@@ -1,0 +1,33 @@
+export const FETCH_FAMILY = 'FETCH_FAMILY';
+export const FETCH_MEMORY = 'FETCH_MEMORY';
+export const FETCH_SCHEDULE = 'FETCH_SCHEDULE';
+export const FETCH_CHATROOM_LIST = "FETCH_CHATROOM_LIST";
+export const FETCH_USER = 'FETCH_USER';
+export const FETCH_USERCHATROOM = "FETCH_USERCHATROOM";
+export const FETCH_USERFAMILY = "FETCH_USERFAMILY";
+export const FETCH_FAMILY_USERS = "FETCH_FAMILY_USERS";
+export const FETCH_MESSAGE = "FETCH_MESSAGE";
+export const FETCH_RECCHALLENGE = "FETCH_RECCHALLENGE";
+
+export const LOGIN="LOGIN";
+export const LOGOUT="LOGOUT";
+
+export const SET_LOADING = 'SET_LOADING';
+export const SET_ERROR = 'SET_ERROR';
+
+export const SET_FAMILY = 'SET_FAMILY';
+export const SET_MEMORY = 'SET_MEMORY';
+export const SET_SCHEDULE = 'SET_SCHEDULE';
+export const SET_CHATROOM = "SET_CHATROOM_LIST";
+export const SET_USER = 'SET_USER';
+export const SET_USERCHATROOM='SET_USERCHATROOM';
+export const SET_USERFAMILY='SET_USERFAMILY';
+export const SET_FAMILY_USERS='SET_FAMILY_USERS';
+export const SET_MESSAGE='SET_MESSAGE';
+export const SET_RECCHALLENGE = "SET_RECCHALLENGE";
+
+
+// export default FETCH_FAMILY;
+
+
+
