@@ -68,6 +68,13 @@
 		<string>arm64</string>
 	</array>
 
+	<key>NSPhotoLibraryUsageDescription</key>
+		<string>사진을 선택하기 위해 접근 권한이 필요합니다.</string>
+	<key>NSCameraUsageDescription</key>
+		<string>카메라를 사용하려면 접근 권한이 필요합니다.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+		<string>사진을 저장하려면 접근 권한이 필요합니다.</string>
+
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

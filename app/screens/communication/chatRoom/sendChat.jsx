@@ -8,9 +8,9 @@ import {
 } from "../../../utils/responsive";
 import formatTime from "./formatTime";
 
-export default function SendChat({ chatTime, message }) {
+export default function SendChat({ chatTime, message, style }) {
   return (
-    <View style={styles.sendContainer}>
+    <View style={[styles.sendContainer, style]}>
       <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>
       <View style={styles.sendBubble}>
         <Text style={styles.sendText}>{message}</Text>
@@ -26,7 +26,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-end",
     justifyContent: "flex-end", // 오른쪽 정렬
-    marginBottom: getResponsiveHeight(5),
   },
 
   sendBubble: {
@@ -34,7 +33,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveIconSize(20),
     paddingVertical: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(20),
-    maxWidth: "85%",
+    maxWidth: getResponsiveWidth(260),
     flexShrink: 1,
     alignSelf: "flex-end",
   },

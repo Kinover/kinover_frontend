@@ -36,13 +36,10 @@ export default function CommunicationScreen({navigation}) {
             <Text style={styles.mainHeaderSubTitleSmall}>첫째</Text>
           </View>
 
-          {/* <Text style={styles.mainHeaderSubTitle}>
-            오늘의 한마디를 적어주세요!
-          </Text> */}
           <TextInput
             style={styles.mainHeaderSubTitle}
             placeholder="오늘의 한마디를 적어주세요!"
-            placeholderTextColor="gray"></TextInput>
+            placeholderTextColor="black"></TextInput>
         </View>
       </View>
 
@@ -62,9 +59,12 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'column',
     justifyContent: 'flex-start',
+    alignItems:'center',
     paddingHorizontal: getResponsiveWidth(30),
     paddingVertical: getResponsiveHeight(30),
     backgroundColor: '#FFC84D',
+    gap:getResponsiveHeight(30),
+    // backgroundColor: '#FFE8EC',
   },
 
   mainHeader: {
@@ -88,12 +88,15 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'center',
     width: 'auto',
-    gap: getResponsiveHeight(10),
+    gap: Platform.OS === 'ios' ? getResponsiveHeight(10) : 0,
   },
 
   mainHeaderTitle: {
     fontFamily: 'Pretendard-Bold', // 로드한 폰트를 지정
-    fontSize: getResponsiveFontSize(32),
+    fontSize:
+      Platform.OS === 'ios'
+        ? getResponsiveFontSize(32)
+        : getResponsiveFontSize(34),
     textAlign: 'center',
   },
 

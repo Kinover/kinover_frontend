@@ -26,6 +26,7 @@ export const SET_FAMILY_USERS='SET_FAMILY_USERS';
 export const SET_MESSAGE='SET_MESSAGE';
 export const SET_RECCHALLENGE = "SET_RECCHALLENGE";
 
+export const UPDATE_IMAGE= 'UPDATE_IMAGE';
 
 // export default FETCH_FAMILY;
 

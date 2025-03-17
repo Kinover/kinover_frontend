@@ -22,8 +22,7 @@ export default function ChatRoomListScreen({navigation}) {
   const {chatRooms, loading, error} = useSelector(state => state.chatRoom);
   const dispatch = useDispatch();
   const user = useSelector(state => state.user);
-  const family=useSelector(state=>state.family);
-
+  const family = useSelector(state => state.family);
 
   // 챗룸 리스트 fetch
   useEffect(() => {
@@ -31,7 +30,7 @@ export default function ChatRoomListScreen({navigation}) {
       console.log('fetchChatRoomList 실행됨');
       dispatch(fetchChatRoomList(family.familyId, user.userId));
     }
-  }, [dispatch,user.login]); // familyId와 userId가 업데이트 된 후에 실행
+  }, [dispatch, user.login]); // familyId와 userId가 업데이트 된 후에 실행
 
   return (
     <BottomSheet
@@ -49,13 +48,11 @@ export default function ChatRoomListScreen({navigation}) {
 
         {/* 가족, 개인 채팅방 */}
         {!loading ? (
-          chatRooms.map(chatRoom => {
+          chatRooms.map((chatRoom, index) => {
             // roomType이 'family'인 경우 가족 채팅방 렌더링
             if (chatRoom.roomType === 'family') {
               return (
-                <TouchableOpacity
-                  style={styles.bottomSheetElement}
-                  key={chatRoom.chatRoomId}>
+                <TouchableOpacity style={styles.bottomSheetElement} key={index}>
                   <Image
                     style={styles.elementImage}
                     source={{
@@ -83,13 +80,11 @@ export default function ChatRoomListScreen({navigation}) {
             }
             if (chatRoom.roomType === 'kino') {
               return (
-                <TouchableOpacity style={styles.bottomSheetElement}
-                key={chatRoom.chatRoomId}>
-                
+                <TouchableOpacity style={styles.bottomSheetElement} key={index}>
                   <Image
                     style={styles.elementImage}
                     source={{
-                      uri: 'https://i.postimg.cc/WbwCzH5N/Ellipse-5-1.png',
+                      uri: 'https://i.postimg.cc/B6SmSRzS/Group-1171276570.jpg',
                     }}></Image>
                   <TouchableOpacity
                     onPress={() =>
@@ -112,9 +107,7 @@ export default function ChatRoomListScreen({navigation}) {
             // roomType이 'oneToOne'인 경우 개인 채팅방 렌더링
             if (chatRoom.roomType === 'oneToOne') {
               return (
-                <TouchableOpacity
-                  style={styles.bottomSheetElement}
-                  key={chatRoom.chatRoomId}>
+                <TouchableOpacity style={styles.bottomSheetElement} key={index}>
                   <Image
                     style={styles.elementImage}
                     source={{
@@ -176,7 +169,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     width: '100%',
     height: getResponsiveHeight(75),
-    gap: getResponsiveWidth(25),
+    gap: getResponsiveWidth(20),
   },
 
   elementImage: {
@@ -189,7 +182,7 @@ const styles = StyleSheet.create({
   elementName: {
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(15),
-    marginTop: getResponsiveIconSize(5),
+    marginTop: getResponsiveIconSize(10),
     marginBottom: getResponsiveIconSize(10),
   },
 

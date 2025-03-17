@@ -6,6 +6,7 @@ import {
   SET_ERROR,
   LOGIN,
   LOGOUT,
+  UPDATE_IMAGE,
 } from '../actions/actionTypes';
 import {initialUserState} from '../state'; // initialState 파일을 수정한 경로로 바꿔주세요.
 
@@ -35,6 +36,12 @@ const userReducer = (state = initialUserState, action) => {
     //     name: nickname || state.name,
     //     loading: false,
     //   };
+
+    case UPDATE_IMAGE:
+      return {
+        ...state,
+        image: action.payload ||state.image,
+      };
 
     case SET_LOADING:
       return {

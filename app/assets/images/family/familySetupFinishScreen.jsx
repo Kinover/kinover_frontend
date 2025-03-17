@@ -12,7 +12,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveIconSize,
-} from '../../utils/responsive';
+} from '../../../utils/responsive';
 import {useNavigation} from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 

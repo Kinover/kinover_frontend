@@ -14,6 +14,7 @@ import {
   getResponsiveIconSize,
 } from './utils/responsive';
 import store from './redux/store';
+import {Platform} from 'react-native';
 
 // 각 탭(화면)
 import CommunicationScreen from './screens/communication/communicationScreen';
@@ -25,10 +26,10 @@ import OneToOneChatRoom from './screens/communication/chatRoom/oneToOneChatRoom'
 import RecChallengeScreen from './screens/memory/challenge/recChallengeScreen';
 import RecChallengeDetailScreen from './screens/memory/challenge/recChallengeDetailScreen';
 import ChallengeScreen from './screens/memory/challenge/challengeScreen';
-import FamilySetupScreen from './screens/family/familySetupScreen';
-import FamilySetupFinishScreen from './screens/family/familySetupFinishScreen';
+import FamilySetupScreen from './assets/images/family/familySetupScreen';
+import FamilySetupFinishScreen from './assets/images/family/familySetupFinishScreen';
 import OnboardingScreen from './screens/authentication/onboardingScreen';
-import CreateFamilyScreen from './screens/family/createFamilyScreen';
+import CreateFamilyScreen from './assets/images/family/createFamilyScreen';
 import FamilyChatRoom from './screens/communication/chatRoom/familyChatRoom';
 import GradeScreen from './screens/home/gradeScreen';
 import ProfileScreen from './components/profileScreen';
@@ -120,6 +121,7 @@ function TabNavigator() {
           shadowOpacity: 0,
           elevation: 0,
           height: getResponsiveHeight(110), // 헤더 높이 설정
+          overflow: 'visible', // overflow 확인
         },
         headerTitleAlign: 'center',
         headerTitle: () => (
@@ -130,14 +132,16 @@ function TabNavigator() {
             style={{
               width: getResponsiveWidth(50), // 원하는 크기로 조절
               height: getResponsiveHeight(47),
-              paddingBottom: getResponsiveHeight(10),
+              paddingBottom:
+                Platform.OS === 'ios'
+                  ? getResponsiveHeight(10)
+                  : getResponsiveHeight(15),
               resizeMode: 'contain', // 이미지 비율 유지
             }}
           />
         ),
         tabBarStyle: tabBarStyle,
       }}>
-
       {/* 첫 번째 탭: 감정기록 */}
       <Tab.Screen
         name="감정기록"
@@ -223,9 +227,6 @@ function AppNavigator() {
         name="온보딩화면"
         component={OnboardingScreen}
         options={{
-          // gestureDirection: 'horizontal-inverted', // 슬라이드 방향 반대로 변경
-          // headerStyleInterpolator: HeaderStyleInterpolators.forUIKit, // 이건 헤더의 애니메이션 스타일
-
           headerStyle: {
             borderBottomWidth: 0, // 하단 경계선 제거
             shadowOpacity: 0, // 그림자 제거
@@ -306,9 +307,6 @@ function AppNavigator() {
         name="가족생성화면"
         component={CreateFamilyScreen}
         options={{
-          // gestureDirection: 'horizontal-inverted', // 슬라이드 방향 반대로 변경
-          // headerStyleInterpolator: HeaderStyleInterpolators.forUIKit, // 이건 헤더의 애니메이션 스타일
-
           headerStyle: {
             borderBottomWidth: 0, // 하단 경계선 제거
             shadowOpacity: 0, // 그림자 제거
@@ -625,10 +623,25 @@ function AppNavigator() {
                   width: getResponsiveWidth(13),
                   height: getResponsiveHeight(26),
                   marginLeft: getResponsiveWidth(30),
+                  
                 }}
               />
             </TouchableOpacity>
           ),
+          // headerRight: () => (
+          //   <TouchableOpacity>
+          //     <Image
+          //       source={{
+          //         uri: 'https://i.postimg.cc/3ryLhKKF/free-icon-message-5251132.png',
+          //       }}
+          //       style={{
+          //         width: getResponsiveWidth(23),
+          //         height: getResponsiveHeight(23),
+          //         marginRight: getResponsiveWidth(30),
+          //         resizeMode:'contain',
+          //       }}></Image>
+          //   </TouchableOpacity>
+          // ),
         })}
       />
 

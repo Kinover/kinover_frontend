@@ -4,7 +4,11 @@ import {useSelector, useDispatch} from 'react-redux';
 import ReceiveChat from './receiveChat';
 import SendChat from './sendChat';
 import {fetchMessage} from '../../../redux/actions/messageActions';
-import {getResponsiveWidth} from '../../../utils/responsive';
+import {
+  getResponsiveHeight,
+  getResponsiveIconSize,
+  getResponsiveWidth,
+} from '../../../utils/responsive';
 
 export default function ChatScreen({chatRoom, user}) {
   const {messages} = useSelector(state => state.message); // Redux 상태 가져오기
@@ -19,31 +23,67 @@ export default function ChatScreen({chatRoom, user}) {
   // messages가 배열인지 확인하고 기본값을 빈 배열로 설정
   const messageList = Array.isArray(messages) ? messages : [];
 
+  // 날짜를 YYYY-MM-DD 형식으로 변환하는 함수
+  const formatDate = dateString => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long',
+    });
+  };
+
   return (
-    <View>
+    <View style={styles.chatContainer}>
       {messageList.length > 0 ? (
-        messageList.map(message => {
-          // 수신메세지
-          if (message.sender.userId !== user.userId) {
-            return (
-              <ReceiveChat
-                key={message.messageId} // 각 컴포넌트에 고유 키를 추가
-                userName={message.sender.name}
-                userProfileImage={message.sender.image}
-                message={message.content}
-                chatTime={message.createdAt}></ReceiveChat>
-            );
-          } else if (message.sender.userId === user.userId) {
-            return (
-              <SendChat
-                key={message.messageId} // 각 컴포넌트에 고유 키를 추가
-                message={message.content}
-                chatTime={message.createdAt}></SendChat>
-            );
-          }
+        messageList.map((message, index) => {
+          const isSameSender =
+            messageList[index - 1] &&
+            messageList[index - 1].sender.userId === message.sender.userId;
+
+          // 현재 메시지의 날짜
+          const currentMessageDate = new Date(message.createdAt).toDateString();
+          const prevMessageDate =
+            index > 0
+              ? new Date(messageList[index - 1].createdAt).toDateString()
+              : null;
+
+          return (
+            <React.Fragment key={message.messageId}>
+              {/* 날짜가 바뀌었으면 날짜 표시 */}
+              {prevMessageDate !== currentMessageDate && (
+                <Text style={styles.dateSeparator}>
+                  {formatDate(message.createdAt)}
+                </Text>
+              )}
+
+              {/* 수신 메시지 */}
+              {message.sender.userId !== user.userId ? (
+                <ReceiveChat
+                  userName={message.sender.name}
+                  userProfileImage={message.sender.image}
+                  message={message.content}
+                  chatTime={message.createdAt}
+                  style={{
+                    marginBottom: isSameSender ? 15 : 25, // 같은 사람이면 간격 10, 다른 사람은 간격 20
+                  }}
+                />
+              ) : (
+                // 발신 메시지
+                <SendChat
+                  message={message.content}
+                  chatTime={message.createdAt}
+                  style={{
+                    marginBottom: isSameSender ? 15 : 25,
+                  }}
+                />
+              )}
+            </React.Fragment>
+          );
         })
       ) : (
-        <Text> 메세지가 없습니다. </Text>
+        <Text>메세지가 없습니다.</Text>
       )}
     </View>
   );
@@ -51,7 +91,19 @@ export default function ChatScreen({chatRoom, user}) {
 
 const styles = StyleSheet.create({
   chatContainer: {
-    width: getResponsiveWidth(330),
-    // height: getResponsiveHeight(80),
+    width: getResponsiveWidth(350),
+    alignSelf:'center',
+  },
+  dateSeparator: {
+    alignSelf: 'center',
+    fontSize: 14,
+    fontWeight: 'bold',
+    paddingHorizontal: getResponsiveWidth(5),
+    marginVertical: getResponsiveHeight(30),
+    backgroundColor: 'rgba(255, 202, 85, 0.7)', // 투명도 0.5로 설정
+    borderColor: 'transparent',
+    borderRadius: getResponsiveIconSize(20),
+    borderWidth: 10,
+    color: '#666',
   },
 });
