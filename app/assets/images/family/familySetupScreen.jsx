@@ -12,11 +12,11 @@ import getResponsiveFontSize, {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveIconSize,
-} from '../../utils/responsive';
+} from '../../../utils/responsive';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
-import {LOGIN} from '../../redux/actions/actionTypes';
-import fetchFamily from '../../redux/actions/familyActions';
+import {LOGIN} from '../../../redux/actions/actionTypes';
+import fetchFamily from '../../../redux/actions/familyActions';
 
 export default function FamilySetupScreen() {
   // 상태 정의: 코드 입력 여부 및 입력된 가족 코드
@@ -51,7 +51,9 @@ export default function FamilySetupScreen() {
   };
 
   const handleInputChange = text => {
-    setFamilyCode(text); // 입력된 값 업데이트
+    // setFamilyCode(text); // 입력된 값 업데이트
+    setFamilyCode('0f7eff1b-c4ad-43c5-90f6-e8b2f4ff5670'); // 입력된 값 업데이트
+
   };
 
   const handleSubmitCode = () => {
@@ -66,7 +68,7 @@ export default function FamilySetupScreen() {
       Alert.alert('오류가 발생했습니다.', error, [{text: '확인'}]);
     } else {
       // 가족 코드가 비어있을 경우 안내 메시지
-      alert('가족 코드를 입력해주세요.');
+      Alert.alert('가족 코드를 입력해주세요.');
     }
   };
 

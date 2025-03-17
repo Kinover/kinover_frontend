@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, {useState, useEffect} from 'react';
 import {
   View,
   StyleSheet,
@@ -7,15 +7,16 @@ import {
   FlatList,
   ScrollView,
   Image,
-} from "react-native";
+} from 'react-native';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from "../../utils/responsive";
+} from '../../utils/responsive';
+import Schedule from './schedule';
 
 // 📌 선택한 날짜가 속한 주의 시작 날짜를 구하는 함수
-const getWeekStartDate = (date) => {
+const getWeekStartDate = date => {
   const newDate = new Date(date);
   const dayOfWeek = newDate.getDay(); // 0(일) ~ 6(토)
 
@@ -51,6 +52,29 @@ export default function ScheduleScreen({navigation}) {
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [hasMemoryButton, setHasMemoryButton] = useState(false); // 해당 요소에 따라 true / false 설정
+  const [schedules, setSchedules] = useState([
+    {
+      name: '가족',
+      schedules: ['부모님과 저녁 식사', '가족 여행 준비', '동생 졸업식 참석'],
+    },
+    {
+      name: '엄마',
+      schedules: [
+        '팀 회의 오전 10시',
+        '프로젝트 마감일 체크',
+        '고객 미팅 오후 3시',
+        '리포트 제출 마감일',
+      ],
+    },
+    {
+      name: '아빠',
+      schedules: ['헬스장 가기', '러닝 5km', '요가 클래스 참석'],
+    },
+    {
+      name: '은재',
+      schedules: ['기타 연습', '책 읽기', '드로잉 클래스 참여'],
+    },
+  ]);
 
   // 📌 초기 상태로 한 주의 날짜를 설정
   useEffect(() => {
@@ -60,20 +84,11 @@ export default function ScheduleScreen({navigation}) {
   }, [selectedDate]);
 
   // 📌 주 변경 함수
-  const changeWeek = (direction) => {
+  const changeWeek = direction => {
     const newDate = new Date(selectedDate);
     newDate.setDate(selectedDate.getDate() + direction * 7); // 한 주 전후로 날짜 변경
     setSelectedDate(newDate);
   };
-
-  // useEffect(() => {
-  //   if(hasMemoryButton===false){
-  //   setHasMemoryButton(true);
-  //   }
-  //   else if(hasMemoryButton===true){
-  //     setHasMemoryButton(false);
-  //   }
-  // }, []);
 
   return (
     <ScrollView style={styles.mainContainer}>
@@ -88,33 +103,29 @@ export default function ScheduleScreen({navigation}) {
           <View style={styles.monthChangeButtonGroup}>
             <TouchableOpacity
               onPress={() => changeWeek(-1)}
-              style={styles.monthChangeButton}
-            >
+              style={styles.monthChangeButton}>
               <Image
                 source={{
-                  uri: "https://i.postimg.cc/4xGvZv46/Group-440-5.png",
+                  uri: 'https://i.postimg.cc/4xGvZv46/Group-440-5.png',
                 }}
                 style={{
                   width: getResponsiveWidth(5.63),
                   height: getResponsiveHeight(11.26),
-                }}
-              ></Image>
+                }}></Image>
               {/* <Text style={styles.monthChangeText}>{"<"}</Text> */}
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => changeWeek(1)}
-              style={styles.monthChangeButton}
-            >
+              style={styles.monthChangeButton}>
               <Image
                 source={{
-                  uri: "https://i.postimg.cc/WbLg6mkB/Group-441-2.png",
+                  uri: 'https://i.postimg.cc/WbLg6mkB/Group-441-2.png',
                 }}
                 style={{
                   width: getResponsiveWidth(5.63),
                   height: getResponsiveHeight(11.26),
-                }}
-              ></Image>
+                }}></Image>
             </TouchableOpacity>
           </View>
         </View>
@@ -125,7 +136,7 @@ export default function ScheduleScreen({navigation}) {
             {weekDates.map((item, index) => (
               <View key={index} style={styles.dayContainer}>
                 <Text style={styles.dayText}>
-                  {["월", "화", "수", "목", "금", "토", "일"][index]}
+                  {['월', '화', '수', '목', '금', '토', '일'][index]}
                 </Text>
                 {/* 📌 요일 추가 */}
                 <View style={styles.ovalGroup}>
@@ -137,8 +148,7 @@ export default function ScheduleScreen({navigation}) {
                   style={[
                     styles.dateText,
                     item.isSelected ? styles.selectedText : {},
-                  ]}
-                >
+                  ]}>
                   {item.date.getDate()}
                 </Text>
                 {/* 📌 날짜 */}
@@ -150,149 +160,9 @@ export default function ScheduleScreen({navigation}) {
 
       {/* 일정 */}
       <View style={styles.scheduleContainer}>
-        <Text style={styles.scheduleTitle}>
-          <Text style={styles.scheduleTitleHightlight}>{"가족 "}</Text>일정은
-          <Text style={styles.scheduleTitleHightlight}>{" 2개 "}</Text>있어요.
-        </Text>
-        <View style={styles.scheduleElement}>
-        <Text
-            style={[
-              styles.scheduleText,
-              {
-                width: 220 // "추억 글쓰기" 버튼이 없을 경우 width 240 적용
-              },
-            ]}
-          >
-            오후 6시 중식당으로
-          </Text>
-          <TouchableOpacity
-            onPress={() => alert("Button Pressed")}
-            style={styles.scheduleButton}
-          >
-            <Image
-              style={styles.buttonIconMemo}
-              source={{ uri: "https://i.postimg.cc/TYsZknFG/Group-485.png" }}
-            ></Image>
-            <Text style={styles.buttonText}>메모</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => alert("Button Pressed")}
-            style={styles.scheduleButton}
-          >
-            <Image
-              style={styles.buttonIconMemory}
-              source={{ uri: "https://i.postimg.cc/cJfC1xwg/Group-486.png" }}
-            ></Image>
-            <Text style={styles.buttonText}>추억 글쓰기</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.scheduleElement}>
-          <Text
-            style={[
-              styles.scheduleText,
-              {
-                width: 220 // "추억 글쓰기" 버튼이 없을 경우 width 240 적용
-              },
-            ]}
-          >
-            할머니 생신
-          </Text>
-          <TouchableOpacity
-            onPress={() => alert("Button Pressed")}
-            style={styles.scheduleButton}
-          >
-            <Image
-              style={styles.buttonIconMemo}
-              source={{ uri: "https://i.postimg.cc/TYsZknFG/Group-485.png" }}
-            ></Image>
-            <Text style={styles.buttonText}>메모</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => alert("Button Pressed")}
-            style={styles.scheduleButton}
-          >
-            <Image
-              style={styles.buttonIconMemory}
-              source={{ uri: "https://i.postimg.cc/cJfC1xwg/Group-486.png" }}
-            ></Image>
-            <Text style={styles.buttonText}>추억 글쓰기</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.scheduleElement}>
-          <Text
-            style={[
-              styles.scheduleAddText,
-              {
-                width: 270 // "추억 글쓰기" 버튼이 없을 경우 width 240 적용
-              },
-            ]}
-          >  + 일정을 추가하세요
-          </Text>
-          <TouchableOpacity
-            onPress={() => alert("Button Pressed")}
-            style={[styles.scheduleButton, { backgroundColor: "#D9D9D9" }]}
-          >
-            <Image
-              style={styles.buttonIconMemo}
-              source={{ uri: "https://i.postimg.cc/TYsZknFG/Group-485.png" }}
-            ></Image>
-            <Text style={styles.buttonText}>메모</Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.scheduleTitle}>
-          <Text style={styles.scheduleTitleHightlight}>{"나의 "}</Text>일정은
-          <Text style={styles.scheduleTitleHightlight}>{" 1개 "}</Text>있어요.
-        </Text>
-
-        <View style={styles.scheduleElement}>
-          <Text
-            style={[
-              styles.scheduleText,
-              {
-                width: 270 // "추억 글쓰기" 버튼이 없을 경우 width 240 적용
-              },
-            ]}
-          >
-            면접
-          </Text>
-          <TouchableOpacity
-            onPress={() => alert("Button Pressed")}
-            style={styles.scheduleButton}
-          >
-            <Image
-              style={styles.buttonIconMemo}
-              source={{ uri: "https://i.postimg.cc/TYsZknFG/Group-485.png" }}
-            ></Image>
-            <Text style={styles.buttonText}>메모</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.scheduleElement}>
-          <Text
-            style={[
-              styles.scheduleAddText,
-              {
-                width: 270 // "추억 글쓰기" 버튼이 없을 경우 width 240 적용
-              },
-            ]}
-          >  + 일정을 추가하세요
-          </Text>
-          <TouchableOpacity
-            onPress={() => alert("Button Pressed")}
-            style={[styles.scheduleButton, { backgroundColor: "#D9D9D9" }]}
-          >
-            <Image
-              style={styles.buttonIconMemo}
-              source={{ uri: "https://i.postimg.cc/TYsZknFG/Group-485.png" }}
-            ></Image>
-            <Text style={styles.buttonText}>메모</Text>
-          </TouchableOpacity>
-        </View>
+        {schedules.map((item, index) => (
+          <Schedule key={index} props={item} />
+        ))}
       </View>
     </ScrollView>
   );
@@ -301,19 +171,19 @@ export default function ScheduleScreen({navigation}) {
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: getResponsiveWidth(20),
     paddingVertical: getResponsiveHeight(20),
   },
 
   mainCalendarContainer: {
     // position:'relative',
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: getResponsiveWidth(30),
     paddingVertical: getResponsiveHeight(30),
-    borderColor: "#FFC84D",
+    borderColor: '#FFC84D',
     borderWidth: 1,
     borderRadius: 20,
     width: getResponsiveWidth(350),
@@ -322,26 +192,26 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: getResponsiveHeight(20),
     width: getResponsiveWidth(310),
   },
 
   monthChangeButtonGroup: {
-    display: "flex",
-    flexDirection: "row",
+    display: 'flex',
+    flexDirection: 'row',
     gap: getResponsiveWidth(20),
   },
 
   monthText: {
-    fontFamily: "Pretendard-Bold",
+    fontFamily: 'Pretendard-Bold',
     fontSize: getResponsiveFontSize(15),
   },
 
   monthChangeButton: {
-    color: "black",
+    color: 'black',
   },
 
   weekContainer: {
@@ -349,143 +219,142 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(10),
   },
   weekDatesContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     width: getResponsiveWidth(310),
   },
 
   dayContainer: {
     width: getResponsiveWidth(30),
     height: getResponsiveHeight(60),
-    justifyContent: "space-between",
-    alignItems: "center",
+    justifyContent: 'space-between',
+    alignItems: 'center',
     // margin: 5,
     borderRadius: 10,
-    backgroundColor: "white",
-    flexDirection: "column", // 📌 세로 방향 정렬
+    backgroundColor: 'white',
+    flexDirection: 'column', // 📌 세로 방향 정렬
     gap: getResponsiveHeight(5), // 📌 아이콘과 날짜 사이 여백 조정
   },
 
   dayText: {
-    fontFamily: "Pretendard-Regular",
+    fontFamily: 'Pretendard-Regular',
     fontSize: getResponsiveFontSize(12),
-    color: "black",
+    color: 'black',
   },
 
   dateText: {
     fontSize: getResponsiveFontSize(11),
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: 'bold',
+    color: '#333',
   },
 
   ovalGroup: {
     width: getResponsiveWidth(34),
     height: getResponsiveHeight(30), // 높이 지정 필수
-    position: "relative", // 자식 요소들이 절대 위치 지정 가능  },
+    position: 'relative', // 자식 요소들이 절대 위치 지정 가능  },
   },
 
   ovalLeft: {
-    position: "absolute",
+    position: 'absolute',
     width: getResponsiveWidth(25.33),
     height: getResponsiveHeight(18.33),
-    backgroundColor: "rgba(255, 200, 77, 0.6)", // ✅ FFC84D 색상 + 70% 투명도
+    backgroundColor: 'rgba(255, 200, 77, 0.6)', // ✅ FFC84D 색상 + 70% 투명도
     borderRadius: getResponsiveHeight(9.165),
-    transform: [{ rotate: "45.65deg" }], // ✅ 45도 회전
+    transform: [{rotate: '45.65deg'}], // ✅ 45도 회전
     left: 0,
     top: getResponsiveHeight(5),
   },
 
   ovalRight: {
-    position: "absolute",
+    position: 'absolute',
     width: getResponsiveWidth(25.33),
     height: getResponsiveHeight(18.33),
-    backgroundColor: "rgba(255, 195, 222, 0.6)", // ✅ FFC84D 색상 + 70% 투명도
+    backgroundColor: 'rgba(255, 195, 222, 0.6)', // ✅ FFC84D 색상 + 70% 투명도
     borderRadius: getResponsiveHeight(9.165),
-    transform: [{ rotate: "134.35deg" }], // ✅ 45도 회전
+    transform: [{rotate: '134.35deg'}], // ✅ 45도 회전
     right: 0,
     top: getResponsiveHeight(5),
   },
 
   selectedText: {
-    color: "gray",
+    color: 'gray',
   },
 
   scheduleContainer: {
     paddingHorizontal: 20,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: '#FFFFFF',
     borderRadius: 10,
     // height:"auto",
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   scheduleTitle: {
-    fontFamily: "Pretendard-Light",
+    fontFamily: 'Pretendard-Light',
     fontSize: getResponsiveFontSize(15),
     marginTop: getResponsiveHeight(20),
     marginBottom: getResponsiveHeight(15),
   },
 
   scheduleTitleHightlight: {
-    fontFamily: "Pretendard-Bold",
+    fontFamily: 'Pretendard-Bold',
     fontSize: getResponsiveFontSize(20),
   },
 
   scheduleElement: {
-    flexDirection: "row",
+    flexDirection: 'row',
     width: getResponsiveWidth(340),
-    justifyContent: "center",
+    justifyContent: 'center',
     paddingVertical: getResponsiveHeight(5),
     borderRadius: 10,
     gap: 13,
   },
 
   scheduleText: {
-    width: "auto", // 기본적으로 auto 적용
+    width: 'auto', // 기본적으로 auto 적용
     // width: getResponsiveWidth(240),
     fontSize: getResponsiveFontSize(15),
-    backgroundColor: "#FFC84D",
+    backgroundColor: '#FFC84D',
     borderRadius: 10,
     paddingLeft: 20,
     lineHeight: getResponsiveHeight(46.89),
   },
 
   scheduleAddText: {
-    width: "auto", // 기본적으로 auto 적용
+    width: 'auto', // 기본적으로 auto 적용
     // width: getResponsiveWidth(240),
     fontSize: getResponsiveFontSize(15),
-    backgroundColor: "#D9D9D9",
+    backgroundColor: '#D9D9D9',
     borderRadius: 10,
     paddingLeft: 20,
     lineHeight: getResponsiveHeight(46.89),
   },
 
   scheduleButton: {
-    position: "relative",
-    backgroundColor: "#FFC84D",
+    position: 'relative',
+    backgroundColor: '#FFC84D',
     width: getResponsiveWidth(52),
     height: getResponsiveHeight(47),
-    alignItems: "center",
+    alignItems: 'center',
     borderRadius: 10,
   },
 
-
   buttonIconMemo: {
-    position: "absolute",
+    position: 'absolute',
     bottom: getResponsiveHeight(20),
     width: getResponsiveWidth(18.84),
     height: getResponsiveHeight(20.48),
   },
 
   buttonIconMemory: {
-    position: "absolute",
+    position: 'absolute',
     bottom: getResponsiveHeight(22),
     width: getResponsiveWidth(20),
     height: getResponsiveHeight(14.3),
   },
 
   buttonText: {
-    position: "absolute",
+    position: 'absolute',
     bottom: getResponsiveHeight(10),
     fontSize: 10,
   },

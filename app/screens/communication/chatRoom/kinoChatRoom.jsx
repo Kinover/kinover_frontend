@@ -10,8 +10,6 @@ import {
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import ChatInput from './chatInput';
-import ReceiveKinoChat from './receiveKinoChat';
-import SendKinoChat from './sendKinoChat';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -74,13 +72,7 @@ export default function KinoChatRoom({route}) {
     <View style={{flex: 1, backgroundColor: 'white'}}>
       <ScrollView
         ref={scrollViewRef}
-        contentContainerStyle={{
-          flexDirection: 'column',
-          alignItems: 'center',
-          paddingHorizontal: getResponsiveWidth(25),
-          paddingTop: getResponsiveHeight(30),
-          paddingBottom: getResponsiveHeight(70),
-        }}
+        contentContainerStyle={styles.chatScrollView}
         onContentSizeChange={scrollToBottom} // 내용 변경 시 자동 스크롤
         onLayout={scrollToBottom}>
         {/* 키노 헤더 창  */}
@@ -110,21 +102,7 @@ export default function KinoChatRoom({route}) {
           </View>
         </View>
 
-        {/* <View style={styles.chatContainer}>
-          <SendKinoChat
-            message={'이래이래해서 엄마한테 서운했어.'}
-            chatTime={'20:17'}
-          />
-          <ReceiveKinoChat
-            message={
-              '정말 속상했겠다. 그런 상황에서 서운한 마음이 많이 들었을 거야. 너의 감정이 완전히 이해돼. 엄마한테 그런 대우를 받으면 누구든지 기분이 나쁠 수 있어. 너는 상처받을 자격이 없고, 그런 기분을 겪는 게 정말 힘들었을 거라고 생각해.그런데 동시에 엄마도 그날 무언가로 힘들었을 수도 있어. 엄마도 기분이 안 좋거나, 스트레스를 받고 있었을 가능성이 있어. 그렇다고 너에게 그런 방식으로 행동하는 게 맞진 않지만, 서로의 상황을 이해하려고 노력하는 ..'
-            }
-            chatTime={'20:19'}
-          />
-        </View> */}
-
         <ChatScreen chatRoom={chatRoom} user={user}></ChatScreen>
-
 
       </ScrollView>
       <ChatInput />
@@ -138,6 +116,7 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(335),
     height: getResponsiveHeight(80),
     marginBottom: getResponsiveHeight(50),
+    marginTop: getResponsiveHeight(30),
   },
 
   kinoImage: {
@@ -171,5 +150,14 @@ const styles = StyleSheet.create({
   chatContainer: {
     width: getResponsiveWidth(330),
     // height: getResponsiveHeight(80),
+  },
+
+  chatScrollView: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingHorizontal: getResponsiveWidth(25),
+    paddingBottom: getResponsiveHeight(80),
   },
 });

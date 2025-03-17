@@ -8,9 +8,9 @@ import {
 } from "../../../utils/responsive";
 import formatTime from './formatTime';
 
-export default function ReceiveChat({ userProfileImage, userName, message, chatTime }) {
+export default function ReceiveChat({ userProfileImage, userName, message, chatTime, style }) {
   return (
-    <View style={styles.receivedContainer}>
+    <View style={[styles.receivedContainer, style]}>
       {/* 프로필 이미지 */}
       <Image source={{ uri: `${userProfileImage}` }} style={styles.receivedUserImage} />
 
@@ -36,7 +36,6 @@ const styles = StyleSheet.create({
   receivedContainer: {
     flexDirection: "row",
     alignItems: "flex-start", // 프로필 이미지와 텍스트 정렬
-    marginBottom: getResponsiveHeight(10),
   },
 
   /** 🔹 프로필 이미지 */
@@ -71,7 +70,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveIconSize(20),
     paddingVertical: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(20),
-    maxWidth: "85%",
+    maxWidth: getResponsiveWidth(260),
     flexShrink: 1,
   },
 

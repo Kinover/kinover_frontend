@@ -23,6 +23,7 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../utils/responsive';
+import {opacity} from 'react-native-reanimated/lib/typescript/Colors';
 
 export default function MemoryScreen({navigation}) {
   const {memories} = useSelector(state => state.memory);
@@ -30,8 +31,6 @@ export default function MemoryScreen({navigation}) {
   const family = useSelector(state => state.family);
   const {familyUsers} = useSelector(state => state.userFamily);
   const dispatch = useDispatch();
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(null);
 
   useEffect(() => {
     dispatch(fetchMemory(family.familyId));
@@ -40,11 +39,10 @@ export default function MemoryScreen({navigation}) {
 
   // 유저 ID를 기준으로 familyUsers 배열을 정렬하는 함수
   const sortFamilyUsers = familyUsers => {
-    // user.userId와 동일한 user를 먼저 정렬
     return [...familyUsers].sort((a, b) => {
-      if (a.userId === user.userId) return -1; // user.userId와 같으면 맨 앞에 오도록
+      if (a.userId === user.userId) return -1;
       if (b.userId === user.userId) return 1;
-      return 0; // 그 외에는 순서 유지
+      return 0;
     });
   };
 
@@ -72,7 +70,6 @@ export default function MemoryScreen({navigation}) {
         style={styles.challengeBackground}
         source={{uri: 'https://i.postimg.cc/pLnqPb73/Group-480.png'}}>
         <TouchableOpacity onPress={() => navigation.navigate('추천 챌린지')}>
-        {/* <TouchableOpacity onPress={() => navigation.navigate('챌린지 화면')}> */}
           <Image
             source={{uri: 'https://i.postimg.cc/MZv3KFn0/Group-481-1.png'}}
             style={styles.challengeButton}
@@ -104,34 +101,14 @@ export default function MemoryScreen({navigation}) {
             </Text>
           </View>
         </View>
-        <DropDownPicker
-          open={open}
-          value={value}
-          items={[
-            {label: '최신순', value: '최신순'},
-            {label: '인기순', value: '인기순'},
-            {label: '댓글순', value: '댓글순'},
-          ]}
-          setOpen={setOpen}
-          setValue={setValue}
-          placeholder="정렬"
-          containerStyle={{
-            zIndex: 9999,
-            width: getResponsiveWidth(85),
-          }} // 부모 컨테이너에도 zIndex와 width 추가
-          style={styles.dropdown}
-          scrollViewProps={{
-            showsVerticalScrollIndicator: false,
-          }}
-          textStyle={{fontSize: getResponsiveFontSize(15)}} // textStyle 추가
-        />
       </View>
     </>
   );
 
   const renderMemoryFeed = ({item}) => {
     return (
-      <View style={styles.contentContainer}>
+      <View
+        style={[styles.contentContainer, {paddingTop: getResponsiveHeight(5)}]}>
         <MemoryFeed item={item} />
       </View>
     );
@@ -141,14 +118,11 @@ export default function MemoryScreen({navigation}) {
     <View style={styles.container}>
       <FlatList
         style={styles.mainContainer}
-        data={memories} // 더미 데이터를 flatlist에 전달
-        renderItem={renderMemoryFeed} // MemoryFeed를 flatlist 아이템으로 전달
-        ListHeaderComponent={renderHeader} // header로 렌더링할 요소들
+        data={memories}
+        renderItem={renderMemoryFeed}
+        ListHeaderComponent={renderHeader}
         keyExtractor={item => item.memoryId}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{
-          paddingBottom: getResponsiveHeight(0),
-        }} // 추가 여백
       />
       <FloatingButton style={{zIndex: 10}} />
     </View>
@@ -159,13 +133,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+
   mainContainer: {
     flex: 1,
-    display: 'flex',
-    // backgroundColor: '#FFFFFF',
     backgroundColor: 'white',
     alignContent: 'flex-start',
-    // justifyContent:'flex-start'
     gap: 0,
   },
 
@@ -173,10 +145,7 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(393),
     height: getResponsiveHeight(180),
     justifyContent: 'center',
-    // alignSelf:'flex-start',
     alignItems: 'center',
-    // marginTop: 0,
-    // objectFit:'cover',
   },
 
   challengeButton: {
@@ -192,11 +161,12 @@ const styles = StyleSheet.create({
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
+    position: 'relative',
     paddingTop: getResponsiveIconSize(25),
-    paddingRight: getResponsiveIconSize(25),
-    paddingLeft: getResponsiveIconSize(25),
+    paddingHorizontal: getResponsiveIconSize(25),
     backgroundColor: '#fff',
-    gap: getResponsiveWidth(30),
+    gap: getResponsiveWidth(23),
+    marginBottom: getResponsiveHeight(30),
   },
 
   contentElement: {
@@ -205,11 +175,13 @@ const styles = StyleSheet.create({
     width: '100%',
     height: getResponsiveHeight(60),
     gap: getResponsiveHeight(10),
-    marginBottom: getResponsiveHeight(20),
+    marginBottom: getResponsiveHeight(25),
+    paddingHorizontal: getResponsiveWidth(5),
   },
 
   bottomSheetCategory: {
     fontSize: getResponsiveFontSize(15),
+    fontFamily:'Pretendard-Regular',
   },
 
   memberList: {
@@ -236,13 +208,15 @@ const styles = StyleSheet.create({
     zIndex: 1,
     height: getResponsiveHeight(50),
     width: '100%',
-    lineHeight: getResponsiveHeight(23),
+    lineHeight: getResponsiveHeight(25),
     flexWrap: 'wrap',
+    fontFamily:'Pretendard-Light',
   },
 
   dropdown: {
     width: getResponsiveWidth(85),
     borderWidth: 0,
-    zIndex: 999,
+    // zIndex: 999,
+    backgroundColor: 'black',
   },
 });

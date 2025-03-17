@@ -42,11 +42,8 @@ export default function OneToOneChatRoom({route}) {
     <View style={{flex: 1, backgroundColor: 'white'}}>
       <ScrollView
         ref={scrollViewRef}
-        contentContainerStyle={{
-          paddingHorizontal: getResponsiveWidth(25),
-          paddingTop: getResponsiveHeight(30),
-          paddingBottom: getResponsiveHeight(70),
-        }}
+        contentContainerStyle={styles.chatScrollView
+        }
         onContentSizeChange={scrollToBottom} // 내용 변경 시 자동 스크롤
         onLayout={scrollToBottom}>
         <ChatScreen chatRoom={chatRoom} user={user}></ChatScreen>
@@ -56,4 +53,13 @@ export default function OneToOneChatRoom({route}) {
   );
 }
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  chatScrollView: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingHorizontal: getResponsiveWidth(25),
+    paddingBottom: getResponsiveHeight(80),
+  },
+});

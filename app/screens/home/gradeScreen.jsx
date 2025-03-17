@@ -9,21 +9,21 @@ import {useSelector} from 'react-redux';
 
 const relationshipMessages = {
   '어색한 사이':
-    '처음 만났을 때, 모든 게 낯설고 서먹한 시기입니다. 서로에 대해 잘 모르지만, 한 발짝씩 다가가고 있는 중이에요.🙂',
+    '처음 만났을 때,\n모든 게 낯설고 서먹한 시기입니다.\n\n서로에 대해 잘 모르지만,\n한 발짝씩 다가가고 있는 중이에요 🙂',
   '알아가는 사이':
-    '서로에 대해 알아가는 중입니다. 아직은 조금 어색하지만, 작은 대화와 행동을 통해 조금씩 가까워지고 있어요.😉',
+    '서로에 대해 알아가는 중입니다.\n아직은 조금 어색하지만,\n\n 작은 대화와 행동을 통해\n조금씩 가까워지고 있답니다 😉',
   '다가가는 사이':
-    '서로를 조금 더 편하게 느끼기 시작했어요. 신뢰를 쌓고, 조금씩 마음의 거리가 좁혀지는 단계입니다.😀',
+    '서로를 조금 더 \n편하게 느끼기 시작했어요.\n\n신뢰를 쌓고, 조금씩 마음의\n거리가 좁혀지는 단계입니다 😀',
   '편안한 사이':
-    '이제 서로가 편안함을 느끼고, 함께 있는 것이 자연스러워졌어요. 서로의 존재가 부담 없이 받아들여지는 시기입니다.😆',
+    '이제 서로가 편안함을 느끼고,\n함께 있는 것이 자연스러워졌어요.\n\n서로의 존재가 부담 없이\n받아들여지는 시기랍니다 😆',
   '진심을 나누는 사이':
-    '서로의 진심을 나누고, 마음 깊은 곳까지 이해하는 사이입니다. 감정과 생각을 솔직하게 공유할 수 있는 관계입니다.🤭',
+    '서로의 진심을 나누고,\n마음 깊은 곳까지\n이해하는 사이입니다.\n\n감정과 생각을 솔직하게 \n공유할 수 있는 관계예요 🤭',
   '단단한 사이':
-    '서로가 든든한 버팀목이 되어 주는 관계입니다. 어려움도 함께 이겨내고, 변함없이 강한 유대감을 느낄 수 있어요.😊',
+    '서로가 든든한\n버팀목이 되어 주는 관계입니다.\n\n어려움도 함께 이겨내고,\n변함없이 강한 유대감을\n느낄 수 있어요 😊',
   '믿음의 사이':
-    '신뢰를 바탕으로 모든 걸 함께 나누는 사이입니다. 서로를 믿고 의지할 수 있는 강한 관계로, 어떤 상황에서도 함께할 수 있어요.😘',
+    '신뢰를 바탕으로\n모든 걸 함께 나누는 사이입니다.\n\n서로를 믿고 의지할 수 있는\n강한 관계로,\n\n어떤 상황에서도 함께할 수 있어요!',
   '하나된 사이':
-    '서로의 마음이 완전히 일치하며\n 하나가 된 관계입니다.\n\n 모든 것을 함께하며,\n 깊은 사랑과 유대감을 느낄 수 있는 \n완벽한 조화의 시기입니다 -🩷',
+    '서로의 마음이 완전히 일치하며\n하나가 된 관계입니다.\n\n모든 것을 함께하며,\n깊은 사랑과 유대감을 느낄 수 있는\n완벽한 조화의 시기입니다 -🩷',
 };
 
 export default function GradeScreen() {
@@ -49,7 +49,9 @@ export default function GradeScreen() {
         </Text>
       </View>
       <View style={styles.mainContainer}>
+        {/* <Text style={styles.mainContainerText}>{message}</Text> */}
         <Text style={styles.mainContainerText}>{message}</Text>
+
         <View style={styles.barContainer}>
           <View style={styles.bar}>
             <View style={styles.progress}></View>
@@ -79,7 +81,7 @@ const styles = StyleSheet.create({
     // paddingVertical: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(30),
     alignItems: 'center',
-    gap: getResponsiveHeight(40),
+    gap: getResponsiveHeight(30),
   },
   header: {
     alignItems: 'center',
@@ -107,7 +109,7 @@ const styles = StyleSheet.create({
   },
   mainContainerText: {
     fontSize: getResponsiveFontSize(20),
-    maxWidth: getResponsiveWidth(280),
+    maxWidth: getResponsiveWidth(290),
     color: '#525252',
     textAlign: 'center',
     fontFamily: 'Pretendard-Light',
@@ -138,7 +140,7 @@ const styles = StyleSheet.create({
 
   kinoImage: {
     position: 'absolute',
-    bottom: getResponsiveHeight(15), // 바 위로 올리기
+    bottom: getResponsiveHeight(23), // 바 위로 올리기
     left: getResponsiveWidth(200), // 왼쪽 배치
     width: getResponsiveWidth(31),
     height: getResponsiveHeight(40),
@@ -146,7 +148,7 @@ const styles = StyleSheet.create({
 
   kinoImage2: {
     position: 'absolute',
-    bottom: getResponsiveHeight(15), // 바 위로 올리기
+    bottom: getResponsiveHeight(23), // 바 위로 올리기
     right: getResponsiveWidth(-30), // 오른쪽 배치
     width: getResponsiveWidth(59),
     height: getResponsiveHeight(64),

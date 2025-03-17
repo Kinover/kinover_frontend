@@ -1,152 +1,141 @@
-import React from 'react';
-import {StyleSheet} from 'react-native';
-import {View, Image, Text} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Image, Text, TextInput } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
+import { fetchFamilyUsers } from '../../redux/actions/userFamilyActions';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../utils/responsive';
-import {useDispatch, useSelector} from 'react-redux';
-import {LOGOUT} from '../../redux/actions/actionTypes';
-import * as KakaoLogin from '@react-native-seoul/kakao-login';
-import {useNavigation} from '@react-navigation/native';
 
 export default function ShortCommentScreen() {
   const user = useSelector(state => state.user);
+  const family = useSelector(state => state.family);
+  const { familyUsers } = useSelector(state => state.userFamily);
   const dispatch = useDispatch();
   const navigation = useNavigation();
 
-  const appLogout = () => {
-    KakaoLogin.logout();
-    dispatch({type: LOGOUT, payload: true});
-    if (user.login == false) {
-      navigation.navigate('온보딩화면');
-    }
-  };
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+
+  useEffect(() => {
+    dispatch(fetchFamilyUsers(family.familyId));
+  }, [dispatch]);
+
+  const predefinedPositions = [
+    { top: '10%', left: '-15%' },
+    { top: '20%', left: '90%' },
+    { top: '35%', left: '0%' },
+    { top: '55%', left: '80%' },
+    { top: '85%', left: '50%' },
+  ];
 
   return (
-    <View style={styles.mainContainer}>
-      {/* 멤버 1 */}
-      <View style={styles.memberContainer1}>
-        <Image
-          style={styles.memberImage1}
-          source={{
-            uri: 'https://i.postimg.cc/WbwCzH5N/Ellipse-5-1.png',
-          }}></Image>
-        <View style={styles.memberComment1Container}>
-          <Image
-            style={styles.memberComment1}
-            source={{
-              uri: 'https://i.postimg.cc/8CBftFdF/Group-483-1.png',
-            }}></Image>
-          <Text style={styles.commentText} onPress={appLogout}>
-            멤버 1 코멘트
-          </Text>
-        </View>
-      </View>
-      {/* 멤버 2 */}
-      <View style={styles.memberContainer2}>
-        <View style={styles.memberComment2Container}>
-          <Image
-            style={styles.memberComment2}
-            source={{
-              uri: 'https://i.postimg.cc/022nmvsd/Group-482.png',
-            }}></Image>
-          <Text style={styles.commentText}>멤버 2 코멘트</Text>
-        </View>
-        <Image
-          style={styles.memberImage2}
-          source={{
-            uri: 'https://i.postimg.cc/WbwCzH5N/Ellipse-5-1.png',
-          }}></Image>
-      </View>
+    <View
+      style={styles.mainContainer}
+      onLayout={event => {
+        const { width, height } = event.nativeEvent.layout;
+        setContainerSize({ width, height });
+      }}
+    >
+      {familyUsers.map((member, index) => {
+        const position = predefinedPositions[index % predefinedPositions.length];
+        const isOdd = index % 2 !== 0;
+        const isCurrentUser = member.userId === user.userId;
+        const isLarge = index === 0 || index === 3;
+
+        return (
+          <View key={index} style={[styles.memberContainer, position]}>
+            <Image
+              style={[
+                styles.memberImage,
+                isLarge && {
+                  width: getResponsiveIconSize(80),
+                  height: getResponsiveIconSize(80),
+                  borderRadius: getResponsiveIconSize(40),
+                },
+              ]}
+              source={{ uri: member.image }}
+            />
+
+            <View
+              style={[
+                styles.memberCommentContainer,
+                { left: isOdd ? '-150%' : '90%' },
+                isLarge && {
+                  width: getResponsiveWidth(130),
+                  height: getResponsiveHeight(80),
+                },
+              ]}
+            >
+              <Image
+                style={styles.memberComment}
+                source={{
+                  uri: isOdd
+                    ? 'https://i.postimg.cc/022nmvsd/Group-482.png'
+                    : 'https://i.postimg.cc/8CBftFdF/Group-483-1.png',
+                }}
+              />
+
+              {isCurrentUser ? (
+                <TextInput style={styles.commentTextInput} placeholder="댓글을 입력하세요" />
+              ) : (
+                <Text style={[styles.commentText, { left: '20%', top: '25%' }]}>멤버 {index + 1} 코멘트</Text>
+              )}
+            </View>
+          </View>
+        );
+      })}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   mainContainer: {
-    flex: 1,
-    paddingTop: getResponsiveWidth(30),
+    width: '80%',
+    height: '80%',
+    position: 'relative',
+    marginTop: getResponsiveHeight(30),
   },
-
-  // 1
-  memberContainer1: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    gap: getResponsiveWidth(10),
-    width: getResponsiveWidth(250),
-    height: getResponsiveHeight(100),
-    position: 'relative', // 상대적인 위치를 설정하여 텍스트를 이미지 위에 배치할 수 있게 해줍니다
+  memberContainer: {
+    position: 'absolute',
+    alignItems: 'center',
   },
-
-  memberImage1: {
-    width: getResponsiveIconSize(80),
-    height: getResponsiveIconSize(80),
-    alignSelf: 'flex-end',
-    resizeMode: 'contain',
+  memberImage: {
+    width: getResponsiveIconSize(64),
+    height: getResponsiveIconSize(64),
+    borderRadius: getResponsiveIconSize(32),
+    resizeMode: 'cover',
+    backgroundColor: 'white',
   },
-
-  memberComment1Container: {
-    position: 'absolute', // 이미지를 배경으로, 텍스트를 그 위에 배치
-    top: 0,
-    left: getResponsiveWidth(85),
+  memberCommentContainer: {
+    position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
-    width: getResponsiveWidth(100),
-    height: getResponsiveHeight(60),
+    width: getResponsiveWidth(104),
+    height: getResponsiveHeight(64),
+    left: '80%',
+    bottom: '80%',
   },
-
-  memberComment1: {
-    position: 'absolute', // 이미지 위에 텍스트를 배치
+  memberComment: {
+    position: 'absolute',
     width: '100%',
     height: '100%',
     resizeMode: 'contain',
   },
-
-  // 2
-  memberContainer2: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    width: getResponsiveWidth(250),
-    height: getResponsiveHeight(70),
-    gap: getResponsiveWidth(10),
-    position: 'relative', // 상대적인 위치 설정
-  },
-
-  memberImage2: {
-    width: getResponsiveIconSize(65),
-    height: getResponsiveIconSize(65),
-    resizeMode: 'contain',
-  },
-
-  memberComment2Container: {
-    position: 'absolute', // 이미지 위에 텍스트 배치
-    top: 0,
-    left: getResponsiveWidth(85),
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: getResponsiveWidth(100),
-    height: getResponsiveHeight(50),
-  },
-
-  memberComment2: {
-    position: 'absolute', // 이미지 위에 텍스트 배치
-    width: '100%',
-    height: '100%',
-    resizeMode: 'contain',
-  },
-
   commentText: {
-    color: 'gray', // 텍스트 색상
+    color: 'black',
     fontSize: getResponsiveFontSize(12),
-    textAlign: 'center', // 텍스트 중앙 정렬
-    position: 'relative', // 텍스트를 이미지 위에 배치
-    top: '50%', // 이미지 중앙에 텍스트 위치
-    left: '50%',
-    transform: [{translateX: -50}, {translateY: -50}], // 중앙 정렬
+    textAlign: 'center',
+    position: 'absolute',
+  },
+  commentTextInput: {
+    color: 'black',
+    fontSize: getResponsiveFontSize(12),
+    textAlign: 'center',
+    position: 'absolute',
+    width: '60%',
+    top: '30%',
   },
 });

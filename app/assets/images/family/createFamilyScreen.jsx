@@ -13,7 +13,7 @@ import {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveWidth,
-} from '../../utils/responsive';
+} from '../../../utils/responsive';
 
 export default function CreateFamilyScreen() {
   const [familyName, setFamilyName] = useState('');
