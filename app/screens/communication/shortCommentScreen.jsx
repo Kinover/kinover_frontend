@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Image, Text, TextInput } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
-import { fetchFamilyUsers } from '../../redux/actions/userFamilyActions';
+import { fetchFamilyUserList } from '../../redux/actions/userFamilyActions';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -13,14 +13,14 @@ import {
 export default function ShortCommentScreen() {
   const user = useSelector(state => state.user);
   const family = useSelector(state => state.family);
-  const { familyUsers } = useSelector(state => state.userFamily);
+  const { familyUserList } = useSelector(state => state.userFamily);
   const dispatch = useDispatch();
   const navigation = useNavigation();
 
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    dispatch(fetchFamilyUsers(family.familyId));
+    dispatch(fetchFamilyUserList(family.familyId));
   }, [dispatch]);
 
   const predefinedPositions = [
@@ -39,7 +39,7 @@ export default function ShortCommentScreen() {
         setContainerSize({ width, height });
       }}
     >
-      {familyUsers.map((member, index) => {
+      {familyUserList.map((member, index) => {
         const position = predefinedPositions[index % predefinedPositions.length];
         const isOdd = index % 2 !== 0;
         const isCurrentUser = member.userId === user.userId;

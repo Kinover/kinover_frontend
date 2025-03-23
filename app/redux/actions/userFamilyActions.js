@@ -5,10 +5,10 @@ import {getToken} from '../../utils/storage';
 export const SET_USER_FAMILY = 'SET_USER_FAMILY';
 export const SET_LOADING = 'SET_LOADING'; // 로딩 상태
 export const SET_ERROR = 'SET_ERROR'; // 에러 상태
-export const SET_FAMILY_USERS = 'SET_FAMILY_USERS';
+export const SET_FAMILY_USER_LIST = 'SET_FAMILY_USER_LIST';
 
 // 유저 패밀리 정보 가져오기 (가족 ID로)
-export const fetchFamilyUsers = familyId => {
+export const fetchFamilyUserList = familyId => {
   return async dispatch => {
     dispatch({type: SET_LOADING, payload: true}); // 로딩 상태 시작
     try {
@@ -36,7 +36,7 @@ export const fetchFamilyUsers = familyId => {
 
       // 가져온 유저들을 UserFamily 상태에 설정
       dispatch({
-        type: SET_FAMILY_USERS,
+        type: SET_FAMILY_USER_LIST,
         payload: Array.isArray(response.data) ? response.data : [], // 배열이면 그대로, 아니면 빈 배열
         // payload: response.data,
       });

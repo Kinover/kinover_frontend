@@ -14,7 +14,7 @@ export const chatRoomReducer = (state = initialChatRoomState, action) => {
     case FETCH_CHATROOM_LIST:
       return {
         ...state,
-        chatRooms: action.payload, // 받아온 ChatRoomDTO 리스트로 상태 업데이트
+        chatRoomList: action.payload, // 받아온 ChatRoomDTO 리스트로 상태 업데이트
       };
 
     case SET_LOADING:

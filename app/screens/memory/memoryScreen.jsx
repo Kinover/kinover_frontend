@@ -11,11 +11,9 @@ import {
 
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchMemory} from '../../redux/actions/memoryActions';
-import {fetchFamily} from '../../redux/actions/familyActions';
-import {fetchFamilyUsers} from '../../redux/actions/userFamilyActions';
+import {fetchFamilyUserList} from '../../redux/actions/userFamilyActions';
 import FloatingButton from './floatingButton';
 import MemoryFeed from './memoryFeed';
-import DropDownPicker from 'react-native-dropdown-picker'; // 드롭다운 패키지 임포트
 
 import {
   getResponsiveWidth,
@@ -23,28 +21,17 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../utils/responsive';
-import {opacity} from 'react-native-reanimated/lib/typescript/Colors';
 
 export default function MemoryScreen({navigation}) {
-  const {memories} = useSelector(state => state.memory);
   const user = useSelector(state => state.user);
   const family = useSelector(state => state.family);
-  const {familyUsers} = useSelector(state => state.userFamily);
+  const {familyUserList} = useSelector(state => state.userFamily);
   const dispatch = useDispatch();
 
   useEffect(() => {
     dispatch(fetchMemory(family.familyId));
-    dispatch(fetchFamilyUsers(family.familyId));
+    dispatch(fetchFamilyUserList(family.familyId));
   }, [dispatch]);
-
-  // 유저 ID를 기준으로 familyUsers 배열을 정렬하는 함수
-  const sortFamilyUsers = familyUsers => {
-    return [...familyUsers].sort((a, b) => {
-      if (a.userId === user.userId) return -1;
-      if (b.userId === user.userId) return 1;
-      return 0;
-    });
-  };
 
   const renderMember = ({item}) => {
     return (
@@ -81,9 +68,9 @@ export default function MemoryScreen({navigation}) {
         <View style={styles.contentElement}>
           <Text style={styles.bottomSheetCategory}>멤버</Text>
           <View style={styles.memberList}>
-            {familyUsers && (
+            {familyUserList && (
               <FlatList
-                data={sortFamilyUsers(familyUsers)} // 정렬된 familyUsers를 전달
+                data={familyUserList}
                 renderItem={renderMember}
                 keyExtractor={(item, index) => index.toString()}
                 horizontal={true}
@@ -105,44 +92,32 @@ export default function MemoryScreen({navigation}) {
     </>
   );
 
-  const renderMemoryFeed = ({item}) => {
-    return (
-      <View
-        style={[styles.contentContainer, {paddingTop: getResponsiveHeight(5)}]}>
-        <MemoryFeed item={item} />
-      </View>
-    );
-  };
-
   return (
-    <View style={styles.container}>
-      <FlatList
-        style={styles.mainContainer}
-        data={memories}
-        renderItem={renderMemoryFeed}
-        ListHeaderComponent={renderHeader}
-        keyExtractor={item => item.memoryId}
-        keyboardShouldPersistTaps="handled"
-      />
-      <FloatingButton style={{zIndex: 10}} />
-    </View>
+    <FlatList
+      style={styles.container}
+      data={[]}
+      renderItem={null}
+      ListHeaderComponent={renderHeader}
+      ListEmptyComponent={
+        <View style={[styles.contentContainer, {paddingTop: 0}]}>
+          <MemoryFeed />
+        </View>
+      }
+      keyExtractor={index => index.toString()}
+      scrollEnabled={true} // FlatList로 전체 스크롤을 처리
+    ></FlatList>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-
-  mainContainer: {
-    flex: 1,
+    position: 'relative',
     backgroundColor: 'white',
-    alignContent: 'flex-start',
-    gap: 0,
   },
 
   challengeBackground: {
-    width: getResponsiveWidth(393),
+    width: '100%',
     height: getResponsiveHeight(180),
     justifyContent: 'center',
     alignItems: 'center',
@@ -150,7 +125,7 @@ const styles = StyleSheet.create({
 
   challengeButton: {
     position: 'absolute',
-    zIndex: 3,
+    zIndex: 30,
     width: getResponsiveWidth(300),
     height: getResponsiveHeight(43),
     alignSelf: 'center',
@@ -165,7 +140,6 @@ const styles = StyleSheet.create({
     paddingTop: getResponsiveIconSize(25),
     paddingHorizontal: getResponsiveIconSize(25),
     backgroundColor: '#fff',
-    gap: getResponsiveWidth(23),
     marginBottom: getResponsiveHeight(30),
   },
 
@@ -173,15 +147,14 @@ const styles = StyleSheet.create({
     display: 'flex',
     flexDirection: 'column',
     width: '100%',
-    height: getResponsiveHeight(60),
+    height: getResponsiveHeight(120),
     gap: getResponsiveHeight(10),
-    marginBottom: getResponsiveHeight(25),
     paddingHorizontal: getResponsiveWidth(5),
   },
 
   bottomSheetCategory: {
     fontSize: getResponsiveFontSize(15),
-    fontFamily:'Pretendard-Regular',
+    fontFamily: 'Pretendard-Regular',
   },
 
   memberList: {
@@ -210,13 +183,12 @@ const styles = StyleSheet.create({
     width: '100%',
     lineHeight: getResponsiveHeight(25),
     flexWrap: 'wrap',
-    fontFamily:'Pretendard-Light',
+    fontFamily: 'Pretendard-Light',
   },
 
   dropdown: {
     width: getResponsiveWidth(85),
     borderWidth: 0,
-    // zIndex: 999,
     backgroundColor: 'black',
   },
 });

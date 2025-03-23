@@ -67,8 +67,8 @@ const renderHeaderRight = ({navigation}) => (
     <Image
       source={{uri: 'https://i.postimg.cc/QxXMJCnz/Vector-2.jpg'}}
       style={{
-        width: getResponsiveWidth(24),
-        height: getResponsiveHeight(26),
+        width: getResponsiveWidth(26),
+        height: getResponsiveHeight(28),
         marginRight: getResponsiveWidth(30),
         resizeMode: 'contain',
       }}
@@ -79,10 +79,10 @@ const renderHeaderRight = ({navigation}) => (
 const renderHeaderRightHome = ({navigation}) => (
   <TouchableOpacity onPress={() => navigation.navigate('가족화면')}>
     <Image
-      source={{uri: 'https://i.postimg.cc/QxXMJCnz/Vector-2.jpg'}}
+      source={{uri: 'https://i.postimg.cc/zGGXswfc/Mask-group-1.png'}}
       style={{
-        width: getResponsiveWidth(24),
-        height: getResponsiveHeight(26),
+        width: getResponsiveWidth(26),
+        height: getResponsiveHeight(28),
         marginRight: getResponsiveWidth(30),
         resizeMode: 'contain',
       }}
@@ -125,20 +125,23 @@ function TabNavigator() {
         },
         headerTitleAlign: 'center',
         headerTitle: () => (
-          <Image
-            source={{
-              uri: 'https://i.postimg.cc/NGPV5sR9/Group-1171276557-1.jpg',
-            }} // 헤더 이미지
+          <View
             style={{
-              width: getResponsiveWidth(50), // 원하는 크기로 조절
-              height: getResponsiveHeight(47),
               paddingBottom:
-                Platform.OS === 'ios'
-                  ? getResponsiveHeight(10)
-                  : getResponsiveHeight(15),
-              resizeMode: 'contain', // 이미지 비율 유지
-            }}
-          />
+                getResponsiveHeight(10),
+            }}>
+            <Image
+              source={{
+                uri: 'https://i.postimg.cc/NGPV5sR9/Group-1171276557-1.jpg',
+              }} // 헤더 이미지
+              style={{
+                width: getResponsiveWidth(49), // 원하는 크기로 조절
+                height: getResponsiveHeight(46),
+
+                resizeMode: 'contain', // 이미지 비율 유지
+              }}
+            />
+          </View>
         ),
         tabBarStyle: tabBarStyle,
       }}>
@@ -623,7 +626,6 @@ function AppNavigator() {
                   width: getResponsiveWidth(13),
                   height: getResponsiveHeight(26),
                   marginLeft: getResponsiveWidth(30),
-                  
                 }}
               />
             </TouchableOpacity>

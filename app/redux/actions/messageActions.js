@@ -3,7 +3,6 @@ import {
   SET_LOADING,
   FETCH_MESSAGE,
   SET_ERROR,
-  SEND_MESSAGE,
 } from './actionTypes'; // actionTypes 임포트
 import {getToken} from '../../utils/storage';
 import { Platform } from 'react-native';

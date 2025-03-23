@@ -1,4 +1,3 @@
-import React from 'react';
 import axios from 'axios';
 import {SET_LOADING, SET_ERROR, FETCH_RECCHALLENGE} from './actionTypes'; // actionTypes 임포트
 import {getToken} from '../../utils/storage';

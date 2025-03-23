@@ -1,5 +1,5 @@
 // userFamilyReducer.js
-import { SET_USER_FAMILY, SET_FAMILY_USERS, SET_LOADING, SET_ERROR } from "../actions/userFamilyActions";
+import { SET_USER_FAMILY, SET_FAMILY_USER_LIST, SET_LOADING, SET_ERROR } from "../actions/userFamilyActions";
 import { initialUserFamilyState } from "../state";
 
 export const userFamilyReducer = (state = initialUserFamilyState, action) => {
@@ -9,10 +9,10 @@ export const userFamilyReducer = (state = initialUserFamilyState, action) => {
         ...state,
         userFamily: action.payload, // 서버에서 받은 userFamily 데이터로 상태 업데이트
       };
-    case SET_FAMILY_USERS:
+    case SET_FAMILY_USER_LIST:
         return {
         ...state,
-        familyUsers: action.payload,
+        familyUserList: action.payload,
         };
     case SET_LOADING:
       return {
