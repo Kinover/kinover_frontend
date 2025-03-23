@@ -42,7 +42,7 @@ export default function RecChallengeDetailScreen({ route }) {
         </View>
 
         <View style={styles.sectionContainer}>
-          <TouchableOpacity style={styles.startButton}>
+          <TouchableOpacity style={[styles.startButton]}>
             <Text style={styles.buttonText}>오늘의 챌린지 도전하러 가기</Text>
           </TouchableOpacity>
         </View>
@@ -105,6 +105,7 @@ const styles = StyleSheet.create({
   bodyContainer: {
     display: 'flex',
     width: '100%',
+    height:'100%',
     flexDirection: 'column',
     gap: getResponsiveHeight(40),
   },

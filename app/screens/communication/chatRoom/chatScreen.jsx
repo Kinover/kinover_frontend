@@ -11,7 +11,7 @@ import {
 } from '../../../utils/responsive';
 
 export default function ChatScreen({chatRoom, user}) {
-  const {messages} = useSelector(state => state.message); // Redux 상태 가져오기
+  const { messageList } = useSelector(state => state.message); // Redux 상태 가져오기
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -21,7 +21,7 @@ export default function ChatScreen({chatRoom, user}) {
   }, [chatRoom]);
 
   // messages가 배열인지 확인하고 기본값을 빈 배열로 설정
-  const messageList = Array.isArray(messages) ? messages : [];
+  const message_list = Array.isArray(messageList) ? messageList : [];
 
   // 날짜를 YYYY-MM-DD 형식으로 변환하는 함수
   const formatDate = dateString => {
@@ -36,17 +36,17 @@ export default function ChatScreen({chatRoom, user}) {
 
   return (
     <View style={styles.chatContainer}>
-      {messageList.length > 0 ? (
-        messageList.map((message, index) => {
+      {message_list.length > 0 ? (
+        message_list.map((message, index) => {
           const isSameSender =
-            messageList[index - 1] &&
-            messageList[index - 1].sender.userId === message.sender.userId;
+          message_list[index - 1] &&
+            message_list[index - 1].sender.userId === message.sender.userId;
 
           // 현재 메시지의 날짜
           const currentMessageDate = new Date(message.createdAt).toDateString();
           const prevMessageDate =
             index > 0
-              ? new Date(messageList[index - 1].createdAt).toDateString()
+              ? new Date(message_list[index - 1].createdAt).toDateString()
               : null;
 
           return (

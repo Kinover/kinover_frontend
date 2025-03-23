@@ -12,17 +12,17 @@ import {fetchRecChallenge} from '../../../redux/actions/recChallengeActions';
 
 export default function ChallengeSlider() {
   const family = useSelector(state => state.family); // Redux 상태에서 family 데이터 가져오기
-  const {recChallenges, loading } = useSelector(state => state.recChallenge); // Redux 상태에서 recChallenges 가져오기
+  const {recChallengeList, loading } = useSelector(state => state.recChallenge); // Redux 상태에서 recChallengeList 가져오기
   const dispatch = useDispatch();
 
   useEffect(() => {
     if (loading) return;  // ✅ 로딩 중이면 실행 안 함
 
-   else if (recChallenges.length === 0) {
+   else if (recChallengeList.length === 0) {
       console.log('Dispatching fetchRecChallenge...');
       dispatch(fetchRecChallenge());
     }
-  }, [recChallenges, loading, dispatch]); 
+  }, [recChallengeList, loading, dispatch]); 
 
 
   return (
@@ -34,16 +34,16 @@ export default function ChallengeSlider() {
 
       <View style={styles.header}>
         <Text style={styles.familyName}>{family.name}</Text>
-        <Text> 패밀리를 위한 추천 미션이에요.</Text>
+        <Text> {" 패밀리를 위한 추천 미션이에요."}</Text>
       </View>
 
       {/* 로딩 중일 경우 로딩 표시 */}
       {loading ? (
         <ActivityIndicator size="large" color="#0000ff" />
       ) : (
-        // recChallenges가 배열이고 데이터가 있을 때만 CardSlider 렌더링
-        Array.isArray(recChallenges) && recChallenges.length > 0 ? (
-          <CardSlider data={recChallenges} />
+        // recChallengeList가 배열이고 데이터가 있을 때만 CardSlider 렌더링
+        Array.isArray(recChallengeList) && recChallengeList.length > 0 ? (
+          <CardSlider data={recChallengeList} />
         ) : (
           <Text>No data available</Text> // 데이터가 없을 경우 메시지 표시
         )

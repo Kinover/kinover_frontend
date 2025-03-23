@@ -1,20 +1,43 @@
 import React, {useState} from 'react';
-import {View, StyleSheet, Switch, Image, Text} from 'react-native';
 import {
-  getResponsiveWidth,
-  getResponsiveHeight,
+  View,
+  StyleSheet,
+  Image,
+  Text,
+  FlatList,
+  SectionList,
+} from 'react-native';
+import DropDownPicker from 'react-native-dropdown-picker';
+import CustomSwitch from '../../utils/customSwitch';
+import {
   getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../utils/responsive';
-import DropDownPicker from 'react-native-dropdown-picker'; // 드롭다운 패키지 임포트
-import CustomSwitch from '../../utils/customSwitch';
+import {useSelector} from 'react-redux';
 
-export default function MemoryFeed({item}) {
+export default function MemoryFeed() {
+  const {memoryList} = useSelector(state => state.memory);
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(null);
-  const [isEnabled, setIsEnabled] = useState(false); // 상태를 관리
+  const [isGalleryView, setIsGalleryView] = useState(false); // 스위치 상태 관리
 
-  const toggleSwitch = () => setIsEnabled(previousState => !previousState); // 상태 변경 함수
+  // 갤러리 뷰에서 여러 메모리를 렌더링
+  const renderMemoryGallery = () => {
+    return (
+      <FlatList
+        data={memoryList} // memoryList 배열을 사용
+        renderItem={({item}) => (
+          <Image style={styles.galleryImage} source={{uri: item.image}} />
+        )}
+        scrollEnabled={false}
+        keyExtractor={item => item.memoryId.toString()}
+        numColumns={3} // 여러 개의 이미지를 한 줄에 렌더링
+        contentContainerStyle={styles.galleryContainer}
+      />
+    );
+  };
 
   return (
     <View style={styles.contentElement}>
@@ -27,50 +50,70 @@ export default function MemoryFeed({item}) {
             {label: '댓글순', value: '댓글순'},
             {label: '최신순', value: '최신순'},
           ]}
-          dropDownDirection="BOTTOM" // 드롭다운 방향을 아래로 고정
+          dropDownContainerStyle={styles.dropDownContainer}
+          dropDownDirection="BOTTOM"
           setOpen={setOpen}
           setValue={setValue}
           placeholder={'최신순'}
-          containerStyle={{
-            width: getResponsiveWidth(95),
-            zIndex: 9999,
-          }}
+          containerStyle={{width: getResponsiveWidth(60), zIndex: 9999}}
           style={styles.dropdown}
-          scrollViewProps={{
-            showsVerticalScrollIndicator: false,
-          }}
-          textStyle={{fontSize: getResponsiveFontSize(15)}}
+          textStyle={{fontSize: 15}}
         />
-        <CustomSwitch></CustomSwitch>
+        <CustomSwitch
+          isEnabled={isGalleryView}
+          toggleSwitch={() => setIsGalleryView(!isGalleryView)}
+        />
       </View>
 
-      {/* Memory 컴포넌트 내용 통합 */}
-      <View style={styles.memoryContainer}>
-        <View style={styles.memberContainer}>
-          <Image
-            style={styles.memberImage}
-            source={{
-              uri: item.user.image,
-            }}></Image>
-          <View style={styles.memberBox}>
-            <Text style={styles.memberName}>{item.user.name}</Text>
-            <Text style={styles.memoryDescription}>조회 1 표현 3 댓글 1</Text>
-          </View>
+      {/* 갤러리뷰 & 리스트뷰 조건부 렌더링 */}
+      {isGalleryView ? (
+        renderMemoryGallery()
+      ) : (
+        <View style={styles.memoryContainer}>
+          {memoryList.map(memory => (
+            <View key={memory.memoryId} style={{marginBottom:getResponsiveHeight(30)}}>
+              <View style={styles.memberContainer}>
+                <Image
+                  style={styles.memberImage}
+                  source={{uri: memory.user.image}}
+                />
+                <View style={styles.memberBox}>
+                  <Text style={styles.memberName}>{memory.user.name}</Text>
+                  <Text style={styles.memoryDescription}>
+                    조회 1 표현 3 댓글 1
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.memoryImageContainer}>
+                <Image
+                  style={styles.memoryImage}
+                  source={{uri: memory.image}}
+                />
+              </View>
+            </View>
+          ))}
         </View>
-
-        <View style={styles.memoryImageContainer}>
-          <Image
-            style={styles.memoryImage}
-            source={{
-              uri: item.image,
-            }}></Image>
-        </View>
-      </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  galleryImage: {
+    width: 100,
+    height: 100,
+    margin: 5,
+    borderRadius: 10,
+  },
+
+  galleryContainer: {
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
   contentElement: {
     display: 'flex',
     flexDirection: 'column',
@@ -78,7 +121,6 @@ const styles = StyleSheet.create({
     gap: getResponsiveHeight(10),
     marginBottom: getResponsiveHeight(20),
     position: 'relative',
-    paddingTop: getResponsiveHeight(10),
   },
 
   // 메모리 전체
@@ -88,6 +130,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     width: '100%',
     marginBottom: getResponsiveHeight(30),
+
   },
 
   // 멤버
@@ -135,6 +178,7 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(330),
     height: getResponsiveHeight(300),
   },
+
   memoryImage: {
     flex: 1,
     resizeMode: 'stretch',
@@ -142,8 +186,17 @@ const styles = StyleSheet.create({
 
   dropdown: {
     fontFamily: 'Pretendard-Regular',
-    width: getResponsiveWidth(95),
+    width: getResponsiveWidth(90),
     borderWidth: 0,
+    // paddingLeft: 5, // 내부 패딩 조절
+  },
+
+  dropDownContainer: {
+    borderColor: '#FFC84D', // 테두리 색상 변경
+    borderWidth: 1, // 테두리 두께 변경
+    borderRadius: 5, // 모서리 둥글게
+    // paddingVertical: 5, // 내부 패딩 조절
+    // paddingHorizontal: 5, // 내부 패딩 조절
   },
 
   lineContainer: {

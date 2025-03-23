@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, TouchableOpacity, Image, StyleSheet } from 'react-native';
-import { getResponsiveIconSize } from '../../utils/responsive';
+import {View, TouchableOpacity, Image, StyleSheet} from 'react-native';
+import {getResponsiveIconSize} from '../../utils/responsive';
 
 export default function FloatingButton() {
   const handleClick = () => {
@@ -10,11 +10,10 @@ export default function FloatingButton() {
   return (
     <TouchableOpacity style={styles.floatingButton} onPress={handleClick}>
       <Image
-        source={{url:'https://i.postimg.cc/XJJ85n6B/Group-1171276555-1.png'}} // 이미지 경로 수정
+        source={{uri: 'https://i.postimg.cc/XJJ85n6B/Group-1171276555-1.png'}} // 이미지 경로 수정
         style={styles.buttonImage}
       />
     </TouchableOpacity>
-    
   );
 }
 
@@ -22,14 +21,15 @@ export default function FloatingButton() {
 const styles = StyleSheet.create({
   floatingButton: {
     position: 'absolute',
-    bottom: 20,  // 화면 하단에서 20px 위
-    right: 20,   // 화면 오른쪽에서 20px 안쪽
+    bottom: 20, // 화면 하단에서 20px 위
+    right: 20, // 화면 오른쪽에서 20px 안쪽
     zIndex: 99, // 다른 요소들 위에 보이도록
+    elevation: 10,  // Android에서 우선순위 설정
   },
   buttonImage: {
-    resizeMode:'contain',
-    width: getResponsiveIconSize(60),   // 버튼의 너비
-    height: getResponsiveIconSize(60),  // 버튼의 높이
+    resizeMode: 'contain',
+    width: getResponsiveIconSize(60), // 버튼의 너비
+    height: getResponsiveIconSize(60), // 버튼의 높이
     borderRadius: 30, // 이미지도 원형으로 만들기
   },
 });

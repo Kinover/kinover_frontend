@@ -26,7 +26,7 @@ export const initialUserState = {
 };
 
 export const initialChatRoomState = {
-  chatRooms: [],
+  chatRoomList: [],
   loading: false,
   error: null,
 };
@@ -43,7 +43,7 @@ export const initialUserChatRoomState = {
 
 // 추억
 export const initialMemoryState = {
-  memories: [],
+  memoryList: [],
   memoryId: '',
   date: '',
   familyId: 1,
@@ -56,6 +56,7 @@ export const initialMemoryState = {
 // 일정
 export const initialScheduleState = {
   scheduleId: '',
+  scheduleList: [],
   title: '',
   memo: '',
   isPersonal: '',
@@ -68,22 +69,18 @@ export const initialUserFamilyState = {
   userFamily: [],
   loading: false,
   error: null,
-  familyUsers: [],
+  familyUserList: [],
 };
 
-// export const initialFamilyUsersState = {
-//   familyUsers:[],
-// };
-
 export const initialMessageState = {
-  messages: [],
+  messageList: [],
   sendMessage: {},
   loading: false,
   error: null,
 };
 
 export const initialRecChallengeState = {
-  recChallenges: [],
+  recChallengeList: [],
   loading: false,
   error: null,
 };

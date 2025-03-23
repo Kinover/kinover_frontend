@@ -19,7 +19,7 @@ import fetchChatRoomList from '../../redux/actions/chatRoomActions';
 
 export default function ChatRoomListScreen({navigation}) {
   const [bottomSheetIndex, setBottomSheetIndex] = useState(1); // 기본적으로 75%로 시작
-  const {chatRooms, loading, error} = useSelector(state => state.chatRoom);
+  const {chatRoomList, loading, error} = useSelector(state => state.chatRoom);
   const dispatch = useDispatch();
   const user = useSelector(state => state.user);
   const family = useSelector(state => state.family);
@@ -48,7 +48,7 @@ export default function ChatRoomListScreen({navigation}) {
 
         {/* 가족, 개인 채팅방 */}
         {!loading ? (
-          chatRooms.map((chatRoom, index) => {
+          chatRoomList.map((chatRoom, index) => {
             // roomType이 'family'인 경우 가족 채팅방 렌더링
             if (chatRoom.roomType === 'family') {
               return (
@@ -56,7 +56,7 @@ export default function ChatRoomListScreen({navigation}) {
                   <Image
                     style={styles.elementImage}
                     source={{
-                      uri: 'https://i.postimg.cc/WbwCzH5N/Ellipse-5-1.png',
+                      uri: chatRoom.image,
                     }}
                   />
                   <TouchableOpacity
@@ -111,7 +111,7 @@ export default function ChatRoomListScreen({navigation}) {
                   <Image
                     style={styles.elementImage}
                     source={{
-                      uri: 'https://i.postimg.cc/WbwCzH5N/Ellipse-5-1.png',
+                      uri: chatRoom.image,
                     }}
                   />
                   <TouchableOpacity
@@ -135,7 +135,7 @@ export default function ChatRoomListScreen({navigation}) {
             }
           })
         ) : (
-          <Text style={styles.noChatRooms}>채팅방이 없습니다.</Text>
+          <Text style={styles.noChatRoomList}>채팅방이 없습니다.</Text>
         )}
       </BottomSheetView>
     </BottomSheet>
@@ -173,10 +173,10 @@ const styles = StyleSheet.create({
   },
 
   elementImage: {
-    // backgroundSize: getResponsiveIconSize(73.23),
-    width: getResponsiveWidth(73.23),
-    height: getResponsiveHeight(72.32),
-    resizeMode: 'contain',
+    width: getResponsiveWidth(73),
+    height: getResponsiveHeight(73),
+    borderRadius:getResponsiveIconSize(36.5),
+    resizeMode: 'cover',
   },
 
   elementName: {
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Light',
     fontSize: getResponsiveFontSize(11),
   },
-  noChatRooms: {
+  noChatRoomList: {
     fontSize: getResponsiveFontSize(16),
     color: '#777',
     textAlign: 'center',

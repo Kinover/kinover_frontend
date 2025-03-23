@@ -1,26 +1,40 @@
 import React, {useState} from 'react';
-import {StyleSheet, View, Image, Text, TouchableOpacity} from 'react-native';
-import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
+import {
+  StyleSheet,
+  View,
+  Image,
+  Text,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+} from 'react-native';
+import {launchImageLibrary} from 'react-native-image-picker';
+import {useSelector, useDispatch} from 'react-redux';
+import {useNavigation} from '@react-navigation/native';
+import {deleteToken} from '../utils/storage';
+import {
+  LOGOUT,
+  UPDATE_IMAGE,
+  UPDATE_PROFILE,
+} from '../redux/actions/actionTypes';
 import getResponsiveFontSize, {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveWidth,
 } from '../utils/responsive';
-import {useSelector, useDispatch} from 'react-redux';
-import {useNavigation} from '@react-navigation/native';
-import {deleteToken} from '../utils/storage';
-import {LOGOUT} from '../redux/actions/actionTypes';
-import {UPDATE_IMAGE} from '../redux/actions/actionTypes';
 
 export default function ProfileScreen() {
   const user = useSelector(state => state.user);
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedName, setEditedName] = useState(user.name);
+  const [editedBirth, setEditedBirth] = useState(user.birth || '2000.00.00');
+
   const handleLogout = async () => {
     try {
       await deleteToken();
-      console.log('로그아웃 처리 완료');
       dispatch({type: LOGOUT, payload: 'false'});
       navigation.navigate('온보딩화면');
     } catch (error) {
@@ -29,45 +43,56 @@ export default function ProfileScreen() {
   };
 
   const handleImagePick = async () => {
-    try {
-      const result = await launchImageLibrary({
-        mediaType: 'photo',
-      });
-
-      if (result.didCancel) {
-        console.log('사용자가 선택을 취소했어요!');
-        return;
-      }
-
-      if (result.errorCode) {
-        console.error(`에러 발생 (${result.errorCode}): ${result.errorMessage}`);
-        return;
-      }
-
-      if (result.assets && result.assets.length > 0) {
-        const imageUri = result.assets[0].uri;
-        dispatch({ type: UPDATE_IMAGE, payload: imageUri });
-      }
-    } catch (error) {
-      console.error('이미지 선택 중 오류 발생:', error);
+    const result = await launchImageLibrary({mediaType: 'photo'});
+    if (result.assets && result.assets.length > 0) {
+      dispatch({type: UPDATE_IMAGE, payload: result.assets[0].uri});
     }
+  };
+
+  const handleSave = () => {
+    // dispatch({
+    //   type: UPDATE_PROFILE,
+    //   payload: {name: editedName, birth: editedBirth},
+    // });
+
+    setIsEditing(false);
+    Alert.alert('저장 완료', '프로필이 업데이트되었습니다.');
+  };
+
+  const handleCancel = () => {
+    setEditedName(user.name);
+    setEditedBirth(user.birth || '2000.00.00');
+    setIsEditing(false);
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.mainContainer}>
+        {/* 프로필 사진 */}
         <View style={styles.topContainer}>
-          <View style={styles.imageContainer}>
-            <TouchableOpacity
-              style={{zIndex: 100, opacity: 0.95}}
-              onPress={handleImagePick}>
+          {isEditing ? (
+            <>
+              <TouchableOpacity
+                onPress={handleImagePick}
+                style={styles.imageContainer}>
+                <Image
+                  style={styles.camera}
+                  source={{
+                    uri: 'https://i.postimg.cc/TY8RKv89/Group-1171276560.png',
+                  }}
+                />
+              </TouchableOpacity>
+
               <Image
-                style={styles.camera}
+                style={styles.image}
                 source={{
-                  uri: 'https://i.postimg.cc/TY8RKv89/Group-1171276560.png',
+                  uri:
+                    user.image ||
+                    'https://i.postimg.cc/hPMYQNhw/Ellipse-265.jpg',
                 }}
               />
-            </TouchableOpacity>
+            </>
+          ) : (
             <Image
               style={styles.image}
               source={{
@@ -75,26 +100,47 @@ export default function ProfileScreen() {
                   user.image || 'https://i.postimg.cc/hPMYQNhw/Ellipse-265.jpg',
               }}
             />
-          </View>
-          <Text style={styles.nameText}>{user.name}</Text>
+          )}
         </View>
+
+        {/* 프로필 정보 */}
         <View style={styles.textContainer}>
-          <View style={styles.textBox}>
-            <Text style={styles.sectorText}>이름</Text>
-            <Text style={styles.text}>|</Text>
-            <Text style={styles.text}>{user.name}</Text>
-          </View>
-          <View style={styles.textBox}>
-            <Text style={styles.sectorText}>생년월일</Text>
-            <Text style={styles.text}>|</Text>
-            <Text style={styles.text}>2000.00.00</Text>
-          </View>
-          <View style={styles.textBox}>
-            <Text style={styles.sectorText}>아이디</Text>
-            <Text style={styles.text}>|</Text>
-            <Text style={styles.text}>{user.email}</Text>
-          </View>
+          <ProfileField
+            label="이름"
+            value={editedName}
+            onChange={setEditedName}
+            isEditing={isEditing}
+          />
+          <ProfileField
+            label="생년월일"
+            value={editedBirth}
+            onChange={setEditedBirth}
+            isEditing={isEditing}
+            keyboardType="numeric"
+          />
+          <ProfileField label="아이디" value={user.email} isEditing={false} />
+
+          {isEditing ? (
+            <View style={styles.buttonRow}>
+              <TouchableOpacity style={styles.button} onPress={handleSave}>
+                <Text style={styles.buttonText}>저장</Text>
+              </TouchableOpacity>
+              {/* <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={handleCancel}>
+                <Text style={styles.cancelText}>취소</Text>
+              </TouchableOpacity> */}
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={[styles.button, {backgroundColor: '#FFE099'}]}
+              onPress={() => setIsEditing(true)}>
+              <Text style={styles.buttonText}>수정</Text>
+            </TouchableOpacity>
+          )}
         </View>
+
+        {/* 로그아웃 & 회원탈퇴 */}
         <View style={styles.bottomContainer}>
           <TouchableOpacity style={styles.button} onPress={handleLogout}>
             <Text style={styles.buttonText}>로그아웃</Text>
@@ -108,6 +154,24 @@ export default function ProfileScreen() {
   );
 }
 
+// 프로필 필드 컴포넌트
+const ProfileField = ({label, value, onChange, isEditing, keyboardType}) => (
+  <View style={styles.textBox}>
+    <Text style={styles.sectorText}>{label}</Text>
+    <Text style={styles.text}>|</Text>
+    {isEditing && onChange ? (
+      <TextInput
+        style={styles.input}
+        value={value}
+        onChangeText={onChange}
+        keyboardType={keyboardType}
+      />
+    ) : (
+      <Text style={styles.text}>{value}</Text>
+    )}
+  </View>
+);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -119,14 +183,14 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     paddingHorizontal: getResponsiveWidth(40),
-    gap: getResponsiveHeight(20),
   },
   topContainer: {
     alignItems: 'center',
-    gap: getResponsiveHeight(15),
+    marginBottom: getResponsiveHeight(20),
   },
   imageContainer: {
     position: 'relative',
+    zIndex: 999,
   },
   image: {
     width: getResponsiveWidth(110),
@@ -137,21 +201,17 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: getResponsiveIconSize(26),
     height: getResponsiveIconSize(26),
-    zIndex: 100,
-    right: getResponsiveWidth(1),
-  },
-  nameText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(17),
+    left: getResponsiveWidth(25),
+    zIndex: 999,
   },
   textContainer: {
     width: '100%',
     alignItems: 'center',
-    gap: getResponsiveHeight(10),
+    gap: getResponsiveHeight(12),
   },
   textBox: {
     width: getResponsiveWidth(280),
-    height: getResponsiveHeight(32),
+    height: getResponsiveHeight(35),
     borderRadius: getResponsiveIconSize(30),
     borderColor: '#FFC84D',
     borderWidth: getResponsiveIconSize(1),
@@ -162,17 +222,21 @@ const styles = StyleSheet.create({
   },
   sectorText: {
     width: getResponsiveWidth(60),
-    fontFamily: 'Pretendard-Light',
     fontSize: getResponsiveFontSize(15),
     textAlign: 'center',
   },
-  text: {
-    fontFamily: 'Pretendard-Light',
+  text: {fontSize: getResponsiveFontSize(15)},
+  input: {
+    flex: 1,
     fontSize: getResponsiveFontSize(15),
+    borderBottomWidth: 1,
+    borderColor: '#FFC84D',
+    paddingVertical: 2,
   },
   bottomContainer: {
     alignItems: 'center',
     gap: getResponsiveHeight(15),
+    marginTop: getResponsiveHeight(30),
   },
   button: {
     width: getResponsiveWidth(280),
@@ -182,8 +246,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  buttonText: {
-    fontFamily: 'Pretendard-Light',
-    fontSize: getResponsiveFontSize(15),
+  buttonText: {fontSize: getResponsiveFontSize(15)},
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: getResponsiveWidth(280),
   },
+  cancelButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: getResponsiveWidth(80),
+    height: getResponsiveHeight(32),
+  },
+  cancelText: {color: 'gray', fontSize: getResponsiveFontSize(15)},
 });

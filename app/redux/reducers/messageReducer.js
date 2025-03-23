@@ -10,7 +10,7 @@ export default function messageReducer(state = initialMessageState, action) {
     case FETCH_MESSAGE:
       return {
         ...state,
-        messages: action.payload,
+        messageList: action.payload,
       };
 
     case SET_LOADING:

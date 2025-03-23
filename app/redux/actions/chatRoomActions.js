@@ -4,7 +4,6 @@ import {
   SET_LOADING,
   FETCH_CHATROOM_LIST,
   SET_ERROR,
-  FETCH_MESSAGE,
 } from './actionTypes'; // actionTypes 임포트
 import {getToken} from '../../utils/storage';
 import { Platform } from 'react-native';

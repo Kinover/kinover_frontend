@@ -11,7 +11,7 @@ export default function recChallengeReducer(
     case FETCH_RECCHALLENGE:
       return {
         ...state,
-        recChallenges: action.payload,
+        recChallengeList: action.payload,
       };
 
     case SET_LOADING:

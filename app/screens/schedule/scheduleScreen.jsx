@@ -1,10 +1,9 @@
-import React, {useState, useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   StyleSheet,
   Text,
   TouchableOpacity,
-  FlatList,
   ScrollView,
   Image,
 } from 'react-native';
@@ -16,13 +15,12 @@ import {
 import Schedule from './schedule';
 
 // 📌 선택한 날짜가 속한 주의 시작 날짜를 구하는 함수
-const getWeekStartDate = date => {
+const getWeekStartDate = (date) => {
   const newDate = new Date(date);
   const dayOfWeek = newDate.getDay(); // 0(일) ~ 6(토)
 
   // 일요일(0)을 포함하는 주의 시작을 월요일(1)로 계산
   const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // 월요일이 시작일
-
   newDate.setDate(newDate.getDate() + diff); // 주 시작일로 조정
   return newDate;
 };
@@ -46,35 +44,11 @@ const updateWeekDates = (date, setWeekDates) => {
   setWeekDates(newWeekDates);
 };
 
-export default function ScheduleScreen({navigation}) {
+export default function ScheduleScreen({ navigation }) {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [weekDates, setWeekDates] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  const [hasMemoryButton, setHasMemoryButton] = useState(false); // 해당 요소에 따라 true / false 설정
-  const [schedules, setSchedules] = useState([
-    {
-      name: '가족',
-      schedules: ['부모님과 저녁 식사', '가족 여행 준비', '동생 졸업식 참석'],
-    },
-    {
-      name: '엄마',
-      schedules: [
-        '팀 회의 오전 10시',
-        '프로젝트 마감일 체크',
-        '고객 미팅 오후 3시',
-        '리포트 제출 마감일',
-      ],
-    },
-    {
-      name: '아빠',
-      schedules: ['헬스장 가기', '러닝 5km', '요가 클래스 참석'],
-    },
-    {
-      name: '은재',
-      schedules: ['기타 연습', '책 읽기', '드로잉 클래스 참여'],
-    },
-  ]);
 
   // 📌 초기 상태로 한 주의 날짜를 설정
   useEffect(() => {
@@ -84,7 +58,7 @@ export default function ScheduleScreen({navigation}) {
   }, [selectedDate]);
 
   // 📌 주 변경 함수
-  const changeWeek = direction => {
+  const changeWeek = (direction) => {
     const newDate = new Date(selectedDate);
     newDate.setDate(selectedDate.getDate() + direction * 7); // 한 주 전후로 날짜 변경
     setSelectedDate(newDate);
@@ -93,7 +67,6 @@ export default function ScheduleScreen({navigation}) {
   return (
     <ScrollView style={styles.mainContainer}>
       {/* 📌 월, 년도 표시와 주 변경 버튼 */}
-
       <View style={styles.mainCalendarContainer}>
         <View style={styles.header}>
           <Text style={styles.monthText}>
@@ -111,8 +84,8 @@ export default function ScheduleScreen({navigation}) {
                 style={{
                   width: getResponsiveWidth(5.63),
                   height: getResponsiveHeight(11.26),
-                }}></Image>
-              {/* <Text style={styles.monthChangeText}>{"<"}</Text> */}
+                }}
+              />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -125,7 +98,8 @@ export default function ScheduleScreen({navigation}) {
                 style={{
                   width: getResponsiveWidth(5.63),
                   height: getResponsiveHeight(11.26),
-                }}></Image>
+                }}
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -134,36 +108,34 @@ export default function ScheduleScreen({navigation}) {
         <View style={styles.weekContainer}>
           <View style={styles.weekDatesContainer}>
             {weekDates.map((item, index) => (
-              <View key={index} style={styles.dayContainer}>
+              <TouchableOpacity
+                key={index}
+                style={styles.dayContainer}
+                onPress={() => setSelectedDate(item.date)} // 선택한 날짜로 변경
+              >
                 <Text style={styles.dayText}>
                   {['월', '화', '수', '목', '금', '토', '일'][index]}
                 </Text>
-                {/* 📌 요일 추가 */}
                 <View style={styles.ovalGroup}>
                   <Text style={styles.ovalLeft}></Text>
                   <Text style={styles.ovalRight}></Text>
                 </View>
-                {/* 📌 아이콘 */}
                 <Text
                   style={[
                     styles.dateText,
                     item.isSelected ? styles.selectedText : {},
-                  ]}>
+                  ]}
+                >
                   {item.date.getDate()}
                 </Text>
-                {/* 📌 날짜 */}
-              </View>
+              </TouchableOpacity>
             ))}
           </View>
         </View>
       </View>
 
       {/* 일정 */}
-      <View style={styles.scheduleContainer}>
-        {schedules.map((item, index) => (
-          <Schedule key={index} props={item} />
-        ))}
-      </View>
+      <Schedule selectedDate={selectedDate} />
     </ScrollView>
   );
 }
@@ -177,7 +149,6 @@ const styles = StyleSheet.create({
   },
 
   mainCalendarContainer: {
-    // position:'relative',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -215,9 +186,9 @@ const styles = StyleSheet.create({
   },
 
   weekContainer: {
-    // marginBottom: 10,
     paddingHorizontal: getResponsiveWidth(10),
   },
+
   weekDatesContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -229,7 +200,6 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(60),
     justifyContent: 'space-between',
     alignItems: 'center',
-    // margin: 5,
     borderRadius: 10,
     backgroundColor: 'white',
     flexDirection: 'column', // 📌 세로 방향 정렬
@@ -251,7 +221,7 @@ const styles = StyleSheet.create({
   ovalGroup: {
     width: getResponsiveWidth(34),
     height: getResponsiveHeight(30), // 높이 지정 필수
-    position: 'relative', // 자식 요소들이 절대 위치 지정 가능  },
+    position: 'relative',
   },
 
   ovalLeft: {
@@ -260,7 +230,7 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(18.33),
     backgroundColor: 'rgba(255, 200, 77, 0.6)', // ✅ FFC84D 색상 + 70% 투명도
     borderRadius: getResponsiveHeight(9.165),
-    transform: [{rotate: '45.65deg'}], // ✅ 45도 회전
+    transform: [{ rotate: '45.65deg' }],
     left: 0,
     top: getResponsiveHeight(5),
   },
@@ -271,7 +241,7 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(18.33),
     backgroundColor: 'rgba(255, 195, 222, 0.6)', // ✅ FFC84D 색상 + 70% 투명도
     borderRadius: getResponsiveHeight(9.165),
-    transform: [{rotate: '134.35deg'}], // ✅ 45도 회전
+    transform: [{ rotate: '134.35deg' }],
     right: 0,
     top: getResponsiveHeight(5),
   },
@@ -284,7 +254,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     backgroundColor: '#FFFFFF',
     borderRadius: 10,
-    // height:"auto",
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -311,8 +280,6 @@ const styles = StyleSheet.create({
   },
 
   scheduleText: {
-    width: 'auto', // 기본적으로 auto 적용
-    // width: getResponsiveWidth(240),
     fontSize: getResponsiveFontSize(15),
     backgroundColor: '#FFC84D',
     borderRadius: 10,
@@ -321,8 +288,6 @@ const styles = StyleSheet.create({
   },
 
   scheduleAddText: {
-    width: 'auto', // 기본적으로 auto 적용
-    // width: getResponsiveWidth(240),
     fontSize: getResponsiveFontSize(15),
     backgroundColor: '#D9D9D9',
     borderRadius: 10,
@@ -344,13 +309,6 @@ const styles = StyleSheet.create({
     bottom: getResponsiveHeight(20),
     width: getResponsiveWidth(18.84),
     height: getResponsiveHeight(20.48),
-  },
-
-  buttonIconMemory: {
-    position: 'absolute',
-    bottom: getResponsiveHeight(22),
-    width: getResponsiveWidth(20),
-    height: getResponsiveHeight(14.3),
   },
 
   buttonText: {
