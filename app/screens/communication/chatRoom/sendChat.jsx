@@ -6,7 +6,7 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from "../../../utils/responsive";
-import formatTime from "./formatTime";
+import formatTime from "../../../utils/formatTime";
 
 export default function SendChat({ chatTime, message, style }) {
   return (

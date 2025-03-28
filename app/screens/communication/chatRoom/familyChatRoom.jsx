@@ -24,29 +24,29 @@ export default function FamilyChatRoom({route}) {
   const scrollViewRef = useRef(null);
   const [isQuestionVisible, setIsQuestionVisible] = useState(false); // 상태 추가
 
-  useEffect(() => {
-    navigation.setOptions({
-      tabBarStyle: {display: 'none'},
-      headerRight: () => (
-        <TouchableOpacity onPress={() => setIsQuestionVisible(prev => !prev)}>
-          <Image
-            source={{
-              uri: 'https://i.postimg.cc/3ryLhKKF/free-icon-message-5251132.png',
-            }}
-            style={{
-              width: getResponsiveWidth(23),
-              height: getResponsiveHeight(23),
-              marginRight: getResponsiveWidth(30),
-              resizeMode: 'contain',
-            }}></Image>
-        </TouchableOpacity>
-      ),
-    });
+  // useEffect(() => {
+  //   navigation.setOptions({
+  //     tabBarStyle: {display: 'none'},
+  //     headerRight: () => (
+  //       <TouchableOpacity onPress={() => setIsQuestionVisible(prev => !prev)}>
+  //         <Image
+  //           source={{
+  //             uri: 'https://i.postimg.cc/3ryLhKKF/free-icon-message-5251132.png',
+  //           }}
+  //           style={{
+  //             width: getResponsiveWidth(23),
+  //             height: getResponsiveHeight(23),
+  //             marginRight: getResponsiveWidth(30),
+  //             resizeMode: 'contain',
+  //           }}></Image>
+  //       </TouchableOpacity>
+  //     ),
+  //   });
 
-    return () => {
-      navigation.setOptions({tabBarStyle: {display: 'flex'}});
-    };
-  }, [navigation, isQuestionVisible]);
+  //   return () => {
+  //     navigation.setOptions({tabBarStyle: {display: 'flex'}});
+  //   };
+  // }, [navigation, isQuestionVisible]);
 
   useEffect(() => {
     if (chatRoom) {

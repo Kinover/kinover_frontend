@@ -1,28 +1,47 @@
 import React from 'react';
-import {StyleSheet, View,Text,Image} from 'react-native';
+import {StyleSheet, View, Text, Image} from 'react-native';
 import getResponsiveFontSize, {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveWidth,
 } from '../../../utils/responsive';
-import { SCREEN_WIDTH } from '@gorhom/bottom-sheet';
+import {SCREEN_WIDTH} from '@gorhom/bottom-sheet';
+import FloatingButton from '../../../utils/floatingButton';
 
 export default function ChallengeScreen({navigation}) {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <View style={styles.header}>
-            <Text style={styles.headerTitle}>운동 기록 인증하고 뱃지 받아요!</Text>
-            <Image style={styles.headerImage} source={{uri:'https://i.postimg.cc/Zq6FSSQG/Group-486-1.png'}}></Image>
+          <Text style={styles.headerTitle}>
+            운동 기록 인증하고 뱃지 받아요!
+          </Text>
+          <Image
+            style={styles.headerImage}
+            source={require('../../../assets/images/challenge_kino-blue.png')}></Image>
         </View>
       </View>
 
       <View style={styles.bodyContainer}>
-        <Image style={styles.image} source={{uri: 'https://i.postimg.cc/pd2WCQKg/Rectangle-196.png'}}></Image>
-        <Image style={styles.image} source={{uri: 'https://i.postimg.cc/pd2WCQKg/Rectangle-196.png'}}></Image>
-        <Image style={styles.image} source={{uri: 'https://i.postimg.cc/pd2WCQKg/Rectangle-196.png'}}></Image>
+        <Image
+          style={styles.image}
+          source={{
+            uri: 'https://i.postimg.cc/pd2WCQKg/Rectangle-196.png',
+          }}></Image>
+        <Image
+          style={styles.image}
+          source={{
+            uri: 'https://i.postimg.cc/pd2WCQKg/Rectangle-196.png',
+          }}></Image>
+        <Image
+          style={styles.image}
+          source={{
+            uri: 'https://i.postimg.cc/pd2WCQKg/Rectangle-196.png',
+          }}></Image>
         <View style={styles.image2}></View>
       </View>
+
+      <FloatingButton type={'challenge'}></FloatingButton>
     </View>
   );
 }
@@ -71,29 +90,27 @@ const styles = StyleSheet.create({
 
   bodyContainer: {
     width: '100%',
-    height:'100%',
+    height: '100%',
     backgroundColor: 'white',
     paddingVertical: getResponsiveIconSize(35),
-    paddingHorizontal: getResponsiveIconSize(30),  // 좌우 패딩 추가
-    flexDirection: 'row',  // 가로 배치
-    flexWrap: 'wrap',      // 줄 바꿈 허용
+    paddingHorizontal: getResponsiveIconSize(30), // 좌우 패딩 추가
+    flexDirection: 'row', // 가로 배치
+    flexWrap: 'wrap', // 줄 바꿈 허용
     justifyContent: 'space-between', // 가로 정렬 (space-between or center 사용 가능)
   },
 
   image: {
-    width: (SCREEN_WIDTH - getResponsiveIconSize(90)) / 3,  // 화면 너비에서 padding을 제외하고 3등분
-    height: (SCREEN_WIDTH - getResponsiveIconSize(90)) / 3,  // 화면 너비에서 padding을 제외하고 3등분
+    width: (SCREEN_WIDTH - getResponsiveIconSize(90)) / 3, // 화면 너비에서 padding을 제외하고 3등분
+    height: (SCREEN_WIDTH - getResponsiveIconSize(90)) / 3, // 화면 너비에서 padding을 제외하고 3등분
     borderRadius: getResponsiveIconSize(15),
     marginBottom: getResponsiveIconSize(10), // 아래 간격 추가
   },
 
   image2: {
-    width: (SCREEN_WIDTH - getResponsiveIconSize(90)) / 3,  // 화면 너비에서 padding을 제외하고 3등분
-    height: (SCREEN_WIDTH - getResponsiveIconSize(90)) / 3,  // 화면 너비에서 padding을 제외하고 3등분
+    width: (SCREEN_WIDTH - getResponsiveIconSize(90)) / 3, // 화면 너비에서 padding을 제외하고 3등분
+    height: (SCREEN_WIDTH - getResponsiveIconSize(90)) / 3, // 화면 너비에서 padding을 제외하고 3등분
     borderRadius: getResponsiveIconSize(15),
     marginBottom: getResponsiveIconSize(10), // 아래 간격 추가
-    backgroundColor:'#D9D9D9'
+    backgroundColor: '#D9D9D9',
   },
-
-
 });

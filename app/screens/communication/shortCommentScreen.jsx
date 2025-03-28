@@ -1,46 +1,47 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Image, Text, TextInput } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
-import { useNavigation } from '@react-navigation/native';
-import { fetchFamilyUserList } from '../../redux/actions/userFamilyActions';
+import React, {useState, useEffect} from 'react';
+import {StyleSheet, View, Image, Text, TextInput} from 'react-native';
+import {useDispatch, useSelector} from 'react-redux';
+import {useNavigation} from '@react-navigation/native';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../utils/responsive';
+import {fetchFamilyUserListThunk} from '../../redux/thunk/familyUserThunk';
 
 export default function ShortCommentScreen() {
   const user = useSelector(state => state.user);
   const family = useSelector(state => state.family);
-  const { familyUserList } = useSelector(state => state.userFamily);
+  const {familyUserList} = useSelector(state => state.userFamily);
   const dispatch = useDispatch();
   const navigation = useNavigation();
 
-  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  const [containerSize, setContainerSize] = useState({width: 0, height: 0});
 
   useEffect(() => {
-    dispatch(fetchFamilyUserList(family.familyId));
+    dispatch(fetchFamilyUserListThunk(family.familyId));
   }, [dispatch]);
 
   const predefinedPositions = [
-    { top: '10%', left: '-15%' },
-    { top: '20%', left: '90%' },
-    { top: '35%', left: '0%' },
-    { top: '55%', left: '80%' },
-    { top: '85%', left: '50%' },
+    {top: '10%', left: '-15%'},
+    {top: '20%', left: '90%'},
+    {top: '35%', left: '0%'},
+    {top: '55%', left: '80%'},
+    {top: '85%', left: '50%'},
   ];
 
   return (
     <View
       style={styles.mainContainer}
       onLayout={event => {
-        const { width, height } = event.nativeEvent.layout;
-        setContainerSize({ width, height });
-      }}
-    >
+        const {width, height} = event.nativeEvent.layout;
+        setContainerSize({width, height});
+      }}>
+
       {familyUserList.map((member, index) => {
-        const position = predefinedPositions[index % predefinedPositions.length];
+        const position =
+          predefinedPositions[index % predefinedPositions.length];
         const isOdd = index % 2 !== 0;
         const isCurrentUser = member.userId === user.userId;
         const isLarge = index === 0 || index === 3;
@@ -56,19 +57,18 @@ export default function ShortCommentScreen() {
                   borderRadius: getResponsiveIconSize(40),
                 },
               ]}
-              source={{ uri: member.image }}
+              source={{uri: member.image}}
             />
 
             <View
               style={[
                 styles.memberCommentContainer,
-                { left: isOdd ? '-150%' : '90%' },
+                {left: isOdd ? '-150%' : '90%'},
                 isLarge && {
                   width: getResponsiveWidth(130),
                   height: getResponsiveHeight(80),
                 },
-              ]}
-            >
+              ]}>
               <Image
                 style={styles.memberComment}
                 source={{
@@ -79,9 +79,14 @@ export default function ShortCommentScreen() {
               />
 
               {isCurrentUser ? (
-                <TextInput style={styles.commentTextInput} placeholder="댓글을 입력하세요" />
+                <TextInput
+                  style={styles.commentTextInput}
+                  placeholder="댓글을 입력하세요"
+                />
               ) : (
-                <Text style={[styles.commentText, { left: '20%', top: '25%' }]}>멤버 {index + 1} 코멘트</Text>
+                <Text style={[styles.commentText, {left: '20%', top: '25%'}]}>
+                  멤버 {index + 1} 코멘트
+                </Text>
               )}
             </View>
           </View>
@@ -98,6 +103,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginTop: getResponsiveHeight(30),
   },
+
   memberContainer: {
     position: 'absolute',
     alignItems: 'center',

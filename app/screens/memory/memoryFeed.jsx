@@ -1,12 +1,5 @@
 import React, {useState} from 'react';
-import {
-  View,
-  StyleSheet,
-  Image,
-  Text,
-  FlatList,
-  SectionList,
-} from 'react-native';
+import {View, StyleSheet, Image, Text, FlatList} from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import CustomSwitch from '../../utils/customSwitch';
 import {
@@ -16,6 +9,7 @@ import {
   getResponsiveIconSize,
 } from '../../utils/responsive';
 import {useSelector} from 'react-redux';
+import FloatingButton from '../../utils/floatingButton';
 
 export default function MemoryFeed() {
   const {memoryList} = useSelector(state => state.memory);
@@ -55,9 +49,9 @@ export default function MemoryFeed() {
           setOpen={setOpen}
           setValue={setValue}
           placeholder={'최신순'}
-          containerStyle={{width: getResponsiveWidth(60), zIndex: 9999}}
+          containerStyle={{width: getResponsiveWidth(70), zIndex: 9999}}
           style={styles.dropdown}
-          textStyle={{fontSize: 15}}
+          textStyle={{fontSize: getResponsiveFontSize(17)}}
         />
         <CustomSwitch
           isEnabled={isGalleryView}
@@ -71,7 +65,9 @@ export default function MemoryFeed() {
       ) : (
         <View style={styles.memoryContainer}>
           {memoryList.map(memory => (
-            <View key={memory.memoryId} style={{marginBottom:getResponsiveHeight(30)}}>
+            <View
+              key={memory.memoryId}
+              style={{marginBottom: getResponsiveHeight(30)}}>
               <View style={styles.memberContainer}>
                 <Image
                   style={styles.memberImage}
@@ -130,7 +126,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     width: '100%',
     marginBottom: getResponsiveHeight(30),
-
+    paddingHorizontal: getResponsiveWidth(10),
   },
 
   // 멤버
@@ -181,6 +177,7 @@ const styles = StyleSheet.create({
 
   memoryImage: {
     flex: 1,
+    borderRadius: getResponsiveIconSize(15),
     resizeMode: 'stretch',
   },
 
@@ -195,8 +192,6 @@ const styles = StyleSheet.create({
     borderColor: '#FFC84D', // 테두리 색상 변경
     borderWidth: 1, // 테두리 두께 변경
     borderRadius: 5, // 모서리 둥글게
-    // paddingVertical: 5, // 내부 패딩 조절
-    // paddingHorizontal: 5, // 내부 패딩 조절
   },
 
   lineContainer: {

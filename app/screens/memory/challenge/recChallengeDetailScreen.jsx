@@ -1,13 +1,31 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  ScrollView,
+  StyleSheet,
+} from 'react-native';
 import getResponsiveFontSize, {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveWidth,
 } from '../../../utils/responsive';
+import {useDispatch, useSelector} from 'react-redux';
+import { setChallengeThunk } from '../../../redux/thunk/challengeThunk';
 
-export default function RecChallengeDetailScreen({ route }) {
-  const { challenge } = route.params;
+export default function RecChallengeDetailScreen({route}) {
+  const dispatch = useDispatch();
+  const {challenge} = route.params;
+  const family = useSelector(state => state.family);
+
+  const fetchCurrentChallenge = () => {
+    const willSaveChallenge = {
+      title: challenge.title,
+      family: family,
+    };
+    dispatch(setChallengeThunk(family, willSaveChallenge));
+  };
 
   return (
     <ScrollView style={styles.mainContainer}>
@@ -17,7 +35,10 @@ export default function RecChallengeDetailScreen({ route }) {
           {challenge.categories.map((category, index) => (
             <View
               key={index}
-              style={[styles.category, { width: getResponsiveWidth(25+category.length * 10) }]} // 글자 길이에 맞춰 너비 조정
+              style={[
+                styles.category,
+                {width: getResponsiveWidth(25 + category.length * 10)},
+              ]} // 글자 길이에 맞춰 너비 조정
             >
               <Text style={styles.categoryText}>{category}</Text>
             </View>
@@ -33,17 +54,31 @@ export default function RecChallengeDetailScreen({ route }) {
 
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>참여 방법</Text>
-          <Text style={styles.sectionDescription}>{challenge.taskDescription}</Text>
+          <Text style={styles.sectionDescription}>
+            {challenge.taskDescription}
+          </Text>
         </View>
 
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>달성 시 리워드</Text>
-          <Text style={styles.sectionDescription}>{challenge.rewardDescription}</Text>
+          <Text style={styles.sectionDescription}>
+            {challenge.rewardDescription}
+          </Text>
         </View>
 
-        <View style={styles.sectionContainer}>
-          <TouchableOpacity style={[styles.startButton]}>
-            <Text style={styles.buttonText}>오늘의 챌린지 도전하러 가기</Text>
+        <View
+          style={[
+            styles.sectionContainer,
+            {
+              display: 'flex',
+              height: getResponsiveHeight(150),
+              flexDirection: 'row',
+              justifyContent: 'center',
+            },
+          ]}>
+          <TouchableOpacity
+            style={[styles.startButton, {alignSelf: 'flex-end'}]}>
+            <Text style={styles.buttonText} onPress={()=>fetchCurrentChallenge}>오늘의 챌린지 도전하러 가기</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -64,11 +99,11 @@ const styles = StyleSheet.create({
   header: {
     display: 'flex',
     flexDirection: 'column',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     width: '100%',
     height: getResponsiveHeight(100),
     gap: getResponsiveHeight(20),
-    marginBottom: getResponsiveHeight(25),
+    marginBottom: getResponsiveHeight(20),
   },
 
   title: {
@@ -105,7 +140,7 @@ const styles = StyleSheet.create({
   bodyContainer: {
     display: 'flex',
     width: '100%',
-    height:'100%',
+    height: '100%',
     flexDirection: 'column',
     gap: getResponsiveHeight(40),
   },

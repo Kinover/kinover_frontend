@@ -3,7 +3,8 @@ import {View, StyleSheet, Text} from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
 import ReceiveChat from './receiveChat';
 import SendChat from './sendChat';
-import {fetchMessage} from '../../../redux/actions/messageActions';
+// import {fetchMessage} from '../../../redux/actions/messageActions';
+import { fetchMessageThunk } from '../../../redux/thunk/messageThunk';
 import {
   getResponsiveHeight,
   getResponsiveIconSize,
@@ -11,12 +12,12 @@ import {
 } from '../../../utils/responsive';
 
 export default function ChatScreen({chatRoom, user}) {
-  const { messageList } = useSelector(state => state.message); // Redux 상태 가져오기
+  const {messageList} = useSelector(state => state.message); // Redux 상태 가져오기
   const dispatch = useDispatch();
 
   useEffect(() => {
     if (chatRoom) {
-      dispatch(fetchMessage(chatRoom.chatRoomId));
+      dispatch(fetchMessageThunk(chatRoom.chatRoomId));
     }
   }, [chatRoom]);
 
@@ -35,64 +36,72 @@ export default function ChatScreen({chatRoom, user}) {
   };
 
   return (
-    <View style={styles.chatContainer}>
-      {message_list.length > 0 ? (
-        message_list.map((message, index) => {
-          const isSameSender =
-          message_list[index - 1] &&
-            message_list[index - 1].sender.userId === message.sender.userId;
+    <>
+      <View style={styles.chatContainer}>
+        {message_list.length > 0 ? (
+          message_list.map((message, index) => {
+            const isSameSender =
+              message_list[index - 1] &&
+              message_list[index - 1].sender.userId === message.sender.userId;
 
-          // 현재 메시지의 날짜
-          const currentMessageDate = new Date(message.createdAt).toDateString();
-          const prevMessageDate =
-            index > 0
-              ? new Date(message_list[index - 1].createdAt).toDateString()
-              : null;
+            // 현재 메시지의 날짜
+            const currentMessageDate = new Date(
+              message.createdAt,
+            ).toDateString();
+            const prevMessageDate =
+              index > 0
+                ? new Date(message_list[index - 1].createdAt).toDateString()
+                : null;
 
-          return (
-            <React.Fragment key={message.messageId}>
-              {/* 날짜가 바뀌었으면 날짜 표시 */}
-              {prevMessageDate !== currentMessageDate && (
-                <Text style={styles.dateSeparator}>
-                  {formatDate(message.createdAt)}
-                </Text>
-              )}
+            return (
+              <React.Fragment key={message.messageId}>
+                {/* 날짜가 바뀌었으면 날짜 표시 */}
+                {prevMessageDate !== currentMessageDate && (
+                  <Text style={styles.dateSeparator}>
+                    {formatDate(message.createdAt)}
+                  </Text>
+                )}
 
-              {/* 수신 메시지 */}
-              {message.sender.userId !== user.userId ? (
-                <ReceiveChat
-                  userName={message.sender.name}
-                  userProfileImage={message.sender.image}
-                  message={message.content}
-                  chatTime={message.createdAt}
-                  style={{
-                    marginBottom: isSameSender ? 15 : 25, // 같은 사람이면 간격 10, 다른 사람은 간격 20
-                  }}
-                />
-              ) : (
-                // 발신 메시지
-                <SendChat
-                  message={message.content}
-                  chatTime={message.createdAt}
-                  style={{
-                    marginBottom: isSameSender ? 15 : 25,
-                  }}
-                />
-              )}
-            </React.Fragment>
-          );
-        })
-      ) : (
-        <Text>메세지가 없습니다.</Text>
-      )}
-    </View>
+                {/* 수신 메시지 */}
+                {message.sender.userId !== user.userId ? (
+                  <ReceiveChat
+                    userName={message.sender.name}
+                    userProfileImage={message.sender.image}
+                    message={message.content}
+                    chatTime={message.createdAt}
+                    style={{
+                      marginBottom: isSameSender ? 15 : 25, // 같은 사람이면 간격 10, 다른 사람은 간격 20
+                    }}
+                  />
+                ) : (
+                  // 발신 메시지
+                  <SendChat
+                    message={message.content}
+                    chatTime={message.createdAt}
+                    style={{
+                      marginBottom: isSameSender ? 15 : 25,
+                    }}
+                  />
+                )}
+              </React.Fragment>
+            );
+          })
+        ) : (
+          <Text>메세지가 없습니다.</Text>
+        )}
+      </View>
+      {/* <ChatSettings
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      /> */}
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   chatContainer: {
     width: getResponsiveWidth(350),
-    alignSelf:'center',
+    alignSelf: 'center',
   },
   dateSeparator: {
     alignSelf: 'center',
