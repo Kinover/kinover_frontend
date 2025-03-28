@@ -2,6 +2,7 @@ import React from 'react';
 import {useNavigation} from '@react-navigation/native';
 import {View, Text, Image, Dimensions, StyleSheet,TouchableOpacity} from 'react-native';
 import Carousel from 'react-native-reanimated-carousel';
+import { getResponsiveIconSize } from '../../../utils/responsive';
 
 const {width} = Dimensions.get('window');
 const {height} = Dimensions.get('window');
@@ -64,7 +65,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     alignSelf: 'center', // 수평 중앙 정렬
-    // borderRadius: ,
+    borderRadius: getResponsiveIconSize(10),
     // marginBottom: 15,
   },
 });

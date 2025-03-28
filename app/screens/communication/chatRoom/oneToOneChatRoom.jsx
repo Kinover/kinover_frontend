@@ -1,8 +1,6 @@
-import React, {useEffect, useRef} from 'react';
-import {ScrollView, TextInput, View, Text, StyleSheet} from 'react-native';
+import React, {useEffect, useRef,useState} from 'react';
+import {ScrollView, TouchableOpacity,Image,View, Text, StyleSheet} from 'react-native';
 import ChatInput from './chatInput';
-import ReceiveChat from './receiveChat';
-import SendChat from './sendChat';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -42,8 +40,7 @@ export default function OneToOneChatRoom({route}) {
     <View style={{flex: 1, backgroundColor: 'white'}}>
       <ScrollView
         ref={scrollViewRef}
-        contentContainerStyle={styles.chatScrollView
-        }
+        contentContainerStyle={styles.chatScrollView}
         onContentSizeChange={scrollToBottom} // 내용 변경 시 자동 스크롤
         onLayout={scrollToBottom}>
         <ChatScreen chatRoom={chatRoom} user={user}></ChatScreen>
@@ -52,6 +49,21 @@ export default function OneToOneChatRoom({route}) {
     </View>
   );
 }
+
+// 헤더 우측 설정 버튼
+const renderHeaderRightChatSetting = (setIsSettingsOpen) => (
+  <TouchableOpacity onPress={() => setIsSettingsOpen(true)}>
+    <Image
+      source={{ uri: 'https://i.postimg.cc/WbtFytsT/setting.png' }}
+      style={{
+        width: getResponsiveWidth(26),
+        height: getResponsiveHeight(28),
+        marginRight: getResponsiveWidth(30),
+        resizeMode: 'contain',
+      }}
+    />
+  </TouchableOpacity>
+);
 
 const styles = StyleSheet.create({
   chatScrollView: {

@@ -15,11 +15,9 @@ import {
   getResponsiveHeight,
 } from '../../utils/responsive';
 import {useDispatch, useSelector} from 'react-redux';
-import {
-  fetchSchedulesForFamilyAndDate,
-  fetchSchedulesForUserAndDate,
-} from '../../redux/actions/scheduleActions';
 
+import {fetchSchedulesForFamilyAndDateThunk} from '../../redux/thunk/scheduleThunk';
+import CustomModal from '../../utils/customModal';
 export default function Schedule({selectedDate}) {
   const {familyId, name} = useSelector(state => state.family);
   const {scheduleList, loading, error} = useSelector(state => state.schedule);
@@ -32,10 +30,19 @@ export default function Schedule({selectedDate}) {
   const [selectedMemo, setSelectedMemo] = useState('');
   const [editable, setEditable] = useState(false);
 
+  const handleCloseModal = () => {
+    setModalVisible(false);
+  };
+
+  const handleConfirm = () => {
+    // 저장 로직 추가
+    setModalVisible(false);
+  };
+
   // 메모 버튼 클릭 시 실행될 함수
   const handleMemoClick = (memo, userId) => {
     setSelectedMemo(memo);
-    setEditable(userId === currentUserId); // 내가 작성한 메모인지 확인
+    setEditable(userId === currentUserId || userId === null); // 내가 작성한 메모인지 확인
     setModalVisible(true);
   };
 
@@ -47,7 +54,7 @@ export default function Schedule({selectedDate}) {
         `📢 Fetching schedules for user: ${user.userName}, date: ${formattedDate}`,
       );
       //   dispatch(fetchSchedulesForUserAndDate(familyId, user.userId, formattedDate));
-      dispatch(fetchSchedulesForFamilyAndDate(familyId, formattedDate));
+      dispatch(fetchSchedulesForFamilyAndDateThunk(familyId, formattedDate));
     });
   }, [dispatch, familyId, selectedDate, familyUserList]);
 
@@ -65,11 +72,51 @@ export default function Schedule({selectedDate}) {
 
   return (
     <View style={styles.container}>
+      {/* 가족 일정이 있는 경우 표시 */}
+      {scheduleList.some(schedule => schedule.userId === null) && (
+        <View style={styles.scheduleContainer}>
+          <Text style={styles.scheduleTitle}>
+            <Text style={styles.scheduleTitleHighlight}>가족 일정</Text>
+            {`이 `}
+            <Text style={styles.scheduleTitleHighlight}>
+              {scheduleList.filter(schedule => schedule.userId === null).length}
+            </Text>
+            개 있어요.
+          </Text>
+
+          {scheduleList
+            .filter(schedule => schedule.userId === null)
+            .map(schedule => (
+              <View key={schedule.scheduleId} style={styles.scheduleElement}>
+                <Text
+                  style={[
+                    styles.scheduleText,
+                    {width: getResponsiveWidth(260)},
+                  ]}>
+                  {schedule.title}
+                </Text>
+                <TouchableOpacity
+                  onPress={() =>
+                    handleMemoClick(schedule.memo, schedule.userId)
+                  }
+                  style={styles.scheduleButton}>
+                  <Image
+                    style={styles.buttonIconMemo}
+                    source={{
+                      uri: 'https://i.postimg.cc/TYsZknFG/Group-485.png',
+                    }}
+                  />
+                  <Text style={styles.buttonText}>메모</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+        </View>
+      )}
+
       {/* 각 가족 구성원에 대한 일정 표시 */}
       {familyUserList.map(user => {
         const userSchedules = scheduleList.filter(
-          schedule =>
-            schedule.userId === user.userId ||schedule.isPersonal===false,
+          schedule => schedule.userId === user.userId,
         );
 
         return (
@@ -78,7 +125,7 @@ export default function Schedule({selectedDate}) {
             {userSchedules.length > 0 && (
               <Text style={styles.scheduleTitle}>
                 <Text style={styles.scheduleTitleHighlight}>
-                  {user ? user.name : name}{' '}
+                  {user ? user.name : name}
                 </Text>
                 {`님의 일정은 `}
                 <Text style={styles.scheduleTitleHighlight}>
@@ -149,10 +196,15 @@ export default function Schedule({selectedDate}) {
             .length === 0,
       ) && <Text style={styles.noScheduleText}>일정이 없습니다.</Text>}
 
-      {/* 메모 모달 */}
-      <Modal animationType="slide" transparent={true} visible={modalVisible}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
+      {/* CustomModal로 메모 모달 표시 */}
+      <CustomModal
+        visible={modalVisible}
+        onClose={handleCloseModal}
+        onConfirm={handleConfirm}
+        confirmText="확인"
+        closeText="닫기"
+        children={
+          <>
             <Text style={styles.modalTitle}>메모</Text>
             <TextInput
               style={styles.memoInput}
@@ -161,14 +213,9 @@ export default function Schedule({selectedDate}) {
               value={selectedMemo}
               onChangeText={setSelectedMemo}
             />
-            <TouchableOpacity
-              onPress={() => setModalVisible(false)}
-              style={styles.modalCloseButton}>
-              <Text style={styles.closeButtonText}>닫기</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+          </>
+        }
+      />
     </View>
   );
 }

@@ -8,7 +8,7 @@ import {
   getResponsiveIconSize,
 } from '../../../utils/responsive';
 import { useSelector, useDispatch } from 'react-redux';
-import {fetchRecChallenge} from '../../../redux/actions/recChallengeActions';
+import { fetchRecChallengeThunk } from '../../../redux/thunk/recChallengeThunk';
 
 export default function ChallengeSlider() {
   const family = useSelector(state => state.family); // Redux 상태에서 family 데이터 가져오기
@@ -20,7 +20,7 @@ export default function ChallengeSlider() {
 
    else if (recChallengeList.length === 0) {
       console.log('Dispatching fetchRecChallenge...');
-      dispatch(fetchRecChallenge());
+      dispatch(fetchRecChallengeThunk());
     }
   }, [recChallengeList, loading, dispatch]); 
 

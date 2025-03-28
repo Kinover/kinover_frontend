@@ -3,11 +3,12 @@ import {TouchableOpacity, View, StyleSheet, Image} from 'react-native';
 import * as KakaoLogin from '@react-native-seoul/kakao-login';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
-import loginAction from '../../redux/actions/loginAction';
+import { loginThunk } from '../../redux/thunk/loginThunk';
 import {getResponsiveHeight, getResponsiveWidth} from '../../utils/responsive';
 
 export default function OnboardingScreen() {
   const user = useSelector(state => state.user);
+  const loginUser=useSelector(state=>state.login);
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
@@ -30,7 +31,7 @@ export default function OnboardingScreen() {
 
 
       // 백엔드에 사용자 데이터 전송 및 JWT 토큰 수신
-      dispatch(loginAction(kakaoUserDto));
+      dispatch(loginThunk(kakaoUserDto));
 
 
     } catch (error) {
@@ -43,14 +44,15 @@ export default function OnboardingScreen() {
   };
 
   useEffect(() => {
-    console.log("loading",user.loading);
-    console.log("login",user.login);
-    console.log("userId",user.userId);
-
-    if (!user.loading && !user.login && user.userId!==null) {
-      navigation.navigate('가족설정화면');
+    console.log('✅ login status changed:', user);
+  
+    if (!loginUser.loading && user.userId !== null) {
+      navigation.reset({
+        index: 0,
+        routes: [{ name: '가족설정화면' }],
+      });
     }
-  }, [user, navigation]);
+  }, [user,loginUser]);
 
   return (
     <View style={styles.container}>

@@ -16,7 +16,7 @@ import {
   getResponsiveIconSize,
 } from '../../../utils/responsive';
 import {useDispatch, useSelector} from 'react-redux';
-import {fetchMessage, sendMessage} from '../../../redux/actions/messageActions';
+import { fetchMessageThunk,sendMessageThunk } from '../../../redux/thunk/messageThunk';
 
 export default ChatInput = ({chatRoom}) => {
   const user = useSelector(state => state.user);
@@ -37,7 +37,7 @@ export default ChatInput = ({chatRoom}) => {
       };
 
       setData(newMessage); // 데이터 세팅
-      dispatch(sendMessage(newMessage, chatRoom)); // 메시지 보내기
+      dispatch(sendMessageThunk(newMessage, chatRoom)); // 메시지 보내기
       setMessage(''); // 메시지 초기화
     }
   };

@@ -1,12 +1,12 @@
 import 'react-native-gesture-handler'; // 이 코드가 제일 첫 줄에 있어야 합니다.
-import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import * as React from 'react';
+import {useState} from 'react';
 import {NavigationContainer, useNavigation} from '@react-navigation/native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {createStackNavigator} from '@react-navigation/stack';
 import {Provider} from 'react-redux';
 import {MenuProvider} from 'react-native-popup-menu';
-import {Image, View, Text, TouchableOpacity} from 'react-native';
+import {Image, View, Text, TouchableOpacity, navigation} from 'react-native';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -14,27 +14,27 @@ import {
   getResponsiveIconSize,
 } from './utils/responsive';
 import store from './redux/store';
-import {Platform} from 'react-native';
 
 // 각 탭(화면)
-import CommunicationScreen from './screens/communication/communicationScreen';
-import MemoryScreen from './screens/memory/memoryScreen';
-import ScheduleScreen from './screens/schedule/scheduleScreen';
 import NotificationScreen from './components/notificationScreen';
 import KinoChatRoom from './screens/communication/chatRoom/kinoChatRoom';
 import OneToOneChatRoom from './screens/communication/chatRoom/oneToOneChatRoom';
 import RecChallengeScreen from './screens/memory/challenge/recChallengeScreen';
 import RecChallengeDetailScreen from './screens/memory/challenge/recChallengeDetailScreen';
 import ChallengeScreen from './screens/memory/challenge/challengeScreen';
-import FamilySetupScreen from './assets/images/family/familySetupScreen';
-import FamilySetupFinishScreen from './assets/images/family/familySetupFinishScreen';
+import FamilySetupScreen from './screens/family/familySetupScreen';
+import FamilySetupFinishScreen from './screens/family/familySetupFinishScreen';
 import OnboardingScreen from './screens/authentication/onboardingScreen';
-import CreateFamilyScreen from './assets/images/family/createFamilyScreen';
+import CreateFamilyScreen from './screens/family/createFamilyScreen';
 import FamilyChatRoom from './screens/communication/chatRoom/familyChatRoom';
 import GradeScreen from './screens/home/gradeScreen';
-import ProfileScreen from './components/profileScreen';
-import HomeScreen from './screens/home/hoemScreen';
-import FamilySettingScreen from './components/familySettingScreen';
+import ProfileScreen from './screens/communication/profileScreen';
+import FamilySettingScreen from './screens/home/familySettingScreen';
+import ChatSettings from './screens/communication/chatRoom/chatSetting';
+import HomeScreen from './screens/home';
+import CommunicationScreen from './screens/communication';
+import ScheduleScreen from './screens/schedule';
+import MemoryScreen from './screens/memory';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -65,7 +65,7 @@ const renderTabBarIcon = (focused, focusedUri, defaultUri) => (
 const renderHeaderRight = ({navigation}) => (
   <TouchableOpacity onPress={() => navigation.navigate('프로필화면')}>
     <Image
-      source={{uri: 'https://i.postimg.cc/QxXMJCnz/Vector-2.jpg'}}
+      source={require('./assets/images/navigator_user-profile-button.png')}
       style={{
         width: getResponsiveWidth(26),
         height: getResponsiveHeight(28),
@@ -79,7 +79,8 @@ const renderHeaderRight = ({navigation}) => (
 const renderHeaderRightHome = ({navigation}) => (
   <TouchableOpacity onPress={() => navigation.navigate('가족화면')}>
     <Image
-      source={{uri: 'https://i.postimg.cc/zGGXswfc/Mask-group-1.png'}}
+      source={require('./assets/images/navigator_family-button.png')}
+      // source={{uri: 'https://i.postimg.cc/zGGXswfc/Mask-group-1.png'}}
       style={{
         width: getResponsiveWidth(26),
         height: getResponsiveHeight(28),
@@ -93,7 +94,7 @@ const renderHeaderRightHome = ({navigation}) => (
 const renderHeaderLeft = ({navigation}) => (
   <TouchableOpacity onPress={() => navigation.navigate('알림함')}>
     <Image
-      source={{uri: 'https://i.postimg.cc/CKW1G4WC/Vector-1.jpg'}}
+      source={require('./assets/images/navigator_alarm-button.png')}
       style={{
         width: getResponsiveWidth(24),
         height: getResponsiveHeight(26),
@@ -127,13 +128,10 @@ function TabNavigator() {
         headerTitle: () => (
           <View
             style={{
-              paddingBottom:
-                getResponsiveHeight(10),
+              paddingBottom: getResponsiveHeight(10),
             }}>
             <Image
-              source={{
-                uri: 'https://i.postimg.cc/NGPV5sR9/Group-1171276557-1.jpg',
-              }} // 헤더 이미지
+              source={require('./assets/images/kinover.png')}
               style={{
                 width: getResponsiveWidth(49), // 원하는 크기로 조절
                 height: getResponsiveHeight(46),
@@ -214,8 +212,23 @@ function TabNavigator() {
   );
 }
 
-function AppNavigator() {
+function AppNavigator({setIsSettingsOpen}) {
   const navigation = useNavigation();
+
+  // ✅ 헤더 우측 설정 버튼
+  const renderHeaderRightChatSetting = setIsSettingsOpen => (
+    <TouchableOpacity onPress={() => setIsSettingsOpen(true)}>
+      <Image
+        source={{uri: 'https://i.postimg.cc/WbtFytsT/setting.png'}}
+        style={{
+          width: getResponsiveWidth(26),
+          height: getResponsiveHeight(28),
+          marginRight: getResponsiveWidth(30),
+          resizeMode: 'contain',
+        }}
+      />
+    </TouchableOpacity>
+  );
 
   return (
     <Stack.Navigator initialRouteName="온보딩화면">
@@ -240,9 +253,7 @@ function AppNavigator() {
           headerTitleAlign: 'center', // 제목을 가운데 정렬
           headerTitle: () => (
             <Image
-              source={{
-                uri: 'https://i.postimg.cc/NGPV5sR9/Group-1171276557-1.jpg',
-              }} // 헤더 이미지
+              source={require('./assets/images/kinover.png')}
               style={{
                 width: getResponsiveWidth(50), // 원하는 크기로 조절
                 height: getResponsiveHeight(47),
@@ -254,7 +265,7 @@ function AppNavigator() {
           headerLeft: () => (
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Image
-                source={{uri: 'https://i.postimg.cc/05Ckjx20/Group-441.jpg'}}
+                source={require('./assets/images/navigator_goback-button.png')}
                 style={{
                   width: getResponsiveWidth(13), // 이미지 크기 조절
                   height: getResponsiveHeight(26),
@@ -280,9 +291,7 @@ function AppNavigator() {
           headerTitleAlign: 'center', // 제목을 가운데 정렬
           headerTitle: () => (
             <Image
-              source={{
-                uri: 'https://i.postimg.cc/NGPV5sR9/Group-1171276557-1.jpg',
-              }} // 헤더 이미지
+              source={require('./assets/images/kinover.png')}
               style={{
                 width: getResponsiveWidth(50), // 원하는 크기로 조절
                 height: getResponsiveHeight(47),
@@ -294,7 +303,7 @@ function AppNavigator() {
           headerLeft: () => (
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Image
-                source={{uri: 'https://i.postimg.cc/05Ckjx20/Group-441.jpg'}}
+                source={require('./assets/images/navigator_goback-button.png')}
                 style={{
                   width: getResponsiveWidth(13), // 이미지 크기 조절
                   height: getResponsiveHeight(26),
@@ -320,9 +329,7 @@ function AppNavigator() {
           headerTitleAlign: 'center', // 제목을 가운데 정렬
           headerTitle: () => (
             <Image
-              source={{
-                uri: 'https://i.postimg.cc/NGPV5sR9/Group-1171276557-1.jpg',
-              }} // 헤더 이미지
+              source={require('./assets/images/kinover.png')}
               style={{
                 width: getResponsiveWidth(50), // 원하는 크기로 조절
                 height: getResponsiveHeight(47),
@@ -334,7 +341,7 @@ function AppNavigator() {
           headerLeft: () => (
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Image
-                source={{uri: 'https://i.postimg.cc/05Ckjx20/Group-441.jpg'}}
+                source={require('./assets/images/navigator_goback-button.png')}
                 style={{
                   width: getResponsiveWidth(13), // 이미지 크기 조절
                   height: getResponsiveHeight(26),
@@ -360,9 +367,7 @@ function AppNavigator() {
           headerTitleAlign: 'center', // 제목을 가운데 정렬
           headerTitle: () => (
             <Image
-              source={{
-                uri: 'https://i.postimg.cc/NGPV5sR9/Group-1171276557-1.jpg',
-              }} // 헤더 이미지
+              source={require('./assets/images/kinover.png')}
               style={{
                 width: getResponsiveWidth(50), // 원하는 크기로 조절
                 height: getResponsiveHeight(47),
@@ -374,7 +379,7 @@ function AppNavigator() {
           headerLeft: () => (
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Image
-                source={{uri: 'https://i.postimg.cc/05Ckjx20/Group-441.jpg'}}
+                source={require('./assets/images/navigator_goback-button.png')}
                 style={{
                   width: getResponsiveWidth(13), // 이미지 크기 조절
                   height: getResponsiveHeight(26),
@@ -407,7 +412,7 @@ function AppNavigator() {
           headerLeft: () => (
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Image
-                source={{uri: 'https://i.postimg.cc/05Ckjx20/Group-441.jpg'}}
+                source={require('./assets/images/navigator_goback-button.png')}
                 style={{
                   width: getResponsiveWidth(13), // 이미지 크기 조절
                   height: getResponsiveHeight(26),
@@ -433,9 +438,7 @@ function AppNavigator() {
           headerTitleAlign: 'center', // 제목을 가운데 정렬
           headerTitle: () => (
             <Image
-              source={{
-                uri: 'https://i.postimg.cc/NGPV5sR9/Group-1171276557-1.jpg',
-              }} // 헤더 이미지
+              source={require('./assets/images/kinover.png')}
               style={{
                 width: getResponsiveWidth(50), // 원하는 크기로 조절
                 height: getResponsiveHeight(47),
@@ -448,7 +451,7 @@ function AppNavigator() {
           headerLeft: () => (
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Image
-                source={{uri: 'https://i.postimg.cc/05Ckjx20/Group-441.jpg'}}
+                source={require('./assets/images/navigator_goback-button.png')}
                 style={{
                   width: getResponsiveWidth(13), // 이미지 크기 조절
                   height: getResponsiveHeight(26),
@@ -474,9 +477,7 @@ function AppNavigator() {
           headerTitleAlign: 'center', // 제목을 가운데 정렬
           headerTitle: () => (
             <Image
-              source={{
-                uri: 'https://i.postimg.cc/NGPV5sR9/Group-1171276557-1.jpg',
-              }} // 헤더 이미지
+              source={require('./assets/images/kinover.png')}
               style={{
                 width: getResponsiveWidth(50), // 원하는 크기로 조절
                 height: getResponsiveHeight(47),
@@ -489,7 +490,7 @@ function AppNavigator() {
           headerLeft: () => (
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Image
-                source={{uri: 'https://i.postimg.cc/05Ckjx20/Group-441.jpg'}}
+                source={require('./assets/images/navigator_goback-button.png')}
                 style={{
                   width: getResponsiveWidth(13), // 이미지 크기 조절
                   height: getResponsiveHeight(26),
@@ -522,7 +523,7 @@ function AppNavigator() {
           headerLeft: () => (
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Image
-                source={{uri: 'https://i.postimg.cc/05Ckjx20/Group-441.jpg'}}
+                source={require('./assets/images/navigator_goback-button.png')}
                 style={{
                   width: getResponsiveWidth(13),
                   height: getResponsiveHeight(26),
@@ -536,7 +537,7 @@ function AppNavigator() {
 
       <Stack.Screen
         name="채팅방화면"
-        component={OneToOneChatRoom}
+        component={OneToOneChatRoom} // ✅ 수정된 Wrapper 사용
         options={({navigation, chatRoom}) => ({
           headerStyle: {
             borderBottomWidth: 0, // 하단 경계선 제거
@@ -555,7 +556,7 @@ function AppNavigator() {
           headerLeft: () => (
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Image
-                source={{uri: 'https://i.postimg.cc/05Ckjx20/Group-441.jpg'}}
+                source={require('./assets/images/navigator_goback-button.png')}
                 style={{
                   width: getResponsiveWidth(13),
                   height: getResponsiveHeight(26),
@@ -564,6 +565,7 @@ function AppNavigator() {
               />
             </TouchableOpacity>
           ),
+          headerRight: () => renderHeaderRightChatSetting(setIsSettingsOpen),
         })}
       />
 
@@ -588,7 +590,7 @@ function AppNavigator() {
           headerLeft: () => (
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Image
-                source={{uri: 'https://i.postimg.cc/05Ckjx20/Group-441.jpg'}}
+                source={require('./assets/images/navigator_goback-button.png')}
                 style={{
                   width: getResponsiveWidth(13),
                   height: getResponsiveHeight(26),
@@ -621,7 +623,7 @@ function AppNavigator() {
           headerLeft: () => (
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Image
-                source={{uri: 'https://i.postimg.cc/05Ckjx20/Group-441.jpg'}}
+                source={require('./assets/images/navigator_goback-button.png')}
                 style={{
                   width: getResponsiveWidth(13),
                   height: getResponsiveHeight(26),
@@ -630,20 +632,7 @@ function AppNavigator() {
               />
             </TouchableOpacity>
           ),
-          // headerRight: () => (
-          //   <TouchableOpacity>
-          //     <Image
-          //       source={{
-          //         uri: 'https://i.postimg.cc/3ryLhKKF/free-icon-message-5251132.png',
-          //       }}
-          //       style={{
-          //         width: getResponsiveWidth(23),
-          //         height: getResponsiveHeight(23),
-          //         marginRight: getResponsiveWidth(30),
-          //         resizeMode:'contain',
-          //       }}></Image>
-          //   </TouchableOpacity>
-          // ),
+          headerRight: () => renderHeaderRightChatSetting(setIsSettingsOpen),
         })}
       />
 
@@ -661,9 +650,7 @@ function AppNavigator() {
           headerTitleAlign: 'center', // 제목을 가운데 정렬
           headerTitle: () => (
             <Image
-              source={{
-                uri: 'https://i.postimg.cc/NGPV5sR9/Group-1171276557-1.jpg',
-              }} // 헤더 이미지
+              source={require('./assets/images/kinover.png')}
               style={{
                 width: getResponsiveWidth(50), // 원하는 크기로 조절
                 height: getResponsiveHeight(47),
@@ -676,7 +663,7 @@ function AppNavigator() {
           headerLeft: () => (
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Image
-                source={{uri: 'https://i.postimg.cc/05Ckjx20/Group-441.jpg'}}
+                source={require('./assets/images/navigator_goback-button.png')}
                 style={{
                   width: getResponsiveWidth(13),
                   height: getResponsiveHeight(26),
@@ -702,9 +689,7 @@ function AppNavigator() {
           headerTitleAlign: 'center', // 제목을 가운데 정렬
           headerTitle: () => (
             <Image
-              source={{
-                uri: 'https://i.postimg.cc/NGPV5sR9/Group-1171276557-1.jpg',
-              }} // 헤더 이미지
+              source={require('./assets/images/kinover.png')}
               style={{
                 width: getResponsiveWidth(50), // 원하는 크기로 조절
                 height: getResponsiveHeight(47),
@@ -717,7 +702,7 @@ function AppNavigator() {
           headerLeft: () => (
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Image
-                source={{uri: 'https://i.postimg.cc/05Ckjx20/Group-441.jpg'}}
+                source={require('./assets/images/navigator_goback-button.png')}
                 style={{
                   width: getResponsiveWidth(13),
                   height: getResponsiveHeight(26),
@@ -743,9 +728,7 @@ function AppNavigator() {
           headerTitleAlign: 'center', // 제목을 가운데 정렬
           headerTitle: () => (
             <Image
-              source={{
-                uri: 'https://i.postimg.cc/NGPV5sR9/Group-1171276557-1.jpg',
-              }} // 헤더 이미지
+              source={require('./assets/images/kinover.png')}
               style={{
                 width: getResponsiveWidth(50), // 원하는 크기로 조절
                 height: getResponsiveHeight(47),
@@ -758,7 +741,7 @@ function AppNavigator() {
           headerLeft: () => (
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Image
-                source={{uri: 'https://i.postimg.cc/05Ckjx20/Group-441.jpg'}}
+                source={require('./assets/images/navigator_goback-button.png')}
                 style={{
                   width: getResponsiveWidth(13),
                   height: getResponsiveHeight(26),
@@ -774,11 +757,18 @@ function AppNavigator() {
 }
 
 export default function MyApp() {
+  // 헤더 우측 설정 버튼
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
   return (
     <Provider store={store}>
       <MenuProvider>
+        <ChatSettings
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+        />
         <NavigationContainer>
-          <AppNavigator />
+          <AppNavigator setIsSettingsOpen={setIsSettingsOpen} />
         </NavigationContainer>
       </MenuProvider>
     </Provider>

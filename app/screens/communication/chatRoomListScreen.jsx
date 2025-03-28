@@ -15,7 +15,8 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../utils/responsive';
-import fetchChatRoomList from '../../redux/actions/chatRoomActions';
+import { fetchChatRoomListThunk } from '../../redux/thunk/chatRoomThunk';
+
 
 export default function ChatRoomListScreen({navigation}) {
   const [bottomSheetIndex, setBottomSheetIndex] = useState(1); // 기본적으로 75%로 시작
@@ -28,7 +29,7 @@ export default function ChatRoomListScreen({navigation}) {
   useEffect(() => {
     if (family && user.userId !== null) {
       console.log('fetchChatRoomList 실행됨');
-      dispatch(fetchChatRoomList(family.familyId, user.userId));
+      dispatch(fetchChatRoomListThunk(family.familyId, user.userId));
     }
   }, [dispatch, user.login]); // familyId와 userId가 업데이트 된 후에 실행
 
