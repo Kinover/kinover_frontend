@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  Modal,
   TextInput,
   ActivityIndicator,
 } from 'react-native';
@@ -53,7 +52,6 @@ export default function Schedule({selectedDate}) {
       console.log(
         `📢 Fetching schedules for user: ${user.userName}, date: ${formattedDate}`,
       );
-      //   dispatch(fetchSchedulesForUserAndDate(familyId, user.userId, formattedDate));
       dispatch(fetchSchedulesForFamilyAndDateThunk(familyId, formattedDate));
     });
   }, [dispatch, familyId, selectedDate, familyUserList]);

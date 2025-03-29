@@ -121,7 +121,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     backgroundColor: 'white',
-    paddingTop: getResponsiveHeight(35),
   },
   headerContainer: {
     display: 'flex',
@@ -129,6 +128,7 @@ const styles = StyleSheet.create({
     alignContent: 'center',
     justifyContent: 'center',
     gap: getResponsiveHeight(5),
+    marginTop:getResponsiveHeight(150),
   },
   headerTitle: {
     fontSize: getResponsiveFontSize(25),
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     gap: getResponsiveHeight(30),
-    bottom: getResponsiveHeight(100),
+    bottom: getResponsiveHeight(70),
   },
   mainImage: {
     width: getResponsiveWidth(319.66),

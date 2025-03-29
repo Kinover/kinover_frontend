@@ -78,7 +78,7 @@ export default function KinoChatRoom({route}) {
         {/* 키노 헤더 창  */}
         <View style={styles.kinoContainer}>
           <Image
-            source={{uri: 'https://i.postimg.cc/KvJ8qb68/Group-1171276552.jpg'}}
+            source={require('../../../assets/images/chatRoom_kino.jpg')}
             style={styles.kinoImage}
           />
           <View style={styles.kinoTextContainer}>

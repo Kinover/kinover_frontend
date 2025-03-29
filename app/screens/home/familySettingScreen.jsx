@@ -144,9 +144,7 @@ export default function FamilySettingScreen() {
             <View style={styles.userAddWrapper}>
               <TouchableOpacity>
                 <Image
-                  source={{
-                    uri: 'https://i.postimg.cc/k4Y5q6LQ/Group-1171276579.png',
-                  }}
+                  source={require('../../assets/images/familySetting_user-add-button.png')}
                   style={styles.userAddImageButton}
                 />
               </TouchableOpacity>
@@ -227,6 +225,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     backgroundColor: '#FFF8E9',
     paddingTop: getResponsiveHeight(30),
+    paddingBottom: getResponsiveHeight(30),
     paddingHorizontal: getResponsiveWidth(30),
     gap: getResponsiveHeight(20),
   },
@@ -298,7 +297,7 @@ const styles = StyleSheet.create({
   mainContainer: {
     position: 'relative',
     width: getResponsiveWidth(341.91),
-    height: getResponsiveHeight(419.32),
+    height: getResponsiveHeight(380.32),
     borderRadius: getResponsiveIconSize(20),
     backgroundColor: 'white',
     display: 'flex',

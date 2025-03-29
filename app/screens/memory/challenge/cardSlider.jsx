@@ -36,7 +36,7 @@ export default function CardSlider({data}) {
               style={styles.card}
               onPress={() => {
                 // 아이템 클릭 시 RecChallengeDetailScreen으로 navigation
-                navigation.navigate('추천 챌린지 세부화면', { challenge: item });
+                navigation.navigate('추천챌린지세부화면', { challenge: item });
               }}
             >
               <Image source={{uri: item.image}} style={styles.image} />

@@ -1,5 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {View, StyleSheet, Text} from 'react-native';
+import { useLayoutEffect } from 'react';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -17,6 +18,8 @@ export default function HomeScreen() {
   const user = useSelector(state => state.user);
   const family = useSelector(state => state.family);
   const navigation = useNavigation();
+
+
 
   useEffect(() => {
     if (user.userId !== null) {

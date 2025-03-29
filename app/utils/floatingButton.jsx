@@ -22,7 +22,7 @@ export default function FloatingButton({type}) {
   };
 
   return (
-    <TouchableOpacity style={[styles.floatingButton, {bottom: type === 'challenge' ? 70 : 20}]} onPress={handleClick}>
+    <TouchableOpacity style={[styles.floatingButton, {bottom: type === 'challenge' ? 20 : 20}]} onPress={handleClick}>
       <Image style={styles.buttonImage} source={getImageSource()} />
     </TouchableOpacity>
   );
