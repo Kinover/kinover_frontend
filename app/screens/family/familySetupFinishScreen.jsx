@@ -55,7 +55,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     backgroundColor: 'white',
-    paddingTop: getResponsiveHeight(35),
   },
   headerContainer: {
     display: 'flex',
@@ -64,6 +63,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: getResponsiveHeight(5),
     fontFamily:'Pretendard-Regular',
+    marginTop: getResponsiveHeight(135),
+
   },
   headerTitle: {
     fontSize: getResponsiveFontSize(25),

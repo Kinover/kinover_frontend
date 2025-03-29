@@ -78,7 +78,6 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'white',
     flex: 1,
-    // paddingVertical: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(30),
     alignItems: 'center',
     gap: getResponsiveHeight(30),
@@ -86,6 +85,7 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     gap: getResponsiveHeight(10),
+    marginBottom:getResponsiveHeight(20),
   },
   lightImage: {
     width: getResponsiveWidth(35),

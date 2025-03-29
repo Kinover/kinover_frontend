@@ -77,7 +77,7 @@ export default function RecChallengeDetailScreen({route}) {
             },
           ]}>
           <TouchableOpacity
-            style={[styles.startButton, {alignSelf: 'flex-end'}]}>
+            style={[styles.startButton, {alignSelf: 'center'}]}>
             <Text style={styles.buttonText} onPress={()=>fetchCurrentChallenge}>오늘의 챌린지 도전하러 가기</Text>
           </TouchableOpacity>
         </View>
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: getResponsiveHeight(100),
     gap: getResponsiveHeight(20),
-    marginBottom: getResponsiveHeight(20),
+    marginBottom: getResponsiveHeight(10),
   },
 
   title: {

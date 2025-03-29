@@ -45,9 +45,16 @@ export default function ProfileScreen() {
               await deleteToken(); // ✅ 1. 토큰 삭제
               dispatch(setLogout()); // ✅ 2. 로그인 상태 false로 변경
               navigation.reset({
-                // ✅ 3. 온보딩 화면으로 초기화 이동
                 index: 0,
-                routes: [{name: '온보딩화면'}],
+                routes: [
+                  {
+                    name: 'Auth',
+                    state: {
+                      index: 0,
+                      routes: [{name: '온보딩화면'}],
+                    },
+                  },
+                ],
               });
             } catch (error) {
               console.error('로그아웃 실패:', error);
@@ -113,7 +120,13 @@ export default function ProfileScreen() {
             )}
           </TouchableOpacity>
 
-          <Text style={{fontSize:getResponsiveFontSize(16),fontFamily:'Pretendard-SemiBold'}}>{user.name}</Text>
+          <Text
+            style={{
+              fontSize: getResponsiveFontSize(16),
+              fontFamily: 'Pretendard-SemiBold',
+            }}>
+            {user.name}
+          </Text>
         </View>
 
         {/* 프로필 정보 */}
@@ -134,7 +147,8 @@ export default function ProfileScreen() {
           <ProfileField label="아이디" value={user.email} isEditing={false} />
 
           {isEditing ? (
-            <View style={[styles.buttonRow,{marginTop:getResponsiveHeight(5)}]}>
+            <View
+              style={[styles.buttonRow, {marginTop: getResponsiveHeight(5)}]}>
               <TouchableOpacity
                 style={[styles.halfButton, {backgroundColor: '#FFE099'}]}
                 onPress={handleSave}>
@@ -148,7 +162,7 @@ export default function ProfileScreen() {
             </View>
           ) : (
             <TouchableOpacity
-              style={[styles.button,{marginTop:getResponsiveHeight(5)}]}
+              style={[styles.button, {marginTop: getResponsiveHeight(5)}]}
               onPress={() => setIsEditing(true)}>
               <Text style={styles.buttonText}>수정</Text>
             </TouchableOpacity>
@@ -192,15 +206,15 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     backgroundColor: 'white',
-    zIndex:-2,
+    zIndex: -2,
     paddingTop: getResponsiveHeight(40),
   },
 
   backgroundCurve: {
     position: 'absolute',
     bottom: 0,
-    width: '220%',
-    height: getResponsiveHeight(640),
+    width: '170%',
+    height: getResponsiveHeight(570),
     backgroundColor: '#FFC84D',
     borderTopLeftRadius: getResponsiveWidth(600),
     borderTopRightRadius: getResponsiveWidth(600),
@@ -219,7 +233,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     position: 'relative',
     alignItems: 'center',
-    marginBottom:getResponsiveHeight(10),
+    marginBottom: getResponsiveHeight(10),
   },
   image: {
     width: getResponsiveWidth(110),

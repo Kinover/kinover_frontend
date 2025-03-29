@@ -61,9 +61,7 @@ export default function OnboardingScreen() {
         <TouchableOpacity onPress={login}>
           <Image
             style={styles.loginButton}
-            source={{
-              uri: 'https://i.postimg.cc/L8BHGpYW/kakao-login-large-wide-3.jpg',
-            }}
+            source={require('../../assets/images/kakao-login-button.jpg')}
           />
         </TouchableOpacity>
       </View>

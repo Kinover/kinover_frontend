@@ -1,13 +1,7 @@
 import React, {useState, useEffect} from 'react';
 import {
-  View,
   StyleSheet,
   ScrollView,
-  Button,
-  FlatList,
-  Text,
-  Image,
-  TextInput,
 } from 'react-native';
 import ChallengeSlider from './challengeSlider';
 import {

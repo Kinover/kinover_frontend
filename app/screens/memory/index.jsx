@@ -55,19 +55,21 @@ export default function MemoryScreen({navigation}) {
 
   const renderHeader = () => (
     <>
-      <ImageBackground
-        style={styles.challengeBackground}
-        source={{uri: 'https://i.postimg.cc/pLnqPb73/Group-480.png'}}>
-        <TouchableOpacity
-          onPress={() =>
-            navigation.navigate(true ? '챌린지 화면' : '추천 챌린지')
-          }>
-          <Image
-            source={{uri: 'https://i.postimg.cc/MZv3KFn0/Group-481-1.png'}}
-            style={styles.challengeButton}
-          />
-        </TouchableOpacity>
-      </ImageBackground>
+      <View style={{flex: 1, backgroundColor: '#FFCA55', borderWidth: 0}}>
+        <ImageBackground
+          style={styles.challengeBackground}
+          source={{uri: 'https://i.postimg.cc/pLnqPb73/Group-480.png'}}>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate(false ? '챌린지화면' : '추천챌린지화면')
+            }>
+            <Image
+              source={{uri: 'https://i.postimg.cc/MZv3KFn0/Group-481-1.png'}}
+              style={styles.challengeButton}
+            />
+          </TouchableOpacity>
+        </ImageBackground>
+      </View>
 
       <View style={styles.contentContainer}>
         <View style={styles.contentElement}>
