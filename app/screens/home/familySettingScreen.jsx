@@ -18,6 +18,7 @@ import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import FamilyNameModal from './modal/familyNameModal/index';
 import UserDeleteModal from './modal/userDeleteModal';
 import UserAddBottomSheet from './userAddBottomSheet';
+import {useNavigation} from '@react-navigation/native';
 
 export const relationshipMapKoreanToEnglish = {
   '어색한 사이': 'AWKWARD_START',
@@ -41,6 +42,7 @@ export default function FamilySettingScreen() {
   const [willModifyUser, setWillModifyUser] = useState('');
 
   const [screenHeight, setScreenHeight] = useState(null);
+  const navigation = useNavigation();
 
   const dispatch = useDispatch();
 
@@ -67,7 +69,9 @@ export default function FamilySettingScreen() {
               style={styles.settingIcon}
             />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.familyDeleteButton}>
+          <TouchableOpacity
+            style={styles.familyDeleteButton}
+            onPress={() => navigation.navigate('가족삭제화면')}>
             <Text style={styles.familyDeleteButtonText}>{'가족 삭제'}</Text>
             <Image
               style={{

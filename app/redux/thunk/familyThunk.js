@@ -15,8 +15,8 @@ export const fetchFamilyThunk = familyId => {
     try {
       const apiUrl =
         Platform.OS === 'android'
-          ? `http://10.0.2.2:9090/api/family/${familyId}`
-          : `http://localhost:9090/api/family/${familyId}`;
+          ? `http://13.209.70.77:9090/api/family/${familyId}`
+          : `http://13.209.70.77:9090/api/family/${familyId}`;
 
       const token = await getToken();
 
@@ -54,8 +54,8 @@ export const modifyFamily = (family) => {
     try {
       const apiUrl =
         Platform.OS === 'android'
-          ? `http://10.0.2.2:9090/api/family/modify`
-          : `http://localhost:9090/api/family/modify`;
+          ? `http://13.209.70.77:8080/api/family/modify`
+          : `http://13.209.70.77:8080/api/family/modify`;
 
       const token = await getToken();
 

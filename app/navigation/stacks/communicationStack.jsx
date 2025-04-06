@@ -84,6 +84,7 @@ export default function CommunicationStack() {
         component={OneToOneChatRoom}
         options={({navigation}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+        
         })}
       />
       <Stack.Screen

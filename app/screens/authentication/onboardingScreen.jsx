@@ -1,14 +1,21 @@
 import React, {useEffect} from 'react';
-import {TouchableOpacity, View, StyleSheet, Image} from 'react-native';
+import {
+  TouchableOpacity,
+  View,
+  StyleSheet,
+  Image,
+  ImageBackground,
+  Text,
+} from 'react-native';
 import * as KakaoLogin from '@react-native-seoul/kakao-login';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
-import { loginThunk } from '../../redux/thunk/loginThunk';
-import {getResponsiveHeight, getResponsiveWidth} from '../../utils/responsive';
+import {loginThunk} from '../../redux/thunk/loginThunk';
+import getResponsiveFontSize, {getResponsiveHeight, getResponsiveWidth} from '../../utils/responsive';
 
 export default function OnboardingScreen() {
   const user = useSelector(state => state.user);
-  const loginUser=useSelector(state=>state.login);
+  const loginUser = useSelector(state => state.login);
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
@@ -29,11 +36,8 @@ export default function OnboardingScreen() {
 
       console.log('kakaoUserDto', kakaoUserDto);
 
-
       // 백엔드에 사용자 데이터 전송 및 JWT 토큰 수신
       dispatch(loginThunk(kakaoUserDto));
-
-
     } catch (error) {
       if (error.code === 'E_CANCELLED_OPERATION') {
         console.log('카카오 로그인 취소:', error.message);
@@ -45,19 +49,24 @@ export default function OnboardingScreen() {
 
   useEffect(() => {
     console.log('✅ login status changed:', user);
-  
+
     if (!loginUser.loading && user.userId !== null) {
       navigation.reset({
         index: 0,
-        routes: [{ name: '가족설정화면' }],
+        routes: [{name: '가족설정화면'}],
       });
     }
-  }, [user,loginUser]);
+  }, [user, loginUser]);
 
   return (
     <View style={styles.container}>
       <View style={styles.mainContainer} />
       <View style={styles.bottomContainer}>
+        <ImageBackground
+          style={styles.loginBubbleMessage}
+          source={require('../../assets/images/login-bubble-message.png')}>
+          <Text style={styles.BubbleMessageText}>우리 가족 이야기, 시작해볼까요?</Text>
+        </ImageBackground>
         <TouchableOpacity onPress={login}>
           <Image
             style={styles.loginButton}
@@ -85,10 +94,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: getResponsiveHeight(50),
     backgroundColor: 'white',
+    gap:getResponsiveHeight(10),
   },
   loginButton: {
     width: getResponsiveWidth(343),
     height: getResponsiveHeight(51),
     borderRadius: 10,
+  },
+  loginBubbleMessage: {
+    position: 'relative',
+    width: getResponsiveWidth(213),
+    height: getResponsiveHeight(47),
+  },
+  BubbleMessageText: {
+    fontFamily:'Pretendard-Light',
+    fontSize:getResponsiveFontSize(14),
+    position: 'absolute',
+    textAlign: 'center',
+    height: getResponsiveHeight(47),
+    top: getResponsiveHeight(8.5),
+    left: getResponsiveWidth(17.5),
   },
 });

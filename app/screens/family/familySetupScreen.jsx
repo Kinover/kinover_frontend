@@ -15,7 +15,7 @@ import getResponsiveFontSize, {
 } from '../../utils/responsive';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
-import { fetchFamilyThunk } from '../../redux/thunk/familyThunk';
+import {fetchFamilyThunk} from '../../redux/thunk/familyThunk';
 
 export default function FamilySetupScreen() {
   // 상태 정의: 코드 입력 여부 및 입력된 가족 코드
@@ -41,7 +41,6 @@ export default function FamilySetupScreen() {
     }
   }, [error]); // error 상태가 바뀔 때마다 실행
 
-
   const handleButtonClick = () => {
     setIsInputVisible(true); // 버튼 클릭 시 텍스트 입력 필드로 전환
   };
@@ -49,7 +48,6 @@ export default function FamilySetupScreen() {
   const handleInputChange = text => {
     // setFamilyCode(text); // 입력된 값 업데이트
     setFamilyCode('0f7eff1b-c4ad-43c5-90f6-e8b2f4ff5670'); // 입력된 값 업데이트
-
   };
 
   const handleSubmitCode = () => {
@@ -80,8 +78,7 @@ export default function FamilySetupScreen() {
       <View style={styles.bottomContainer}>
         <Image
           style={styles.mainImage}
-          source={require('../../assets/images/familySetup_kinoFamily.png')}
-          ></Image>
+          source={require('../../assets/images/familySetup_kinoFamily.png')}></Image>
 
         <View style={styles.buttonContainer}>
           {!isInputVisible ? (
@@ -108,6 +105,16 @@ export default function FamilySetupScreen() {
             onPress={() => navigation.navigate('가족생성화면')}>
             <Text style={styles.buttonText}>새 가족 모임을 만들어보세요!</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('Tabs', {
+                screen: '감정기록',
+                params: {screen: '감정화면'},
+              })
+            }>
+            <Text style={styles.text}>모임 설정 다음에 하기</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </View>
@@ -128,7 +135,7 @@ const styles = StyleSheet.create({
     alignContent: 'center',
     justifyContent: 'center',
     gap: getResponsiveHeight(5),
-    marginTop:getResponsiveHeight(150),
+    marginTop: getResponsiveHeight(150),
   },
   headerTitle: {
     fontSize: getResponsiveFontSize(25),
@@ -182,5 +189,12 @@ const styles = StyleSheet.create({
     paddingLeft: getResponsiveWidth(20),
     fontSize: getResponsiveFontSize(15.6),
     textAlign: 'center',
+  },
+  text: {
+    fontSize: getResponsiveFontSize(12.2),
+    textAlign: 'center',
+    fontFamily: 'Pretendard-Regular',
+    color: 'gray',
+    marginTop: getResponsiveHeight(5),
   },
 });

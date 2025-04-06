@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -14,6 +14,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {fetchMemoryThunk} from '../../redux/thunk/memoryThunk';
 import {fetchFamilyUserListThunk} from '../../redux/thunk/familyUserThunk';
 import MemoryFeed from './memoryFeed';
+import NoticeModal from './noticeModal';
 
 import {
   getResponsiveWidth,
@@ -29,6 +30,8 @@ export default function MemoryScreen({navigation}) {
   const {challenge} = useSelector(state => state.challenge);
   const {familyUserList} = useSelector(state => state.userFamily);
   const dispatch = useDispatch();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [noticeInput, setNoticeInput] = useState(family.notice);
 
   useEffect(() => {
     dispatch(fetchMemoryThunk(family.familyId));
@@ -90,14 +93,22 @@ export default function MemoryScreen({navigation}) {
         <View style={styles.contentElement}>
           <Text style={styles.bottomSheetCategory}>공지사항</Text>
           <View style={styles.noticeContainer}>
-            <TouchableOpacity style={styles.noticeModifyButton}>
+            <TouchableOpacity
+              style={styles.noticeModifyButton}
+              onPress={() => setModalVisible(true)}>
               <Image
                 style={styles.noticeModifyButton}
                 source={require('../../assets/images/familySetting_modify-family-name-button.png')}></Image>
             </TouchableOpacity>
-            <Text style={styles.notice} numberOfLines={0}>
-              {family.notice}
-            </Text>
+            {family.notice ? (
+              <Text style={styles.notice} numberOfLines={0}>
+                {family.notice}
+              </Text>
+            ) : (
+              <Text style={styles.noticeX} numberOfLines={0}>
+                {'공지사항이 없습니다.'}
+              </Text>
+            )}
           </View>
         </View>
       </View>
@@ -114,6 +125,17 @@ export default function MemoryScreen({navigation}) {
         ListEmptyComponent={
           <View style={[styles.contentContainer, {paddingTop: 0}]}>
             <MemoryFeed />
+            {setModalVisible ? (
+              <NoticeModal
+                visible={modalVisible}
+                onClose={() => setModalVisible(false)}
+                family={family}
+                noticeInput={noticeInput}
+                setNoticeInput={setNoticeInput}
+              />
+            ) : (
+              <></>
+            )}
           </View>
         }
         keyExtractor={index => index.toString()}
@@ -162,7 +184,8 @@ const styles = StyleSheet.create({
     display: 'flex',
     flexDirection: 'column',
     width: '100%',
-    height: getResponsiveHeight(120),
+    minHeight: getResponsiveHeight(110),
+    maxHeight: getResponsiveHeight(130),
     gap: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(5),
   },
@@ -193,13 +216,25 @@ const styles = StyleSheet.create({
   },
 
   notice: {
-    fontSize: 13,
+    fontSize: getResponsiveFontSize(13),
     zIndex: 1,
-    height: getResponsiveHeight(50),
+    minHeight: getResponsiveHeight(20),
     width: '100%',
-    lineHeight: getResponsiveHeight(25),
+    lineHeight: getResponsiveHeight(20),
     flexWrap: 'wrap',
     fontFamily: 'Pretendard-Light',
+    height: 'auto',
+  },
+  noticeX: {
+    fontSize: getResponsiveFontSize(13),
+    zIndex: 1,
+    color: 'gray',
+    minHeight: getResponsiveHeight(20),
+    width: '100%',
+    lineHeight: getResponsiveHeight(20),
+    flexWrap: 'wrap',
+    fontFamily: 'Pretendard-Light',
+    height: 'auto',
   },
 
   noticeModifyButton: {

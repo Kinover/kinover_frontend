@@ -11,8 +11,8 @@ export const loginThunk = (kakaoUserDto) => {
     try {
       const apiUrl =
         Platform.OS === 'android'
-          ? `http://10.0.2.2:9090/api/login/kakao`
-          : `http://localhost:9090/api/login/kakao`;
+          ? `http://13.209.70.77:8080/api/login/kakao`
+          : `http://13.209.70.77:8080/api/login/kakao`;
 
       const response = await axios.post(apiUrl, kakaoUserDto, {
         headers: { 'Content-Type': 'application/json' },

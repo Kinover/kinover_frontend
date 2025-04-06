@@ -14,8 +14,8 @@ export const fetchChatRoomListThunk = (familyId, userId) => {
     try {
       const apiUrl =
         Platform.OS === 'android'
-          ? `http://10.0.2.2:9090/api/chatRoom/${familyId}/${userId}`
-          : `http://localhost:9090/api/chatRoom/${familyId}/${userId}`;
+          ? `http://13.209.70.77:8080/api/chatRoom/${familyId}/${userId}`
+          : `http://13.209.70.77:8080/api/chatRoom/${familyId}/${userId}`;
 
       const token = await getToken();
 
