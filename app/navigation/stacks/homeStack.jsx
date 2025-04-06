@@ -9,7 +9,7 @@ import {RenderHeaderRightHome} from '../tabHeaderHelpers';
 import {RenderGoBackButton} from '../tabHeaderHelpers';
 import {Image, View} from 'react-native';
 import {getResponsiveWidth, getResponsiveHeight} from '../../utils/responsive';
-
+import FamilyDeleteScreen from '../../screens/home/familyDeleteScreen';
 
 const Stack = createStackNavigator();
 
@@ -78,6 +78,14 @@ export default function HomeStack() {
       <Stack.Screen
         name="알림화면"
         component={NotificationScreen}
+        options={({navigation}) => ({
+          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+        })}
+      />
+
+      <Stack.Screen
+        name="가족삭제화면"
+        component={FamilyDeleteScreen}
         options={({navigation}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}

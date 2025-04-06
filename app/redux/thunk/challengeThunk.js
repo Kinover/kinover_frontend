@@ -14,8 +14,8 @@ export const setChallengeThunk = ({ family, recChallenge }) => {
     try {
       const apiUrl =
         Platform.OS === 'android'
-          ? `http://10.0.2.2:9090/api/challenge/save`
-          : `http://localhost:9090/api/challenge/save`;
+          ? `http://13.209.70.77:8080/api/challenge/save`
+          : `http://13.209.70.77:8080/api/challenge/save`;
 
       const token = await getToken();
 

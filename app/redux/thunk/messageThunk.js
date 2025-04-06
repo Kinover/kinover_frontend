@@ -14,8 +14,8 @@ export const fetchMessageThunk = (chatRoomId) => {
     try {
       const apiUrl =
         Platform.OS === 'android'
-          ? `http://10.0.2.2:9090/api/chatRoom/${chatRoomId}/messages/fetch`
-          : `http://localhost:9090/api/chatRoom/${chatRoomId}/messages/fetch`;
+          ? `http://13.209.70.77:9090/api/chatRoom/${chatRoomId}/messages/fetch`
+          : `http://13.209.70.77:9090/api/chatRoom/${chatRoomId}/messages/fetch`;
 
       const token = await getToken();
 
@@ -42,8 +42,8 @@ export const sendMessageThunk = (message, chatRoomId) => {
       try {
         const apiUrl =
           Platform.OS === 'android'
-            ? 'http://10.0.2.2:9090/api/chatRoom/messages/send'
-            : 'http://localhost:9090/api/chatRoom/messages/send';
+            ? 'http://10.0.2.2:8080/api/chatRoom/messages/send'
+            : 'http://localhost:8080/api/chatRoom/messages/send';
   
         const token = await getToken();
   

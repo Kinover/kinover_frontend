@@ -14,8 +14,8 @@ export const fetchSchedulesForFamilyAndDateThunk = (familyId, date) => {
       try {
         const apiUrl =
           Platform.OS === 'android'
-            ? `http://10.0.2.2:9090/api/schedule/get/${familyId}?date=${date}`
-            : `http://localhost:9090/api/schedule/get/${familyId}?date=${date}`;
+            ? `http://13.209.70.77:8080/api/schedule/get/${familyId}?date=${date}`
+            : `http://13.209.70.77:8080/api/schedule/get/${familyId}?date=${date}`;
   
         const token = await getToken();
   
@@ -41,8 +41,8 @@ export const fetchSchedulesForUserAndDateThunk = (familyId, userId, date) => {
     try {
       const apiUrl =
         Platform.OS === 'android'
-          ? `http://10.0.2.2:9090/api/schedule/get/${familyId}/${userId}?date=${date}`
-          : `http://localhost:9090/api/schedule/get/${familyId}/${userId}?date=${date}`;
+          ? `http://13.209.70.77:9090/api/schedule/get/${familyId}/${userId}?date=${date}`
+          : `http://13.209.70.77:9090/api/schedule/get/${familyId}/${userId}?date=${date}`;
 
       const token = await getToken();
 

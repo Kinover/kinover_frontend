@@ -10,8 +10,8 @@ export const fetchUserThunk = () => {
     try {
       const apiUrl =
         Platform.OS === 'android'
-          ? 'http://10.0.2.2:9090/api/user/userinfo'
-          : 'http://localhost:9090/api/user/userinfo';
+          ? 'http://13.209.70.77:9090/api/user/userinfo'
+          : 'http://13.209.70.77:9090/api/user/userinfo';
 
       const token = await getToken();
 
@@ -36,8 +36,8 @@ export const modifyUserThunk = (user) => {
     try {
       const apiUrl =
         Platform.OS === 'android'
-          ? 'http://10.0.2.2:9090/api/user/modify'
-          : 'http://localhost:9090/api/user/modify';
+          ? 'http://13.209.70.77:8080/api/user/modify'
+          : 'http://13.209.70.77:8080/api/user/modify';
 
       const token = await getToken();
 
