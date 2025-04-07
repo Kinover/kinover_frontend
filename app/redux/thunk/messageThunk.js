@@ -40,10 +40,7 @@ export const sendMessageThunk = (message, chatRoomId) => {
     return async (dispatch) => {
       dispatch(setMessageLoading(true));
       try {
-        const apiUrl =
-          Platform.OS === 'android'
-            ? 'http://43.200.47.242:9090/api/chatRoom/messages/send'
-            : 'http://43.200.47.242:9090/api/chatRoom/messages/send';
+        const apiUrl ='http://43.200.47.242:9090/api/chatRoom/messages/send';
   
         const token = await getToken();
   

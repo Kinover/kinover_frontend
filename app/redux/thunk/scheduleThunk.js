@@ -12,10 +12,7 @@ export const fetchSchedulesForFamilyAndDateThunk = (familyId, date) => {
     return async (dispatch) => {
       dispatch(setScheduleLoading(true));
       try {
-        const apiUrl =
-          Platform.OS === 'android'
-            ? `http://43.200.47.242:9090/api/schedule/get/${familyId}?date=${date}`
-            : `http://43.200.47.242:9090/api/schedule/get/${familyId}?date=${date}`;
+        const apiUrl =`http://43.200.47.242:9090/api/schedule/get/${familyId}?date=${date}`;
   
         const token = await getToken();
   

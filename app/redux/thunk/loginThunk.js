@@ -13,10 +13,7 @@ export const loginThunk = kakaoUserDto => {
   return async dispatch => {
     dispatch(setLoginLoading(true));
     try {
-      const apiUrl =
-        Platform.OS === 'android'
-          ? `http://43.200.47.242:9090/api/login/kakao`
-          : `http://43.200.47.242:9090/api/login/kakao`;
+      const apiUrl =`http://43.200.47.242:9090/api/login/kakao`;
 
       const response = await axios.post(apiUrl, kakaoUserDto, {
         headers: {
