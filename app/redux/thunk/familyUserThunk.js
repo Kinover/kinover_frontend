@@ -12,10 +12,7 @@ export const fetchFamilyUserListThunk = (familyId) => {
   return async (dispatch) => {
     dispatch(setUserFamilyLoading(true));
     try {
-      const apiUrl =
-        Platform.OS === 'android'
-          ? `http://43.200.47.242:9090/api/userFamily/familyUsers/${familyId}`
-          : `http://43.200.47.242:9090/api/userFamily/familyUsers/${familyId}`;
+      const apiUrl =`http://43.200.47.242:9090/api/userFamily/familyUsers/${familyId}`;
 
       const token = await getToken();
 
