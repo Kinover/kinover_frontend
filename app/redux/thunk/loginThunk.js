@@ -1,21 +1,28 @@
 // loginThunk.js
 import axios from 'axios';
-import { Platform } from 'react-native';
-import { saveToken } from '../../utils/storage';
-import { setLoginLoading, setLoginError, setLoginSuccess } from '../slices/authSlice';
-import { fetchUserThunk } from './userThunk';
+import {Platform} from 'react-native';
+import {saveToken} from '../../utils/storage';
+import {
+  setLoginLoading,
+  setLoginError,
+  setLoginSuccess,
+} from '../slices/authSlice';
+import {fetchUserThunk} from './userThunk';
 
-export const loginThunk = (kakaoUserDto) => {
-  return async (dispatch) => {
+export const loginThunk = kakaoUserDto => {
+  return async dispatch => {
     dispatch(setLoginLoading(true));
     try {
       const apiUrl =
         Platform.OS === 'android'
-          ? `http://13.209.70.77:8080/api/login/kakao`
-          : `http://13.209.70.77:8080/api/login/kakao`;
+          ? `http://43.200.47.242:9090/api/login/kakao`
+          : `http://43.200.47.242:9090/api/login/kakao`;
 
       const response = await axios.post(apiUrl, kakaoUserDto, {
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
       });
 
       await saveToken(response.data); // 토큰 저장
