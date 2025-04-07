@@ -12,10 +12,7 @@ export const fetchRecChallengeThunk = () => {
   return async (dispatch) => {
     dispatch(setRecChallengeLoading(true));
     try {
-      const apiUrl =
-        Platform.OS === 'android'
-          ? `http://43.200.47.242:9090/api/recChallenge/get`
-          : `http://43.200.47.242:9090/api/recChallenge/get`;
+      const apiUrl = `http://43.200.47.242:9090/api/recChallenge/get`;
 
       const token = await getToken();
 

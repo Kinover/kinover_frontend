@@ -12,10 +12,7 @@ export const fetchMemoryThunk = (familyId) => {
   return async (dispatch) => {
     dispatch(setMemoryLoading(true));
     try {
-      const apiUrl =
-        Platform.OS === 'android'
-          ? `http://43.200.47.242:9090/api/memory/${familyId}`
-          : `http://43.200.47.242:9090/api/memory/${familyId}`;
+      const apiUrl =`http://43.200.47.242:9090/api/memory/${familyId}`;
 
       const token = await getToken();
 

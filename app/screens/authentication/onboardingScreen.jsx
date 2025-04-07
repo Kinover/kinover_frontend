@@ -21,37 +21,15 @@ export default function OnboardingScreen() {
   const loginUser = useSelector(state => state.login);
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const [kakaoUserDto, setKakaoUserDto] = useState(null);
 
   const login = async () => {
     try {
       const result = await KakaoLogin.login();
       console.log('✅ Login Success:', result);
 
-      const profile = await KakaoLogin.getProfile();
-      console.log('✅ GetProfile Success:', profile);
+      console.log("accessToken:", result.accessToken);
+      dispatch(loginThunk(result.accessToken));
 
-      if (
-        profile.id !== null &&
-        profile.nickname !== null &&
-        profile.email !== null &&
-        profile.profileImageUrl !== null
-      ) {
-        const userData = {
-          // kakaoId: Number(profile.id) || 0,
-          // nickname: profile.nickname || "이름없음",
-          // email: profile.email || "no-email@unknown.com",
-          // profileImage: profile.profileImageUrl || "https://d",
-          kakaoId: 12345678,
-          nickname: "test",
-          email: "test@example.com",
-          profileImage: "https://example.com/image.jpg",
-        };
-        setKakaoUserDto(userData);
-
-      } else {
-        console.warn('⚠️ 카카오 프로필 정보가 불완전함:', profile);
-      }
     } catch (error) {
       if (error.code === 'E_CANCELLED_OPERATION') {
         console.log('🚫 카카오 로그인 취소:', error.message);
@@ -63,14 +41,6 @@ export default function OnboardingScreen() {
       }
     }
   };
-
-  // ✅ 프로필 데이터를 받은 뒤에 로그인 요청
-  useEffect(() => {
-    if (kakaoUserDto) {
-      console.log('🚀 프로필 정보 수신 완료, 로그인 요청 보냄:',kakaoUserDto);
-      dispatch(loginThunk(kakaoUserDto));
-    }
-  }, [kakaoUserDto]);
 
   // ✅ 로그인 완료되면 다음 화면으로 이동
   useEffect(() => {
