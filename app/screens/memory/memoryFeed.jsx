@@ -183,7 +183,7 @@ const styles = StyleSheet.create({
 
   dropdown: {
     fontFamily: 'Pretendard-Regular',
-    width: getResponsiveWidth(90),
+    width: getResponsiveWidth(100),
     borderWidth: 0,
     // paddingLeft: 5, // 내부 패딩 조절
   },

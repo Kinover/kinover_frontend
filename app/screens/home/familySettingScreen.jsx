@@ -55,7 +55,11 @@ export default function FamilySettingScreen() {
           setScreenHeight(height);
         }}>
         <View style={styles.topContainer}>
-          <Text style={styles.title}>{family.name} 패밀리</Text>
+          {family.name ? (
+            <Text style={styles.title}>{family.name} 패밀리</Text>
+          ) : (
+            <Text style={styles.title}>패밀리가 없습니다.</Text>
+          )}
           <TouchableOpacity
             onPress={() => {
               setModalType('familyName');
@@ -86,18 +90,29 @@ export default function FamilySettingScreen() {
         <View style={styles.headerContainer}>
           <TouchableOpacity
             style={[styles.button, {height: getResponsiveHeight(60.81)}]}>
-            <Text
-              style={{
-                fontFamily: 'Pretendard-Regular',
-                textAlign: 'center',
-                fontSize: getResponsiveFontSize(15),
-              }}>
-              가족 코드
+            {family.familyId ? (
               <Text
                 style={{
-                  fontSize: getResponsiveFontSize(13),
-                }}>{`\n${family.familyId}`}</Text>
-            </Text>
+                  fontFamily: 'Pretendard-Regular',
+                  textAlign: 'center',
+                  fontSize: getResponsiveFontSize(15),
+                }}>
+                가족 코드
+                <Text
+                  style={{
+                    fontSize: getResponsiveFontSize(13),
+                  }}>{`\n${family.familyId}`}</Text>
+              </Text>
+            ) : (
+              <Text
+                style={{
+                  fontFamily: 'Pretendard-Regular',
+                  textAlign: 'center',
+                  fontSize: getResponsiveFontSize(15),
+                }}>
+                가족 코드가 없습니다.
+              </Text>
+            )}
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, {backgroundColor: '#FFC84D'}]}>
@@ -301,7 +316,9 @@ const styles = StyleSheet.create({
   mainContainer: {
     position: 'relative',
     width: getResponsiveWidth(341.91),
-    height: getResponsiveHeight(380.32),
+    height: 'auto',
+    // minHeight: getResponsiveHeight(85),
+    maxHeight: getResponsiveHeight(380.32),
     borderRadius: getResponsiveIconSize(20),
     backgroundColor: 'white',
     display: 'flex',
@@ -357,7 +374,7 @@ const styles = StyleSheet.create({
   },
 
   userChangeButton: {
-    position: 'absolute',
+    position: 'relative',
     width: getResponsiveWidth(285.1),
     height: getResponsiveHeight(40.81),
     backgroundColor: '#EFEFEF',

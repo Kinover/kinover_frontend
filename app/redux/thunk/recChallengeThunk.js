@@ -14,8 +14,8 @@ export const fetchRecChallengeThunk = () => {
     try {
       const apiUrl =
         Platform.OS === 'android'
-          ? `http://13.209.70.77:8080/api/recChallenge/get`
-          : `http://13.209.70.77:8080/api/recChallenge/get`;
+          ? `http://43.200.47.242:9090/api/recChallenge/get`
+          : `http://43.200.47.242:9090/api/recChallenge/get`;
 
       const token = await getToken();
 
