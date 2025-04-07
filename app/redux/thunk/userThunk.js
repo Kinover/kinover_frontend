@@ -8,10 +8,7 @@ export const fetchUserThunk = () => {
   return async (dispatch) => {
     dispatch(setUserLoading(true));
     try {
-      const apiUrl =
-        Platform.OS === 'android'
-          ? 'http://43.200.47.242:9090/api/user/userinfo'
-          : 'http://43.200.47.242:9090/api/user/userinfo';
+      const apiUrl = 'http://43.200.47.242:9090/api/user/userinfo';
 
       const token = await getToken();
 

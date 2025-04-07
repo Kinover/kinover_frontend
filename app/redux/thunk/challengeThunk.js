@@ -12,10 +12,7 @@ export const setChallengeThunk = ({ family, recChallenge }) => {
   return async (dispatch) => {
     dispatch(setChallengeLoading(true));
     try {
-      const apiUrl =
-        Platform.OS === 'android'
-          ? `http://43.200.47.242:9090/api/challenge/save`
-          : `http://43.200.47.242:9090/api/challenge/save`;
+      const apiUrl =`http://43.200.47.242:9090/api/challenge/save`;
 
       const token = await getToken();
 
