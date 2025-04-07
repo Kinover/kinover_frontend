@@ -54,8 +54,8 @@ export const modifyFamily = (family) => {
     try {
       const apiUrl =
         Platform.OS === 'android'
-          ? `http://13.209.70.77:8080/api/family/modify`
-          : `http://13.209.70.77:8080/api/family/modify`;
+          ? `http://43.200.47.242:9090/api/family/modify`
+          : `http://43.200.47.242:9090/api/family/modify`;
 
       const token = await getToken();
 

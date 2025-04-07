@@ -192,7 +192,19 @@ export default function Schedule({selectedDate}) {
         user =>
           scheduleList.filter(schedule => schedule.userId === user.userId)
             .length === 0,
-      ) && <Text style={styles.noScheduleText}>일정이 없습니다.</Text>}
+      ) && (
+        <View
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            width: '100%',
+            height: '100%',
+          }}>
+          <Text style={styles.noScheduleText}>일정이 없습니다.</Text>
+        </View>
+      )}
 
       {/* CustomModal로 메모 모달 표시 */}
       <CustomModal
@@ -225,6 +237,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     alignItems: 'center',
     marginBottom: getResponsiveHeight(40),
+    minHeight:'30%',
   },
 
   scheduleTitle: {

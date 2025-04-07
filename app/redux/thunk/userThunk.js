@@ -10,8 +10,8 @@ export const fetchUserThunk = () => {
     try {
       const apiUrl =
         Platform.OS === 'android'
-          ? 'http://13.209.70.77:9090/api/user/userinfo'
-          : 'http://13.209.70.77:9090/api/user/userinfo';
+          ? 'http://43.200.47.242:9090/api/user/userinfo'
+          : 'http://43.200.47.242:9090/api/user/userinfo';
 
       const token = await getToken();
 
@@ -36,8 +36,8 @@ export const modifyUserThunk = (user) => {
     try {
       const apiUrl =
         Platform.OS === 'android'
-          ? 'http://13.209.70.77:8080/api/user/modify'
-          : 'http://13.209.70.77:8080/api/user/modify';
+          ? 'http://localhost:3001/api/user/modify'
+          : 'http://localhost:3001/api/user/modify';
 
       const token = await getToken();
 
@@ -46,6 +46,8 @@ export const modifyUserThunk = (user) => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
+        withCredentials: true, // ✅ 요거 꼭 필요함!
+
       });
 
       dispatch(setUser(response.data));

@@ -14,8 +14,8 @@ export const fetchFamilyUserListThunk = (familyId) => {
     try {
       const apiUrl =
         Platform.OS === 'android'
-          ? `http://13.209.70.77:8080/api/userFamily/familyUsers/${familyId}`
-          : `http://13.209.70.77:8080/api/userFamily/familyUsers/${familyId}`;
+          ? `http://43.200.47.242:9090/api/userFamily/familyUsers/${familyId}`
+          : `http://43.200.47.242:9090/api/userFamily/familyUsers/${familyId}`;
 
       const token = await getToken();
 
