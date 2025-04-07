@@ -58,7 +58,7 @@ export default function HomeScreen() {
         </View>
       ) : (
         <View style={styles.headerContainer}>
-          <Text style={styles.headerTitle}>아직 가족 모임이 생성되지 않았어요..🥹</Text>
+          <Text style={styles.headerTitle}>{"아직 가족 모임이\n생성되지 않았어요.. 🥹"}</Text>
         </View>
       )}
 

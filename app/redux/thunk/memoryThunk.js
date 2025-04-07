@@ -14,8 +14,8 @@ export const fetchMemoryThunk = (familyId) => {
     try {
       const apiUrl =
         Platform.OS === 'android'
-          ? `http://13.209.70.77:8080/api/memory/${familyId}`
-          : `http://13.209.70.77:8080/api/memory/${familyId}`;
+          ? `http://43.200.47.242:9090/api/memory/${familyId}`
+          : `http://43.200.47.242:9090/api/memory/${familyId}`;
 
       const token = await getToken();
 

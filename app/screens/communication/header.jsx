@@ -15,7 +15,7 @@ export default function UserHeader() {
 
   return (
     <View style={styles.mainHeader}>
-      <Image style={styles.mainHeaderImage} source={{uri: user.image}} />
+      <Image style={styles.mainHeaderImage} source={(user.image?{uri: user.image}:require('../../assets/images/profile.png'))} />
       <View style={styles.mainHeaderTitleBox}>
         <View
           style={{

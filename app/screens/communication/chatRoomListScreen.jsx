@@ -15,8 +15,7 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../utils/responsive';
-import { fetchChatRoomListThunk } from '../../redux/thunk/chatRoomThunk';
-
+import {fetchChatRoomListThunk} from '../../redux/thunk/chatRoomThunk';
 
 export default function ChatRoomListScreen({navigation}) {
   const [bottomSheetIndex, setBottomSheetIndex] = useState(1); // 기본적으로 75%로 시작
@@ -48,7 +47,7 @@ export default function ChatRoomListScreen({navigation}) {
         <Text style={styles.bottomSheetTitle}>채팅방</Text>
 
         {/* 가족, 개인 채팅방 */}
-        {!loading ? (
+        {(!loading && chatRoomList==[]) ? (
           chatRoomList.map((chatRoom, index) => {
             // roomType이 'family'인 경우 가족 채팅방 렌더링
             if (chatRoom.roomType === 'family') {
@@ -136,7 +135,7 @@ export default function ChatRoomListScreen({navigation}) {
             }
           })
         ) : (
-          <Text style={styles.noChatRoomList}>채팅방이 없습니다.</Text>
+          <Text style={styles.noChatRoomList}>{"아직 채팅방이 없어요.\n가족과의 첫 대화를 시작해볼까요?"}</Text>
         )}
       </BottomSheetView>
     </BottomSheet>
@@ -176,7 +175,7 @@ const styles = StyleSheet.create({
   elementImage: {
     width: getResponsiveWidth(73),
     height: getResponsiveHeight(73),
-    borderRadius:getResponsiveIconSize(36.5),
+    borderRadius: getResponsiveIconSize(36.5),
     resizeMode: 'cover',
   },
 
