@@ -1,5 +1,6 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"> <!-- 여기에 패키지 이름 추가 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" > <!-- 여기에 패키지 이름 추가 -->
 
+<uses-feature android:name="android.hardware.camera" android:required="false" />
 <uses-permission android:name="android.permission.INTERNET" />
 <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 <uses-permission android:name="android.permission.USE_CREDENTIALS" />
@@ -7,6 +8,7 @@
 <uses-permission android:name="android.permission.CAMERA"/>
 <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
 <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+
 
     <application
       android:name=".MainApplication"
@@ -36,7 +38,7 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:host="oauth" android:scheme="kakao481db040d2e018832f0c8232a8fb7042"/>
+        <data android:host="oauth" android:scheme="kakaobce05be0c0a25b65bbb43adf582ff2f8"/>
       </intent-filter>
     </activity>
     </application>

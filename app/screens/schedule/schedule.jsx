@@ -5,356 +5,200 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  TextInput,
-  ActivityIndicator,
+  ScrollView,
 } from 'react-native';
+import {useDispatch, useSelector} from 'react-redux';
 import {
   getResponsiveFontSize,
   getResponsiveWidth,
   getResponsiveHeight,
 } from '../../utils/responsive';
-import {useDispatch, useSelector} from 'react-redux';
-
 import {fetchSchedulesForFamilyAndDateThunk} from '../../redux/thunk/scheduleThunk';
-import CustomModal from '../../utils/customModal';
+
 export default function Schedule({selectedDate}) {
-  const {familyId, name} = useSelector(state => state.family);
-  const {scheduleList, loading, error} = useSelector(state => state.schedule);
+  const dispatch = useDispatch();
+  const {familyId} = useSelector(state => state.family);
+  const {scheduleList} = useSelector(state => state.schedule);
   const {familyUserList} = useSelector(state => state.userFamily);
   const currentUserId = useSelector(state => state.user.userId);
-  const dispatch = useDispatch();
-
-  // 모달 상태 관리
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedMemo, setSelectedMemo] = useState('');
-  const [editable, setEditable] = useState(false);
-
-  const handleCloseModal = () => {
-    setModalVisible(false);
+  const filteredSchedules =
+    selectedUserId === 'family'
+      ? scheduleList.filter(item => item.userId === null)
+      : scheduleList.filter(item => item.userId === selectedUserId);
+  const dummySchedule = {
+    scheduleId: 'dummy-schedule-1',
+    title: '할머니 생신',
+    memo: '@@고깃집 몇 시까지 오세요~',
+    userId: null,
   };
+  const fullScheduleList = [...filteredSchedules, dummySchedule];
 
-  const handleConfirm = () => {
-    // 저장 로직 추가
-    setModalVisible(false);
-  };
-
-  // 메모 버튼 클릭 시 실행될 함수
-  const handleMemoClick = (memo, userId) => {
-    setSelectedMemo(memo);
-    setEditable(userId === currentUserId || userId === null); // 내가 작성한 메모인지 확인
-    setModalVisible(true);
-  };
+  const [selectedUserId, setSelectedUserId] = useState('family');
 
   useEffect(() => {
-    // familyUserList에 있는 각 사용자에 대해 일정을 fetch
-    familyUserList.forEach(user => {
-      const formattedDate = selectedDate.toISOString().split('T')[0]; // '2025-03-12' 형식으로 변환
-      console.log(
-        `📢 Fetching schedules for user: ${user.userName}, date: ${formattedDate}`,
-      );
-      dispatch(fetchSchedulesForFamilyAndDateThunk(familyId, formattedDate));
-    });
-  }, [dispatch, familyId, selectedDate, familyUserList]);
+    const formattedDate = selectedDate.toISOString().split('T')[0];
+    dispatch(fetchSchedulesForFamilyAndDateThunk(familyId, formattedDate));
+  }, [dispatch, familyId, selectedDate]);
 
-  // 일정 불러오는 중일 때 처리
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FFC84D" />
-          <Text style={styles.loadingText}>일정을 불러오는 중...</Text>
-        </View>
-      </View>
-    );
-  }
+  const getFormattedDate = () => {
+    const dayMap = ['일', '월', '화', '수', '목', '금', '토'];
+    const year = selectedDate.getFullYear();
+    const month = selectedDate.getMonth() + 1;
+    const day = selectedDate.getDate();
+    const dayOfWeek = dayMap[selectedDate.getDay()];
+    return `${year}년 ${month}월 ${day}일 (${dayOfWeek})`;
+  };
+
+  const reorderedTabs = [
+    selectedUserId === 'family'
+      ? {userId: 'family', name: '가족'}
+      : familyUserList.find(user => user.userId === selectedUserId),
+    ...['family', ...familyUserList.map(u => u.userId)]
+      .filter(id => id !== selectedUserId)
+      .map(id =>
+        id === 'family'
+          ? {userId: 'family', name: '가족'}
+          : familyUserList.find(u => u.userId === id),
+      ),
+  ];
 
   return (
-    <View style={styles.container}>
-      {/* 가족 일정이 있는 경우 표시 */}
-      {scheduleList.some(schedule => schedule.userId === null) && (
-        <View style={styles.scheduleContainer}>
-          <Text style={styles.scheduleTitle}>
-            <Text style={styles.scheduleTitleHighlight}>가족 일정</Text>
-            {`이 `}
-            <Text style={styles.scheduleTitleHighlight}>
-              {scheduleList.filter(schedule => schedule.userId === null).length}
-            </Text>
-            개 있어요.
-          </Text>
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.dateText}>{getFormattedDate()}</Text>
 
-          {scheduleList
-            .filter(schedule => schedule.userId === null)
-            .map(schedule => (
-              <View key={schedule.scheduleId} style={styles.scheduleElement}>
-                <Text
-                  style={[
-                    styles.scheduleText,
-                    {width: getResponsiveWidth(260)},
-                  ]}>
-                  {schedule.title}
-                </Text>
-                <TouchableOpacity
-                  onPress={() =>
-                    handleMemoClick(schedule.memo, schedule.userId)
-                  }
-                  style={styles.scheduleButton}>
-                  <Image
-                    style={styles.buttonIconMemo}
-                    source={{
-                      uri: 'https://i.postimg.cc/TYsZknFG/Group-485.png',
-                    }}
-                  />
-                  <Text style={styles.buttonText}>메모</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-        </View>
-      )}
+      {/* 구성원 탭 */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.tabRow}>
+        {reorderedTabs.map(user => (
+          <TouchableOpacity
+            key={user.userId}
+            style={[
+              styles.tab,
+              selectedUserId === user.userId && styles.tabSelected,
+            ]}
+            onPress={() => setSelectedUserId(user.userId)}>
+            <Text style={styles.tabText}>{user.name}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
 
-      {/* 각 가족 구성원에 대한 일정 표시 */}
-      {familyUserList.map(user => {
-        const userSchedules = scheduleList.filter(
-          schedule => schedule.userId === user.userId,
-        );
-
-        return (
-          <View key={user.userId} style={styles.scheduleContainer}>
-            {/* 일정이 있을 경우에만 해당 사용자 이름과 일정 개수 표시 */}
-            {userSchedules.length > 0 && (
-              <Text style={styles.scheduleTitle}>
-                <Text style={styles.scheduleTitleHighlight}>
-                  {user ? user.name : name}
-                </Text>
-                {`님의 일정은 `}
-                <Text style={styles.scheduleTitleHighlight}>
-                  {`${userSchedules.length}`}
-                </Text>
-                개 있어요.
+      <View>
+        {/* 일정 카드 */}
+        <View style={styles.contentColumn}>
+          {fullScheduleList.map(schedule => (
+            <View key={schedule.scheduleId} style={styles.card}>
+              <Text style={styles.cardTitle}>{schedule.title}</Text>
+              <Text style={styles.cardMemo}>
+                {schedule.memo || '@@고깃집 몇 시까지 오세요~'}
               </Text>
-            )}
+              <TouchableOpacity style={styles.memoIcon}>
+                <Image
+                  style={styles.icon}
+                  source={require('../../assets/images/schedule-pencil.png')}
+                />
+              </TouchableOpacity>
+            </View>
+          ))}
 
-            {userSchedules.length > 0
-              ? userSchedules.map(schedule => (
-                  <View
-                    key={schedule.scheduleId}
-                    style={styles.scheduleElement}>
-                    <Text
-                      style={[
-                        styles.scheduleText,
-                        {width: getResponsiveWidth(260)},
-                      ]}>
-                      {schedule.title}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() =>
-                        handleMemoClick(schedule.memo, schedule.userId)
-                      }
-                      style={styles.scheduleButton}>
-                      <Image
-                        style={styles.buttonIconMemo}
-                        source={{
-                          uri: 'https://i.postimg.cc/TYsZknFG/Group-485.png',
-                        }}
-                      />
-                      <Text style={styles.buttonText}>메모</Text>
-                    </TouchableOpacity>
-                  </View>
-                ))
-              : null}
-
-            {/* 일정 추가 버튼 */}
-            {userSchedules.length > 0 && user.userId === currentUserId && (
-              <View style={styles.scheduleElement}>
-                <TouchableOpacity style={{width: getResponsiveWidth(260)}}>
-                  <Text style={styles.scheduleAddText}>
-                    + 일정을 추가하세요
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => alert('Button Pressed')}
-                  style={[styles.scheduleButton, {backgroundColor: '#D9D9D9'}]}>
-                  <Image
-                    style={styles.buttonIconMemo}
-                    source={{
-                      uri: 'https://i.postimg.cc/TYsZknFG/Group-485.png',
-                    }}
-                  />
-                  <Text style={styles.buttonText}>메모</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-        );
-      })}
-
-      {/* 전체 가족이 일정을 갖고 있지 않은 경우에만 표시 */}
-      {familyUserList.every(
-        user =>
-          scheduleList.filter(schedule => schedule.userId === user.userId)
-            .length === 0,
-      ) && (
-        <View
-          style={{
-            display: 'flex',
-            flexDirection: 'row',
-            alignItems: 'flex-end',
-            justifyContent: 'center',
-            width: '100%',
-            height: '100%',
-          }}>
-          <Text style={styles.noScheduleText}>일정이 없습니다.</Text>
+          <TouchableOpacity style={styles.addCard}>
+            <Text style={styles.addCardText}>일정을 추가하세요</Text>
+            <Text style={styles.plus}>＋</Text>
+          </TouchableOpacity>
         </View>
-      )}
-
-      {/* CustomModal로 메모 모달 표시 */}
-      <CustomModal
-        visible={modalVisible}
-        onClose={handleCloseModal}
-        onConfirm={handleConfirm}
-        confirmText="확인"
-        closeText="닫기"
-        children={
-          <>
-            <Text style={styles.modalTitle}>메모</Text>
-            <TextInput
-              style={styles.memoInput}
-              multiline
-              editable={editable} // 내가 작성한 메모일 경우만 수정 가능
-              value={selectedMemo}
-              onChangeText={setSelectedMemo}
-            />
-          </>
-        }
-      />
-    </View>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    flexDirection: 'column',
-    justifyContent: 'flex-start',
-    alignItems: 'center',
-    marginBottom: getResponsiveHeight(40),
-    minHeight:'30%',
+    paddingBottom: getResponsiveHeight(50),
+    paddingHorizontal: getResponsiveWidth(10),
   },
-
-  scheduleTitle: {
-    fontFamily: 'Pretendard-Light',
-    fontSize: getResponsiveFontSize(15),
-    marginTop: getResponsiveHeight(20),
-    marginBottom: getResponsiveHeight(25),
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    textAlign: 'center',
+  dateText: {
+    fontSize: getResponsiveFontSize(16),
+    fontFamily: 'Pretendard-SemiBold',
+    marginVertical: getResponsiveHeight(20),
+    alignSelf: 'flex-start',
   },
-
-  scheduleTitleHighlight: {
-    fontFamily: 'Pretendard-Bold',
-    fontSize: getResponsiveFontSize(20),
-  },
-
-  scheduleElement: {
+  tabRow: {
     flexDirection: 'row',
-    width: getResponsiveWidth(340),
-    justifyContent: 'center',
-    paddingVertical: getResponsiveHeight(5),
-    borderRadius: 10,
-    gap: 13,
-  },
-
-  scheduleText: {
-    fontSize: getResponsiveFontSize(15),
-    backgroundColor: '#FFC84D',
-    borderRadius: 10,
-    paddingLeft: 20,
-    lineHeight: getResponsiveHeight(46.89),
-  },
-
-  scheduleAddText: {
-    fontSize: getResponsiveFontSize(15),
-    backgroundColor: '#D9D9D9',
-    borderRadius: 10,
-    paddingLeft: 20,
-    display: 'flex',
-    alignItems: 'flex-start',
-    justifyContent: 'center',
-    lineHeight: getResponsiveHeight(46.89),
-  },
-
-  scheduleButton: {
-    position: 'relative',
-    backgroundColor: '#FFC84D',
-    width: getResponsiveWidth(52),
-    height: getResponsiveHeight(47),
-    alignItems: 'center',
-    borderRadius: 10,
-  },
-
-  buttonIconMemo: {
-    position: 'absolute',
-    bottom: getResponsiveHeight(20),
-    width: getResponsiveWidth(18.84),
-    height: getResponsiveHeight(20.48),
-  },
-
-  buttonText: {
-    position: 'absolute',
-    bottom: getResponsiveHeight(10),
-    fontSize: 10,
-  },
-
-  noScheduleText: {
-    fontSize: getResponsiveFontSize(15),
-    color: 'gray',
-    marginTop: getResponsiveHeight(20),
-  },
-
-  scheduleContainer: {
+    gap: getResponsiveWidth(10),
     marginBottom: getResponsiveHeight(20),
   },
-
-  loadingContainer: {
-    flex: 1,
-    display: 'flex',
+  tab: {
+    width: getResponsiveWidth(55),
+    height: getResponsiveWidth(55),
+    borderRadius: 999,
+    backgroundColor: '#D9D9D9',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    marginTop: getResponsiveHeight(20),
   },
+  tabSelected: {
+    backgroundColor: '#FFF6E1',
+    borderWidth: 1,
+    borderColor: '#FFC84D',
+  },
+  tabText: {
+    fontSize: getResponsiveFontSize(13),
+    fontFamily: 'Pretendard-SemiBold',
+  },
+  contentColumn: {
+    flex: 1,
+  },
+  card: {
+    backgroundColor: '#FFF8E1',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#FFC84D',
+    padding: getResponsiveHeight(15),
+    paddingHorizontal: getResponsiveHeight(20),
 
-  loadingText: {
-    fontSize: getResponsiveFontSize(16),
-    marginTop: getResponsiveHeight(20),
+    marginBottom: getResponsiveHeight(15),
+    position: 'relative',
+    minHeight: getResponsiveHeight(80),
+  },
+  cardTitle: {
+    fontSize: getResponsiveFontSize(13),
+    fontFamily: 'Pretendard-Regular',
+    marginBottom: 4,
+  },
+  cardMemo: {
+    fontSize: getResponsiveFontSize(11),
+    fontFamily: 'Pretendard-Regular',
+    color: '#6E6E6E',
+  },
+  memoIcon: {
+    position: 'absolute',
+    right: 15,
+    bottom: 30,
+  },
+  icon: {
+    width: 20,
+    height: 20,
+  },
+  addCard: {
+    borderRadius: 20,
+    borderWidth: 1.8,
+    borderColor: '#FFC84D',
+    borderStyle: 'dashed',
+    justifyContent:'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    height: getResponsiveHeight(80),
+    flexDirection: 'row',
+    paddingHorizontal:getResponsiveWidth(20),
+    gap: 10,
+  },
+  addCardText: {
+    fontSize: getResponsiveFontSize(13),
+    fontFamily: 'Pretendard-Regular',
+  },
+  plus: {
+    fontSize: 20,
+    fontFamily: 'Pretendard-Bold',
     color: '#FFC84D',
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContainer: {
-    width: 300,
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
-  },
-  modalTitle: {fontSize: 18, fontWeight: 'bold', marginBottom: 10},
-  memoInput: {
-    height: 100,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    padding: 10,
-    borderRadius: 5,
-  },
-  modalCloseButton: {
-    marginTop: 10,
-    backgroundColor: '#FFC84D',
-    padding: 10,
-    borderRadius: 5,
-  },
-  closeButtonText: {textAlign: 'center', fontWeight: 'bold'},
 });

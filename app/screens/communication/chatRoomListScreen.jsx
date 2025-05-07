@@ -30,7 +30,7 @@ export default function ChatRoomListScreen({navigation}) {
       console.log('fetchChatRoomList 실행됨');
       dispatch(fetchChatRoomListThunk(family.familyId, user.userId));
     }
-  }, [dispatch, user.login]); // familyId와 userId가 업데이트 된 후에 실행
+  }, [dispatch, user.login, family.familyId]); // familyId와 userId가 업데이트 된 후에 실행
 
   return (
     <BottomSheet
@@ -47,10 +47,35 @@ export default function ChatRoomListScreen({navigation}) {
         <Text style={styles.bottomSheetTitle}>채팅방</Text>
 
         {/* 가족, 개인 채팅방 */}
-        {(!loading && chatRoomList==[]) ? (
+        {!loading && Array.isArray(chatRoomList) && chatRoomList.length > 0 ? (
           chatRoomList.map((chatRoom, index) => {
             // roomType이 'family'인 경우 가족 채팅방 렌더링
-            if (chatRoom.roomType === 'family') {
+
+            if (chatRoom.kino === true) {
+              return (
+                <TouchableOpacity style={styles.bottomSheetElement} key={index}>
+                  <Image
+                    style={styles.elementImage}
+                    source={{
+                      uri: 'https://i.postimg.cc/B6SmSRzS/Group-1171276570.jpg',
+                    }}></Image>
+                  <TouchableOpacity
+                    onPress={() =>
+                      navigation.navigate('키노상담소화면', {
+                        chatRoom,
+                        user,
+                      })
+                    }>
+                    <View style={{display: 'flex', flexDirection: 'column'}}>
+                      <Text style={styles.elementName}>챗봇 키노</Text>
+                      <Text style={styles.elementDescription}>
+                        가족 관계 고민을 키노에게 털어놓고 조언을 구해요!
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                </TouchableOpacity>
+              );
+            } else if (chatRoom.familyType === 'family') {
               return (
                 <TouchableOpacity style={styles.bottomSheetElement} key={index}>
                   <Image
@@ -78,34 +103,8 @@ export default function ChatRoomListScreen({navigation}) {
                 </TouchableOpacity>
               );
             }
-            if (chatRoom.roomType === 'kino') {
-              return (
-                <TouchableOpacity style={styles.bottomSheetElement} key={index}>
-                  <Image
-                    style={styles.elementImage}
-                    source={{
-                      uri: 'https://i.postimg.cc/B6SmSRzS/Group-1171276570.jpg',
-                    }}></Image>
-                  <TouchableOpacity
-                    onPress={() =>
-                      navigation.navigate('키노상담소화면', {
-                        chatRoom,
-                        user,
-                      })
-                    }>
-                    <View style={{display: 'flex', flexDirection: 'column'}}>
-                      <Text style={styles.elementName}>챗봇 키노</Text>
-                      <Text style={styles.elementDescription}>
-                        가족 관계 고민을 키노에게 털어놓고 조언을 구해요!
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              );
-            }
-
             // roomType이 'oneToOne'인 경우 개인 채팅방 렌더링
-            if (chatRoom.roomType === 'oneToOne') {
+            else if (chatRoom.familyType === 'personal') {
               return (
                 <TouchableOpacity style={styles.bottomSheetElement} key={index}>
                   <Image
@@ -135,7 +134,9 @@ export default function ChatRoomListScreen({navigation}) {
             }
           })
         ) : (
-          <Text style={styles.noChatRoomList}>{"아직 채팅방이 없어요.\n가족과의 첫 대화를 시작해볼까요?"}</Text>
+          <Text style={styles.noChatRoomList}>
+            {'아직 채팅방이 없어요.\n가족과의 첫 대화를 시작해볼까요?'}
+          </Text>
         )}
       </BottomSheetView>
     </BottomSheet>

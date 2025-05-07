@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   Image,
   ScrollView,
@@ -10,113 +10,171 @@ import {
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import ChatInput from './chatInput';
+import ChatScreen from './chatScreen';
+import {getToken} from '../../../utils/storage';
 import {
+  getResponsiveFontSize,
   getResponsiveWidth,
   getResponsiveHeight,
-  getResponsiveFontSize,
-  getResponsiveIconSize,
 } from '../../../utils/responsive';
-import ChatScreen from './chatScreen';
 
 export default function KinoChatRoom({route}) {
   const navigation = useNavigation();
-  const scrollViewRef = useRef(null); // ScrollView에 ref 추가
+  const scrollViewRef = useRef(null);
+  const socketRef = useRef(null);
   const {chatRoom, user} = route.params || {};
-
-  // 채팅 화면이 업데이트될 때 자동 스크롤
-  const scrollToBottom = () => {
-    scrollViewRef.current?.scrollToEnd({animated: true});
-  };
-
-  useEffect(() => {
-    // 화면 들어올 때 바텀 네비 숨기기
-    navigation.getParent()?.setOptions({tabBarStyle: {display: 'none'}});
-
-    return () => {
-      // 화면 나갈 때 다시 보이게 설정
-      navigation.getParent()?.setOptions({tabBarStyle: {display: 'flex'}});
-    };
-  }, [navigation]);
-
+  const [messageList, setMessageList] = useState([]);
   const text = '안녕하세요.\n상담사 키노예요.\n어떤 고민을 가지고 계신가요?'; // 개행 추가
   const textArray = text.split('\n'); // 줄바꿈을 기준으로 텍스트를 나눔
-
   // UseRef를 컴포넌트가 마운트될 때 한 번만 생성하도록 변경
   const bounceValues = useRef(
     textArray.map(() => new Animated.Value(0)), // 처음 한 번만 생성
   ).current;
 
+  const scrollToBottom = () => {
+    scrollViewRef.current?.scrollToEnd({animated: true});
+  };
+
   useEffect(() => {
-    Animated.loop(
-      Animated.stagger(
-        50, // 글자 간격 조절
-        bounceValues.map(bounceValue =>
-          Animated.sequence([
-            Animated.timing(bounceValue, {
-              toValue: -5, // 위로 튀기
-              duration: 500,
-              useNativeDriver: true,
-            }),
-            Animated.timing(bounceValue, {
-              toValue: 0, // 원래 위치로 복귀
-              duration: 500,
-              useNativeDriver: true,
-            }),
-          ]),
-        ),
-      ),
-    ).start();
+    navigation.getParent()?.setOptions({tabBarStyle: {display: 'none'}});
+    return () =>
+      navigation.getParent()?.setOptions({tabBarStyle: {display: 'flex'}});
+  }, [navigation]);
+
+  // 🧪 서버에서 과거 메시지 불러오기
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const token = await getToken();
+        const res = await fetch(
+          `http://43.200.47.242:9090/api/chatRoom/${chatRoom.chatRoomId}/messages/fetch`,
+          {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({}),
+          },
+        );
+        const data = await res.json();
+        console.log('📜 과거 메시지 불러옴:', data.length);
+        setMessageList(data);
+      } catch (err) {
+        console.error('📛 메시지 불러오기 실패:', err);
+      }
+    };
+
+    if (chatRoom) fetchMessages();
+  }, [chatRoom]);
+
+  // 🧪 WebSocket 연결 및 수신 메시지 수집
+  useEffect(() => {
+    const connectWebSocket = async () => {
+      const token = await getToken();
+      if (!chatRoom || !user?.userId || !token) return;
+
+      const ws = new WebSocket(`ws://43.200.47.242:9090/chat?token=${token}`);
+
+      ws.onopen = () => {
+        console.log('✅ WebSocket 연결됨');
+      };
+
+      ws.onmessage = event => {
+        try {
+          const newMessage = JSON.parse(event.data);
+          console.log('📥 수신 메시지:', newMessage);
+
+          setMessageList(prev => {
+            const updated = [...prev, newMessage];
+            console.log('🆕 갱신된 messageList 길이:', updated.length);
+            return updated;
+          });
+        } catch (err) {
+          console.error('❌ WebSocket 수신 파싱 실패:', err);
+        }
+      };
+
+      ws.onerror = err => console.error('⚠️ WebSocket 오류:', err);
+      ws.onclose = () => console.log('🔌 WebSocket 종료');
+
+      socketRef.current = ws;
+    };
+
+    connectWebSocket();
+
+    return () => {
+      socketRef.current?.close();
+    };
   }, []);
+
+  // 🧪 messageList 변화 로그
+  useEffect(() => {
+    console.log('🔄 messageList 변경 감지됨. 현재 길이:', messageList.length);
+  }, [messageList]);
 
   return (
     <View style={{flex: 1, backgroundColor: 'white'}}>
+      <View style={styles.kinoContainer}>
+        <Image
+          source={require('../../../assets/images/chatRoom_kino.jpg')}
+          style={styles.kinoImage}
+        />
+        <View style={styles.kinoTextContainer}>
+          {textArray.map((line, lineIndex) => (
+            <View
+              key={lineIndex}
+              style={{flexDirection: 'row', flexWrap: 'wrap'}}>
+              {line.split('').map((char, index) => (
+                <Animated.Text
+                  key={index} // 각 문자에 고유한 key 값을 부여
+                  style={[
+                    styles.kinoText,
+                    char === '키' || char === '노' ? styles.highlight : null, // 키노 강조
+                    {transform: [{translateY: bounceValues[lineIndex]}]},
+                  ]}>
+                  {char}
+                </Animated.Text>
+              ))}
+            </View>
+          ))}
+        </View>
+      </View>
       <ScrollView
         ref={scrollViewRef}
         contentContainerStyle={styles.chatScrollView}
-        onContentSizeChange={scrollToBottom} // 내용 변경 시 자동 스크롤
-        onLayout={scrollToBottom}>
-        {/* 키노 헤더 창  */}
-        <View style={styles.kinoContainer}>
-          <Image
-            source={require('../../../assets/images/chatRoom_kino.jpg')}
-            style={styles.kinoImage}
-          />
-          <View style={styles.kinoTextContainer}>
-            {textArray.map((line, lineIndex) => (
-              <View
-                key={lineIndex}
-                style={{flexDirection: 'row', flexWrap: 'wrap'}}>
-                {line.split('').map((char, index) => (
-                  <Animated.Text
-                    key={index} // 각 문자에 고유한 key 값을 부여
-                    style={[
-                      styles.kinoText,
-                      char === '키' || char === '노' ? styles.highlight : null, // 키노 강조
-                      {transform: [{translateY: bounceValues[lineIndex]}]},
-                    ]}>
-                    {char}
-                  </Animated.Text>
-                ))}
-              </View>
-            ))}
-          </View>
-        </View>
-
-        <ChatScreen chatRoom={chatRoom} user={user}></ChatScreen>
-
+        onContentSizeChange={scrollToBottom}
+        onLayout={scrollToBottom}
+        showsVerticalScrollIndicator={false}>
+        <ChatScreen chatRoom={chatRoom} user={user} messageList={messageList} />
       </ScrollView>
-      <ChatInput />
+      <ChatInput
+        chatRoom={chatRoom}
+        user={user}
+        socketRef={socketRef}
+        setMessageList={setMessageList}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  chatScrollView: {
+    flexGrow: 1,
+    flexDirection: 'column',
+    paddingBottom: getResponsiveHeight(80),
+    paddingHorizontal: getResponsiveWidth(20),
+  },
+
   kinoContainer: {
     position: 'relative',
     width: getResponsiveWidth(335),
     height: getResponsiveHeight(80),
-    marginBottom: getResponsiveHeight(50),
-    marginTop: getResponsiveHeight(30),
+    marginBottom: getResponsiveHeight(20),
+    marginTop: getResponsiveHeight(15),
+    // gap:getResponsiveWidth(10),
+    display: 'flex',
+    alignSelf: 'center',
   },
 
   kinoImage: {
@@ -128,7 +186,7 @@ const styles = StyleSheet.create({
 
   kinoTextContainer: {
     position: 'absolute',
-    right: getResponsiveWidth(0),
+    right: getResponsiveWidth(-10),
     bottom: getResponsiveHeight(0),
     width: getResponsiveWidth(250),
     flexDirection: 'column',
@@ -146,18 +204,5 @@ const styles = StyleSheet.create({
     color: '#FFC84D',
     fontFamily: 'Pretendard-Bold',
   },
-
-  chatContainer: {
-    width: getResponsiveWidth(330),
-    // height: getResponsiveHeight(80),
-  },
-
-  chatScrollView: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingHorizontal: getResponsiveWidth(25),
-    paddingBottom: getResponsiveHeight(80),
-  },
 });
+

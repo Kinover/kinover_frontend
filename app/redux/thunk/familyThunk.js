@@ -9,14 +9,10 @@ import {
 } from '../slices/familySlice';
 
 export const fetchFamilyThunk = familyId => {
-
   return async dispatch => {
     dispatch(setFamilyLoading(true));
     try {
-      const apiUrl =
-        Platform.OS === 'android'
-          ? `http://13.209.70.77:9090/api/family/${familyId}`
-          : `http://13.209.70.77:9090/api/family/${familyId}`;
+      const apiUrl = `http://43.200.47.242:9090/api/family/${familyId}`;
 
       const token = await getToken();
 
@@ -48,7 +44,7 @@ export const fetchFamilyThunk = familyId => {
   };
 };
 
-export const modifyFamily = (family) => {
+export const modifyFamily = family => {
   return async dispatch => {
     dispatch(setFamilyLoading(true));
     try {
