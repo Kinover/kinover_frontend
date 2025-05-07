@@ -15,37 +15,30 @@ import {
   getResponsiveHeight,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-import {useDispatch, useSelector} from 'react-redux';
-import { fetchMessageThunk,sendMessageThunk } from '../../../redux/thunk/messageThunk';
 
-export default ChatInput = ({chatRoom}) => {
-  const user = useSelector(state => state.user);
+export default function ChatInput({chatRoom, user, socketRef}) {
   const [message, setMessage] = useState('');
-  const [data, setData] = useState({});
-  const inputRef = useRef(null); // TextInput에 ref 추가
-  const dispatch = useDispatch();
+  const inputRef = useRef(null);
 
-  const handleSend = ({chatRoom}) => {
-    if (message.trim().length > 0 && chatRoom?.chatRoomId) {
-      const newMessage = {
-        messageId: null,
-        content: message, // 메시지 내용
-        createdAt: new Date().toISOString(), // 현재 시간 (ISO 포맷으로 변환)
-        chatRoom: chatRoom, // 채팅방 ID
-        messageType: 'text', // 메시지 타입 (예: text, image 등)
-        sender: user, // 보낸 사람의 ID
-      };
+  const handleSend = () => {
+    if (!message.trim()) return;
 
-      setData(newMessage); // 데이터 세팅
-      dispatch(sendMessageThunk(newMessage, chatRoom)); // 메시지 보내기
-      setMessage(''); // 메시지 초기화
+    const socket = socketRef?.current;
+    if (!socket || socket.readyState !== 1) {
+      alert('연결이 불안정해요. 다시 시도해주세요.');
+      return;
     }
-  };
 
-  const handleFocus = () => {
-    if (inputRef.current) {
-      inputRef.current.focus(); // 강제로 포커스 설정
-    }
+    const newMessage = {
+      content: message,
+      chatRoomId: chatRoom.chatRoomId,
+      senderId: user.userId,
+      messageType: 'text',
+    };
+
+    socket.send(JSON.stringify(newMessage));
+    console.log('📤 WebSocket 전송:', newMessage);
+    setMessage('');
   };
 
   return (
@@ -53,16 +46,7 @@ export default ChatInput = ({chatRoom}) => {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}>
-      <TouchableWithoutFeedback
-        onPress={() => {
-          // 키보드 dismiss와 포커스 처리
-          if (inputRef.current && !inputRef.current.isFocused()) {
-            inputRef.current.focus(); // 첫 번째 클릭 시 포커스 설정
-          } else {
-            Keyboard.dismiss(); // 두 번째 클릭 시 키보드 숨기기
-          }
-        }}
-        accessible={false}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.innerContainer}>
           <View style={styles.inputContainer}>
             <TouchableOpacity style={styles.inputPlusButton}>
@@ -75,20 +59,16 @@ export default ChatInput = ({chatRoom}) => {
               />
             </TouchableOpacity>
             <TextInput
-              ref={inputRef} // TextInput에 ref 연결
+              ref={inputRef}
               style={styles.input}
               value={message}
               onChangeText={setMessage}
               placeholder="메시지를 입력하세요"
               returnKeyType="send"
-              onSubmitEditing={() => handleSend({chatRoom})}
-              onFocus={handleFocus} // 포커스 시 처리
-              autoFocus={false} // autoFocus는 false로 설정
+              onSubmitEditing={handleSend}
             />
           </View>
-          <TouchableOpacity
-            onPress={() => handleSend({chatRoom})}
-            style={styles.sendButton}>
+          <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
             <Image
               source={{uri: 'https://i.postimg.cc/fLWscdRY/Group-477-1.png'}}
               style={{
@@ -101,7 +81,8 @@ export default ChatInput = ({chatRoom}) => {
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
-};
+}
+
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',

@@ -14,6 +14,7 @@ import {
   getResponsiveIconSize,
   getResponsiveWidth,
 } from '../../utils/responsive';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CreateFamilyScreen() {
   const [familyName, setFamilyName] = useState('');
@@ -49,7 +50,7 @@ export default function CreateFamilyScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top,bottom,left,right']}>
       {/* 가족 이름 입력 */}
       <View style={styles.elementContainer}>
         {isEditingFamilyName ? (
@@ -171,7 +172,7 @@ export default function CreateFamilyScreen() {
       <TouchableOpacity style={styles.button}>
         <Text style={styles.buttonText}>생성 완료</Text>
       </TouchableOpacity>
-    </View>
+    </SafeAreaView>
   );
 }
 const styles = StyleSheet.create({
@@ -181,7 +182,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     display: 'flex',
     paddingHorizontal: getResponsiveWidth(20),
-    paddingTop: getResponsiveHeight(50),
+    paddingTop: getResponsiveHeight(150),
     gap: getResponsiveHeight(30),
     alignItems: 'center',
     justifyContent: 'flex-start',
