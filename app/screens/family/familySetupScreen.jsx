@@ -47,7 +47,7 @@ export default function FamilySetupScreen() {
 
   const handleInputChange = text => {
     // setFamilyCode(text); // 입력된 값 업데이트
-    setFamilyCode('0f7eff1b-c4ad-43c5-90f6-e8b2f4ff5670'); // 입력된 값 업데이트
+    setFamilyCode('0e992098-1544-11f0-be5c-0a1e787a0cd7'); // 입력된 값 업데이트
   };
 
   const handleSubmitCode = () => {

@@ -1,13 +1,15 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import CommunicationScreen from '../../screens/communication';
-import ProfileScreen from '../../screens/communication/profileScreen';
+// import ProfileScreen from '../../screens/home/profileScreen';
+import {RenderHeaderRightSetting} from '../tabHeaderHelpers';
 import OneToOneChatRoom from '../../screens/communication/chatRoom/oneToOneChatRoom';
 import KinoChatRoom from '../../screens/communication/chatRoom/kinoChatRoom';
 import FamilyChatRoom from '../../screens/communication/chatRoom/familyChatRoom';
 import ChatSettings from '../../screens/communication/chatRoom/chatSetting';
 import {
-  RenderHeaderRight,
+  RenderHeaderRightChatSetting,
+  // RenderHeaderRight,
   RenderHeaderLeft,
   RenderHeaderLeft2,
 } from '../tabHeaderHelpers';
@@ -29,7 +31,6 @@ export default function CommunicationStack() {
           shadowOpacity: 0,
           elevation: 0,
           height: getResponsiveHeight(120),
-          overflow: 'visible',
         },
         headerTitleAlign: 'center',
         headerShown: true,
@@ -51,7 +52,9 @@ export default function CommunicationStack() {
         component={CommunicationScreen}
         options={({navigation}) => ({
           headerLeft: () => <RenderHeaderLeft2 navigation={navigation} />,
-          headerRight: () => <RenderHeaderRight navigation={navigation} />,
+          headerRight: () => (
+            <RenderHeaderRightSetting navigation={navigation} />
+          ),
           headerTitle: () => (
             <Image
               source={require('../../assets/images/kinover.png')}
@@ -73,32 +76,39 @@ export default function CommunicationStack() {
         })}
       />
       <Stack.Screen
-        name="프로필화면"
-        component={ProfileScreen}
-        options={({navigation}) => ({
-          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-        })}
-      />
-      <Stack.Screen
         name="채팅방화면"
         component={OneToOneChatRoom}
-        options={({navigation}) => ({
+        options={({navigation,route}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-        
+          // headerRight: () => (
+          //   <RenderHeaderRightChatSetting
+          //     setIsSettingsOpen={setIsSettingsOpen}
+          //   />
+          // ),
         })}
       />
       <Stack.Screen
         name="키노상담소화면"
         component={KinoChatRoom}
-        options={({navigation}) => ({
+        options={({navigation,route}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          // headerRight: () => (
+          //   <RenderHeaderRightChatSetting
+          //     setIsSettingsOpen={setIsSettingsOpen}
+          //   />
+          // ),
         })}
       />
       <Stack.Screen
         name="가족채팅방화면"
         component={FamilyChatRoom}
-        options={({navigation}) => ({
+        options={({navigation,route}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          // headerRight: () => (
+          //   <RenderHeaderRightChatSetting
+          //     setIsSettingsOpen={setIsSettingsOpen}
+          //   />
+          // ),
         })}
       />
       <Stack.Screen

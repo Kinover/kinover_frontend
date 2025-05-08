@@ -12,10 +12,7 @@ export const fetchMessageThunk = (chatRoomId) => {
   return async (dispatch) => {
     dispatch(setMessageLoading(true));
     try {
-      const apiUrl =
-        Platform.OS === 'android'
-          ? `http://13.209.70.77:9090/api/chatRoom/${chatRoomId}/messages/fetch`
-          : `http://13.209.70.77:9090/api/chatRoom/${chatRoomId}/messages/fetch`;
+      const apiUrl = `http://43.200.47.242:9090/api/chatRoom/${chatRoomId}/messages/fetch`;
 
       const token = await getToken();
 
@@ -25,6 +22,8 @@ export const fetchMessageThunk = (chatRoomId) => {
           Authorization: `Bearer ${token}`,
         },
       });
+
+      console.log(response.data);
 
       dispatch(setMessageList(response.data));
     } catch (error) {

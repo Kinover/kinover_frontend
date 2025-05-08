@@ -6,11 +6,12 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from "../../../utils/responsive";
+import formatTime from "../../../utils/formatTime";
 
 export default function SendKinoChat({ chatTime, message }) {
   return (
     <View style={styles.sendContainer}>
-      <Text style={styles.sendTime}>{chatTime}</Text>
+      <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>
       <View style={styles.sendBubble}>
         <Text style={styles.sendText}>{message}</Text>
       </View>
@@ -29,7 +30,7 @@ const styles = StyleSheet.create({
   },
 
   sendBubble: {
-    backgroundColor: "#FFC84D",
+    backgroundColor: "#FFECC3",
     borderRadius: getResponsiveIconSize(20),
     paddingVertical: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(20),

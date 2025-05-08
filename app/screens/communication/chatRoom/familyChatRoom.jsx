@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useRef} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   ScrollView,
   View,
@@ -14,62 +14,121 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-import {useNavigation} from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import ChatScreen from './chatScreen';
 import ChatInput from './chatInput';
+import { getToken } from '../../../utils/storage';
 
-export default function FamilyChatRoom({route}) {
-  const {chatRoom, user} = route.params || {};
+export default function FamilyChatRoom({ route }) {
+  const { chatRoom, user } = route.params || {};
   const navigation = useNavigation();
   const scrollViewRef = useRef(null);
-  const [isQuestionVisible, setIsQuestionVisible] = useState(false); // 상태 추가
+  const socketRef = useRef(null);
+  const [messageList, setMessageList] = useState([]);
+  const [isQuestionVisible, setIsQuestionVisible] = useState(false);
 
-  // useEffect(() => {
-  //   navigation.setOptions({
-  //     tabBarStyle: {display: 'none'},
-  //     headerRight: () => (
-  //       <TouchableOpacity onPress={() => setIsQuestionVisible(prev => !prev)}>
-  //         <Image
-  //           source={{
-  //             uri: 'https://i.postimg.cc/3ryLhKKF/free-icon-message-5251132.png',
-  //           }}
-  //           style={{
-  //             width: getResponsiveWidth(23),
-  //             height: getResponsiveHeight(23),
-  //             marginRight: getResponsiveWidth(30),
-  //             resizeMode: 'contain',
-  //           }}></Image>
-  //       </TouchableOpacity>
-  //     ),
-  //   });
+  const scrollToBottom = () => {
+    scrollViewRef.current?.scrollToEnd({ animated: true });
+  };
 
-  //   return () => {
-  //     navigation.setOptions({tabBarStyle: {display: 'flex'}});
-  //   };
-  // }, [navigation, isQuestionVisible]);
+  useEffect(() => {
+    navigation.getParent()?.setOptions({ tabBarStyle: { display: 'none' } });
+    return () => {
+      navigation.getParent()?.setOptions({ tabBarStyle: { display: 'flex' } });
+    };
+  }, [navigation]);
 
   useEffect(() => {
     if (chatRoom) {
-      navigation.setOptions({headerTitle: chatRoom.roomName});
+      navigation.setOptions({ headerTitle: chatRoom.roomName });
     }
   }, [chatRoom, navigation]);
+
+  // ✅ 과거 메시지 불러오기
+  useEffect(() => {
+    const fetchMessages = async () => {
+      try {
+        const token = await getToken();
+        const res = await fetch(
+          `http://43.200.47.242:9090/api/chatRoom/${chatRoom.chatRoomId}/messages/fetch`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({}),
+          }
+        );
+        const data = await res.json();
+        console.log('📜 과거 메시지:', data.length);
+        setMessageList(data);
+      } catch (err) {
+        console.error('❌ 메시지 가져오기 실패:', err);
+      }
+    };
+
+    if (chatRoom) fetchMessages();
+  }, [chatRoom]);
+
+  // ✅ WebSocket 연결 및 실시간 메시지 처리
+  useEffect(() => {
+    const connectWebSocket = async () => {
+      const token = await getToken();
+      if (!chatRoom || !user?.userId || !token) return;
+
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
+      }
+
+      const ws = new WebSocket(`ws://43.200.47.242:9090/chat?token=${token}`);
+
+      ws.onopen = () => {
+        console.log('✅ WebSocket 연결 성공');
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          console.log('📥 수신:', message);
+
+          setMessageList(prev => [...prev, message]);
+        } catch (err) {
+          console.error('❌ 수신 메시지 파싱 실패:', err);
+        }
+      };
+
+      ws.onerror = (err) => {
+        console.error('⚠️ WebSocket 오류:', err);
+      };
+
+      ws.onclose = () => {
+        console.log('🔌 WebSocket 종료');
+      };
+
+      socketRef.current = ws;
+    };
+
+    connectWebSocket();
+
+    return () => {
+      socketRef.current?.close();
+      socketRef.current = null;
+    };
+  }, [chatRoom?.roomId, user?.userId]);
 
   if (!chatRoom || !user) {
     return <Text>데이터가 없습니다.</Text>;
   }
 
-  const scrollToBottom = () => {
-    scrollViewRef.current?.scrollToEnd({animated: true});
-  };
-
   return (
-    <View style={{flex: 1, backgroundColor: 'white'}}>
-      {/* 질문 표시 및 배경 어둡게 */}
+    <View style={{ flex: 1, backgroundColor: 'white' }}>
       {isQuestionVisible && (
         <>
           <View style={styles.overlay} />
           <ImageBackground
-            source={{uri: 'https://i.postimg.cc/ZYWh5gLS/Group-484-1.png'}}
+            source={{ uri: 'https://i.postimg.cc/ZYWh5gLS/Group-484-1.png' }}
             style={styles.todayQuestionContainer}
             resizeMode="contain">
             <View style={styles.todayQuestionContent}>
@@ -79,18 +138,12 @@ export default function FamilyChatRoom({route}) {
               </Text>
             </View>
             <View style={styles.buttonContainer}>
-              <TouchableOpacity>
-                <View style={styles.answerButton} />
-              </TouchableOpacity>
-              <TouchableOpacity>
-                <View style={styles.answerButton} />
-              </TouchableOpacity>
+              <TouchableOpacity><View style={styles.answerButton} /></TouchableOpacity>
+              <TouchableOpacity><View style={styles.answerButton} /></TouchableOpacity>
               <TouchableOpacity>
                 <Image
                   style={styles.plusButton}
-                  source={{
-                    uri: 'https://i.postimg.cc/63VJ4VHz/Group-1171276565-1.png',
-                  }}
+                  source={{ uri: 'https://i.postimg.cc/63VJ4VHz/Group-1171276565-1.png' }}
                 />
               </TouchableOpacity>
             </View>
@@ -98,19 +151,29 @@ export default function FamilyChatRoom({route}) {
         </>
       )}
 
-      {/* 채팅 화면 */}
       <ScrollView
         ref={scrollViewRef}
         contentContainerStyle={styles.chatScrollView}
         onContentSizeChange={scrollToBottom}
-        onLayout={scrollToBottom}>
-        <ChatScreen chatRoom={chatRoom} user={user} />
+        onLayout={scrollToBottom}
+        showsVerticalScrollIndicator={false}>
+        <ChatScreen
+          chatRoom={chatRoom}
+          user={user}
+          messageList={messageList} // ✅ 실시간 메시지 전달
+        />
       </ScrollView>
 
-      <ChatInput chatRoom={chatRoom} />
+      <ChatInput
+        chatRoom={chatRoom}
+        user={user}
+        socketRef={socketRef}
+        setMessageList={setMessageList} // ✅ 전송 시 메시지 리스트 갱신
+      />
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   todayQuestionContainer: {
@@ -148,7 +211,6 @@ const styles = StyleSheet.create({
     top: getResponsiveHeight(150),
     width: getResponsiveWidth(320),
     paddingHorizontal: getResponsiveWidth(20),
-    display: 'flex',
     alignItems: 'center',
     justifyContent: 'flex-start',
     gap: getResponsiveWidth(7),
@@ -164,15 +226,11 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(23.6),
   },
   chatScrollView: {
-    display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'flex-start',
     paddingHorizontal: getResponsiveWidth(25),
     paddingBottom: getResponsiveHeight(80),
-  },
-  chatContainer: {
-    width: getResponsiveWidth(340),
   },
   overlay: {
     position: 'absolute',

@@ -1,30 +1,20 @@
-import React, {useEffect} from 'react';
+import React, {useState} from 'react';
 import {View, StyleSheet, Text} from 'react-native';
-import {useSelector, useDispatch} from 'react-redux';
 import ReceiveChat from './receiveChat';
 import SendChat from './sendChat';
-// import {fetchMessage} from '../../../redux/actions/messageActions';
-import { fetchMessageThunk } from '../../../redux/thunk/messageThunk';
+import ReceiveKinoChat from './receiveKinoChat';
+import SendKinoChat from './sendKinoChat';
+import {useLayoutEffect} from 'react';
+import {useNavigation} from '@react-navigation/native';
+import {RenderHeaderRightChatSetting} from '../../../navigation/tabHeaderHelpers';
 import {
+  getResponsiveWidth,
   getResponsiveHeight,
   getResponsiveIconSize,
-  getResponsiveWidth,
 } from '../../../utils/responsive';
+import ChatSettings from './chatSetting';
 
-export default function ChatScreen({chatRoom, user}) {
-  const {messageList} = useSelector(state => state.message); // Redux 상태 가져오기
-  const dispatch = useDispatch();
-
-  useEffect(() => {
-    if (chatRoom) {
-      dispatch(fetchMessageThunk(chatRoom.chatRoomId));
-    }
-  }, [chatRoom]);
-
-  // messages가 배열인지 확인하고 기본값을 빈 배열로 설정
-  const message_list = Array.isArray(messageList) ? messageList : [];
-
-  // 날짜를 YYYY-MM-DD 형식으로 변환하는 함수
+export default function ChatScreen({chatRoom, user, messageList = []}) {
   const formatDate = dateString => {
     const date = new Date(dateString);
     return date.toLocaleDateString('ko-KR', {
@@ -34,67 +24,80 @@ export default function ChatScreen({chatRoom, user}) {
       weekday: 'long',
     });
   };
+  const navigation = useNavigation();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <RenderHeaderRightChatSetting setIsSettingsOpen={setIsSettingsOpen} />
+      ),
+    });
+  }, [navigation]);
+
+  const sortedMessages = [...messageList].sort(
+    (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+  );
 
   return (
-    <>
-      <View style={styles.chatContainer}>
-        {message_list.length > 0 ? (
-          message_list.map((message, index) => {
-            const isSameSender =
-              message_list[index - 1] &&
-              message_list[index - 1].sender.userId === message.sender.userId;
+    <View style={styles.chatContainer}>
+      {sortedMessages.map((message, index) => {
+        const currentMessageDate = new Date(message.createdAt).toDateString();
+        const prevMessageDate =
+          index > 0
+            ? new Date(sortedMessages[index - 1].createdAt).toDateString()
+            : null;
 
-            // 현재 메시지의 날짜
-            const currentMessageDate = new Date(
-              message.createdAt,
-            ).toDateString();
-            const prevMessageDate =
-              index > 0
-                ? new Date(message_list[index - 1].createdAt).toDateString()
-                : null;
+        const isSameSender =
+          index > 0 && sortedMessages[index - 1].senderId === message.senderId;
 
-            return (
-              <React.Fragment key={message.messageId}>
-                {/* 날짜가 바뀌었으면 날짜 표시 */}
-                {prevMessageDate !== currentMessageDate && (
-                  <Text style={styles.dateSeparator}>
-                    {formatDate(message.createdAt)}
-                  </Text>
-                )}
+        return (
+          <React.Fragment key={message.messageId}>
+            {prevMessageDate !== currentMessageDate && (
+              <Text style={styles.dateSeparator}>
+                {formatDate(message.createdAt)}
+              </Text>
+            )}
 
-                {/* 수신 메시지 */}
-                {message.sender.userId !== user.userId ? (
-                  <ReceiveChat
-                    userName={message.sender.name}
-                    userProfileImage={message.sender.image}
-                    message={message.content}
-                    chatTime={message.createdAt}
-                    style={{
-                      marginBottom: isSameSender ? 15 : 25, // 같은 사람이면 간격 10, 다른 사람은 간격 20
-                    }}
-                  />
-                ) : (
-                  // 발신 메시지
-                  <SendChat
-                    message={message.content}
-                    chatTime={message.createdAt}
-                    style={{
-                      marginBottom: isSameSender ? 15 : 25,
-                    }}
-                  />
-                )}
-              </React.Fragment>
-            );
-          })
-        ) : (
-          <Text>메세지가 없습니다.</Text>
-        )}
-      </View>
-      {/* <ChatSettings
+            {message.senderId !== user.userId ? (
+              chatRoom.kino ? (
+                <ReceiveKinoChat
+                  userName={message.senderName}
+                  userProfileImage={message.senderImage}
+                  message={message.content}
+                  chatTime={message.createdAt}
+                  style={{marginBottom: isSameSender ? 15 : 25}}
+                />
+              ) : (
+                <ReceiveChat
+                  userName={message.senderName}
+                  userProfileImage={message.senderImage}
+                  message={message.content}
+                  chatTime={message.createdAt}
+                  style={{marginBottom: isSameSender ? 15 : 25}}
+                />
+              )
+            ) : chatRoom.kino ? (
+              <SendKinoChat
+                message={message.content}
+                chatTime={message.createdAt}
+                style={{marginBottom: isSameSender ? 15 : 25}}
+              />
+            ) : (
+              <SendChat
+                message={message.content}
+                chatTime={message.createdAt}
+                style={{marginBottom: isSameSender ? 15 : 25}}
+              />
+            )}
+          </React.Fragment>
+        );
+      })}
+      <ChatSettings
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-      /> */}
-    </>
+      />
+    </View>
   );
 }
 
@@ -105,14 +108,14 @@ const styles = StyleSheet.create({
   },
   dateSeparator: {
     alignSelf: 'center',
-    fontSize: 14,
-    fontWeight: 'bold',
-    paddingHorizontal: getResponsiveWidth(5),
+    fontSize: 12,
+    fontFamily: 'Pretendard-SemiBold',
+    paddingHorizontal: getResponsiveWidth(10),
+    paddingVertical: getResponsiveHeight(5),
+
     marginVertical: getResponsiveHeight(30),
-    backgroundColor: 'rgba(255, 202, 85, 0.7)', // 투명도 0.5로 설정
-    borderColor: 'transparent',
+    backgroundColor: 'rgba(255, 202, 85, 0.7)',
     borderRadius: getResponsiveIconSize(20),
-    borderWidth: 10,
     color: '#666',
   },
 });

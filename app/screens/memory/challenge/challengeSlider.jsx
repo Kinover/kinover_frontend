@@ -1,7 +1,7 @@
 // ChallengeSlider 컴포넌트
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, View, Image, ActivityIndicator } from 'react-native';
-import CardSlider from './cardSlider';
+import CardSlider from '../../home/cardSlider';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,

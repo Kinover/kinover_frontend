@@ -15,6 +15,7 @@ import getResponsiveFontSize, {
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../utils/responsive';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function OnboardingScreen() {
   const user = useSelector(state => state.user);
@@ -55,7 +56,7 @@ export default function OnboardingScreen() {
   }, [user, loginUser]);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top,bottom,right,left']}>
       <View style={styles.mainContainer} />
       <View style={styles.bottomContainer}>
         <ImageBackground
@@ -72,7 +73,7 @@ export default function OnboardingScreen() {
           />
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

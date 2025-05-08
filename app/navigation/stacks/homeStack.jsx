@@ -1,15 +1,15 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import HomeScreen from '../../screens/home';
-import GradeScreen from '../../screens/home/gradeScreen';
 import FamilySettingScreen from '../../screens/home/familySettingScreen';
 import NotificationScreen from '../../components/notificationScreen';
-import {RenderHeaderLeft1} from '../tabHeaderHelpers';
-import {RenderHeaderRightHome} from '../tabHeaderHelpers';
+import {RenderHeaderLeft1, RenderHeaderLogo} from '../tabHeaderHelpers';
+import { RenderHeaderRightSetting } from '../tabHeaderHelpers';
 import {RenderGoBackButton} from '../tabHeaderHelpers';
 import {Image, View} from 'react-native';
 import {getResponsiveWidth, getResponsiveHeight} from '../../utils/responsive';
 import FamilyDeleteScreen from '../../screens/home/familyDeleteScreen';
+import ProfileScreen from '../../screens/home/profileScreen';
 
 const Stack = createStackNavigator();
 
@@ -24,7 +24,6 @@ export default function HomeStack() {
           shadowOpacity: 0,
           elevation: 0,
           height: getResponsiveHeight(120),
-          overflow: 'visible',
         },
         headerTitleAlign: 'center',
         headerShown: true,
@@ -46,26 +45,15 @@ export default function HomeStack() {
         component={HomeScreen}
         options={({navigation}) => ({
           headerLeft: () => <RenderHeaderLeft1 navigation={navigation} />,
-          headerRight: () => <RenderHeaderRightHome navigation={navigation} />,
-          headerTitle: () => (
-            <Image
-              source={require('../../assets/images/kinover.png')}
-              style={{
-                width: getResponsiveWidth(49),
-                height: getResponsiveHeight(46),
-                marginBottom: getResponsiveHeight(10),
-                resizeMode: 'contain',
-              }}
-            />
-          ),
+          headerRight: () => <RenderHeaderRightSetting navigation={navigation} />,
         })}
       />
+
       <Stack.Screen
-        name="등급화면"
-        component={GradeScreen}
+        name="프로필화면"
+        component={ProfileScreen}
         options={({navigation}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-          headerTitle: '',
         })}
       />
       <Stack.Screen
