@@ -18,7 +18,6 @@ export default function ScheduleStack() {
           shadowOpacity: 0,
           elevation: 0,
           height: getResponsiveHeight(120),
-          overflow: 'visible',
         },
         headerTitleAlign: 'center',
         headerShown: true,

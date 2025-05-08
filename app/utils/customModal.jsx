@@ -1,11 +1,12 @@
 import React from 'react';
-import {Modal, View, Text, TouchableOpacity, StyleSheet} from 'react-native';
+import {Modal, View, Text, TouchableOpacity, StyleSheet, Platform} from 'react-native';
 import {BlurView} from '@react-native-community/blur';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
 } from './responsive';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 export default function CustomModal({
   visible,
@@ -22,27 +23,34 @@ export default function CustomModal({
   closeText,
   buttonBottomStyle,
 }) {
+  const insets = useSafeAreaInsets();
+
   return (
     <Modal
       animationType="fade"
       transparent={true}
       visible={visible}
-      onRequestClose={onClose}>
+      onRequestClose={onClose}
+      // presentationStyle="overFullScreen" // 👈 핵심
+      presentationStyle="overFullScreen" // ✅ 이거 중요
+      statusBarTranslucent={true} // ✅ Android에서 전체 덮기
+    >
       <BlurView
         style={[
           StyleSheet.absoluteFill,
           {
             flex: 1,
             position: 'absolute',
-            backgroundColor: 'rgba(0, 0, 0, 0.4)', // ← ✅ 핵심!
+            backgroundColor: Platform.OS==='android'?'rgba(0, 0, 0, 0.1)':'rgba(0, 0, 0, 0.2)', // ← ✅ 핵심!
           },
         ]}
         blurType="light" // or 'light', 'extraLight', etc.
         blurAmount={2} // 흐림 정도
         reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.4)"
+
         // ✅ 여기!
       ></BlurView>
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, {paddingBottom: insets.bottom || 20}]}>
         <View style={[styles.modalBox, modalBoxStyle]}>
           {/* 모달 내용 */}
           {/* 상단 닫기 버튼 */}
@@ -57,11 +65,13 @@ export default function CustomModal({
 
           {/* 버튼 영역 */}
           <View style={[styles.buttonBottom, buttonBottomStyle]}>
-            <TouchableOpacity
-              onPress={onClose}
-              style={[styles.closeButton, closeButtonStyle]}>
-              <Text style={closeTextStyle}>{closeText}</Text>
-            </TouchableOpacity>
+            {closeText && (
+              <TouchableOpacity
+                onPress={onClose}
+                style={[styles.closeButton, closeButtonStyle]}>
+                <Text style={closeTextStyle}>{closeText}</Text>
+              </TouchableOpacity>
+            )}
 
             {onConfirm && (
               <TouchableOpacity
@@ -80,9 +90,9 @@ export default function CustomModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    // backgroundColor: 'rgba(0,0,0,0.4)', // ✅ 절대 유지
     justifyContent: 'center',
     alignItems: 'center',
+    paddingBottom: Platform.OS === 'android' ? 20 : 0, // ✅ 아래 잘리는 현상 방지
   },
   modalBox: {
     position: 'relative',
@@ -92,6 +102,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'white', // ✅ 유지
     borderRadius: 10, // ✅ 유지
     paddingTop: getResponsiveHeight(30),
+    zIndex:9999, // iOS
+    elevation: 20, // Android
   },
   contentWrapper: {
     marginBottom: 20,
@@ -128,11 +140,11 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: getResponsiveHeight(5),
     right: getResponsiveWidth(15),
-    zIndex: 10,
+    zIndex: 5,
   },
 
   closeXText: {
-    fontSize: getResponsiveFontSize(22),
+    fontSize: getResponsiveFontSize(26),
     color: '#FFC84D',
   },
 });

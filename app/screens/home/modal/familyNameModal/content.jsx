@@ -16,15 +16,16 @@ export default function FamilyNameModalContent({
         style={{
           fontFamily: 'Pretendard-SemiBold',
           fontSize: getResponsiveFontSize(20),
+          marginTop:getResponsiveHeight(10),
         }}>
         {`'${currentFamilyName}'`} 패밀리 님,{'\n'}가족명을 변경하시겠습니까?
       </Text>
       <View
         style={{
           width: '100%',
-          height: getResponsiveHeight(45),
+          height: getResponsiveHeight(40),
           borderWidth: 1,
-          borderColor: '#999',
+          borderColor: '#E0E0E0',
           borderRadius: 8,
           paddingHorizontal: 10,
           justifyContent: 'center',
@@ -34,7 +35,7 @@ export default function FamilyNameModalContent({
           onChangeText={setFamilyNameInput}
           style={{
             fontSize: getResponsiveFontSize(15),
-            fontFamily: 'Pretendard-SemiBold',
+            fontFamily: 'Pretendard-Regular',
             color: '#000',
           }}
           placeholder="가족명을 입력하세요"

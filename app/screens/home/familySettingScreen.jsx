@@ -15,7 +15,7 @@ import {
   getResponsiveIconSize,
 } from '../../utils/responsive';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
-import FamilyNameModal from './modal/familyNameModal/index';
+import FamilyNameModal from './familyNameModal';
 import UserDeleteModal from './modal/userDeleteModal';
 import UserAddBottomSheet from './userAddBottomSheet';
 import {useNavigation} from '@react-navigation/native';

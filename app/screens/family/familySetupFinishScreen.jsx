@@ -15,6 +15,7 @@ import {
 } from '../../utils/responsive';
 import {useNavigation} from '@react-navigation/native';
 import { useSelector } from 'react-redux';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function FamilySetupFinishScreen() {
   const navigation = useNavigation();
@@ -24,7 +25,7 @@ export default function FamilySetupFinishScreen() {
     navigation.navigate('Tabs')
   }
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top,bottom,left,right']}>
       <View style={styles.headerContainer}>
         <Text
           style={
@@ -43,8 +44,11 @@ export default function FamilySetupFinishScreen() {
         <TouchableOpacity style={styles.button} onPress={handleButtonClick}>
           <Text style={styles.buttonText}>첫 글 쓰고 추억 남기러 가기</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={handleButtonClick}>
+          <Text style={styles.buttonText}>가족에게 코드 공유하러 가기</Text>
+        </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 

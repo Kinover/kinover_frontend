@@ -5,8 +5,7 @@ import CommunicationStack from './stacks/communicationStack';
 import ScheduleStack from './stacks/scheduleStack';
 import MemoryStack from './stacks/memoryStack';
 import {renderTabBarIcon, renderTabBarLabel} from './tabHeaderHelpers';
-import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
-
+import {getFocusedRouteNameFromRoute} from '@react-navigation/native';
 
 const Tab = createBottomTabNavigator();
 
@@ -72,14 +71,23 @@ export default function TabNavigator() {
       <Tab.Screen
         name="추억기록"
         component={MemoryStack}
-        options={{
-          tabBarLabel: ({focused}) => renderTabBarLabel('추억기록', focused),
-          tabBarIcon: ({focused}) =>
-            renderTabBarIcon(
-              focused,
-              'https://i.postimg.cc/3NCVXHm0/Vector-16.png',
-              'https://i.postimg.cc/sgz4hhgX/Vector-19.png',
-            ),
+        options={({route}) => {
+          const hiddenScreens = ['게시글화면']; // 📌 탭 숨길 화면 목록
+
+          const routeName = getFocusedRouteNameFromRoute(route);
+
+          const shouldHideTab = hiddenScreens.includes(routeName);
+
+          return {
+            tabBarLabel: ({focused}) => renderTabBarLabel('추억기록', focused),
+            tabBarIcon: ({focused}) =>
+              renderTabBarIcon(
+                focused,
+                'https://i.postimg.cc/3NCVXHm0/Vector-16.png',
+                'https://i.postimg.cc/sgz4hhgX/Vector-19.png',
+              ),
+            tabBarStyle: shouldHideTab ? {display: 'none'} : undefined, // 📌 탭 숨기기
+          };
         }}
       />
     </Tab.Navigator>
