@@ -1,5 +1,4 @@
 import React, {useState, useEffect, useCallback, useLayoutEffect} from 'react';
-import BottomSheet, {BottomSheetView} from '@gorhom/bottom-sheet';
 import LinearGradient from 'react-native-linear-gradient';
 import {
   Image,
