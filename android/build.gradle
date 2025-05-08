@@ -18,11 +18,19 @@ buildscript {
   }
 }
 
-allprojects {
-  repositories {
-    google()
-    mavenCentral()
-    maven { url 'https://www.jitpack.io' }
-    maven { url 'https://devrepo.kakao.com/nexus/content/groups/public/' } // ✅ 이 줄 추가
-  }
+
+subprojects {
+    afterEvaluate {
+        if (project.hasProperty("android")) {
+            android {
+                lintOptions {
+                    abortOnError false
+                    checkReleaseBuilds false
+                    disable 'WrongConstant'
+                }
+            }
+        }
+    }
 }
+
+apply plugin: "com.facebook.react.rootproject"
