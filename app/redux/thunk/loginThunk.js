@@ -1,7 +1,7 @@
 // loginThunk.js
 import axios from 'axios';
 import { Platform } from 'react-native';
-import { saveToken } from '../../utils/storage';
+import { saveLoginInfo } from '../../utils/storage';
 import {
   setLoginLoading,
   setLoginError,
@@ -30,7 +30,7 @@ export const loginThunk = kakaoUserDto => {
         },
       });
 
-      await saveToken(response.data); // 토큰 저장
+      await saveLoginInfo(response.data); // token + hasFamily 저장
 
       dispatch(setLoginSuccess());
       await dispatch(fetchUserThunk()); // 유저 정보 가져오기

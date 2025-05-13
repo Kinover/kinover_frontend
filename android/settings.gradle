@@ -1,14 +1,9 @@
 pluginManagement {
-  // ✅ 순서 매우 중요!! 반드시 includeBuild가 위에 있어야 함
-  includeBuild("../node_modules/@react-native/gradle-plugin")
-
-  repositories {
-    maven { url = uri("$rootDir/../node_modules/react-native/android") } // ← uri로 바꾸는 게 공식 추천 방식이야!
-    gradlePluginPortal()
-    google()
-    mavenCentral()
-  }
+    includeBuild("../node_modules/@react-native/gradle-plugin")
 }
-
-
-include(":app")
+plugins {
+    id("com.facebook.react.settings")
+}
+extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
+    ex.autolinkLibrariesFromCommand()
+}
