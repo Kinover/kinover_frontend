@@ -15,6 +15,8 @@ buildscript {
   dependencies {
     classpath("com.android.tools.build:gradle:8.2.2")
     classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+    classpath("com.facebook.react:react-native-gradle-plugin")
+
   }
 }
 
@@ -33,4 +35,3 @@ subprojects {
     }
 }
 
-apply plugin: "com.facebook.react.rootproject"
