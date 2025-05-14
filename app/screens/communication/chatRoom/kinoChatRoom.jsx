@@ -40,12 +40,11 @@ export default function KinoChatRoom({route}) {
   }, [chatRoom?.chatRoomId]);
 
   useEffect(() => {
-    navigation.getParent()?.setOptions({ tabBarStyle: { display: 'none' } });
+    navigation.getParent()?.setOptions({tabBarStyle: {display: 'none'}});
     return () => {
-      navigation.getParent()?.setOptions({ tabBarStyle: { display: 'flex' } });
+      navigation.getParent()?.setOptions({tabBarStyle: {display: 'flex'}});
     };
   }, [navigation]);
-  
 
   // ✅ WebSocket 연결
   useEffect(() => {
@@ -146,6 +145,11 @@ export default function KinoChatRoom({route}) {
           const next = messageList[index + 1];
           const isSameSender = next?.senderId === item.senderId;
 
+          const prevMessage = messageList[index + 1]; // inverted=true니까 다음 index가 이전 메시지
+          const currentDate = new Date(item.createdAt).toDateString();
+          const prevDate = prevMessage ? new Date(prevMessage.createdAt).toDateString() : null;
+      
+          const shouldShowDate = currentDate !== prevDate;
           return (
             <ChatMessageItem
               chatRoom={chatRoom}
@@ -153,6 +157,8 @@ export default function KinoChatRoom({route}) {
               currentUserId={user.userId}
               isKino={chatRoom.kino}
               isSameSender={isSameSender}
+              shouldShowDate={shouldShowDate}
+
             />
           );
         }}
@@ -162,7 +168,11 @@ export default function KinoChatRoom({route}) {
         ListFooterComponent={
           isFetchingMore && <ActivityIndicator size="small" color="#aaa" />
         }
-        contentContainerStyle={{flexGrow: 1}}
+        contentContainerStyle={{
+          flexGrow: 1,
+          justifyContent: 'flex-start', // inverted일 때 위로 붙게 하려면 'flex-start'!
+          minHeight: '100%', // 콘텐츠가 화면 높이보다 작을 때 위에 붙게 하기 위함
+        }}
         maintainVisibleContentPosition={{minIndexForVisible: 0}}
         removeClippedSubviews={false}
         onScroll={handleScroll} // ✅ 사용자 스크롤 감지
@@ -177,6 +187,7 @@ export default function KinoChatRoom({route}) {
         user={user}
         socketRef={socketRef}
         setMessageList={setMessageList}
+
       />
     </View>
   );

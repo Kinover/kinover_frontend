@@ -49,7 +49,7 @@ export default function HomeScreen() {
     {
       id: 1,
       category: '공지',
-      title: '가족 캠핑 챌린지',
+      title: `${family.notice}`,
       image: require('../../assets/images/one.png'),
     },
     {
@@ -75,7 +75,8 @@ export default function HomeScreen() {
       console.log(user.userId);
       console.log(user.image);
     }
-  }, [dispatch, user.userId]);
+  }, [dispatch, user]);
+
 
   return (
     <>
@@ -104,8 +105,7 @@ export default function HomeScreen() {
               </Text>
             </View>
 
-            <TouchableOpacity
-              style={styles.familyDeleteButton}>
+            <TouchableOpacity style={styles.familyDeleteButton}>
               <Text style={styles.familyDeleteButtonText}>{'가족명 변경'}</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -144,7 +144,7 @@ export default function HomeScreen() {
             {familyUserList && familyUserList.length > 0 ? (
               chunkArray(
                 (familyUserList || []).filter(
-                  member => member && member.name && member.image,
+                  member => member && member.name ,
                 ),
                 3,
               ).map((row, rowIndex) => (
@@ -155,6 +155,7 @@ export default function HomeScreen() {
                       style={styles.user}
                       disabled={!isEditMode}
                       onPress={() => {
+                        setIsEditMode(false);
                         navigation.navigate('프로필화면', {user: member});
                       }}>
                       <Image
@@ -168,8 +169,8 @@ export default function HomeScreen() {
                               styles.userImage,
                               {
                                 position: 'absolute',
-                                opacity: 0.4,
-                                backgroundColor: 'lightgray',
+                                opacity: 0.5,
+                                backgroundColor: 'gray',
                               },
                             ]}></View>
                           <Image
@@ -179,6 +180,7 @@ export default function HomeScreen() {
                               top: getResponsiveHeight(25),
                               width: getResponsiveWidth(20),
                               height: getResponsiveHeight(20),
+                              zIndex: 999,
                             }}
                           />
                         </>
@@ -309,7 +311,8 @@ export default function HomeScreen() {
                 multiline={true} // ✅ 여러 줄 입력 가능하게
               />
             </View>
-          }/>
+          }
+        />
       )}
     </>
   );

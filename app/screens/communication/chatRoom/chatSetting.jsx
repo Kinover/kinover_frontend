@@ -1,4 +1,4 @@
-import React, {useEffect} from 'react';
+import React, {useEffect, useState} from 'react';
 import {BlurView} from '@react-native-community/blur';
 import {useSelector, useDispatch} from 'react-redux';
 import {fetchChatRoomUsersThunk} from '../../../redux/thunk/chatRoomThunk';
@@ -11,6 +11,7 @@ import {
   PanResponder,
   Image,
   Modal,
+  TextInput,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -23,6 +24,8 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
+import CustomModal from '../../../utils/customModal';
+import {renameChatRoomThunk} from '../../../redux/thunk/chatRoomThunk';
 
 const {width} = Dimensions.get('window');
 
@@ -35,14 +38,36 @@ export default function ChatSettings({
   onLeaveChat,
   onToggleNotifications,
   chatRoomId,
-  navigation
+  navigation,
 }) {
   const translateX = useSharedValue(width);
   const chatRoomUsers = useSelector(state => state.chatRoom.chatRoomUsers);
   const dispatch = useDispatch();
+  const [isLeaveModalVisible, setIsLeaveModalVisible] = useState(false);
+  const [isRenameModalVisible, setIsRenameModalVisible] = useState(false);
+  const [newRoomName, setNewRoomName] = useState('');
+
+  const handleRenameChatRoom = () => {
+    if (!newRoomName.trim()) return;
+
+    dispatch(renameChatRoomThunk({chatRoomId, roomName: newRoomName}))
+      .unwrap()
+      .then(() => {
+        setIsRenameModalVisible(false);
+        setNewRoomName('');
+      })
+      .catch(err => {
+        console.warn('❌ 이름 변경 실패:', err);
+      });
+  };
 
   const handleShowMembers = () => {
     navigation.navigate('채팅방멤버추가화면', {chatRoomId});
+  };
+
+  const handleLeaveConfirm = () => {
+    setIsLeaveModalVisible(false);
+    onLeaveChat();
   };
 
   useEffect(() => {
@@ -102,7 +127,9 @@ export default function ChatSettings({
         </View>
 
         <View style={styles.content}>
-          <TouchableOpacity style={styles.option} onPress={onChangeName}>
+          <TouchableOpacity
+            style={styles.option}
+            onPress={() => setIsRenameModalVisible(true)}>
             <Text style={styles.optionText}>채팅방 이름 변경</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.option} onPress={onShowMedia}>
@@ -133,13 +160,119 @@ export default function ChatSettings({
           </View>
         </View>
 
-        {/* 👇 하단 고정 나가기 버튼 */}
-        <TouchableOpacity style={styles.leaveOption} onPress={onLeaveChat}>
+        <TouchableOpacity
+          style={styles.leaveOption}
+          onPress={() => setIsLeaveModalVisible(true)}>
           <Text style={[styles.optionText, styles.leaveText]}>
             채팅방 나가기
           </Text>
         </TouchableOpacity>
       </Animated.View>
+
+      <CustomModal
+        visible={isLeaveModalVisible}
+        onClose={() => setIsLeaveModalVisible(false)}
+        onConfirm={handleLeaveConfirm}
+        confirmText="나가기"
+        closeText="취소하기"
+        buttonBottomStyle={{
+          flexDirection: 'row',
+          gap: getResponsiveWidth(10),
+          justifyContent: 'space-between',
+        }}
+        confirmButtonStyle={{
+          flex: 1,
+          backgroundColor: '#FFC84D',
+          paddingVertical: getResponsiveHeight(10),
+          borderRadius: 8,
+        }}
+        closeButtonStyle={{
+          // backgroundColor: '#E0E0E0',
+          flex: 1,
+          backgroundColor: '#E0E0E0',
+          paddingVertical: getResponsiveHeight(10),
+          borderRadius: 8,
+        }}
+        closeTextStyle={{
+          fontFamily: 'Pretendard-Regular',
+          fontSize: getResponsiveFontSize(14),
+        }}
+        confirmTextStyle={{
+          fontFamily: 'Pretendard-Regular',
+          fontSize: getResponsiveFontSize(14),
+          color: 'black',
+        }}>
+        <Text
+          style={{
+            fontSize: 16,
+            textAlign: 'center',
+            fontFamily: 'Pretendard-SemiBold',
+            marginTop: getResponsiveHeight(10),
+          }}>
+          정말 채팅방을 나가시겠습니까?
+        </Text>
+      </CustomModal>
+      <CustomModal
+        visible={isRenameModalVisible}
+        onClose={() => {
+          setIsRenameModalVisible(false);
+          setNewRoomName('');
+        }}
+        onConfirm={handleRenameChatRoom}
+        confirmText="변경"
+        closeText="취소"
+        buttonBottomStyle={{
+          flexDirection: 'row',
+          gap: getResponsiveWidth(10),
+          justifyContent: 'space-between',
+        }}
+        confirmButtonStyle={{
+          flex: 1,
+          backgroundColor: '#FFC84D',
+          paddingVertical: getResponsiveHeight(10),
+          borderRadius: 8,
+        }}
+        closeButtonStyle={{
+          flex: 1,
+          backgroundColor: '#E0E0E0',
+          paddingVertical: getResponsiveHeight(10),
+          borderRadius: 8,
+        }}
+        closeTextStyle={{
+          fontFamily: 'Pretendard-Regular',
+          fontSize: getResponsiveFontSize(14),
+        }}
+        confirmTextStyle={{
+          fontFamily: 'Pretendard-Regular',
+          fontSize: getResponsiveFontSize(14),
+          color: 'black',
+        }}>
+        <View style={{marginTop: getResponsiveHeight(10)}}>
+          <Text
+            style={{
+              fontFamily: 'Pretendard-SemiBold',
+              fontSize: getResponsiveFontSize(16),
+              marginBottom: getResponsiveHeight(10),
+              textAlign: 'center',
+            }}>
+            채팅방 이름을 수정하세요
+          </Text>
+          <TextInput
+            placeholder="새 채팅방 이름"
+            value={newRoomName}
+            onChangeText={setNewRoomName}
+            style={{
+              borderWidth: 1,
+              borderColor: '#ccc',
+              borderRadius: 6,
+              padding: 10,
+              fontSize: getResponsiveFontSize(14),
+              backgroundColor: '#fff',
+              fontFamily: 'Pretendard-Regular',
+            }}
+          />
+        </View>
+      </CustomModal>
     </Modal>
   );
 }
@@ -164,7 +297,7 @@ const styles = StyleSheet.create({
     borderLeftWidth: 1,
     borderColor: '#ddd',
     paddingHorizontal: 20,
-    paddingBottom: getResponsiveHeight(100), // Leave button과 겹치지 않게
+    paddingBottom: getResponsiveHeight(100),
     zIndex: 9999,
     elevation: 20,
   },
@@ -194,7 +327,6 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-Light',
   },
-
   addMemberButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -202,26 +334,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: '#f5d58d',
   },
-
   addIcon: {
     fontSize: getResponsiveFontSize(40),
-    // width: getResponsiveIconSize(40),
-    // height: getResponsiveIconSize(40),
     color: '#F29F05',
     marginRight: getResponsiveWidth(10),
     fontFamily: 'Pretendard-Bold',
   },
-
   addText: {
     fontSize: getResponsiveFontSize(14),
     color: 'black',
     fontFamily: 'Pretendard-Medium',
   },
-
   memberList: {
     width: '100%',
     minHeight: '16%',
-    // maxHeight: '70%',
     borderRadius: getResponsiveIconSize(5),
     backgroundColor: '#FFD26D',
     marginTop: 10,

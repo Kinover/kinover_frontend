@@ -51,12 +51,11 @@ export default function FamilyChatRoom({route}) {
     }
   };
   useEffect(() => {
-    navigation.getParent()?.setOptions({ tabBarStyle: { display: 'none' } });
+    navigation.getParent()?.setOptions({tabBarStyle: {display: 'none'}});
     return () => {
-      navigation.getParent()?.setOptions({ tabBarStyle: { display: 'flex' } });
+      navigation.getParent()?.setOptions({tabBarStyle: {display: 'flex'}});
     };
   }, [navigation]);
-  
 
   useEffect(() => {
     if (chatRoom) {
@@ -151,7 +150,7 @@ export default function FamilyChatRoom({route}) {
   }
 
   return (
-    <View style={{flex: 1, backgroundColor: 'white',paddingBottom:'15%'}}>
+    <View style={{flex: 1, backgroundColor: 'white', paddingBottom: '20%'}}>
       {isQuestionVisible && (
         <>
           <View style={styles.overlay} />
@@ -192,6 +191,14 @@ export default function FamilyChatRoom({route}) {
         renderItem={({item, index}) => {
           const next = messageList[index + 1];
           const isSameSender = next?.senderId === item.senderId;
+
+          const prevMessage = messageList[index + 1]; // inverted=true니까 다음 index가 이전 메시지
+          const currentDate = new Date(item.createdAt).toDateString();
+          const prevDate = prevMessage
+            ? new Date(prevMessage.createdAt).toDateString()
+            : null;
+
+          const shouldShowDate = currentDate !== prevDate;
           return (
             <ChatMessageItem
               chatRoom={chatRoom}
@@ -199,6 +206,7 @@ export default function FamilyChatRoom({route}) {
               currentUserId={user.userId}
               isKino={false}
               isSameSender={isSameSender}
+              shouldShowDate={shouldShowDate}
             />
           );
         }}
@@ -218,11 +226,7 @@ export default function FamilyChatRoom({route}) {
         }}
       />
 
-      <ChatInput
-        chatRoom={chatRoom}
-        user={user}
-        socketRef={socketRef}
-      />
+      <ChatInput chatRoom={chatRoom} user={user} socketRef={socketRef} />
     </View>
   );
 }

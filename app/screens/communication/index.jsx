@@ -33,22 +33,13 @@ export default function CommunicationScreen({navigation}) {
   return (
     <SafeAreaView style={styles.mainContainer} edges={['top,bottom,left,right']}>
 
-      {/* 유저 헤더 */}
-      {/* <UserHeader /> */}
-
-      {/* 가족 구성원 한마디 */}
-      {/* <ShortCommentScreen /> */}
-
-      {/* 채팅방 리스트 바텀시트 */}
-      {/* <ChatRoomListScreen navigation={navigation} /> */}
-
-      <View
+      {/* <View
         style={{
           width: '100%',
           height: getResponsiveHeight(60),
           backgroundColor: 'lightgray',
         }}
-      />
+      /> */}
       <View style={{paddingHorizontal: getResponsiveWidth(25)}}>
         <Text style={styles.bottomSheetTitle}>채팅방</Text>
 
@@ -163,6 +154,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: getResponsiveHeight(30),
     backgroundColor:'white',
+    paddingTop:getResponsiveHeight(20),
   },
 
   bottomSheetTitle: {
