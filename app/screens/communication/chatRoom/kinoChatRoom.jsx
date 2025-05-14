@@ -39,6 +39,14 @@ export default function KinoChatRoom({route}) {
     }
   }, [chatRoom?.chatRoomId]);
 
+  useEffect(() => {
+    navigation.getParent()?.setOptions({ tabBarStyle: { display: 'none' } });
+    return () => {
+      navigation.getParent()?.setOptions({ tabBarStyle: { display: 'flex' } });
+    };
+  }, [navigation]);
+  
+
   // ✅ WebSocket 연결
   useEffect(() => {
     const connectWebSocket = async () => {
