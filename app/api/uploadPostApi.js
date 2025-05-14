@@ -2,8 +2,6 @@
 import axios from 'axios';
 import { getToken } from '../utils/storage';
 
-
-
 export const uploadPostApi = async (postData) => {
   try {
     const token = await getToken();

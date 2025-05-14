@@ -1,8 +1,9 @@
 // chatRoomSlice.js
-import { createSlice } from '@reduxjs/toolkit';
+import {createSlice} from '@reduxjs/toolkit';
 
 const initialChatRoomState = {
   chatRoomList: [],
+  chatRoomUsers: [],
   loading: false,
   error: null,
 };
@@ -14,6 +15,9 @@ const chatRoomSlice = createSlice({
     setChatRoomList(state, action) {
       state.chatRoomList = action.payload;
     },
+    setChatRoomUsers: (state, action) => {
+      state.chatRoomUsers = action.payload;
+    },
     setChatRoomLoading(state, action) {
       state.loading = action.payload;
     },
@@ -23,5 +27,7 @@ const chatRoomSlice = createSlice({
   },
 });
 
-export const { setChatRoomList, setChatRoomLoading, setChatRoomError } = chatRoomSlice.actions;
+export const {setChatRoomList,   setChatRoomUsers,
+  setChatRoomLoading, setChatRoomError} =
+  chatRoomSlice.actions;
 export default chatRoomSlice.reducer;

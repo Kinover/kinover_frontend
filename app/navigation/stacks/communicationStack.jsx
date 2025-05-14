@@ -17,6 +17,7 @@ import {getResponsiveWidth, getResponsiveHeight} from '../../utils/responsive';
 import {Image, View} from 'react-native';
 import {RenderGoBackButton} from '../tabHeaderHelpers';
 import NotificationScreen from '../../components/notificationScreen';
+import AddChatMemeberScreen from '../../screens/communication/chatRoom/addChatMemberScreen';
 
 const Stack = createStackNavigator();
 
@@ -78,7 +79,7 @@ export default function CommunicationStack() {
       <Stack.Screen
         name="채팅방화면"
         component={OneToOneChatRoom}
-        options={({navigation,route}) => ({
+        options={({navigation, route}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           // headerRight: () => (
           //   <RenderHeaderRightChatSetting
@@ -90,7 +91,7 @@ export default function CommunicationStack() {
       <Stack.Screen
         name="키노상담소화면"
         component={KinoChatRoom}
-        options={({navigation,route}) => ({
+        options={({navigation, route}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           // headerRight: () => (
           //   <RenderHeaderRightChatSetting
@@ -102,7 +103,7 @@ export default function CommunicationStack() {
       <Stack.Screen
         name="가족채팅방화면"
         component={FamilyChatRoom}
-        options={({navigation,route}) => ({
+        options={({navigation, route}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           // headerRight: () => (
           //   <RenderHeaderRightChatSetting
@@ -114,6 +115,14 @@ export default function CommunicationStack() {
       <Stack.Screen
         name="채팅설정화면"
         component={ChatSettings}
+        options={({navigation}) => ({
+          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+        })}
+      />
+
+      <Stack.Screen
+        name="채팅방멤버추가화면"
+        component={AddChatMemeberScreen}
         options={({navigation}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}

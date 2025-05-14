@@ -2,7 +2,6 @@ import React,{useState} from 'react';
 import {View, Image} from 'react-native';
 import {getResponsiveHeight, getResponsiveWidth} from '../utils/responsive';
 import {createStackNavigator} from '@react-navigation/stack';
-import ChatSettings from '../screens/communication/chatRoom/chatSetting';
 import TabNavigator from './tabNavigator';
 import AuthNavigator from './authNavigator';
 
