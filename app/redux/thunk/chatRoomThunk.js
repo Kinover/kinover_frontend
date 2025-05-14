@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { getToken } from '../../utils/storage';
 import {
   setChatRoomList,
+  setChatRoomUsers,
   setChatRoomLoading,
   setChatRoomError,
 } from '../slices/chatRoomSlice';
@@ -27,6 +28,32 @@ export const fetchChatRoomListThunk = (familyId, userId) => {
       console.log('✅ 채팅방 목록 불러오기 성공:', response.data);
     } catch (error) {
       console.error('❌ 채팅방 목록 불러오기 실패:', error);
+      dispatch(setChatRoomError(error.message));
+    } finally {
+      dispatch(setChatRoomLoading(false));
+    }
+  };
+};
+
+
+export const fetchChatRoomUsersThunk = (chatRoomId) => {
+  return async (dispatch) => {
+    dispatch(setChatRoomLoading(true));
+
+    try {
+      const token = await getToken();
+      const apiUrl = `http://43.200.47.242:9090/api/chatRoom/${chatRoomId}/users/get`;
+
+      const response = await axios.post(apiUrl, {}, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      dispatch(setChatRoomUsers(response.data));
+      console.log('✅ 채팅방 내 유저 조회 성공:', response.data);
+    } catch (error) {
+      console.error('❌ 채팅방 내 유저 조회 실패:', error);
       dispatch(setChatRoomError(error.message));
     } finally {
       dispatch(setChatRoomLoading(false));

@@ -1,137 +1,195 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  ScrollView,
-  TouchableOpacity,
-  Image,
   View,
-  Text,
+  FlatList,
+  ActivityIndicator,
   StyleSheet,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
 import ChatInput from './chatInput';
+import ChatMessageItem from './chatMessageItem';
 import {
-  getResponsiveWidth,
-  getResponsiveHeight,
-  getResponsiveFontSize,
-  getResponsiveIconSize,
-} from '../../../utils/responsive';
-import ChatScreen from './chatScreen';
-import {useNavigation} from '@react-navigation/native';
+  fetchMessageThunk,
+  fetchMoreMessagesThunk,
+} from '../../../redux/thunk/messageThunk';
+import { addMessage, setMessageList } from '../../../redux/slices/messageSlice';
 import { getToken } from '../../../utils/storage';
 
-export default function OneToOneChatRoom({route}) {
-  const {chatRoom, user} = route.params || {}; // params에서 가져오기
+export default function OneToOneChatRoom({ route }) {
   const navigation = useNavigation();
-  const scrollViewRef = useRef(null); // ScrollView에 ref 추가
-  const socketRef = useRef(null); // ✅ useRef로 socket 관리
-  const [socket, setSocket] = useState(null);
+  const dispatch = useDispatch();
+  const { chatRoom, user } = route.params || {};
+  const { messageList, isLoading } = useSelector((state) => state.message);
 
-  // 채팅 화면이 업데이트될 때 자동 스크롤
-  const scrollToBottom = () => {
-    scrollViewRef.current?.scrollToEnd({animated: true});
-  };
+  const socketRef = useRef(null);
+  const flatListRef = useRef(null);
 
+  const [noMoreMessages, setNoMoreMessages] = useState(false);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const scrollTimeout = useRef(null);
+
+  // ✅ 초기 메시지 불러오기
+  useEffect(() => {
+    if (chatRoom?.chatRoomId) {
+      dispatch(fetchMessageThunk(chatRoom.chatRoomId));
+      setNoMoreMessages(false);
+    }
+  }, [chatRoom?.chatRoomId]);
+
+  // ✅ WebSocket 연결
   useEffect(() => {
     const connectWebSocket = async () => {
       const token = await getToken();
-      if (!chatRoom || !user?.userId || !token) {
-        console.log('🚫 조건 부족으로 WebSocket 연결 안함');
-        return;
+      if (!chatRoom || !user?.userId || !token) return;
+
+      if (socketRef.current) {
+        socketRef.current.close();
+        socketRef.current = null;
       }
-  
-      console.log('🪪 토큰:', token);
+
       const ws = new WebSocket(`ws://43.200.47.242:9090/chat?token=${token}`);
-  
+
       ws.onopen = () => {
         console.log('✅ WebSocket 연결 성공');
       };
-  
+
       ws.onmessage = (event) => {
         try {
           const message = JSON.parse(event.data);
           console.log('📥 수신:', message);
+          dispatch(addMessage(message));
+          if (!isUserScrolling) {
+            setTimeout(() => scrollToBottom(), 100);
+          }
         } catch (err) {
-          console.error('❌ 수신 메시지 파싱 실패:', err);
+          console.error('❌ 메시지 파싱 실패:', err);
         }
       };
-  
-      ws.onerror = (err) => {
-        console.error('⚠️ WebSocket 오류:', err);
-      };
-  
-      ws.onclose = (e) => {
-        console.log('🔌 WebSocket 연결 종료', e.code, e.reason);
-      };
-  
+
+      ws.onerror = (err) => console.error('⚠️ WebSocket 오류:', err);
+      ws.onclose = () => console.log('🔌 WebSocket 종료');
+
       socketRef.current = ws;
     };
-  
+
     connectWebSocket();
-  
+
     return () => {
-      if (socketRef.current) {
-        console.log('🧹 WebSocket 정리');
-        socketRef.current.close();
-      }
+      socketRef.current?.close();
+      socketRef.current = null;
     };
-  }, []); // ✅ useEffect 딱 한 번만 실행!
+  }, [chatRoom?.roomId, user?.userId]);
 
+  // ✅ 하단 자동 스크롤
+  const scrollToBottom = () => {
+    if (flatListRef.current && messageList.length > 0) {
+      flatListRef.current.scrollToIndex({
+        index: 0,
+        animated: true,
+        viewPosition: 0,
+      });
+    }
+  };
+
+  // ✅ 메시지 수신 시 자동 스크롤
   useEffect(() => {
-    // 화면 들어올 때 바텀 네비 숨기기
-    navigation.getParent()?.setOptions({tabBarStyle: {display: 'none'}});
+    if (messageList.length > 0 && !isUserScrolling) {
+      scrollToBottom();
+    }
+  }, [messageList.length]);
 
+  // ✅ 과거 메시지 불러오기
+  const loadOlderMessages = async () => {
+    if (isFetchingMore || noMoreMessages || messageList.length === 0) return;
+
+    setIsFetchingMore(true);
+    const oldest = messageList[messageList.length - 1];
+    const result = await dispatch(
+      fetchMoreMessagesThunk(chatRoom.chatRoomId, oldest?.createdAt),
+    );
+
+    if (result.payload?.length === 0) {
+      setNoMoreMessages(true);
+    }
+
+    setIsFetchingMore(false);
+  };
+
+  // ✅ 사용자 스크롤 감지
+  const handleScroll = () => {
+    setIsUserScrolling(true);
+    if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+    scrollTimeout.current = setTimeout(() => {
+      setIsUserScrolling(false);
+    }, 1000);
+  };
+
+  // ✅ 하단 탭 숨기기
+  useEffect(() => {
+    navigation.getParent()?.setOptions({ tabBarStyle: { display: 'none' } });
     return () => {
-      // 화면 나갈 때 다시 보이게 설정
-      navigation.getParent()?.setOptions({tabBarStyle: {display: 'flex'}});
+      navigation.getParent()?.setOptions({ tabBarStyle: { display: 'flex' } });
     };
   }, [navigation]);
 
   useEffect(() => {
     if (chatRoom) {
-      navigation.setOptions({headerTitle: chatRoom.roomName});
+      navigation.setOptions({ headerTitle: chatRoom.roomName });
     }
   }, [navigation, chatRoom]);
 
   return (
-    <View style={{flex: 1, backgroundColor: 'white'}}>
-      <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={styles.chatScrollView}
-        onContentSizeChange={scrollToBottom} // 내용 변경 시 자동 스크롤
-        onLayout={scrollToBottom}
-        showsVerticalScrollIndicator={false}>
-        <ChatScreen chatRoom={chatRoom} user={user}></ChatScreen>
-      </ScrollView>
+    <View style={styles.container}>
+      <FlatList
+        ref={flatListRef}
+        data={messageList}
+        keyExtractor={(item) => `${item.messageId}_${item.createdAt}`}
+        renderItem={({ item, index }) => {
+          const next = messageList[index + 1];
+          const isSameSender = next?.senderId === item.senderId;
+
+          return (
+            <ChatMessageItem
+              chatRoom={chatRoom}
+              message={item}
+              currentUserId={user.userId}
+              isKino={false}
+              isSameSender={isSameSender}
+            />
+          );
+        }}
+        inverted
+        onEndReached={noMoreMessages ? null : loadOlderMessages}
+        onEndReachedThreshold={0.3}
+        ListFooterComponent={
+          isFetchingMore && <ActivityIndicator size="small" color="#aaa" />
+        }
+        contentContainerStyle={{ flexGrow: 1 }}
+        maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+        removeClippedSubviews={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={100}
+        onScrollToIndexFailed={() => {
+          setTimeout(() => scrollToBottom(), 300);
+        }}
+      />
+
       <ChatInput
         chatRoom={chatRoom}
         user={user}
-        socketRef={socketRef} // ChatScreen에서 useState로 관리한 WebSocket 객체
+        socketRef={socketRef}
+        setMessageList={setMessageList}
       />
     </View>
   );
 }
 
-// 헤더 우측 설정 버튼
-const renderHeaderRightChatSetting = setIsSettingsOpen => (
-  <TouchableOpacity onPress={() => setIsSettingsOpen(true)}>
-    <Image
-      source={{uri: 'https://i.postimg.cc/WbtFytsT/setting.png'}}
-      style={{
-        width: getResponsiveWidth(26),
-        height: getResponsiveHeight(28),
-        marginRight: getResponsiveWidth(30),
-        resizeMode: 'contain',
-      }}
-    />
-  </TouchableOpacity>
-);
-
 const styles = StyleSheet.create({
-  chatScrollView: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingHorizontal: getResponsiveWidth(25),
-    paddingBottom: getResponsiveHeight(80),
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    paddingBottom: '15%',
   },
 });

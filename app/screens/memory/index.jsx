@@ -30,7 +30,6 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 export default function MemoryScreen({navigation}) {
   const user = useSelector(state => state.user);
   const family = useSelector(state => state.family);
-  const {challenge} = useSelector(state => state.challenge);
   const {familyUserList} = useSelector(state => state.userFamily);
   const dispatch = useDispatch();
   const [modalVisible, setModalVisible] = useState(false);

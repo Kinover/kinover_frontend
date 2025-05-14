@@ -14,11 +14,9 @@ import {
   getResponsiveHeight,
 } from '../../utils/responsive';
 import { useSelector } from 'react-redux';
-import { imageUrlApi, uploadImageToS3 } from '../../api/imageUrlApi';
+import { getPresignedUrls, uploadImageToS3 } from '../../api/imageUrlApi';
 import { uploadPostApi } from '../../api/uploadPostApi';
-import { getToken } from '../../utils/storage';
 import { getUserIdFromToken } from '../../api/getUserIdFromToken';
-
 
 export default function CreatePostPage({ navigation, route }) {
   const [text, setText] = useState('');
@@ -26,40 +24,38 @@ export default function CreatePostPage({ navigation, route }) {
   const user = useSelector(state => state.user);
   const family = useSelector(state => state.family);
   const { selectedCategory, selectedImages } = route.params;
-  
 
   const handleUpload = async () => {
     if (isUploading) return;
     setIsUploading(true);
 
     try {
-      const fileUrls = [];
+      // ✅ 파일 이름 미리 생성
+      const fileNames = selectedImages.map((_, i) => `img_${Date.now()}_${i}_${Math.floor(Math.random() * 1000)}.jpg`);
 
-      if (selectedImages && selectedImages.length > 0) {
-        for (const uri of selectedImages) {
-          const fileName = `img_${Date.now()}_${Math.floor(Math.random() * 1000)}.jpg`;
-          const contentType = 'image/jpeg';
-          const { uploadUrl, fileUrl } = await imageUrlApi(fileName, contentType);
-          await uploadImageToS3(uploadUrl, uri, contentType);
-          fileUrls.push(fileUrl);
-        }
+      // ✅ presigned URLs 요청
+      const presignedUrls = await getPresignedUrls(fileNames);
+
+      // ✅ 순차적 S3 업로드
+      for (let i = 0; i < selectedImages.length; i++) {
+        await uploadImageToS3(presignedUrls[i], selectedImages[i]);
       }
 
+      // ✅ userId 가져오기
       const tokenUserId = await getUserIdFromToken();
 
+      // ✅ 게시글 업로드
       const payload = {
         authorId: Number(tokenUserId),
         categoryId: selectedCategory?.categoryId,
-        imageUrls: fileUrls,
+        imageUrls: fileNames, // ✅ 이제는 파일 이름만 전송
         content: text,
-        familyId:  family.familyId,
-        // authorName: user.name,
-        // authorImage: user.image,
+        familyId: family.familyId,
       };
 
-      console.log('📦 게시글 업로드 payload:', JSON.stringify(payload, null, 2)); // ✅ 콘솔 추가
+      console.log('📦 게시글 업로드 payload:', JSON.stringify(payload, null, 2));
+      await uploadPostApi(payload);
 
-      await uploadPostApi(payload); // ✅ 교체 완료
       console.log('✅ 게시글 업로드 완료');
       navigation.navigate('추억화면', { selectedCategory });
     } catch (err) {

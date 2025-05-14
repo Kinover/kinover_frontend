@@ -1,12 +1,13 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
-  ScrollView,
   View,
   Text,
+  FlatList,
   StyleSheet,
   ImageBackground,
   TouchableOpacity,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import {
   getResponsiveWidth,
@@ -14,64 +15,55 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-import { useNavigation } from '@react-navigation/native';
-import ChatScreen from './chatScreen';
+import {useNavigation} from '@react-navigation/native';
 import ChatInput from './chatInput';
-import { getToken } from '../../../utils/storage';
+import ChatMessageItem from './chatMessageItem';
+import {getToken} from '../../../utils/storage';
+import {useDispatch} from 'react-redux';
+import {addMessage} from '../../../redux/slices/messageSlice';
+import {
+  fetchMessageThunk,
+  fetchMoreMessagesThunk,
+} from '../../../redux/thunk/messageThunk';
+import {useSelector} from 'react-redux';
 
-export default function FamilyChatRoom({ route }) {
-  const { chatRoom, user } = route.params || {};
+export default function FamilyChatRoom({route}) {
+  const {chatRoom, user} = route.params || {};
   const navigation = useNavigation();
-  const scrollViewRef = useRef(null);
+  const dispatch = useDispatch();
   const socketRef = useRef(null);
-  const [messageList, setMessageList] = useState([]);
+  const flatListRef = useRef(null);
+  const {messageList} = useSelector(state => state.message);
   const [isQuestionVisible, setIsQuestionVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [noMoreMessages, setNoMoreMessages] = useState(false);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const scrollTimeout = useRef(null);
 
   const scrollToBottom = () => {
-    scrollViewRef.current?.scrollToEnd({ animated: true });
+    if (flatListRef.current && messageList.length > 0) {
+      flatListRef.current.scrollToIndex({
+        index: 0,
+        animated: true,
+        viewPosition: 0,
+      });
+    }
   };
 
   useEffect(() => {
-    navigation.getParent()?.setOptions({ tabBarStyle: { display: 'none' } });
-    return () => {
-      navigation.getParent()?.setOptions({ tabBarStyle: { display: 'flex' } });
-    };
-  }, [navigation]);
-
-  useEffect(() => {
     if (chatRoom) {
-      navigation.setOptions({ headerTitle: chatRoom.roomName });
+      navigation.setOptions({headerTitle: chatRoom.roomName});
     }
   }, [chatRoom, navigation]);
 
-  // ✅ 과거 메시지 불러오기
   useEffect(() => {
-    const fetchMessages = async () => {
-      try {
-        const token = await getToken();
-        const res = await fetch(
-          `http://43.200.47.242:9090/api/chatRoom/${chatRoom.chatRoomId}/messages/fetch`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({}),
-          }
-        );
-        const data = await res.json();
-        console.log('📜 과거 메시지:', data.length);
-        setMessageList(data);
-      } catch (err) {
-        console.error('❌ 메시지 가져오기 실패:', err);
-      }
-    };
+    if (chatRoom?.chatRoomId) {
+      dispatch(fetchMessageThunk(chatRoom.chatRoomId));
+      setNoMoreMessages(false);
+    }
+  }, [chatRoom?.chatRoomId]);
 
-    if (chatRoom) fetchMessages();
-  }, [chatRoom]);
-
-  // ✅ WebSocket 연결 및 실시간 메시지 처리
   useEffect(() => {
     const connectWebSocket = async () => {
       const token = await getToken();
@@ -88,24 +80,23 @@ export default function FamilyChatRoom({ route }) {
         console.log('✅ WebSocket 연결 성공');
       };
 
-      ws.onmessage = (event) => {
+      ws.onmessage = event => {
         try {
           const message = JSON.parse(event.data);
           console.log('📥 수신:', message);
 
-          setMessageList(prev => [...prev, message]);
+          dispatch(addMessage(message));
+
+          if (!isUserScrolling) {
+            setTimeout(() => scrollToBottom(), 100);
+          }
         } catch (err) {
           console.error('❌ 수신 메시지 파싱 실패:', err);
         }
       };
 
-      ws.onerror = (err) => {
-        console.error('⚠️ WebSocket 오류:', err);
-      };
-
-      ws.onclose = () => {
-        console.log('🔌 WebSocket 종료');
-      };
+      ws.onerror = err => console.error('⚠️ WebSocket 오류:', err);
+      ws.onclose = () => console.log('🔌 WebSocket 종료');
 
       socketRef.current = ws;
     };
@@ -118,17 +109,47 @@ export default function FamilyChatRoom({ route }) {
     };
   }, [chatRoom?.roomId, user?.userId]);
 
+  useEffect(() => {
+    if (messageList.length > 0 && !isUserScrolling) {
+      scrollToBottom();
+    }
+  }, [messageList.length]);
+
+  const loadOlderMessages = async () => {
+    if (isFetchingMore || noMoreMessages || messageList.length === 0) return;
+
+    setIsFetchingMore(true);
+    const oldest = messageList[messageList.length - 1];
+    const result = await dispatch(
+      fetchMoreMessagesThunk(chatRoom.chatRoomId, oldest?.createdAt),
+    );
+
+    if (result.payload?.length === 0) {
+      setNoMoreMessages(true);
+    }
+
+    setIsFetchingMore(false);
+  };
+
+  const handleScroll = () => {
+    setIsUserScrolling(true);
+    if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
+    scrollTimeout.current = setTimeout(() => {
+      setIsUserScrolling(false);
+    }, 1000);
+  };
+
   if (!chatRoom || !user) {
     return <Text>데이터가 없습니다.</Text>;
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: 'white' }}>
+    <View style={{flex: 1, backgroundColor: 'white',paddingBottom:'15%'}}>
       {isQuestionVisible && (
         <>
           <View style={styles.overlay} />
           <ImageBackground
-            source={{ uri: 'https://i.postimg.cc/ZYWh5gLS/Group-484-1.png' }}
+            source={{uri: 'https://i.postimg.cc/ZYWh5gLS/Group-484-1.png'}}
             style={styles.todayQuestionContainer}
             resizeMode="contain">
             <View style={styles.todayQuestionContent}>
@@ -138,12 +159,18 @@ export default function FamilyChatRoom({ route }) {
               </Text>
             </View>
             <View style={styles.buttonContainer}>
-              <TouchableOpacity><View style={styles.answerButton} /></TouchableOpacity>
-              <TouchableOpacity><View style={styles.answerButton} /></TouchableOpacity>
+              <TouchableOpacity>
+                <View style={styles.answerButton} />
+              </TouchableOpacity>
+              <TouchableOpacity>
+                <View style={styles.answerButton} />
+              </TouchableOpacity>
               <TouchableOpacity>
                 <Image
                   style={styles.plusButton}
-                  source={{ uri: 'https://i.postimg.cc/63VJ4VHz/Group-1171276565-1.png' }}
+                  source={{
+                    uri: 'https://i.postimg.cc/63VJ4VHz/Group-1171276565-1.png',
+                  }}
                 />
               </TouchableOpacity>
             </View>
@@ -151,29 +178,47 @@ export default function FamilyChatRoom({ route }) {
         </>
       )}
 
-      <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={styles.chatScrollView}
-        onContentSizeChange={scrollToBottom}
-        onLayout={scrollToBottom}
-        showsVerticalScrollIndicator={false}>
-        <ChatScreen
-          chatRoom={chatRoom}
-          user={user}
-          messageList={messageList} // ✅ 실시간 메시지 전달
-        />
-      </ScrollView>
+      <FlatList
+        ref={flatListRef}
+        data={messageList}
+        keyExtractor={item => `${item.messageId}_${item.createdAt}`}
+        renderItem={({item, index}) => {
+          const next = messageList[index + 1];
+          const isSameSender = next?.senderId === item.senderId;
+          return (
+            <ChatMessageItem
+              chatRoom={chatRoom}
+              message={item}
+              currentUserId={user.userId}
+              isKino={false}
+              isSameSender={isSameSender}
+            />
+          );
+        }}
+        inverted
+        onEndReached={noMoreMessages ? null : loadOlderMessages}
+        onEndReachedThreshold={0.3}
+        ListFooterComponent={
+          isFetchingMore && <ActivityIndicator size="small" color="#aaa" />
+        }
+        contentContainerStyle={{flexGrow: 1}}
+        maintainVisibleContentPosition={{minIndexForVisible: 0}}
+        removeClippedSubviews={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={100}
+        onScrollToIndexFailed={() => {
+          setTimeout(() => scrollToBottom(), 300);
+        }}
+      />
 
       <ChatInput
         chatRoom={chatRoom}
         user={user}
         socketRef={socketRef}
-        setMessageList={setMessageList} // ✅ 전송 시 메시지 리스트 갱신
       />
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   todayQuestionContainer: {
@@ -188,10 +233,8 @@ const styles = StyleSheet.create({
     zIndex: 200,
   },
   todayQuestionContent: {
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   todayQuestionTitle: {
     fontFamily: 'Pretendard-SemiBold',
@@ -224,13 +267,6 @@ const styles = StyleSheet.create({
   plusButton: {
     width: getResponsiveWidth(23.6),
     height: getResponsiveHeight(23.6),
-  },
-  chatScrollView: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingHorizontal: getResponsiveWidth(25),
-    paddingBottom: getResponsiveHeight(80),
   },
   overlay: {
     position: 'absolute',

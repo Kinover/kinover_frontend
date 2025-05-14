@@ -8,9 +8,7 @@ import userChatRoomReducer from './slices/userChatRoomSlice';
 import userFamilyReducer from './slices/userFamilySlice';
 import chatRoomReducer from './slices/chatRoomSlice';
 import messageReducer from './slices/messageSlice';
-import recChallengeReducer from './slices/recChallengeSlice';
 import scheduleReducer from './slices/scheduleSlice';
-import challengeReducer from './slices/challengeSlice';
 import loginReducer from './slices/authSlice'; // ✅ 이 줄 추가
 
 const rootReducer = combineReducers({
@@ -21,9 +19,7 @@ const rootReducer = combineReducers({
   userFamily: userFamilyReducer,
   chatRoom: chatRoomReducer,
   message: messageReducer,
-  recChallenge: recChallengeReducer,
   schedule: scheduleReducer,
-  challenge: challengeReducer,
   login: loginReducer,
 });
 

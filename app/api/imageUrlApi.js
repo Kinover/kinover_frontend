@@ -1,36 +1,29 @@
+// 📁 /api/imageUrlApi.js
 import axios from 'axios';
-import {getToken} from '../utils/storage';
+import { getToken } from '../utils/storage';
 
-// 1. presigned URL 요청
-export const imageUrlApi = async fileName => {
+// ✅ 여러 Presigned URL 요청
+export const getPresignedUrls = async (fileNames) => {
   try {
     const token = await getToken();
     const response = await axios.post(
-      'http://43.200.47.242:9090/api/image/upload-url',
-      {fileName}, // ✅ 백엔드는 fileName만 필요함
+      'http://43.200.47.242:9090/api/image/upload-urls',
+      { fileNames },
       {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-      },
+      }
     );
-
-    const url = response.data; // 백엔드가 string 하나만 반환
-    return {
-      uploadUrl: url, // S3에 PUT할 presigned URL
-      fileUrl: url, // 업로드된 후 접근할 URL (같음)
-    };
+    return response.data; // Array of presigned URLs
   } catch (error) {
-    console.error(
-      'Presigned URL 요청 실패:',
-      error.response?.data || error.message,
-    );
+    console.error('Presigned URL 목록 요청 실패:', error.response?.data || error.message);
     throw error;
   }
 };
 
-// 2. S3에 PUT 요청으로 이미지 업로드
+// ✅ S3에 PUT 요청으로 이미지 업로드
 export const uploadImageToS3 = async (uploadUrl, fileUri) => {
   try {
     const fileResponse = await fetch(fileUri);
@@ -39,7 +32,7 @@ export const uploadImageToS3 = async (uploadUrl, fileUri) => {
     const uploadResponse = await fetch(uploadUrl, {
       method: 'PUT',
       headers: {
-        'Content-Type': 'image/jpeg', // ✅ presigned URL과 일치해야 함
+        'Content-Type': 'image/jpeg',
       },
       body: blob,
     });
