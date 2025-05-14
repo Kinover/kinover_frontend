@@ -24,6 +24,47 @@ export const fetchFamilyUserListThunk = (familyId) => {
       });
 
       dispatch(setFamilyUserList(Array.isArray(response.data) ? response.data : []));
+      console.log(response.data);
+    } catch (error) {
+      dispatch(setUserFamilyError(error.message));
+    } finally {
+      dispatch(setUserFamilyLoading(false));
+    }
+  };
+};
+
+export const modifyFamilyUserThunk = user => {
+  return async (dispatch, getState) => {
+    dispatch(setUserFamilyLoading(true));
+    try {
+      const apiUrl = `http://43.200.47.242:9090/api/user/modify`;
+      const token = await getToken();
+
+      const response = await axios.post(apiUrl, user, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const updatedUser = response.data;
+      const {familyUserList} = getState().userFamily;
+
+      // ✅ 기존 리스트에서 해당 유저만 업데이트
+      const updatedList = familyUserList.map(member =>
+        member.userId === updatedUser.userId
+          ? {
+              ...member,
+              name: updatedUser.name,
+              birth: updatedUser.birth,
+              image: updatedUser.image,
+            }
+          : member,
+      );
+
+      dispatch(setFamilyUserList(updatedList));
+      console.log('✅ 프로필 수정 완료:', response.data);
+
     } catch (error) {
       dispatch(setUserFamilyError(error.message));
     } finally {

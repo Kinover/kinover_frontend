@@ -1,26 +1,21 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  View,
-  FlatList,
-  ActivityIndicator,
-  StyleSheet,
-} from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { useDispatch, useSelector } from 'react-redux';
+import React, {useEffect, useRef, useState} from 'react';
+import {View, FlatList, ActivityIndicator, StyleSheet} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
+import {useDispatch, useSelector} from 'react-redux';
 import ChatInput from './chatInput';
 import ChatMessageItem from './chatMessageItem';
 import {
   fetchMessageThunk,
   fetchMoreMessagesThunk,
 } from '../../../redux/thunk/messageThunk';
-import { addMessage, setMessageList } from '../../../redux/slices/messageSlice';
-import { getToken } from '../../../utils/storage';
+import {addMessage, setMessageList} from '../../../redux/slices/messageSlice';
+import {getToken} from '../../../utils/storage';
 
-export default function OneToOneChatRoom({ route }) {
+export default function OneToOneChatRoom({route}) {
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const { chatRoom, user } = route.params || {};
-  const { messageList, isLoading } = useSelector((state) => state.message);
+  const {chatRoom, user} = route.params || {};
+  const {messageList, isLoading} = useSelector(state => state.message);
 
   const socketRef = useRef(null);
   const flatListRef = useRef(null);
@@ -55,7 +50,7 @@ export default function OneToOneChatRoom({ route }) {
         console.log('✅ WebSocket 연결 성공');
       };
 
-      ws.onmessage = (event) => {
+      ws.onmessage = event => {
         try {
           const message = JSON.parse(event.data);
           console.log('📥 수신:', message);
@@ -68,7 +63,7 @@ export default function OneToOneChatRoom({ route }) {
         }
       };
 
-      ws.onerror = (err) => console.error('⚠️ WebSocket 오류:', err);
+      ws.onerror = err => console.error('⚠️ WebSocket 오류:', err);
       ws.onclose = () => console.log('🔌 WebSocket 종료');
 
       socketRef.current = ws;
@@ -128,15 +123,15 @@ export default function OneToOneChatRoom({ route }) {
 
   // ✅ 하단 탭 숨기기
   useEffect(() => {
-    navigation.getParent()?.setOptions({ tabBarStyle: { display: 'none' } });
+    navigation.getParent()?.setOptions({tabBarStyle: {display: 'none'}});
     return () => {
-      navigation.getParent()?.setOptions({ tabBarStyle: { display: 'flex' } });
+      navigation.getParent()?.setOptions({tabBarStyle: {display: 'flex'}});
     };
   }, [navigation]);
 
   useEffect(() => {
     if (chatRoom) {
-      navigation.setOptions({ headerTitle: chatRoom.roomName });
+      navigation.setOptions({headerTitle: chatRoom.roomName});
     }
   }, [navigation, chatRoom]);
 
@@ -145,11 +140,16 @@ export default function OneToOneChatRoom({ route }) {
       <FlatList
         ref={flatListRef}
         data={messageList}
-        keyExtractor={(item) => `${item.messageId}_${item.createdAt}`}
-        renderItem={({ item, index }) => {
+        keyExtractor={item => `${item.messageId}_${item.createdAt}`}
+        renderItem={({item, index}) => {
           const next = messageList[index + 1];
           const isSameSender = next?.senderId === item.senderId;
-
+          const prevMessage = messageList[index + 1]; // inverted=true니까 다음 index가 이전 메시지
+          const currentDate = new Date(item.createdAt).toDateString();
+          const prevDate = prevMessage
+            ? new Date(prevMessage.createdAt).toDateString()
+            : null;
+          const shouldShowDate = currentDate !== prevDate;
           return (
             <ChatMessageItem
               chatRoom={chatRoom}
@@ -157,6 +157,7 @@ export default function OneToOneChatRoom({ route }) {
               currentUserId={user.userId}
               isKino={false}
               isSameSender={isSameSender}
+              shouldShowDate={shouldShowDate}
             />
           );
         }}
@@ -166,8 +167,8 @@ export default function OneToOneChatRoom({ route }) {
         ListFooterComponent={
           isFetchingMore && <ActivityIndicator size="small" color="#aaa" />
         }
-        contentContainerStyle={{ flexGrow: 1 }}
-        maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+        contentContainerStyle={{flexGrow: 1}}
+        maintainVisibleContentPosition={{minIndexForVisible: 0}}
         removeClippedSubviews={false}
         onScroll={handleScroll}
         scrollEventThrottle={100}
@@ -190,6 +191,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingBottom: '15%',
+    paddingBottom: '20%',
   },
 });

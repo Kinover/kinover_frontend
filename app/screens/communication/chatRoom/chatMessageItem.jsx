@@ -7,8 +7,16 @@ import SendKinoChat from './sendKinoChat';
 import {useNavigation} from '@react-navigation/native';
 import {useState} from 'react';
 import {useLayoutEffect} from 'react';
+import {useDispatch} from 'react-redux';
 import ChatSettings from './chatSetting';
-import { useEffect } from 'react';
+import {leaveChatRoomThunk} from '../../../redux/thunk/chatRoomThunk';
+import {useEffect} from 'react';
+import {
+  getResponsiveWidth,
+  getResponsiveIconSize,
+  getResponsiveHeight,
+} from '../../../utils/responsive';
+import {Alert,Text} from 'react-native';
 import {RenderHeaderRightChatSetting} from '../../../navigation/tabHeaderHelpers';
 export default function ChatMessageItem({
   chatRoom,
@@ -16,14 +24,42 @@ export default function ChatMessageItem({
   currentUserId,
   isKino = false,
   isSameSender = false,
+  shouldShowDate = false, // ✅ 추가
 }) {
   const isMe = message.senderId === currentUserId;
   const marginBottom = isSameSender ? 15 : 25;
+  const dispatch = useDispatch();
 
   let ChatComponent;
 
   const navigation = useNavigation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const formatDate = dateString => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long',
+    });
+  };
+
+  const onLeaveChat = () => {
+    dispatch(leaveChatRoomThunk(chatRoom.chatRoomId))
+      .unwrap()
+      .then(() => {
+        Alert.alert('채팅방을 나갔습니다.');
+        navigation.goBack();
+      })
+      .catch(err => {
+        console.error('❌ 나가기 실패:', err);
+        Alert.alert(
+          '채팅방 나가기 실패',
+          typeof err === 'string' ? err : '다시 시도해 주세요',
+        );
+      });
+  };
 
   useEffect(() => {
     navigation.getParent()?.setOptions({tabBarStyle: {display: 'none'}});
@@ -75,6 +111,11 @@ export default function ChatMessageItem({
     <>
       <View
         style={[styles.wrapper, isMe ? styles.alignRight : styles.alignLeft]}>
+        {shouldShowDate && (
+          <Text style={styles.dateSeparator}>
+            {formatDate(message.createdAt)}
+          </Text>
+        )}
         {ChatComponent}
       </View>
       <ChatSettings
@@ -82,6 +123,7 @@ export default function ChatMessageItem({
         onClose={() => setIsSettingsOpen(false)}
         chatRoomId={chatRoom.chatRoomId}
         navigation={navigation}
+        onLeaveChat={onLeaveChat}
       />
     </>
   );
@@ -97,5 +139,17 @@ const styles = StyleSheet.create({
   },
   alignLeft: {
     alignItems: 'flex-start',
+  },
+  dateSeparator: {
+    alignSelf: 'center',
+    fontSize: 12,
+    fontWeight: 'bold',
+    paddingHorizontal: getResponsiveWidth(5),
+    marginVertical: getResponsiveHeight(28),
+    backgroundColor: 'rgba(255, 202, 85, 0.7)', // 투명도 0.5로 설정
+    borderColor: 'transparent',
+    borderRadius: getResponsiveIconSize(20),
+    borderWidth: 9,
+    color: '#666',
   },
 });

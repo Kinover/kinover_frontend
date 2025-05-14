@@ -1,6 +1,7 @@
 // fetchChatRoomListThunk.js
 import axios from 'axios';
 import { Platform } from 'react-native';
+import {createAsyncThunk} from '@reduxjs/toolkit';
 import { getToken } from '../../utils/storage';
 import {
   setChatRoomList,
@@ -60,3 +61,64 @@ export const fetchChatRoomUsersThunk = (chatRoomId) => {
     }
   };
 };
+
+export const leaveChatRoomThunk = createAsyncThunk(
+  'chatRoom/leaveChatRoom',
+  async (chatRoomId, { rejectWithValue }) => {
+    try {
+      const token = await getToken();
+
+      const res = await fetch(
+        `http://43.200.47.242:9090/api/chatRoom/${chatRoomId}/leave`,
+        {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        // ❌ 에러 응답일 때만 간단히 reject
+        return rejectWithValue(`서버 오류: ${res.status}`);
+      }
+
+      // ✅ 성공하면 그냥 chatRoomId 반환 (또는 true, 'success' 등)
+      return chatRoomId;
+    } catch (error) {
+      return rejectWithValue(error.message || '알 수 없는 에러');
+    }
+  }
+);
+
+export const renameChatRoomThunk = createAsyncThunk(
+  'chatRoom/renameChatRoom',
+  async ({ chatRoomId, roomName }, { rejectWithValue }) => {
+    try {
+      const token = await getToken();
+      const response = await fetch(
+        `http://43.200.47.242:9090/api/chatRoom/${chatRoomId}/rename?roomName=${encodeURIComponent(
+          roomName
+        )}`,
+        {
+          method: 'PATCH',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        return rejectWithValue(`이름 변경 실패: ${response.status}`);
+      }
+
+      const data = await response.text();
+      console.log('✅ 채팅방 이름 변경 성공:', data);
+      return data;
+
+    } catch (err) {
+      console.error('❌ 채팅방 이름 변경 중 에러:', err);
+      return rejectWithValue(err.message || '알 수 없는 오류');
+    }
+  }
+);
