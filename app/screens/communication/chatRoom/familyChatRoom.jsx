@@ -50,6 +50,13 @@ export default function FamilyChatRoom({route}) {
       });
     }
   };
+  useEffect(() => {
+    navigation.getParent()?.setOptions({ tabBarStyle: { display: 'none' } });
+    return () => {
+      navigation.getParent()?.setOptions({ tabBarStyle: { display: 'flex' } });
+    };
+  }, [navigation]);
+  
 
   useEffect(() => {
     if (chatRoom) {
