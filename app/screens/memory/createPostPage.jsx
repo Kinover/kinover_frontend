@@ -11,7 +11,6 @@ import {
 import {
   getResponsiveWidth,
   getResponsiveFontSize,
-  getResponsiveHeight,
 } from '../../utils/responsive';
 import { useSelector } from 'react-redux';
 import { getPresignedUrls, uploadImageToS3 } from '../../api/imageUrlApi';
@@ -41,12 +40,9 @@ export default function CreatePostPage({ navigation, route }) {
         await uploadImageToS3(presignedUrls[i], selectedImages[i]);
       }
 
-      // ✅ userId 가져오기
-      const tokenUserId = await getUserIdFromToken();
-
       // ✅ 게시글 업로드
       const payload = {
-        authorId: Number(tokenUserId),
+        authorId: user.userId,
         categoryId: selectedCategory?.categoryId,
         imageUrls: fileNames, // ✅ 이제는 파일 이름만 전송
         content: text,
@@ -119,12 +115,13 @@ const styles = StyleSheet.create({
     padding: getResponsiveWidth(10),
   },
   input: {
-    height: '60%',
+    height: '70%',
     borderWidth: 1,
     borderColor: '#888888',
     padding: getResponsiveWidth(10),
-    fontSize: getResponsiveFontSize(14),
+    fontSize: getResponsiveFontSize(16),
     fontFamily: 'Pretendard-Regular',
+    overflow: 'scroll',
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,

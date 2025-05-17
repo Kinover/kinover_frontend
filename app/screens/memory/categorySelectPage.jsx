@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect, useEffect } from 'react';
+import React, {useState, useLayoutEffect, useEffect} from 'react';
 import {
   View,
   Text,
@@ -8,56 +8,65 @@ import {
   Image,
   TextInput,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
+import {useDispatch, useSelector} from 'react-redux';
 import getResponsiveFontSize, {
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../utils/responsive';
-import CustomModal from '../../utils/customModal';
 import CategoryModal from '../../utils/categoryModal';
-import { useSelector } from 'react-redux';
-import { createCategory } from '../../api/categoryCreateApi';
-import { getCategoryApi } from '../../api/getCategoryApi';
+import {
+  createCategoryThunk,
+  fetchCategoryThunk,
+} from '../../redux/thunk/categoryThunk';
 
-export default function CategorySelectPage({ route }) {
+export default function CategorySelectPage({route}) {
   const navigation = useNavigation();
+  const dispatch = useDispatch();
   const family = useSelector(state => state.family);
+  const familyId = useSelector(state => state.family.familyId);
+  const {categoryList, isLoading} = useSelector(state => state.category);
 
-  const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
-
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [newCategory, setNewCategory] = useState('');
 
   // ✅ 서버에서 카테고리 불러오기
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const data = await getCategoryApi(family.familyId);
-        setCategories(data);
-        setSelectedCategory(data[0]);
-        setSelectedIndex(0);
-      } catch (err) {
-        console.error('카테고리 불러오기 실패:', err);
-        alert('카테고리를 불러오는 데 실패했습니다.');
-      }
-    };
+    if (familyId) {
+      dispatch(fetchCategoryThunk(familyId));
+    }
+  }, [familyId]);
 
-    fetchCategories();
-  }, []);
+  useEffect(() => {
+    if (categoryList.length > 0) {
+      setSelectedCategory(categoryList[0]);
+      setSelectedIndex(0);
+    }
+  }, [categoryList]);
 
   // ✅ 새 카테고리 생성
   const handleAddCategory = async () => {
     if (newCategory.trim()) {
       try {
-        const created = await createCategory(newCategory.trim(), family.familyId);
-        const newList = [...categories, created];
-        setCategories(newList);
-        setSelectedIndex(newList.length - 1);
-        setSelectedCategory(created);
-        setNewCategory('');
-        setAddModalVisible(false);
+        const resultAction = await dispatch(
+          createCategoryThunk({
+            title: newCategory.trim(),
+            familyId: String(familyId),
+          }),
+        );
+
+        if (createCategoryThunk.fulfilled.match(resultAction)) {
+          const created = resultAction.payload;
+          const newIndex = categoryList.length;
+          setSelectedCategory(created);
+          setSelectedIndex(newIndex);
+          setNewCategory('');
+          setAddModalVisible(false);
+        } else {
+          throw new Error('카테고리 생성 실패');
+        }
       } catch (err) {
         alert('카테고리 생성 실패');
       }
@@ -68,8 +77,14 @@ export default function CategorySelectPage({ route }) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <View style={{ width: '100%', alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontSize: getResponsiveFontSize(20), textAlign: 'center' }}>
+        <View
+          style={{
+            width: '100%',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+          <Text
+            style={{fontSize: getResponsiveFontSize(20), textAlign: 'center'}}>
             카테고리 선택
           </Text>
         </View>
@@ -84,8 +99,7 @@ export default function CategorySelectPage({ route }) {
               });
             }
           }}
-          style={{ marginRight: 15 }}
-        >
+          style={{marginRight: 15}}>
           <Image
             source={require('../../assets/images/check-bt.png')}
             style={{
@@ -101,7 +115,7 @@ export default function CategorySelectPage({ route }) {
   }, [navigation, selectedCategory]);
 
   // ✅ 항목 렌더링
-  const renderItem = ({ item, index }) => (
+  const renderItem = ({item, index}) => (
     <TouchableOpacity
       onPress={() => {
         setSelectedIndex(index);
@@ -110,8 +124,7 @@ export default function CategorySelectPage({ route }) {
       style={[
         styles.itemContainer,
         selectedIndex === index && styles.selectedItem,
-      ]}
-    >
+      ]}>
       <Text style={styles.itemText}>{item.title}</Text>
     </TouchableOpacity>
   );
@@ -119,15 +132,14 @@ export default function CategorySelectPage({ route }) {
   return (
     <View style={styles.container}>
       <FlatList
-        data={categories}
+        data={categoryList}
         renderItem={renderItem}
         keyExtractor={(item, index) => item.categoryId || index.toString()}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListFooterComponent={
           <TouchableOpacity
             style={styles.addButton}
-            onPress={() => setAddModalVisible(true)}
-          >
+            onPress={() => setAddModalVisible(true)}>
             <Text style={styles.addText}>카테고리 추가</Text>
           </TouchableOpacity>
         }
@@ -140,7 +152,7 @@ export default function CategorySelectPage({ route }) {
         }}
         onConfirm={handleAddCategory}
         content={
-          <View style={{ paddingHorizontal: 0 }}>
+          <View style={{paddingHorizontal: 0}}>
             <Text
               style={{
                 fontSize: getResponsiveFontSize(18),
@@ -148,8 +160,7 @@ export default function CategorySelectPage({ route }) {
                 textAlign: 'center',
                 marginBottom: getResponsiveHeight(15),
                 marginTop: getResponsiveHeight(15),
-              }}
-            >
+              }}>
               새 카테고리를 입력해주세요
             </Text>
             <View
@@ -159,8 +170,7 @@ export default function CategorySelectPage({ route }) {
                 borderRadius: 8,
                 paddingHorizontal: 10,
                 paddingVertical: 8,
-              }}
-            >
+              }}>
               <TextInput
                 placeholder="예: 2025 가족 여행"
                 style={{

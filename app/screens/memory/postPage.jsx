@@ -13,13 +13,18 @@ import {
   Platform,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import {useDispatch, useSelector} from 'react-redux';
 import getResponsiveFontSize, {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveWidth,
 } from '../../utils/responsive';
-import CustomModal from '../../utils/customModal';
 import ImageDeleteModal from '../../utils/imageDeleteModal';
+import {deletePostThunk} from '../../redux/thunk/memoryThunk';
+import {
+  fetchCommentsThunk,
+  createCommentThunk,
+} from '../../redux/thunk/commentThunk';
 
 export default function PostPage({route}) {
   const [isFullImageMode, setIsFullImageMode] = useState(false);
@@ -27,17 +32,30 @@ export default function PostPage({route}) {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [showDeleteOptions, setShowDeleteOptions] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState('');
-
   const [contentHeight, setContentHeight] = useState(0);
-  const [dynamicSnapPoints, setDynamicSnapPoints] = useState(['20%', '25%']);
+  const [commentText, setCommentText] = useState('');
   const fadeAnim = useState(new Animated.Value(0))[0];
+  const CDN = 'https://dzqa9jgkeds0b.cloudfront.net/'; // 실제 도메인으로 교체
 
+  const user = useSelector(state => state.user);
+  const familyId = useSelector(state => state.family.familyId);
   const memory = route.params.memory;
+  const categoryId = route.params.categoryId || null;
+
   const navigation = useNavigation();
+  const dispatch = useDispatch();
+
+  const {commentList} = useSelector(state => state.comment);
 
   const toggleFullImageMode = () => {
     setIsFullImageMode(prev => !prev);
   };
+
+  useEffect(() => {
+    if (memory.postId !== null) {
+      dispatch(fetchCommentsThunk(memory.postId));
+    }
+  }, [memory.postId]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -72,10 +90,27 @@ export default function PostPage({route}) {
     }).start();
   }, []);
 
+  const handleSendComment = () => {
+    const trimmed = commentText.trim();
+    if (!trimmed) return;
+
+    dispatch(
+      createCommentThunk({
+        postId: memory.postId,
+        content: trimmed,
+        authorId: user.userId,
+      }),
+    );
+    setCommentText('');
+  };
+
   return (
     <View style={styles.container}>
       <TouchableWithoutFeedback onPress={toggleFullImageMode}>
-        <Image style={styles.memoryImage} source={{uri: memory.image}} />
+        <Image
+          style={styles.memoryImage}
+          source={{uri: CDN + memory.imageUrls[0]}}
+        />
       </TouchableWithoutFeedback>
 
       {!isFullImageMode && !commentIndex && (
@@ -85,9 +120,9 @@ export default function PostPage({route}) {
               <View style={styles.writer}>
                 <Image
                   style={styles.writerImage}
-                  source={{uri: memory.user.image}}
+                  source={{uri: memory.authorImage}}
                 />
-                <Text style={styles.writerName}>{memory.user.name}</Text>
+                <Text style={styles.writerName}>{memory.authorName}</Text>
               </View>
               <TouchableOpacity onPress={() => setCommentIndex(true)}>
                 <Image
@@ -102,7 +137,7 @@ export default function PostPage({route}) {
                     left: getResponsiveWidth(20),
                     color: 'gray',
                   }}>
-                  2
+                  {commentList.length}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -134,29 +169,20 @@ export default function PostPage({route}) {
                 position: 'absolute',
                 height: '100%',
                 width: getResponsiveWidth(50),
-                display: 'flex',
                 flexDirection: 'row',
                 justifyContent: 'center',
                 alignItems: 'center',
-                zIndex:2,
-                // backgroundColor:'pink'
+                zIndex: 2,
               }}
               onPress={() => setCommentIndex(false)}>
               <Image
                 style={styles.back_bt}
-                source={require('../../assets/images/backbt.png')}></Image>
+                source={require('../../assets/images/backbt.png')}
+              />
             </TouchableOpacity>
-            <View
-              style={{
-                display: 'flex',
-                height: '100%',
-                justifyContent: 'center',
-              }}>
+            <View style={{height: '100%', justifyContent: 'center'}}>
               <Text
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
                   textAlign: 'center',
                   fontSize: getResponsiveFontSize(18),
                   fontFamily: 'Pretendard-Regular',
@@ -168,66 +194,60 @@ export default function PostPage({route}) {
 
           <ScrollView
             style={styles.commentContentContainer}
-            contentContainerStyle={{paddingBottom: '10%'}}
+            contentContainerStyle={{paddingBottom: '13%'}}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             nestedScrollEnabled={true}>
-            <View style={styles.commentBox}>
-              <Image
-                style={styles.commentWriterImage}
-                source={require('../../assets/images/kino-yellow.png')}></Image>
-              <View style={styles.commentTextBox}>
-                <Text style={styles.commentWriter}>키노</Text>
-                <Text style={styles.commentContent}>
-                  이때 진짜 좋았었는데 ㅎㅎ 봄나들이 또가고 싶다
+            {commentList.map(comment => (
+              <View style={styles.commentBox} key={comment.commentId}>
+                <Image
+                  style={styles.commentWriterImage}
+                  source={{uri: comment.authorImage}}
+                />
+                <View style={styles.commentTextBox}>
+                  <Text style={styles.commentWriter}>{comment.authorName}</Text>
+                  <Text style={styles.commentContent}>{comment.content}</Text>
+                </View>
+                <Text style={styles.commentCreatedAt}>
+                  {comment.createdAt?.split('T')[0]}
                 </Text>
               </View>
-              <Text style={styles.commentCreatedAt}>2025-04-25</Text>
-            </View>
-
-            <View style={styles.commentBox}>
-              <Image
-                style={styles.commentWriterImage}
-                source={require('../../assets/images/kino-blue.png')}></Image>
-              <View style={styles.commentTextBox}>
-                <Text style={styles.commentWriter}>피노키노</Text>
-                <Text style={styles.commentContent}>
-                  으악 이때가 벌써 일년 전이라니 ㅋㅋㅋ 아 기억난다 막내가 자꾸
-                  가다가 벚꽃 잡겠다고 팔짝대다가 넘어지고.. 엉엉 울고
-                  그랬었는데 지난주에 벚꽃 축제 가려다가 비와가지고 못간거 ㅜㅜ
-                  너무 아쉽긴 하다 내년에는 꼭 가고야 말겠어!! 근데 아직도 이
-                  게시글 보는 사람이 있나? 아 야식으로 팔도 비빔면에 삼겹살 먹고
-                  싶다~
-                </Text>
-              </View>
-              <Text style={styles.commentCreatedAt}>2025-04-25</Text>
-            </View>
+            ))}
           </ScrollView>
 
           <View style={styles.commentInputContainer}>
             <Image
               style={styles.commentInputImage}
-              source={require('../../assets/images/kino-blue.png')}></Image>
+              source={{uri: `${user.image}`}}
+            />
             <TextInput
               style={styles.commentInput}
               placeholder="한마디 남기기.."
+              value={commentText}
+              onChangeText={setCommentText}
+              onSubmitEditing={handleSendComment}
             />
-            <TouchableOpacity>
+            <TouchableOpacity onPress={handleSendComment}>
               <Image
                 style={styles.commentSendBt}
-                source={require('../../assets/images/comment-send-bt.png')}></Image>
+                source={require('../../assets/images/comment-send-bt.png')}
+              />
             </TouchableOpacity>
           </View>
         </View>
       )}
-
       {deleteModalVisible && (
         <ImageDeleteModal
           visible={deleteModalVisible}
           onClose={() => setDeleteModalVisible(false)}
-          onConfirm={() => {
-            console.log(`${deleteTarget} 삭제!`);
-            setDeleteModalVisible(false);
+          onConfirm={async () => {
+            if (deleteTarget === '게시물') {
+              await dispatch(deletePostThunk(memory.postId, familyId));
+              setDeleteModalVisible(false);
+              navigation.goBack();
+            } else {
+              setDeleteModalVisible(false);
+            }
           }}
           closeText="취소"
           confirmText="삭제"
@@ -264,7 +284,8 @@ export default function PostPage({route}) {
                 ? '게시물을 삭제하시겠습니까?'
                 : '사진을 삭제하시겠습니까?'}
             </Text>
-          }></ImageDeleteModal>
+          }
+        />
       )}
 
       {showDeleteOptions && (
@@ -394,19 +415,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     // backgroundColor:'yellow',
     gap: getResponsiveWidth(10),
-    paddingHorizontal: getResponsiveWidth(5),
-    paddingVertical: getResponsiveWidth(5),
+    paddingHorizontal: getResponsiveWidth(6),
+    paddingVertical: getResponsiveWidth(6),
     alignItems: 'flex-start',
     justifyContent: 'flex-start',
   },
   commentWriterImage: {
-    width: getResponsiveWidth(40),
-    height: getResponsiveHeight(40),
+    width: getResponsiveWidth(42),
+    height: getResponsiveHeight(42),
     borderRadius: getResponsiveHeight(20),
     // backgroundColor:'pink',
     borderColor: 'lightgray',
-    borderWidth: 1,
-    resizeMode: 'contain',
+    borderWidth: 0.5,
+    resizeMode: 'cover',
   },
   commentTextBox: {
     display: 'flex',
@@ -435,7 +456,6 @@ const styles = StyleSheet.create({
   },
 
   back_bt: {
-    // position: 'absolute',
     width: getResponsiveWidth(30),
     height: getResponsiveHeight(20),
     resizeMode: 'contain',
@@ -445,14 +465,14 @@ const styles = StyleSheet.create({
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     position: 'absolute',
     width: '100%',
     height: '20%',
     backgroundColor: '#D9D9D9',
     bottom: '0',
-    paddingHorizontal: getResponsiveWidth(10),
-    gap: getResponsiveWidth(10),
+    paddingHorizontal: getResponsiveWidth(17.5),
+    gap: getResponsiveWidth(12),
   },
   commentInputImage: {
     width: getResponsiveWidth(30),
@@ -461,11 +481,12 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     backgroundColor: 'white',
     borderWidth: 0.1,
+    resizeMode: 'cover',
   },
   commentInput: {
-    width: '80%',
+    width: '75%',
     height: Platform.OS === 'android' ? '70%' : '60%',
-    borderBottomWidth: 1, // 언더바 두께
+    borderBottomWidth: 0.5, // 언더바 두께
   },
   commentSendBt: {
     width: getResponsiveWidth(28),

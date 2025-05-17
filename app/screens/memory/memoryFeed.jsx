@@ -8,75 +8,45 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
-import CustomSwitch from '../../utils/customSwitch';
+import {useFocusEffect} from '@react-navigation/native';
+
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../utils/responsive';
-import {useSelector} from 'react-redux';
-import FloatingButton from '../../utils/floatingButton';
+import {useDispatch, useSelector} from 'react-redux';
 import {useNavigation} from '@react-navigation/native';
+import {useCallback} from 'react';
+import {fetchMemoryThunk} from '../../redux/thunk/memoryThunk';
 
 export default function MemoryFeed() {
-  // const {memoryList} = useSelector(state => state.memory);
+  const familyId = useSelector(state => state.family.familyId);
+  const {memoryList} = useSelector(state => state.memory);
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(null);
   const [isGalleryView, setIsGalleryView] = useState(false); // 스위치 상태 관리
-
+  const dispatch = useDispatch();
   const navigation = useNavigation();
-  //더미
+  const CDN = 'https://dzqa9jgkeds0b.cloudfront.net/'; // 실제 도메인으로 교체
 
-  const memoryList = [
-    {
-      memoryId: 1,
-      image: 'https://i.postimg.cc/2SVJQ2zf/cherryblossom.png',
-      title: '2022 여의도 벚꽃 축제',
-      content:
-        '2022년 봄, 우리 가족이 여의도 벚꽃 축제에 다녀왔던 그 날! 🌸 벚꽃 터널 아래서 다 같이 사진 찍느라 정신없었지만, 분홍빛 꽃잎이 흩날리는 모습이 너무 예뻤어요. 😍\n\n' +
-        '막내가 벚꽃 잎 잡겠다고 깡충깡충 뛰던 모습이 아직도 선해요! ㅎㅎ 엄마가 싸온 김밥이랑 떡볶이를 한강공원에서 먹으면서 다 같이 깔깔 웃었던 순간이 최고였던 거 같아요. 🌞\n\n' +
-        '사진 찍을 때 바람이 살랑살랑 불어서 꽃잎이 비처럼 내렸고, 그때 우리 가족 모두 얼굴에 꽃잎을 맞으며 웃던 장면은 정말 영화 같았어요. 📸\n\n' +
-        '저녁에는 근처 야시장에 들러서 군밤이랑 붕어빵도 사 먹었는데, 특히 막내가 붕어빵을 얼굴만큼 크게 한 입 베어 물던 게 너무 귀여웠어요! 🐟\n\n' +
-        '걷다가 우연히 본 거리 공연에서는 아빠가 리듬을 타면서 박수를 쳤고, 엄마는 흥겨운 노래에 맞춰 어깨를 들썩였어요. 그 모습을 보면서 우리 가족이 이렇게 소소한 순간에도 함께 웃을 수 있다는 게 얼마나 행복한 일인지 다시 한 번 느꼈어요. 🎶💖\n\n' +
-        '한강 위로 어둠이 내려앉기 시작할 때쯤, 강가에 앉아 야경을 바라보면서 다 같이 따뜻한 코코아를 나눠 마셨어요. 따뜻한 음료를 마시며 서로의 얼굴을 바라보던 그 순간, 말은 많지 않았지만 마음만은 꽉 채워진 기분이었어요. ☕🌃\n\n' +
-        '다음에는 더 많은 사람들과 함께, 또 한 번 이렇게 아름다운 봄날을 보내고 싶어요.🌷🌸 그리고 이 기억들을 오래도록 간직해서, 시간이 흘러도 꺼내볼 때마다 웃음이 나오는 그런 추억으로 남겼으면 좋겠어요. 🫶',
 
-      createdAt: '2025.04.20',
-      user: {
-        name: '엄마',
-        image: 'https://picsum.photos/seed/mom/100/100',
-      },
-    },
-    {
-      memoryId: 2,
-      image:
-        'https://img1.daumcdn.net/thumb/R1280x0/?fname=http://t1.daumcdn.net/brunch/service/user/6WJu/image/l0czNd_v6Ce6V_qJTwV4KM00bIE.jpg',
-      title: '2020 할머니 칠순잔치',
-      content:
-        '할머니 칠순 잔치를 다 같이 모여서 축하했던 그 날! 🎉\n\n' +
-        '할머니가 케이크 자르시면서 "이 나이에 무슨 생일이야~" 하시던 모습이 아직도 생생하네요. 😊 다들 바빠서 정신없었지만, 오랜만에 모인 가족들이 한자리에 모여 웃고 떠들었던 시간이 정말 소중했어요.\n\n' +
-        '삼촌이 준비한 깜짝 영상편지에 할머니가 눈물 흘리셨을 때, 우리 모두 마음이 뭉클했었죠. 💖',
-      createdAt: '2025.04.15',
-      user: {
-        name: '아빠',
-        image: 'https://picsum.photos/seed/dad/100/100',
-      },
-    },
-    {
-      memoryId: 3,
-      image:
-        'https://cdn.smartfn.co.kr/news/photo/202003/91570_101660_4106.jpg',
-      title: '2019 중국 상하이 여행',
-      content:
-        '2020년 여름, 상하이로 떠났던 가족 여행! ✈️ 낮에는 와이탄을 걷고, 밤에는 동방명주 야경을 구경했어요. 🌃',
-      createdAt: '2025.04.12',
-      user: {
-        name: '지유',
-        image: 'https://picsum.photos/seed/jiyu/100/100',
-      },
-    },
-  ];
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(fetchMemoryThunk(familyId));
+    }, [familyId]),
+  );
+
+  const formatDate = dateString => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long',
+    });
+  };
 
   // 갤러리 뷰에서 여러 메모리를 렌더링
   const renderMemoryGallery = () => {
@@ -86,11 +56,16 @@ export default function MemoryFeed() {
         renderItem={({item}) => (
           <TouchableOpacity
             onPress={() => navigation.navigate('게시글화면', {memory: item})}>
-            <Image style={styles.galleryImage} source={{uri: item.image}} />
+            <Image
+              style={styles.galleryImage}
+              source={{
+                uri: CDN + item.imageUrls[0],
+              }}
+            />
           </TouchableOpacity>
         )}
         scrollEnabled={false}
-        keyExtractor={item => item.memoryId.toString()}
+        keyExtractor={item => item.postId}
         numColumns={3} // 여러 개의 이미지를 한 줄에 렌더링
         contentContainerStyle={styles.galleryContainer}
       />
@@ -154,23 +129,25 @@ export default function MemoryFeed() {
       ) : (
         <View style={styles.memoryContainer}>
           {memoryList.map(memory => (
-            <View key={memory.memoryId}>
+            <View key={memory.postId}>
               <TouchableOpacity
                 onPress={() =>
                   navigation.navigate('게시글화면', {memory: memory})
                 }
-                key={memory.memoryId}
+                key={memory.postId}
                 style={{
                   backgroundColor: 'white',
                 }}>
                 <Text style={{marginBottom: getResponsiveHeight(5)}}>
-                  {memory.createdAt}
+                  {formatDate(memory.createdAt)}
                 </Text>
                 <View style={styles.memoryImageContainer}>
                   <View style={{position: 'relative', flex: 1}}>
                     <Image
                       style={styles.memoryImage}
-                      source={{uri: memory.image}}
+                      source={{
+                        uri: CDN + memory.imageUrls[0],
+                      }}
                     />
                     <Text
                       style={{
@@ -179,7 +156,6 @@ export default function MemoryFeed() {
                         bottom: getResponsiveHeight(20),
                         zIndex: 999,
                         fontSize: getResponsiveFontSize(18),
-                        // backgroundColor: 'pink',
                         fontFamily: 'Pretendard-SemiBold',
                         color: 'white',
                       }}>

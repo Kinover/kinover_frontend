@@ -348,9 +348,10 @@ const styles = StyleSheet.create({
   memberList: {
     width: '100%',
     minHeight: '16%',
-    borderRadius: getResponsiveIconSize(5),
+    borderRadius: getResponsiveIconSize(8),
     backgroundColor: '#FFD26D',
     marginTop: 10,
+    overflow: 'hidden',
   },
   memberItem: {
     flexDirection: 'row',
