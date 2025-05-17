@@ -12,16 +12,12 @@ export const fetchUserThunk = () => {
 
       const token = await getToken();
 
-      const response = await axios.post(
-        apiUrl,
-        {},
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
+      const response = await axios.get(apiUrl, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
-      );
+      });
 
       dispatch(setUser(response.data));
     } catch (error) {
@@ -31,6 +27,7 @@ export const fetchUserThunk = () => {
     }
   };
 };
+
 export const modifyUserThunk = user => {
   return async dispatch => {
     dispatch(setUserLoading(true));
@@ -46,8 +43,7 @@ export const modifyUserThunk = user => {
         },
       });
 
-      
-      // dispatch(setUser(response.data));
+      dispatch(setUser(response.data));
       console.log('✅ 프로필 수정 완료:', response.data);
     } catch (error) {
       console.error('❌ 프로필 수정 실패:', error);

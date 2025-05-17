@@ -179,8 +179,11 @@ const styles = StyleSheet.create({
   noChatRoomListView: {
     display: 'flex',
     alignSelf: 'center',
+    alignItems:'center',
+    alignContent:'center',
     flexDirection: 'row',
     justifyContent: 'center',
+    width: '100%',
   },
   noChatRoomList: {
     fontSize: getResponsiveFontSize(16),

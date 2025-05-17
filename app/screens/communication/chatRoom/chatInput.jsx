@@ -72,8 +72,8 @@ export default function ChatInput({chatRoom, user, socketRef}) {
             <Image
               source={{uri: 'https://i.postimg.cc/fLWscdRY/Group-477-1.png'}}
               style={{
-                width: getResponsiveWidth(26),
-                height: getResponsiveHeight(26),
+                width: getResponsiveWidth(24),
+                height: getResponsiveHeight(24),
               }}
             />
           </TouchableOpacity>
@@ -104,19 +104,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
+    paddingVertical: getResponsiveHeight(10),
+    paddingHorizontal: getResponsiveWidth(17.5),
+    gap: getResponsiveWidth(12),
   },
   inputContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     height: getResponsiveHeight(37),
-    marginHorizontal: 10,
     borderWidth: 1,
     borderColor: '#FFC84D',
     borderRadius: 30,
     backgroundColor: 'rgba(255, 231, 178, 0.2)',
-    paddingHorizontal: getResponsiveWidth(10),
+    paddingHorizontal: getResponsiveWidth(7.5),
   },
   input: {
     flex: 1,
@@ -126,6 +127,5 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   sendButton: {
-    padding: 8,
   },
 });
