@@ -7,6 +7,7 @@ import {
   FlatList,
   TouchableOpacity,
   Button,
+  Dimensions,
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import {useFocusEffect} from '@react-navigation/native';
@@ -34,6 +35,13 @@ export default function MemoryFeed() {
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const route = useRoute();
+
+  const ITEM_MARGIN = getResponsiveWidth(1);
+  const NUM_COLUMNS = 3;
+  const screenWidth = Dimensions.get('window').width // 또는 Dimensions.get('window').width
+
+  const itemSize =
+    (screenWidth - ITEM_MARGIN * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
 
   const category = route?.params?.category;
   const [selectedCategoryTitle, setSelectedCategoryTitle] = useState('전체');
@@ -75,27 +83,28 @@ export default function MemoryFeed() {
   // 갤러리 뷰에서 여러 메모리를 렌더링
   const renderMemoryGallery = () => {
     return (
+      <View style={{flex:1, padding:ITEM_MARGIN}}>
       <FlatList
-        data={memoryList} // memoryList 배열을 사용
-        renderItem={({item}) => {
-          console.log('🧾 게시글 항목:', item);
-          return (
-            <TouchableOpacity
-              onPress={() => navigation.navigate('게시글화면', {memory: item})}>
-              <Image
-                style={styles.galleryImage}
-                source={{
-                  uri: item.imageUrls[0],
-                }}
-              />
-            </TouchableOpacity>
-          );
-        }}
-        scrollEnabled={false}
+        data={filteredMemoryList}
+        renderItem={({item}) => (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('게시글화면', {memory: item})}
+            style={[
+              styles.galleryItem,
+              {width: itemSize, height: itemSize, padding: ITEM_MARGIN},
+            ]}>
+            <Image
+              style={styles.galleryImage}
+              source={{uri: item.imageUrls[0]}}
+            />
+          </TouchableOpacity>
+        )}
         keyExtractor={item => item.postId}
-        numColumns={3} // 여러 개의 이미지를 한 줄에 렌더링
-        contentContainerStyle={styles.galleryContainer}
+        numColumns={3}
+        columnWrapperStyle={[styles.galleryRow,{padidng:ITEM_MARGIN}]}
+        scrollEnabled={false}
       />
+      </View>
     );
   };
 
@@ -126,7 +135,13 @@ export default function MemoryFeed() {
         <TouchableOpacity
           style={[styles.categoryButton]}
           onPress={() => navigation.navigate('카테고리화면')}>
-          <View style={{display:'flex', flexDirection: 'row',alignItems:'center', gap:getResponsiveWidth(9)}}>
+          <View
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: getResponsiveWidth(9),
+            }}>
             <Text style={styles.categoryButtonText}>
               {selectedCategoryTitle}
             </Text>
@@ -250,10 +265,9 @@ const styles = StyleSheet.create({
   },
 
   galleryImage: {
-    width: 125,
-    height: 125,
-    margin: 2,
-    // borderRadius: 10,
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
   },
 
   galleryContainer: {
@@ -380,5 +394,21 @@ const styles = StyleSheet.create({
     marginTop: getResponsiveHeight(15),
     marginBottom: getResponsiveHeight(15),
     marginLeft: -20,
+  },
+
+  galleryItem: {
+    borderRadius: 0,
+    overflow: 'hidden',
+  },
+
+  galleryImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+
+  galleryRow: {
+    justifyContent: 'space-between',
+    // marginBottom: ITEM_MARGIN,
   },
 });
