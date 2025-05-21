@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Image, Text, StyleSheet} from 'react-native';
+import { View, Image, Text, StyleSheet, FlatList } from 'react-native';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -15,7 +15,7 @@ export default function ReceiveChat({
   chatTime,
   style,
   messageType,
-  imageUrls,
+  imageUrls = [],
 }) {
   const renderImages = () => {
     return (
@@ -23,8 +23,8 @@ export default function ReceiveChat({
         data={imageUrls}
         keyExtractor={(item, index) => item + index}
         numColumns={3}
-        renderItem={({item}) => (
-          <Image source={{uri: item}} style={styles.imageItem} />
+        renderItem={({ item }) => (
+          <Image source={{ uri: item }} style={styles.imageItem} />
         )}
         scrollEnabled={false}
         contentContainerStyle={styles.imageGrid}
@@ -34,30 +34,32 @@ export default function ReceiveChat({
 
   return (
     <View style={[styles.receivedContainer, style]}>
-      {/* 프로필 이미지 */}
-      <Image
-        source={{uri: `${userProfileImage}`}}
-        style={styles.receivedUserImage}
-      />
+      <Image source={{ uri: userProfileImage }} style={styles.receivedUserImage} />
 
-      {/* 유저 이름 & 말풍선 */}
       <View style={styles.textContainer}>
-        {/* 유저 이름 */}
         <Text style={styles.userName}>{userName}</Text>
 
-        {/* 메시지 & 시간 */}
         <View style={styles.messageContainer}>
-          <View
-            style={[
-              styles.receivedBubble,
-              messageType === 'text' ? styles.textPadding : styles.imagePadding,
-            ]}>
-            {messageType === 'image' ? (
-              renderImages()
-            ) : (
-              <Text style={styles.receivedText}>{message}</Text>
-            )}
-          </View>
+          {/* ✅ 이미지 1장일 때는 말풍선 없이 */}
+          {messageType === 'image' && imageUrls.length === 1 ? (
+            <Image
+              source={{ uri: imageUrls[0] }}
+              style={styles.singleImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View
+              style={[
+                styles.receivedBubble,
+                messageType === 'text' ? styles.textPadding : styles.imagePadding,
+              ]}>
+              {messageType === 'image' ? (
+                renderImages()
+              ) : (
+                <Text style={styles.receivedText}>{message}</Text>
+              )}
+            </View>
+          )}
           <Text style={styles.receivedTime}>{formatTime(chatTime)}</Text>
         </View>
       </View>
@@ -68,19 +70,17 @@ export default function ReceiveChat({
 const styles = StyleSheet.create({
   receivedContainer: {
     flexDirection: 'row',
-    alignItems: 'flex-start', // 프로필 이미지와 텍스트 정렬
+    alignItems: 'flex-start',
   },
 
-  /** 🔹 프로필 이미지 */
   receivedUserImage: {
     width: getResponsiveWidth(45),
     height: getResponsiveWidth(45),
     borderRadius: getResponsiveWidth(25),
     backgroundColor: '#ddd',
-    marginRight: getResponsiveWidth(10), // 유저이름과 간격
+    marginRight: getResponsiveWidth(10),
   },
 
-  /** 🔹 유저 이름 & 메시지 */
   textContainer: {
     flex: 1,
     flexDirection: 'column',
@@ -89,10 +89,9 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: getResponsiveFontSize(13),
     color: '#444',
-    marginBottom: getResponsiveHeight(10), // 이름 아래 간격
+    marginBottom: getResponsiveHeight(10),
   },
 
-  /** 🔹 메시지 & 시간 */
   messageContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -104,10 +103,12 @@ const styles = StyleSheet.create({
     maxWidth: getResponsiveWidth(260),
     flexShrink: 1,
   },
+
   textPadding: {
     paddingVertical: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(17),
   },
+
   imagePadding: {
     paddingVertical: getResponsiveHeight(4.5),
     paddingHorizontal: getResponsiveWidth(4.5),
@@ -118,12 +119,29 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(13),
     color: 'black',
     flexWrap: 'wrap',
-    lineHeight: getResponsiveFontSize(18), // 줄 간격 설정
+    lineHeight: getResponsiveFontSize(18),
   },
 
   receivedTime: {
     fontSize: getResponsiveFontSize(10),
     color: '#666',
-    marginLeft: getResponsiveWidth(5), // 말풍선 왼쪽에 위치
+    marginLeft: getResponsiveWidth(5),
+  },
+
+  imageGrid: {
+    gap: getResponsiveWidth(4),
+  },
+
+  imageItem: {
+    width: getResponsiveWidth(70),
+    height: getResponsiveWidth(70),
+    borderRadius: 8,
+    margin: 2,
+  },
+
+  singleImage: {
+    width: getResponsiveWidth(200),
+    aspectRatio: 1, // ✅ 비율 유지
+    borderRadius: 10,
   },
 });

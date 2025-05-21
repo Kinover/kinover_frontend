@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Text, StyleSheet, Image, FlatList} from 'react-native';
+import { View, Text, StyleSheet, Image, FlatList } from 'react-native';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -19,41 +19,44 @@ export default function SendChat({
     if (imageUrls.length === 1) {
       return (
         <Image
-          source={{uri: imageUrls[0]}}
+          source={{ uri: imageUrls[0] }}
           style={styles.singleImage}
-          resizeMode="contain"
+          resizeMode="cover" // 꽉 채우고 여백 없이
         />
       );
     }
 
     return (
-      <FlatList
-        data={imageUrls}
-        keyExtractor={(item, index) => item + index}
-        numColumns={3}
-        renderItem={({item}) => (
-          <Image source={{uri: item}} style={styles.imageItem} />
-        )}
-        scrollEnabled={false}
-        contentContainerStyle={styles.imageGrid}
-      />
+      <View style={[styles.sendBubble, styles.imagePadding]}>
+        <FlatList
+          data={imageUrls}
+          keyExtractor={(item, index) => item + index}
+          numColumns={3}
+          renderItem={({ item }) => (
+            <Image source={{ uri: item }} style={styles.imageItem} />
+          )}
+          scrollEnabled={false}
+          contentContainerStyle={styles.imageGrid}
+        />
+      </View>
     );
   };
 
   return (
     <View style={[styles.sendContainer, style]}>
       <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>
-      <View
-        style={[
-          styles.sendBubble,
-          messageType === 'text' ? styles.textPadding : styles.imagePadding,
-        ]}>
-        {messageType === 'image' ? (
-          renderImages()
+
+      {messageType === 'image' ? (
+        imageUrls.length === 1 ? (
+          renderImages() // ✅ 1장일 땐 단독으로 표시 (말풍선 없음)
         ) : (
+          renderImages() // ✅ 여러 장일 땐 말풍선으로 감싸서 FlatList 표시
+        )
+      ) : (
+        <View style={[styles.sendBubble, styles.textPadding]}>
           <Text style={styles.sendText}>{message}</Text>
-        )}
-      </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -103,8 +106,8 @@ const styles = StyleSheet.create({
   },
   singleImage: {
     width: getResponsiveWidth(200),
-    height: getResponsiveHeight(200),
+    aspectRatio: 1, // ✅ 비율 유지
     borderRadius: 10,
+    alignSelf: 'flex-end',
   },
-  
 });
