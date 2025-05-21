@@ -70,7 +70,16 @@ export default function PostPage({route}) {
 
     navigation.setOptions({
       headerShown: !isFullImageMode,
-      headerTitle: categoryTitle,
+      headerTitle: () => (
+        <Text
+          style={{
+            fontFamily: 'Pretendard-Regular',
+            fontSize: getResponsiveFontSize(16),
+            color: 'black',
+          }}>
+          {categoryTitle}
+        </Text>
+      ),
       headerRight: () => (
         <TouchableOpacity onPress={() => setShowDeleteOptions(prev => !prev)}>
           <Image
@@ -80,7 +89,7 @@ export default function PostPage({route}) {
               height: getResponsiveHeight(20),
               resizeMode: 'contain',
               marginRight: getResponsiveWidth(15),
-              bottom: getResponsiveHeight(5),
+              // bottom: getResponsiveHeight(5),
             }}
           />
         </TouchableOpacity>

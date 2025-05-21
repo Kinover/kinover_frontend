@@ -238,7 +238,6 @@ export function RenderGoBackButtonGallery({navigation}) {
           width: getResponsiveWidth(9),
           height: getResponsiveHeight(20),
           marginLeft: getResponsiveWidth(25),
-          marginBottom: getResponsiveWidth(12),
           resizeMode: 'contain',
         }}
       />

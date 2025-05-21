@@ -38,7 +38,7 @@ export default function MemoryFeed() {
 
   const ITEM_MARGIN = getResponsiveWidth(1);
   const NUM_COLUMNS = 3;
-  const screenWidth = Dimensions.get('window').width // 또는 Dimensions.get('window').width
+  const screenWidth = Dimensions.get('window').width; // 또는 Dimensions.get('window').width
 
   const itemSize =
     (screenWidth - ITEM_MARGIN * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
@@ -70,40 +70,39 @@ export default function MemoryFeed() {
     }, [familyId]),
   );
 
-  const formatDate = dateString => {
+  const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      weekday: 'long',
-    });
+    const year = date.getFullYear();
+    const month = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${year}.${month}.${day}`;
   };
+  
 
   // 갤러리 뷰에서 여러 메모리를 렌더링
   const renderMemoryGallery = () => {
     return (
-      <View style={{flex:1, padding:ITEM_MARGIN}}>
-      <FlatList
-        data={filteredMemoryList}
-        renderItem={({item}) => (
-          <TouchableOpacity
-            onPress={() => navigation.navigate('게시글화면', {memory: item})}
-            style={[
-              styles.galleryItem,
-              {width: itemSize, height: itemSize, padding: ITEM_MARGIN},
-            ]}>
-            <Image
-              style={styles.galleryImage}
-              source={{uri: item.imageUrls[0]}}
-            />
-          </TouchableOpacity>
-        )}
-        keyExtractor={item => item.postId}
-        numColumns={3}
-        columnWrapperStyle={[styles.galleryRow,{padidng:ITEM_MARGIN}]}
-        scrollEnabled={false}
-      />
+      <View style={{flex: 1, padding: ITEM_MARGIN}}>
+        <FlatList
+          data={filteredMemoryList}
+          renderItem={({item}) => (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('게시글화면', {memory: item})}
+              style={[
+                styles.galleryItem,
+                {width: itemSize, height: itemSize, padding: ITEM_MARGIN},
+              ]}>
+              <Image
+                style={styles.galleryImage}
+                source={{uri: item.imageUrls[0]}}
+              />
+            </TouchableOpacity>
+          )}
+          keyExtractor={item => item.postId}
+          numColumns={3}
+          columnWrapperStyle={[styles.galleryRow, {padidng: ITEM_MARGIN}]}
+          scrollEnabled={false}
+        />
       </View>
     );
   };
