@@ -126,7 +126,7 @@ export default function MemoryFeed() {
         <TouchableOpacity
           style={[styles.categoryButton]}
           onPress={() => navigation.navigate('카테고리화면')}>
-          <View style={{display:'flex', flexDirection: 'row',alignItems:'center', gap:getResponsiveWidth(7)}}>
+          <View style={{display:'flex', flexDirection: 'row',alignItems:'center', gap:getResponsiveWidth(9)}}>
             <Text style={styles.categoryButtonText}>
               {selectedCategoryTitle}
             </Text>
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-SemiBold',
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontSize: getResponsiveFontSize(18),
+    fontSize: getResponsiveFontSize(19),
     color: '#FFC84D',
   },
 
