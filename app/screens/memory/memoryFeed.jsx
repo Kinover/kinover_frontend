@@ -126,7 +126,19 @@ export default function MemoryFeed() {
         <TouchableOpacity
           style={[styles.categoryButton]}
           onPress={() => navigation.navigate('카테고리화면')}>
-          <Text style={styles.categoryButtonText}>{selectedCategoryTitle}</Text>
+          <View style={{display:'flex', flexDirection: 'row',alignItems:'center', gap:getResponsiveWidth(7)}}>
+            <Text style={styles.categoryButtonText}>
+              {selectedCategoryTitle}
+            </Text>
+            <Image
+              style={{
+                resizeMode: 'contain',
+                width: getResponsiveWidth(12),
+                height: getResponsiveHeight(9),
+              }}
+              source={require('../../assets/images/down-yellow.png')}
+            />
+          </View>
         </TouchableOpacity>
         <View
           style={{
@@ -191,7 +203,6 @@ export default function MemoryFeed() {
                         fontSize: getResponsiveFontSize(15),
                         fontFamily: 'Pretendard-Regular',
                         color: 'white',
-                    
                       }}>
                       댓글 {memory.commentCount}
                     </Text>
@@ -227,14 +238,15 @@ const styles = StyleSheet.create({
   categoryButton: {
     paddingVertical: getResponsiveHeight(5),
     backgroundColor: 'white',
+    paddingHorizontal: getResponsiveWidth(3),
   },
 
   categoryButtonText: {
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: 'Pretendard-SemiBold',
     textAlign: 'center',
     textAlignVertical: 'center',
     fontSize: getResponsiveFontSize(18),
-    color: 'black',
+    color: '#FFC84D',
   },
 
   galleryImage: {
