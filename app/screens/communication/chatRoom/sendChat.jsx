@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
   imageItem: {
     width: getResponsiveWidth(70),
     height: getResponsiveWidth(70),
-    borderRadius: 8,
+    borderRadius: 4,
     margin: 2,
   },
   singleImage: {

@@ -143,7 +143,7 @@ export default function ChatInput({ chatRoom, user, socketRef }) {
             width: IMAGE_SIZE,
             height: IMAGE_SIZE,
             margin: 2,
-            borderRadius: 8,
+            borderRadius: 1,
             borderWidth: isSelected ? 3 : 0,
             borderColor: isSelected ? '#FFC84D' : 'transparent',
           }}
