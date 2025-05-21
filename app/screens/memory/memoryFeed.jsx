@@ -70,14 +70,13 @@ export default function MemoryFeed() {
     }, [familyId]),
   );
 
-  const formatDate = (dateString) => {
+  const formatDate = dateString => {
     const date = new Date(dateString);
     const year = date.getFullYear();
     const month = `${date.getMonth() + 1}`.padStart(2, '0');
     const day = `${date.getDate()}`.padStart(2, '0');
     return `${year}.${month}.${day}`;
   };
-  
 
   // 갤러리 뷰에서 여러 메모리를 렌더링
   const renderMemoryGallery = () => {
@@ -211,10 +210,10 @@ export default function MemoryFeed() {
                     <Text
                       style={{
                         position: 'absolute',
-                        right: getResponsiveWidth(10),
-                        bottom: getResponsiveHeight(20),
-                        zIndex: 999,
-                        fontSize: getResponsiveFontSize(15),
+                        right: getResponsiveWidth(8),
+                        bottom: getResponsiveHeight(17),
+                        zIndex: 5,
+                        fontSize: getResponsiveFontSize(17),
                         fontFamily: 'Pretendard-Regular',
                         color: 'white',
                       }}>
@@ -226,6 +225,7 @@ export default function MemoryFeed() {
                       fontSize: getResponsiveFontSize(22),
                       fontFamily: 'Pretendard-Regualr',
                       marginBottom: getResponsiveHeight(5),
+                      paddingHorizontal: getResponsiveWidth(3),
                     }}>
                     {getCategoryLabel(memory.categoryId)}
                   </Text>
@@ -234,6 +234,7 @@ export default function MemoryFeed() {
                       fontFamily: 'Pretendard-Light',
                       fontSize: getResponsiveFontSize(12),
                       maxHeight: getResponsiveHeight(50),
+                      paddingHorizontal: getResponsiveWidth(3),
                     }}>
                     {memory.content}
                   </Text>
@@ -295,7 +296,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     width: '100%',
     // marginBottom: getResponsiveHeight(30),
-    paddingHorizontal: getResponsiveWidth(10),
+    paddingHorizontal: getResponsiveWidth(5),
     // backgroundColor:'lightgray',
   },
 
