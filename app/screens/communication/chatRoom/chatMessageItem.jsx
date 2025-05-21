@@ -16,7 +16,7 @@ import {
   getResponsiveIconSize,
   getResponsiveHeight,
 } from '../../../utils/responsive';
-import {Alert,Text} from 'react-native';
+import {Alert, Text} from 'react-native';
 import {RenderHeaderRightChatSetting} from '../../../navigation/tabHeaderHelpers';
 export default function ChatMessageItem({
   chatRoom,
@@ -79,12 +79,16 @@ export default function ChatMessageItem({
         message={message.content}
         chatTime={message.createdAt}
         style={{marginBottom}}
+        imageUrls={message.imageUrls}
+        messageType={message.messageType}
       />
     ) : (
       <SendChat
         message={message.content}
         chatTime={message.createdAt}
         style={{marginBottom}}
+        imageUrls={message.imageUrls}
+        messageType={message.messageType}
       />
     );
   } else {
@@ -95,6 +99,7 @@ export default function ChatMessageItem({
         message={message.content}
         chatTime={message.createdAt}
         style={{marginBottom}}
+        messageType={message.messageType}
       />
     ) : (
       <ReceiveChat
@@ -103,6 +108,8 @@ export default function ChatMessageItem({
         message={message.content}
         chatTime={message.createdAt}
         style={{marginBottom}}
+        messageType={message.messageType}
+        imageUrls={message.imageUrls}
       />
     );
   }
@@ -132,7 +139,7 @@ export default function ChatMessageItem({
 const styles = StyleSheet.create({
   wrapper: {
     width: '100%',
-    paddingHorizontal: '5%',
+    paddingHorizontal: '3%',
   },
   alignRight: {
     alignItems: 'flex-end',

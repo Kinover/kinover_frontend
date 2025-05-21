@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
 import {
   getResponsiveWidth,
@@ -150,7 +151,7 @@ export default function FamilyChatRoom({route}) {
   }
 
   return (
-    <View style={{flex: 1, backgroundColor: 'white', paddingBottom: '20%'}}>
+    <SafeAreaView style={{flex: 1, backgroundColor: 'white', paddingBottom: '20%'}}>
       {isQuestionVisible && (
         <>
           <View style={styles.overlay} />
@@ -227,7 +228,7 @@ export default function FamilyChatRoom({route}) {
       />
 
       <ChatInput chatRoom={chatRoom} user={user} socketRef={socketRef} />
-    </View>
+    </SafeAreaView>
   );
 }
 

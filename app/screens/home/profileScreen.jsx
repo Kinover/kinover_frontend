@@ -15,13 +15,14 @@ import {useDispatch, useSelector} from 'react-redux';
 import {useNavigation} from '@react-navigation/native';
 import {modifyUserThunk} from '../../redux/thunk/userThunk';
 import {modifyFamilyUserThunk} from '../../redux/thunk/familyUserThunk';
+import RNFS from 'react-native-fs';
+
 import getResponsiveFontSize, {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveWidth,
 } from '../../utils/responsive';
 import {getPresignedUrls, uploadImageToS3} from '../../api/imageUrlApi';
-
 
 export default function ProfileScreen({route}) {
   const {user} = route.params;
@@ -33,45 +34,69 @@ export default function ProfileScreen({route}) {
   const [editedBirth, setEditedBirth] = useState(
     (user.birth || '2000-00-00').split('T')[0],
   );
-  const [editedImage, setEditedImage] = useState(user.image);
-
+  const [editedImage, setEditedImage] = useState(
+    user.image?.startsWith('http')
+      ? user.image
+      : `https://dzqa9jgkeds0b.cloudfront.net/${user.image}`,
+  );
   const [showDatePicker, setShowDatePicker] = useState(false);
+
+  const convertPhUriToFileUri = async (phUri, index) => {
+    const destPath = `${
+      RNFS.TemporaryDirectoryPath
+    }photo_${Date.now()}_${index}.jpg`;
+    try {
+      await RNFS.copyAssetsFileIOS(phUri, destPath, 0, 0);
+      return 'file://' + destPath;
+    } catch (err) {
+      console.error('📛 ph:// 변환 실패:', err.message);
+      return null;
+    }
+  };
 
   const handleImagePick = async () => {
     const result = await launchImageLibrary({mediaType: 'photo'});
     if (result.assets && result.assets.length > 0) {
       const selectedAsset = result.assets[0];
-      const fileUri = selectedAsset.uri;
-      const fileName = selectedAsset.fileName || `img_${Date.now()}.jpg`;
-  
+      const originalUri = selectedAsset.uri;
+      const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
+      let fileName = selectedAsset.fileName || `img_${Date.now()}.jpg`;
+      fileName = fileName.replace(CLOUD_FRONT, '');
+
       try {
-        // 1. Presigned URL 및 이미지 이름 요청
-        const { uploadUrls, imageUrls } = await getPresignedUrls([fileName]);
-  
-        const uploadUrl = uploadUrls[0];
-        const imageFileName = imageUrls[0];
-  
-        // 2. S3 업로드
+        let fileUri = originalUri;
+        if (Platform.OS === 'ios' && originalUri.startsWith('ph://')) {
+          fileUri = await convertPhUriToFileUri(originalUri, 0);
+          if (!fileUri) throw new Error('ph:// → file:// 변환 실패');
+        }
+
+        console.log('📸 최종 파일 URI:', fileUri);
+
+        if (!fileUri) throw new Error('fileUri가 undefined입니다.');
+
+        const presignedUrls = await getPresignedUrls([fileName]);
+        const uploadUrl = presignedUrls[0];
+
+        if (!uploadUrl) throw new Error('uploadUrl이 유효하지 않습니다.');
+
         await uploadImageToS3(uploadUrl, fileUri);
-  
-        // 3. 접근 가능한 이미지 URL 생성
-        const uploadedImageUrl = `https://kinover-media-bucket.s3.ap-northeast-2.amazonaws.com/${imageFileName}`; // ← 수정 필요
-  
+
+        const uploadedImageUrl = `${CLOUD_FRONT}${fileName}`;
         setEditedImage(uploadedImageUrl);
-        console.log('✅ 최종 이미지 URL:', uploadedImageUrl);
+        console.log('✅ 최종 업로드된 이미지 URL:', uploadedImageUrl);
       } catch (err) {
-        console.error('이미지 업로드 실패:', err);
+        console.error('❌ 이미지 업로드 실패:', err.message);
+        Alert.alert('업로드 실패', '이미지 업로드 중 문제가 발생했어요.');
       }
     }
   };
-  
 
   const handleConfirm = () => {
     const payload = {
       userId: user.userId,
       name: editedName,
       birth: editedBirth,
-      image: editedImage,
+      image: editedImage?.replace('https://dzqa9jgkeds0b.cloudfront.net/', ''),
     };
 
     if (user.userId === stateUser.userId) {
@@ -86,13 +111,17 @@ export default function ProfileScreen({route}) {
   const handleCancel = () => {
     setEditedName(user.name);
     setEditedBirth((user.birth || '2000-00-00').split('T')[0]);
-    setEditedImage(user.image);
+    setEditedImage(
+      user.image?.startsWith('http')
+        ? user.image
+        : `https://dzqa9jgkeds0b.cloudfront.net/${user.image}`,
+    );
   };
 
   const handleDateChange = (event, selectedDate) => {
     setShowDatePicker(false);
     if (selectedDate) {
-      const iso = selectedDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      const iso = selectedDate.toISOString().split('T')[0];
       setEditedBirth(iso);
     }
   };
@@ -100,13 +129,18 @@ export default function ProfileScreen({route}) {
   return (
     <View style={styles.container}>
       <View style={styles.backgroundCurve} />
-
       <View style={styles.mainContainer}>
         <View style={styles.topContainer}>
-          <TouchableOpacity onPress={handleImagePick} style={styles.imageContainer}>
+          <TouchableOpacity
+            onPress={handleImagePick}
+            style={styles.imageContainer}>
             <Image
               style={styles.image}
-              source={{uri: editedImage || 'https://i.postimg.cc/hPMYQNhw/Ellipse-265.jpg'}}
+              source={{
+                uri:
+                  editedImage ||
+                  'https://i.postimg.cc/hPMYQNhw/Ellipse-265.jpg',
+              }}
             />
             <View style={styles.imageBlur} />
             <Image
@@ -129,7 +163,9 @@ export default function ProfileScreen({route}) {
             keyboardType="default"
             placeholder="이름을 입력하세요"
           />
-          <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.textBox}>
+          <TouchableOpacity
+            onPress={() => setShowDatePicker(true)}
+            style={styles.textBox}>
             <Text style={[styles.input, {color: '#000'}]}>{editedBirth}</Text>
           </TouchableOpacity>
           {showDatePicker && (
@@ -162,10 +198,7 @@ const ProfileField = ({value, onChange, keyboardType, placeholder}) => {
   return (
     <View style={styles.textBox}>
       <TextInput
-        style={[
-          styles.input,
-          {color: isFocused ? '#000' : '#999'},
-        ]}
+        style={[styles.input, {color: isFocused ? '#000' : '#999'}]}
         value={value}
         onChangeText={onChange}
         keyboardType={keyboardType}

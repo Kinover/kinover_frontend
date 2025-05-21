@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopWidth: 3,
     borderColor: '#D3D3D3',
-    padding: getResponsiveWidth(10),
+    // padding: getResponsiveWidth(10),
   },
   userItem: {
     flexDirection: 'row',
@@ -140,6 +140,7 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(10),
     borderBottomWidth: 1,
     borderColor: '#ddd',
+    padding: getResponsiveWidth(10),
   },
   userItemSelected: {
     backgroundColor: '#FFF2CC',

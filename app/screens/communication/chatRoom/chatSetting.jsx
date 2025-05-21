@@ -46,11 +46,20 @@ export default function ChatSettings({
   const [isLeaveModalVisible, setIsLeaveModalVisible] = useState(false);
   const [isRenameModalVisible, setIsRenameModalVisible] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
+  const familyId = useSelector(state => state.family.familyId);
+  const userId = useSelector(state => state.user.userId);
 
   const handleRenameChatRoom = () => {
     if (!newRoomName.trim()) return;
 
-    dispatch(renameChatRoomThunk({chatRoomId, roomName: newRoomName}))
+    dispatch(
+      renameChatRoomThunk({
+        familyId,
+        userId,
+        chatRoomId,
+        roomName: newRoomName,
+      }),
+    )
       .unwrap()
       .then(() => {
         setIsRenameModalVisible(false);
@@ -94,6 +103,7 @@ export default function ChatSettings({
       }
     },
   });
+
 
   return (
     <Modal

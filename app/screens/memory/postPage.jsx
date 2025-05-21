@@ -1,30 +1,41 @@
-import React, {useState, useEffect, useCallback, useLayoutEffect} from 'react';
-import LinearGradient from 'react-native-linear-gradient';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useLayoutEffect,
+  useRef,
+} from 'react';
 import {
+  FlatList,
   Image,
   Text,
-  StyleSheet,
   View,
-  TouchableWithoutFeedback,
-  ScrollView,
-  Animated,
   TouchableOpacity,
-  TextInput,
+  Dimensions,
+  PanResponder,
+  StyleSheet,
   Platform,
+  SafeAreaView,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import getResponsiveFontSize, {
   getResponsiveHeight,
-  getResponsiveIconSize,
   getResponsiveWidth,
+  getResponsiveIconSize,
 } from '../../utils/responsive';
 import ImageDeleteModal from '../../utils/imageDeleteModal';
-import {deletePostThunk} from '../../redux/thunk/memoryThunk';
+import {
+  deletePostThunk,
+  deletePostImageThunk,
+  fetchMemoryThunk,
+} from '../../redux/thunk/memoryThunk';
 import {
   fetchCommentsThunk,
   createCommentThunk,
 } from '../../redux/thunk/commentThunk';
+import DescriptionSection from './descriptionSection';
+import CommentSection from './commentSection';
 
 export default function PostPage({route}) {
   const [isFullImageMode, setIsFullImageMode] = useState(false);
@@ -32,34 +43,34 @@ export default function PostPage({route}) {
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [showDeleteOptions, setShowDeleteOptions] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState('');
-  const [contentHeight, setContentHeight] = useState(0);
   const [commentText, setCommentText] = useState('');
-  const fadeAnim = useState(new Animated.Value(0))[0];
-  const CDN = 'https://dzqa9jgkeds0b.cloudfront.net/'; // 실제 도메인으로 교체
-
-  const user = useSelector(state => state.user);
-  const familyId = useSelector(state => state.family.familyId);
-  const memory = route.params.memory;
-  const categoryId = route.params.categoryId || null;
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [localImages, setLocalImages] = useState([]);
 
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
+  const user = useSelector(state => state.user);
+  const familyId = useSelector(state => state.family.familyId);
+  const categoryList = useSelector(state => state.category.categoryList);
   const {commentList} = useSelector(state => state.comment);
-
-  const toggleFullImageMode = () => {
-    setIsFullImageMode(prev => !prev);
-  };
+  const memory = route.params.memory;
 
   useEffect(() => {
-    if (memory.postId !== null) {
+    if (memory?.postId) {
       dispatch(fetchCommentsThunk(memory.postId));
+      setLocalImages(memory.imageUrls); // ✅ 초기 이미지 설정
     }
-  }, [memory.postId]);
+  }, [memory]);
 
   useLayoutEffect(() => {
+    const categoryTitle =
+      categoryList.find(cat => cat.categoryId === memory.categoryId)?.title ||
+      '';
+
     navigation.setOptions({
       headerShown: !isFullImageMode,
+      headerTitle: categoryTitle,
       headerRight: () => (
         <TouchableOpacity onPress={() => setShowDeleteOptions(prev => !prev)}>
           <Image
@@ -75,25 +86,11 @@ export default function PostPage({route}) {
         </TouchableOpacity>
       ),
     });
-  }, [isFullImageMode, navigation]);
-
-  const onContentLayout = useCallback(event => {
-    const {height} = event.nativeEvent.layout;
-    setContentHeight(height);
-  }, []);
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 500,
-      useNativeDriver: true,
-    }).start();
-  }, []);
+  }, [isFullImageMode, categoryList, memory.categoryId]);
 
   const handleSendComment = () => {
     const trimmed = commentText.trim();
     if (!trimmed) return;
-
     dispatch(
       createCommentThunk({
         postId: memory.postId,
@@ -104,138 +101,109 @@ export default function PostPage({route}) {
     setCommentText('');
   };
 
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderRelease: (evt, gestureState) => {
+        const {dx, dy} = gestureState;
+        const isTap = Math.abs(dx) < 5 && Math.abs(dy) < 5;
+        if (isTap) {
+          setIsFullImageMode(prev => !prev);
+        }
+      },
+    }),
+  ).current;
+
   return (
-    <View style={styles.container}>
-      <TouchableWithoutFeedback onPress={toggleFullImageMode}>
-        <Image
-          style={styles.memoryImage}
-          source={{uri: CDN + memory.imageUrls[0]}}
-        />
-      </TouchableWithoutFeedback>
-
-      {!isFullImageMode && !commentIndex && (
-        <View style={styles.description}>
-          <TouchableWithoutFeedback>
-            <View style={styles.headerContainer}>
-              <View style={styles.writer}>
-                <Image
-                  style={styles.writerImage}
-                  source={{uri: memory.authorImage}}
-                />
-                <Text style={styles.writerName}>{memory.authorName}</Text>
-              </View>
-              <TouchableOpacity onPress={() => setCommentIndex(true)}>
-                <Image
-                  style={styles.commentButton}
-                  source={require('../../assets/images/messageBubble.png')}
-                />
-                <Text
-                  style={{
-                    position: 'absolute',
-                    fontSize: getResponsiveFontSize(14.5),
-                    top: getResponsiveHeight(11),
-                    left: getResponsiveWidth(20),
-                    color: 'gray',
-                  }}>
-                  {commentList.length}
-                </Text>
-              </TouchableOpacity>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.imageLayer}>
+        <FlatList
+          data={localImages}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(item, index) => index.toString()}
+          style={{
+            position: 'relative',
+            width: Dimensions.get('window').width,
+            height: Dimensions.get('window').height,
+            display: 'flex',
+            flex: 1,
+          }}
+          contentContainerStyle={{
+            alignItems: 'center', // ✅ 가로 중앙 정렬
+            width: Dimensions.get('window').width * localImages.length,
+            // alignSelf: 'flex-start',
+          }}
+          onMomentumScrollEnd={e => {
+            const index = Math.round(
+              e.nativeEvent.contentOffset.x /
+                e.nativeEvent.layoutMeasurement.width,
+            );
+            setCurrentImageIndex(index);
+          }}
+          renderItem={({item}) => (
+            <View
+              {...panResponder.panHandlers}
+              style={{
+                width: Dimensions.get('window').width,
+                height: Dimensions.get('window').height,
+                justifyContent: 'center', // 세로 정중앙
+                alignItems: 'center', // 가로 정중앙
+              }}>
+              <Image style={styles.memoryImage} source={{uri: item}} />
             </View>
-          </TouchableWithoutFeedback>
+          )}
+        />
 
-          <ScrollView
-            style={styles.contentContainer}
-            contentContainerStyle={{paddingBottom: '10%'}}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            nestedScrollEnabled={true}>
-            <Text style={styles.content} onLayout={onContentLayout}>
-              {memory.content}
+        {!isFullImageMode && localImages.length > 1 && (
+          <View style={styles.imageIndexContainer}>
+            <Text style={[styles.imageIndexText, {color: 'yellow'}]}>
+              {currentImageIndex + 1}
             </Text>
-          </ScrollView>
-          <LinearGradient
-            colors={['rgba(255,255,255,0)', 'rgba(255,255,255,1)']}
-            style={styles.fadeOutGradient}
-            pointerEvents="none"
+            <Text style={styles.imageIndexText}> / {localImages.length}</Text>
+          </View>
+        )}
+      </View>
+      {!isFullImageMode && !commentIndex && (
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            width: '100%',
+            minHeight: '15%',
+            zIndex: 10,
+            maxHeight: '30%',
+          }}>
+          <DescriptionSection
+            memory={memory}
+            commentList={commentList}
+            onPressComment={() => setCommentIndex(true)}
           />
         </View>
       )}
 
       {!isFullImageMode && commentIndex && (
-        <View style={styles.commentContainer}>
-          <View style={styles.commentHeader}>
-            <TouchableOpacity
-              style={{
-                position: 'absolute',
-                height: '100%',
-                width: getResponsiveWidth(50),
-                flexDirection: 'row',
-                justifyContent: 'center',
-                alignItems: 'center',
-                zIndex: 2,
-              }}
-              onPress={() => setCommentIndex(false)}>
-              <Image
-                style={styles.back_bt}
-                source={require('../../assets/images/backbt.png')}
-              />
-            </TouchableOpacity>
-            <View style={{height: '100%', justifyContent: 'center'}}>
-              <Text
-                style={{
-                  textAlign: 'center',
-                  fontSize: getResponsiveFontSize(18),
-                  fontFamily: 'Pretendard-Regular',
-                }}>
-                댓글
-              </Text>
-            </View>
-          </View>
-
-          <ScrollView
-            style={styles.commentContentContainer}
-            contentContainerStyle={{paddingBottom: '13%'}}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            nestedScrollEnabled={true}>
-            {commentList.map(comment => (
-              <View style={styles.commentBox} key={comment.commentId}>
-                <Image
-                  style={styles.commentWriterImage}
-                  source={{uri: comment.authorImage}}
-                />
-                <View style={styles.commentTextBox}>
-                  <Text style={styles.commentWriter}>{comment.authorName}</Text>
-                  <Text style={styles.commentContent}>{comment.content}</Text>
-                </View>
-                <Text style={styles.commentCreatedAt}>
-                  {comment.createdAt?.split('T')[0]}
-                </Text>
-              </View>
-            ))}
-          </ScrollView>
-
-          <View style={styles.commentInputContainer}>
-            <Image
-              style={styles.commentInputImage}
-              source={{uri: `${user.image}`}}
-            />
-            <TextInput
-              style={styles.commentInput}
-              placeholder="한마디 남기기.."
-              value={commentText}
-              onChangeText={setCommentText}
-              onSubmitEditing={handleSendComment}
-            />
-            <TouchableOpacity onPress={handleSendComment}>
-              <Image
-                style={styles.commentSendBt}
-                source={require('../../assets/images/comment-send-bt.png')}
-              />
-            </TouchableOpacity>
-          </View>
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            width: '100%',
+            height: '35%',
+            zIndex: 10,
+          }}>
+          <CommentSection
+            commentList={commentList}
+            commentText={commentText}
+            onChangeComment={setCommentText}
+            onSubmitComment={handleSendComment}
+            onCloseComment={() => setCommentIndex(false)}
+            user={user}
+          />
         </View>
       )}
+
       {deleteModalVisible && (
         <ImageDeleteModal
           visible={deleteModalVisible}
@@ -245,8 +213,28 @@ export default function PostPage({route}) {
               await dispatch(deletePostThunk(memory.postId, familyId));
               setDeleteModalVisible(false);
               navigation.goBack();
-            } else {
-              setDeleteModalVisible(false);
+            } else if (deleteTarget === '사진') {
+              const targetImage = localImages[currentImageIndex];
+              try {
+                await dispatch(
+                  deletePostImageThunk(memory.postId, targetImage, familyId),
+                );
+                const updated = localImages.filter(
+                  (_, i) => i !== currentImageIndex,
+                );
+                setLocalImages(updated);
+                setCurrentImageIndex(prev =>
+                  prev >= updated.length ? updated.length - 1 : prev,
+                );
+                if (updated.length === 0) {
+                  await dispatch(deletePostThunk(memory.postId, familyId));
+                  navigation.goBack();
+                }
+              } catch (err) {
+                console.error('❌ 이미지 삭제 실패:', err);
+              } finally {
+                setDeleteModalVisible(false);
+              }
             }
           }}
           closeText="취소"
@@ -311,7 +299,7 @@ export default function PostPage({route}) {
           </TouchableOpacity>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -319,184 +307,42 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
+  },
+  imageLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    zIndex: 1,
   },
   memoryImage: {
-    position: 'absolute',
-    width: '100%',
-    height: '100%',
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').height,
     resizeMode: 'contain',
+    backgroundColor: 'transparent',
   },
-  description: {
-    // flex: 1,
-    width: '100%',
-    height: '30%',
-    alignItems: 'center',
-  },
-  fadeOutGradient: {
+  imageIndexContainer: {
     position: 'absolute',
-    bottom: 0,
-    height: '30%', // 흐릿하게 사라질 영역 높이
-    width: '100%',
-  },
-
-  headerContainer: {
-    width: '100%',
+    top: getResponsiveHeight(100),
+    alignSelf: 'center',
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    height: getResponsiveHeight(60),
-    paddingHorizontal: getResponsiveWidth(10),
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    paddingHorizontal: 11,
+    paddingVertical: 3,
+    borderRadius: 10,
+    zIndex: 3,
   },
-  writer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(10),
-  },
-  writerImage: {
-    width: getResponsiveWidth(40),
-    height: getResponsiveHeight(40),
-    borderRadius: getResponsiveWidth(20),
-    backgroundColor: 'white',
-    borderColor: 'gray',
-    borderWidth: getResponsiveWidth(0.5),
-  },
-  writerName: {
-    fontSize: getResponsiveFontSize(18),
-    fontFamily: 'Pretendard-Regular',
-  },
-  commentButton: {
-    width: getResponsiveWidth(45),
-    height: getResponsiveHeight(40),
-    right: getResponsiveWidth(-5),
-    resizeMode: 'contain',
-    bottom: -5,
-  },
-  contentContainer: {
-    backgroundColor: 'rgba(245, 245, 245, 0.8)',
-    width: '100%',
-    paddingHorizontal: getResponsiveWidth(10),
-  },
-  content: {
-    color: 'black',
-    fontFamily: 'Pretendard-Light',
-    fontSize: getResponsiveFontSize(15),
-    paddingVertical: getResponsiveWidth(5),
-  },
-
-  commentContainer: {
-    width: '100%',
-    height: '30%',
-    backgroundColor: '#EDEDED',
-  },
-
-  commentHeader: {
-    width: '100%',
-    height: '15%',
-    // backgroundColor: 'pink',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-
-  commentContentContainer: {
-    width: '100%',
-    backgroundColor: '#EDEDED',
-    borderTopColor: '#D3D3D3',
-    borderTopWidth: 2,
-    // height: '25%',
-  },
-
-  commentBox: {
-    position: 'relative',
-    width: '100%',
-    height: 'auto',
-    display: 'flex',
-    flexDirection: 'row',
-    // backgroundColor:'yellow',
-    gap: getResponsiveWidth(10),
-    paddingHorizontal: getResponsiveWidth(6),
-    paddingVertical: getResponsiveWidth(6),
-    alignItems: 'flex-start',
-    justifyContent: 'flex-start',
-  },
-  commentWriterImage: {
-    width: getResponsiveWidth(42),
-    height: getResponsiveHeight(42),
-    borderRadius: getResponsiveHeight(20),
-    // backgroundColor:'pink',
-    borderColor: 'lightgray',
-    borderWidth: 0.5,
-    resizeMode: 'cover',
-  },
-  commentTextBox: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    justifyContent: 'flex-end',
-    top: getResponsiveHeight(3),
-    width: '85%',
-    gap: getResponsiveHeight(2),
-  },
-  commentWriter: {
+  imageIndexText: {
+    color: 'white',
+    fontSize: getResponsiveFontSize(12),
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(15),
   },
-  commentContent: {
-    flexWrap: 'wrap',
-    fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(13),
-  },
-  commentCreatedAt: {
-    position: 'absolute',
-    fontSize: getResponsiveFontSize(9),
-    right: getResponsiveWidth(5),
-    top: getResponsiveHeight(7.5),
-    fontFamily: 'Pretendard-Light',
-  },
-
-  back_bt: {
-    width: getResponsiveWidth(30),
-    height: getResponsiveHeight(20),
-    resizeMode: 'contain',
-  },
-
-  commentInputContainer: {
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'absolute',
-    width: '100%',
-    height: '20%',
-    backgroundColor: '#D9D9D9',
-    bottom: '0',
-    paddingHorizontal: getResponsiveWidth(17.5),
-    gap: getResponsiveWidth(12),
-  },
-  commentInputImage: {
-    width: getResponsiveWidth(30),
-    height: getResponsiveHeight(30),
-    borderRadius: getResponsiveWidth(15),
-    resizeMode: 'contain',
-    backgroundColor: 'white',
-    borderWidth: 0.1,
-    resizeMode: 'cover',
-  },
-  commentInput: {
-    width: '75%',
-    height: Platform.OS === 'android' ? '70%' : '60%',
-    borderBottomWidth: 0.5, // 언더바 두께
-  },
-  commentSendBt: {
-    width: getResponsiveWidth(28),
-    height: getResponsiveHeight(28),
-    borderRadius: getResponsiveIconSize(14),
-  },
-
   deleteOptions: {
     position: 'absolute',
-    top: getResponsiveHeight(95), // 휴지통 아래
+    top: getResponsiveHeight(95),
     right: getResponsiveWidth(15),
     backgroundColor: 'rgba(245, 245, 245, 0.8)',
     borderRadius: 7,

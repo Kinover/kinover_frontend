@@ -15,7 +15,17 @@ import {
 import { useSelector } from 'react-redux';
 import { getPresignedUrls, uploadImageToS3 } from '../../api/imageUrlApi';
 import { uploadPostApi } from '../../api/uploadPostApi';
-import { getUserIdFromToken } from '../../api/getUserIdFromToken';
+
+// ✅ 미디어 타입 추출 함수 (파일 확장자 기반)
+const getMediaTypeFromUri = (uri) => {
+  if (!uri || typeof uri !== 'string') return 'UNKNOWN';
+  const lower = uri.toLowerCase();
+
+  if (lower.match(/\.(jpg|jpeg|png|gif|webp)$/)) return 'IMAGE';
+  if (lower.match(/\.(mp4|mov|avi|wmv|flv|mkv)$/)) return 'VIDEO';
+
+  return 'UNKNOWN';
+};
 
 export default function CreatePostPage({ navigation, route }) {
   const [text, setText] = useState('');
@@ -29,27 +39,32 @@ export default function CreatePostPage({ navigation, route }) {
     setIsUploading(true);
 
     try {
-      // ✅ 파일 이름 미리 생성
-      const fileNames = selectedImages.map((_, i) => `img_${Date.now()}_${i}_${Math.floor(Math.random() * 1000)}.jpg`);
+      const fileNames = selectedImages.map(
+        (_, i) =>
+          `img_${Date.now()}_${i}_${Math.floor(Math.random() * 1000)}.jpg`,
+      );
 
-      // ✅ presigned URLs 요청
       const presignedUrls = await getPresignedUrls(fileNames);
 
-      // ✅ 순차적 S3 업로드
       for (let i = 0; i < selectedImages.length; i++) {
         await uploadImageToS3(presignedUrls[i], selectedImages[i]);
       }
 
-      // ✅ 게시글 업로드
+      const postTypes = selectedImages.map(uri => getMediaTypeFromUri(uri));
+
       const payload = {
         authorId: user.userId,
         categoryId: selectedCategory?.categoryId,
-        imageUrls: fileNames, // ✅ 이제는 파일 이름만 전송
+        imageUrls: fileNames,
+        postTypes,
         content: text,
         familyId: family.familyId,
       };
 
+      console.log('🧾 selectedImages:', selectedImages);
+      console.log('🧾 postTypes:', postTypes);
       console.log('📦 게시글 업로드 payload:', JSON.stringify(payload, null, 2));
+
       await uploadPostApi(payload);
 
       console.log('✅ 게시글 업로드 완료');
@@ -64,10 +79,8 @@ export default function CreatePostPage({ navigation, route }) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <View style={{ width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontSize: getResponsiveFontSize(20), textAlign: 'center' }}>
-            글 작성하기
-          </Text>
+        <View style={styles.headerContainer}>
+          <Text style={styles.headerText}>글 작성하기</Text>
         </View>
       ),
       headerRight: () => (
@@ -129,5 +142,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 10,
+  },
+  headerContainer: {
+    width: '100%',
+    height: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerText: {
+    fontSize: getResponsiveFontSize(20),
+    textAlign: 'center',
   },
 });

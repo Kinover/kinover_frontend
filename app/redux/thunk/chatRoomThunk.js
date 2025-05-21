@@ -9,6 +9,7 @@ import {
   setChatRoomLoading,
   setChatRoomError,
 } from '../slices/chatRoomSlice';
+import { fetchFamilyThunk } from './familyThunk';
 
 export const fetchChatRoomListThunk = (familyId, userId) => {
   return async (dispatch) => {
@@ -93,7 +94,7 @@ export const leaveChatRoomThunk = createAsyncThunk(
 
 export const renameChatRoomThunk = createAsyncThunk(
   'chatRoom/renameChatRoom',
-  async ({ chatRoomId, roomName }, { rejectWithValue }) => {
+  async ({ familyId,userId, chatRoomId, roomName }, { rejectWithValue }) => {
     try {
       const token = await getToken();
       const response = await fetch(
@@ -114,6 +115,8 @@ export const renameChatRoomThunk = createAsyncThunk(
 
       const data = await response.text();
       console.log('✅ 채팅방 이름 변경 성공:', data);
+      
+      dispatch(fetchChatRoomListThunk(familyId,userId))
       return data;
 
     } catch (err) {
