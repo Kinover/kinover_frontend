@@ -188,11 +188,12 @@ export default function MemoryFeed() {
                         right: getResponsiveWidth(10),
                         bottom: getResponsiveHeight(20),
                         zIndex: 999,
-                        fontSize: getResponsiveFontSize(18),
-                        fontFamily: 'Pretendard-SemiBold',
+                        fontSize: getResponsiveFontSize(15),
+                        fontFamily: 'Pretendard-Regular',
                         color: 'white',
+                    
                       }}>
-                      댓글 2
+                      댓글 {memory.commentCount}
                     </Text>
                   </View>
                   <Text
