@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Text, StyleSheet,Image} from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -14,38 +14,39 @@ export default function SendKinoChat({
   messageType = 'text',
   message,
 }) {
-  const renderImages = () => {
-    if (imageUrls.length === 1) {
-      return (
-        <Image
-          source={{uri: imageUrls[0]}}
-          style={styles.singleImage}
-          resizeMode="contain"
-        />
-      );
-    }
-  };
-
   return (
     <View style={styles.sendContainer}>
       <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>
-      <View
-        style={[
-          styles.sendBubble,
-          messageType === 'text' ? styles.textPadding : styles.imagePadding,
-        ]}>
-        {messageType === 'image' ? (
-          renderImages()
-        ) : (
-          <Text style={styles.sendText}>{message}</Text>
-        )}
-      </View>
+
+      {messageType === 'image' && imageUrls.length === 1 ? (
+        <Image
+          source={{ uri: imageUrls[0] }}
+          style={styles.singleImage}
+          resizeMode="cover"
+        />
+      ) : (
+        <View
+          style={[
+            styles.sendBubble,
+            messageType === 'text' ? styles.textPadding : styles.imagePadding,
+          ]}
+        >
+          {messageType === 'image' ? (
+            <Image
+              source={{ uri: imageUrls[0] }}
+              style={styles.singleImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <Text style={styles.sendText}>{message}</Text>
+          )}
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  /** 🔹 발신 메시지 스타일 */
   sendContainer: {
     display: 'flex',
     flexDirection: 'row',
@@ -75,17 +76,19 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(13),
     color: 'black',
     flexWrap: 'wrap',
-    lineHeight: getResponsiveFontSize(18), // 줄 간격 설정
+    lineHeight: getResponsiveFontSize(18),
   },
 
   sendTime: {
     fontSize: getResponsiveFontSize(10),
     color: '#666',
-    marginRight: getResponsiveWidth(5), // 말풍선 왼쪽에 위치
+    marginRight: getResponsiveWidth(5),
   },
+
   singleImage: {
     width: getResponsiveWidth(200),
-    height: getResponsiveHeight(200),
+    aspectRatio: 1, // ✅ 원본 비율 유지
     borderRadius: 10,
+    alignSelf: 'flex-end',
   },
 });

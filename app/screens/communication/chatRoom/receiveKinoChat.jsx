@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, Image, Text, StyleSheet} from 'react-native';
+import { View, Image, Text, StyleSheet, FlatList } from 'react-native';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -8,21 +8,55 @@ import {
 } from '../../../utils/responsive';
 import formatTime from "../../../utils/formatTime";
 
+export default function ReceiveKinoChat({
+  message,
+  chatTime,
+  userProfileImage,
+  messageType = 'text',
+  imageUrls = [],
+}) {
+  const renderImages = () => {
+    if (imageUrls.length === 1) {
+      return (
+        <Image
+          source={{ uri: imageUrls[0] }}
+          style={styles.singleImage}
+          resizeMode="cover"
+        />
+      );
+    }
 
-export default function ReceiveKinoChat({message, chatTime,userProfileImage}) {
+    return (
+      <FlatList
+        data={imageUrls}
+        keyExtractor={(item, index) => item + index}
+        numColumns={3}
+        renderItem={({ item }) => (
+          <Image source={{ uri: item }} style={styles.imageItem} />
+        )}
+        scrollEnabled={false}
+        contentContainerStyle={styles.imageGrid}
+      />
+    );
+  };
+
   return (
     <View style={styles.receivedContainer}>
-      {/* 유저 이름 & 말풍선 */}
       <View style={styles.textContainer}>
-
-        {/* 메시지 & 시간 */}
         <View style={styles.messageContainer}>
-        {/* <Image source={{ uri: `${userProfileImage}` }} style={styles.receivedUserImage} /> */}
-
-          <View style={styles.receivedBubble}>
-            <Text style={styles.receivedText}>{message}</Text>
-          </View>
-          <Text style={styles.receivedTime}>{formatTime(chatTime)}</Text>
+          {messageType === 'image' ? (
+            <>
+              {renderImages()}
+              <Text style={styles.receivedTime}>{formatTime(chatTime)}</Text>
+            </>
+          ) : (
+            <>
+              <View style={styles.receivedBubble}>
+                <Text style={styles.receivedText}>{message}</Text>
+              </View>
+              <Text style={styles.receivedTime}>{formatTime(chatTime)}</Text>
+            </>
+          )}
         </View>
       </View>
     </View>
@@ -31,30 +65,17 @@ export default function ReceiveKinoChat({message, chatTime,userProfileImage}) {
 
 const styles = StyleSheet.create({
   receivedContainer: {
-    position:'relative',
+    position: 'relative',
     flexDirection: 'row',
-    alignItems: 'flex-start', // 프로필 이미지와 텍스트 정렬
+    alignItems: 'flex-start',
     marginBottom: getResponsiveHeight(30),
   },
 
-    /** 🔹 프로필 이미지 */
-    receivedUserImage: {
-      width: getResponsiveWidth(45),
-      height: getResponsiveWidth(45),
-      borderRadius: getResponsiveWidth(25),
-      backgroundColor: "#ddd",
-      marginRight: getResponsiveWidth(10), // 유저이름과 간격
-      top:1,
-      alignSelf:'flex-start',
-    },
-
-  /** 🔹 유저 이름 & 메시지 */
   textContainer: {
     flex: 1,
     flexDirection: 'column',
   },
 
-  /** 🔹 메시지 & 시간 */
   messageContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -74,12 +95,29 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(13),
     color: 'black',
     flexWrap: 'wrap',
-    lineHeight: getResponsiveFontSize(18), // 줄 간격 설정
+    lineHeight: getResponsiveFontSize(18),
   },
 
   receivedTime: {
     fontSize: getResponsiveFontSize(10),
     color: '#666',
-    marginLeft: getResponsiveWidth(5), // 말풍선 왼쪽에 위치
+    marginLeft: getResponsiveWidth(5),
+  },
+
+  singleImage: {
+    width: getResponsiveWidth(200),
+    aspectRatio: 1,
+    borderRadius: 10,
+  },
+
+  imageGrid: {
+    gap: getResponsiveWidth(4),
+  },
+
+  imageItem: {
+    width: getResponsiveWidth(70),
+    height: getResponsiveWidth(70),
+    borderRadius: 8,
+    margin: 2,
   },
 });
