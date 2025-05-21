@@ -23,6 +23,10 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import FamilyNameModal from './familyNameModal';
 import NoticeModal from './noticeModal';
+import useWebSocketStatus from '../../hooks/useWebSocketStatus';
+import {setOnlineUserIds} from '../../redux/slices/statusSlice';
+import {getToken} from '../../utils/storage';
+import useFamilyStatusSocket from '../../hooks/useFamilyStatusSocket';
 
 export default function HomeScreen() {
   const dispatch = useDispatch();
@@ -36,6 +40,12 @@ export default function HomeScreen() {
   const [modalType, setModalType] = useState(null); // 'userDelete' | 'familyName' | 'settings'
   const [containerWidth, setContainerWidth] = useState(0);
   const [selectedNotice, setSelectedNotice] = useState(null); // 💡 공지 선택용
+  const onlineUserIds = useSelector(state => state.status.onlineUserIds);
+  const notice = useSelector(state => state.familyNotice);
+  // ⬇️ 추가: 접속중 유저 ID 목록 가져오기
+
+  useWebSocketStatus(user.userId);
+  useFamilyStatusSocket(family.familyId);
 
   const chunkArray = (arr, size) => {
     const result = [];
@@ -76,7 +86,6 @@ export default function HomeScreen() {
       console.log(user.image);
     }
   }, [dispatch, user]);
-
 
   return (
     <>
@@ -143,9 +152,7 @@ export default function HomeScreen() {
           <View style={styles.bodyContainer}>
             {familyUserList && familyUserList.length > 0 ? (
               chunkArray(
-                (familyUserList || []).filter(
-                  member => member && member.name ,
-                ),
+                (familyUserList || []).filter(member => member && member.name),
                 3,
               ).map((row, rowIndex) => (
                 <View key={rowIndex} style={styles.bodyContainerRow}>
@@ -162,6 +169,9 @@ export default function HomeScreen() {
                         source={{uri: member.image}}
                         style={styles.userImage}
                       />
+                      {onlineUserIds.includes(member.userId) && (
+                        <View style={styles.onlineDot} />
+                      )}
                       {isEditMode && (
                         <>
                           <View
@@ -469,5 +479,17 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: getResponsiveWidth(600),
     borderTopRightRadius: getResponsiveWidth(600),
     zIndex: 0,
+  },
+  onlineDot: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#29D697',
+    borderColor: 'white',
+    borderWidth: 2,
+    zIndex: 999,
   },
 });

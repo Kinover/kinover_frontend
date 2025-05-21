@@ -16,6 +16,8 @@ export const getPresignedUrls = async (fileNames) => {
         },
       }
     );
+    console.log('📡 Presigned 응답 데이터:', response.data);
+
     return response.data; // Array of presigned URLs
   } catch (error) {
     console.error('Presigned URL 목록 요청 실패:', error.response?.data || error.message);

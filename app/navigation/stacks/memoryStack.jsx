@@ -15,6 +15,7 @@ import ImageSelectPage from '../../screens/memory/ImageSelectPage';
 import {RenderGoBackButton} from '../../navigation/tabHeaderHelpers';
 import CategorySelectPage from '../../screens/memory/categorySelectPage';
 import CreatePostPage from '../../screens/memory/createPostPage';
+import CategoryPage from '../../screens/memory/categoryPage';
 
 const Stack = createStackNavigator();
 
@@ -47,7 +48,6 @@ export default function MemoryStack() {
         headerLeft: () => null, // ✅ 올바른 접근
       })}>
       <Stack.Screen name="추억화면" component={MemoryScreen} />
-
       <Stack.Screen
         name="게시글화면"
         component={PostPage}
@@ -75,6 +75,12 @@ export default function MemoryStack() {
           },
         })}
       />
+      <Stack.Screen
+        name="카테고리화면"
+        component={CategoryPage}
+        options={({navigation}) => ({
+          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+        })}/>
 
       <Stack.Screen
         name="이미지선택화면"

@@ -6,10 +6,12 @@ import {
   Text,
   FlatList,
   TouchableOpacity,
+  Button,
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 import {useFocusEffect} from '@react-navigation/native';
-
+import {useEffect} from 'react';
+import {useRoute} from '@react-navigation/native';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -20,6 +22,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {useNavigation} from '@react-navigation/native';
 import {useCallback} from 'react';
 import {fetchMemoryThunk} from '../../redux/thunk/memoryThunk';
+import {fetchCategoryThunk} from '../../redux/thunk/categoryThunk';
 
 export default function MemoryFeed() {
   const familyId = useSelector(state => state.family.familyId);
@@ -27,14 +30,35 @@ export default function MemoryFeed() {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(null);
   const [isGalleryView, setIsGalleryView] = useState(false); // 스위치 상태 관리
+  const categoryList = useSelector(state => state.category.categoryList);
   const dispatch = useDispatch();
   const navigation = useNavigation();
-  const CDN = 'https://dzqa9jgkeds0b.cloudfront.net/'; // 실제 도메인으로 교체
+  const route = useRoute();
 
+  const category = route?.params?.category;
+  const [selectedCategoryTitle, setSelectedCategoryTitle] = useState('전체');
+
+  // ✅ 조건에 따라 memory 필터링
+  const filteredMemoryList =
+    selectedCategoryTitle === '전체'
+      ? memoryList
+      : memoryList.filter(memory => {
+          const category = categoryList.find(
+            cat => cat.categoryId === memory.categoryId,
+          );
+          return category?.title === selectedCategoryTitle;
+        });
+
+  useEffect(() => {
+    if (category) {
+      setSelectedCategoryTitle(category.title);
+    }
+  }, [category]);
 
   useFocusEffect(
     useCallback(() => {
       dispatch(fetchMemoryThunk(familyId));
+      dispatch(fetchCategoryThunk(familyId));
     }, [familyId]),
   );
 
@@ -53,17 +77,20 @@ export default function MemoryFeed() {
     return (
       <FlatList
         data={memoryList} // memoryList 배열을 사용
-        renderItem={({item}) => (
-          <TouchableOpacity
-            onPress={() => navigation.navigate('게시글화면', {memory: item})}>
-            <Image
-              style={styles.galleryImage}
-              source={{
-                uri: CDN + item.imageUrls[0],
-              }}
-            />
-          </TouchableOpacity>
-        )}
+        renderItem={({item}) => {
+          console.log('🧾 게시글 항목:', item);
+          return (
+            <TouchableOpacity
+              onPress={() => navigation.navigate('게시글화면', {memory: item})}>
+              <Image
+                style={styles.galleryImage}
+                source={{
+                  uri: item.imageUrls[0],
+                }}
+              />
+            </TouchableOpacity>
+          );
+        }}
         scrollEnabled={false}
         keyExtractor={item => item.postId}
         numColumns={3} // 여러 개의 이미지를 한 줄에 렌더링
@@ -72,10 +99,15 @@ export default function MemoryFeed() {
     );
   };
 
+  const getCategoryLabel = categoryId => {
+    const found = categoryList.find(cat => cat.categoryId === categoryId);
+    return found ? found.title : '카테고리 없음';
+  };
+
   return (
     <View style={styles.contentElement}>
       <View style={styles.lineContainer}>
-        <DropDownPicker
+        {/* <DropDownPicker
           open={open}
           value={value}
           items={[
@@ -90,7 +122,12 @@ export default function MemoryFeed() {
           containerStyle={{width: getResponsiveWidth(90), zIndex: 9999}}
           style={styles.dropdown}
           textStyle={{fontSize: getResponsiveFontSize(17)}}
-        />
+        /> */}
+        <TouchableOpacity
+          style={[styles.categoryButton]}
+          onPress={() => navigation.navigate('카테고리화면')}>
+          <Text style={styles.categoryButtonText}>{selectedCategoryTitle}</Text>
+        </TouchableOpacity>
         <View
           style={{
             width: getResponsiveWidth(80),
@@ -128,16 +165,14 @@ export default function MemoryFeed() {
         renderMemoryGallery()
       ) : (
         <View style={styles.memoryContainer}>
-          {memoryList.map(memory => (
+          {filteredMemoryList.map(memory => (
             <View key={memory.postId}>
               <TouchableOpacity
                 onPress={() =>
                   navigation.navigate('게시글화면', {memory: memory})
                 }
                 key={memory.postId}
-                style={{
-                  backgroundColor: 'white',
-                }}>
+                style={{backgroundColor: 'white'}}>
                 <Text style={{marginBottom: getResponsiveHeight(5)}}>
                   {formatDate(memory.createdAt)}
                 </Text>
@@ -145,9 +180,7 @@ export default function MemoryFeed() {
                   <View style={{position: 'relative', flex: 1}}>
                     <Image
                       style={styles.memoryImage}
-                      source={{
-                        uri: CDN + memory.imageUrls[0],
-                      }}
+                      source={{uri: memory.imageUrls[0]}}
                     />
                     <Text
                       style={{
@@ -162,18 +195,17 @@ export default function MemoryFeed() {
                       댓글 2
                     </Text>
                   </View>
-
                   <Text
                     style={{
                       fontSize: getResponsiveFontSize(22),
                       fontFamily: 'Pretendard-Regualr',
                       marginBottom: getResponsiveHeight(5),
                     }}>
-                    {memory.title}
+                    {getCategoryLabel(memory.categoryId)}
                   </Text>
                   <Text
                     style={{
-                      fonrFamily: 'Pretendard-Light',
+                      fontFamily: 'Pretendard-Light',
                       fontSize: getResponsiveFontSize(12),
                       maxHeight: getResponsiveHeight(50),
                     }}>
@@ -191,6 +223,19 @@ export default function MemoryFeed() {
 }
 
 const styles = StyleSheet.create({
+  categoryButton: {
+    paddingVertical: getResponsiveHeight(5),
+    backgroundColor: 'white',
+  },
+
+  categoryButtonText: {
+    fontFamily: 'Pretendard-Regular',
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    fontSize: getResponsiveFontSize(18),
+    color: 'black',
+  },
+
   galleryImage: {
     width: 125,
     height: 125,
@@ -213,7 +258,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     width: '100%',
     gap: getResponsiveHeight(10),
-    marginBottom: getResponsiveHeight(20),
+    // marginBottom: getResponsiveHeight(20),
     position: 'relative',
   },
 
@@ -223,7 +268,7 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     justifyContent: 'flex-start',
     width: '100%',
-    marginBottom: getResponsiveHeight(30),
+    // marginBottom: getResponsiveHeight(30),
     paddingHorizontal: getResponsiveWidth(10),
     // backgroundColor:'lightgray',
   },
@@ -297,6 +342,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     width: '100%',
     height: 'auto',
+    paddingVertical: getResponsiveHeight(7),
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'space-between',

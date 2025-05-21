@@ -46,7 +46,7 @@ const createCategory = async (title, familyId) => {
     const url = 'http://43.200.47.242:9090/api/categories';
     const body = {
       title,
-      familyId: familyId,
+      familyId,
     };
 
     console.log('🌐 [POST] 요청 URL:', url);

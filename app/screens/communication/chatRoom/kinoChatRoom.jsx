@@ -11,6 +11,8 @@ import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import ChatInput from './chatInput';
 import ChatMessageItem from './chatMessageItem';
+import { SafeAreaView } from 'react-native';
+
 import {
   fetchMessageThunk,
   fetchMoreMessagesThunk,
@@ -136,7 +138,7 @@ export default function KinoChatRoom({route}) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <FlatList
         ref={flatListRef}
         data={messageList}
@@ -189,7 +191,7 @@ export default function KinoChatRoom({route}) {
         setMessageList={setMessageList}
 
       />
-    </View>
+    </SafeAreaView>
   );
 }
 

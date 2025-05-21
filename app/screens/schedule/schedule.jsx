@@ -14,24 +14,12 @@ import {
   getResponsiveHeight,
 } from '../../utils/responsive';
 import {fetchSchedulesForFamilyAndDateThunk} from '../../redux/thunk/scheduleThunk';
-
 export default function Schedule({selectedDate}) {
   const dispatch = useDispatch();
   const {familyId} = useSelector(state => state.family);
   const {scheduleList} = useSelector(state => state.schedule);
   const {familyUserList} = useSelector(state => state.userFamily);
   const currentUserId = useSelector(state => state.user.userId);
-  const filteredSchedules =
-    selectedUserId === 'family'
-      ? scheduleList.filter(item => item.userId === null)
-      : scheduleList.filter(item => item.userId === selectedUserId);
-  const dummySchedule = {
-    scheduleId: 'dummy-schedule-1',
-    title: '할머니 생신',
-    memo: '@@고깃집 몇 시까지 오세요~',
-    userId: null,
-  };
-  const fullScheduleList = [...filteredSchedules, dummySchedule];
 
   const [selectedUserId, setSelectedUserId] = useState('family');
 
@@ -48,6 +36,11 @@ export default function Schedule({selectedDate}) {
     const dayOfWeek = dayMap[selectedDate.getDay()];
     return `${year}년 ${month}월 ${day}일 (${dayOfWeek})`;
   };
+
+  const filteredSchedules =
+    selectedUserId === 'family'
+      ? scheduleList.filter(item => item.userId === null)
+      : scheduleList.filter(item => item.userId === selectedUserId);
 
   const reorderedTabs = [
     selectedUserId === 'family'
@@ -87,11 +80,11 @@ export default function Schedule({selectedDate}) {
       <View>
         {/* 일정 카드 */}
         <View style={styles.contentColumn}>
-          {fullScheduleList.map(schedule => (
+          {filteredSchedules.map(schedule => (
             <View key={schedule.scheduleId} style={styles.card}>
               <Text style={styles.cardTitle}>{schedule.title}</Text>
               <Text style={styles.cardMemo}>
-                {schedule.memo || '@@고깃집 몇 시까지 오세요~'}
+                {schedule.memo || '@@메모 없음'}
               </Text>
               <TouchableOpacity style={styles.memoIcon}>
                 <Image
@@ -184,12 +177,12 @@ const styles = StyleSheet.create({
     borderWidth: 1.8,
     borderColor: '#FFC84D',
     borderStyle: 'dashed',
-    justifyContent:'space-between',
+    justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#FFF',
     height: getResponsiveHeight(80),
     flexDirection: 'row',
-    paddingHorizontal:getResponsiveWidth(20),
+    paddingHorizontal: getResponsiveWidth(20),
     gap: 10,
   },
   addCardText: {

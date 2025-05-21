@@ -12,6 +12,8 @@ import scheduleReducer from './slices/scheduleSlice';
 import loginReducer from './slices/authSlice'; // ✅ 이 줄 추가
 import commentReducer from './slices/commentSlice';
 import categoryReducer from './slices/categorySlice';
+import statusSlice from './slices/statusSlice';
+import familyNoticeReducer from './slices/familyNoticeSlice';
 
 const rootReducer = combineReducers({
   family: familyReducer,
@@ -25,6 +27,8 @@ const rootReducer = combineReducers({
   login: loginReducer,
   comment: commentReducer,
   category: categoryReducer,
+  status:statusSlice,
+  familyNotice:familyNoticeReducer,
 });
 
 export default rootReducer;
