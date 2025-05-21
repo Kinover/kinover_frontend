@@ -54,7 +54,7 @@ export default function DescriptionSection({
           </Text>
         </ScrollView>
         <LinearGradient
-          colors={['rgba(255,255,255,0)', 'rgba(255,255,255,1)']}
+          colors={['rgba(245, 245, 245, 0)', 'rgba(245, 245, 245, 1)']}
           style={styles.fadeOutGradient}
           pointerEvents="none"
         />
@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
   fadeOutGradient: {
     position: 'absolute',
     bottom: 0,
-    height: '30%', // 흐릿하게 사라질 영역 높이
+    height: '90%', // 예: 80~100 정도로 흐림 범위 넓히기
     width: '100%',
   },
 
