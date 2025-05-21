@@ -13,7 +13,7 @@
 - **Kakao 로그인 API** – 소셜 로그인 연동
 - **Axios** – 백엔드 REST API 통신
 - **S3 Presigned URL** – 이미지 업로드 처리
-- **Figma** – UI 디자인 시안 기반 pixel-perfect 구현
+- **Figma** – 다양한 해상도 대응을 고려한 pixel-perfect 반응형 UI 구현
 - **Custom Components** – Modal / Toast / Loader 등 UI 요소 모듈화
 
 ## 주요 기능
