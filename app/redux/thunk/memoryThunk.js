@@ -14,7 +14,7 @@ export const fetchMemoryThunk = (familyId, categoryId = null) => {
       const token = await getToken();
       console.log('🔐 토큰 획득 성공:', token);
 
-      let apiUrl = `http://43.200.47.242:9090/api/posts?familyId=${familyId}`;
+      let apiUrl = `https://kinover.shop/api/posts?familyId=${familyId}`;
       if (categoryId) {
         apiUrl += `&categoryId=${categoryId}`;
       } 
@@ -48,7 +48,7 @@ export const deletePostThunk = (postId, familyId) => {
       const token = await getToken();
       console.log('🔐 토큰 획득 성공:', token);
 
-      const apiUrl = `http://43.200.47.242:9090/api/posts/${postId}`;
+      const apiUrl = `https://kinover.shop/api/posts/${postId}`;
       console.log('🌐 DELETE 요청 URL:', apiUrl);
 
       const response = await axios.delete(apiUrl, {
@@ -82,7 +82,7 @@ export const deletePostImageThunk = (postId, imageUrlToDelete, familyId) => {
       const token = await getToken();
       console.log('🔐 토큰 획득 성공:', token);
 
-      const apiUrl = `http://kinover.shop/api/posts/${postId}/image`;
+      const apiUrl = `https://kinover.shop/api/posts/${postId}/image`;
       console.log('🌐 DELETE 요청 URL:', apiUrl);
 
       const response = await axios.delete(apiUrl, {

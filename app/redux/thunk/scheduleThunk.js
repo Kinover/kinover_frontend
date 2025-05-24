@@ -14,7 +14,7 @@ export const fetchSchedulesForFamilyAndDateThunk = (familyId, date) => {
     console.log('📅 [가족 스케줄] 요청 시작:', { familyId, date });
 
     try {
-      const apiUrl = `http://kinover.shop/api/schedule/get/${familyId}?date=${date}`;
+      const apiUrl = `https://kinover.shop/api/schedule/get/${familyId}?date=${date}`;
       const token = await getToken();
 
       console.log('🌐 API URL:', apiUrl);
@@ -45,7 +45,7 @@ export const fetchSchedulesForUserAndDateThunk = (familyId, userId, date) => {
     console.log('👤 [유저별 스케줄] 요청 시작:', { familyId, userId, date });
 
     try {
-      const apiUrl = `http://kinover.shop/api/schedule/get/${familyId}/${userId}?date=${date}`;
+      const apiUrl = `https://kinover.shop/api/schedule/get/${familyId}/${userId}?date=${date}`;
       const token = await getToken();
 
       console.log('🌐 API URL:', apiUrl);
@@ -78,7 +78,7 @@ export const addScheduleThunk = (scheduleData) => {
     console.log('📝 [스케줄 추가] 요청 시작:', scheduleData);
 
     try {
-      const apiUrl = `http://kinover.shop/api/schedule/add`;
+      const apiUrl = `https://kinover.shop/api/schedule/add`;
       const token = await getToken();
 
       const response = await axios.post(apiUrl, scheduleData, {
@@ -107,7 +107,7 @@ export const updateScheduleThunk = (updatedScheduleData) => {
     console.log('✏️ [스케줄 수정] 요청 시작:', updatedScheduleData);
 
     try {
-      const apiUrl = `http://kinover.shop/api/schedule/modify`;
+      const apiUrl = `https://kinover.shop/api/schedule/modify`;
       const token = await getToken();
 
       const response = await axios.post(apiUrl, updatedScheduleData, {
@@ -136,7 +136,7 @@ export const deleteScheduleThunk = (scheduleId) => {
     console.log('🗑️ [스케줄 삭제] 요청 시작:', scheduleId);
 
     try {
-      const apiUrl = `http://kinover.shop/api/schedule/remove/${scheduleId}`;
+      const apiUrl = `https://kinover.shop/api/schedule/remove/${scheduleId}`;
       const token = await getToken();
 
       const response = await axios.delete(apiUrl, {

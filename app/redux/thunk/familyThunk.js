@@ -12,7 +12,7 @@ export const fetchFamilyThunk = familyId => {
   return async dispatch => {
     dispatch(setFamilyLoading(true));
     try {
-      const apiUrl = `http://kinover.shop/api/family/${familyId}`;
+      const apiUrl = `https://kinover.shop/api/family/${familyId}`;
 
       const token = await getToken();
 
@@ -48,7 +48,7 @@ export const modifyFamily = family => {
   return async dispatch => {
     dispatch(setFamilyLoading(true));
     try {
-      const apiUrl = `http://kinover.shop/api/family/modify`;
+      const apiUrl = `https://kinover.shop/api/family/modify`;
 
       const token = await getToken();
 

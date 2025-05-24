@@ -15,7 +15,7 @@ export const fetchMessageThunk = (chatRoomId, before = null, limit = 20) => {
     try {
       const token = await getToken();
 
-      let apiUrl = `http://kinover.shop/api/chatRoom/${chatRoomId}/messages/fetch?limit=${limit}`;
+      let apiUrl = `https://kinover.shop/api/chatRoom/${chatRoomId}/messages/fetch?limit=${limit}`;
       if (before) {
         apiUrl += `&before=${encodeURIComponent(before)}`;
       }
@@ -42,7 +42,7 @@ export const fetchMoreMessagesThunk = (chatRoomId, beforeTime) => {
     try {
       const token = await getToken();
       const limit = 20;
-      let apiUrl = `http://kinover.shop/api/chatRoom/${chatRoomId}/messages/fetch?limit=${limit}&before=${encodeURIComponent(
+      let apiUrl = `https://kinover.shop/api/chatRoom/${chatRoomId}/messages/fetch?limit=${limit}&before=${encodeURIComponent(
         beforeTime,
       )}`;
 
@@ -68,7 +68,7 @@ export const sendMessageThunk = (message, chatRoomId) => {
   return async dispatch => {
     dispatch(setMessageLoading(true));
     try {
-      const apiUrl = 'http://kinover.shop/api/chatRoom/messages/send';
+      const apiUrl = 'https://kinover.shop/api/chatRoom/messages/send';
       const token = await getToken();
 
       const response = await axios.post(apiUrl, message, {
