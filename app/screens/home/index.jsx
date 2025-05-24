@@ -396,8 +396,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
     height: '23%',
-    // borderRadius: getResponsiveIconSize(20),
-    // // ⭐ 추가: 그림자
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
