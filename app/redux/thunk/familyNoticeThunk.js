@@ -13,7 +13,7 @@ export const fetchFamilyNoticeThunk = familyId => {
     try {
       const token = await getToken();
       const response = await axios.get(
-        `http://kinover.shop/api/family/notice/${familyId}`,
+        `https://kinover.shop/api/family/notice/${familyId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -36,7 +36,7 @@ export const updateFamilyNoticeThunk = (familyId, noticeText) => {
     try {
       const token = await getToken();
       const response = await axios.put(
-        `http://kinover.shop/api/family/notice/${familyId}`,
+        `https://kinover.shop/api/family/notice/${familyId}`,
         noticeText,
         {
           headers: {

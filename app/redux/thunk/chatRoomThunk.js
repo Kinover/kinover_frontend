@@ -15,7 +15,7 @@ export const fetchChatRoomListThunk = (familyId, userId) => {
   return async (dispatch) => {
     dispatch(setChatRoomLoading(true));
     try {
-      const apiUrl = `http://kinover.shop/api/chatRoom/${familyId}/${userId}`;
+      const apiUrl = `https://kinover.shop/api/chatRoom/${familyId}/${userId}`;
 
       const token = await getToken();
 
@@ -44,7 +44,7 @@ export const fetchChatRoomUsersThunk = (chatRoomId) => {
 
     try {
       const token = await getToken();
-      const apiUrl = `http://kinover.shop/api/chatRoom/${chatRoomId}/users/get`;
+      const apiUrl = `https://kinover.shop/api/chatRoom/${chatRoomId}/users/get`;
 
       const response = await axios.post(apiUrl, {}, {
         headers: {
@@ -70,7 +70,7 @@ export const leaveChatRoomThunk = createAsyncThunk(
       const token = await getToken();
 
       const res = await fetch(
-        `http://kinover.shop/api/chatRoom/${chatRoomId}/leave`,
+        `https://kinover.shop/api/chatRoom/${chatRoomId}/leave`,
         {
           method: 'DELETE',
           headers: {
@@ -98,7 +98,7 @@ export const renameChatRoomThunk = createAsyncThunk(
     try {
       const token = await getToken();
       const response = await fetch(
-        `http://kinover.shop/api/chatRoom/${chatRoomId}/rename?roomName=${encodeURIComponent(
+        `https://kinover.shop/api/chatRoom/${chatRoomId}/rename?roomName=${encodeURIComponent(
           roomName
         )}`,
         {

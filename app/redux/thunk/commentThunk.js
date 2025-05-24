@@ -6,7 +6,7 @@ import {
   setCommentError,
 } from '../slices/commentSlice';
 
-const BASE_URL = 'http://kinover.shop/api/comments';
+const BASE_URL = 'https://kinover.shop/api/comments';
 
 // ✅ 댓글 조회
 export const fetchCommentsThunk = (postId) => {

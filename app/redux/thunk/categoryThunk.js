@@ -43,7 +43,7 @@ const createCategory = async (title, familyId) => {
       throw new Error('로그인이 필요합니다.');
     }
 
-    const url = 'http://kinover.shop/api/categories';
+    const url = 'https://kinover.shop/api/categories';
     const body = {
       title,
       familyId,

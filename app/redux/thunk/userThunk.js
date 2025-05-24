@@ -8,7 +8,7 @@ export const fetchUserThunk = () => {
   return async dispatch => {
     dispatch(setUserLoading(true));
     try {
-      const apiUrl = 'http://kinover.shop/api/user/userinfo';
+      const apiUrl = 'https://kinover.shop/api/user/userinfo';
 
       const token = await getToken();
 
@@ -32,7 +32,7 @@ export const modifyUserThunk = user => {
   return async dispatch => {
     dispatch(setUserLoading(true));
     try {
-      const apiUrl = 'http://kinover.shop/api/user/modify';
+      const apiUrl = 'https://kinover.shop/api/user/modify';
 
       const token = await getToken();
 
