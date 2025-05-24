@@ -115,19 +115,36 @@ export default function CategorySelectPage({route}) {
   }, [navigation, selectedCategory]);
 
   // ✅ 항목 렌더링
-  const renderItem = ({item, index}) => (
-    <TouchableOpacity
-      onPress={() => {
-        setSelectedIndex(index);
-        setSelectedCategory(item);
-      }}
-      style={[
-        styles.itemContainer,
-        selectedIndex === index && styles.selectedItem,
-      ]}>
-      <Text style={styles.itemText}>{item.title}</Text>
-    </TouchableOpacity>
-  );
+  const renderItem = ({item, index}) => {
+    const isSelected = selectedIndex === index;
+
+    return (
+      <TouchableOpacity
+        onPress={() => {
+          setSelectedIndex(index);
+          setSelectedCategory(item);
+        }}
+        style={[
+          styles.itemContainer,
+          selectedIndex === index && styles.selectedItem,
+        ]}>
+        <Text style={styles.itemText}>{item.title}</Text>
+        <TouchableOpacity>
+          <Image
+            source={
+              isSelected
+                ? require('../../assets/images/selected-bt.png')
+                : require('../../assets/images/unselected-bt.png')
+            }
+            style={{
+              width: getResponsiveWidth(14),
+              height: getResponsiveHeight(14),
+              resizeMode: 'contain',
+            }}></Image>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -196,14 +213,17 @@ const styles = StyleSheet.create({
     borderColor: '#D3D3D3',
   },
   itemContainer: {
-    paddingVertical: 16,
-    paddingHorizontal: getResponsiveWidth(20),
+    display:'flex',
+    flexDirection:'row',
+    justifyContent:'space-between',
+    paddingVertical: getResponsiveWidth(20),
+    paddingHorizontal: getResponsiveWidth(25),
   },
   selectedItem: {
     backgroundColor: '#FFF3D2',
   },
   itemText: {
-    fontSize: getResponsiveFontSize(14),
+    fontSize: getResponsiveFontSize(15),
     fontFamily: 'Pretendard-Regular',
   },
   separator: {
@@ -212,12 +232,12 @@ const styles = StyleSheet.create({
     marginHorizontal: getResponsiveWidth(10),
   },
   addButton: {
-    paddingVertical: 16,
-    paddingHorizontal: getResponsiveWidth(20),
+    paddingVertical: getResponsiveWidth(20),
+    paddingHorizontal: getResponsiveWidth(25),
   },
   addText: {
     color: '#F8B500',
-    fontSize: getResponsiveFontSize(14),
-    fontFamily: 'Pretendard-Regular',
+    fontSize: getResponsiveFontSize(15),
+    fontFamily: 'Pretendard-Medium',
   },
 });
