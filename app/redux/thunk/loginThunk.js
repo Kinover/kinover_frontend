@@ -13,7 +13,7 @@ export const loginThunk = kakaoUserDto => {
   return async dispatch => {
     dispatch(setLoginLoading(true));
     try {
-      const apiUrl = `http://43.200.47.242:9090/api/login/kakao`;
+      const apiUrl = `http://kinover.shop/api/login/kakao`;
 
       // kakaoUserDto가 문자열인지 확인하고 객체로 변환
       const requestBody = typeof kakaoUserDto === 'string' 

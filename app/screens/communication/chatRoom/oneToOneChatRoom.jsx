@@ -1,16 +1,19 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {View, FlatList, ActivityIndicator, StyleSheet} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import {useLayoutEffect} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import ChatInput from './chatInput';
 import ChatMessageItem from './chatMessageItem';
-import { SafeAreaView } from 'react-native';
+import {SafeAreaView} from 'react-native';
+import ChatSettings from './chatSetting';
 import {
   fetchMessageThunk,
   fetchMoreMessagesThunk,
 } from '../../../redux/thunk/messageThunk';
 import {addMessage, setMessageList} from '../../../redux/slices/messageSlice';
 import {getToken} from '../../../utils/storage';
+import {RenderHeaderRightChatSetting} from '../../../navigation/tabHeaderHelpers';
 
 export default function OneToOneChatRoom({route}) {
   const navigation = useNavigation();
@@ -25,6 +28,31 @@ export default function OneToOneChatRoom({route}) {
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const scrollTimeout = useRef(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <RenderHeaderRightChatSetting setIsSettingsOpen={setIsSettingsOpen} />
+      ),
+    });
+  }, [navigation]);
+
+  const onLeaveChat = () => {
+    dispatch(leaveChatRoomThunk(chatRoom.chatRoomId))
+      .unwrap()
+      .then(() => {
+        Alert.alert('채팅방을 나갔습니다.');
+        navigation.goBack();
+      })
+      .catch(err => {
+        console.error('❌ 나가기 실패:', err);
+        Alert.alert(
+          '채팅방 나가기 실패',
+          typeof err === 'string' ? err : '다시 시도해 주세요',
+        );
+      });
+  };
 
   // ✅ 초기 메시지 불러오기
   useEffect(() => {
@@ -183,6 +211,13 @@ export default function OneToOneChatRoom({route}) {
         user={user}
         socketRef={socketRef}
         setMessageList={setMessageList}
+      />
+      <ChatSettings
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        chatRoomId={chatRoom.chatRoomId}
+        navigation={navigation}
+        onLeaveChat={onLeaveChat}
       />
     </SafeAreaView>
   );

@@ -1,17 +1,20 @@
 import React, {useEffect, useState} from 'react';
 import {BlurView} from '@react-native-community/blur';
 import {useSelector, useDispatch} from 'react-redux';
-import {fetchChatRoomUsersThunk} from '../../../redux/thunk/chatRoomThunk';
+import {
+  fetchChatRoomUsersThunk,
+  renameChatRoomThunk,
+} from '../../../redux/thunk/chatRoomThunk';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   Dimensions,
-  PanResponder,
   Image,
   Modal,
   TextInput,
+  ScrollView,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -25,15 +28,12 @@ import {
   getResponsiveIconSize,
 } from '../../../utils/responsive';
 import CustomModal from '../../../utils/customModal';
-import {renameChatRoomThunk} from '../../../redux/thunk/chatRoomThunk';
 
 const {width} = Dimensions.get('window');
 
 export default function ChatSettings({
   isOpen,
   onClose,
-  onChangeName,
-  onShowMembers,
   onShowMedia,
   onLeaveChat,
   onToggleNotifications,
@@ -48,6 +48,7 @@ export default function ChatSettings({
   const [newRoomName, setNewRoomName] = useState('');
   const familyId = useSelector(state => state.family.familyId);
   const userId = useSelector(state => state.user.userId);
+  const [showMembers, setShowMembers] = useState(false);
 
   const handleRenameChatRoom = () => {
     if (!newRoomName.trim()) return;
@@ -71,6 +72,7 @@ export default function ChatSettings({
   };
 
   const handleShowMembers = () => {
+    onClose(); // ✅ 모달 닫고
     navigation.navigate('채팅방멤버추가화면', {chatRoomId});
   };
 
@@ -95,16 +97,6 @@ export default function ChatSettings({
     transform: [{translateX: translateX.value}],
   }));
 
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onPanResponderMove: (evt, gestureState) => {
-      if (gestureState.dx > 50) {
-        onClose();
-      }
-    },
-  });
-
-
   return (
     <Modal
       visible={isOpen}
@@ -114,14 +106,7 @@ export default function ChatSettings({
       statusBarTranslucent>
       {isOpen && (
         <BlurView
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              flex: 1,
-              position: 'absolute',
-              backgroundColor: 'rgba(0, 0, 0, 0.4)',
-            },
-          ]}
+          style={[StyleSheet.absoluteFill, styles.blurOverlay]}
           blurType="light"
           blurAmount={2}
           reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.4)"
@@ -129,9 +114,7 @@ export default function ChatSettings({
       )}
       {isOpen && <TouchableOpacity style={styles.backdrop} onPress={onClose} />}
 
-      <Animated.View
-        style={[styles.container, animatedStyle]}
-        {...panResponder.panHandlers}>
+      <Animated.View style={[styles.container, animatedStyle]}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>채팅방 설정</Text>
         </View>
@@ -140,8 +123,55 @@ export default function ChatSettings({
           <TouchableOpacity
             style={styles.option}
             onPress={() => setIsRenameModalVisible(true)}>
-            <Text style={styles.optionText}>채팅방 이름 변경</Text>
+            <Text style={styles.optionText}>이름 변경</Text>
           </TouchableOpacity>
+
+          <View style={{display: 'flex', justifyContent: 'space-between'}}>
+            <TouchableOpacity
+              onPress={() => setShowMembers(!showMembers)}
+              style={styles.option}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}>
+                <Text style={styles.optionText}>멤버 목록</Text>
+                <Image
+                  source={require('../../../assets/images/down-yellow.png')}
+                  style={{
+                    resizeMode: 'contain',
+                    width: getResponsiveWidth(17),
+                    height: getResponsiveHeight(17),
+                    marginRight: getResponsiveWidth(5),
+                  }}
+                />
+              </View>
+              {showMembers && (
+                <ScrollView style={styles.memberList}>
+                  {chatRoomUsers?.map(user => (
+                    <View key={user.userId} style={styles.memberItem}>
+                      <Image
+                        source={{uri: user.image}}
+                        style={styles.memberImage}
+                      />
+                      <Text style={styles.memberName}>{user.name}</Text>
+                    </View>
+                  ))}
+                  <TouchableOpacity
+                    onPress={handleShowMembers}
+                    style={styles.addMemberButton}>
+                    <Image
+                      source={require('../../../assets/images/addMember-bt.png')}
+                      style={styles.addIcon}
+                    />
+                    <Text style={styles.addText}>새 멤버 초대</Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              )}
+            </TouchableOpacity>
+          </View>
+
           <TouchableOpacity style={styles.option} onPress={onShowMedia}>
             <Text style={styles.optionText}>사진 & 영상</Text>
           </TouchableOpacity>
@@ -150,24 +180,6 @@ export default function ChatSettings({
             onPress={onToggleNotifications}>
             <Text style={styles.optionText}>알림 설정</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.option} onPress={onShowMembers}>
-            <Text style={styles.optionText}>멤버 목록</Text>
-          </TouchableOpacity>
-
-          <View style={styles.memberList}>
-            <TouchableOpacity
-              onPress={handleShowMembers}
-              style={styles.addMemberButton}>
-              <Text style={styles.addIcon}>＋</Text>
-              <Text style={styles.addText}>멤버 추가</Text>
-            </TouchableOpacity>
-            {chatRoomUsers?.map(user => (
-              <View key={user.userId} style={styles.memberItem}>
-                <Image source={{uri: user.image}} style={styles.memberImage} />
-                <Text style={styles.memberName}>{user.name}</Text>
-              </View>
-            ))}
-          </View>
         </View>
 
         <TouchableOpacity
@@ -185,43 +197,14 @@ export default function ChatSettings({
         onConfirm={handleLeaveConfirm}
         confirmText="나가기"
         closeText="취소하기"
-        buttonBottomStyle={{
-          flexDirection: 'row',
-          gap: getResponsiveWidth(10),
-          justifyContent: 'space-between',
-        }}
-        confirmButtonStyle={{
-          flex: 1,
-          backgroundColor: '#FFC84D',
-          paddingVertical: getResponsiveHeight(10),
-          borderRadius: 8,
-        }}
-        closeButtonStyle={{
-          // backgroundColor: '#E0E0E0',
-          flex: 1,
-          backgroundColor: '#E0E0E0',
-          paddingVertical: getResponsiveHeight(10),
-          borderRadius: 8,
-        }}
-        closeTextStyle={{
-          fontFamily: 'Pretendard-Regular',
-          fontSize: getResponsiveFontSize(14),
-        }}
-        confirmTextStyle={{
-          fontFamily: 'Pretendard-Regular',
-          fontSize: getResponsiveFontSize(14),
-          color: 'black',
-        }}>
-        <Text
-          style={{
-            fontSize: 16,
-            textAlign: 'center',
-            fontFamily: 'Pretendard-SemiBold',
-            marginTop: getResponsiveHeight(10),
-          }}>
-          정말 채팅방을 나가시겠습니까?
-        </Text>
+        confirmButtonStyle={styles.confirmButton}
+        closeButtonStyle={styles.closeButton}
+        closeTextStyle={styles.modalText}
+        confirmTextStyle={[styles.modalText, {color: 'black'}]}
+        buttonBottomStyle={styles.modalButtonRow}>
+        <Text style={styles.modalTitle}>정말 채팅방을 나가시겠습니까?</Text>
       </CustomModal>
+
       <CustomModal
         visible={isRenameModalVisible}
         onClose={() => {
@@ -231,55 +214,18 @@ export default function ChatSettings({
         onConfirm={handleRenameChatRoom}
         confirmText="변경"
         closeText="취소"
-        buttonBottomStyle={{
-          flexDirection: 'row',
-          gap: getResponsiveWidth(10),
-          justifyContent: 'space-between',
-        }}
-        confirmButtonStyle={{
-          flex: 1,
-          backgroundColor: '#FFC84D',
-          paddingVertical: getResponsiveHeight(10),
-          borderRadius: 8,
-        }}
-        closeButtonStyle={{
-          flex: 1,
-          backgroundColor: '#E0E0E0',
-          paddingVertical: getResponsiveHeight(10),
-          borderRadius: 8,
-        }}
-        closeTextStyle={{
-          fontFamily: 'Pretendard-Regular',
-          fontSize: getResponsiveFontSize(14),
-        }}
-        confirmTextStyle={{
-          fontFamily: 'Pretendard-Regular',
-          fontSize: getResponsiveFontSize(14),
-          color: 'black',
-        }}>
+        confirmButtonStyle={styles.confirmButton}
+        closeButtonStyle={styles.closeButton}
+        closeTextStyle={styles.modalText}
+        confirmTextStyle={[styles.modalText, {color: 'black'}]}
+        buttonBottomStyle={styles.modalButtonRow}>
         <View style={{marginTop: getResponsiveHeight(10)}}>
-          <Text
-            style={{
-              fontFamily: 'Pretendard-SemiBold',
-              fontSize: getResponsiveFontSize(16),
-              marginBottom: getResponsiveHeight(10),
-              textAlign: 'center',
-            }}>
-            채팅방 이름을 수정하세요
-          </Text>
+          <Text style={styles.modalTitle}>채팅방 이름을 수정하세요</Text>
           <TextInput
             placeholder="새 채팅방 이름"
             value={newRoomName}
             onChangeText={setNewRoomName}
-            style={{
-              borderWidth: 1,
-              borderColor: '#ccc',
-              borderRadius: 6,
-              padding: 10,
-              fontSize: getResponsiveFontSize(14),
-              backgroundColor: '#fff',
-              fontFamily: 'Pretendard-Regular',
-            }}
+            style={styles.textInput}
           />
         </View>
       </CustomModal>
@@ -297,6 +243,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.3)',
     zIndex: 999,
   },
+  blurOverlay: {
+    flex: 1,
+    position: 'absolute',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
   container: {
     position: 'absolute',
     top: 0,
@@ -306,7 +257,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderLeftWidth: 1,
     borderColor: '#ddd',
-    paddingHorizontal: 20,
+    paddingHorizontal: 30,
     paddingBottom: getResponsiveHeight(100),
     zIndex: 9999,
     elevation: 20,
@@ -314,11 +265,11 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: getResponsiveHeight(80),
+    marginTop: getResponsiveHeight(90),
     marginBottom: getResponsiveHeight(40),
   },
   headerTitle: {
-    fontSize: getResponsiveFontSize(18),
+    fontSize: getResponsiveFontSize(22),
     fontFamily: 'Pretendard-Regular',
     color: '#FFC84D',
     fontWeight: 'bold',
@@ -328,59 +279,59 @@ const styles = StyleSheet.create({
   },
   option: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 15,
+    justifyContent: 'flex-start',
+    paddingVertical: 7,
     borderBottomWidth: 1,
     borderColor: '#ddd',
+    marginVertical: 10,
+    flexDirection: 'column',
   },
   optionText: {
-    fontSize: getResponsiveFontSize(14),
+    fontSize: getResponsiveFontSize(17),
     fontFamily: 'Pretendard-Light',
   },
   addMemberButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: getResponsiveHeight(10),
-    borderBottomWidth: 1,
-    borderColor: '#f5d58d',
+    padding: getResponsiveHeight(5),
   },
   addIcon: {
-    fontSize: getResponsiveFontSize(40),
-    color: '#F29F05',
-    marginRight: getResponsiveWidth(10),
-    fontFamily: 'Pretendard-Bold',
+    width: getResponsiveIconSize(34),
+    height: getResponsiveIconSize(34),
+    resizeMode: 'contain',
+    marginRight: getResponsiveWidth(12),
+
   },
   addText: {
     fontSize: getResponsiveFontSize(14),
-    color: 'black',
+    color: '#FFB000',
     fontFamily: 'Pretendard-Medium',
   },
   memberList: {
     width: '100%',
     minHeight: '16%',
     borderRadius: getResponsiveIconSize(8),
-    backgroundColor: '#FFD26D',
+    backgroundColor: 'rgba(255, 228, 167, 0.30)',
     marginTop: 10,
     overflow: 'hidden',
+    padding: getResponsiveHeight(10),
   },
   memberItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: getResponsiveHeight(10),
-    borderBottomWidth: 1,
-    borderColor: '#f5d58d',
+    padding: getResponsiveHeight(5),
   },
   memberImage: {
-    width: getResponsiveIconSize(40),
-    height: getResponsiveIconSize(40),
-    borderRadius: getResponsiveIconSize(20),
-    marginRight: getResponsiveWidth(10),
+    width: getResponsiveIconSize(34),
+    height: getResponsiveIconSize(34),
+    borderRadius: getResponsiveIconSize(17),
+    marginRight: getResponsiveWidth(12),
     backgroundColor: '#fff',
   },
   memberName: {
-    fontSize: getResponsiveFontSize(14),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#333',
+    fontSize: getResponsiveFontSize(14.5),
+    fontFamily: 'Pretendard-Light',
+    color: 'black',
   },
   leaveOption: {
     position: 'absolute',
@@ -397,5 +348,41 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Regular',
     color: 'red',
     fontSize: getResponsiveFontSize(14),
+  },
+  modalTitle: {
+    fontSize: 16,
+    textAlign: 'center',
+    fontFamily: 'Pretendard-SemiBold',
+    marginBottom: getResponsiveHeight(10),
+  },
+  modalText: {
+    fontFamily: 'Pretendard-Regular',
+    fontSize: getResponsiveFontSize(14),
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    gap: getResponsiveWidth(10),
+    justifyContent: 'space-between',
+  },
+  confirmButton: {
+    flex: 1,
+    backgroundColor: '#FFC84D',
+    paddingVertical: getResponsiveHeight(10),
+    borderRadius: 8,
+  },
+  closeButton: {
+    flex: 1,
+    backgroundColor: '#E0E0E0',
+    paddingVertical: getResponsiveHeight(10),
+    borderRadius: 8,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6,
+    padding: 10,
+    fontSize: getResponsiveFontSize(14),
+    backgroundColor: '#fff',
+    fontFamily: 'Pretendard-Regular',
   },
 });

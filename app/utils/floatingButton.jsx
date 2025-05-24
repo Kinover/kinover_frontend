@@ -13,7 +13,7 @@ export default function FloatingButton({type}) {
 
   const getImageSource = () => {
     if (type === 'communication') {
-      return require('../assets/images/communication_floating-button.png');
+      return require('../assets/images/createNewChatRoom-bt.png');
     } else if (type === 'memory') {
       return require('../assets/images/memory_floating-button.png');
     } else if (type === 'challenge') {
@@ -35,11 +35,15 @@ const styles = StyleSheet.create({
     right: 20,
     zIndex: 9,
     elevation: 10,
+    // shadowRadius:1.5,
+    // shadowOpacity:0.5,
+    // shadowColor:'lightGray',
+    // shadowOffset:-10,
   },
   buttonImage: {
-    width: getResponsiveWidth(60),
-    height: getResponsiveHeight(60),
-    borderRadius: getResponsiveIconSize(30),
+    width: getResponsiveWidth(55),
+    height: getResponsiveHeight(55),
+    borderRadius: getResponsiveIconSize(22.5),
     resizeMode: 'contain',
   },
 });

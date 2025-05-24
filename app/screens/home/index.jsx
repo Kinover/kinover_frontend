@@ -27,6 +27,8 @@ import useWebSocketStatus from '../../hooks/useWebSocketStatus';
 import {setOnlineUserIds} from '../../redux/slices/statusSlice';
 import {getToken} from '../../utils/storage';
 import useFamilyStatusSocket from '../../hooks/useFamilyStatusSocket';
+import {requestPermission} from '@react-native-firebase/messaging';
+import NoticeSlider from './noticeSlider';
 
 export default function HomeScreen() {
   const dispatch = useDispatch();
@@ -46,6 +48,10 @@ export default function HomeScreen() {
 
   useWebSocketStatus(user.userId);
   useFamilyStatusSocket(family.familyId);
+
+  // useEffect(() => {
+  //     requestUserPermission();
+  //   }, []);
 
   const chunkArray = (arr, size) => {
     const result = [];
@@ -135,13 +141,11 @@ export default function HomeScreen() {
             style={styles.headerContainer}
             onLayout={e => setContainerWidth(e.nativeEvent.layout.width)}>
             {containerWidth > 0 && (
-              <CardSlider
+              <NoticeSlider
                 data={dummyData}
-                containerWidth={containerWidth}
-                onCardPress={item => {
-                  console.log('Tapped card:', item);
+                onPress={item => {
                   setSelectedNotice(item);
-                  setModalType('notice'); // 💡 공지 모달 열기
+                  setModalType('notice');
                   setModalVisible(true);
                 }}
               />
@@ -393,7 +397,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '23%',
     // borderRadius: getResponsiveIconSize(20),
-
     // // ⭐ 추가: 그림자
     shadowColor: '#000',
     shadowOffset: {

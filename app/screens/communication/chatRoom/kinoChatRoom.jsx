@@ -7,11 +7,16 @@ import {
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
+import ChatSettings from './chatSetting';
+
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import ChatInput from './chatInput';
 import ChatMessageItem from './chatMessageItem';
 import { SafeAreaView } from 'react-native';
+import { useLayoutEffect } from 'react';
+import { RenderHeaderRightChatSetting } from '../../../navigation/tabHeaderHelpers';
+
 
 import {
   fetchMessageThunk,
@@ -32,6 +37,31 @@ export default function KinoChatRoom({route}) {
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const scrollTimeout = useRef(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const onLeaveChat = () => {
+    dispatch(leaveChatRoomThunk(chatRoom.chatRoomId))
+      .unwrap()
+      .then(() => {
+        Alert.alert('채팅방을 나갔습니다.');
+        navigation.goBack();
+      })
+      .catch(err => {
+        console.error('❌ 나가기 실패:', err);
+        Alert.alert(
+          '채팅방 나가기 실패',
+          typeof err === 'string' ? err : '다시 시도해 주세요',
+        );
+      });
+  };
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <RenderHeaderRightChatSetting setIsSettingsOpen={setIsSettingsOpen} />
+      ),
+    });
+  }, [navigation]);
 
   // ✅ 초기 메시지 불러오기
   useEffect(() => {
@@ -190,6 +220,13 @@ export default function KinoChatRoom({route}) {
         socketRef={socketRef}
         setMessageList={setMessageList}
 
+      />
+            <ChatSettings
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        chatRoomId={chatRoom.chatRoomId}
+        navigation={navigation}
+        onLeaveChat={onLeaveChat}
       />
     </SafeAreaView>
   );

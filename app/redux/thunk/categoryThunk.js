@@ -12,7 +12,7 @@ const getCategoryApi = async familyId => {
       throw new Error('로그인이 필요합니다.');
     }
 
-    const url = `http://43.200.47.242:9090/api/categories/${familyId}`;
+    const url = `https://kinover.shop/api/categories/${familyId}`;
     console.log('🌐 [GET] 요청 URL:', url);
 
     const response = await axios.get(url, {
@@ -43,7 +43,7 @@ const createCategory = async (title, familyId) => {
       throw new Error('로그인이 필요합니다.');
     }
 
-    const url = 'http://43.200.47.242:9090/api/categories';
+    const url = 'http://kinover.shop/api/categories';
     const body = {
       title,
       familyId,

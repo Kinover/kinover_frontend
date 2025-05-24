@@ -48,6 +48,7 @@ export default function MemoryStack() {
         headerLeft: () => null, // ✅ 올바른 접근
       })}>
       <Stack.Screen name="추억화면" component={MemoryScreen} />
+      
       <Stack.Screen
         name="게시글화면"
         component={PostPage}

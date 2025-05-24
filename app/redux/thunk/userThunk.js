@@ -8,7 +8,7 @@ export const fetchUserThunk = () => {
   return async dispatch => {
     dispatch(setUserLoading(true));
     try {
-      const apiUrl = 'http://43.200.47.242:9090/api/user/userinfo';
+      const apiUrl = 'http://kinover.shop/api/user/userinfo';
 
       const token = await getToken();
 
@@ -32,7 +32,7 @@ export const modifyUserThunk = user => {
   return async dispatch => {
     dispatch(setUserLoading(true));
     try {
-      const apiUrl = 'http://43.200.47.242:9090/api/user/modify';
+      const apiUrl = 'http://kinover.shop/api/user/modify';
 
       const token = await getToken();
 

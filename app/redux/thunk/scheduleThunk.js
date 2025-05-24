@@ -14,7 +14,7 @@ export const fetchSchedulesForFamilyAndDateThunk = (familyId, date) => {
     console.log('📅 [가족 스케줄] 요청 시작:', { familyId, date });
 
     try {
-      const apiUrl = `http://43.200.47.242:9090/api/schedule/get/${familyId}?date=${date}`;
+      const apiUrl = `http://kinover.shop/api/schedule/get/${familyId}?date=${date}`;
       const token = await getToken();
 
       console.log('🌐 API URL:', apiUrl);
@@ -45,7 +45,7 @@ export const fetchSchedulesForUserAndDateThunk = (familyId, userId, date) => {
     console.log('👤 [유저별 스케줄] 요청 시작:', { familyId, userId, date });
 
     try {
-      const apiUrl = `http://13.209.70.77:9090/api/schedule/get/${familyId}/${userId}?date=${date}`;
+      const apiUrl = `http://kinover.shop/api/schedule/get/${familyId}/${userId}?date=${date}`;
       const token = await getToken();
 
       console.log('🌐 API URL:', apiUrl);
@@ -66,6 +66,93 @@ export const fetchSchedulesForUserAndDateThunk = (familyId, userId, date) => {
     } finally {
       dispatch(setScheduleLoading(false));
       console.log('📦 [유저별 스케줄] 요청 완료');
+    }
+  };
+};
+
+
+// ✅ 일정 추가 Thunk
+export const addScheduleThunk = (scheduleData) => {
+  return async (dispatch) => {
+    dispatch(setScheduleLoading(true));
+    console.log('📝 [스케줄 추가] 요청 시작:', scheduleData);
+
+    try {
+      const apiUrl = `http://kinover.shop/api/schedule/add`;
+      const token = await getToken();
+
+      const response = await axios.post(apiUrl, scheduleData, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log('✅ [스케줄 추가] 성공:', response.data);
+      return response.data; // 새로 추가된 scheduleId 반환
+    } catch (error) {
+      console.error('❌ [스케줄 추가] 오류:', error);
+      dispatch(setScheduleError(error.message));
+      throw error;
+    } finally {
+      dispatch(setScheduleLoading(false));
+    }
+  };
+};
+
+// ✅ 일정 수정 Thunk
+export const updateScheduleThunk = (updatedScheduleData) => {
+  return async (dispatch) => {
+    dispatch(setScheduleLoading(true));
+    console.log('✏️ [스케줄 수정] 요청 시작:', updatedScheduleData);
+
+    try {
+      const apiUrl = `http://kinover.shop/api/schedule/modify`;
+      const token = await getToken();
+
+      const response = await axios.post(apiUrl, updatedScheduleData, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log('✅ [스케줄 수정] 성공:', response.data);
+      return response.data; // 수정된 scheduleId 반환
+    } catch (error) {
+      console.error('❌ [스케줄 수정] 오류:', error);
+      dispatch(setScheduleError(error.message));
+      throw error;
+    } finally {
+      dispatch(setScheduleLoading(false));
+    }
+  };
+};
+
+// ✅ 일정 삭제 Thunk
+export const deleteScheduleThunk = (scheduleId) => {
+  return async (dispatch) => {
+    dispatch(setScheduleLoading(true));
+    console.log('🗑️ [스케줄 삭제] 요청 시작:', scheduleId);
+
+    try {
+      const apiUrl = `http://kinover.shop/api/schedule/remove/${scheduleId}`;
+      const token = await getToken();
+
+      const response = await axios.delete(apiUrl, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log('✅ [스케줄 삭제] 성공:', response.data);
+      return response.data; // 성공 응답 반환 (필요 시)
+    } catch (error) {
+      console.error('❌ [스케줄 삭제] 오류:', error);
+      dispatch(setScheduleError(error.message));
+      throw error;
+    } finally {
+      dispatch(setScheduleLoading(false));
     }
   };
 };

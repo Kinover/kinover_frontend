@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, FlatList } from 'react-native';
+import React, {useState} from 'react';
+import {View, Text, StyleSheet, Image, FlatList, TouchableOpacity} from 'react-native';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -7,6 +7,7 @@ import {
   getResponsiveIconSize,
 } from '../../../utils/responsive';
 import formatTime from '../../../utils/formatTime';
+import ImageModal from './imageModal';
 
 export default function SendChat({
   chatTime,
@@ -15,14 +16,22 @@ export default function SendChat({
   messageType = 'text',
   style,
 }) {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedImageUri, setSelectedImageUri] = useState('');
+
+  const handleImagePress = uri => {
+    setSelectedImageUri(uri);
+    setModalVisible(true);
+  };
+
   const renderImages = () => {
     if (imageUrls.length === 1) {
       return (
-        <Image
-          source={{ uri: imageUrls[0] }}
-          style={styles.singleImage}
-          resizeMode="cover" // 꽉 채우고 여백 없이
-        />
+        <>
+          <TouchableOpacity onPress={() => handleImagePress(imageUrls[0])}>
+            <Image source={{uri: imageUrls[0]}} style={styles.singleImage} resizeMode="cover" />
+          </TouchableOpacity>
+        </>
       );
     }
 
@@ -32,8 +41,10 @@ export default function SendChat({
           data={imageUrls}
           keyExtractor={(item, index) => item + index}
           numColumns={3}
-          renderItem={({ item }) => (
-            <Image source={{ uri: item }} style={styles.imageItem} />
+          renderItem={({item}) => (
+            <TouchableOpacity onPress={() => handleImagePress(item)}>
+              <Image source={{uri: item}} style={styles.imageItem} />
+            </TouchableOpacity>
           )}
           scrollEnabled={false}
           contentContainerStyle={styles.imageGrid}
@@ -47,20 +58,21 @@ export default function SendChat({
       <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>
 
       {messageType === 'image' ? (
-        imageUrls.length === 1 ? (
-          renderImages() // ✅ 1장일 땐 단독으로 표시 (말풍선 없음)
-        ) : (
-          renderImages() // ✅ 여러 장일 땐 말풍선으로 감싸서 FlatList 표시
-        )
+        imageUrls.length === 1 ? renderImages() : renderImages()
       ) : (
         <View style={[styles.sendBubble, styles.textPadding]}>
           <Text style={styles.sendText}>{message}</Text>
         </View>
       )}
+
+      <ImageModal
+        visible={modalVisible}
+        imageUri={selectedImageUri}
+        onClose={() => setModalVisible(false)}
+      />
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   sendContainer: {
@@ -106,7 +118,7 @@ const styles = StyleSheet.create({
   },
   singleImage: {
     width: getResponsiveWidth(200),
-    aspectRatio: 1, // ✅ 비율 유지
+    aspectRatio: 1,
     borderRadius: 10,
     alignSelf: 'flex-end',
   },

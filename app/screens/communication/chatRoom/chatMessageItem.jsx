@@ -45,33 +45,13 @@ export default function ChatMessageItem({
     });
   };
 
-  const onLeaveChat = () => {
-    dispatch(leaveChatRoomThunk(chatRoom.chatRoomId))
-      .unwrap()
-      .then(() => {
-        Alert.alert('채팅방을 나갔습니다.');
-        navigation.goBack();
-      })
-      .catch(err => {
-        console.error('❌ 나가기 실패:', err);
-        Alert.alert(
-          '채팅방 나가기 실패',
-          typeof err === 'string' ? err : '다시 시도해 주세요',
-        );
-      });
-  };
+
 
   useEffect(() => {
     navigation.getParent()?.setOptions({tabBarStyle: {display: 'none'}});
   }, [navigation]);
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <RenderHeaderRightChatSetting setIsSettingsOpen={setIsSettingsOpen} />
-      ),
-    });
-  }, [navigation]);
+
 
   if (isMe) {
     ChatComponent = isKino ? (
@@ -125,13 +105,6 @@ export default function ChatMessageItem({
         )}
         {ChatComponent}
       </View>
-      <ChatSettings
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        chatRoomId={chatRoom.chatRoomId}
-        navigation={navigation}
-        onLeaveChat={onLeaveChat}
-      />
     </>
   );
 }
