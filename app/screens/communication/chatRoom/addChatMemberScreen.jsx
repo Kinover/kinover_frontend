@@ -41,9 +41,7 @@ export default function AddChatMemberScreen({navigation, route}) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <Text style={{fontSize: 18, textAlign: 'center'}}>
-          멤버 초대하기 ({selected.length})
-        </Text>
+        <Text style={{fontSize: 18, textAlign: 'center'}}>새 멤버 초대</Text>
       ),
       headerRight: () => (
         <TouchableOpacity onPress={handleNext} style={{marginRight: 15}}>
@@ -115,8 +113,29 @@ export default function AddChatMemberScreen({navigation, route}) {
                   styles.userItem,
                   isSelected && styles.userItemSelected,
                 ]}>
-                <Image source={{uri: user.image}} style={styles.userImage} />
-                <Text style={styles.userName}>{user.name}</Text>
+                <View
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: getResponsiveWidth(5),
+                  }}>
+                  <Image source={{uri: user.image}} style={styles.userImage} />
+                  <Text style={styles.userName}>{user.name}</Text>
+                </View>
+                <TouchableOpacity>
+                  <Image
+                    source={
+                      isSelected
+                        ? require('../../../assets/images/selected-bt.png')
+                        : require('../../../assets/images/unselected-bt.png')
+                    }
+                    style={{
+                      width: getResponsiveWidth(14),
+                      height: getResponsiveHeight(14),
+                      resizeMode: 'contain',
+                    }}></Image>
+                </TouchableOpacity>
               </TouchableOpacity>
             );
           })}
@@ -137,23 +156,26 @@ const styles = StyleSheet.create({
   userItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: getResponsiveHeight(10),
-    borderBottomWidth: 1,
-    borderColor: '#ddd',
-    padding: getResponsiveWidth(10),
+    paddingVertical: getResponsiveHeight(15),
+    // borderBottomWidth: 1,
+    // borderColor: '#ddd',
+    display: 'flex',
+    justifyContent: 'space-between',
+    paddingHorizontal: getResponsiveWidth(22.5),
+    gap: getResponsiveWidth(10),
   },
   userItemSelected: {
     backgroundColor: '#FFF2CC',
   },
   userImage: {
-    width: getResponsiveIconSize(40),
-    height: getResponsiveIconSize(40),
-    borderRadius: getResponsiveIconSize(20),
+    width: getResponsiveIconSize(45),
+    height: getResponsiveIconSize(45),
+    borderRadius: getResponsiveIconSize(22.5),
     marginRight: getResponsiveWidth(10),
     backgroundColor: '#eee',
   },
   userName: {
-    fontSize: getResponsiveFontSize(14),
-    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(16),
+    fontFamily: 'Pretendard-Regular',
   },
 });

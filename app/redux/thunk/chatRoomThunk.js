@@ -15,7 +15,7 @@ export const fetchChatRoomListThunk = (familyId, userId) => {
   return async (dispatch) => {
     dispatch(setChatRoomLoading(true));
     try {
-      const apiUrl = `http://43.200.47.242:9090/api/chatRoom/${familyId}/${userId}`;
+      const apiUrl = `http://kinover.shop/api/chatRoom/${familyId}/${userId}`;
 
       const token = await getToken();
 
@@ -44,7 +44,7 @@ export const fetchChatRoomUsersThunk = (chatRoomId) => {
 
     try {
       const token = await getToken();
-      const apiUrl = `http://43.200.47.242:9090/api/chatRoom/${chatRoomId}/users/get`;
+      const apiUrl = `http://kinover.shop/api/chatRoom/${chatRoomId}/users/get`;
 
       const response = await axios.post(apiUrl, {}, {
         headers: {
@@ -70,7 +70,7 @@ export const leaveChatRoomThunk = createAsyncThunk(
       const token = await getToken();
 
       const res = await fetch(
-        `http://43.200.47.242:9090/api/chatRoom/${chatRoomId}/leave`,
+        `http://kinover.shop/api/chatRoom/${chatRoomId}/leave`,
         {
           method: 'DELETE',
           headers: {
@@ -94,11 +94,11 @@ export const leaveChatRoomThunk = createAsyncThunk(
 
 export const renameChatRoomThunk = createAsyncThunk(
   'chatRoom/renameChatRoom',
-  async ({ familyId,userId, chatRoomId, roomName }, { rejectWithValue }) => {
+  async ({ familyId, userId, chatRoomId, roomName }, { rejectWithValue, dispatch }) => {
     try {
       const token = await getToken();
       const response = await fetch(
-        `http://43.200.47.242:9090/api/chatRoom/${chatRoomId}/rename?roomName=${encodeURIComponent(
+        `http://kinover.shop/api/chatRoom/${chatRoomId}/rename?roomName=${encodeURIComponent(
           roomName
         )}`,
         {
@@ -115,10 +115,10 @@ export const renameChatRoomThunk = createAsyncThunk(
 
       const data = await response.text();
       console.log('✅ 채팅방 이름 변경 성공:', data);
-      
-      dispatch(fetchChatRoomListThunk(familyId,userId))
-      return data;
 
+      // ✅ thunkAPI에서 dispatch 가져와서 사용
+      dispatch(fetchChatRoomListThunk(familyId, userId));
+      return data;
     } catch (err) {
       console.error('❌ 채팅방 이름 변경 중 에러:', err);
       return rejectWithValue(err.message || '알 수 없는 오류');

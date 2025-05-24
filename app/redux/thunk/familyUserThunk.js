@@ -12,7 +12,7 @@ export const fetchFamilyUserListThunk = (familyId) => {
   return async (dispatch) => {
     dispatch(setUserFamilyLoading(true));
     try {
-      const apiUrl =`http://43.200.47.242:9090/api/userFamily/familyUsers/${familyId}`;
+      const apiUrl =`http://kinover.shop/api/userFamily/familyUsers/${familyId}`;
 
       const token = await getToken();
 
@@ -37,7 +37,7 @@ export const modifyFamilyUserThunk = user => {
   return async (dispatch, getState) => {
     dispatch(setUserFamilyLoading(true));
     try {
-      const apiUrl = `http://43.200.47.242:9090/api/user/modify`;
+      const apiUrl = `http://kinover.shop/api/user/modify`;
       const token = await getToken();
 
       const response = await axios.post(apiUrl, user, {

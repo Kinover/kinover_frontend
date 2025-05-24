@@ -16,7 +16,7 @@ const useFamilyStatusSocket = (familyId) => {
         return;
       }
 
-      const url = `ws://43.200.47.242:9090/family-status?token=${token}&familyId=${familyId}`;
+      const url = `ws://kinover.shop/family-status?token=${token}&familyId=${familyId}`;
       console.log('[WS /family-status] 연결 시도:', url);
 
       socket = new WebSocket(url);

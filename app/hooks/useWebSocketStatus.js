@@ -11,7 +11,7 @@ const useWebSocketStatus = () => {
         return;
       }
 
-      const url = `ws://43.200.47.242:9090/status?token=${token}`;
+      const url = `ws://kinover.shop/status?token=${token}`;
       console.log('[WS /status] 연결 시도 URL:', url);
 
       socket = new WebSocket(url);
