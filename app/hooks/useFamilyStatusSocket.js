@@ -1,16 +1,17 @@
-import { useEffect, useRef } from 'react';
-import { useDispatch } from 'react-redux';
-import { getToken } from '../utils/storage';
-import { setOnlineUserIds } from '../redux/slices/statusSlice';
+import {useEffect, useRef} from 'react';
+import {useDispatch} from 'react-redux';
+import {getToken} from '../utils/storage';
+import {setOnlineUserIds} from '../redux/slices/statusSlice';
+import { setLastActiveMap } from '../redux/slices/familySlice';
 
-const useFamilyStatusSocket = (familyId) => {
+const useFamilyStatusSocket = familyId => {
   const dispatch = useDispatch();
   const socketRef = useRef(null);
 
   useEffect(() => {
     let socket;
 
-    getToken().then((token) => {
+    getToken().then(token => {
       if (!token || !familyId) {
         console.warn('❗ 토큰 또는 familyId 누락');
         return;
@@ -26,19 +27,26 @@ const useFamilyStatusSocket = (familyId) => {
         console.log('[WS /family-status] 연결됨');
       };
 
-      socket.onmessage = (event) => {
+      socket.onmessage = event => {
         try {
-          const updatedList = JSON.ㄱparse(event.data); // Array<{ userId: string, isOnline: boolean }>
+          const updatedList = JSON.parse(event.data); // Array<{ userId: string, isOnline: boolean }>
           const onlineIds = updatedList
-            .filter((user) => user.isOnline)
-            .map((user) => user.userId);
+            .filter(user => user.isOnline)
+            .map(user => user.userId);
+
+          const lastActiveMap = updatedList.reduce((acc, curr) => {
+            acc[curr.userId] = curr.lastActiveAt;
+            return acc;
+          }, {});
+
           dispatch(setOnlineUserIds(onlineIds));
+          dispatch(setLastActiveMap(lastActiveMap)); // ✅ 추가
         } catch (e) {
           console.error('[WS /family-status] 메시지 파싱 오류:', e);
         }
       };
 
-      socket.onerror = (e) => {
+      socket.onerror = e => {
         console.error('[WS /family-status] 오류:', e?.message || e);
       };
 
