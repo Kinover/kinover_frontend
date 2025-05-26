@@ -22,7 +22,9 @@ export default function FloatingButton({type}) {
   };
 
   return (
-    <TouchableOpacity style={[styles.floatingButton, {bottom: type === 'challenge' ? 20 : 20}]} onPress={handleClick}>
+    <TouchableOpacity
+      style={[styles.floatingButton, {bottom: type === 'challenge' ? 20 : 20}]}
+      onPress={handleClick}>
       <Image style={styles.buttonImage} source={getImageSource()} />
     </TouchableOpacity>
   );
@@ -31,19 +33,25 @@ export default function FloatingButton({type}) {
 const styles = StyleSheet.create({
   floatingButton: {
     position: 'absolute',
-    bottom: 20,
-    right: 20,
+    bottom: 23,
+    right: 23,
     zIndex: 9,
     elevation: 10,
     // shadowRadius:1.5,
     // shadowOpacity:0.5,
     // shadowColor:'lightGray',
     // shadowOffset:-10,
+    shadowOffset: {width: 0, height: 2.5},
+    shadowRadius: 1,
+    shadowColor: 'gray',
+    shadowOpacity:0.4,
+
   },
   buttonImage: {
-    width: getResponsiveWidth(55),
-    height: getResponsiveHeight(55),
-    borderRadius: getResponsiveIconSize(22.5),
+    width: getResponsiveWidth(60),
+    height: getResponsiveHeight(60),
+    borderRadius: getResponsiveIconSize(30),
     resizeMode: 'contain',
+
   },
 });

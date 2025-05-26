@@ -1,5 +1,6 @@
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-gesture-handler';
-import React, { useEffect } from 'react';
+import React, {useEffect} from 'react';
 import MyApp from './app/_layout.jsx';
 import {enableScreens} from 'react-native-screens';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
@@ -9,8 +10,10 @@ enableScreens();
 
 export default function App() {
   return (
-    <SafeAreaProvider>
+    // <GestureHandlerRootView style={{flex:1}}>
+      <SafeAreaProvider>
         <MyApp />
-    </SafeAreaProvider>
+      </SafeAreaProvider>
+    // </GestureHandlerRootView>
   );
 }

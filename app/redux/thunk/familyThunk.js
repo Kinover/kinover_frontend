@@ -3,6 +3,8 @@ import axios from 'axios';
 import {Platform} from 'react-native';
 import {getToken} from '../../utils/storage';
 import {
+  setOnlineUserIds,
+  setLastActiveMap,
   setFamily,
   setFamilyLoading,
   setFamilyError,
@@ -70,6 +72,39 @@ export const modifyFamily = family => {
         ),
       );
       console.error('가족 정보 조회 실패:', error);
+    } finally {
+      dispatch(setFamilyLoading(false));
+    }
+  };
+};
+
+export const fetchFamilyStatusThunk = familyId => {
+  return async dispatch => {
+    dispatch(setFamilyLoading(true));
+    try {
+      const token = await getToken();
+      const response = await axios.get(
+        `https://kinover.shop/api/family/family-status?familyId=${familyId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      const data = response.data;
+      const onlineUserIds = data.filter(u => u.online).map(u => u.userId);
+      const lastActiveMap = data.reduce((acc, curr) => {
+        acc[curr.userId] = curr.lastActiveAt;
+        return acc;
+      }, {});
+
+      dispatch(setOnlineUserIds(onlineUserIds));
+      dispatch(setLastActiveMap(lastActiveMap));
+      console.log('✅ 접속 상태 조회 성공:', data);
+    } catch (error) {
+      dispatch(setFamilyError(error.message));
+      console.error('❌ 접속 상태 조회 실패:', error);
     } finally {
       dispatch(setFamilyLoading(false));
     }
