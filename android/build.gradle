@@ -1,37 +1,23 @@
 buildscript {
-  ext {
-    buildToolsVersion = "34.0.0"
-    minSdkVersion = 24
-    compileSdkVersion = 34
-    targetSdkVersion = 34
-    ndkVersion = "27.1.12297006"
-    kotlinVersion = "1.9.10"
-  }
-  repositories {
-    google()
-    mavenCentral()
-    maven { url 'https://devrepo.kakao.com/nexus/content/groups/public/' }
-  }
-  dependencies {
-    classpath("com.android.tools.build:gradle:8.2.2")
-    classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
-    classpath("com.facebook.react:react-native-gradle-plugin")
+    ext {
+        buildToolsVersion = "35.0.0"
+        minSdkVersion = 24
+        compileSdkVersion = 35
+        targetSdkVersion = 35
+        ndkVersion = "27.1.12297006"
+        kotlinVersion = "2.0.21"
+    }
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://devrepo.kakao.com/nexus/content/groups/public/' }
 
-  }
-}
-
-
-subprojects {
-    afterEvaluate {
-        if (project.hasProperty("android")) {
-            android {
-                lintOptions {
-                    abortOnError false
-                    checkReleaseBuilds false
-                    disable 'WrongConstant'
-                }
-            }
-        }
+    }
+    dependencies {
+        classpath("com.android.tools.build:gradle")
+        classpath("com.facebook.react:react-native-gradle-plugin")
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
     }
 }
 
+apply plugin: "com.facebook.react.rootproject"
