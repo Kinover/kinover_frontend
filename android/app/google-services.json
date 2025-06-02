@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1038540937232",
+    "project_id": "kinover-fcm",
+    "storage_bucket": "kinover-fcm.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1038540937232:android:04611389f96462b1e75295",
+        "android_client_info": {
+          "package_name": "com.kinover_frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAdBvulEyymMruSZb-O1lFHOxbXiV7Cckw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

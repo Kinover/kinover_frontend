@@ -1,4 +1,4 @@
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import 'react-native-gesture-handler';
 import React, {useEffect} from 'react';
 import MyApp from './app/_layout.jsx';
@@ -9,11 +9,12 @@ import 'react-native-get-random-values';
 enableScreens();
 
 export default function App() {
+
   return (
     // <GestureHandlerRootView style={{flex:1}}>
-      <SafeAreaProvider>
-        <MyApp />
-      </SafeAreaProvider>
+    <SafeAreaProvider>
+      <MyApp />
+    </SafeAreaProvider>
     // </GestureHandlerRootView>
   );
 }

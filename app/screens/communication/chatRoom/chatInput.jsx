@@ -1,5 +1,5 @@
 // ✅ ChatInput.js
-import React, { useState, useRef, useEffect } from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
   TextInput,
@@ -11,9 +11,9 @@ import {
   Platform,
   Dimensions,
 } from 'react-native';
-import { CameraRoll } from '@react-native-camera-roll/camera-roll';
+import {CameraRoll} from '@react-native-camera-roll/camera-roll';
 import uuid from 'react-native-uuid';
-import { getPresignedUrls, uploadImageToS3 } from '../../../api/imageUrlApi';
+import {getPresignedUrls, uploadImageToS3} from '../../../api/imageUrlApi';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -24,7 +24,7 @@ import RNFS from 'react-native-fs';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const IMAGE_SIZE = SCREEN_WIDTH / 4 - 4;
 
-export default function ChatInput({ chatRoom, user, socketRef }) {
+export default function ChatInput({chatRoom, user, socketRef}) {
   const [message, setMessage] = useState('');
   const [showGallery, setShowGallery] = useState(false);
   const [photos, setPhotos] = useState([]);
@@ -48,7 +48,7 @@ export default function ChatInput({ chatRoom, user, socketRef }) {
     if (!hasPermission) return;
 
     try {
-      const res = await CameraRoll.getPhotos({ first: 30, assetType: 'Photos' });
+      const res = await CameraRoll.getPhotos({first: 30, assetType: 'Photos'});
       const photoData = res.edges.map(edge => edge.node.image);
       setPhotos(photoData);
     } catch (err) {
@@ -99,7 +99,7 @@ export default function ChatInput({ chatRoom, user, socketRef }) {
             chatRoomId: chatRoom.chatRoomId,
             senderId: user.userId,
             imageUrls: fileNames,
-          })
+          }),
         );
         console.log('🖼️ 여러 이미지 전송됨:', fileNames);
         setShowGallery(false);
@@ -115,7 +115,9 @@ export default function ChatInput({ chatRoom, user, socketRef }) {
   };
 
   const convertPhUriToFileUri = async (phUri, index) => {
-    const destPath = `${RNFS.TemporaryDirectoryPath}photo_${Date.now()}_${index}.jpg`;
+    const destPath = `${
+      RNFS.TemporaryDirectoryPath
+    }photo_${Date.now()}_${index}.jpg`;
     try {
       await RNFS.copyAssetsFileIOS(phUri, destPath, 0, 0);
       return 'file://' + destPath;
@@ -125,7 +127,7 @@ export default function ChatInput({ chatRoom, user, socketRef }) {
     }
   };
 
-  const toggleSelectImage = (uri) => {
+  const toggleSelectImage = uri => {
     if (selectedImages.includes(uri)) {
       setSelectedImages(prev => prev.filter(img => img !== uri));
     } else {
@@ -133,12 +135,12 @@ export default function ChatInput({ chatRoom, user, socketRef }) {
     }
   };
 
-  const renderPhoto = ({ item }) => {
+  const renderPhoto = ({item}) => {
     const isSelected = selectedImages.includes(item.uri);
     return (
       <TouchableOpacity onPress={() => toggleSelectImage(item.uri)}>
         <Image
-          source={{ uri: item.uri }}
+          source={{uri: item.uri}}
           style={{
             width: IMAGE_SIZE,
             height: IMAGE_SIZE,
@@ -153,14 +155,14 @@ export default function ChatInput({ chatRoom, user, socketRef }) {
   };
 
   return (
-    <View>
+    <>
       <View style={styles.innerContainer}>
         <View style={styles.inputContainer}>
           <TouchableOpacity
             style={styles.inputPlusButton}
             onPress={toggleGallery}>
             <Image
-              source={{ uri: 'https://i.postimg.cc/yxdVHRq7/Group-478.png' }}
+              source={{uri: 'https://i.postimg.cc/yxdVHRq7/Group-478.png'}}
               style={{
                 width: getResponsiveIconSize(24),
                 height: getResponsiveIconSize(24),
@@ -179,7 +181,7 @@ export default function ChatInput({ chatRoom, user, socketRef }) {
         </View>
         <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
           <Image
-            source={{ uri: 'https://i.postimg.cc/fLWscdRY/Group-477-1.png' }}
+            source={{uri: 'https://i.postimg.cc/fLWscdRY/Group-477-1.png'}}
             style={{
               width: getResponsiveWidth(24),
               height: getResponsiveHeight(24),
@@ -199,7 +201,7 @@ export default function ChatInput({ chatRoom, user, socketRef }) {
           />
         </View>
       )}
-    </View>
+    </>
   );
 }
 
@@ -208,7 +210,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: getResponsiveHeight(10),
+    paddingVertical: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(14.5),
     gap: getResponsiveWidth(12),
     backgroundColor: '#fff',
@@ -219,7 +221,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    height: getResponsiveHeight(37),
+    height: getResponsiveHeight(42),
     borderWidth: 1,
     borderColor: '#FFC84D',
     borderRadius: 30,
@@ -229,6 +231,8 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: '100%',
+    alignSelf: 'center',
+    textAlignVertical: 'center',
   },
   inputPlusButton: {
     marginRight: 10,

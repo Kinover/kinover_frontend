@@ -16,8 +16,8 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-import { RenderHeaderRightChatSetting } from '../../../navigation/tabHeaderHelpers';
-import { useLayoutEffect } from 'react';
+import {RenderHeaderRightChatSetting} from '../../../navigation/tabHeaderHelpers';
+import {useLayoutEffect} from 'react';
 import {useNavigation} from '@react-navigation/native';
 import ChatInput from './chatInput';
 import ChatMessageItem from './chatMessageItem';
@@ -46,7 +46,6 @@ export default function FamilyChatRoom({route}) {
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const scrollTimeout = useRef(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
 
   const scrollToBottom = () => {
     if (flatListRef.current && messageList.length > 0) {
@@ -181,7 +180,11 @@ export default function FamilyChatRoom({route}) {
   }
 
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: 'white', paddingBottom: '20%'}}>
+    <SafeAreaView
+      style={{
+        flex: 1,
+        backgroundColor: 'white',
+      }}>
       {isQuestionVisible && (
         <>
           <View style={styles.overlay} />
@@ -269,34 +272,7 @@ export default function FamilyChatRoom({route}) {
   );
 }
 
-const styles = StyleSheet.create({
-  todayQuestionContainer: {
-    position: 'absolute',
-    width: getResponsiveWidth(320),
-    height: getResponsiveHeight(176.89),
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingVertical: getResponsiveHeight(40),
-    marginTop: getResponsiveHeight(60),
-    zIndex: 200,
-  },
-  todayQuestionContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  todayQuestionTitle: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(14),
-    marginBottom: getResponsiveHeight(15),
-    textAlign: 'center',
-  },
-  todayQuestionText: {
-    fontFamily: 'Pretendard-Light',
-    fontSize: getResponsiveFontSize(14),
-    width: getResponsiveWidth(150),
-    textAlign: 'center',
-  },
+const Styles = StyleSheet.create({
   buttonContainer: {
     position: 'absolute',
     flexDirection: 'row',

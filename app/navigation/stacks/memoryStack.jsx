@@ -29,7 +29,10 @@ export default function MemoryStack() {
           borderBottomWidth: 0,
           shadowOpacity: 0,
           elevation: 0,
-          height: getResponsiveHeight(120),
+          height:
+            Platform.OS == 'ios'
+              ? getResponsiveHeight(120)
+              : getResponsiveHeight(80),
         },
         headerTitleAlign: 'center',
         headerShown: true,
@@ -48,10 +51,11 @@ export default function MemoryStack() {
         headerLeft: () => null, // ✅ 올바른 접근
       })}>
       <Stack.Screen name="추억화면" component={MemoryScreen} />
-      
+
       <Stack.Screen
         name="게시글화면"
         component={PostPage}
+        
         options={({route, navigation}) => ({
           headerTitle: route.params.memory.title, // memory.title을 타이틀로!
           headerTitleAlign: 'center',
@@ -81,7 +85,8 @@ export default function MemoryStack() {
         component={CategoryPage}
         options={({navigation}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-        })}/>
+        })}
+      />
 
       <Stack.Screen
         name="이미지선택화면"

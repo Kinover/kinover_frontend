@@ -17,8 +17,10 @@ export default function ScheduleStack() {
           borderBottomWidth: 0,
           shadowOpacity: 0,
           elevation: 0,
-          height: getResponsiveHeight(120),
-        },
+          height:
+          Platform.OS == 'ios'
+            ? getResponsiveHeight(120)
+            : getResponsiveHeight(80),        },
         headerTitleAlign: 'center',
         headerShown: true,
         headerTitle: () => (

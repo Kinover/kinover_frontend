@@ -45,13 +45,9 @@ export default function ChatMessageItem({
     });
   };
 
-
-
   useEffect(() => {
     navigation.getParent()?.setOptions({tabBarStyle: {display: 'none'}});
   }, [navigation]);
-
-
 
   if (isMe) {
     ChatComponent = isKino ? (

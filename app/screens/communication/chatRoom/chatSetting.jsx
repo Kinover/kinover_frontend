@@ -144,6 +144,7 @@ export default function ChatSettings({
                     width: getResponsiveWidth(17),
                     height: getResponsiveHeight(17),
                     marginRight: getResponsiveWidth(5),
+                    transform: [{rotate: showMembers ? '0deg' : '180deg'}], // ✅ 추가
                   }}
                 />
               </View>
@@ -300,7 +301,6 @@ const styles = StyleSheet.create({
     height: getResponsiveIconSize(34),
     resizeMode: 'contain',
     marginRight: getResponsiveWidth(12),
-
   },
   addText: {
     fontSize: getResponsiveFontSize(14),

@@ -14,6 +14,7 @@ import commentReducer from './slices/commentSlice';
 import categoryReducer from './slices/categorySlice';
 import statusSlice from './slices/statusSlice';
 import familyNoticeReducer from './slices/familyNoticeSlice';
+import notificationReducer from './slices/notificationSlice';
 
 const rootReducer = combineReducers({
   family: familyReducer,
@@ -29,6 +30,7 @@ const rootReducer = combineReducers({
   category: categoryReducer,
   status:statusSlice,
   familyNotice:familyNoticeReducer,
+  notification: notificationReducer,
 });
 
 export default rootReducer;

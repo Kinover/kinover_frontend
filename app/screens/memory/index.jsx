@@ -9,6 +9,8 @@ import {
   ImageBackground,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
 
 import {useDispatch, useSelector} from 'react-redux';
 
@@ -34,11 +36,14 @@ export default function MemoryScreen({navigation}) {
   const dispatch = useDispatch();
   const [modalVisible, setModalVisible] = useState(false);
   const [noticeInput, setNoticeInput] = useState(family.notice);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     dispatch(fetchMemoryThunk(family.familyId));
     dispatch(fetchFamilyUserListThunk(family.familyId));
   }, [dispatch]);
+  console.log('🔵 iOS 하단 inset:', insets.bottom);
+
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -63,10 +68,13 @@ export default function MemoryScreen({navigation}) {
   }, [navigation]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top,bottom,left,right']}>
+    <SafeAreaView
+      style={styles.container}
+      edges={['top']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{flexGrow: 1}}>
+        contentContainerStyle={{flex: 1}}
+        style={{flex: 1}}>
         <View style={styles.bodyContainer}>
           <MemoryFeed />
         </View>
@@ -84,7 +92,6 @@ const styles = StyleSheet.create({
 
   bodyContainer: {
     flex: 1,
-    top: getResponsiveHeight(5),
     backgroundColor: 'white',
   },
 
