@@ -8,7 +8,7 @@ export const uploadPostApi = async (postData) => {
     if (!token) throw new Error('로그인이 필요합니다.');
 
     const response = await axios.post(
-      'http://43.200.47.242:9090/api/posts',
+      'https://kinover.shop/api/posts',
       postData,
       {
         headers: {

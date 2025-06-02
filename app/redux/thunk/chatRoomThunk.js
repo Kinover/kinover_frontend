@@ -125,3 +125,26 @@ export const renameChatRoomThunk = createAsyncThunk(
     }
   }
 );
+
+// 채팅방 생성 Thunk
+export const createChatRoomThunk = createAsyncThunk(
+  'chatRoom/create',
+  async ({ roomName, userIds }, { rejectWithValue }) => {
+    try {
+      const token = await getToken();
+      const response = await axios.post(
+        `https://kinover.shop/api/chatRoom/create/${encodeURIComponent(roomName)}/${userIds}`,
+        null,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('🔴 채팅방 생성 실패:', error.response?.data || error.message);
+      return rejectWithValue(error.response?.data || '채팅방 생성 실패');
+    }
+  }
+);

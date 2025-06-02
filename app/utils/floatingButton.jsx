@@ -6,9 +6,13 @@ import {
   getResponsiveWidth,
 } from './responsive';
 
-export default function FloatingButton({type}) {
+export default function FloatingButton({type, navigation}) {
   const handleClick = () => {
-    alert('플로팅 버튼 클릭!');
+    if (type === 'communication') {
+      navigation.navigate('채팅방생성화면'); // ✅ 채팅방 생성 화면으로 이동
+    } else {
+      alert('플로팅 버튼 클릭!');
+    }
   };
 
   const getImageSource = () => {
@@ -23,7 +27,7 @@ export default function FloatingButton({type}) {
 
   return (
     <TouchableOpacity
-      style={[styles.floatingButton, {bottom: type === 'challenge' ? 20 : 20}]}
+      style={[styles.floatingButton, {bottom: 20}]}
       onPress={handleClick}>
       <Image style={styles.buttonImage} source={getImageSource()} />
     </TouchableOpacity>
@@ -37,21 +41,15 @@ const styles = StyleSheet.create({
     right: 23,
     zIndex: 9,
     elevation: 10,
-    // shadowRadius:1.5,
-    // shadowOpacity:0.5,
-    // shadowColor:'lightGray',
-    // shadowOffset:-10,
     shadowOffset: {width: 0, height: 2.5},
     shadowRadius: 1,
     shadowColor: 'gray',
-    shadowOpacity:0.4,
-
+    shadowOpacity: 0.4,
   },
   buttonImage: {
     width: getResponsiveWidth(60),
     height: getResponsiveHeight(60),
     borderRadius: getResponsiveIconSize(30),
     resizeMode: 'contain',
-
   },
 });

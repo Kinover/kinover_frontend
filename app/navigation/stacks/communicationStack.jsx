@@ -18,6 +18,7 @@ import {Image, View} from 'react-native';
 import {RenderGoBackButton} from '../tabHeaderHelpers';
 import NotificationScreen from '../../components/notificationScreen';
 import AddChatMemeberScreen from '../../screens/communication/chatRoom/addChatMemberScreen';
+import CreateChatRoom from '../../screens/communication/chatRoom/createChatRoom';
 
 const Stack = createStackNavigator();
 
@@ -31,7 +32,10 @@ export default function CommunicationStack() {
           borderBottomWidth: 0,
           shadowOpacity: 0,
           elevation: 0,
-          height: getResponsiveHeight(120),
+          height:
+            Platform.OS == 'ios'
+              ? getResponsiveHeight(120)
+              : getResponsiveHeight(80),
         },
         headerTitleAlign: 'center',
         headerShown: true,
@@ -123,6 +127,14 @@ export default function CommunicationStack() {
       <Stack.Screen
         name="채팅방멤버추가화면"
         component={AddChatMemeberScreen}
+        options={({navigation}) => ({
+          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+        })}
+      />
+
+      <Stack.Screen
+        name="채팅방생성화면"
+        component={CreateChatRoom}
         options={({navigation}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}

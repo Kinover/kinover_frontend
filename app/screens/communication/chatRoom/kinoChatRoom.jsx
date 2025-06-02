@@ -13,10 +13,9 @@ import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import ChatInput from './chatInput';
 import ChatMessageItem from './chatMessageItem';
-import { SafeAreaView } from 'react-native';
-import { useLayoutEffect } from 'react';
-import { RenderHeaderRightChatSetting } from '../../../navigation/tabHeaderHelpers';
-
+import {SafeAreaView} from 'react-native';
+import {useLayoutEffect} from 'react';
+import {RenderHeaderRightChatSetting} from '../../../navigation/tabHeaderHelpers';
 
 import {
   fetchMessageThunk,
@@ -179,8 +178,10 @@ export default function KinoChatRoom({route}) {
 
           const prevMessage = messageList[index + 1]; // inverted=true니까 다음 index가 이전 메시지
           const currentDate = new Date(item.createdAt).toDateString();
-          const prevDate = prevMessage ? new Date(prevMessage.createdAt).toDateString() : null;
-      
+          const prevDate = prevMessage
+            ? new Date(prevMessage.createdAt).toDateString()
+            : null;
+
           const shouldShowDate = currentDate !== prevDate;
           return (
             <ChatMessageItem
@@ -190,7 +191,6 @@ export default function KinoChatRoom({route}) {
               isKino={chatRoom.kino}
               isSameSender={isSameSender}
               shouldShowDate={shouldShowDate}
-
             />
           );
         }}
@@ -219,9 +219,8 @@ export default function KinoChatRoom({route}) {
         user={user}
         socketRef={socketRef}
         setMessageList={setMessageList}
-
       />
-            <ChatSettings
+      <ChatSettings
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         chatRoomId={chatRoom.chatRoomId}
@@ -236,6 +235,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingBottom: '15%',
   },
 });

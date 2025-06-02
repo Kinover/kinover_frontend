@@ -4,9 +4,9 @@ import HomeScreen from '../../screens/home';
 import FamilySettingScreen from '../../screens/home/familySettingScreen';
 import NotificationScreen from '../../components/notificationScreen';
 import {RenderHeaderLeft1, RenderHeaderLogo} from '../tabHeaderHelpers';
-import { RenderHeaderRightSetting } from '../tabHeaderHelpers';
+import {RenderHeaderRightSetting} from '../tabHeaderHelpers';
 import {RenderGoBackButton} from '../tabHeaderHelpers';
-import {Image, View} from 'react-native';
+import {Image, Platform, View} from 'react-native';
 import {getResponsiveWidth, getResponsiveHeight} from '../../utils/responsive';
 import FamilyDeleteScreen from '../../screens/home/familyDeleteScreen';
 import ProfileScreen from '../../screens/home/profileScreen';
@@ -23,7 +23,10 @@ export default function HomeStack() {
           borderBottomWidth: 0,
           shadowOpacity: 0,
           elevation: 0,
-          height: getResponsiveHeight(120),
+          height:
+            Platform.OS == 'ios'
+              ? getResponsiveHeight(120)
+              : getResponsiveHeight(80),
         },
         headerTitleAlign: 'center',
         headerShown: true,
@@ -45,7 +48,9 @@ export default function HomeStack() {
         component={HomeScreen}
         options={({navigation}) => ({
           headerLeft: () => <RenderHeaderLeft1 navigation={navigation} />,
-          headerRight: () => <RenderHeaderRightSetting navigation={navigation} />,
+          headerRight: () => (
+            <RenderHeaderRightSetting navigation={navigation} />
+          ),
         })}
       />
 

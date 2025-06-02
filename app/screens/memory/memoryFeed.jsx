@@ -114,22 +114,6 @@ export default function MemoryFeed() {
   return (
     <View style={styles.contentElement}>
       <View style={styles.lineContainer}>
-        {/* <DropDownPicker
-          open={open}
-          value={value}
-          items={[
-            {label: '카테고리1', value: '카테고리1'},
-            {label: '전체', value: '전체'},
-          ]}
-          dropDownContainerStyle={styles.dropDownContainer}
-          dropDownDirection="BOTTOM"
-          setOpen={setOpen}
-          setValue={setValue}
-          placeholder={'전체'}
-          containerStyle={{width: getResponsiveWidth(90), zIndex: 9999}}
-          style={styles.dropdown}
-          textStyle={{fontSize: getResponsiveFontSize(17)}}
-        /> */}
         <TouchableOpacity
           style={[styles.categoryButton]}
           onPress={() => navigation.navigate('카테고리화면')}>

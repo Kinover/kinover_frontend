@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
     flex: 1,
     display: 'flex',
     flexDirection: 'column',
-    paddingTop: getResponsiveIconSize(5),
+    paddingVertical:0,
     paddingRight: getResponsiveIconSize(25),
     paddingLeft: getResponsiveIconSize(25),
     backgroundColor: '#fff',
@@ -143,7 +143,6 @@ const styles = StyleSheet.create({
   bottomSheetTitle: {
     fontFamily: 'Pretendard-SemiBold', // Regular 폰트 적용
     fontSize: getResponsiveFontSize(24),
-    marginBottom: getResponsiveIconSize(15),
   },
 
   bottomSheetElement: {
@@ -179,11 +178,12 @@ const styles = StyleSheet.create({
   noChatRoomListView: {
     display: 'flex',
     alignSelf: 'center',
-    alignItems:'center',
-    alignContent:'center',
+    alignItems: 'center',
+    alignContent: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
     width: '100%',
+    height: '100%',
   },
   noChatRoomList: {
     fontSize: getResponsiveFontSize(16),

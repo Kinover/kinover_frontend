@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   FlatList,
   TextInput,
+  KeyboardAvoidingView,
 } from 'react-native';
 import {
   getResponsiveWidth,
@@ -81,14 +82,11 @@ export default function HomeScreen() {
   return (
     // <>
     <GestureHandlerRootView style={{flex: 1}}>
-      <SafeAreaView style={styles.container} edges={['top,bottom,left,right']}>
+      <SafeAreaView
+        style={styles.container}
+        edges={['top', 'bottom', 'left', 'right']}>
         <View style={styles.backgroundCurve} />
 
-        {/* <View style={styles.topContainer}>
-       
-          </View> */}
-
-        {/* <View style={{display:'flex',flexDirection:'row',justifyContent:'flex-start',alignItems:'flex-start',width:'90%'}}> */}
         <View
           style={styles.headerContainer}
           onLayout={e => setContainerWidth(e.nativeEvent.layout.width)}>
@@ -98,8 +96,8 @@ export default function HomeScreen() {
                 src={user.image}
                 style={{
                   width: getResponsiveWidth(150),
-                  height: getResponsiveHeight(150),
-                  borderRadius: getResponsiveIconSize(75),
+                  height: getResponsiveWidth(150),
+                  borderRadius: getResponsiveWidth(75),
                   resizeMode: 'cover',
                 }}></Image>
             </TouchableOpacity>
@@ -111,6 +109,7 @@ export default function HomeScreen() {
                 height: getResponsiveHeight(40),
                 right: getResponsiveWidth(-8),
                 bottom: getResponsiveHeight(8),
+                resizeMode: 'contain',
               }}
               source={require('../../assets/images/state-2.png')}></Image>
           </View>
@@ -164,16 +163,17 @@ export default function HomeScreen() {
             </Text>
           )}
         </View>
-        <UserBottomSheet
-          sheetRef={userSheetRef}
-          selectedUser={selectedUser}
-          onSave={(name, desc) => {
-            console.log('✅ 저장됨', name, desc);
-            // userSheetRef.current?.close();
-          }}
-          onCancel={() => userSheetRef.current?.close()}
-        />
       </SafeAreaView>
+
+      <UserBottomSheet
+        sheetRef={userSheetRef}
+        selectedUser={selectedUser}
+        onSave={(name, desc) => {
+          console.log('✅ 저장됨', name, desc);
+          // userSheetRef.current?.close();
+        }}
+        onCancel={() => userSheetRef.current?.close()}
+      />
     </GestureHandlerRootView>
     // {/* </> */}
   );
@@ -295,9 +295,10 @@ const styles = StyleSheet.create({
 
   userImage: {
     width: getResponsiveWidth(74),
-    height: getResponsiveHeight(74),
-    borderRadius: getResponsiveIconSize(37),
-    resizeMode: 'cover',
+    height: getResponsiveWidth(74),
+    borderRadius: getResponsiveWidth(37),
+    // resizeMode: 'contain',
+    objectFit: 'cover',
   },
 
   userName: {

@@ -108,7 +108,7 @@ export default function UserBottomSheet({
           // backgroundColor: '#FFCC40',
           backgroundColor: 'transparent',
           zIndex: 9999, // ✅ 추가
-          elevation: 20, // ✅ Android에서 위로 띄우기
+          elevation: 0, // ✅ Android에서 위로 띄우기
         }}>
         <BottomSheetView style={styles.container}>
           {/* <View style={styles.curvedBackground}/> */}

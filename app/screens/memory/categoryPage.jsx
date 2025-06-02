@@ -1,6 +1,6 @@
 // components/CategoryPage.js
 
-import React, { useState, useLayoutEffect, useEffect, useMemo } from 'react';
+import React, {useState, useLayoutEffect, useEffect, useMemo} from 'react';
 import {
   View,
   Text,
@@ -10,8 +10,8 @@ import {
   Image,
   TextInput,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import { useDispatch, useSelector } from 'react-redux';
+import {useNavigation} from '@react-navigation/native';
+import {useDispatch, useSelector} from 'react-redux';
 import getResponsiveFontSize, {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -26,7 +26,7 @@ export default function CategoryPage() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const familyId = useSelector(state => state.family.familyId);
-  const { categoryList } = useSelector(state => state.category);
+  const {categoryList} = useSelector(state => state.category);
 
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -34,7 +34,7 @@ export default function CategoryPage() {
   const [newCategory, setNewCategory] = useState('');
 
   const fullCategoryList = useMemo(() => {
-    const 전체 = { categoryId: 'all', title: '전체' };
+    const 전체 = {categoryId: 'all', title: '전체'};
     return [전체, ...categoryList];
   }, [categoryList]);
 
@@ -73,8 +73,10 @@ export default function CategoryPage() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <View style={{ width: '100%', alignItems: 'center' }}>
-          <Text style={{ fontSize: getResponsiveFontSize(20) }}>카테고리 선택</Text>
+        <View style={{width: '100%', alignItems: 'center'}}>
+          <Text style={{fontSize: getResponsiveFontSize(20)}}>
+            카테고리 선택
+          </Text>
         </View>
       ),
       headerRight: () => (
@@ -86,29 +88,46 @@ export default function CategoryPage() {
               });
             }
           }}
-          style={{ marginRight: getResponsiveWidth(10) }}>
+          style={{marginRight: getResponsiveWidth(10)}}>
           <Image
             source={require('../../assets/images/check-bt.png')}
-            style={{ width: 25, height: 25, resizeMode: 'contain' }}
+            style={{width: 25, height: 25, resizeMode: 'contain'}}
           />
         </TouchableOpacity>
       ),
     });
   }, [navigation, selectedCategory]);
 
-  const renderItem = ({ item, index }) => (
-    <TouchableOpacity
-      onPress={() => {
-        setSelectedIndex(index);
-        setSelectedCategory(item);
-      }}
-      style={[
-        styles.itemContainer,
-        selectedIndex === index && styles.selectedItem,
-      ]}>
-      <Text style={styles.itemText}>{item.title}</Text>
-    </TouchableOpacity>
-  );
+  const renderItem = ({item, index}) => {
+    const isSelected = selectedIndex === index;
+
+    return (
+      <TouchableOpacity
+        onPress={() => {
+          setSelectedIndex(index);
+          setSelectedCategory(item);
+        }}
+        style={[
+          styles.itemContainer,
+          selectedIndex === index && styles.selectedItem,
+        ]}>
+        <Text style={styles.itemText}>{item.title}</Text>
+        <TouchableOpacity>
+          <Image
+            source={
+              isSelected
+                ? require('../../assets/images/selected-bt.png')
+                : require('../../assets/images/unselected-bt.png')
+            }
+            style={{
+              width: getResponsiveWidth(14),
+              height: getResponsiveHeight(14),
+              resizeMode: 'contain',
+            }}></Image>
+        </TouchableOpacity>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -117,13 +136,13 @@ export default function CategoryPage() {
         renderItem={renderItem}
         keyExtractor={(item, index) => item.categoryId + index}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListFooterComponent={
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setAddModalVisible(true)}>
-            <Text style={styles.addText}>카테고리 추가</Text>
-          </TouchableOpacity>
-        }
+        // ListFooterComponent={
+        //   <TouchableOpacity
+        //     style={styles.addButton}
+        //     onPress={() => setAddModalVisible(true)}>
+        //     <Text style={styles.addText}>카테고리 추가</Text>
+        //   </TouchableOpacity>
+        // }
       />
       <CategoryModal
         visible={addModalVisible}
@@ -134,20 +153,22 @@ export default function CategoryPage() {
         onConfirm={handleAddCategory}
         content={
           <View>
-            <Text style={{
-              fontSize: getResponsiveFontSize(18),
-              fontFamily: 'Pretendard-SemiBold',
-              textAlign: 'center',
-              marginVertical: getResponsiveHeight(15),
-            }}>
+            <Text
+              style={{
+                fontSize: getResponsiveFontSize(18),
+                fontFamily: 'Pretendard-SemiBold',
+                textAlign: 'center',
+                marginVertical: getResponsiveHeight(15),
+              }}>
               새 카테고리를 입력해주세요
             </Text>
-            <View style={{
-              borderWidth: 1,
-              borderColor: '#ddd',
-              borderRadius: 8,
-              padding: 10,
-            }}>
+            <View
+              style={{
+                borderWidth: 1,
+                borderColor: '#ddd',
+                borderRadius: 8,
+                padding: 10,
+              }}>
               <TextInput
                 placeholder="예: 2025 가족 여행"
                 style={{
@@ -173,14 +194,17 @@ const styles = StyleSheet.create({
     borderColor: '#D3D3D3',
   },
   itemContainer: {
-    paddingVertical: 16,
-    paddingHorizontal: getResponsiveWidth(20),
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: getResponsiveWidth(20),
+    paddingHorizontal: getResponsiveWidth(25),
   },
   selectedItem: {
     backgroundColor: '#FFF3D2',
   },
   itemText: {
-    fontSize: getResponsiveFontSize(14),
+    fontSize: getResponsiveFontSize(15),
     fontFamily: 'Pretendard-Regular',
   },
   separator: {
@@ -189,12 +213,12 @@ const styles = StyleSheet.create({
     marginHorizontal: getResponsiveWidth(10),
   },
   addButton: {
-    paddingVertical: 16,
-    paddingHorizontal: getResponsiveWidth(20),
+    paddingVertical: getResponsiveWidth(20),
+    paddingHorizontal: getResponsiveWidth(25),
   },
   addText: {
     color: '#F8B500',
-    fontSize: getResponsiveFontSize(14),
-    fontFamily: 'Pretendard-Regular',
+    fontSize: getResponsiveFontSize(15),
+    fontFamily: 'Pretendard-Medium',
   },
 });
