@@ -4,7 +4,7 @@ import {View, Text, TextInput} from 'react-native';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
-} from '../../utils/responsive';
+} from '../../responsive';
 
 export default function NoticeModalContent({
   currentNotice,

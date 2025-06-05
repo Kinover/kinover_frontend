@@ -14,7 +14,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import getResponsiveFontSize, {
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../utils/responsive';
+} from '../../../utils/responsive';
 
 export default function DescriptionSection({
   memory,
@@ -36,7 +36,7 @@ export default function DescriptionSection({
           <TouchableOpacity onPress={onPressComment}>
             <Image
               style={styles.commentButton}
-              source={require('../../assets/images/messageBubble.png')}
+              source={require('../../../assets/images/messageBubble.png')}
             />
             <Text style={styles.commentCount}>{commentList.length}</Text>
           </TouchableOpacity>

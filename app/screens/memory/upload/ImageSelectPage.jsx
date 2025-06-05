@@ -16,7 +16,7 @@ import { useNavigation } from '@react-navigation/native';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../utils/responsive';
+} from '../../../utils/responsive';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const IMAGE_SIZE = SCREEN_WIDTH / 3 - 4;
@@ -123,7 +123,7 @@ export default function ImageSelectPage() {
       headerRight: () => (
         <TouchableOpacity onPress={handleNext} style={{ marginRight: 15 }}>
           <Image
-            source={require('../../assets/images/check-bt.png')}
+            source={require('../../../assets/images/check-bt.png')}
             style={{
               width: 25,
               height: 25,
