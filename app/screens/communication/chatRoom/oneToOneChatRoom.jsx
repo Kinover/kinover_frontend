@@ -3,10 +3,10 @@ import {View, FlatList, ActivityIndicator, StyleSheet} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useLayoutEffect} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
-import ChatInput from './chatInput';
-import ChatMessageItem from './chatMessageItem';
+import ChatInput from './chat/chatInput';
+import ChatMessageItem from './chat/chatMessageItem';
 import {SafeAreaView} from 'react-native';
-import ChatSettings from './chatSetting';
+import ChatSettings from './setting/chatSetting';
 import {
   fetchMessageThunk,
   fetchMoreMessagesThunk,

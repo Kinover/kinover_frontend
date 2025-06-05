@@ -13,12 +13,12 @@ import {
 } from 'react-native';
 import {CameraRoll} from '@react-native-camera-roll/camera-roll';
 import uuid from 'react-native-uuid';
-import {getPresignedUrls, uploadImageToS3} from '../../../api/imageUrlApi';
+import {getPresignedUrls, uploadImageToS3} from '../../../../api/imageUrlApi';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
+} from '../../../../utils/responsive';
 import RNFS from 'react-native-fs';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;

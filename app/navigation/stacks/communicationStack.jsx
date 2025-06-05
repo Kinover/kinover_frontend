@@ -6,7 +6,7 @@ import {RenderHeaderRightSetting} from '../tabHeaderHelpers';
 import OneToOneChatRoom from '../../screens/communication/chatRoom/oneToOneChatRoom';
 import KinoChatRoom from '../../screens/communication/chatRoom/kinoChatRoom';
 import FamilyChatRoom from '../../screens/communication/chatRoom/familyChatRoom';
-import ChatSettings from '../../screens/communication/chatRoom/chatSetting';
+import ChatSettings from '../../screens/communication/chatRoom/setting/chatSetting';
 import {
   RenderHeaderRightChatSetting,
   // RenderHeaderRight,
@@ -17,8 +17,8 @@ import {getResponsiveWidth, getResponsiveHeight} from '../../utils/responsive';
 import {Image, View} from 'react-native';
 import {RenderGoBackButton} from '../tabHeaderHelpers';
 import NotificationScreen from '../../components/notificationScreen';
-import AddChatMemeberScreen from '../../screens/communication/chatRoom/addChatMemberScreen';
-import CreateChatRoom from '../../screens/communication/chatRoom/createChatRoom';
+import AddChatMemeberScreen from '../../screens/communication/chatRoom/setting/addChatMemberScreen';
+import CreateChatRoom from '../../screens/communication/createChatRoom';
 
 const Stack = createStackNavigator();
 

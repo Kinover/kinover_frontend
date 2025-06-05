@@ -8,16 +8,16 @@ import {useNavigation} from '@react-navigation/native';
 import {useState} from 'react';
 import {useLayoutEffect} from 'react';
 import {useDispatch} from 'react-redux';
-import ChatSettings from './chatSetting';
-import {leaveChatRoomThunk} from '../../../redux/thunk/chatRoomThunk';
+import ChatSettings from '../setting/chatSetting';
+import {leaveChatRoomThunk} from '../../../../redux/thunk/chatRoomThunk';
 import {useEffect} from 'react';
 import {
   getResponsiveWidth,
   getResponsiveIconSize,
   getResponsiveHeight,
-} from '../../../utils/responsive';
+} from '../../../../utils/responsive';
 import {Alert, Text} from 'react-native';
-import {RenderHeaderRightChatSetting} from '../../../navigation/tabHeaderHelpers';
+import {RenderHeaderRightChatSetting} from '../../../../navigation/tabHeaderHelpers';
 export default function ChatMessageItem({
   chatRoom,
   message,

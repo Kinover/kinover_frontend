@@ -5,9 +5,9 @@ import {
   getResponsiveHeight,
   getResponsiveFontSize,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
-import formatTime from '../../../utils/formatTime';
-import ImageModal from './imageModal';
+} from '../../../../utils/responsive';
+import formatTime from '../../../../utils/formatTime';
+import ImageModal from '../imageModal';
 
 export default function SendChat({
   chatTime,

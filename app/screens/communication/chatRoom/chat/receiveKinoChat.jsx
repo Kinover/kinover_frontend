@@ -5,8 +5,8 @@ import {
   getResponsiveHeight,
   getResponsiveFontSize,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
-import formatTime from "../../../utils/formatTime";
+} from '../../../../utils/responsive';
+import formatTime from "../../../../utils/formatTime";
 
 export default function ReceiveKinoChat({
   message,

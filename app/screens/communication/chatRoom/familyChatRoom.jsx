@@ -20,8 +20,8 @@ import {
 import {RenderHeaderRightChatSetting} from '../../../navigation/tabHeaderHelpers';
 import {useLayoutEffect} from 'react';
 import {useNavigation} from '@react-navigation/native';
-import ChatInput from './chatInput';
-import ChatMessageItem from './chatMessageItem';
+import ChatInput from './chat/chatInput';
+import ChatMessageItem from './chat/chatMessageItem';
 import {getToken} from '../../../utils/storage';
 import {useDispatch} from 'react-redux';
 import {addMessage} from '../../../redux/slices/messageSlice';
@@ -29,7 +29,7 @@ import {
   fetchMessageThunk,
   fetchMoreMessagesThunk,
 } from '../../../redux/thunk/messageThunk';
-import ChatSettings from './chatSetting';
+import ChatSettings from './setting/chatSetting';
 
 import {useSelector} from 'react-redux';
 import { leaveChatRoomThunk } from '../../../redux/thunk/chatRoomThunk';
