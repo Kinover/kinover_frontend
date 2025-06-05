@@ -47,11 +47,22 @@ export default function HomeScreen() {
   // useEffect(() => {
   //     requestUserPermission();
   //   }, []);
-
   const handleUserPress = member => {
-    console.log('👆 유저 클릭됨:', member); // ✅ 로그 추가
-    setSelectedUser(member);
+    console.log('👆 유저 클릭됨:', member);
+  
+    setSelectedUser(member); // 무조건 먼저 설정
+    setTimeout(() => {
+      if (userSheetRef.current) {
+        console.log('📦 바텀시트 열기 시도함 (snapToIndex(0))');
+        try {
+          userSheetRef.current.snapToIndex(0);
+        } catch (e) {
+          console.error('❌ BottomSheet snapToIndex 실패:', e);
+        }
+      }
+    }, 100); // 100ms 정도 딜레이 주기
   };
+  
 
   useEffect(() => {
     if (selectedUser && userSheetRef.current) {
@@ -167,11 +178,14 @@ export default function HomeScreen() {
       <UserBottomSheet
         sheetRef={userSheetRef}
         selectedUser={selectedUser}
+        isVisible={!!selectedUser} // 오버레이 컨트롤
         onSave={(name, desc) => {
           console.log('✅ 저장됨', name, desc);
-          // userSheetRef.current?.close();
         }}
-        onCancel={() => userSheetRef.current?.close()}
+        onCancel={() => {
+          setSelectedUser(null); // ⬅️ 닫으면 상태 비우기
+          userSheetRef.current?.close();
+        }}
       />
     </GestureHandlerRootView>
     // {/* </> */}
