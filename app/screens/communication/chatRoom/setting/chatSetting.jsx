@@ -4,7 +4,7 @@ import {useSelector, useDispatch} from 'react-redux';
 import {
   fetchChatRoomUsersThunk,
   renameChatRoomThunk,
-} from '../../../redux/thunk/chatRoomThunk';
+} from '../../../../redux/thunk/chatRoomThunk';
 import {
   View,
   Text,
@@ -26,8 +26,8 @@ import {
   getResponsiveFontSize,
   getResponsiveWidth,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
-import CustomModal from '../../../utils/customModal';
+} from '../../../../utils/responsive';
+import CustomModal from '../../../../utils/customModal';
 
 const {width} = Dimensions.get('window');
 
@@ -138,7 +138,7 @@ export default function ChatSettings({
                 }}>
                 <Text style={styles.optionText}>멤버 목록</Text>
                 <Image
-                  source={require('../../../assets/images/down-yellow.png')}
+                  source={require('../../../../assets/images/down-yellow.png')}
                   style={{
                     resizeMode: 'contain',
                     width: getResponsiveWidth(17),
@@ -163,7 +163,7 @@ export default function ChatSettings({
                     onPress={handleShowMembers}
                     style={styles.addMemberButton}>
                     <Image
-                      source={require('../../../assets/images/addMember-bt.png')}
+                      source={require('../../../../assets/images/addMember-bt.png')}
                       style={styles.addIcon}
                     />
                     <Text style={styles.addText}>새 멤버 초대</Text>

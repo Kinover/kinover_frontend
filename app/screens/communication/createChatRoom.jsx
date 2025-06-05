@@ -7,30 +7,32 @@ import {
   Image,
   ScrollView,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
 import axios from 'axios';
 import {useSelector, useDispatch} from 'react-redux';
+import {createChatRoomThunk} from '../../redux/thunk/chatRoomThunk';
 
-import {getToken} from '../../../utils/storage';
+import {getToken} from '../../utils/storage';
 import {
   getResponsiveWidth,
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
-import {fetchFamilyUserListThunk} from '../../../redux/thunk/familyUserThunk';
+} from '../../utils/responsive';
+import {fetchFamilyUserListThunk} from '../../redux/thunk/familyUserThunk';
 
-export default function AddChatMemberScreen({navigation, route}) {
-  const {chatRoomId} = route.params;
+export default function CreateChatRoom({navigation}) {
   const dispatch = useDispatch();
   const family = useSelector(state => state.family);
-  const chatRoomUsers = useSelector(state => state.chatRoom.chatRoomUsers);
+  const currentUserId = useSelector(state => state.user.userId);
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
   const loading = useSelector(state => state.userFamily.loading);
 
   const [selected, setSelected] = useState([]);
+  const [roomName, setRoomName] = useState('');
 
-  // 유저 데이터 불러오기
+  // 가족 유저 목록 불러오기
   useEffect(() => {
     if (family.familyId) {
       dispatch(fetchFamilyUserListThunk(family.familyId));
@@ -41,12 +43,14 @@ export default function AddChatMemberScreen({navigation, route}) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <Text style={{fontSize: 18, textAlign: 'center'}}>새 멤버 초대</Text>
+        <Text style={{fontSize: 18, textAlign: 'center'}}>채팅방 만들기</Text>
       ),
       headerRight: () => (
-        <TouchableOpacity onPress={handleNext} style={{marginRight: 15}}>
+        <TouchableOpacity
+          onPress={handleCreateChatRoom}
+          style={{marginRight: 15}}>
           <Image
-            source={require('../../../assets/images/check-bt.png')}
+            source={require('../../assets/images/check-bt.png')}
             style={{
               width: 25,
               height: 25,
@@ -57,12 +61,7 @@ export default function AddChatMemberScreen({navigation, route}) {
         </TouchableOpacity>
       ),
     });
-  }, [selected]);
-
-  // 채팅방에 아직 없는 유저 필터링
-  const selectableUsers = familyUserList.filter(
-    user => !chatRoomUsers.find(u => u.userId === user.userId),
-  );
+  }, [selected, roomName]);
 
   // 선택 토글
   const toggleUser = userId => {
@@ -73,32 +72,40 @@ export default function AddChatMemberScreen({navigation, route}) {
     );
   };
 
-  // 초대 요청
-  const handleNext = async () => {
-    if (selected.length === 0) return;
+  // 채팅방 생성 요청
+  const handleCreateChatRoom = async () => {
+    if (selected.length === 0 || !roomName.trim()) return;
+
+    const idsStr = selected.join(',');
 
     try {
-      const token = await getToken();
-      const idsStr = selected.join(',');
+      const result = await dispatch(
+        createChatRoomThunk({roomName, userIds: idsStr}),
+      ).unwrap(); // unwrap으로 결과 직접 받기
 
-      await axios.post(
-        `http://43.200.47.242:9090/api/chatRoom/${chatRoomId}/addUsers/${idsStr}`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      navigation.goBack(); // 초대 후 뒤로 이동
+      console.log('🟢 채팅방 생성 성공:', result);
+      navigation.navigate('ChatScreen', {chatRoomId: result.chatRoomId});
     } catch (err) {
-      console.error('유저 초대 실패:', err);
+      console.error('🔴 채팅방 생성 실패:', err);
     }
   };
 
+  const selectableUsers = familyUserList.filter(
+    user => user.userId !== currentUserId,
+  );
+
   return (
     <View style={styles.container}>
+      {/* 채팅방 이름 입력 */}
+      <View style={styles.inputContainer}>
+        <TextInput
+          value={roomName}
+          onChangeText={setRoomName}
+          placeholder="채팅방 이름을 입력하세요"
+          style={styles.input}
+        />
+      </View>
+
       {loading ? (
         <ActivityIndicator size="large" color="#F8B500" />
       ) : (
@@ -113,29 +120,18 @@ export default function AddChatMemberScreen({navigation, route}) {
                   styles.userItem,
                   isSelected && styles.userItemSelected,
                 ]}>
-                <View
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: getResponsiveWidth(5),
-                  }}>
+                <View style={styles.userInfo}>
                   <Image source={{uri: user.image}} style={styles.userImage} />
                   <Text style={styles.userName}>{user.name}</Text>
                 </View>
-                <TouchableOpacity>
-                  <Image
-                    source={
-                      isSelected
-                        ? require('../../../assets/images/selected-bt.png')
-                        : require('../../../assets/images/unselected-bt.png')
-                    }
-                    style={{
-                      width: getResponsiveWidth(14),
-                      height: getResponsiveHeight(14),
-                      resizeMode: 'contain',
-                    }}></Image>
-                </TouchableOpacity>
+                <Image
+                  source={
+                    isSelected
+                      ? require('../../assets/images/selected-bt.png')
+                      : require('../../assets/images/unselected-bt.png')
+                  }
+                  style={styles.selectIcon}
+                />
               </TouchableOpacity>
             );
           })}
@@ -151,21 +147,33 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopWidth: 3,
     borderColor: '#D3D3D3',
-    // padding: getResponsiveWidth(10),
+  },
+  inputContainer: {
+    padding: getResponsiveWidth(20),
+    borderBottomWidth: 1,
+    borderColor: '#ddd',
+  },
+  input: {
+    fontSize: getResponsiveFontSize(16),
+    fontFamily: 'Pretendard-Regular',
+    borderBottomWidth: 0.5,
+    borderColor: '#B0B0B0',
+    paddingVertical: getResponsiveHeight(8),
   },
   userItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: getResponsiveHeight(15),
-    // borderBottomWidth: 1,
-    // borderColor: '#ddd',
-    display: 'flex',
     justifyContent: 'space-between',
     paddingHorizontal: getResponsiveWidth(22.5),
-    gap: getResponsiveWidth(10),
   },
   userItemSelected: {
     backgroundColor: '#FFF2CC',
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(5),
   },
   userImage: {
     width: getResponsiveIconSize(45),
@@ -177,5 +185,10 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: getResponsiveFontSize(16),
     fontFamily: 'Pretendard-Regular',
+  },
+  selectIcon: {
+    width: getResponsiveWidth(14),
+    height: getResponsiveHeight(14),
+    resizeMode: 'contain',
   },
 });
