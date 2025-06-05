@@ -14,7 +14,7 @@ import getResponsiveFontSize, {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveIconSize,
-} from '../../utils/responsive';
+} from '../../../utils/responsive';
 
 export default function CommentSection({
   commentList,
@@ -30,7 +30,7 @@ export default function CommentSection({
         <TouchableOpacity style={styles.backButton} onPress={onCloseComment}>
           <Image
             style={styles.back_bt}
-            source={require('../../assets/images/backbt.png')}
+            source={require('../../../assets/images/backbt.png')}
           />
         </TouchableOpacity>
         <View style={{height: '100%', justifyContent: 'center', width: '100%'}}>
@@ -73,7 +73,7 @@ export default function CommentSection({
         <TouchableOpacity onPress={onSubmitComment}>
           <Image
             style={styles.commentSendBt}
-            source={require('../../assets/images/comment-send-bt.png')}
+            source={require('../../../assets/images/comment-send-bt.png')}
           />
         </TouchableOpacity>
       </View>

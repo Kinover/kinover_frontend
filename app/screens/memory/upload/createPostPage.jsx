@@ -11,10 +11,10 @@ import {
 import {
   getResponsiveWidth,
   getResponsiveFontSize,
-} from '../../utils/responsive';
+} from '../../../utils/responsive';
 import { useSelector } from 'react-redux';
-import { getPresignedUrls, uploadImageToS3 } from '../../api/imageUrlApi';
-import { uploadPostApi } from '../../api/uploadPostApi';
+import { getPresignedUrls, uploadImageToS3 } from '../../../api/imageUrlApi';
+import { uploadPostApi } from '../../../api/uploadPostApi';
 
 // ✅ 미디어 타입 추출 함수 (파일 확장자 기반)
 const getMediaTypeFromUri = (uri) => {
@@ -86,7 +86,7 @@ export default function CreatePostPage({ navigation, route }) {
       headerRight: () => (
         <TouchableOpacity onPress={handleUpload} style={{ marginRight: 15 }}>
           <Image
-            source={require('../../assets/images/check-bt.png')}
+            source={require('../../../assets/images/check-bt.png')}
             style={{
               width: 25,
               height: 25,

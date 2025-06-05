@@ -1,9 +1,9 @@
 import React from 'react';
-import CustomModal from '../../utils/customModal';
+import CustomModal from '../../customModal';
 import {useDispatch} from 'react-redux';
 import NoticeModalContent from './noticeModalContent';
 import {relationshipMapKoreanToEnglish} from '../home/familySettingScreen';
-import {modifyFamily} from '../../redux/thunk/familyThunk';
+import {modifyFamily} from '../../../redux/thunk/familyThunk';
 
 export default function NoticeModal({
   visible,

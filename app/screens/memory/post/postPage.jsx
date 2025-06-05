@@ -23,17 +23,17 @@ import getResponsiveFontSize, {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveIconSize,
-} from '../../utils/responsive';
-import ImageDeleteModal from '../../utils/imageDeleteModal';
+} from '../../../utils/responsive';
+import ImageDeleteModal from '../../../utils/imageDeleteModal';
 import {
   deletePostThunk,
   deletePostImageThunk,
   fetchMemoryThunk,
-} from '../../redux/thunk/memoryThunk';
+} from '../../../redux/thunk/memoryThunk';
 import {
   fetchCommentsThunk,
   createCommentThunk,
-} from '../../redux/thunk/commentThunk';
+} from '../../../redux/thunk/commentThunk';
 import DescriptionSection from './descriptionSection';
 import CommentSection from './commentSection';
 
@@ -85,7 +85,7 @@ export default function PostPage({route}) {
           style={{position:'relative', elevation: 10, zIndex: 50}}
           onPress={() => setShowDeleteOptions(prev => !prev)}>
           <Image
-            source={require('../../assets/images/trash.png')}
+            source={require('../../../assets/images/trash.png')}
             style={{
               width: getResponsiveWidth(20),
               height: getResponsiveHeight(20),

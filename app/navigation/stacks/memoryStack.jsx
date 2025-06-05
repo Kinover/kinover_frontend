@@ -10,11 +10,11 @@ import {
   RenderGoBackButtonGallery,
   RenderHeaderDeletePost,
 } from '../tabHeaderHelpers';
-import PostPage from '../../screens/memory/postPage';
-import ImageSelectPage from '../../screens/memory/ImageSelectPage';
+import PostPage from '../../screens/memory/post/postPage';
+import ImageSelectPage from '../../screens/memory/upload/ImageSelectPage';
 import {RenderGoBackButton} from '../../navigation/tabHeaderHelpers';
-import CategorySelectPage from '../../screens/memory/categorySelectPage';
-import CreatePostPage from '../../screens/memory/createPostPage';
+import CategorySelectPage from '../../screens/memory/upload/categorySelectPage';
+import CreatePostPage from '../../screens/memory/upload/createPostPage';
 import CategoryPage from '../../screens/memory/categoryPage';
 
 const Stack = createStackNavigator();
