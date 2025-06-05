@@ -6,6 +6,8 @@ import {
   StyleSheet,
   TouchableOpacity,
   Image,
+  Alert,
+  Platform,
 } from 'react-native';
 import BottomSheet, {BottomSheetView} from '@gorhom/bottom-sheet';
 import {
@@ -20,6 +22,7 @@ import {getPresignedUrls, uploadImageToS3} from '../../api/imageUrlApi';
 export default function UserBottomSheet({
   sheetRef,
   selectedUser,
+  isVisible,
   onSave,
   onCancel,
 }) {
@@ -27,12 +30,8 @@ export default function UserBottomSheet({
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [isVisible, setIsVisible] = useState(false); // 🟡 오버레이 제어용 상태
-  const [imageUrl, setImageUrl] = useState(
-    selectedUser?.image?.startsWith('http')
-      ? selectedUser.image
-      : `https://dzqa9jgkeds0b.cloudfront.net/${selectedUser?.image}`,
-  );
+  const [imageUrl, setImageUrl] = useState('');
+
   useEffect(() => {
     if (selectedUser) {
       setName(selectedUser.name || '');
@@ -42,7 +41,6 @@ export default function UserBottomSheet({
           ? selectedUser.image
           : `https://dzqa9jgkeds0b.cloudfront.net/${selectedUser.image}`,
       );
-      //   setIsVisible(true);
     }
   }, [selectedUser]);
 
@@ -78,40 +76,28 @@ export default function UserBottomSheet({
     }
   };
 
-  const handleClose = () => {
-    setIsVisible(false); // ✅ 닫을 때 오버레이 제거
-    onCancel(); // 상위에서 snapToIndex(-1) 호출
-  };
-
-  useEffect(() => {
-    console.log('🟡 바텀시트에 전달된 selectedUser:', selectedUser);
-    setIsVisible(true); // ✅ 여기 추가!!
-  }, [selectedUser]);
-
   return (
     <>
       {isVisible && (
         <TouchableOpacity
           style={styles.overlay}
           activeOpacity={1}
-          onPress={handleClose} // 배경 누르면 닫기
+          onPress={onCancel}
         />
       )}
+
       <BottomSheet
         ref={sheetRef}
         index={-1}
-        initialSnapIndex={0} // 기본적으로 75%로 시작
         snapPoints={snapPoints}
         enablePanDownToClose
         handleComponent={() => null}
         backgroundStyle={{
-          // backgroundColor: '#FFCC40',
           backgroundColor: 'transparent',
-          zIndex: 9999, // ✅ 추가
-          elevation: 0, // ✅ Android에서 위로 띄우기
+          zIndex: 5,
+          elevation: 0,
         }}>
         <BottomSheetView style={styles.container}>
-          {/* <View style={styles.curvedBackground}/> */}
           <Image
             style={{
               position: 'absolute',
@@ -121,12 +107,13 @@ export default function UserBottomSheet({
               right: '-58%',
               top: getResponsiveHeight(60),
             }}
-            source={require('../../assets/images/curved-back.png')}></Image>
+            source={require('../../assets/images/curved-back.png')}
+          />
           <TouchableOpacity onPress={handleImagePick}>
             <Image
               source={
-                selectedUser?.image
-                  ? {uri: selectedUser.image}
+                imageUrl
+                  ? {uri: imageUrl}
                   : require('../../assets/images/kino-yellow.png')
               }
               style={styles.profileImage}
@@ -156,7 +143,7 @@ export default function UserBottomSheet({
               onPress={() => onSave(name, description, imageUrl)}>
               <Text style={styles.buttonText}>저장</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.button}>
+            <TouchableOpacity style={styles.button} onPress={onCancel}>
               <Text style={styles.buttonText}>취소</Text>
             </TouchableOpacity>
           </View>
@@ -179,18 +166,6 @@ const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
-  },
-  curvedBackground: {
-    position: 'absolute',
-    top: 50,
-    left: 0,
-    right: 0,
-    height: '300',
-    backgroundColor: '#FFC84D',
-    borderTopLeftRadius: 500,
-    borderTopRightRadius: 500,
-    // borderTopEndRadius:10000,
-    // width:
   },
   profileImage: {
     alignSelf: 'center',
@@ -226,14 +201,10 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 1},
   },
   textArea: {
-    fontFamily: 'Pretendard-Light',
     height: getResponsiveHeight(90),
     textAlignVertical: 'top',
   },
   buttonRow: {
-    // flex:1,
-    display: 'flex',
-    width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-evenly',
     marginTop: getResponsiveHeight(20),
@@ -245,7 +216,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingHorizontal: 20,
     paddingVertical: 9,
-    width: 'auto',
   },
   buttonText: {
     fontFamily: 'Pretendard-Light',
