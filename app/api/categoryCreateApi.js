@@ -10,7 +10,7 @@ export const createCategory = async (title, familyId) => {
     }
 
     const response = await axios.post(
-      'http://43.200.47.242:9090/api/categories',
+      'https://kinover.shop/api/categories',
       {
         title,
         familyId: String(familyId), // UUID 문자열로 보장

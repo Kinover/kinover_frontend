@@ -1,6 +1,6 @@
 import React from 'react';
 import {View, Text, Image} from 'react-native';
-import {getResponsiveFontSize, getResponsiveHeight} from '../../../../utils/responsive';
+import {getResponsiveFontSize, getResponsiveHeight} from '../../responsive';
 import {StyleSheet} from 'react-native';
 
 export default function UserDeleteModalContent({user}) {

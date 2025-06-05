@@ -10,7 +10,7 @@ export const getCategoryApi = async (familyId) => {
     }
 
     const response = await axios.get(
-      `http://43.200.47.242:9090/api/categories/${familyId}`,
+      `https://kinover.shop/api/categories/${familyId}`,
       {
         headers: {
           'Authorization': `Bearer ${token}`,

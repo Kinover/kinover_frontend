@@ -1,6 +1,6 @@
 import React from 'react';
 import {Text} from 'react-native';
-import {getResponsiveFontSize} from '../../../../utils/responsive';
+import {getResponsiveFontSize} from '../../responsive';
 
 export default function ComingSoonModalContent() {
   return (
