@@ -1,7 +1,7 @@
 import React from 'react';
 
 import UserDeleteModalContent from './content';
-import CustomModal from '../../../../utils/customModal';
+import CustomModal from '../../customModal';
 
 export default function UserDeleteModal({visible, onClose, user}) {
   return (

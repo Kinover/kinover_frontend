@@ -81,7 +81,9 @@ export default function PostPage({route}) {
         </Text>
       ),
       headerRight: () => (
-        <TouchableOpacity onPress={() => setShowDeleteOptions(prev => !prev)}>
+        <TouchableOpacity
+          style={{position:'relative', elevation: 10, zIndex: 50}}
+          onPress={() => setShowDeleteOptions(prev => !prev)}>
           <Image
             source={require('../../assets/images/trash.png')}
             style={{
@@ -90,6 +92,7 @@ export default function PostPage({route}) {
               resizeMode: 'contain',
               marginRight: getResponsiveWidth(15),
               // bottom: getResponsiveHeight(5),
+              elevation: 10,
             }}
           />
         </TouchableOpacity>

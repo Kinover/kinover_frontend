@@ -26,7 +26,6 @@ import {setOnlineUserIds} from '../../redux/slices/statusSlice';
 import {getToken} from '../../utils/storage';
 import useFamilyStatusSocket from '../../hooks/useFamilyStatusSocket';
 import {requestPermission} from '@react-native-firebase/messaging';
-import NoticeSlider from './noticeSlider';
 import UserBottomSheet from './userBottomSheet';
 
 export default function HomeScreen() {
@@ -184,7 +183,6 @@ const styles = StyleSheet.create({
     flex: 1,
     display: 'flex',
     position: 'relative',
-    // alignItems: 'center',
     flexDirection: 'column',
     justifyContent: 'flex-start',
     backgroundColor: '#FFC84D',
@@ -297,7 +295,6 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(74),
     height: getResponsiveWidth(74),
     borderRadius: getResponsiveWidth(37),
-    // resizeMode: 'contain',
     objectFit: 'cover',
   },
 
@@ -341,6 +338,5 @@ const styles = StyleSheet.create({
     backgroundColor: '#29D697',
     borderColor: 'white',
     borderWidth: 2,
-    // zIndex: 999,
   },
 });

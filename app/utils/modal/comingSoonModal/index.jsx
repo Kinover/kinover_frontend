@@ -1,5 +1,5 @@
 import React from 'react';
-import CustomModal from '../../../../utils/customModal';
+import CustomModal from '../../customModal';
 import ComingSoonModalContent from './content';
 
 export default function ComingSoonModal({visible, onClose}) {

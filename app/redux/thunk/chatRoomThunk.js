@@ -131,6 +131,7 @@ export const createChatRoomThunk = createAsyncThunk(
   'chatRoom/create',
   async ({ roomName, userIds }, { rejectWithValue }) => {
     try {
+      console.log(`🟡 채팅방 생성 요청: roomName="${roomName}", userIds=${userIds}`);
       const token = await getToken();
       const response = await axios.post(
         `https://kinover.shop/api/chatRoom/create/${encodeURIComponent(roomName)}/${userIds}`,
@@ -141,6 +142,7 @@ export const createChatRoomThunk = createAsyncThunk(
           },
         }
       );
+      console.log('🟢 채팅방 생성 성공:', response.data);
       return response.data;
     } catch (error) {
       console.error('🔴 채팅방 생성 실패:', error.response?.data || error.message);

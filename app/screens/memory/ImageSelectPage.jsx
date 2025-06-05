@@ -26,7 +26,6 @@ export default function ImageSelectPage() {
   const [selected, setSelected] = useState([]);
   const navigation = useNavigation();
 
-  // ✅ 권한 요청
   const requestPermission = async () => {
     if (Platform.OS === 'android') {
       const granted = await PermissionsAndroid.request(
@@ -39,14 +38,26 @@ export default function ImageSelectPage() {
     return true;
   };
 
-  // ✅ ph:// → file:// 경로로 변환
+  // ✅ iOS 전용: ph:// → file:// 경로로 복사
   const convertPhUriToFileUri = async (phUri, index) => {
-    const destPath = `${RNFS.TemporaryDirectoryPath}photo_${Date.now()}_${index}.jpg`;
+    const destPath = `${RNFS.TemporaryDirectoryPath}photo_ios_${Date.now()}_${index}.jpg`;
     try {
       await RNFS.copyAssetsFileIOS(phUri, destPath, 0, 0);
       return 'file://' + destPath;
     } catch (err) {
-      console.error('📛 ph:// 변환 실패:', err.message);
+      console.error('📛 iOS ph:// 변환 실패:', err.message);
+      return null;
+    }
+  };
+
+  // ✅ Android 전용: content:// → file:// 로 복사
+  const convertContentUriToFileUri = async (contentUri, index) => {
+    const destPath = `${RNFS.TemporaryDirectoryPath}photo_android_${Date.now()}_${index}.jpg`;
+    try {
+      await RNFS.copyFile(contentUri, destPath); // content:// -> file 복사
+      return 'file://' + destPath;
+    } catch (err) {
+      console.error('📛 Android content:// 변환 실패:', err.message);
       return null;
     }
   };
@@ -84,14 +95,18 @@ export default function ImageSelectPage() {
     }
   };
 
-  // ✅ 선택된 이미지들을 file://로 변환해서 넘기기
+  // ✅ 모든 플랫폼에서 file:// 경로로 변환 후 넘기기
   const handleNext = async () => {
     const convertedUris = await Promise.all(
-      selected.map((uri, i) =>
-        Platform.OS === 'ios' && uri.startsWith('ph://')
-          ? convertPhUriToFileUri(uri, i)
-          : Promise.resolve(uri)
-      )
+      selected.map((uri, i) => {
+        if (Platform.OS === 'ios' && uri.startsWith('ph://')) {
+          return convertPhUriToFileUri(uri, i);
+        }
+        if (Platform.OS === 'android' && uri.startsWith('content://')) {
+          return convertContentUriToFileUri(uri, i);
+        }
+        return Promise.resolve(uri); // 이미 file:// 인 경우
+      })
     );
 
     const validUris = convertedUris.filter(Boolean); // null 제거

@@ -1,15 +1,12 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import HomeScreen from '../../screens/home';
-import FamilySettingScreen from '../../screens/home/familySettingScreen';
 import NotificationScreen from '../../components/notificationScreen';
 import {RenderHeaderLeft1, RenderHeaderLogo} from '../tabHeaderHelpers';
 import {RenderHeaderRightSetting} from '../tabHeaderHelpers';
 import {RenderGoBackButton} from '../tabHeaderHelpers';
 import {Image, Platform, View} from 'react-native';
 import {getResponsiveWidth, getResponsiveHeight} from '../../utils/responsive';
-import FamilyDeleteScreen from '../../screens/home/familyDeleteScreen';
-import ProfileScreen from '../../screens/home/profileScreen';
 
 const Stack = createStackNavigator();
 
@@ -55,30 +52,8 @@ export default function HomeStack() {
       />
 
       <Stack.Screen
-        name="프로필화면"
-        component={ProfileScreen}
-        options={({navigation}) => ({
-          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-        })}
-      />
-      <Stack.Screen
-        name="가족설정화면"
-        component={FamilySettingScreen}
-        options={({navigation}) => ({
-          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-        })}
-      />
-      <Stack.Screen
         name="알림화면"
         component={NotificationScreen}
-        options={({navigation}) => ({
-          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-        })}
-      />
-
-      <Stack.Screen
-        name="가족삭제화면"
-        component={FamilyDeleteScreen}
         options={({navigation}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}

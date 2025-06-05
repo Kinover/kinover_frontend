@@ -18,8 +18,6 @@ import {fetchMemoryThunk} from '../../redux/thunk/memoryThunk';
 import {fetchFamilyUserListThunk} from '../../redux/thunk/familyUserThunk';
 import MemoryFeed from './memoryFeed';
 
-import NoticeModal from './noticeModal';
-
 import {
   getResponsiveWidth,
   getResponsiveHeight,

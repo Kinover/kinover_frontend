@@ -9,6 +9,7 @@ import {
   Image,
   ActivityIndicator,
   SafeAreaView,
+  Alert,
 } from 'react-native';
 import {
   getResponsiveWidth,
@@ -31,6 +32,7 @@ import {
 import ChatSettings from './chatSetting';
 
 import {useSelector} from 'react-redux';
+import { leaveChatRoomThunk } from '../../../redux/thunk/chatRoomThunk';
 
 export default function FamilyChatRoom({route}) {
   const {chatRoom, user} = route.params || {};
