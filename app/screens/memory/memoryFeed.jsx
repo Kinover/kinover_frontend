@@ -276,12 +276,11 @@ const styles = StyleSheet.create({
   // 메모리 전체
   memoryContainer: {
     display: 'flex',
+    flex:1,
     flexDirection: 'column',
     justifyContent: 'flex-start',
     width: '100%',
-    // marginBottom: getResponsiveHeight(30),
-    paddingHorizontal: getResponsiveWidth(5),
-    // backgroundColor:'lightgray',
+    paddingHorizontal: getResponsiveWidth(10),
   },
 
   // 멤버
@@ -358,7 +357,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: getResponsiveWidth(15),
+    paddingHorizontal: getResponsiveWidth(10),
   },
 
   switch: {
