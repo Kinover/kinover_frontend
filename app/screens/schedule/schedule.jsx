@@ -231,6 +231,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-SemiBold',
     marginVertical: getResponsiveHeight(20),
     alignSelf: 'flex-start',
+    fontWeight: Platform.OS == 'ios' ? null : 'bold',
   },
   tabWrapper: {
     flexDirection: 'row',
@@ -259,7 +260,8 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: 'Pretendard-Medium',
+    fontWeight: Platform.OS == 'ios' ? null : '700',
   },
   timelineWrapper: {
     flexDirection: 'row',

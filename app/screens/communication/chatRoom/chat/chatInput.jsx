@@ -155,7 +155,7 @@ export default function ChatInput({chatRoom, user, socketRef}) {
   };
 
   return (
-    <>
+    <View>
       <View style={styles.innerContainer}>
         <View style={styles.inputContainer}>
           <TouchableOpacity
@@ -201,7 +201,7 @@ export default function ChatInput({chatRoom, user, socketRef}) {
           />
         </View>
       )}
-    </>
+    </View>
   );
 }
 

@@ -1,12 +1,19 @@
 import React from 'react';
-import {Modal, View, Text, TouchableOpacity, StyleSheet, Platform} from 'react-native';
+import {
+  View,
+  Text,
+  Modal,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+} from 'react-native';
 import {BlurView} from '@react-native-community/blur';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
 } from './responsive';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+// import Modal from 'react-native-modal';
 
 export default function CustomModal({
   visible,
@@ -23,15 +30,12 @@ export default function CustomModal({
   closeText,
   buttonBottomStyle,
 }) {
-  const insets = useSafeAreaInsets();
-
   return (
     <Modal
       animationType="fade"
       transparent={true}
       visible={visible}
       onRequestClose={onClose}
-      // presentationStyle="overFullScreen" // 👈 핵심
       presentationStyle="overFullScreen" // ✅ 이거 중요
       statusBarTranslucent={true} // ✅ Android에서 전체 덮기
     >
@@ -41,7 +45,10 @@ export default function CustomModal({
           {
             flex: 1,
             position: 'absolute',
-            backgroundColor: Platform.OS==='android'?'rgba(0, 0, 0, 0.1)':'rgba(0, 0, 0, 0.2)', // ← ✅ 핵심!
+            backgroundColor:
+              Platform.OS === 'android'
+                ? 'rgba(0, 0, 0, 0.1)'
+                : 'rgba(0, 0, 0, 0.2)', // ← ✅ 핵심!
           },
         ]}
         blurType="light" // or 'light', 'extraLight', etc.
@@ -50,7 +57,8 @@ export default function CustomModal({
 
         // ✅ 여기!
       ></BlurView>
-      <View style={[styles.overlay, {paddingBottom: insets.bottom || 20}]}>
+
+      <View style={[styles.overlay]}>
         <View style={[styles.modalBox, modalBoxStyle]}>
           {/* 모달 내용 */}
           {/* 상단 닫기 버튼 */}
@@ -92,7 +100,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingBottom: Platform.OS === 'android' ? 20 : 0, // ✅ 아래 잘리는 현상 방지
   },
   modalBox: {
     position: 'relative',
@@ -102,8 +109,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'white', // ✅ 유지
     borderRadius: 10, // ✅ 유지
     paddingTop: getResponsiveHeight(30),
-    zIndex:9999, // iOS
-    elevation: 20, // Android
+    zIndex: 50, // iOS
+    elevation: 10, // Android
   },
   contentWrapper: {
     marginBottom: 20,
