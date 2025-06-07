@@ -86,9 +86,21 @@ export default function FamilyChatRoom({route}) {
 
   useEffect(() => {
     if (chatRoom) {
-      navigation.setOptions({headerTitle: chatRoom.roomName});
+      navigation.setOptions({
+        headerTitle: () => (
+          <Text
+            style={{
+              fontFamily: 'Pretendard-Regular', // ✅ 원하는 폰트로 변경!
+              fontSize: 19,
+              color: '#333', // 또는 원하는 색상
+            }}>
+            {chatRoom.roomName}
+          </Text>
+        ),
+      });
     }
   }, [chatRoom, navigation]);
+  
 
   useEffect(() => {
     if (chatRoom?.chatRoomId) {

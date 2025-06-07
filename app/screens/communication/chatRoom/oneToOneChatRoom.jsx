@@ -7,6 +7,7 @@ import ChatInput from './chat/chatInput';
 import ChatMessageItem from './chat/chatMessageItem';
 import {SafeAreaView} from 'react-native';
 import ChatSettings from './setting/chatSetting';
+import { Text } from 'react-native';
 import {
   fetchMessageThunk,
   fetchMoreMessagesThunk,
@@ -153,9 +154,21 @@ export default function OneToOneChatRoom({route}) {
 
   useEffect(() => {
     if (chatRoom) {
-      navigation.setOptions({headerTitle: chatRoom.roomName});
+      navigation.setOptions({
+        headerTitle: () => (
+          <Text
+            style={{
+              fontFamily: 'Pretendard-Regular', // ✅ 원하는 폰트로 변경!
+              fontSize: 19,
+              color: '#333', // 또는 원하는 색상
+            }}>
+            {chatRoom.roomName}
+          </Text>
+        ),
+      });
     }
-  }, [navigation, chatRoom]);
+  }, [chatRoom, navigation]);
+  
 
   return (
     <SafeAreaView style={styles.container}>
