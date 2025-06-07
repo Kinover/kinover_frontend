@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { View, Text, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Platform } from 'react-native';
 import CustomModal from '../../../../../utils/customModal';
 import {
   getResponsiveHeight,
@@ -28,7 +28,7 @@ export default function RenameChatRoomModal({
       confirmTextStyle={[styles.modalText, { color: 'black' }]}
       buttonBottomStyle={styles.modalButtonRow}
     >
-      <View style={{ marginTop: getResponsiveHeight(10) }}>
+      <View style={{ marginTop: getResponsiveHeight(15)}}>
         <Text style={styles.modalTitle}>채팅방 이름을 수정하세요</Text>
         <TextInput
           placeholder="새 채팅방 이름"
@@ -43,10 +43,11 @@ export default function RenameChatRoomModal({
 
 const styles = StyleSheet.create({
   modalTitle: {
-    fontSize: 16,
+    fontSize: 17,
     textAlign: 'center',
-    fontFamily: 'Pretendard-SemiBold',
-    marginBottom: getResponsiveHeight(10),
+    fontFamily: 'Pretendard-Medium',
+    fontWeight:Platform.OS=='ios'?null:'700',
+    marginBottom: getResponsiveHeight(20),
   },
   modalText: {
     fontFamily: 'Pretendard-Regular',
