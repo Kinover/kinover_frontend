@@ -4,12 +4,14 @@ import {getResponsiveHeight, getResponsiveWidth} from '../../utils/responsive';
 import Schedule from './schedule';
 import Calendar from './header';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import CustomModal from '../../utils/customModal';
+import CategoryModal from '../../utils/categoryModal';
 
 export default function ScheduleScreen({navigation}) {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   return (
-    <SafeAreaView style={{flex: 1}} edges={['top,bottom,left,right']}>
+    <SafeAreaView style={{flex: 1}} edges={['top,bottom']}>
       <ScrollView
         style={styles.mainContainer}
         showsVerticalScrollIndicator={false}>

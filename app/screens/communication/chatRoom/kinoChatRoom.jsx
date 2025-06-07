@@ -208,6 +208,13 @@ export default function KinoChatRoom({route}) {
           setTimeout(() => scrollToBottom(), 300);
         }}
       />
+           <ChatSettings
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        chatRoomId={chatRoom.chatRoomId}
+        navigation={navigation}
+        onLeaveChat={onLeaveChat}
+      />
 
       <ChatInput
         chatRoom={chatRoom}
@@ -215,13 +222,7 @@ export default function KinoChatRoom({route}) {
         socketRef={socketRef}
         setMessageList={setMessageList}
       />
-      <ChatSettings
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        chatRoomId={chatRoom.chatRoomId}
-        navigation={navigation}
-        onLeaveChat={onLeaveChat}
-      />
+ 
     </SafeAreaView>
   );
 }

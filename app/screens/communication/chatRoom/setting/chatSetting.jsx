@@ -1,6 +1,8 @@
 import React, {useEffect, useState} from 'react';
 import {BlurView} from '@react-native-community/blur';
 import {useSelector, useDispatch} from 'react-redux';
+import LeaveChatRoomModal from './modal/leaveChatRoomModal';
+import RenameChatRoomModal from './modal/renameChatRoomModal';
 import {
   fetchChatRoomUsersThunk,
   renameChatRoomThunk,
@@ -27,7 +29,7 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../../../utils/responsive';
-import CustomModal from '../../../../utils/customModal';
+import {WINDOW_HEIGHT, WINDOW_WIDTH} from '@gorhom/bottom-sheet';
 
 const {width} = Dimensions.get('window');
 
@@ -103,7 +105,24 @@ export default function ChatSettings({
       transparent
       animationType="none"
       onRequestClose={onClose}
-      statusBarTranslucent>
+      statusBarTranslucent={true}>
+      <View>
+        <LeaveChatRoomModal
+          visible={isLeaveModalVisible}
+          onClose={() => setIsLeaveModalVisible(false)}
+          onConfirm={handleLeaveConfirm}
+        />
+        <RenameChatRoomModal
+          visible={isRenameModalVisible}
+          onClose={() => {
+            setIsRenameModalVisible(false);
+            setNewRoomName('');
+          }}
+          onConfirm={handleRenameChatRoom}
+          newRoomName={newRoomName}
+          setNewRoomName={setNewRoomName}
+        />
+      </View>
       {isOpen && (
         <BlurView
           style={[StyleSheet.absoluteFill, styles.blurOverlay]}
@@ -112,6 +131,7 @@ export default function ChatSettings({
           reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.4)"
         />
       )}
+
       {isOpen && <TouchableOpacity style={styles.backdrop} onPress={onClose} />}
 
       <Animated.View style={[styles.container, animatedStyle]}>
@@ -191,45 +211,6 @@ export default function ChatSettings({
           </Text>
         </TouchableOpacity>
       </Animated.View>
-
-      <CustomModal
-        visible={isLeaveModalVisible}
-        onClose={() => setIsLeaveModalVisible(false)}
-        onConfirm={handleLeaveConfirm}
-        confirmText="나가기"
-        closeText="취소하기"
-        confirmButtonStyle={styles.confirmButton}
-        closeButtonStyle={styles.closeButton}
-        closeTextStyle={styles.modalText}
-        confirmTextStyle={[styles.modalText, {color: 'black'}]}
-        buttonBottomStyle={styles.modalButtonRow}>
-        <Text style={styles.modalTitle}>정말 채팅방을 나가시겠습니까?</Text>
-      </CustomModal>
-
-      <CustomModal
-        visible={isRenameModalVisible}
-        onClose={() => {
-          setIsRenameModalVisible(false);
-          setNewRoomName('');
-        }}
-        onConfirm={handleRenameChatRoom}
-        confirmText="변경"
-        closeText="취소"
-        confirmButtonStyle={styles.confirmButton}
-        closeButtonStyle={styles.closeButton}
-        closeTextStyle={styles.modalText}
-        confirmTextStyle={[styles.modalText, {color: 'black'}]}
-        buttonBottomStyle={styles.modalButtonRow}>
-        <View style={{marginTop: getResponsiveHeight(10)}}>
-          <Text style={styles.modalTitle}>채팅방 이름을 수정하세요</Text>
-          <TextInput
-            placeholder="새 채팅방 이름"
-            value={newRoomName}
-            onChangeText={setNewRoomName}
-            style={styles.textInput}
-          />
-        </View>
-      </CustomModal>
     </Modal>
   );
 }
@@ -242,12 +223,12 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: 'rgba(0,0,0,0.3)',
-    zIndex: 999,
   },
   blurOverlay: {
     flex: 1,
+    elevation: 10,
     position: 'absolute',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   container: {
     position: 'absolute',
@@ -261,7 +242,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 30,
     paddingBottom: getResponsiveHeight(100),
     zIndex: 9999,
-    elevation: 20,
+    elevation: 10,
   },
   header: {
     flexDirection: 'row',

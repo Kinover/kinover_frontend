@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   View,
   ScrollView,
+  Platform,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
@@ -75,6 +76,7 @@ export default function CommunicationScreen({navigation}) {
           </Text>
         )}
       </ScrollView>
+
       <FloatingButton navigation={navigation} type="communication" />
     </View>
   );
@@ -85,13 +87,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
     paddingHorizontal: getResponsiveWidth(25),
-    paddingTop: getResponsiveHeight(30),
+    paddingTop: getResponsiveHeight(20),
   },
 
   bottomSheetTitle: {
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(24),
     marginBottom: getResponsiveIconSize(20),
+    fontWeight: Platform.OS == 'ios' ? null : 'bold',
   },
   bottomSheetElement: {
     flexDirection: 'row',
@@ -112,13 +115,14 @@ const styles = StyleSheet.create({
   },
   elementName: {
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(15),
+    fontSize: getResponsiveFontSize(16.5),
     marginTop: getResponsiveIconSize(10),
     marginBottom: getResponsiveIconSize(10),
+    fontWeight: Platform.OS == 'ios' ? null : 'bold',
   },
   elementDescription: {
     fontFamily: 'Pretendard-Light',
-    fontSize: getResponsiveFontSize(11),
+    fontSize: getResponsiveFontSize(12),
   },
   noChatRoomList: {
     fontSize: getResponsiveFontSize(16),

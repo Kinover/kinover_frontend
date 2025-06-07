@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, {useState, useEffect} from 'react';
 import {
   View,
   StyleSheet,
   Text,
   TouchableOpacity,
   Image,
+  Platform,
 } from 'react-native';
 import {
   getResponsiveFontSize,
@@ -13,7 +14,7 @@ import {
 } from '../../utils/responsive';
 
 // 📌 선택한 날짜가 속한 주의 시작 날짜를 구하는 함수
-const getWeekStartDate = (date) => {
+const getWeekStartDate = date => {
   const newDate = new Date(date);
   const dayOfWeek = newDate.getDay(); // 0(일) ~ 6(토)
 
@@ -42,27 +43,26 @@ const updateWeekDates = (date, setWeekDates) => {
   setWeekDates(newWeekDates);
 };
 
+export default function Calendar({selectedDate, setSelectedDate}) {
+  // const [selectedDate, setSelectedDate] = useState(new Date());
+  const [weekDates, setWeekDates] = useState([]);
+  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
-export default function Calendar({selectedDate,setSelectedDate}) {
-    // const [selectedDate, setSelectedDate] = useState(new Date());
-    const [weekDates, setWeekDates] = useState([]);
-    const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-    const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
-  
-    // 📌 초기 상태로 한 주의 날짜를 설정
-    useEffect(() => {
-      updateWeekDates(selectedDate, setWeekDates);
-      setCurrentMonth(selectedDate.getMonth()); // 선택된 날짜에 맞춰 월 업데이트
-      setCurrentYear(selectedDate.getFullYear()); // 선택된 날짜에 맞춰 년도 업데이트
-    }, [selectedDate]);
-  
-    // 📌 주 변경 함수
-    const changeWeek = (direction) => {
-      const newDate = new Date(selectedDate);
-      newDate.setDate(selectedDate.getDate() + direction * 7); // 한 주 전후로 날짜 변경
-      setSelectedDate(newDate);
-    };
-  
+  // 📌 초기 상태로 한 주의 날짜를 설정
+  useEffect(() => {
+    updateWeekDates(selectedDate, setWeekDates);
+    setCurrentMonth(selectedDate.getMonth()); // 선택된 날짜에 맞춰 월 업데이트
+    setCurrentYear(selectedDate.getFullYear()); // 선택된 날짜에 맞춰 년도 업데이트
+  }, [selectedDate]);
+
+  // 📌 주 변경 함수
+  const changeWeek = direction => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(selectedDate.getDate() + direction * 7); // 한 주 전후로 날짜 변경
+    setSelectedDate(newDate);
+  };
+
   return (
     <View style={styles.mainCalendarContainer}>
       <View style={styles.header}>
@@ -164,6 +164,7 @@ const styles = StyleSheet.create({
   monthText: {
     fontFamily: 'Pretendard-Bold',
     fontSize: getResponsiveFontSize(15),
+    fontWeight: Platform.OS == 'ios' ? null : 'bold',
   },
 
   monthChangeButton: {
@@ -233,5 +234,6 @@ const styles = StyleSheet.create({
 
   selectedText: {
     color: 'gray',
+    
   },
 });

@@ -32,7 +32,7 @@ import {
 import ChatSettings from './setting/chatSetting';
 
 import {useSelector} from 'react-redux';
-import { leaveChatRoomThunk } from '../../../redux/thunk/chatRoomThunk';
+import {leaveChatRoomThunk} from '../../../redux/thunk/chatRoomThunk';
 
 export default function FamilyChatRoom({route}) {
   const {chatRoom, user} = route.params || {};
@@ -41,7 +41,6 @@ export default function FamilyChatRoom({route}) {
   const socketRef = useRef(null);
   const flatListRef = useRef(null);
   const {messageList} = useSelector(state => state.message);
-  const [isQuestionVisible, setIsQuestionVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [noMoreMessages, setNoMoreMessages] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
@@ -82,7 +81,6 @@ export default function FamilyChatRoom({route}) {
       ),
     });
   }, [navigation]);
- 
 
   useEffect(() => {
     if (chatRoom) {
@@ -100,7 +98,6 @@ export default function FamilyChatRoom({route}) {
       });
     }
   }, [chatRoom, navigation]);
-  
 
   useEffect(() => {
     if (chatRoom?.chatRoomId) {
@@ -194,39 +191,6 @@ export default function FamilyChatRoom({route}) {
         flex: 1,
         backgroundColor: 'white',
       }}>
-      {isQuestionVisible && (
-        <>
-          <View style={styles.overlay} />
-          <ImageBackground
-            source={{uri: 'https://i.postimg.cc/ZYWh5gLS/Group-484-1.png'}}
-            style={styles.todayQuestionContainer}
-            resizeMode="contain">
-            <View style={styles.todayQuestionContent}>
-              <Text style={styles.todayQuestionTitle}>질문 03</Text>
-              <Text style={styles.todayQuestionText}>
-                우리 가족만이 가지고 있는 유행어나 습관이 있다면?
-              </Text>
-            </View>
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity>
-                <View style={styles.answerButton} />
-              </TouchableOpacity>
-              <TouchableOpacity>
-                <View style={styles.answerButton} />
-              </TouchableOpacity>
-              <TouchableOpacity>
-                <Image
-                  style={styles.plusButton}
-                  source={{
-                    uri: 'https://i.postimg.cc/63VJ4VHz/Group-1171276565-1.png',
-                  }}
-                />
-              </TouchableOpacity>
-            </View>
-          </ImageBackground>
-        </>
-      )}
-
       <FlatList
         ref={flatListRef}
         data={messageList}
@@ -268,8 +232,6 @@ export default function FamilyChatRoom({route}) {
           setTimeout(() => scrollToBottom(), 300);
         }}
       />
-
-      <ChatInput chatRoom={chatRoom} user={user} socketRef={socketRef} />
       <ChatSettings
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -277,6 +239,8 @@ export default function FamilyChatRoom({route}) {
         navigation={navigation}
         onLeaveChat={onLeaveChat}
       />
+
+      <ChatInput chatRoom={chatRoom} user={user} socketRef={socketRef} />
     </SafeAreaView>
   );
 }
