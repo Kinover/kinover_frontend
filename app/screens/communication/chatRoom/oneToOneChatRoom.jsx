@@ -150,13 +150,6 @@ export default function OneToOneChatRoom({route}) {
     }, 1000);
   };
 
-  // ✅ 하단 탭 숨기기
-  useEffect(() => {
-    navigation.getParent()?.setOptions({tabBarStyle: {display: 'none'}});
-    return () => {
-      navigation.getParent()?.setOptions({tabBarStyle: {display: 'flex'}});
-    };
-  }, [navigation]);
 
   useEffect(() => {
     if (chatRoom) {

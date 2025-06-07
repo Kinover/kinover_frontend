@@ -88,9 +88,9 @@ export default function Schedule({selectedDate}) {
       title,
       memo,
       date: formattedDate,
-      personal: selectedUserId !== 'family',
-      user: selectedUserId === 'family' ? null : {user: selectedUser},
-      family: {family},
+      isPersonal: selectedUserId !== 'family',
+      userId: selectedUserId === 'family' ? null : selectedUserId,
+      familyId: familyId,
     };
 
     if (editingSchedule) {

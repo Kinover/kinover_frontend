@@ -11,7 +11,7 @@ export default function useChatWebSocket({ onMessage, onOpen, onClose }) {
       return;
     }
 
-    const ws = new WebSocket(`ws://43.200.47.242:9090/chat?token=${token}`);
+    const ws = new WebSocket(`ws://kinover.shop:9090/chat?token=${token}`);
     socketRef.current = ws;
 
     ws.onopen = () => {
