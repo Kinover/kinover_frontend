@@ -91,6 +91,10 @@ export default function UserBottomSheet({
         index={-1}
         snapPoints={snapPoints}
         enablePanDownToClose
+        keyboardBehavior="interactive" // ✅ 키보드 올라오면 바텀시트 같이 올라오게!
+        keyboardBlurBehavior="restore" // ✅ 키보드 내려가면 다시 원래 위치로
+        android_keyboardInputMode="adjustResize" // 안드로이드도 대비
+
         handleComponent={() => null}
         backgroundStyle={{
           backgroundColor: 'transparent',

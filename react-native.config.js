@@ -1,7 +1,7 @@
 module.exports = {
   project: {
     android: {
-      packageName: 'com.kinoverfrontend', // 👈 이 값!
+      packageName: 'com.kinover_frontend', // 👈 이 값!
     },
   },
   assets: ['./app/assets/fonts'],

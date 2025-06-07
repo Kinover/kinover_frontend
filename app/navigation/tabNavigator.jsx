@@ -1,34 +1,23 @@
 import React from 'react';
-import {Platform} from 'react-native';
-import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {getFocusedRouteNameFromRoute} from '@react-navigation/native';
+import { Platform } from 'react-native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 
 import HomeStack from './stacks/homeStack';
 import CommunicationStack from './stacks/communicationStack';
 import ScheduleStack from './stacks/scheduleStack';
 import MemoryStack from './stacks/memoryStack';
-import {renderTabBarIcon, renderTabBarLabel} from './tabHeaderHelpers';
+import { renderTabBarIcon, renderTabBarLabel } from './tabHeaderHelpers';
 
 const Tab = createBottomTabNavigator();
 
-const defaultTabBarStyle = {
-  position: 'relative',
-  // height: Platform.OS === 'ios' ?  : 75,
-};
-
-const hiddenTabBarStyle = {
-  position: 'relative',
-  height: 0,
-  opacity: 0,
-};
-
-// 📌 숨겨야 할 화면들 정리
+// 📌 숨겨야 할 화면 정의
 const hideTabBarScreens = {
   소통기록: ['채팅방화면', '가족채팅방화면', '키노상담소화면'],
   추억기록: ['게시글화면'],
 };
 
-// 🧩 탭 설정 정보
+// 📌 탭 구성 정보
 const TABS = [
   {
     name: '감정기록',
@@ -64,34 +53,51 @@ const TABS = [
   },
 ];
 
-// 🛠️ 옵션 함수
-function getTabScreenOptions(name, icon, route) {
-  const focusedScreen = getFocusedRouteNameFromRoute(route) || '';
-  const shouldHide = hideTabBarScreens[name]?.includes(focusedScreen);
+// 📌 현재 route에 따라 tabBarStyle 다르게 설정
+const getTabBarStyle = (route, tabName) => {
+  const focusedRoute = getFocusedRouteNameFromRoute(route) ?? '';
+  const shouldHide = hideTabBarScreens[tabName]?.includes(focusedRoute);
+
+  if (shouldHide) {
+    return { display: 'none' };
+  }
 
   return {
-    tabBarLabel: ({focused}) => renderTabBarLabel(name, focused),
-    tabBarIcon: ({focused}) =>
-      renderTabBarIcon(focused, icon.focused, icon.default),
-    tabBarStyle: shouldHide ? hiddenTabBarStyle : defaultTabBarStyle,
+    backgroundColor: '#fff',
+    borderTopWidth: 0.5,
+    borderTopColor: '#eee',
+    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+    paddingTop: 8,
+    height: Platform.OS === 'ios' ? 90 : 90,
   };
-}
+};
 
+// 📌 Tab Navigator
 export default function TabNavigator() {
   return (
     <Tab.Navigator
       initialRouteName="감정기록"
-      screenOptions={{
-        headerShown: false,
-        keyboardHidesTabBar: true,
-      }}>
-      {TABS.map(({name, component, icon}) => (
-        <Tab.Screen
-          key={name}
-          name={name}
-          component={component}
-          options={({route}) => getTabScreenOptions(name, icon, route)}
-        />
+      screenOptions={({ route }) => {
+        const currentTab = TABS.find(tab => tab.name === route.name);
+
+        return {
+          keyboardHidesTabBar: true, // ✅ 키보드 올라오면 탭바 숨김
+
+          headerShown: false,
+          tabBarLabel: ({ focused }) =>
+            renderTabBarLabel(route.name, focused),
+          tabBarIcon: ({ focused }) =>
+            renderTabBarIcon(
+              focused,
+              currentTab?.icon.focused,
+              currentTab?.icon.default,
+            ),
+          tabBarStyle: getTabBarStyle(route, route.name),
+        };
+      }}
+    >
+      {TABS.map(({ name, component }) => (
+        <Tab.Screen key={name} name={name} component={component} />
       ))}
     </Tab.Navigator>
   );

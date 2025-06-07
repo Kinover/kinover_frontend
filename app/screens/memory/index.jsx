@@ -65,17 +65,17 @@ export default function MemoryScreen({navigation}) {
 
   return (
     <View style={styles.container}>
-      <ScrollView
+      <View style={styles.barContainer} />
+      <View
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           minHeight: '100%', // ← 빈 공간 없어짐
-          // paddingBottom: insets.bottom + 20, // ← 하단 inset 보완
         }}
         style={{flex: 1}}>
         <View style={styles.bodyContainer}>
           <MemoryFeed />
         </View>
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
 
   barContainer: {
     width: '100%',
-    height: getResponsiveHeight(40),
-    backgroundColor: 'pink',
+    height: getResponsiveHeight(5),
+    backgroundColor: '#D9D9D9',
   },
 });

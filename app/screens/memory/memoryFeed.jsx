@@ -1,66 +1,46 @@
-import React, {useState} from 'react';
+// ✅ memoryFeed 리팩토링: ScrollView 제거하고 FlatList/MasonryList가 최상위 스크롤 담당
+import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
   StyleSheet,
-  Image,
   Text,
-  FlatList,
+  Image,
   TouchableOpacity,
-  Button,
   Dimensions,
+  FlatList,
 } from 'react-native';
-import DropDownPicker from 'react-native-dropdown-picker';
-import {useFocusEffect} from '@react-navigation/native';
-import {useEffect} from 'react';
-import {useRoute} from '@react-navigation/native';
+const ITEM_MARGIN = getResponsiveWidth(4); // 예: 각 이미지 간 마진
+import {
+  useFocusEffect,
+  useNavigation,
+  useRoute,
+} from '@react-navigation/native';
+import {useDispatch, useSelector} from 'react-redux';
+import MasonryList from 'react-native-masonry-list';
+import {fetchMemoryThunk} from '../../redux/thunk/memoryThunk';
+import {fetchCategoryThunk} from '../../redux/thunk/categoryThunk';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
-  getResponsiveWidth,
   getResponsiveIconSize,
+  getResponsiveWidth,
 } from '../../utils/responsive';
-import {useDispatch, useSelector} from 'react-redux';
-import {useNavigation} from '@react-navigation/native';
-import {useCallback} from 'react';
-import {fetchMemoryThunk} from '../../redux/thunk/memoryThunk';
-import {fetchCategoryThunk} from '../../redux/thunk/categoryThunk';
+import {WINDOW_WIDTH} from '@gorhom/bottom-sheet';
 
 export default function MemoryFeed() {
   const familyId = useSelector(state => state.family.familyId);
   const {memoryList} = useSelector(state => state.memory);
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(null);
-  const [isGalleryView, setIsGalleryView] = useState(false); // 스위치 상태 관리
   const categoryList = useSelector(state => state.category.categoryList);
-  const dispatch = useDispatch();
   const navigation = useNavigation();
   const route = useRoute();
-
-  const ITEM_MARGIN = getResponsiveWidth(1);
-  const NUM_COLUMNS = 3;
-  const screenWidth = Dimensions.get('window').width; // 또는 Dimensions.get('window').width
-
-  const itemSize =
-    (screenWidth - ITEM_MARGIN * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
-
+  const dispatch = useDispatch();
   const category = route?.params?.category;
-  const [selectedCategoryTitle, setSelectedCategoryTitle] = useState('전체');
 
-  // ✅ 조건에 따라 memory 필터링
-  const filteredMemoryList =
-    selectedCategoryTitle === '전체'
-      ? memoryList
-      : memoryList.filter(memory => {
-          const category = categoryList.find(
-            cat => cat.categoryId === memory.categoryId,
-          );
-          return category?.title === selectedCategoryTitle;
-        });
+  const [selectedCategoryTitle, setSelectedCategoryTitle] = useState('전체');
+  const [isGalleryView, setIsGalleryView] = useState(false);
 
   useEffect(() => {
-    if (category) {
-      setSelectedCategoryTitle(category.title);
-    }
+    if (category) setSelectedCategoryTitle(category.title);
   }, [category]);
 
   useFocusEffect(
@@ -70,82 +50,83 @@ export default function MemoryFeed() {
     }, [familyId]),
   );
 
-  const formatDate = dateString => {
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = `${date.getMonth() + 1}`.padStart(2, '0');
-    const day = `${date.getDate()}`.padStart(2, '0');
-    return `${year}.${month}.${day}`;
-  };
+  const filteredMemoryList =
+    selectedCategoryTitle === '전체'
+      ? memoryList
+      : memoryList.filter(memory => {
+          const cat = categoryList.find(
+            c => c.categoryId === memory.categoryId,
+          );
+          return cat?.title === selectedCategoryTitle;
+        });
 
-  // 갤러리 뷰에서 여러 메모리를 렌더링
-  const renderMemoryGallery = () => {
-    return (
-      <View style={{flex: 1, padding: ITEM_MARGIN}}>
-        <FlatList
-          data={filteredMemoryList}
-          renderItem={({item}) => (
-            <TouchableOpacity
-              onPress={() => navigation.navigate('게시글화면', {memory: item})}
-              style={[
-                styles.galleryItem,
-                {width: itemSize, height: itemSize, padding: ITEM_MARGIN},
-              ]}>
-              <Image
-                style={styles.galleryImage}
-                source={{uri: item.imageUrls[0]}}
-              />
-            </TouchableOpacity>
-          )}
-          keyExtractor={item => item.postId}
-          numColumns={3}
-          columnWrapperStyle={[styles.galleryRow, {padidng: ITEM_MARGIN}]}
-          scrollEnabled={false}
-        />
-      </View>
-    );
-  };
+  const allImages = filteredMemoryList.flatMap(memory =>
+    (memory.imageUrls || []).map(uri => ({
+      uri,
+      postId: memory.postId,
+      memory,
+    })),
+  );
 
-  const getCategoryLabel = categoryId => {
-    const found = categoryList.find(cat => cat.categoryId === categoryId);
+  const getCategoryLabel = id => {
+    const found = categoryList.find(cat => cat.categoryId === id);
     return found ? found.title : '카테고리 없음';
   };
 
-  return (
-    <View style={styles.contentElement}>
-      <View style={styles.lineContainer}>
-        <TouchableOpacity
-          style={[styles.categoryButton]}
-          onPress={() => navigation.navigate('카테고리화면')}>
-          <View
-            style={{
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: getResponsiveWidth(9),
-            }}>
-            <Text style={styles.categoryButtonText}>
-              {selectedCategoryTitle}
-            </Text>
-            <Image
-              style={{
-                resizeMode: 'contain',
-                width: getResponsiveWidth(12),
-                height: getResponsiveHeight(9),
-              }}
-              source={require('../../assets/images/down-yellow.png')}
-            />
-          </View>
-        </TouchableOpacity>
-        <View
+  const formatDate = d => {
+    const date = new Date(d);
+    const y = date.getFullYear();
+    const m = `${date.getMonth() + 1}`.padStart(2, '0');
+    const day = `${date.getDate()}`.padStart(2, '0');
+    return `${y}.${m}.${day}`;
+  };
+
+  const renderListItem = ({item: memory}) => (
+    <TouchableOpacity
+      onPress={() => navigation.navigate('게시글화면', {memory})}
+      style={{paddingBottom: getResponsiveHeight(20)}}>
+      <Text style={{marginBottom: getResponsiveHeight(5)}}>
+        {formatDate(memory.createdAt)}
+      </Text>
+      <View>
+        <Image
+          style={styles.memoryImage}
+          source={{uri: memory.imageUrls?.[0]}}
+        />
+        <Text
           style={{
-            width: getResponsiveWidth(80),
-            height: getResponsiveHeight(35),
-            justifyContent: 'center',
-            flexDirection: 'row',
-            alignItems: 'flex-end',
-            gap: getResponsiveWidth(10),
+            position: 'absolute',
+            right: getResponsiveWidth(8),
+            bottom: getResponsiveHeight(17),
+            zIndex: 5,
+            fontSize: getResponsiveFontSize(17),
+            fontFamily: 'Pretendard-Regular',
+            color: 'white',
           }}>
+          댓글 {memory.commentCount}
+        </Text>
+      </View>
+      <Text style={styles.categoryText}>
+        {getCategoryLabel(memory.categoryId)}
+      </Text>
+      <Text style={styles.contentText}>{memory.content}</Text>
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={styles.container}>
+      {/* 상단 필터 */}
+      <View style={styles.headerContainer}>
+        <TouchableOpacity
+          style={styles.categoryButton}
+          onPress={() => navigation.navigate('카테고리화면')}>
+          <Text style={styles.categoryButtonText}>{selectedCategoryTitle}</Text>
+          <Image
+            source={require('../../assets/images/down-yellow.png')}
+            style={styles.arrowIcon}
+          />
+        </TouchableOpacity>
+        <View style={styles.toggleContainer}>
           <TouchableOpacity onPress={() => setIsGalleryView(true)}>
             <Image
               source={
@@ -153,7 +134,7 @@ export default function MemoryFeed() {
                   ? require('../../assets/images/grid_on.png')
                   : require('../../assets/images/grid_off.png')
               }
-              style={styles.gallery_bt}
+              style={styles.galleryIcon}
             />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => setIsGalleryView(false)}>
@@ -163,235 +144,113 @@ export default function MemoryFeed() {
                   ? require('../../assets/images/list_on.png')
                   : require('../../assets/images/list_off.png')
               }
-              style={styles.gallery_bt}
+              style={styles.galleryIcon}
             />
           </TouchableOpacity>
         </View>
       </View>
-
-      {/* 갤러리뷰 & 리스트뷰 조건부 렌더링 */}
+      {/* 목록 */}
       {isGalleryView ? (
-        renderMemoryGallery()
-      ) : (
-        <View style={styles.memoryContainer}>
-          {filteredMemoryList.map(memory => (
-            <View key={memory.postId}>
+        <FlatList
+          key={isGalleryView ? 'gallery' : 'list'} // ✅ key가 바뀌면 FlatList 전체 재렌더링됨
+          data={isGalleryView ? allImages : filteredMemoryList}
+          keyExtractor={(item, index) =>
+            isGalleryView ? `${item.postId}-${index}` : `${item.postId}`
+          }
+          numColumns={isGalleryView ? 3 : 1}
+          renderItem={({item}) =>
+            isGalleryView ? (
               <TouchableOpacity
                 onPress={() =>
-                  navigation.navigate('게시글화면', {memory: memory})
+                  navigation.navigate('게시글화면', {memory: item.memory})
                 }
-                key={memory.postId}
-                style={{backgroundColor: 'white'}}>
-                <Text style={{marginBottom: getResponsiveHeight(5)}}>
-                  {formatDate(memory.createdAt)}
-                </Text>
-                <View style={styles.memoryImageContainer}>
-                  <View style={{position: 'relative', flex: 1}}>
-                    <Image
-                      style={styles.memoryImage}
-                      source={{uri: memory.imageUrls[0]}}
-                    />
-                    <Text
-                      style={{
-                        position: 'absolute',
-                        right: getResponsiveWidth(8),
-                        bottom: getResponsiveHeight(17),
-                        zIndex: 5,
-                        fontSize: getResponsiveFontSize(17),
-                        fontFamily: 'Pretendard-Regular',
-                        color: 'white',
-                      }}>
-                      댓글 {memory.commentCount}
-                    </Text>
-                  </View>
-                  <Text
-                    style={{
-                      fontSize: getResponsiveFontSize(22),
-                      fontFamily: 'Pretendard-Regualr',
-                      marginBottom: getResponsiveHeight(5),
-                      paddingHorizontal: getResponsiveWidth(3),
-                    }}>
-                    {getCategoryLabel(memory.categoryId)}
-                  </Text>
-                  <Text
-                    style={{
-                      fontFamily: 'Pretendard-Light',
-                      fontSize: getResponsiveFontSize(12),
-                      maxHeight: getResponsiveHeight(50),
-                      paddingHorizontal: getResponsiveWidth(3),
-                    }}>
-                    {memory.content}
-                  </Text>
-                </View>
+                style={{
+                  width: (WINDOW_WIDTH - ITEM_MARGIN * 4) / 3,
+                  aspectRatio: 1,
+                  marginBottom: ITEM_MARGIN,
+                  marginRight: ITEM_MARGIN,
+                }}>
+                <Image
+                  source={{uri: item.uri}}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    resizeMode: 'cover',
+                    borderRadius: 1,
+                  }}
+                />
               </TouchableOpacity>
-              <View style={styles.bar}></View>
-            </View>
-          ))}
-        </View>
+            ) : (
+              renderListItem({item}) // 기존 리스트 렌더 함수 재활용
+            )
+          }
+          columnWrapperStyle={
+            isGalleryView ? {justifyContent: 'flex-start'} : undefined
+          }
+          contentContainerStyle={{
+            paddingHorizontal: ITEM_MARGIN,
+            paddingTop: ITEM_MARGIN,
+          }}
+        />
+      ) : (
+        <FlatList
+          data={filteredMemoryList}
+          renderItem={renderListItem}
+          keyExtractor={item => String(item.postId)}
+          contentContainerStyle={{paddingHorizontal: getResponsiveWidth(10)}}
+        />
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  categoryButton: {
-    paddingVertical: getResponsiveHeight(5),
-    backgroundColor: 'white',
-    paddingHorizontal: getResponsiveWidth(3),
-  },
-
-  categoryButtonText: {
-    fontFamily: 'Pretendard-SemiBold',
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    fontSize: getResponsiveFontSize(19),
-    color: '#FFC84D',
-  },
-
-  galleryImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-
-  galleryContainer: {
-    width: '100%',
-    display: 'flex',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    // paddingHorizontal:
-    // backgroundColor:'black',
-  },
-
-  contentElement: {
-    display: 'flex',
-    flexDirection: 'column',
-    width: '100%',
-    gap: getResponsiveHeight(10),
-    // marginBottom: getResponsiveHeight(20),
-    position: 'relative',
-  },
-
-  // 메모리 전체
-  memoryContainer: {
-    display: 'flex',
-    flex:1,
-    flexDirection: 'column',
-    justifyContent: 'flex-start',
-    width: '100%',
+  container: {flex: 1, backgroundColor: 'white'},
+  headerContainer: {
+    paddingVertical: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(10),
-  },
-
-  // 멤버
-  memberContainer: {
-    display: 'flex',
-    flexDirection: 'row',
-    paddingTop: getResponsiveIconSize(5),
-    backgroundColor: '#fff',
-    gap: getResponsiveWidth(15),
-    height: getResponsiveHeight(60),
-  },
-
-  // 멤버 text
-  memberBox: {
-    display: 'flex',
-    flexDirection: 'column',
-    marginBottom: getResponsiveIconSize(10),
-    justifyContent: 'flex-start',
-    width: '100%',
-    height: getResponsiveHeight(40),
-  },
-
-  memberImage: {
-    width: getResponsiveWidth(40),
-    height: getResponsiveHeight(40),
-    borderColor: 'lightgray',
-    borderWidth: getResponsiveIconSize(0.7),
-    borderRadius: getResponsiveIconSize(20),
-    resizeMode: 'cover',
-  },
-
-  memberName: {
-    fontSize: getResponsiveFontSize(14),
-    marginTop: getResponsiveIconSize(5),
-    marginBottom: getResponsiveIconSize(5),
-  },
-
-  memoryDescription: {
-    fontSize: getResponsiveFontSize(10),
-  },
-
-  memoryImageContainer: {
-    display: 'flex',
-    alignSelf: 'center',
-    width: '100%',
-    height: getResponsiveHeight(300),
-  },
-
-  memoryImage: {
-    flex: 1,
-    // borderRadius: getResponsiveIconSize(15),
-    resizeMode: 'cover',
-    marginBottom: getResponsiveHeight(10),
-  },
-
-  dropdown: {
-    fontFamily: 'Pretendard-Regular',
-    width: getResponsiveWidth(80),
-    borderWidth: 0,
-  },
-
-  dropDownContainer: {
-    borderColor: '#FFC84D', // 테두리 색상 변경
-    borderWidth: 1, // 테두리 두께 변경
-    borderRadius: 5, // 모서리 둥글게
-  },
-
-  lineContainer: {
-    position: 'relative',
-    width: '100%',
-    height: 'auto',
-    paddingVertical: getResponsiveHeight(7),
-    display: 'flex',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: getResponsiveWidth(10),
   },
-
-  switch: {
-    // width:getResponsiveHeight(20),
+  categoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(5),
   },
-
-  gallery_bt: {
+  categoryButtonText: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(19),
+    color: '#FFC84D',
+  },
+  arrowIcon: {
+    resizeMode: 'contain',
+    width: getResponsiveWidth(12),
+    height: getResponsiveHeight(9),
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    gap: getResponsiveWidth(10),
+  },
+  galleryIcon: {
     width: getResponsiveWidth(30),
     height: getResponsiveHeight(30),
     resizeMode: 'contain',
   },
-
-  bar: {
-    width: '120%',
-    backgroundColor: '#D9D9D9',
-    height: getResponsiveHeight(2),
-    marginTop: getResponsiveHeight(15),
-    marginBottom: getResponsiveHeight(15),
-    marginLeft: -20,
-  },
-
-  galleryItem: {
-    borderRadius: 0,
-    overflow: 'hidden',
-  },
-
-  galleryImage: {
+  memoryImage: {
     width: '100%',
-    height: '100%',
+    height: getResponsiveHeight(300),
     resizeMode: 'cover',
+    marginBottom: getResponsiveHeight(10),
   },
-
-  galleryRow: {
-    justifyContent: 'space-between',
-    // marginBottom: ITEM_MARGIN,
+  categoryText: {
+    fontSize: getResponsiveFontSize(22),
+    fontFamily: 'Pretendard-Regular',
+    marginBottom: getResponsiveHeight(5),
+  },
+  contentText: {
+    fontFamily: 'Pretendard-Light',
+    fontSize: getResponsiveFontSize(12),
+    maxHeight: getResponsiveHeight(50),
   },
 });
