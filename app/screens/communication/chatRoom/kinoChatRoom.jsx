@@ -54,6 +54,7 @@ export default function KinoChatRoom({route}) {
       });
   };
 
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerRight: () => (
@@ -70,6 +71,7 @@ export default function KinoChatRoom({route}) {
     }
   }, [chatRoom?.chatRoomId]);
 
+
   // ✅ WebSocket 연결
   useEffect(() => {
     const connectWebSocket = async () => {
@@ -81,7 +83,7 @@ export default function KinoChatRoom({route}) {
         socketRef.current = null;
       }
 
-      const ws = new WebSocket(`ws://43.200.47.242:9090/chat?token=${token}`);
+      const ws = new WebSocket(`ws://kinover.shop:9090/chat?token=${token}`);
 
       ws.onopen = () => {
         console.log('✅ WebSocket 연결 성공');

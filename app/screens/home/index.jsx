@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
+import {KeyboardAvoidingView} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {useNavigation} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -115,7 +116,7 @@ export default function HomeScreen() {
           )}
         </View>
       </SafeAreaView>
-
+      
       <UserBottomSheet
         sheetRef={userSheetRef}
         selectedUser={selectedUser}

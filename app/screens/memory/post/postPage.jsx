@@ -69,7 +69,6 @@ export default function PostPage({route}) {
       '';
 
     navigation.setOptions({
-      headerShown: !isFullImageMode,
       headerTitle: () => (
         <Text
           style={{
@@ -82,7 +81,7 @@ export default function PostPage({route}) {
       ),
       headerRight: () => (
         <TouchableOpacity
-          style={{position:'relative', elevation: 10, zIndex: 50}}
+          style={{position: 'relative', elevation: 10, zIndex: 10}}
           onPress={() => setShowDeleteOptions(prev => !prev)}>
           <Image
             source={require('../../../assets/images/trash.png')}
@@ -91,12 +90,13 @@ export default function PostPage({route}) {
               height: getResponsiveHeight(20),
               resizeMode: 'contain',
               marginRight: getResponsiveWidth(15),
+              zIndex: 10,
               // bottom: getResponsiveHeight(5),
-              elevation: 10,
             }}
           />
         </TouchableOpacity>
       ),
+      headerShown: !isFullImageMode,
     });
   }, [isFullImageMode, categoryList, memory.categoryId]);
 
@@ -138,8 +138,6 @@ export default function PostPage({route}) {
           keyExtractor={(item, index) => index.toString()}
           style={{
             position: 'relative',
-            width: Dimensions.get('window').width,
-            height: Dimensions.get('window').height,
             display: 'flex',
             flex: 1,
           }}
@@ -326,13 +324,13 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
+    zIndex:0,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1,
   },
   memoryImage: {
     width: Dimensions.get('window').width,
-    height: Dimensions.get('window').height,
+    flex: 1,
     resizeMode: 'contain',
     backgroundColor: 'transparent',
   },
@@ -359,7 +357,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(245, 245, 245, 0.8)',
     borderRadius: 7,
     zIndex: 10,
-    overflow: 'hidden',
+    // overflow: 'hidden',
   },
   deleteOptionButton: {
     paddingVertical: getResponsiveHeight(10),
