@@ -99,7 +99,12 @@ export function RenderHeaderLogo({navigation}) {
           params: {screen: '알림화면'},
         })
       }
-      style={{position:'relative',display: 'flex', flexDirection: 'row', alignItems: 'flex-end'}}>
+      style={{
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+      }}>
       <Image
         source={require('../assets/images/kinover.png')}
         style={{
@@ -112,12 +117,12 @@ export function RenderHeaderLogo({navigation}) {
       <View>
         <Text
           style={{
-            position:'absolute',
-            bottom:'12',
+            position: 'absolute',
+            bottom: '12',
             width: getResponsiveWidth(120),
             height: getResponsiveHeight(30),
             fontSize: getResponsiveIconSize(30),
-            fontFamily:'Pretendard-SemiBold',
+            fontFamily: 'Pretendard-SemiBold',
           }}>
           Kinover
         </Text>
@@ -125,7 +130,6 @@ export function RenderHeaderLogo({navigation}) {
     </TouchableOpacity>
   );
 }
-
 
 // 헤더 좌측 알림 버튼
 export function RenderHeaderLeft2({navigation}) {
@@ -161,6 +165,8 @@ export function RenderGoBackButton({navigation}) {
           height: getResponsiveHeight(23),
           marginLeft: getResponsiveWidth(20),
           resizeMode: 'contain',
+          zIndex:999,
+        
         }}
       />
     </TouchableOpacity>
@@ -170,10 +176,7 @@ export function RenderGoBackButton({navigation}) {
 // 헤더 좌측 알림 버튼
 export function RenderHeaderRightChatSetting({setIsSettingsOpen}) {
   return (
-    <TouchableOpacity
-    onPress={() => setIsSettingsOpen(true)}
-
-      >
+    <TouchableOpacity onPress={() => setIsSettingsOpen(true)}>
       <Image
         source={require('../assets/images/dots.png')}
         style={{
@@ -222,6 +225,8 @@ export function RenderHeaderDeletePost({navigation}) {
           marginRight: getResponsiveWidth(25),
           marginBottom: getResponsiveWidth(12),
           resizeMode: 'contain',
+          zIndex:999,
+
         }}
       />
     </TouchableOpacity>
@@ -239,6 +244,7 @@ export function RenderGoBackButtonGallery({navigation}) {
           height: getResponsiveHeight(20),
           marginLeft: getResponsiveWidth(25),
           resizeMode: 'contain',
+          zIndex:999,
         }}
       />
     </TouchableOpacity>

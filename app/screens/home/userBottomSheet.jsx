@@ -9,6 +9,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import {KeyboardAvoidingView} from 'react-native';
 import BottomSheet, {BottomSheetView} from '@gorhom/bottom-sheet';
 import {
   getResponsiveHeight,
@@ -91,67 +92,72 @@ export default function UserBottomSheet({
         index={-1}
         snapPoints={snapPoints}
         enablePanDownToClose
-        keyboardBehavior="interactive" // ✅ 키보드 올라오면 바텀시트 같이 올라오게!
-        keyboardBlurBehavior="restore" // ✅ 키보드 내려가면 다시 원래 위치로
-        android_keyboardInputMode="adjustResize" // 안드로이드도 대비
-
+        keyboardBehavior="interactive"
+        keyboardBlurBehavior="restore"
+        android_keyboardInputMode="adjustResize"
         handleComponent={() => null}
         backgroundStyle={{
           backgroundColor: 'transparent',
           zIndex: 5,
           elevation: 0,
         }}>
-        <BottomSheetView style={styles.container}>
-          <Image
-            style={{
-              position: 'absolute',
-              width: '250%',
-              height: '130%',
-              resizeMode: 'contain',
-              right: '-58%',
-              top: getResponsiveHeight(60),
-            }}
-            source={require('../../assets/images/curved-back.png')}
-          />
-          <TouchableOpacity onPress={handleImagePick}>
+        <KeyboardAvoidingView
+          style={{flex: 1}}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0} // 필요시 - 값 조정
+        >
+          <BottomSheetView style={styles.container}>
             <Image
-              source={
-                imageUrl
-                  ? {uri: imageUrl}
-                  : require('../../assets/images/kino-yellow.png')
-              }
-              style={styles.profileImage}
+              style={{
+                position: 'absolute',
+                width: '250%',
+                height: '130%',
+                resizeMode: 'contain',
+                right: '-58%',
+                top: getResponsiveHeight(60),
+              }}
+              source={require('../../assets/images/curved-back.png')}
             />
-          </TouchableOpacity>
+            <TouchableOpacity onPress={handleImagePick}>
+              <Image
+                source={
+                  imageUrl
+                    ? {uri: imageUrl}
+                    : require('../../assets/images/kino-yellow.png')
+                }
+                style={styles.profileImage}
+              />
+            </TouchableOpacity>
 
-          <View style={styles.inputRow}>
-            <Text style={styles.label}>이름</Text>
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={setName}
-            />
-          </View>
-          <View style={styles.inputRow}>
-            <Text style={styles.label}>특징</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={description}
-              onChangeText={setDescription}
-              multiline
-            />
-          </View>
-          <View style={styles.buttonRow}>
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => onSave(name, description, imageUrl)}>
-              <Text style={styles.buttonText}>저장</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.button} onPress={onCancel}>
-              <Text style={styles.buttonText}>취소</Text>
-            </TouchableOpacity>
-          </View>
-        </BottomSheetView>
+            <View style={styles.inputRow}>
+              <Text style={styles.label}>이름</Text>
+              <TextInput
+                style={styles.input}
+                value={name}
+                onChangeText={setName}
+              />
+            </View>
+            <View style={styles.inputRow}>
+              <Text style={styles.label}>특징</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={description}
+                onChangeText={setDescription}
+                multiline
+              />
+            </View>
+            <View style={styles.buttonRow}>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => onSave(name, description, imageUrl)}>
+                <Text style={styles.buttonText}>저장</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.button} onPress={onCancel}>
+                <Text style={styles.buttonText}>취소</Text>
+              </TouchableOpacity>
+            </View>
+          </BottomSheetView>
+        </KeyboardAvoidingView>
       </BottomSheet>
     </>
   );

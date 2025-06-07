@@ -55,7 +55,6 @@ export default function MemoryStack() {
       <Stack.Screen
         name="게시글화면"
         component={PostPage}
-        
         options={({route, navigation}) => ({
           headerTitle: route.params.memory.title, // memory.title을 타이틀로!
           headerTitleAlign: 'center',
@@ -111,28 +110,6 @@ export default function MemoryStack() {
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}
       />
-
-      {/* <Stack.Screen
-        name="챌린지화면"
-        component={ChallengeScreen}
-        options={({navigation}) => ({
-          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-        })}
-      />
-      <Stack.Screen
-        name="추천챌린지화면"
-        component={RecChallengeScreen}
-        options={({navigation}) => ({
-          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-        })}
-      />
-      <Stack.Screen
-        name="추천챌린지세부화면"
-        component={RecChallengeDetailScreen}
-        options={({navigation}) => ({
-          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-        })}
-      /> */}
     </Stack.Navigator>
   );
 }
