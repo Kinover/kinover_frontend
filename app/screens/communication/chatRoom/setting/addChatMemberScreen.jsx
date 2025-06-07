@@ -102,7 +102,7 @@ export default function AddChatMemberScreen({navigation, route}) {
       {loading ? (
         <ActivityIndicator size="large" color="#F8B500" />
       ) : (
-        <ScrollView>
+        <ScrollView style={{flex:1,}}>
           {selectableUsers.map(user => {
             const isSelected = selected.includes(user.userId);
             return (
@@ -151,7 +151,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopWidth: 3,
     borderColor: '#D3D3D3',
-    // padding: getResponsiveWidth(10),
   },
   userItem: {
     flexDirection: 'row',
