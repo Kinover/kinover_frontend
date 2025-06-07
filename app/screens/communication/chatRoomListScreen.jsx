@@ -42,7 +42,7 @@ export default function ChatRoomListScreen({ navigation }) {
       description = '가족 관계 고민을 키노에게 털어놓고 조언을 구해요!';
       screen = '키노상담소화면';
     } else if (chatRoom.familyType === 'family') {
-      screen = '가족채팅방화면';
+      screen = '채팅방화면';
     }
 
     return (

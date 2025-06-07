@@ -1,11 +1,8 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import CommunicationScreen from '../../screens/communication';
-// import ProfileScreen from '../../screens/home/profileScreen';
 import {RenderHeaderRightSetting} from '../tabHeaderHelpers';
-import OneToOneChatRoom from '../../screens/communication/chatRoom/oneToOneChatRoom';
 import KinoChatRoom from '../../screens/communication/chatRoom/kinoChatRoom';
-import FamilyChatRoom from '../../screens/communication/chatRoom/familyChatRoom';
 import ChatSettings from '../../screens/communication/chatRoom/setting/chatSetting';
 import {
   RenderHeaderRightChatSetting,
@@ -19,6 +16,7 @@ import {RenderGoBackButton} from '../tabHeaderHelpers';
 import NotificationScreen from '../../components/notificationScreen';
 import AddChatMemeberScreen from '../../screens/communication/chatRoom/setting/addChatMemberScreen';
 import CreateChatRoom from '../../screens/communication/createChatRoom';
+import ChatRoom from '../../screens/communication/chatRoom/chatRoom';
 
 const Stack = createStackNavigator();
 
@@ -80,18 +78,7 @@ export default function CommunicationStack() {
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}
       />
-      <Stack.Screen
-        name="채팅방화면"
-        component={OneToOneChatRoom}
-        options={({navigation, route}) => ({
-          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-          // headerRight: () => (
-          //   <RenderHeaderRightChatSetting
-          //     setIsSettingsOpen={setIsSettingsOpen}
-          //   />
-          // ),
-        })}
-      />
+
       <Stack.Screen
         name="키노상담소화면"
         component={KinoChatRoom}
@@ -105,15 +92,11 @@ export default function CommunicationStack() {
         })}
       />
       <Stack.Screen
-        name="가족채팅방화면"
-        component={FamilyChatRoom}
+        name="채팅방화면"
+        component={ChatRoom}
         options={({navigation, route}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-          // headerRight: () => (
-          //   <RenderHeaderRightChatSetting
-          //     setIsSettingsOpen={setIsSettingsOpen}
-          //   />
-          // ),
+
         })}
       />
       <Stack.Screen
