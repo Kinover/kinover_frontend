@@ -33,10 +33,12 @@ export default function LeaveChatRoomModal({
 
 const styles = StyleSheet.create({
   modalTitle: {
-    fontSize: 16,
+    fontSize: 17,
     textAlign: 'center',
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: 'Pretendard-Medium',
+    fontWeight:Platform.OS=='ios'?null:'700',
     marginBottom: getResponsiveHeight(10),
+    marginTop:getResponsiveHeight(15),
   },
   modalText: {
     fontFamily: 'Pretendard-Regular',
