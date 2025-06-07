@@ -135,6 +135,8 @@ export default function Schedule({selectedDate}) {
       {/* 세로선 + 일정 카드 */}
       <View style={styles.timelineWrapper}>
         <View style={styles.verticalLine} />
+        <View style={styles.verticalLine1} />
+
         <View style={styles.scheduleCards}>
           {filteredSchedules.map(schedule => (
             <View key={schedule.scheduleId} style={styles.card}>
@@ -263,6 +265,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
+  verticalLine1: {
+    position: 'absolute',
+    top: -15,
+    width: 1.2,
+    height: getResponsiveHeight(300),
+    backgroundColor: '#FFC84D',
+    marginLeft: getResponsiveWidth(27),
+    marginRight: getResponsiveWidth(20),
+  },
+
   verticalLine: {
     width: 1.2,
     height: getResponsiveHeight(300),
@@ -270,6 +282,7 @@ const styles = StyleSheet.create({
     marginLeft: getResponsiveWidth(27),
     marginRight: getResponsiveWidth(20),
   },
+
   scheduleCards: {
     flex: 1,
   },
