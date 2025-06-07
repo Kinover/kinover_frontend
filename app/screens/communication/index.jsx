@@ -39,7 +39,7 @@ export default function CommunicationScreen({navigation}) {
     let screen = '채팅방화면';
 
     if (chatRoom.familyType === 'family') {
-      screen = '가족채팅방화면';
+      screen = '채팅방화면';
     } else if (chatRoom.kino === true) {
       imageUri = 'https://i.postimg.cc/B6SmSRzS/Group-1171276570.jpg';
       name = '챗봇 키노';

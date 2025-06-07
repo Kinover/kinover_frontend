@@ -3,9 +3,9 @@ import React from 'react';
 import { useNavigation } from '@react-navigation/native';
 import ChatRoomScreenTemplate from '../../../components/chatRoomScreenTemplate';
 
-export default function FamilyChatRoom({ route }) {
+export default function ChatRoom({ route }) {
   const { chatRoom, user } = route.params || {};
   const navigation = useNavigation();
 
-  return <ChatRoomScreenTemplate chatRoom={chatRoom} user={user} isKino={true} navigation={navigation} />;
+  return <ChatRoomScreenTemplate chatRoom={chatRoom} user={user} isKino={false} navigation={navigation} />;
 }
