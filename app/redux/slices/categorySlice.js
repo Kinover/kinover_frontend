@@ -11,8 +11,14 @@ const categorySlice = createSlice({
   name: 'category',
   initialState,
   reducers: {
+    // ✅ 에러 초기화
     clearCategoryError(state) {
       state.error = null;
+    },
+
+    // ✅ 임시 카테고리 리스트 상태에 반영
+    setTempCategoryList(state, action) {
+      state.categoryList = action.payload;
     },
   },
   extraReducers: builder => {
@@ -39,7 +45,7 @@ const categorySlice = createSlice({
       })
       .addCase(createCategoryThunk.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.categoryList.push(action.payload); // 새 항목 추가
+        state.categoryList.push(action.payload);
       })
       .addCase(createCategoryThunk.rejected, (state, action) => {
         state.isLoading = false;
@@ -48,5 +54,6 @@ const categorySlice = createSlice({
   },
 });
 
-export const { clearCategoryError } = categorySlice.actions;
+// ✅ 액션과 리듀서 export
+export const { clearCategoryError, setTempCategoryList } = categorySlice.actions;
 export default categorySlice.reducer;

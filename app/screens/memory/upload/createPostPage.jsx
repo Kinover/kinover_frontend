@@ -34,39 +34,50 @@ export default function CreatePostPage({ navigation, route }) {
   const family = useSelector(state => state.family);
   const { selectedCategory, selectedImages } = route.params;
 
+  
   const handleUpload = async () => {
     if (isUploading) return;
     setIsUploading(true);
-
+  
     try {
+      // ✅ 1. 카테고리 임시 생성 처리
+      let finalCategoryId = selectedCategory?.categoryId;
+  
+      if (selectedCategory?.isTemporary) {
+        const result = await dispatch(createCategoryThunk({
+          title: selectedCategory.title,
+          familyId: family.familyId,
+        }));
+        finalCategoryId = result.payload.categoryId;
+      }
+  
+      // ✅ 2. 이미지 업로드
       const fileNames = selectedImages.map(
         (_, i) =>
           `img_${Date.now()}_${i}_${Math.floor(Math.random() * 1000)}.jpg`,
       );
-
+  
       const presignedUrls = await getPresignedUrls(fileNames);
-
+  
       for (let i = 0; i < selectedImages.length; i++) {
         await uploadImageToS3(presignedUrls[i], selectedImages[i]);
       }
-
+  
       const postTypes = selectedImages.map(uri => getMediaTypeFromUri(uri));
-
+  
       const payload = {
         authorId: user.userId,
-        categoryId: selectedCategory?.categoryId,
+        categoryId: finalCategoryId,
         imageUrls: fileNames,
         postTypes,
         content: text,
         familyId: family.familyId,
       };
-
-      console.log('🧾 selectedImages:', selectedImages);
-      console.log('🧾 postTypes:', postTypes);
+  
       console.log('📦 게시글 업로드 payload:', JSON.stringify(payload, null, 2));
-
+  
       await uploadPostApi(payload);
-
+  
       console.log('✅ 게시글 업로드 완료');
       navigation.navigate('추억화면', { selectedCategory });
     } catch (err) {
@@ -75,7 +86,7 @@ export default function CreatePostPage({ navigation, route }) {
       setIsUploading(false);
     }
   };
-
+  
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (

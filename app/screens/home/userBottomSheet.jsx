@@ -119,14 +119,20 @@ export default function UserBottomSheet({
               source={require('../../assets/images/curved-back.png')}
             />
             <TouchableOpacity onPress={handleImagePick}>
-              <Image
-                source={
-                  imageUrl
-                    ? {uri: imageUrl}
-                    : require('../../assets/images/kino-yellow.png')
-                }
-                style={styles.profileImage}
-              />
+              <View style={styles.profileimageContainer}>
+                <Image
+                  source={
+                    imageUrl
+                      ? {uri: imageUrl}
+                      : require('../../assets/images/kino-yellow.png')
+                  }
+                  style={styles.profileImage}
+                />
+                <View style={styles.profileImageOverlay}></View>
+                <Image
+                  style={styles.profileImagePencil}
+                  source={require('../../assets/images/pencil.png')}></Image>
+              </View>
             </TouchableOpacity>
 
             <View style={styles.inputRow}>
@@ -177,12 +183,36 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
-  profileImage: {
+  profileimageContainer: {
+    display: 'flex',
+    position: 'relative',
     alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
     width: getResponsiveWidth(110),
     height: getResponsiveWidth(110),
     borderRadius: getResponsiveWidth(55),
     marginBottom: getResponsiveHeight(20),
+  },
+  profileImage: {
+    position: 'absolute',
+    width: getResponsiveWidth(110),
+    height: getResponsiveWidth(110),
+    borderRadius: getResponsiveWidth(55),
+  },
+  profileImagePencil: {
+    position: 'absolute',
+    width: getResponsiveWidth(35),
+    height: getResponsiveWidth(35),
+    objectFit: 'contain',
+  },
+  profileImageOverlay: {
+    position: 'absolute',
+    backgroundColor: 'gray',
+    opacity: 0.3,
+    width: getResponsiveWidth(110),
+    height: getResponsiveWidth(110),
+    borderRadius: getResponsiveWidth(55),
   },
   inputRow: {
     flexDirection: 'row',
@@ -209,7 +239,9 @@ const styles = StyleSheet.create({
     shadowColor: 'gray',
     shadowOpacity: 0.7,
     shadowOffset: {width: 0, height: 1},
+    elevation: 4,
   },
+
   textArea: {
     height: getResponsiveHeight(90),
     textAlignVertical: 'top',
