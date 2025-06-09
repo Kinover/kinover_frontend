@@ -47,29 +47,20 @@ export default function CategorySelectPage({route}) {
   }, [categoryList]);
 
   // ✅ 새 카테고리 생성
-  const handleAddCategory = async () => {
+  const handleAddCategory = () => {
     if (newCategory.trim()) {
-      try {
-        const resultAction = await dispatch(
-          createCategoryThunk({
-            title: newCategory.trim(),
-            familyId: familyId,
-          }),
-        );
+      const tempCategory = {
+        categoryId: `temp-${Date.now()}`, // 구분 가능한 임시 ID
+        title: newCategory.trim(),
+        isTemporary: true,
+      };
+      const updated = [...categoryList, tempCategory];
 
-        if (createCategoryThunk.fulfilled.match(resultAction)) {
-          const created = resultAction.payload;
-          const newIndex = categoryList.length;
-          setSelectedCategory(created);
-          setSelectedIndex(newIndex);
-          setNewCategory('');
-          setAddModalVisible(false);
-        } else {
-          throw new Error('카테고리 생성 실패');
-        }
-      } catch (err) {
-        alert('카테고리 생성 실패');
-      }
+      setNewCategory('');
+      setAddModalVisible(false);
+      setSelectedCategory(tempCategory);
+      setSelectedIndex(updated.length - 1);
+      dispatch({type: 'category/setTempCategoryList', payload: updated}); // 또는 local 상태
     }
   };
 
@@ -151,7 +142,7 @@ export default function CategorySelectPage({route}) {
       <FlatList
         data={categoryList}
         renderItem={renderItem}
-        keyExtractor={(item, index) => item.categoryId || index.toString()}
+        keyExtractor={(item, index) => item.categoryId?.toString() || item.title}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListFooterComponent={
           <TouchableOpacity
@@ -213,9 +204,9 @@ const styles = StyleSheet.create({
     borderColor: '#D3D3D3',
   },
   itemContainer: {
-    display:'flex',
-    flexDirection:'row',
-    justifyContent:'space-between',
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     paddingVertical: getResponsiveWidth(20),
     paddingHorizontal: getResponsiveWidth(25),
   },
