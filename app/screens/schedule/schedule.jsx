@@ -21,6 +21,7 @@ import {
   updateScheduleThunk,
 } from '../../redux/thunk/scheduleThunk';
 import CustomModal from '../../utils/customModal';
+import { WINDOW_HEIGHT } from '@gorhom/bottom-sheet';
 
 export default function Schedule({selectedDate}) {
   const dispatch = useDispatch();
@@ -106,7 +107,7 @@ export default function Schedule({selectedDate}) {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <View contentContainerStyle={styles.container} >
       <Text style={styles.dateText}>{getFormattedDate()}</Text>
 
       {/* 유저 탭 */}
@@ -217,14 +218,15 @@ export default function Schedule({selectedDate}) {
           }}
         />
       </CustomModal>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: getResponsiveHeight(50),
-    paddingHorizontal: getResponsiveWidth(5),
+    flex:1,
+    paddingHorizontal: getResponsiveWidth(10),
+    paddingVertical:getResponsiveHeight(80),
   },
   dateText: {
     fontSize: getResponsiveFontSize(16),
@@ -264,14 +266,16 @@ const styles = StyleSheet.create({
     fontWeight: Platform.OS == 'ios' ? null : '700',
   },
   timelineWrapper: {
+    position:'relative',
     flexDirection: 'row',
+    height:'100%',
     alignItems: 'flex-start',
   },
   verticalLine1: {
     position: 'absolute',
     top: -15,
     width: 1.2,
-    height: getResponsiveHeight(300),
+    height: '100%',
     backgroundColor: '#FFC84D',
     marginLeft: getResponsiveWidth(27),
     marginRight: getResponsiveWidth(20),
@@ -279,7 +283,7 @@ const styles = StyleSheet.create({
 
   verticalLine: {
     width: 1.2,
-    height: getResponsiveHeight(300),
+    height: '100%',
     backgroundColor: '#FFC84D',
     marginLeft: getResponsiveWidth(27),
     marginRight: getResponsiveWidth(20),

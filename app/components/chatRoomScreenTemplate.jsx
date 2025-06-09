@@ -2,7 +2,7 @@
 import React, {useState, useEffect} from 'react';
 import {SafeAreaView, StyleSheet} from 'react-native';
 import {useDispatch} from 'react-redux';
-import { getToken } from '../utils/storage';
+import {getToken} from '../utils/storage';
 import MessageFlatList from './messageFlatList';
 import ChatInput from '../screens/communication/chatRoom/chat/chatInput';
 import ChatSettings from '../screens/communication/chatRoom/setting/chatSetting';
@@ -11,6 +11,7 @@ import useChatRoomScreen from '../hooks/useChatRoomScreen';
 import useHeaderSetting from '../hooks/useHeaderSetting';
 import {onLeaveChat} from '../hooks/onLeaveChat';
 import {fetchMessageThunk} from '../redux/thunk/messageThunk';
+import useHideTabBar from '../hooks/useHideTabBar';
 
 export default function ChatRoomScreenTemplate({
   chatRoom,
@@ -33,6 +34,8 @@ export default function ChatRoomScreenTemplate({
     socketRef,
     isUserScrolling,
   } = useChatRoomScreen(chatRoom, user, isKino);
+
+  useHideTabBar();
 
   useHeaderSetting(navigation, setIsSettingsOpen, chatRoom.roomName);
 
