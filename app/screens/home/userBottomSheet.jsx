@@ -47,6 +47,7 @@ export default function UserBottomSheet({
 
   const handleImagePick = async () => {
     const result = await launchImageLibrary({mediaType: 'photo'});
+
     if (result.assets && result.assets.length > 0) {
       const selectedAsset = result.assets[0];
       const originalUri = selectedAsset.uri;
@@ -56,6 +57,7 @@ export default function UserBottomSheet({
 
       try {
         let fileUri = originalUri;
+
         if (Platform.OS === 'ios' && originalUri.startsWith('ph://')) {
           const destPath = `${
             RNFS.TemporaryDirectoryPath
@@ -64,10 +66,19 @@ export default function UserBottomSheet({
           fileUri = 'file://' + destPath;
         }
 
+        if (Platform.OS === 'android' && originalUri.startsWith('content://')) {
+          const destPath = `${
+            RNFS.TemporaryDirectoryPath
+          }/photo_${Date.now()}.jpg`;
+          const base64Data = await RNFS.readFile(originalUri, 'base64');
+          await RNFS.writeFile(destPath, base64Data, 'base64');
+          fileUri = 'file://' + destPath;
+        }
+
         const presignedUrls = await getPresignedUrls([fileName]);
         const uploadUrl = presignedUrls[0];
 
-        await uploadImageToS3(uploadUrl, fileUri);
+        await uploadImageToS3(uploadUrl, fileUri); // 여기는 file:// 로 보장됨
         const uploadedImageUrl = `${CLOUD_FRONT}${fileName}`;
         setImageUrl(uploadedImageUrl);
       } catch (err) {
