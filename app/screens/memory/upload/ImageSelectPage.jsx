@@ -53,14 +53,17 @@ export default function ImageSelectPage() {
   // ✅ Android 전용: content:// → file:// 로 복사
   const convertContentUriToFileUri = async (contentUri, index) => {
     const destPath = `${RNFS.TemporaryDirectoryPath}photo_android_${Date.now()}_${index}.jpg`;
+  
     try {
-      await RNFS.copyFile(contentUri, destPath); // content:// -> file 복사
+      const base64Data = await RNFS.readFile(contentUri, 'base64');
+      await RNFS.writeFile(destPath, base64Data, 'base64');
       return 'file://' + destPath;
     } catch (err) {
       console.error('📛 Android content:// 변환 실패:', err.message);
       return null;
     }
   };
+  
 
   // ✅ 사진 불러오기
   const loadPhotos = async () => {

@@ -84,7 +84,7 @@ export default function CreateChatRoom({navigation}) {
       ).unwrap(); // unwrap으로 결과 직접 받기
 
       console.log('🟢 채팅방 생성 성공:', result);
-      navigation.navigate('ChatScreen', {chatRoomId: result.chatRoomId});
+      navigation.navigate('소통화면');
     } catch (err) {
       console.error('🔴 채팅방 생성 실패:', err);
     }

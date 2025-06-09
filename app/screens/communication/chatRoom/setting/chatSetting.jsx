@@ -78,8 +78,9 @@ export default function ChatSettings({
   };
 
   const handleLeaveConfirm = () => {
+    onClose(); // ✅ ChatSettings 모달 먼저 닫기
     setIsLeaveModalVisible(false);
-    onLeaveChat();
+    onLeaveChat(dispatch, navigation, chatRoomId);
   };
 
   useEffect(() => {
