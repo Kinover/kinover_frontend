@@ -52,6 +52,13 @@ export default function PostPage({route}) {
 
   useHideTabBar();
 
+  // ✅ PostPage unmount 시 헤더 복원
+useEffect(() => {
+  return () => {
+    navigation.setOptions({ headerShown: true });
+  };
+}, []);
+
   useEffect(() => {
     if (memory?.postId) {
       dispatch(fetchCommentsThunk(memory.postId));
