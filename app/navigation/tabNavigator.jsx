@@ -1,12 +1,12 @@
 import React from 'react';
-import { Platform } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import {Platform} from 'react-native';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 
 import HomeStack from './stacks/homeStack';
 import CommunicationStack from './stacks/communicationStack';
 import ScheduleStack from './stacks/scheduleStack';
 import MemoryStack from './stacks/memoryStack';
-import { renderTabBarIcon, renderTabBarLabel } from './tabHeaderHelpers';
+import {renderTabBarIcon, renderTabBarLabel} from './tabHeaderHelpers';
 
 const Tab = createBottomTabNavigator();
 
@@ -23,7 +23,7 @@ const TABS = [
     name: '소통기록',
     component: CommunicationStack,
     icon: {
-      focused: 'https://i.postimg.cc/zf4cV7s8/Group-1171276556-1.jpg',
+      focused: 'https://i.postimg.cc/k45KQp31/chat.png',
       default: 'https://i.postimg.cc/j5NkNNTN/Group-1171276556.jpg',
     },
   },
@@ -49,15 +49,14 @@ export default function TabNavigator() {
   return (
     <Tab.Navigator
       initialRouteName="감정기록"
-      screenOptions={({ route }) => {
+      screenOptions={({route}) => {
         const currentTab = TABS.find(tab => tab.name === route.name);
 
         return {
           keyboardHidesTabBar: true,
           headerShown: false,
-          tabBarLabel: ({ focused }) =>
-            renderTabBarLabel(route.name, focused),
-          tabBarIcon: ({ focused }) =>
+          tabBarLabel: ({focused}) => renderTabBarLabel(route.name, focused),
+          tabBarIcon: ({focused}) =>
             renderTabBarIcon(
               focused,
               currentTab?.icon.focused,
@@ -72,9 +71,8 @@ export default function TabNavigator() {
             height: Platform.OS === 'ios' ? 90 : 90,
           },
         };
-      }}
-    >
-      {TABS.map(({ name, component }) => (
+      }}>
+      {TABS.map(({name, component}) => (
         <Tab.Screen key={name} name={name} component={component} />
       ))}
     </Tab.Navigator>
