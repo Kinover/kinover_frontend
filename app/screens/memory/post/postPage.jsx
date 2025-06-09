@@ -36,6 +36,7 @@ import {
 } from '../../../redux/thunk/commentThunk';
 import DescriptionSection from './descriptionSection';
 import CommentSection from './commentSection';
+import useHideTabBar from '../../../hooks/useHideTabBar';
 
 export default function PostPage({route}) {
   const [isFullImageMode, setIsFullImageMode] = useState(false);
@@ -55,6 +56,8 @@ export default function PostPage({route}) {
   const categoryList = useSelector(state => state.category.categoryList);
   const {commentList} = useSelector(state => state.comment);
   const memory = route.params.memory;
+
+  useHideTabBar();
 
   useEffect(() => {
     if (memory?.postId) {
@@ -324,7 +327,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    zIndex:0,
+    zIndex: 0,
     justifyContent: 'center',
     alignItems: 'center',
   },

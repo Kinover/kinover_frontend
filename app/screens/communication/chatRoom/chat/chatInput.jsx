@@ -10,6 +10,7 @@ import {
   PermissionsAndroid,
   Platform,
   Dimensions,
+  SafeAreaView,
 } from 'react-native';
 import {CameraRoll} from '@react-native-camera-roll/camera-roll';
 import uuid from 'react-native-uuid';
@@ -155,7 +156,7 @@ export default function ChatInput({chatRoom, user, socketRef}) {
   };
 
   return (
-    <View>
+    <SafeAreaView>
       <View style={styles.innerContainer}>
         <View style={styles.inputContainer}>
           <TouchableOpacity
@@ -201,7 +202,7 @@ export default function ChatInput({chatRoom, user, socketRef}) {
           />
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

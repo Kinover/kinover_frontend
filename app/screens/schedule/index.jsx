@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {StyleSheet, ScrollView} from 'react-native';
+import {View, StyleSheet, ScrollView} from 'react-native';
 import {getResponsiveHeight, getResponsiveWidth} from '../../utils/responsive';
 import Schedule from './schedule';
 import Calendar from './header';
@@ -11,7 +11,9 @@ export default function ScheduleScreen({navigation}) {
   const [selectedDate, setSelectedDate] = useState(new Date());
 
   return (
-    <SafeAreaView style={{flex: 1}} edges={['top,bottom']}>
+    <SafeAreaView
+      style={{flex: 1, backgroundColor: 'white'}}
+      edges={['bottom']}>
       <ScrollView
         style={styles.mainContainer}
         showsVerticalScrollIndicator={false}>
@@ -32,6 +34,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
     paddingHorizontal: getResponsiveWidth(20),
-    paddingVertical: getResponsiveHeight(20),
+    // paddingTop: getResponsiveHeight(10),
+    // marginBottom: getResponsiveHeight(15),
   },
 });

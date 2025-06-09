@@ -9,7 +9,6 @@ import {
   ImageBackground,
   ScrollView,
 } from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {useDispatch, useSelector} from 'react-redux';
 
@@ -31,15 +30,12 @@ export default function MemoryScreen({navigation}) {
   const family = useSelector(state => state.family);
   const {familyUserList} = useSelector(state => state.userFamily);
   const dispatch = useDispatch();
-  const [modalVisible, setModalVisible] = useState(false);
-  const [noticeInput, setNoticeInput] = useState(family.notice);
-  const insets = useSafeAreaInsets();
+
 
   useEffect(() => {
     dispatch(fetchMemoryThunk(family.familyId));
     dispatch(fetchFamilyUserListThunk(family.familyId));
   }, [dispatch]);
-  console.log('🔵 iOS 하단 inset:', insets.bottom);
 
   useLayoutEffect(() => {
     navigation.setOptions({

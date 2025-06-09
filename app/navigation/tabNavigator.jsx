@@ -1,7 +1,6 @@
 import React from 'react';
 import { Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { getFocusedRouteNameFromRoute } from '@react-navigation/native';
 
 import HomeStack from './stacks/homeStack';
 import CommunicationStack from './stacks/communicationStack';
@@ -11,13 +10,6 @@ import { renderTabBarIcon, renderTabBarLabel } from './tabHeaderHelpers';
 
 const Tab = createBottomTabNavigator();
 
-// 📌 숨겨야 할 화면 정의
-const hideTabBarScreens = {
-  소통기록: ['채팅방화면', '가족채팅방화면', '키노상담소화면','채팅방멤버추가화면','채팅방생성화면'],
-  추억기록: ['게시글화면','카테고리화면','카테고리선택화면','이미지선택화면','게시글작성화면'],
-};
-
-// 📌 탭 구성 정보
 const TABS = [
   {
     name: '감정기록',
@@ -53,26 +45,6 @@ const TABS = [
   },
 ];
 
-// 📌 현재 route에 따라 tabBarStyle 다르게 설정
-const getTabBarStyle = (route, tabName) => {
-  const focusedRoute = getFocusedRouteNameFromRoute(route) ?? '';
-  const shouldHide = hideTabBarScreens[tabName]?.includes(focusedRoute);
-
-  if (shouldHide) {
-    return { display: 'none' };
-  }
-
-  return {
-    backgroundColor: '#fff',
-    borderTopWidth: 0.5,
-    borderTopColor: '#eee',
-    paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-    paddingTop: 8,
-    height: Platform.OS === 'ios' ? 90 : 90,
-  };
-};
-
-// 📌 Tab Navigator
 export default function TabNavigator() {
   return (
     <Tab.Navigator
@@ -81,7 +53,7 @@ export default function TabNavigator() {
         const currentTab = TABS.find(tab => tab.name === route.name);
 
         return {
-          keyboardHidesTabBar: true, // ✅ 키보드 올라오면 탭바 숨김
+          keyboardHidesTabBar: true,
           headerShown: false,
           tabBarLabel: ({ focused }) =>
             renderTabBarLabel(route.name, focused),
@@ -91,7 +63,14 @@ export default function TabNavigator() {
               currentTab?.icon.focused,
               currentTab?.icon.default,
             ),
-          tabBarStyle: getTabBarStyle(route, route.name),
+          tabBarStyle: {
+            backgroundColor: '#fff',
+            borderTopWidth: 0.5,
+            borderTopColor: '#eee',
+            paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+            paddingTop: 8,
+            height: Platform.OS === 'ios' ? 90 : 90,
+          },
         };
       }}
     >
