@@ -289,7 +289,7 @@ export default function PostPage({route}) {
         />
       )}
 
-      {showDeleteOptions && (
+      {showDeleteOptions && !isFullImageMode && (
         <View style={styles.deleteOptions}>
           <TouchableOpacity
             style={styles.deleteOptionButton}
