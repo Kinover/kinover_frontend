@@ -104,6 +104,7 @@ export default function ChatRoomScreenTemplate({
         chatRoomId={chatRoom.chatRoomId}
         navigation={navigation}
         onLeaveChat={onLeaveChat}
+        isKino={isKino}
       />
     </SafeAreaView>
   );
