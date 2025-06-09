@@ -139,7 +139,7 @@ export default function ChatSettings({
         </View>
 
         <View style={styles.content}>
-          {isKino && (
+          {!isKino && (
             <TouchableOpacity
               style={styles.option}
               onPress={() => setIsRenameModalVisible(true)}>
@@ -147,7 +147,7 @@ export default function ChatSettings({
             </TouchableOpacity>
           )}
 
-          {isKino && (
+          {!isKino && (
             <View style={{display: 'flex', justifyContent: 'space-between'}}>
               <TouchableOpacity
                 onPress={() => setShowMembers(!showMembers)}
