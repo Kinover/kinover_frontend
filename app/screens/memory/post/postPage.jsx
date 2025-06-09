@@ -1,9 +1,8 @@
 import React, {
   useState,
   useEffect,
-  useCallback,
-  useLayoutEffect,
   useRef,
+  useCallback,
 } from 'react';
 import {
   FlatList,
@@ -17,12 +16,11 @@ import {
   Platform,
   SafeAreaView,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
-import {useDispatch, useSelector} from 'react-redux';
+import { useNavigation } from '@react-navigation/native';
+import { useDispatch, useSelector } from 'react-redux';
 import getResponsiveFontSize, {
   getResponsiveHeight,
   getResponsiveWidth,
-  getResponsiveIconSize,
 } from '../../../utils/responsive';
 import ImageDeleteModal from '../../../utils/imageDeleteModal';
 import {
@@ -38,7 +36,7 @@ import DescriptionSection from './descriptionSection';
 import CommentSection from './commentSection';
 import useHideTabBar from '../../../hooks/useHideTabBar';
 
-export default function PostPage({route}) {
+export default function PostPage({ route }) {
   const [isFullImageMode, setIsFullImageMode] = useState(false);
   const [commentIndex, setCommentIndex] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -54,7 +52,7 @@ export default function PostPage({route}) {
   const user = useSelector(state => state.user);
   const familyId = useSelector(state => state.family.familyId);
   const categoryList = useSelector(state => state.category.categoryList);
-  const {commentList} = useSelector(state => state.comment);
+  const { commentList } = useSelector(state => state.comment);
   const memory = route.params.memory;
 
   useHideTabBar();
@@ -62,16 +60,16 @@ export default function PostPage({route}) {
   useEffect(() => {
     if (memory?.postId) {
       dispatch(fetchCommentsThunk(memory.postId));
-      setLocalImages(memory.imageUrls); // ✅ 초기 이미지 설정
+      setLocalImages(memory.imageUrls);
     }
   }, [memory]);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const categoryTitle =
-      categoryList.find(cat => cat.categoryId === memory.categoryId)?.title ||
-      '';
+      categoryList.find(cat => cat.categoryId === memory.categoryId)?.title || '';
 
     navigation.setOptions({
+      headerShown: !isFullImageMode,
       headerTitle: () => (
         <Text
           style={{
@@ -84,7 +82,7 @@ export default function PostPage({route}) {
       ),
       headerRight: () => (
         <TouchableOpacity
-          style={{position: 'relative', elevation: 10, zIndex: 10}}
+          style={{ position: 'relative', elevation: 10, zIndex: 10 }}
           onPress={() => setShowDeleteOptions(prev => !prev)}>
           <Image
             source={require('../../../assets/images/trash.png')}
@@ -93,26 +91,21 @@ export default function PostPage({route}) {
               height: getResponsiveHeight(20),
               resizeMode: 'contain',
               marginRight: getResponsiveWidth(15),
-              zIndex: 10,
-              // bottom: getResponsiveHeight(5),
             }}
           />
         </TouchableOpacity>
       ),
-      headerShown: !isFullImageMode,
     });
   }, [isFullImageMode, categoryList, memory.categoryId]);
 
   const handleSendComment = () => {
     const trimmed = commentText.trim();
     if (!trimmed) return;
-    dispatch(
-      createCommentThunk({
-        postId: memory.postId,
-        content: trimmed,
-        authorId: user.userId,
-      }),
-    );
+    dispatch(createCommentThunk({
+      postId: memory.postId,
+      content: trimmed,
+      authorId: user.userId,
+    }));
     setCommentText('');
   };
 
@@ -120,15 +113,42 @@ export default function PostPage({route}) {
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderRelease: (evt, gestureState) => {
-        const {dx, dy} = gestureState;
-        const isTap = Math.abs(dx) < 5 && Math.abs(dy) < 5;
-        if (isTap) {
+      onPanResponderRelease: (_, gesture) => {
+        const { dx, dy } = gesture;
+        if (Math.abs(dx) < 5 && Math.abs(dy) < 5) {
           setIsFullImageMode(prev => !prev);
         }
       },
     }),
   ).current;
+
+  const handleDeleteConfirm = async () => {
+    setDeleteModalVisible(false);
+
+    if (deleteTarget === '게시물') {
+      navigation.goBack();
+      setTimeout(() => {
+        dispatch(deletePostThunk(memory.postId, familyId));
+      }, 50);
+    } else if (deleteTarget === '사진') {
+      const targetImage = localImages[currentImageIndex];
+      try {
+        await dispatch(deletePostImageThunk(memory.postId, targetImage, familyId));
+        const updated = localImages.filter((_, i) => i !== currentImageIndex);
+        setLocalImages(updated);
+        setCurrentImageIndex(prev => (prev >= updated.length ? updated.length - 1 : prev));
+
+        if (updated.length === 0) {
+          navigation.goBack();
+          setTimeout(() => {
+            dispatch(deletePostThunk(memory.postId, familyId));
+          }, 50);
+        }
+      } catch (err) {
+        console.error('❌ 이미지 삭제 실패:', err);
+      }
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -139,56 +159,45 @@ export default function PostPage({route}) {
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           keyExtractor={(item, index) => index.toString()}
-          style={{
-            position: 'relative',
-            display: 'flex',
-            flex: 1,
-          }}
-          contentContainerStyle={{
-            alignItems: 'center', // ✅ 가로 중앙 정렬
-            width: Dimensions.get('window').width * localImages.length,
-            // alignSelf: 'flex-start',
-          }}
+          initialNumToRender={1}
+          windowSize={2}
+          removeClippedSubviews
           onMomentumScrollEnd={e => {
             const index = Math.round(
-              e.nativeEvent.contentOffset.x /
-                e.nativeEvent.layoutMeasurement.width,
+              e.nativeEvent.contentOffset.x / e.nativeEvent.layoutMeasurement.width
             );
             setCurrentImageIndex(index);
           }}
-          renderItem={({item}) => (
+          contentContainerStyle={{
+            alignItems: 'center',
+            width: Dimensions.get('window').width * localImages.length,
+          }}
+          renderItem={({ item }) => (
             <View
               {...panResponder.panHandlers}
               style={{
                 width: Dimensions.get('window').width,
                 height: Dimensions.get('window').height,
-                justifyContent: 'center', // 세로 정중앙
-                alignItems: 'center', // 가로 정중앙
+                justifyContent: 'center',
+                alignItems: 'center',
               }}>
-              <Image style={styles.memoryImage} source={{uri: item}} />
+              <Image style={styles.memoryImage} source={{ uri: item }} />
             </View>
           )}
         />
 
         {!isFullImageMode && localImages.length > 1 && (
           <View style={styles.imageIndexContainer}>
-            <Text style={[styles.imageIndexText, {color: 'yellow'}]}>
+            <Text style={[styles.imageIndexText, { color: 'yellow' }]}>
               {currentImageIndex + 1}
             </Text>
             <Text style={styles.imageIndexText}> / {localImages.length}</Text>
           </View>
         )}
       </View>
+
       {!isFullImageMode && !commentIndex && (
-        <View
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            width: '100%',
-            minHeight: '15%',
-            zIndex: 10,
-            maxHeight: '30%',
-          }}>
+        <View style={styles.descriptionWrapper}>
           <DescriptionSection
             memory={memory}
             commentList={commentList}
@@ -198,14 +207,7 @@ export default function PostPage({route}) {
       )}
 
       {!isFullImageMode && commentIndex && (
-        <View
-          style={{
-            position: 'absolute',
-            bottom: 0,
-            width: '100%',
-            height: '35%',
-            zIndex: 10,
-          }}>
+        <View style={styles.commentWrapper}>
           <CommentSection
             commentList={commentList}
             commentText={commentText}
@@ -221,72 +223,20 @@ export default function PostPage({route}) {
         <ImageDeleteModal
           visible={deleteModalVisible}
           onClose={() => setDeleteModalVisible(false)}
-          onConfirm={async () => {
-            if (deleteTarget === '게시물') {
-              await dispatch(deletePostThunk(memory.postId, familyId));
-              setDeleteModalVisible(false);
-              navigation.goBack();
-            } else if (deleteTarget === '사진') {
-              const targetImage = localImages[currentImageIndex];
-              try {
-                await dispatch(
-                  deletePostImageThunk(memory.postId, targetImage, familyId),
-                );
-                const updated = localImages.filter(
-                  (_, i) => i !== currentImageIndex,
-                );
-                setLocalImages(updated);
-                setCurrentImageIndex(prev =>
-                  prev >= updated.length ? updated.length - 1 : prev,
-                );
-                if (updated.length === 0) {
-                  await dispatch(deletePostThunk(memory.postId, familyId));
-                  navigation.goBack();
-                }
-              } catch (err) {
-                console.error('❌ 이미지 삭제 실패:', err);
-              } finally {
-                setDeleteModalVisible(false);
-              }
-            }
-          }}
+          onConfirm={handleDeleteConfirm}
           closeText="취소"
           confirmText="삭제"
-          closeTextStyle={{
-            fontSize: getResponsiveFontSize(14),
-            fontFamily: 'Pretendard-Regular',
-          }}
-          confirmTextStyle={{
-            fontSize: getResponsiveFontSize(14),
-            fontFamily: 'Pretendard-Regular',
-          }}
-          closeButtonStyle={{
-            flex: 1,
-            backgroundColor: '#E0E0E0',
-            paddingVertical: getResponsiveHeight(10),
-            borderRadius: 8,
-          }}
-          confirmButtonStyle={{
-            flex: 1,
-            backgroundColor: '#FFC84D',
-            paddingVertical: getResponsiveHeight(10),
-            borderRadius: 8,
-          }}
-          children={
-            <Text
-              style={{
-                fontSize: getResponsiveFontSize(17),
-                fontFamily: 'Pretendard-SemiBold',
-                textAlign: 'center',
-                marginTop: getResponsiveHeight(10),
-                marginBottom: getResponsiveHeight(5),
-              }}>
-              {deleteTarget === '게시물'
-                ? '게시물을 삭제하시겠습니까?'
-                : '사진을 삭제하시겠습니까?'}
-            </Text>
-          }
-        />
+          closeTextStyle={styles.modalText}
+          confirmTextStyle={styles.modalText}
+          closeButtonStyle={styles.modalCloseButton}
+          confirmButtonStyle={styles.modalConfirmButton}
+        >
+          <Text style={styles.modalTitle}>
+            {deleteTarget === '게시물'
+              ? '게시물을 삭제하시겠습니까?'
+              : '사진을 삭제하시겠습니까?'}
+          </Text>
+        </ImageDeleteModal>
       )}
 
       {showDeleteOptions && !isFullImageMode && (
@@ -317,19 +267,10 @@ export default function PostPage({route}) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
+  container: { flex: 1, backgroundColor: 'white' },
   imageLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    zIndex: 0, justifyContent: 'center', alignItems: 'center',
   },
   memoryImage: {
     width: Dimensions.get('window').width,
@@ -353,6 +294,21 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(12),
     fontFamily: 'Pretendard-SemiBold',
   },
+  descriptionWrapper: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    minHeight: '15%',
+    maxHeight: '30%',
+    zIndex: 10,
+  },
+  commentWrapper: {
+    position: 'absolute',
+    bottom: 0,
+    width: '100%',
+    height: '35%',
+    zIndex: 10,
+  },
   deleteOptions: {
     position: 'absolute',
     top: getResponsiveHeight(95),
@@ -360,7 +316,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(245, 245, 245, 0.8)',
     borderRadius: 7,
     zIndex: 10,
-    // overflow: 'hidden',
   },
   deleteOptionButton: {
     paddingVertical: getResponsiveHeight(10),
@@ -375,5 +330,28 @@ const styles = StyleSheet.create({
   divider: {
     height: Platform.OS === 'android' ? 0.5 : 0.2,
     backgroundColor: 'black',
+  },
+  modalText: {
+    fontSize: getResponsiveFontSize(14),
+    fontFamily: 'Pretendard-Regular',
+  },
+  modalTitle: {
+    fontSize: getResponsiveFontSize(17),
+    fontFamily: 'Pretendard-SemiBold',
+    textAlign: 'center',
+    marginTop: getResponsiveHeight(10),
+    marginBottom: getResponsiveHeight(5),
+  },
+  modalCloseButton: {
+    flex: 1,
+    backgroundColor: '#E0E0E0',
+    paddingVertical: getResponsiveHeight(10),
+    borderRadius: 8,
+  },
+  modalConfirmButton: {
+    flex: 1,
+    backgroundColor: '#FFC84D',
+    paddingVertical: getResponsiveHeight(10),
+    borderRadius: 8,
   },
 });
