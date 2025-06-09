@@ -135,7 +135,7 @@ export default function UserBottomSheet({
                   source={
                     imageUrl
                       ? {uri: imageUrl}
-                      : require('../../assets/images/kino-yellow.png')
+                      : require('../../assets/images/default.png')
                   }
                   style={styles.profileImage}
                 />
