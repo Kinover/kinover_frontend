@@ -37,7 +37,7 @@ export default function ChatRoomScreenTemplate({
 
   useHideTabBar();
 
-  useHeaderSetting(navigation, setIsSettingsOpen, chatRoom.roomName);
+  useHeaderSetting(navigation, setIsSettingsOpen, chatRoom.roomName, isKino);
 
   useEffect(() => {
     if (chatRoom?.chatRoomId) {

@@ -29,8 +29,6 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../../../utils/responsive';
-import {WINDOW_HEIGHT, WINDOW_WIDTH} from '@gorhom/bottom-sheet';
-
 const {width} = Dimensions.get('window');
 
 export default function ChatSettings({
@@ -41,6 +39,7 @@ export default function ChatSettings({
   onToggleNotifications,
   chatRoomId,
   navigation,
+  isKino,
 }) {
   const translateX = useSharedValue(width);
   const chatRoomUsers = useSelector(state => state.chatRoom.chatRoomUsers);
@@ -140,58 +139,62 @@ export default function ChatSettings({
         </View>
 
         <View style={styles.content}>
-          <TouchableOpacity
-            style={styles.option}
-            onPress={() => setIsRenameModalVisible(true)}>
-            <Text style={styles.optionText}>이름 변경</Text>
-          </TouchableOpacity>
-
-          <View style={{display: 'flex', justifyContent: 'space-between'}}>
+          {isKino && (
             <TouchableOpacity
-              onPress={() => setShowMembers(!showMembers)}
-              style={styles.option}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}>
-                <Text style={styles.optionText}>멤버 목록</Text>
-                <Image
-                  source={require('../../../../assets/images/down-yellow.png')}
-                  style={{
-                    resizeMode: 'contain',
-                    width: getResponsiveWidth(17),
-                    height: getResponsiveHeight(17),
-                    marginRight: getResponsiveWidth(5),
-                    transform: [{rotate: showMembers ? '0deg' : '180deg'}], // ✅ 추가
-                  }}
-                />
-              </View>
-              {showMembers && (
-                <ScrollView style={styles.memberList}>
-                  {chatRoomUsers?.map(user => (
-                    <View key={user.userId} style={styles.memberItem}>
-                      <Image
-                        source={{uri: user.image}}
-                        style={styles.memberImage}
-                      />
-                      <Text style={styles.memberName}>{user.name}</Text>
-                    </View>
-                  ))}
-                  <TouchableOpacity
-                    onPress={handleShowMembers}
-                    style={styles.addMemberButton}>
-                    <Image
-                      source={require('../../../../assets/images/addMember-bt.png')}
-                      style={styles.addIcon}
-                    />
-                    <Text style={styles.addText}>새 멤버 초대</Text>
-                  </TouchableOpacity>
-                </ScrollView>
-              )}
+              style={styles.option}
+              onPress={() => setIsRenameModalVisible(true)}>
+              <Text style={styles.optionText}>이름 변경</Text>
             </TouchableOpacity>
-          </View>
+          )}
+
+          {isKino && (
+            <View style={{display: 'flex', justifyContent: 'space-between'}}>
+              <TouchableOpacity
+                onPress={() => setShowMembers(!showMembers)}
+                style={styles.option}>
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}>
+                  <Text style={styles.optionText}>멤버 목록</Text>
+                  <Image
+                    source={require('../../../../assets/images/down-yellow.png')}
+                    style={{
+                      resizeMode: 'contain',
+                      width: getResponsiveWidth(17),
+                      height: getResponsiveHeight(17),
+                      marginRight: getResponsiveWidth(5),
+                      transform: [{rotate: showMembers ? '0deg' : '180deg'}], // ✅ 추가
+                    }}
+                  />
+                </View>
+                {showMembers && (
+                  <ScrollView style={styles.memberList}>
+                    {chatRoomUsers?.map(user => (
+                      <View key={user.userId} style={styles.memberItem}>
+                        <Image
+                          source={{uri: user.image}}
+                          style={styles.memberImage}
+                        />
+                        <Text style={styles.memberName}>{user.name}</Text>
+                      </View>
+                    ))}
+                    <TouchableOpacity
+                      onPress={handleShowMembers}
+                      style={styles.addMemberButton}>
+                      <Image
+                        source={require('../../../../assets/images/addMember-bt.png')}
+                        style={styles.addIcon}
+                      />
+                      <Text style={styles.addText}>새 멤버 초대</Text>
+                    </TouchableOpacity>
+                  </ScrollView>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
 
           <TouchableOpacity style={styles.option} onPress={onShowMedia}>
             <Text style={styles.optionText}>사진 & 영상</Text>
