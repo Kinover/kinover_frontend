@@ -30,6 +30,7 @@ import {
   getResponsiveIconSize,
 } from '../../../../utils/responsive';
 const {width} = Dimensions.get('window');
+import ChangeKinoModal from './modal/changeKinoModal';
 
 export default function ChatSettings({
   isOpen,
@@ -41,6 +42,8 @@ export default function ChatSettings({
   navigation,
   isKino,
 }) {
+  const [isChangeKinoModalVisible, setIsChangeKinoModalVisible] =
+    useState(false);
   const translateX = useSharedValue(width);
   const chatRoomUsers = useSelector(state => state.chatRoom.chatRoomUsers);
   const dispatch = useDispatch();
@@ -122,6 +125,15 @@ export default function ChatSettings({
           newRoomName={newRoomName}
           setNewRoomName={setNewRoomName}
         />
+        <ChangeKinoModal
+          visible={isChangeKinoModalVisible}
+          onClose={() => setIsChangeKinoModalVisible(false)}
+          onConfirm={() => {
+            setIsChangeKinoModalVisible(false);
+            // ✅ 여기에 키노 초기화/교체 로직 연결
+            navigation.navigate('키노선택화면'); // 예시
+          }}
+        />
       </View>
       {isOpen && (
         <BlurView
@@ -197,6 +209,15 @@ export default function ChatSettings({
             </View>
           )}
 
+          {isKino && (
+            <TouchableOpacity style={styles.option}>
+              <Text
+                style={styles.optionText}
+                onPress={() => setIsChangeKinoModalVisible(true)}>
+                키노 교체하기
+              </Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity style={styles.option} onPress={onShowMedia}>
             <Text style={styles.optionText}>사진 & 영상</Text>
           </TouchableOpacity>
