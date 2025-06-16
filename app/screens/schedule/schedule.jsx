@@ -19,9 +19,9 @@ import {
   fetchSchedulesForFamilyAndDateThunk,
   addScheduleThunk,
   updateScheduleThunk,
+  deleteScheduleThunk,
 } from '../../redux/thunk/scheduleThunk';
 import CustomModal from '../../utils/customModal';
-import { WINDOW_HEIGHT } from '@gorhom/bottom-sheet';
 
 export default function Schedule({selectedDate}) {
   const dispatch = useDispatch();
@@ -31,12 +31,10 @@ export default function Schedule({selectedDate}) {
   const {familyUserList} = useSelector(state => state.userFamily);
   const currentUser = useSelector(state => state.user);
   const [selectedUserId, setSelectedUserId] = useState('family');
-
   const [modalVisible, setModalVisible] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [title, setTitle] = useState('');
   const [memo, setMemo] = useState('');
-
   const formattedDate = selectedDate.toISOString().split('T')[0];
 
   useEffect(() => {
@@ -50,6 +48,16 @@ export default function Schedule({selectedDate}) {
     const day = selectedDate.getDate();
     const dayOfWeek = dayMap[selectedDate.getDay()];
     return `${year}년 ${month}월 ${day}일 (${dayOfWeek})`;
+  };
+
+  const handleDeleteSchedule = async () => {
+    if (editingSchedule?.scheduleId) {
+      await dispatch(deleteScheduleThunk(editingSchedule.scheduleId));
+      setModalVisible(false);
+      setTitle('');
+      setMemo('');
+      setEditingSchedule(null);
+    }
   };
 
   const filteredSchedules =
@@ -89,7 +97,7 @@ export default function Schedule({selectedDate}) {
       title,
       memo,
       date: formattedDate,
-      isPersonal: selectedUserId !== 'family',
+      personal: selectedUserId !== 'family',
       userId: selectedUserId === 'family' ? null : selectedUserId,
       familyId: familyId,
     };
@@ -107,7 +115,7 @@ export default function Schedule({selectedDate}) {
   };
 
   return (
-    <View contentContainerStyle={styles.container} >
+    <View contentContainerStyle={styles.container}>
       <Text style={styles.dateText}>{getFormattedDate()}</Text>
 
       {/* 유저 탭 */}
@@ -164,7 +172,6 @@ export default function Schedule({selectedDate}) {
       </View>
 
       {/* 일정 추가/수정 모달 */}
-
       <CustomModal
         visible={modalVisible}
         onClose={() => setModalVisible(false)}
@@ -189,7 +196,10 @@ export default function Schedule({selectedDate}) {
           color: '#333',
           fontFamily: 'Pretendard-Regular',
           textAlign: 'center',
-        }}>
+        }}
+        showTrashButton={true} // ← 일정 모달일 때만 true
+        onTrashPress={handleDeleteSchedule} // ← 휴지통 버튼 누를 때 동작
+      >
         <TextInput
           value={title}
           onChangeText={setTitle}
@@ -224,9 +234,9 @@ export default function Schedule({selectedDate}) {
 
 const styles = StyleSheet.create({
   container: {
-    flex:1,
+    flex: 1,
     paddingHorizontal: getResponsiveWidth(10),
-    paddingVertical:getResponsiveHeight(80),
+    paddingVertical: getResponsiveHeight(80),
   },
   dateText: {
     fontSize: getResponsiveFontSize(16),
@@ -266,9 +276,9 @@ const styles = StyleSheet.create({
     fontWeight: Platform.OS == 'ios' ? null : '700',
   },
   timelineWrapper: {
-    position:'relative',
+    position: 'relative',
     flexDirection: 'row',
-    height:'100%',
+    height: '100%',
     alignItems: 'flex-start',
   },
   verticalLine1: {

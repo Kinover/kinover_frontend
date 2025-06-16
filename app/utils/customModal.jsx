@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Image,
 } from 'react-native';
 import {BlurView} from '@react-native-community/blur';
 import {
@@ -13,7 +14,6 @@ import {
   getResponsiveWidth,
   getResponsiveFontSize,
 } from './responsive';
-// import Modal from 'react-native-modal';
 
 export default function CustomModal({
   visible,
@@ -29,6 +29,8 @@ export default function CustomModal({
   confirmText,
   closeText,
   buttonBottomStyle,
+  showTrashButton = false, // ✅ 추가: 일정 모달일 때만 true
+  onTrashPress, // ✅ 추가: 휴지통 버튼 클릭 이벤트
 }) {
   return (
     <Modal
@@ -36,9 +38,8 @@ export default function CustomModal({
       transparent={true}
       visible={visible}
       onRequestClose={onClose}
-      presentationStyle="overFullScreen" // ✅ 이거 중요
-      statusBarTranslucent={true} // ✅ Android에서 전체 덮기
-    >
+      presentationStyle="overFullScreen"
+      statusBarTranslucent={true}>
       <BlurView
         style={[
           StyleSheet.absoluteFill,
@@ -48,30 +49,47 @@ export default function CustomModal({
             backgroundColor:
               Platform.OS === 'android'
                 ? 'rgba(0, 0, 0, 0.1)'
-                : 'rgba(0, 0, 0, 0.2)', // ← ✅ 핵심!
+                : 'rgba(0, 0, 0, 0.2)',
           },
         ]}
-        blurType="light" // or 'light', 'extraLight', etc.
-        blurAmount={2} // 흐림 정도
+        blurType="light"
+        blurAmount={2}
         reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.4)"
-
-        // ✅ 여기!
-      ></BlurView>
+      />
 
       <View style={[styles.overlay]}>
         <View style={[styles.modalBox, modalBoxStyle]}>
-          {/* 모달 내용 */}
-          {/* 상단 닫기 버튼 */}
-          <TouchableOpacity
-            style={styles.closeXButton}
-            onPress={onClose}
-            hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-            <Text style={styles.closeXText}>×</Text>
-          </TouchableOpacity>
+          {/* 닫기(X) + 휴지통 버튼 */}
+          <View
+            style={[
+              styles.topButtonRow,
+              showTrashButton && {
+                justifyContent: 'space-between',
+                width: '100%',
+              },
+            ]}>
+            {showTrashButton && (
+              <TouchableOpacity
+                onPress={onTrashPress}
+                style={styles.trashButton}
+                hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+                <Image
+                  source={require('../assets/images/trash.png')}
+                  style={styles.trashIcon}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={styles.closeXButton}
+              onPress={onClose}
+              hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+              <Text style={styles.closeXText}>×</Text>
+            </TouchableOpacity>
+          </View>
 
           <View style={[styles.contentWrapper, contentStyle]}>{children}</View>
 
-          {/* 버튼 영역 */}
           <View style={[styles.buttonBottom, buttonBottomStyle]}>
             {closeText && (
               <TouchableOpacity
@@ -106,11 +124,34 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(320),
     height: 'auto',
     padding: 20,
-    backgroundColor: 'white', // ✅ 유지
-    borderRadius: 10, // ✅ 유지
+    backgroundColor: 'white',
+    borderRadius: 10,
     paddingTop: getResponsiveHeight(30),
-    zIndex: 50, // iOS
-    elevation: 10, // Android
+    zIndex: 50,
+    elevation: 10,
+  },
+  topButtonRow: {
+    position: 'absolute',
+    top: getResponsiveHeight(5),
+    right: getResponsiveWidth(15),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    zIndex: 5,
+  },
+  closeXButton: {
+    marginRight: 10,
+  },
+  closeXText: {
+    fontSize: getResponsiveFontSize(26),
+    color: '#FFC84D',
+  },
+  trashButton: {
+    padding: 4,
+  },
+  trashIcon: {
+    width: getResponsiveWidth(16),
+    height: getResponsiveHeight(16),
   },
   contentWrapper: {
     marginBottom: 20,
@@ -141,17 +182,5 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     width: '100%',
     textAlign: 'center',
-  },
-
-  closeXButton: {
-    position: 'absolute',
-    top: getResponsiveHeight(5),
-    right: getResponsiveWidth(15),
-    zIndex: 5,
-  },
-
-  closeXText: {
-    fontSize: getResponsiveFontSize(26),
-    color: '#FFC84D',
   },
 });
