@@ -8,6 +8,7 @@ import {RenderGoBackButton} from '../tabHeaderHelpers';
 import {Image, Platform, View} from 'react-native';
 import {getResponsiveWidth, getResponsiveHeight} from '../../utils/responsive';
 import SettingScreen from '../../components/settingScreen';
+import NotificationSettingScreen from '../../components/notificationSettingScreen';
 
 const Stack = createStackNavigator();
 
@@ -63,6 +64,13 @@ export default function HomeStack() {
       <Stack.Screen
         name="설정화면"
         component={SettingScreen}
+        options={({navigation}) => ({
+          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+        })}
+      />
+      <Stack.Screen
+        name="알림설정화면"
+        component={NotificationSettingScreen}
         options={({navigation}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}
