@@ -1,50 +1,62 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, Animated } from 'react-native';
-import {getResponsiveFontSize,getResponsiveHeight,getResponsiveWidth} from './responsive';
+import React, {useState} from 'react';
+import {View, Text, TouchableOpacity, Animated} from 'react-native';
+import {
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveWidth,
+} from './responsive';
 
-export default function CustomSwitch({ isEnabled, toggleSwitch }) {
+export default function CustomSwitch({isEnabled, toggleSwitch}) {
   const [thumbPosition] = useState(new Animated.Value(isEnabled ? 40 : 0));
 
   React.useEffect(() => {
     Animated.spring(thumbPosition, {
-      toValue: isEnabled ? 37 : 0,
+      toValue: isEnabled ? getResponsiveWidth(24) : 0,
       useNativeDriver: false,
     }).start();
   }, [isEnabled]);
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={toggleSwitch} style={styles.switchContainer}>
-        <Text style={[styles.text, { left: 15 }]}>전체</Text>
-        <Animated.View style={[styles.switchThumb, { transform: [{ translateX: thumbPosition }] }]} />
-        <Text style={[styles.text, { right: 15 }]}>앨범</Text>
+      <TouchableOpacity
+        onPress={toggleSwitch}
+        style={[
+          styles.switchContainer,
+          {backgroundColor: isEnabled ? '#FFC84D' : '#ccc'},
+        ]}>
+        <Animated.View
+          style={[
+            styles.switchThumb,
+            {transform: [{translateX: thumbPosition}]},
+          ]}
+        />
       </TouchableOpacity>
     </View>
   );
 }
 
-
 const styles = {
   container: {
     position: 'relative',
-    width: getResponsiveWidth(80),
-    height: getResponsiveHeight(30),
+    width: getResponsiveWidth(60),
+    height: getResponsiveWidth(30),
   },
 
   switchContainer: {
-    width: getResponsiveWidth(80),
+    width: getResponsiveWidth(55),
     height: getResponsiveWidth(30),
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#FFC84D',
     borderRadius: 30,
     justifyContent: 'center',
     position: 'relative', // 위치 설정을 위해 relative로 설정
   },
   switchThumb: {
-    width: 50,
-    height: 30,
-    borderRadius: 50,
-    backgroundColor: '#FFC84D',
+    width: 25,
+    height: 25,
+    borderRadius: 12.5,
+    backgroundColor: 'white',
     position: 'absolute', // thumb를 절대 위치로 설정
+    left: 3,
   },
   text: {
     fontSize: 12,
