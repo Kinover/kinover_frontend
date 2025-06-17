@@ -31,9 +31,9 @@ export default function ChangeKinoModal({visible, onClose, onConfirm}) {
 
 const styles = StyleSheet.create({
   modalTitle: {
-    fontSize: 17,
+    fontSize: 18,
     textAlign: 'center',
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: 'Pretendard-SemiBold',
     fontWeight: Platform.OS === 'ios' ? null : '700',
     marginBottom: getResponsiveHeight(8),
     marginTop: getResponsiveHeight(15),
@@ -44,7 +44,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Regular',
     fontSize: getResponsiveFontSize(12),
     lineHeight: getResponsiveHeight(20),
-    marginBottom: getResponsiveHeight(10),
   },
   modalText: {
     fontFamily: 'Pretendard-Regular',

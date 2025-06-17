@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 19,
     textAlign: 'center',
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: 'Pretendard-SemiBold',
     fontWeight: Platform.OS === 'ios' ? null : '700',
     marginBottom: getResponsiveHeight(5),
     marginTop: getResponsiveHeight(10),
