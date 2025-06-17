@@ -190,13 +190,13 @@ export function RenderHeaderRightChatSetting({setIsSettingsOpen}) {
   );
 }
 
-// 헤더 좌측 알림 버튼
+// 헤더 우측 알림 버튼
 export function RenderHeaderRightSetting({navigation}) {
   return (
     <TouchableOpacity
       onPress={() =>
         navigation.navigate('Tabs', {
-          screen: '설정화면',
+          screen: '감정기록',
           params: {screen: '설정화면'},
         })
       }>

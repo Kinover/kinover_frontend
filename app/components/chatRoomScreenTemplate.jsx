@@ -19,9 +19,9 @@ export default function ChatRoomScreenTemplate({
   isKino,
   navigation,
 }) {
+
   const dispatch = useDispatch();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-
   const {
     flatListRef,
     messageList,
