@@ -19,6 +19,7 @@ export const fetchUserThunk = () => {
         },
       });
 
+      console.log(response.data);
       dispatch(setUser(response.data));
     } catch (error) {
       dispatch(setUserError(error.message));

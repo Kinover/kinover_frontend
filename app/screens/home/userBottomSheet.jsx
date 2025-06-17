@@ -28,7 +28,6 @@ export default function UserBottomSheet({
   onCancel,
 }) {
   const snapPoints = useMemo(() => ['60%'], []);
-
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');

@@ -17,6 +17,7 @@ import NotificationScreen from '../../components/notificationScreen';
 import AddChatMemeberScreen from '../../screens/communication/chatRoom/setting/addChatMemberScreen';
 import CreateChatRoom from '../../screens/communication/createChatRoom';
 import ChatRoom from '../../screens/communication/chatRoom/chatRoom';
+import KinoSelectScreen from '../../screens/communication/chatRoom/kinoSelectScreen';
 
 const Stack = createStackNavigator();
 
@@ -91,12 +92,24 @@ export default function CommunicationStack() {
           // ),
         })}
       />
+
+      <Stack.Screen
+        name="키노선택화면"
+        component={KinoSelectScreen}
+        options={({navigation, route}) => ({
+          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          // headerRight: () => (
+          //   <RenderHeaderRightChatSetting
+          //     setIsSettingsOpen={setIsSettingsOpen}
+          //   />
+          // ),
+        })}
+      />
       <Stack.Screen
         name="채팅방화면"
         component={ChatRoom}
         options={({navigation, route}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-
         })}
       />
       <Stack.Screen

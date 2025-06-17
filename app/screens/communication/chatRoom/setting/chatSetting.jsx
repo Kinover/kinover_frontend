@@ -1,12 +1,4 @@
 import React, {useEffect, useState} from 'react';
-import {BlurView} from '@react-native-community/blur';
-import {useSelector, useDispatch} from 'react-redux';
-import LeaveChatRoomModal from './modal/leaveChatRoomModal';
-import RenameChatRoomModal from './modal/renameChatRoomModal';
-import {
-  fetchChatRoomUsersThunk,
-  renameChatRoomThunk,
-} from '../../../../redux/thunk/chatRoomThunk';
 import {
   View,
   Text,
@@ -15,22 +7,30 @@ import {
   Dimensions,
   Image,
   Modal,
-  TextInput,
   ScrollView,
 } from 'react-native';
+import {BlurView} from '@react-native-community/blur';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
+import {useSelector, useDispatch} from 'react-redux';
+import LeaveChatRoomModal from './modal/leaveChatRoomModal';
+import RenameChatRoomModal from './modal/renameChatRoomModal';
+import ChangeKinoModal from './modal/changeKinoModal';
+import {
+  fetchChatRoomUsersThunk,
+  renameChatRoomThunk,
+} from '../../../../redux/thunk/chatRoomThunk';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../../../utils/responsive';
+
 const {width} = Dimensions.get('window');
-import ChangeKinoModal from './modal/changeKinoModal';
 
 export default function ChatSettings({
   isOpen,
@@ -41,50 +41,22 @@ export default function ChatSettings({
   chatRoomId,
   navigation,
   isKino,
+  onNavigateToKino,
 }) {
+  if (!isOpen) return null; // ✅ Modal 완전 제거
+
   const [isChangeKinoModalVisible, setIsChangeKinoModalVisible] =
     useState(false);
-  const translateX = useSharedValue(width);
-  const chatRoomUsers = useSelector(state => state.chatRoom.chatRoomUsers);
-  const dispatch = useDispatch();
   const [isLeaveModalVisible, setIsLeaveModalVisible] = useState(false);
   const [isRenameModalVisible, setIsRenameModalVisible] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
+  const [showMembers, setShowMembers] = useState(false);
+  const translateX = useSharedValue(width);
+
+  const chatRoomUsers = useSelector(state => state.chatRoom.chatRoomUsers);
   const familyId = useSelector(state => state.family.familyId);
   const userId = useSelector(state => state.user.userId);
-  const [showMembers, setShowMembers] = useState(false);
-
-  const handleRenameChatRoom = () => {
-    if (!newRoomName.trim()) return;
-
-    dispatch(
-      renameChatRoomThunk({
-        familyId,
-        userId,
-        chatRoomId,
-        roomName: newRoomName,
-      }),
-    )
-      .unwrap()
-      .then(() => {
-        setIsRenameModalVisible(false);
-        setNewRoomName('');
-      })
-      .catch(err => {
-        console.warn('❌ 이름 변경 실패:', err);
-      });
-  };
-
-  const handleShowMembers = () => {
-    onClose(); // ✅ 모달 닫고
-    navigation.navigate('채팅방멤버추가화면', {chatRoomId});
-  };
-
-  const handleLeaveConfirm = () => {
-    onClose(); // ✅ ChatSettings 모달 먼저 닫기
-    setIsLeaveModalVisible(false);
-    onLeaveChat(dispatch, navigation, chatRoomId);
-  };
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (isOpen && chatRoomId) {
@@ -102,13 +74,49 @@ export default function ChatSettings({
     transform: [{translateX: translateX.value}],
   }));
 
+  const handleRenameChatRoom = () => {
+    if (!newRoomName.trim()) return;
+
+    dispatch(
+      renameChatRoomThunk({
+        familyId,
+        userId,
+        chatRoomId,
+        roomName: newRoomName,
+      }),
+    )
+      .unwrap()
+      .then(() => {
+        setIsRenameModalVisible(false);
+        setNewRoomName('');
+      })
+      .catch(err => console.warn('❌ 이름 변경 실패:', err));
+  };
+
+  const handleShowMembers = () => {
+    onClose();
+    navigation.navigate('채팅방멤버추가화면', {chatRoomId});
+  };
+
+  const handleLeaveConfirm = () => {
+    onClose();
+    setIsLeaveModalVisible(false);
+    onLeaveChat(dispatch, navigation, chatRoomId);
+  };
+
+  const handleGoToKinoSelect = () => {
+    onClose(); // 먼저 모달 닫기
+    navigation.navigate('키노선택화면');
+  };
+
   return (
     <Modal
-      visible={isOpen}
+      visible={true}
       transparent
       animationType="none"
       onRequestClose={onClose}
       statusBarTranslucent={true}>
+      {/* 모달 내부 모달들 */}
       <View>
         <LeaveChatRoomModal
           visible={isLeaveModalVisible}
@@ -128,24 +136,20 @@ export default function ChatSettings({
         <ChangeKinoModal
           visible={isChangeKinoModalVisible}
           onClose={() => setIsChangeKinoModalVisible(false)}
-          onConfirm={() => {
-            setIsChangeKinoModalVisible(false);
-            // ✅ 여기에 키노 초기화/교체 로직 연결
-            navigation.navigate('키노선택화면'); // 예시
-          }}
+          onConfirm={handleGoToKinoSelect}
         />
       </View>
-      {isOpen && (
-        <BlurView
-          style={[StyleSheet.absoluteFill, styles.blurOverlay]}
-          blurType="light"
-          blurAmount={2}
-          reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.4)"
-        />
-      )}
 
-      {isOpen && <TouchableOpacity style={styles.backdrop} onPress={onClose} />}
+      {/* 배경 블러/터치 */}
+      <BlurView
+        style={[StyleSheet.absoluteFill, styles.blurOverlay]}
+        blurType="light"
+        blurAmount={2}
+        reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.4)"
+      />
+      <TouchableOpacity style={styles.backdrop} onPress={onClose} />
 
+      {/* 설정 패널 */}
       <Animated.View style={[styles.container, animatedStyle]}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>채팅방 설정</Text>
@@ -161,66 +165,64 @@ export default function ChatSettings({
           )}
 
           {!isKino && (
-            <View style={{display: 'flex', justifyContent: 'space-between'}}>
-              <TouchableOpacity
-                onPress={() => setShowMembers(!showMembers)}
-                style={styles.option}>
-                <View
+            <TouchableOpacity
+              onPress={() => setShowMembers(!showMembers)}
+              style={styles.option}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}>
+                <Text style={styles.optionText}>멤버 목록</Text>
+                <Image
+                  source={require('../../../../assets/images/down-yellow.png')}
                   style={{
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}>
-                  <Text style={styles.optionText}>멤버 목록</Text>
-                  <Image
-                    source={require('../../../../assets/images/down-yellow.png')}
-                    style={{
-                      resizeMode: 'contain',
-                      width: getResponsiveWidth(17),
-                      height: getResponsiveHeight(17),
-                      marginRight: getResponsiveWidth(5),
-                      transform: [{rotate: showMembers ? '0deg' : '180deg'}], // ✅ 추가
-                    }}
-                  />
-                </View>
-                {showMembers && (
-                  <ScrollView style={styles.memberList}>
-                    {chatRoomUsers?.map(user => (
-                      <View key={user.userId} style={styles.memberItem}>
-                        <Image
-                          source={{uri: user.image}}
-                          style={styles.memberImage}
-                        />
-                        <Text style={styles.memberName}>{user.name}</Text>
-                      </View>
-                    ))}
-                    <TouchableOpacity
-                      onPress={handleShowMembers}
-                      style={styles.addMemberButton}>
+                    resizeMode: 'contain',
+                    width: getResponsiveWidth(17),
+                    height: getResponsiveHeight(17),
+                    marginRight: getResponsiveWidth(5),
+                    transform: [{rotate: showMembers ? '0deg' : '180deg'}],
+                  }}
+                />
+              </View>
+              {showMembers && (
+                <ScrollView style={styles.memberList}>
+                  {chatRoomUsers?.map(user => (
+                    <View key={user.userId} style={styles.memberItem}>
                       <Image
-                        source={require('../../../../assets/images/addMember-bt.png')}
-                        style={styles.addIcon}
+                        source={{uri: user.image}}
+                        style={styles.memberImage}
                       />
-                      <Text style={styles.addText}>새 멤버 초대</Text>
-                    </TouchableOpacity>
-                  </ScrollView>
-                )}
-              </TouchableOpacity>
-            </View>
+                      <Text style={styles.memberName}>{user.name}</Text>
+                    </View>
+                  ))}
+                  <TouchableOpacity
+                    onPress={handleShowMembers}
+                    style={styles.addMemberButton}>
+                    <Image
+                      source={require('../../../../assets/images/addMember-bt.png')}
+                      style={styles.addIcon}
+                    />
+                    <Text style={styles.addText}>새 멤버 초대</Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              )}
+            </TouchableOpacity>
           )}
 
           {isKino && (
-            <TouchableOpacity style={styles.option}>
-              <Text
-                style={styles.optionText}
-                onPress={() => setIsChangeKinoModalVisible(true)}>
-                키노 교체하기
-              </Text>
+            <TouchableOpacity
+              style={styles.option}
+              onPress={() => setIsChangeKinoModalVisible(true)}>
+              <Text style={styles.optionText}>키노 교체하기</Text>
             </TouchableOpacity>
           )}
+
           <TouchableOpacity style={styles.option} onPress={onShowMedia}>
             <Text style={styles.optionText}>사진 & 영상</Text>
           </TouchableOpacity>
+
           <TouchableOpacity
             style={styles.option}
             onPress={onToggleNotifications}>
@@ -285,13 +287,12 @@ const styles = StyleSheet.create({
     gap: 15,
   },
   option: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     justifyContent: 'flex-start',
     paddingVertical: 7,
     borderBottomWidth: 1,
     borderColor: '#ddd',
     marginVertical: 10,
-    flexDirection: 'column',
   },
   optionText: {
     fontSize: getResponsiveFontSize(17),
@@ -354,41 +355,5 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Regular',
     color: 'red',
     fontSize: getResponsiveFontSize(14),
-  },
-  modalTitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    fontFamily: 'Pretendard-SemiBold',
-    marginBottom: getResponsiveHeight(10),
-  },
-  modalText: {
-    fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(14),
-  },
-  modalButtonRow: {
-    flexDirection: 'row',
-    gap: getResponsiveWidth(10),
-    justifyContent: 'space-between',
-  },
-  confirmButton: {
-    flex: 1,
-    backgroundColor: '#FFC84D',
-    paddingVertical: getResponsiveHeight(10),
-    borderRadius: 8,
-  },
-  closeButton: {
-    flex: 1,
-    backgroundColor: '#E0E0E0',
-    paddingVertical: getResponsiveHeight(10),
-    borderRadius: 8,
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    padding: 10,
-    fontSize: getResponsiveFontSize(14),
-    backgroundColor: '#fff',
-    fontFamily: 'Pretendard-Regular',
   },
 });
