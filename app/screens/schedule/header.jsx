@@ -13,54 +13,46 @@ import {
   getResponsiveWidth,
 } from '../../utils/responsive';
 
-// 📌 선택한 날짜가 속한 주의 시작 날짜를 구하는 함수
-const getWeekStartDate = date => {
-  const newDate = new Date(date);
-  const dayOfWeek = newDate.getDay(); // 0(일) ~ 6(토)
-
-  // 일요일(0)을 포함하는 주의 시작을 월요일(1)로 계산
-  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // 월요일이 시작일
-  newDate.setDate(newDate.getDate() + diff); // 주 시작일로 조정
-  return newDate;
-};
-
-// 📌 현재 선택한 날짜 기준으로 한 주의 날짜를 설정하는 함수
-const updateWeekDates = (date, setWeekDates) => {
-  const startDate = getWeekStartDate(date); // 주 시작일을 구함
-  const newWeekDates = [];
-
-  // 7일을 계산하여 주의 모든 날짜를 배열에 담음
-  for (let i = 0; i < 7; i++) {
-    const currentDate = new Date(startDate);
-    currentDate.setDate(startDate.getDate() + i); // 각 날짜를 계산
-    newWeekDates.push({
-      date: currentDate,
-      isSelected: currentDate.toDateString() === date.toDateString(), // 선택된 날짜를 확인
-    });
-  }
-
-  // 주의 날짜 배열을 업데이트
-  setWeekDates(newWeekDates);
-};
-
 export default function Calendar({selectedDate, setSelectedDate}) {
-  // const [selectedDate, setSelectedDate] = useState(new Date());
-  const [weekDates, setWeekDates] = useState([]);
-  const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [monthDates, setMonthDates] = useState([]);
+  const [currentMonth, setCurrentMonth] = useState(selectedDate.getMonth());
+  const [currentYear, setCurrentYear] = useState(selectedDate.getFullYear());
 
-  // 📌 초기 상태로 한 주의 날짜를 설정
+  const updateMonthDates = date => {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+
+    const startDate = new Date(firstDay);
+    startDate.setDate(firstDay.getDate() - firstDay.getDay()); // 일요일부터
+
+    const totalDays = 37; // 6줄 × 7칸
+    const dates = [];
+
+    for (let i = 0; i < totalDays; i++) {
+      const d = new Date(startDate);
+      d.setDate(startDate.getDate() + i);
+      dates.push({
+        date: d,
+        isSelected: d.toDateString() === date.toDateString(),
+        isCurrentMonth: d.getMonth() === month,
+      });
+    }
+
+    setMonthDates(dates);
+    setCurrentMonth(month);
+    setCurrentYear(year);
+  };
+
   useEffect(() => {
-    updateWeekDates(selectedDate, setWeekDates);
-    setCurrentMonth(selectedDate.getMonth()); // 선택된 날짜에 맞춰 월 업데이트
-    setCurrentYear(selectedDate.getFullYear()); // 선택된 날짜에 맞춰 년도 업데이트
+    updateMonthDates(selectedDate);
   }, [selectedDate]);
 
-  // 📌 주 변경 함수
-  const changeWeek = direction => {
-    const newDate = new Date(selectedDate);
-    newDate.setDate(selectedDate.getDate() + direction * 7); // 한 주 전후로 날짜 변경
+  const changeMonth = direction => {
+    const newDate = new Date(currentYear, currentMonth + direction, 1);
     setSelectedDate(newDate);
+    updateMonthDates(newDate);
   };
 
   return (
@@ -71,62 +63,47 @@ export default function Calendar({selectedDate, setSelectedDate}) {
         </Text>
 
         <View style={styles.monthChangeButtonGroup}>
-          <TouchableOpacity
-            onPress={() => changeWeek(-1)}
-            style={styles.monthChangeButton}>
+          <TouchableOpacity onPress={() => changeMonth(-1)}>
             <Image
-              source={{
-                uri: 'https://i.postimg.cc/4xGvZv46/Group-440-5.png',
-              }}
-              style={{
-                width: getResponsiveWidth(5.63),
-                height: getResponsiveHeight(11.26),
-              }}
+              source={{uri: 'https://i.postimg.cc/4xGvZv46/Group-440-5.png'}}
+              style={{width: 15, height: 15, resizeMode: 'contain'}}
             />
           </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => changeWeek(1)}
-            style={styles.monthChangeButton}>
+          <TouchableOpacity onPress={() => changeMonth(1)}>
             <Image
-              source={{
-                uri: 'https://i.postimg.cc/WbLg6mkB/Group-441-2.png',
-              }}
-              style={{
-                width: getResponsiveWidth(5.63),
-                height: getResponsiveHeight(11.26),
-              }}
+              source={{uri: 'https://i.postimg.cc/WbLg6mkB/Group-441-2.png'}}
+              style={{width: 15, height: 15, resizeMode: 'contain'}}
             />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* 📌 주간 캘린더 */}
-      <View style={styles.weekContainer}>
-        <View style={styles.weekDatesContainer}>
-          {weekDates.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={styles.dayContainer}
-              onPress={() => setSelectedDate(item.date)} // 선택한 날짜로 변경
-            >
-              <Text style={styles.dayText}>
-                {['월', '화', '수', '목', '금', '토', '일'][index]}
-              </Text>
-              <View style={styles.ovalGroup}>
-                <Text style={styles.ovalLeft}></Text>
-                <Text style={styles.ovalRight}></Text>
-              </View>
-              <Text
-                style={[
-                  styles.dateText,
-                  item.isSelected ? styles.selectedText : {},
-                ]}>
-                {item.date.getDate()}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      {/* 요일 헤더 */}
+      <View style={styles.weekRow}>
+        {['일', '월', '화', '수', '목', '금', '토'].map(day => (
+          <Text key={day} style={styles.dayText}>
+            {day}
+          </Text>
+        ))}
+      </View>
+
+      {/* 날짜 그리드 */}
+      <View style={styles.dateGrid}>
+        {monthDates.map((item, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[
+              styles.dayBox,
+              item.isSelected && styles.selectedBox,
+              !item.isCurrentMonth && {opacity: 0.3},
+            ]}
+            onPress={() => setSelectedDate(item.date)}>
+            <Text
+              style={[styles.dateText, item.isSelected && styles.selectedText]}>
+              {item.date.getDate()}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
     </View>
   );
@@ -134,106 +111,56 @@ export default function Calendar({selectedDate, setSelectedDate}) {
 
 const styles = StyleSheet.create({
   mainCalendarContainer: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: getResponsiveWidth(30),
-    paddingVertical: getResponsiveHeight(30),
-    borderColor: '#FFC84D',
     borderWidth: 1,
+    borderColor: '#FFC84D',
     borderRadius: 20,
-    width: getResponsiveWidth(350),
-    height: getResponsiveHeight(148),
+    padding: 16,
     marginBottom: getResponsiveHeight(20),
   },
-
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: getResponsiveHeight(20),
-    width: getResponsiveWidth(310),
   },
-
-  monthChangeButtonGroup: {
-    display: 'flex',
-    flexDirection: 'row',
-    gap: getResponsiveWidth(20),
-  },
-
   monthText: {
     fontFamily: 'Pretendard-Bold',
-    fontSize: getResponsiveFontSize(15),
-    fontWeight: Platform.OS == 'ios' ? null : 'bold',
+    fontSize: getResponsiveFontSize(18),
   },
-
-  monthChangeButton: {
-    color: 'black',
+  monthChangeButtonGroup: {
+    flexDirection: 'row',
+    gap: 10,
   },
-
-  weekContainer: {
-    paddingHorizontal: getResponsiveWidth(10),
-  },
-
-  weekDatesContainer: {
+  weekRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: getResponsiveWidth(310),
+    marginBottom: 10,
   },
-
-  dayContainer: {
-    width: getResponsiveWidth(30),
-    height: getResponsiveHeight(60),
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderRadius: 10,
-    backgroundColor: 'white',
-    flexDirection: 'column', // 📌 세로 방향 정렬
-    gap: getResponsiveHeight(5), // 📌 아이콘과 날짜 사이 여백 조정
-  },
-
   dayText: {
-    fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(12),
-    color: 'black',
+    width: `${100 / 7}%`,
+    textAlign: 'center',
+    fontSize: getResponsiveFontSize(15),
+    fontFamily: 'Pretendard-Medium',
   },
-
+  dateGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  dayBox: {
+    width: `${100 / 7}%`,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   dateText: {
-    fontSize: getResponsiveFontSize(11),
-    fontWeight: 'bold',
-    color: '#333',
+    fontSize: getResponsiveFontSize(15),
+    paddingVertical: getResponsiveHeight(12.5),
   },
-
-  ovalGroup: {
-    width: getResponsiveWidth(34),
-    height: getResponsiveHeight(30), // 높이 지정 필수
-    position: 'relative',
+  selectedBox: {
+    backgroundColor: '#FFF3D2',
+    borderRadius: 999,
   },
-
-  ovalLeft: {
-    position: 'absolute',
-    width: getResponsiveWidth(25.33),
-    height: getResponsiveHeight(18.33),
-    backgroundColor: 'rgba(255, 200, 77, 0.6)', // ✅ FFC84D 색상 + 70% 투명도
-    borderRadius: getResponsiveHeight(9.165),
-    transform: [{rotate: '45.65deg'}],
-    left: 0,
-    top: getResponsiveHeight(5),
-  },
-
-  ovalRight: {
-    position: 'absolute',
-    width: getResponsiveWidth(25.33),
-    height: getResponsiveHeight(18.33),
-    backgroundColor: 'rgba(255, 195, 222, 0.6)', // ✅ FFC84D 색상 + 70% 투명도
-    borderRadius: getResponsiveHeight(9.165),
-    transform: [{rotate: '134.35deg'}],
-    right: 0,
-    top: getResponsiveHeight(5),
-  },
-
   selectedText: {
-    color: 'gray',
-    
+    color: '#333',
+    fontWeight: 'bold',
   },
 });

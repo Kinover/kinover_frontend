@@ -10,8 +10,11 @@ import {
   RenderHeaderLeft,
   RenderHeaderLeft2,
 } from '../tabHeaderHelpers';
-import {getResponsiveWidth, getResponsiveHeight} from '../../utils/responsive';
-import {Image, View} from 'react-native';
+import getResponsiveFontSize, {
+  getResponsiveWidth,
+  getResponsiveHeight,
+} from '../../utils/responsive';
+import {Image, View, Text} from 'react-native';
 import {RenderGoBackButton} from '../tabHeaderHelpers';
 import NotificationScreen from '../../components/notificationScreen';
 import AddChatMemeberScreen from '../../screens/communication/chatRoom/setting/addChatMemberScreen';
@@ -55,21 +58,36 @@ export default function CommunicationStack() {
         name="소통화면"
         component={CommunicationScreen}
         options={({navigation}) => ({
-          headerLeft: () => <RenderHeaderLeft2 navigation={navigation} />,
-          headerRight: () => (
-            <RenderHeaderRightSetting navigation={navigation} />
-          ),
+          // headerLeft: () => <RenderHeaderLeft2 navigation={navigation} />,
+          // headerRight: () => (
+          //   <RenderHeaderRightSetting navigation={navigation} />
+          // ),
+          // headerTitle: () => (
+          //   <Image
+          //     source={require('../../assets/images/kinover.png')}
+          //     style={{
+          //       width: getResponsiveWidth(49),
+          //       height: getResponsiveHeight(46),
+          //       marginBottom: getResponsiveHeight(10),
+          //       resizeMode: 'contain',
+          //     }}
+          //   />
+          // ),
+          headerTitleAlign: 'left',
           headerTitle: () => (
-            <Image
-              source={require('../../assets/images/kinover.png')}
+            <Text
               style={{
-                width: getResponsiveWidth(49),
-                height: getResponsiveHeight(46),
-                marginBottom: getResponsiveHeight(10),
-                resizeMode: 'contain',
-              }}
-            />
+                fontSize: getResponsiveFontSize(26),
+                fontFamily: 'Pretendard-SemiBold',
+                textAlign: 'left',
+                textAlignVertical:'center'
+              }}>
+              채팅
+            </Text>
           ),
+          headerTitleContainerStyle: {
+            paddingLeft: getResponsiveWidth(5),
+          },
         })}
       />
       <Stack.Screen

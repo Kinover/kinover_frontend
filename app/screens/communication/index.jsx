@@ -51,27 +51,26 @@ export default function CommunicationScreen({navigation}) {
 
     return (
       <TouchableOpacity
-        style={styles.bottomSheetElement}
+        style={styles.chatRoomItem}
         key={index}
         onPress={() => navigation.navigate(screen, {chatRoom, user})}>
-        <Image style={styles.elementImage} source={{uri: imageUri}} />
+        <Image style={styles.chatRoomImage} source={{uri: imageUri}} />
         <View style={styles.textContainer}>
-          <Text style={styles.elementName}>{name}</Text>
-          <Text style={styles.elementDescription}>{description}</Text>
+          <Text style={styles.chatRoomName}>{name}</Text>
+          <Text style={styles.chatRoomDescription}>{description}</Text>
         </View>
       </TouchableOpacity>
     );
   };
 
   return (
-    <View style={styles.mainContainer}>
-      <Text style={styles.bottomSheetTitle}>채팅방</Text>
-
-      <ScrollView>
+    <View style={styles.container}>
+      {/* <Text style={styles.title}>채팅</Text> */}
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         {loading ? null : chatRoomList?.length > 0 ? (
           chatRoomList.map(renderChatRoom)
         ) : (
-          <Text style={styles.noChatRoomList}>
+          <Text style={styles.noChatMessage}>
             {'아직 채팅방이 없어요.\n가족과의 첫 대화를 시작해볼까요?'}
           </Text>
         )}
@@ -83,28 +82,30 @@ export default function CommunicationScreen({navigation}) {
 }
 
 const styles = StyleSheet.create({
-  mainContainer: {
+  container: {
     flex: 1,
     backgroundColor: 'white',
-    paddingHorizontal: getResponsiveWidth(25),
-    paddingTop: getResponsiveHeight(20),
+    paddingHorizontal: getResponsiveWidth(10),
+    paddingTop: getResponsiveHeight(10),
   },
-
-  bottomSheetTitle: {
+  title: {
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(24),
-    marginBottom: getResponsiveIconSize(20),
-    fontWeight: Platform.OS == 'ios' ? null : 'bold',
+    fontSize: getResponsiveFontSize(28),
+    marginBottom: getResponsiveHeight(20),
+    fontWeight: Platform.OS === 'ios' ? undefined : 'bold',
   },
-  bottomSheetElement: {
+  scrollContent: {
+    paddingBottom: getResponsiveHeight(100),
+  },
+  chatRoomItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: getResponsiveIconSize(10),
+    marginBottom: getResponsiveHeight(16),
     width: '100%',
     height: getResponsiveHeight(75),
-    gap: getResponsiveWidth(20),
+    gap: getResponsiveWidth(16),
   },
-  elementImage: {
+  chatRoomImage: {
     width: getResponsiveWidth(73),
     height: getResponsiveHeight(73),
     borderRadius: getResponsiveIconSize(36.5),
@@ -112,22 +113,24 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flexDirection: 'column',
+    justifyContent: 'center',
   },
-  elementName: {
+  chatRoomName: {
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(16.5),
-    marginTop: getResponsiveIconSize(10),
-    marginBottom: getResponsiveIconSize(10),
-    fontWeight: Platform.OS == 'ios' ? null : 'bold',
+    marginBottom: getResponsiveHeight(6),
+    fontWeight: Platform.OS === 'ios' ? undefined : 'bold',
   },
-  elementDescription: {
+  chatRoomDescription: {
     fontFamily: 'Pretendard-Light',
     fontSize: getResponsiveFontSize(12),
+    color: '#555',
   },
-  noChatRoomList: {
+  noChatMessage: {
     fontSize: getResponsiveFontSize(16),
     color: '#777',
     textAlign: 'center',
     marginTop: getResponsiveHeight(100),
+    lineHeight: getResponsiveFontSize(24),
   },
 });

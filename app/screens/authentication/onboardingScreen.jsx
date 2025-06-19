@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import * as KakaoLogin from '@react-native-seoul/kakao-login';
 import { useNavigation } from '@react-navigation/native';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { loginThunk } from '../../redux/thunk/loginThunk';
 import {
   getResponsiveFontSize,
@@ -25,14 +25,12 @@ import { fetchFamilyThunk } from '../../redux/thunk/familyThunk';
 export default function OnboardingScreen() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const [autoLoginDone, setAutoLoginDone] = useState(false); // ✅ 자동 로그인 완료 여부
+  const [autoLoginDone, setAutoLoginDone] = useState(false);
 
   const login = async () => {
     try {
       const result = await KakaoLogin.login();
       console.log('✅ Login Success:', result);
-      console.log('accessToken:', result.accessToken);
-
       dispatch(loginThunk(result.accessToken));
     } catch (error) {
       if (error.code === 'E_CANCELLED_OPERATION') {
@@ -43,7 +41,6 @@ export default function OnboardingScreen() {
     }
   };
 
-  // ✅ 앱 실행 시 자동 로그인 시도
   useEffect(() => {
     const init = async () => {
       try {
@@ -53,11 +50,9 @@ export default function OnboardingScreen() {
         console.log('👨‍👩‍👧 hasFamily:', hasFamily);
 
         if (token && hasFamily) {
-          console.log('🚀 자동 로그인 + 가족 있음 → 감정화면 이동');
-
           dispatch(setLoginSuccess());
           await dispatch(fetchUserThunk());
-          await dispatch(fetchFamilyThunk('0e992098-1544-11f0-be5c-0a1e787a0cd7')); // TODO: 실제 familyId로 교체
+          await dispatch(fetchFamilyThunk('0e992098-1544-11f0-be5c-0a1e787a0cd7'));
 
           navigation.reset({
             index: 0,
@@ -81,7 +76,7 @@ export default function OnboardingScreen() {
       } catch (err) {
         console.error('🚨 자동 로그인 실패:', err);
       } finally {
-        setAutoLoginDone(true); // ✅ 버튼 활성화
+        setAutoLoginDone(true);
       }
     };
 
@@ -95,10 +90,9 @@ export default function OnboardingScreen() {
         <ImageBackground
           style={styles.loginBubbleMessage}
           source={require('../../assets/images/login-bubble-message.png')}>
-          <Text style={styles.BubbleMessageText}>우리 가족 이야기, 시작해볼까요?</Text>
+          <Text style={styles.bubbleMessageText}>우리 가족 이야기, 시작해볼까요?</Text>
         </ImageBackground>
 
-        {/* ✅ 자동 로그인 끝난 후에만 클릭 가능 */}
         <TouchableOpacity onPress={autoLoginDone ? login : null} disabled={!autoLoginDone}>
           <Image
             style={styles.loginButton}
@@ -116,8 +110,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   mainContainer: {
-    width: '100%',
-    height: '65%',
+    width: getResponsiveWidth(390), // 최대 가로
+    height: getResponsiveHeight(480), // 대략적인 65%
     backgroundColor: 'lightgray',
   },
   bottomContainer: {
@@ -126,25 +120,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: getResponsiveHeight(50),
     backgroundColor: 'white',
-    gap: getResponsiveHeight(10),
+    gap: getResponsiveHeight(16),
   },
   loginButton: {
     width: getResponsiveWidth(343),
     height: getResponsiveHeight(51),
-    borderRadius: 10,
+    borderRadius: getResponsiveWidth(10),
   },
   loginBubbleMessage: {
-    position: 'relative',
     width: getResponsiveWidth(213),
     height: getResponsiveHeight(47),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  BubbleMessageText: {
+  bubbleMessageText: {
     fontFamily: 'Pretendard-Light',
     fontSize: getResponsiveFontSize(14),
-    position: 'absolute',
     textAlign: 'center',
-    height: getResponsiveHeight(47),
-    top: getResponsiveHeight(8.5),
-    left: getResponsiveWidth(17.5),
+    color: '#000',
   },
 });

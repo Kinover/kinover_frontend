@@ -14,6 +14,7 @@ import {
   getResponsiveFontSize,
   getResponsiveWidth,
   getResponsiveHeight,
+  getResponsiveIconSize,
 } from '../../utils/responsive';
 import {
   fetchSchedulesForFamilyAndDateThunk,
@@ -166,7 +167,9 @@ export default function Schedule({selectedDate}) {
 
           <TouchableOpacity style={styles.addCard} onPress={onAddSchedule}>
             <Text style={styles.addCardText}>일정을 추가하세요</Text>
-            <Text style={styles.plus}>＋</Text>
+            <Image
+              style={styles.plus}
+              source={require('../../assets/images/plusCircle2.png')}></Image>
           </TouchableOpacity>
         </View>
       </View>
@@ -351,9 +354,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Regular',
   },
   plus: {
-    fontSize: 20,
-    fontFamily: 'Pretendard-Bold',
     color: '#FFC84D',
+    width: getResponsiveIconSize(20),
+    height: getResponsiveIconSize(20),
+    resizeMode: 'contain',
   },
   modalOverlay: {
     flex: 1,

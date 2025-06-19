@@ -6,17 +6,17 @@ import {
   Text,
   Image,
   TouchableOpacity,
-  Dimensions,
   FlatList,
 } from 'react-native';
-const ITEM_MARGIN = getResponsiveWidth(4); // 예: 각 이미지 간 마진
+
 import {
   useFocusEffect,
   useNavigation,
   useRoute,
 } from '@react-navigation/native';
+import GalleryToggle from './galleryToggle';
+import CategoryDropdownButton from './categoryDropdownButton';
 import {useDispatch, useSelector} from 'react-redux';
-import MasonryList from 'react-native-masonry-list';
 import {fetchMemoryThunk} from '../../redux/thunk/memoryThunk';
 import {fetchCategoryThunk} from '../../redux/thunk/categoryThunk';
 import {
@@ -27,7 +27,13 @@ import {
 } from '../../utils/responsive';
 import {WINDOW_WIDTH} from '@gorhom/bottom-sheet';
 
-export default function MemoryFeed() {
+const ITEM_MARGIN = getResponsiveWidth(4);
+
+export default function MemoryFeed({
+  selectedCategoryTitle,
+  isGalleryView,
+  setSelectedCategoryTitle,
+}) {
   const familyId = useSelector(state => state.family.familyId);
   const {memoryList} = useSelector(state => state.memory);
   const categoryList = useSelector(state => state.category.categoryList);
@@ -35,9 +41,6 @@ export default function MemoryFeed() {
   const route = useRoute();
   const dispatch = useDispatch();
   const category = route?.params?.category;
-
-  const [selectedCategoryTitle, setSelectedCategoryTitle] = useState('전체');
-  const [isGalleryView, setIsGalleryView] = useState(false);
 
   useEffect(() => {
     if (category) setSelectedCategoryTitle(category.title);
@@ -93,18 +96,7 @@ export default function MemoryFeed() {
           style={styles.memoryImage}
           source={{uri: memory.imageUrls?.[0]}}
         />
-        <Text
-          style={{
-            position: 'absolute',
-            right: getResponsiveWidth(8),
-            bottom: getResponsiveHeight(17),
-            zIndex: 5,
-            fontSize: getResponsiveFontSize(17),
-            fontFamily: 'Pretendard-Regular',
-            color: 'white',
-          }}>
-          댓글 {memory.commentCount}
-        </Text>
+        <Text style={styles.commentText}>댓글 {memory.commentCount}</Text>
       </View>
       <Text style={styles.categoryText}>
         {getCategoryLabel(memory.categoryId)}
@@ -115,91 +107,39 @@ export default function MemoryFeed() {
 
   return (
     <View style={styles.container}>
-      {/* 상단 필터 */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity
-          style={styles.categoryButton}
-          onPress={() => navigation.navigate('카테고리화면')}>
-          <Text style={styles.categoryButtonText}>{selectedCategoryTitle}</Text>
-          <Image
-            source={require('../../assets/images/down-yellow.png')}
-            style={styles.arrowIcon}
-          />
-        </TouchableOpacity>
-        <View style={styles.toggleContainer}>
-          <TouchableOpacity onPress={() => setIsGalleryView(true)}>
-            <Image
-              source={
-                isGalleryView
-                  ? require('../../assets/images/grid_on.png')
-                  : require('../../assets/images/grid_off.png')
+      <FlatList
+        key={isGalleryView ? 'gallery' : 'list'}
+        data={isGalleryView ? allImages : filteredMemoryList}
+        keyExtractor={(item, index) =>
+          isGalleryView ? `${item.postId}-${index}` : `${item.postId}`
+        }
+        numColumns={isGalleryView ? 3 : 1}
+        renderItem={({item}) =>
+          isGalleryView ? (
+            <TouchableOpacity
+              onPress={() =>
+                navigation.navigate('게시글화면', {memory: item.memory})
               }
-              style={styles.galleryIcon}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setIsGalleryView(false)}>
-            <Image
-              source={
-                !isGalleryView
-                  ? require('../../assets/images/list_on.png')
-                  : require('../../assets/images/list_off.png')
-              }
-              style={styles.galleryIcon}
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
-      {/* 목록 */}
-      {isGalleryView ? (
-        <FlatList
-          key={isGalleryView ? 'gallery' : 'list'} // ✅ key가 바뀌면 FlatList 전체 재렌더링됨
-          data={isGalleryView ? allImages : filteredMemoryList}
-          keyExtractor={(item, index) =>
-            isGalleryView ? `${item.postId}-${index}` : `${item.postId}`
-          }
-          numColumns={isGalleryView ? 3 : 1}
-          renderItem={({item}) =>
-            isGalleryView ? (
-              <TouchableOpacity
-                onPress={() =>
-                  navigation.navigate('게시글화면', {memory: item.memory})
-                }
-                style={{
-                  width: (WINDOW_WIDTH - ITEM_MARGIN * 4) / 3,
-                  aspectRatio: 1,
-                  marginBottom: ITEM_MARGIN,
-                  marginRight: ITEM_MARGIN,
-                }}>
-                <Image
-                  source={{uri: item.uri}}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    resizeMode: 'cover',
-                    borderRadius: 1,
-                  }}
-                />
-              </TouchableOpacity>
-            ) : (
-              renderListItem({item}) // 기존 리스트 렌더 함수 재활용
-            )
-          }
-          columnWrapperStyle={
-            isGalleryView ? {justifyContent: 'flex-start'} : undefined
-          }
-          contentContainerStyle={{
-            paddingHorizontal: ITEM_MARGIN,
-            paddingTop: ITEM_MARGIN,
-          }}
-        />
-      ) : (
-        <FlatList
-          data={filteredMemoryList}
-          renderItem={renderListItem}
-          keyExtractor={item => String(item.postId)}
-          contentContainerStyle={{paddingHorizontal: getResponsiveWidth(10)}}
-        />
-      )}
+              style={{
+                width: (WINDOW_WIDTH - ITEM_MARGIN * 4) / 3,
+                aspectRatio: 1,
+                marginBottom: ITEM_MARGIN,
+                marginRight: ITEM_MARGIN,
+              }}>
+              <Image source={{uri: item.uri}} style={styles.galleryImage} />
+            </TouchableOpacity>
+          ) : (
+            renderListItem({item})
+          )
+        }
+        columnWrapperStyle={
+          isGalleryView ? {justifyContent: 'flex-start'} : undefined
+        }
+        contentContainerStyle={{
+          paddingHorizontal: ITEM_MARGIN,
+          paddingTop: ITEM_MARGIN,
+        }}
+      />
     </View>
   );
 }
@@ -237,11 +177,26 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(30),
     resizeMode: 'contain',
   },
+  galleryImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+    borderRadius: 1,
+  },
   memoryImage: {
     width: '100%',
     height: getResponsiveHeight(300),
     resizeMode: 'cover',
     marginBottom: getResponsiveHeight(10),
+  },
+  commentText: {
+    position: 'absolute',
+    right: getResponsiveWidth(8),
+    bottom: getResponsiveHeight(17),
+    zIndex: 5,
+    fontSize: getResponsiveFontSize(17),
+    fontFamily: 'Pretendard-Regular',
+    color: 'white',
   },
   categoryText: {
     fontSize: getResponsiveFontSize(22),
