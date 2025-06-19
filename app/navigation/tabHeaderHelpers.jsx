@@ -7,7 +7,30 @@ import {
   getResponsiveWidth,
 } from '../utils/responsive';
 
-// 탭 바 아이콘 렌더링 함수
+// ✅ 공통 아이콘 버튼 생성기
+const createIconButton = (
+  navigationFunc,
+  imageSource,
+  width,
+  height,
+  margin = {},
+  additionalStyle = {},
+) => (
+  <TouchableOpacity onPress={navigationFunc}>
+    <Image
+      source={imageSource}
+      style={{
+        width: getResponsiveWidth(width),
+        height: getResponsiveHeight(height),
+        resizeMode: 'contain',
+        ...margin,
+        ...additionalStyle,
+      }}
+    />
+  </TouchableOpacity>
+);
+
+// ✅ 탭바 아이콘 렌더러
 export const renderTabBarIcon = (focused, focusedUri, defaultUri) => (
   <Image
     source={{uri: focused ? focusedUri : defaultUri}}
@@ -20,7 +43,7 @@ export const renderTabBarIcon = (focused, focusedUri, defaultUri) => (
   />
 );
 
-// 탭 바 라벨 렌더링 함수
+// ✅ 탭바 라벨 렌더러
 export const renderTabBarLabel = (label, focused) => (
   <Text
     style={{
@@ -32,221 +55,112 @@ export const renderTabBarLabel = (label, focused) => (
   </Text>
 );
 
-// 홈 화면 헤더 우측 버튼
-export function RenderHeaderRightHome({navigation}) {
-  return (
-    <TouchableOpacity onPress={() => navigation.navigate('가족설정화면')}>
-      <Image
-        source={require('../assets/images/navigator_family-button.png')}
-        style={{
-          width: getResponsiveWidth(26),
-          height: getResponsiveHeight(28),
-          marginRight: getResponsiveWidth(30),
-          resizeMode: 'contain',
-        }}
-      />
-    </TouchableOpacity>
+// ✅ 감정기록 알림 이동 버튼
+export const RenderHeaderLeft1 = ({navigation}) =>
+  createIconButton(
+    () =>
+      navigation.navigate('Tabs', {
+        screen: '감정기록',
+        params: {screen: '알림화면'},
+      }),
+    require('../assets/images/navigator_alarm-button.png'),
+    getResponsiveIconSize(24),
+    getResponsiveIconSize(26),
+    {marginLeft: getResponsiveWidth(20), resizeMode: 'contain'},
   );
-}
 
-// 기본 헤더 우측 버튼 (프로필화면 이동)
-export function RenderHeaderRightHome2({navigation}) {
-  return (
-    <TouchableOpacity onPress={() => navigation.navigate('프로필화면')}>
-      <Image
-        source={require('../assets/images/navigator_user-profile-button.png')}
-        style={{
-          width: getResponsiveWidth(26),
-          height: getResponsiveHeight(28),
-          marginRight: getResponsiveWidth(30),
-          resizeMode: 'contain',
-        }}
-      />
-    </TouchableOpacity>
+// ✅ 설정화면 이동 버튼
+export const RenderHeaderRightSetting = ({navigation}) =>
+  createIconButton(
+    () =>
+      navigation.navigate('Tabs', {
+        screen: '감정기록',
+        params: {screen: '설정화면'},
+      }),
+    require('../assets/images/setting_bt.png'),
+    getResponsiveIconSize(24),
+    getResponsiveIconSize(26),
+    {marginRight: getResponsiveWidth(20), resizeMode: 'contain'},
   );
-}
 
-// 헤더 좌측 알림 버튼
-export function RenderHeaderLeft1({navigation}) {
-  return (
-    <TouchableOpacity
-      onPress={() =>
-        navigation.navigate('Tabs', {
-          screen: '감정기록',
-          params: {screen: '알림화면'},
-        })
-      }>
-      <Image
-        source={require('../assets/images/navigator_alarm-button.png')}
-        style={{
-          width: getResponsiveWidth(24),
-          height: getResponsiveHeight(26),
-          marginLeft: getResponsiveWidth(30),
-          resizeMode: 'contain',
-        }}
-      />
-    </TouchableOpacity>
+// ✅ 채팅 설정 열기 버튼
+export const RenderHeaderRightChatSetting = ({setIsSettingsOpen}) =>
+  createIconButton(
+    () => setIsSettingsOpen(true),
+    require('../assets/images/dots.png'),
+    21,
+    25,
+    {marginRight: getResponsiveWidth(20)},
   );
-}
 
-// 헤더 좌측 알림 버튼
-export function RenderHeaderLogo({navigation}) {
-  return (
-    <TouchableOpacity
-      onPress={() =>
-        navigation.navigate('Tabs', {
-          screen: '감정기록',
-          params: {screen: '알림화면'},
-        })
-      }
+// ✅ 게시글 삭제 아이콘
+export const RenderHeaderDeletePost = () =>
+  createIconButton(
+    () => {}, // 삭제 로직 필요 시 여기에 구현
+    require('../assets/images/trash.png'),
+    20,
+    20,
+    {
+      marginRight: getResponsiveWidth(20),
+      marginBottom: getResponsiveHeight(12),
+    },
+    {zIndex: 999},
+  );
+
+// ✅ 일반 뒤로가기 버튼
+export const RenderGoBackButton = ({navigation}) =>
+  createIconButton(
+    () => navigation.goBack(),
+    require('../assets/images/navigator_goback-button.png'),
+    12,
+    23,
+    {marginLeft: getResponsiveWidth(20)},
+    {zIndex: 999},
+  );
+
+// ✅ 갤러리 뒤로가기 버튼
+export const RenderGoBackButtonGallery = ({navigation}) =>
+  createIconButton(
+    () => navigation.goBack(),
+    require('../assets/images/navigator_goback-button.png'),
+    9,
+    20,
+    {marginLeft: getResponsiveWidth(25)},
+    {zIndex: 999},
+  );
+
+// ✅ 로고 + 텍스트 헤더
+export const RenderHeaderLogo = ({navigation}) => (
+  <TouchableOpacity
+    onPress={() =>
+      navigation.navigate('Tabs', {
+        screen: '감정기록',
+        params: {screen: '알림화면'},
+      })
+    }
+    style={{
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+    }}>
+    <Image
+      source={require('../assets/images/kinover.png')}
       style={{
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'flex-end',
+        width: getResponsiveWidth(70),
+        height: getResponsiveHeight(70),
+        marginLeft: getResponsiveWidth(10),
+        resizeMode: 'contain',
+      }}
+    />
+    <Text
+      style={{
+        position: 'absolute',
+        bottom: getResponsiveHeight(8),
+        width: getResponsiveWidth(120),
+        height: getResponsiveHeight(30),
+        fontSize: getResponsiveFontSize(24),
+        fontFamily: 'Pretendard-SemiBold',
       }}>
-      <Image
-        source={require('../assets/images/kinover.png')}
-        style={{
-          width: getResponsiveWidth(70),
-          height: getResponsiveHeight(70),
-          marginLeft: getResponsiveWidth(10),
-          resizeMode: 'contain',
-        }}
-      />
-      <View>
-        <Text
-          style={{
-            position: 'absolute',
-            bottom: '12',
-            width: getResponsiveWidth(120),
-            height: getResponsiveHeight(30),
-            fontSize: getResponsiveIconSize(30),
-            fontFamily: 'Pretendard-SemiBold',
-          }}>
-          Kinover
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-// 헤더 좌측 알림 버튼
-export function RenderHeaderLeft2({navigation}) {
-  return (
-    <TouchableOpacity
-      onPress={() =>
-        navigation.navigate('Tabs', {
-          screen: '소통기록',
-          params: {screen: '알림화면'},
-        })
-      }>
-      <Image
-        source={require('../assets/images/navigator_alarm-button.png')}
-        style={{
-          width: getResponsiveWidth(24),
-          height: getResponsiveHeight(26),
-          marginLeft: getResponsiveWidth(30),
-          resizeMode: 'contain',
-        }}
-      />
-    </TouchableOpacity>
-  );
-}
-
-// 뒤로 가기 버튼
-export function RenderGoBackButton({navigation}) {
-  return (
-    <TouchableOpacity onPress={() => navigation.goBack()}>
-      <Image
-        source={require('../assets/images/navigator_goback-button.png')}
-        style={{
-          width: getResponsiveWidth(12),
-          height: getResponsiveHeight(23),
-          marginLeft: getResponsiveWidth(20),
-          resizeMode: 'contain',
-          zIndex:999,
-        
-        }}
-      />
-    </TouchableOpacity>
-  );
-}
-
-// 헤더 좌측 알림 버튼
-export function RenderHeaderRightChatSetting({setIsSettingsOpen}) {
-  return (
-    <TouchableOpacity onPress={() => setIsSettingsOpen(true)}>
-      <Image
-        source={require('../assets/images/dots.png')}
-        style={{
-          width: getResponsiveWidth(21),
-          height: getResponsiveHeight(25),
-          marginRight: getResponsiveWidth(20),
-          resizeMode: 'contain',
-        }}
-      />
-    </TouchableOpacity>
-  );
-}
-
-// 헤더 우측 알림 버튼
-export function RenderHeaderRightSetting({navigation}) {
-  return (
-    <TouchableOpacity
-      onPress={() =>
-        navigation.navigate('Tabs', {
-          screen: '감정기록',
-          params: {screen: '설정화면'},
-        })
-      }>
-      <Image
-        source={require('../assets/images/setting_bt.png')}
-        style={{
-          width: getResponsiveWidth(26),
-          height: getResponsiveHeight(28),
-          marginRight: getResponsiveWidth(30),
-          resizeMode: 'contain',
-        }}
-      />
-    </TouchableOpacity>
-  );
-}
-
-// 뒤로 가기 버튼
-export function RenderHeaderDeletePost({navigation}) {
-  return (
-    <TouchableOpacity>
-      <Image
-        source={require('../assets/images/trash.png')}
-        style={{
-          width: getResponsiveWidth(20),
-          height: getResponsiveHeight(20),
-          marginRight: getResponsiveWidth(25),
-          marginBottom: getResponsiveWidth(12),
-          resizeMode: 'contain',
-          zIndex:999,
-
-        }}
-      />
-    </TouchableOpacity>
-  );
-}
-
-// 뒤로 가기 버튼
-export function RenderGoBackButtonGallery({navigation}) {
-  return (
-    <TouchableOpacity onPress={() => navigation.goBack()}>
-      <Image
-        source={require('../assets/images/navigator_goback-button.png')}
-        style={{
-          width: getResponsiveWidth(9),
-          height: getResponsiveHeight(20),
-          marginLeft: getResponsiveWidth(25),
-          resizeMode: 'contain',
-          zIndex:999,
-        }}
-      />
-    </TouchableOpacity>
-  );
-}
+      Kinover
+    </Text>
+  </TouchableOpacity>
+);

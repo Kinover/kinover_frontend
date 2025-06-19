@@ -9,11 +9,9 @@ import {
   ActivityIndicator,
   TextInput,
 } from 'react-native';
-import axios from 'axios';
 import {useSelector, useDispatch} from 'react-redux';
 import {createChatRoomThunk} from '../../redux/thunk/chatRoomThunk';
 
-import {getToken} from '../../utils/storage';
 import {
   getResponsiveWidth,
   getResponsiveFontSize,
@@ -145,8 +143,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    borderTopWidth: 3,
-    borderColor: '#D3D3D3',
+
   },
   inputContainer: {
     padding: getResponsiveWidth(20),

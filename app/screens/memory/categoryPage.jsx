@@ -1,5 +1,3 @@
-// components/CategoryPage.js
-
 import React, {useState, useLayoutEffect, useEffect, useMemo} from 'react';
 import {
   View,
@@ -84,6 +82,7 @@ export default function CategoryPage() {
           onPress={() => {
             if (selectedCategory) {
               navigation.navigate('추억화면', {
+                merge: true, // 중요!
                 category: selectedCategory,
               });
             }
@@ -123,7 +122,8 @@ export default function CategoryPage() {
               width: getResponsiveWidth(14),
               height: getResponsiveHeight(14),
               resizeMode: 'contain',
-            }}></Image>
+            }}
+          />
         </TouchableOpacity>
       </TouchableOpacity>
     );
@@ -136,13 +136,6 @@ export default function CategoryPage() {
         renderItem={renderItem}
         keyExtractor={(item, index) => item.categoryId + index}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
-        // ListFooterComponent={
-        //   <TouchableOpacity
-        //     style={styles.addButton}
-        //     onPress={() => setAddModalVisible(true)}>
-        //     <Text style={styles.addText}>카테고리 추가</Text>
-        //   </TouchableOpacity>
-        // }
       />
       <CategoryModal
         visible={addModalVisible}
@@ -211,14 +204,5 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#eee',
     marginHorizontal: getResponsiveWidth(10),
-  },
-  addButton: {
-    paddingVertical: getResponsiveWidth(20),
-    paddingHorizontal: getResponsiveWidth(25),
-  },
-  addText: {
-    color: '#F8B500',
-    fontSize: getResponsiveFontSize(15),
-    fontFamily: 'Pretendard-Medium',
   },
 });

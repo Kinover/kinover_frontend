@@ -120,7 +120,7 @@ export default function UserBottomSheet({
             <Image
               style={{
                 position: 'absolute',
-                width: '250%',
+                width: '235%',
                 height: '130%',
                 resizeMode: 'contain',
                 right: '-58%',
@@ -160,6 +160,8 @@ export default function UserBottomSheet({
                 value={description}
                 onChangeText={setDescription}
                 multiline
+                placeholder="이 사람을 한마디로 표현한다면?"
+                placeholderTextColor="#999"
               />
             </View>
             <View style={styles.buttonRow}>
@@ -178,24 +180,20 @@ export default function UserBottomSheet({
     </>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
-    display: 'flex',
     flex: 1,
     backgroundColor: 'transparent',
     width: '100%',
     height: '100%',
-    paddingVertical: getResponsiveWidth(20),
-    paddingHorizontal: getResponsiveWidth(50),
+    paddingVertical: getResponsiveHeight(20),
+    paddingHorizontal: getResponsiveWidth(30),
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   profileimageContainer: {
-    display: 'flex',
-    position: 'relative',
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
@@ -205,44 +203,44 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(20),
   },
   profileImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: getResponsiveWidth(55),
+    resizeMode: 'cover',
+  },
+  profileImageOverlay: {
     position: 'absolute',
-    width: getResponsiveWidth(110),
-    height: getResponsiveWidth(110),
+    backgroundColor: 'gray',
+    opacity: 0.3,
+    width: '100%',
+    height: '100%',
     borderRadius: getResponsiveWidth(55),
   },
   profileImagePencil: {
     position: 'absolute',
     width: getResponsiveWidth(35),
     height: getResponsiveWidth(35),
-    objectFit: 'contain',
-  },
-  profileImageOverlay: {
-    position: 'absolute',
-    backgroundColor: 'gray',
-    opacity: 0.3,
-    width: getResponsiveWidth(110),
-    height: getResponsiveWidth(110),
-    borderRadius: getResponsiveWidth(55),
+    resizeMode: 'contain',
   },
   inputRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     marginBottom: getResponsiveHeight(15),
-    gap: getResponsiveWidth(5),
+    gap: getResponsiveWidth(8),
   },
   label: {
     fontFamily: 'Pretendard-Medium',
     width: getResponsiveWidth(50),
     fontSize: getResponsiveFontSize(16),
     textAlignVertical: 'center',
-    marginTop: 8,
+    marginTop: getResponsiveHeight(8),
   },
   input: {
     fontFamily: 'Pretendard-Light',
     flex: 1,
-    borderRadius: 15,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    borderRadius: getResponsiveWidth(15),
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(10),
     fontSize: getResponsiveFontSize(16),
     backgroundColor: '#fff',
     shadowRadius: 1,
@@ -251,7 +249,6 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 1},
     elevation: 4,
   },
-
   textArea: {
     height: getResponsiveHeight(90),
     textAlignVertical: 'top',
@@ -265,9 +262,9 @@ const styles = StyleSheet.create({
   button: {
     flex: 1,
     backgroundColor: '#fff',
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 9,
+    borderRadius: getResponsiveWidth(20),
+    paddingHorizontal: getResponsiveWidth(20),
+    paddingVertical: getResponsiveHeight(9),
   },
   buttonText: {
     fontFamily: 'Pretendard-Light',

@@ -1,4 +1,3 @@
-// ✅ ChatInput.js
 import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
@@ -146,7 +145,7 @@ export default function ChatInput({chatRoom, user, socketRef}) {
             width: IMAGE_SIZE,
             height: IMAGE_SIZE,
             margin: 2,
-            borderRadius: 1,
+            borderRadius: getResponsiveWidth(4),
             borderWidth: isSelected ? 3 : 0,
             borderColor: isSelected ? '#FFC84D' : 'transparent',
           }}
@@ -164,12 +163,10 @@ export default function ChatInput({chatRoom, user, socketRef}) {
             onPress={toggleGallery}>
             <Image
               source={{uri: 'https://i.postimg.cc/yxdVHRq7/Group-478.png'}}
-              style={{
-                width: getResponsiveIconSize(24),
-                height: getResponsiveIconSize(24),
-              }}
+              style={styles.icon}
             />
           </TouchableOpacity>
+
           <TextInput
             ref={inputRef}
             style={styles.input}
@@ -179,14 +176,23 @@ export default function ChatInput({chatRoom, user, socketRef}) {
             returnKeyType="send"
             onSubmitEditing={handleSend}
           />
+
+          {message.length > 0 && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={() => setMessage('')}>
+              <Image
+                source={require('../../../../assets/images/clearBt.png')}
+                style={styles.clearIcon}
+              />
+            </TouchableOpacity>
+          )}
         </View>
+
         <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
           <Image
             source={{uri: 'https://i.postimg.cc/fLWscdRY/Group-477-1.png'}}
-            style={{
-              width: getResponsiveWidth(24),
-              height: getResponsiveHeight(24),
-            }}
+            style={styles.icon}
           />
         </TouchableOpacity>
       </View>
@@ -210,9 +216,8 @@ const styles = StyleSheet.create({
   innerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(14.5),
+    paddingHorizontal: getResponsiveWidth(14),
     gap: getResponsiveWidth(12),
     backgroundColor: '#fff',
     borderTopWidth: 1,
@@ -225,20 +230,39 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(42),
     borderWidth: 1,
     borderColor: '#FFC84D',
-    borderRadius: 30,
+    borderRadius: getResponsiveWidth(30),
     backgroundColor: 'rgba(255, 231, 178, 0.2)',
-    paddingHorizontal: getResponsiveWidth(7.5),
+    paddingHorizontal: getResponsiveWidth(10),
   },
   input: {
     flex: 1,
     height: '100%',
-    alignSelf: 'center',
+    fontSize: getResponsiveIconSize(14),
+    paddingHorizontal: getResponsiveWidth(4),
     textAlignVertical: 'center',
   },
   inputPlusButton: {
-    marginRight: 10,
+    marginRight: getResponsiveWidth(6),
   },
-  sendButton: {},
+  sendButton: {
+    padding: getResponsiveWidth(4),
+  },
+  icon: {
+    width: getResponsiveIconSize(24),
+    height: getResponsiveIconSize(24),
+    resizeMode: 'contain',
+  },
+  clearButton: {
+    paddingHorizontal: getResponsiveWidth(4),
+    justifyContent: 'center',
+    alignItems: 'center',
+    opacity: 0.5,
+  },
+  clearIcon: {
+    width: getResponsiveWidth(18),
+    height: getResponsiveWidth(18),
+    // tintColor: '#999',
+  },
   galleryContainer: {
     maxHeight: getResponsiveHeight(300),
     backgroundColor: '#fff',

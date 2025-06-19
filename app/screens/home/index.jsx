@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     bottom: getResponsiveHeight(8),
   },
   userNameHeader: {
-    fontFamily: 'Pretendard-Light',
+    fontFamily: 'Pretendard-Medium',
     fontSize: getResponsiveFontSize(22),
     marginTop: getResponsiveHeight(15),
   },
