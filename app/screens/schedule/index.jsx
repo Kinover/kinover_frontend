@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import {View, StyleSheet, ScrollView} from 'react-native';
 import {getResponsiveHeight, getResponsiveWidth} from '../../utils/responsive';
 import Schedule from './schedule';
-import Calendar from './header';
+import Calendar from './calendar';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 export default function ScheduleScreen({navigation}) {

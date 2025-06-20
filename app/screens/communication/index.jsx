@@ -1,74 +1,49 @@
-import 'react-native-gesture-handler';
+// CommunicationScreen.js
 import React, {useEffect} from 'react';
 import {
   StyleSheet,
   Text,
-  Image,
-  TouchableOpacity,
   View,
   ScrollView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchChatRoomListThunk} from '../../redux/thunk/chatRoomThunk';
-import FloatingButton from '../../utils/floatingButton';
+import FloatingButton from '../../components/floatingButton';
+import ChatRoomItem from './chatRoomItem';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
-  getResponsiveIconSize,
 } from '../../utils/responsive';
 
 export default function CommunicationScreen({navigation}) {
   const dispatch = useDispatch();
-  const user = useSelector(state => state.user);
-  const family = useSelector(state => state.family);
+  const {userId, login} = useSelector(state => state.user);
+  const {familyId} = useSelector(state => state.family);
   const {chatRoomList, loading} = useSelector(state => state.chatRoom);
 
   useEffect(() => {
-    if (family && user.userId !== null) {
-      dispatch(fetchChatRoomListThunk(family.familyId, user.userId));
+    if (familyId && userId !== null) {
+      dispatch(fetchChatRoomListThunk(familyId, userId));
     }
-  }, [dispatch, user.login, family.familyId]);
-
-  const renderChatRoom = (chatRoom, index) => {
-    let imageUri = chatRoom.image;
-    let name = chatRoom.roomName;
-    let description = '울 가족 오늘도 화이팅!';
-    let screen = '채팅방화면';
-
-    if (chatRoom.familyType === 'family') {
-      screen = '채팅방화면';
-    } else if (chatRoom.kino === true) {
-      imageUri = 'https://i.postimg.cc/B6SmSRzS/Group-1171276570.jpg';
-      name = '챗봇 키노';
-      description = '가족 관계 고민을 키노에게 털어놓고 조언을 구해요!';
-      screen = '키노상담소화면';
-    } else if (chatRoom.familyType === 'personal') {
-      description = '이따 두부 밥 좀 챙겨줘~';
-    }
-
-    return (
-      <TouchableOpacity
-        style={styles.chatRoomItem}
-        key={index}
-        onPress={() => navigation.navigate(screen, {chatRoom, user})}>
-        <Image style={styles.chatRoomImage} source={{uri: imageUri}} />
-        <View style={styles.textContainer}>
-          <Text style={styles.chatRoomName}>{name}</Text>
-          <Text style={styles.chatRoomDescription}>{description}</Text>
-        </View>
-      </TouchableOpacity>
-    );
-  };
+  }, [familyId, userId, login]);
 
   return (
     <View style={styles.container}>
-      {/* <Text style={styles.title}>채팅</Text> */}
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {loading ? null : chatRoomList?.length > 0 ? (
-          chatRoomList.map(renderChatRoom)
+        {loading ? (
+          <ActivityIndicator size="large" color="#FFC84D" />
+        ) : chatRoomList?.length > 0 ? (
+          chatRoomList.map((chatRoom, index) => (
+            <ChatRoomItem
+              key={index}
+              chatRoom={chatRoom}
+              userId={userId}
+              navigation={navigation}
+            />
+          ))
         ) : (
           <Text style={styles.noChatMessage}>
             {'아직 채팅방이 없어요.\n가족과의 첫 대화를 시작해볼까요?'}
@@ -85,46 +60,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    paddingHorizontal: getResponsiveWidth(10),
+    paddingHorizontal: getResponsiveWidth(20),
     paddingTop: getResponsiveHeight(10),
-  },
-  title: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(28),
-    marginBottom: getResponsiveHeight(20),
-    fontWeight: Platform.OS === 'ios' ? undefined : 'bold',
   },
   scrollContent: {
     paddingBottom: getResponsiveHeight(100),
-  },
-  chatRoomItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: getResponsiveHeight(16),
-    width: '100%',
-    height: getResponsiveHeight(75),
-    gap: getResponsiveWidth(16),
-  },
-  chatRoomImage: {
-    width: getResponsiveWidth(73),
-    height: getResponsiveHeight(73),
-    borderRadius: getResponsiveIconSize(36.5),
-    resizeMode: 'cover',
-  },
-  textContainer: {
-    flexDirection: 'column',
-    justifyContent: 'center',
-  },
-  chatRoomName: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(16.5),
-    marginBottom: getResponsiveHeight(6),
-    fontWeight: Platform.OS === 'ios' ? undefined : 'bold',
-  },
-  chatRoomDescription: {
-    fontFamily: 'Pretendard-Light',
-    fontSize: getResponsiveFontSize(12),
-    color: '#555',
   },
   noChatMessage: {
     fontSize: getResponsiveFontSize(16),

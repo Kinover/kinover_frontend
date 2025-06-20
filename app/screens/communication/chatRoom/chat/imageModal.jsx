@@ -11,11 +11,11 @@ import {
 } from 'react-native';
 import {BlurView} from '@react-native-community/blur';
 import ImageZoom from 'react-native-image-pan-zoom';
-import getResponsiveFontSize from '../../../utils/responsive';
+import getResponsiveFontSize from '../../../../utils/responsive';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from '../../../../utils/responsive';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -36,13 +36,13 @@ export default function ImageModal({visible, imageUri, onClose}) {
         <ImageZoom
           cropWidth={screenWidth}
           cropHeight={screenHeight}
-          imageWidth={getResponsiveWidth(320)}
-          imageHeight={getResponsiveHeight(400)}>
+          imageWidth={screenWidth}
+          imageHeight={screenHeight}>
           <Image
             source={{uri: imageUri}}
             style={{
-              width: getResponsiveWidth(320),
-              height: getResponsiveHeight(400),
+              width: screenWidth,
+              height: screenHeight,
               resizeMode: 'contain',
             }}
           />

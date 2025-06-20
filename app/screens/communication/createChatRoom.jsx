@@ -26,9 +26,7 @@ export default function CreateChatRoom({navigation}) {
   const currentUserId = useSelector(state => state.user.userId);
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
   const loading = useSelector(state => state.userFamily.loading);
-
   const [selected, setSelected] = useState([]);
-  const [roomName, setRoomName] = useState('');
 
   // 가족 유저 목록 불러오기
   useEffect(() => {
@@ -59,7 +57,7 @@ export default function CreateChatRoom({navigation}) {
         </TouchableOpacity>
       ),
     });
-  }, [selected, roomName]);
+  }, [selected]);
 
   // 선택 토글
   const toggleUser = userId => {
@@ -72,14 +70,23 @@ export default function CreateChatRoom({navigation}) {
 
   // 채팅방 생성 요청
   const handleCreateChatRoom = async () => {
-    if (selected.length === 0 || !roomName.trim()) return;
+    if (selected.length === 0) return;
 
     const idsStr = selected.join(',');
 
+    const selectedUserNames = selectableUsers
+      .filter(user => selected.includes(user.userId))
+      .map(user => user.name);
+
+    const autoRoomName = selectedUserNames.join(', ');
+
     try {
       const result = await dispatch(
-        createChatRoomThunk({roomName, userIds: idsStr}),
-      ).unwrap(); // unwrap으로 결과 직접 받기
+        createChatRoomThunk({
+          roomName: autoRoomName,
+          userIds: idsStr,
+        }),
+      ).unwrap();
 
       console.log('🟢 채팅방 생성 성공:', result);
       navigation.navigate('소통화면');
@@ -95,14 +102,6 @@ export default function CreateChatRoom({navigation}) {
   return (
     <View style={styles.container}>
       {/* 채팅방 이름 입력 */}
-      <View style={styles.inputContainer}>
-        <TextInput
-          value={roomName}
-          onChangeText={setRoomName}
-          placeholder="채팅방 이름을 입력하세요"
-          style={styles.input}
-        />
-      </View>
 
       {loading ? (
         <ActivityIndicator size="large" color="#F8B500" />
@@ -143,7 +142,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-
+    borderTopWidth: 0.5,
+    borderColor: 'lightgray',
   },
   inputContainer: {
     padding: getResponsiveWidth(20),

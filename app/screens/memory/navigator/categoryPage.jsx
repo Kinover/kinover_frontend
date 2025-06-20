@@ -13,12 +13,12 @@ import {useDispatch, useSelector} from 'react-redux';
 import getResponsiveFontSize, {
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../utils/responsive';
-import CategoryModal from '../../utils/categoryModal';
+} from '../../../utils/responsive';
+import CategoryModal from '../upload/categoryModal';
 import {
   createCategoryThunk,
   fetchCategoryThunk,
-} from '../../redux/thunk/categoryThunk';
+} from '../../../redux/thunk/categoryThunk';
 
 export default function CategoryPage() {
   const navigation = useNavigation();
@@ -89,7 +89,7 @@ export default function CategoryPage() {
           }}
           style={{marginRight: getResponsiveWidth(10)}}>
           <Image
-            source={require('../../assets/images/check-bt.png')}
+            source={require('../../../assets/images/check-bt.png')}
             style={{width: 25, height: 25, resizeMode: 'contain'}}
           />
         </TouchableOpacity>
@@ -115,8 +115,8 @@ export default function CategoryPage() {
           <Image
             source={
               isSelected
-                ? require('../../assets/images/selected-bt.png')
-                : require('../../assets/images/unselected-bt.png')
+                ? require('../../../assets/images/selected-bt.png')
+                : require('../../../assets/images/unselected-bt.png')
             }
             style={{
               width: getResponsiveWidth(14),

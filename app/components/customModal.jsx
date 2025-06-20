@@ -13,7 +13,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
-} from './responsive';
+} from '../utils/responsive';
 
 export default function CustomModal({
   visible,

@@ -8,9 +8,9 @@ import {
   Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import LogoutModal from './logoutModal';
-import DeleteAccountModal from './deleteAccountModal'; // ✅ 계정탈퇴 모달 import
-import { getResponsiveHeight, getResponsiveIconSize } from '../utils/responsive';
+import LogoutModal from '../modal/logoutModal';
+import DeleteAccountModal from '../modal/deleteAccountModal'; // ✅ 계정탈퇴 모달 import
+import { getResponsiveHeight, getResponsiveIconSize } from '../../../utils/responsive';
 
 export default function SettingScreen() {
   const navigation = useNavigation();
@@ -42,7 +42,7 @@ export default function SettingScreen() {
           <Text style={styles.label}>알림</Text>
           <Image
             style={styles.arrow}
-            source={require('../assets/images/rightArrow-gray.png')}
+            source={require('../../../assets/images/rightArrow-gray.png')}
           />
         </TouchableOpacity>
       </View>
@@ -72,14 +72,14 @@ export default function SettingScreen() {
           <Text style={styles.label}>서비스 이용약관</Text>
           <Image
             style={styles.arrow}
-            source={require('../assets/images/rightArrow-gray.png')}
+            source={require('../../../assets/images/rightArrow-gray.png')}
           />
         </TouchableOpacity>
         <TouchableOpacity style={styles.row}>
           <Text style={styles.label}>개인정보처리방침</Text>
           <Image
             style={styles.arrow}
-            source={require('../assets/images/rightArrow-gray.png')}
+            source={require('../../../assets/images/rightArrow-gray.png')}
           />
         </TouchableOpacity>
       </View>
@@ -91,14 +91,14 @@ export default function SettingScreen() {
           <Text style={styles.label}>로그아웃</Text>
           <Image
             style={styles.arrow}
-            source={require('../assets/images/rightArrow-gray.png')}
+            source={require('../../../assets/images/rightArrow-gray.png')}
           />
         </TouchableOpacity>
         <TouchableOpacity style={styles.row} onPress={() => setShowDeleteModal(true)}>
           <Text style={styles.label}>계정탈퇴</Text>
           <Image
             style={styles.arrow}
-            source={require('../assets/images/rightArrow-gray.png')}
+            source={require('../../../assets/images/rightArrow-gray.png')}
           />
         </TouchableOpacity>
       </View>

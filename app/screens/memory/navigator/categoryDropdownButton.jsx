@@ -10,7 +10,7 @@ import {
   getResponsiveFontSize,
   getResponsiveWidth,
   getResponsiveHeight,
-} from '../../utils/responsive';
+} from '../../../utils/responsive';
 
 export default function CategoryDropdownButton({
   selectedTitle,
@@ -21,7 +21,7 @@ export default function CategoryDropdownButton({
     <TouchableOpacity style={[styles.categoryButton, style]} onPress={onPress}>
       <Text style={styles.text}>{selectedTitle}</Text>
       <Image
-        source={require('../../assets/images/down-yellow.png')}
+        source={require('../../../assets/images/arrow-down.png')}
         style={styles.icon}
       />
     </TouchableOpacity>
@@ -32,18 +32,18 @@ const styles = StyleSheet.create({
   categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: getResponsiveWidth(10),
+    gap: getResponsiveWidth(7),
   },
   text: {
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(25),
     // color: '#FFC84D',
     color: '#FFC84D',
-
+    color: 'black',
   },
   icon: {
     resizeMode: 'contain',
-    width: getResponsiveWidth(12),
-    height: getResponsiveHeight(9),
+    width: getResponsiveWidth(20),
+    height: getResponsiveHeight(20),
   },
 });

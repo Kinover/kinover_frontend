@@ -1,11 +1,11 @@
 // FamilyChatRoom.jsx
 import React from 'react';
 import { useNavigation } from '@react-navigation/native';
-import ChatRoomScreenTemplate from '../../../components/chatRoomScreenTemplate';
+import ChatRoomScreenTemplate from './chatRoomScreenTemplate';
 
-export default function FamilyChatRoom({ route }) {
-  const { chatRoom, user } = route.params || {};
+export default function KinoChatRoom({ route }) {
+  const { chatRoom, userId } = route.params || {};
   const navigation = useNavigation();
 
-  return <ChatRoomScreenTemplate chatRoom={chatRoom} user={user} isKino={true} navigation={navigation} />;
+  return <ChatRoomScreenTemplate chatRoom={chatRoom} userId={userId} isKino={true} navigation={navigation} />;
 }

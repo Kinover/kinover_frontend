@@ -17,7 +17,7 @@ import getResponsiveFontSize, {
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../../utils/responsive';
-import ImageDeleteModal from '../../../utils/imageDeleteModal';
+import ImageDeleteModal from './imageDeleteModal';
 import {
   deletePostThunk,
   deletePostImageThunk,
@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: Platform.OS === 'android' ? 0.5 : 0.2,
-    backgroundColor: 'black',
+    backgroundColor: 'gray',
   },
   modalText: {
     fontSize: getResponsiveFontSize(14),

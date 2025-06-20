@@ -6,7 +6,7 @@ import PostPage from '../../screens/memory/post/postPage';
 import ImageSelectPage from '../../screens/memory/upload/ImageSelectPage';
 import CategorySelectPage from '../../screens/memory/upload/categorySelectPage';
 import CreatePostPage from '../../screens/memory/upload/createPostPage';
-import CategoryPage from '../../screens/memory/categoryPage';
+import CategoryPage from '../../screens/memory/navigator/categoryPage';
 
 import {
   RenderGoBackButton,

@@ -4,7 +4,7 @@ import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from './responsive';
+} from '../utils/responsive';
 
 export default function CustomSwitch({isEnabled, toggleSwitch}) {
   const [thumbPosition] = useState(new Animated.Value(isEnabled ? 40 : 0));

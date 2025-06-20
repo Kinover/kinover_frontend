@@ -4,7 +4,7 @@ import {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveWidth,
-} from './responsive';
+} from '../utils/responsive';
 
 export default function FloatingButton({type, navigation}) {
   const handleClick = () => {
