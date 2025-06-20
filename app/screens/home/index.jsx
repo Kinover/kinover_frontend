@@ -45,12 +45,11 @@ export default function HomeScreen() {
   useWebSocketStatus(user.userId);
   useFamilyStatusSocket(family.familyId);
 
-  // 부모에서 넘겨주는 함수 예시
   const handleSave = async (name, description, imageUrl) => {
-    console.log(name, description, imageUrl);
     await dispatch(modifyUserThunk({name, description, image: imageUrl}));
-    setBottomSheetVisible(false);
+    setSelectedUser(null);
   };
+
   useEffect(() => {
     if (user.userId && family.familyId) {
       dispatch(fetchFamilyThunk(family.familyId));
@@ -171,9 +170,9 @@ const styles = StyleSheet.create({
   bodyContainer: {
     backgroundColor: 'white',
     borderRadius: getResponsiveIconSize(20),
-    paddingHorizontal: '8%',
+    paddingHorizontal: getResponsiveWidth(24),
     paddingVertical: getResponsiveHeight(32),
-    marginHorizontal: '5%',
+    marginHorizontal: getResponsiveWidth(20),
     elevation: 5,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 0},
@@ -215,11 +214,11 @@ const styles = StyleSheet.create({
   },
   onlineDot: {
     position: 'absolute',
-    top: 5,
-    right: 5,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    top: getResponsiveHeight(5),
+    right: getResponsiveWidth(5),
+    width: getResponsiveWidth(12),
+    height: getResponsiveWidth(12),
+    borderRadius: getResponsiveWidth(6),
     backgroundColor: '#29D697',
     borderColor: 'white',
     borderWidth: 2,

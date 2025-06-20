@@ -5,7 +5,11 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import { getResponsiveHeight } from '../../../utils/responsive';
+import {
+  getResponsiveHeight,
+  getResponsiveWidth,
+  getResponsiveFontSize,
+} from '../../../utils/responsive';
 import CustomSwitch from '../../../components/customSwitch';
 
 export default function NotificationSettingScreen() {
@@ -82,14 +86,14 @@ export default function NotificationSettingScreen() {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: getResponsiveWidth(20),
+    paddingTop: getResponsiveHeight(20),
     flex: 1,
   },
   header: {
-    fontSize: 26,
+    fontSize: getResponsiveFontSize(24),
     fontWeight: 'bold',
-    marginBottom: 30,
+    marginBottom: getResponsiveHeight(25),
     color: '#000',
   },
   section: {
@@ -101,10 +105,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: getResponsiveHeight(8),
   },
   label: {
-    fontSize: 17,
+    fontSize: getResponsiveFontSize(16),
     color: '#222',
   },
 });
