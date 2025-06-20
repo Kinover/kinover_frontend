@@ -23,20 +23,16 @@ import {
 export default function CategorySelectPage({route}) {
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const family = useSelector(state => state.family);
   const familyId = useSelector(state => state.family.familyId);
-  const {categoryList, isLoading} = useSelector(state => state.category);
+  const {categoryList} = useSelector(state => state.category);
 
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [newCategory, setNewCategory] = useState('');
 
-  // ✅ 서버에서 카테고리 불러오기
   useEffect(() => {
-    if (familyId) {
-      dispatch(fetchCategoryThunk(familyId));
-    }
+    if (familyId) dispatch(fetchCategoryThunk(familyId));
   }, [familyId]);
 
   useEffect(() => {
@@ -46,38 +42,27 @@ export default function CategorySelectPage({route}) {
     }
   }, [categoryList]);
 
-  // ✅ 새 카테고리 생성
   const handleAddCategory = () => {
     if (newCategory.trim()) {
       const tempCategory = {
-        categoryId: `temp-${Date.now()}`, // 구분 가능한 임시 ID
+        categoryId: `temp-${Date.now()}`,
         title: newCategory.trim(),
         isTemporary: true,
       };
       const updated = [...categoryList, tempCategory];
-
       setNewCategory('');
       setAddModalVisible(false);
       setSelectedCategory(tempCategory);
       setSelectedIndex(updated.length - 1);
-      dispatch({type: 'category/setTempCategoryList', payload: updated}); // 또는 local 상태
+      dispatch({type: 'category/setTempCategoryList', payload: updated});
     }
   };
 
-  // ✅ 상단 헤더
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <View
-          style={{
-            width: '100%',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
-          <Text
-            style={{fontSize: getResponsiveFontSize(20), textAlign: 'center'}}>
-            카테고리 선택
-          </Text>
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>카테고리 선택</Text>
         </View>
       ),
       headerRight: () => (
@@ -90,25 +75,18 @@ export default function CategorySelectPage({route}) {
               });
             }
           }}
-          style={{marginRight: 15}}>
+          style={styles.headerRight}>
           <Image
             source={require('../../../assets/images/check-bt.png')}
-            style={{
-              width: 25,
-              height: 25,
-              resizeMode: 'contain',
-              right: getResponsiveWidth(10),
-            }}
+            style={styles.checkImage}
           />
         </TouchableOpacity>
       ),
     });
   }, [navigation, selectedCategory]);
 
-  // ✅ 항목 렌더링
   const renderItem = ({item, index}) => {
     const isSelected = selectedIndex === index;
-
     return (
       <TouchableOpacity
         onPress={() => {
@@ -117,7 +95,7 @@ export default function CategorySelectPage({route}) {
         }}
         style={[
           styles.itemContainer,
-          selectedIndex === index && styles.selectedItem,
+          isSelected && styles.selectedItem,
         ]}>
         <Text style={styles.itemText}>{item.title}</Text>
         <TouchableOpacity>
@@ -127,11 +105,8 @@ export default function CategorySelectPage({route}) {
                 ? require('../../../assets/images/selected-bt.png')
                 : require('../../../assets/images/unselected-bt.png')
             }
-            style={{
-              width: getResponsiveWidth(14),
-              height: getResponsiveHeight(14),
-              resizeMode: 'contain',
-            }}></Image>
+            style={styles.radioIcon}
+          />
         </TouchableOpacity>
       </TouchableOpacity>
     );
@@ -160,31 +135,12 @@ export default function CategorySelectPage({route}) {
         }}
         onConfirm={handleAddCategory}
         content={
-          <View style={{paddingHorizontal: 0}}>
-            <Text
-              style={{
-                fontSize: getResponsiveFontSize(18),
-                fontFamily: 'Pretendard-SemiBold',
-                textAlign: 'center',
-                marginBottom: getResponsiveHeight(15),
-                marginTop: getResponsiveHeight(15),
-              }}>
-              새 카테고리를 입력해주세요
-            </Text>
-            <View
-              style={{
-                borderWidth: 1,
-                borderColor: '#ddd',
-                borderRadius: 8,
-                paddingHorizontal: 10,
-                paddingVertical: 8,
-              }}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>새 카테고리를 입력해주세요</Text>
+            <View style={styles.inputBox}>
               <TextInput
                 placeholder="예: 2025 가족 여행"
-                style={{
-                  fontFamily: 'Pretendard-Regular',
-                  fontSize: getResponsiveFontSize(14),
-                }}
+                style={styles.input}
                 value={newCategory}
                 onChangeText={setNewCategory}
               />
@@ -203,8 +159,25 @@ const styles = StyleSheet.create({
     borderTopWidth: 3,
     borderColor: '#D3D3D3',
   },
+  headerCenter: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: getResponsiveFontSize(20),
+    fontFamily:'Pretendard-Regular',
+    textAlign: 'center',
+  },
+  headerRight: {
+    marginRight: getResponsiveWidth(10),
+  },
+  checkImage: {
+    width: getResponsiveWidth(25),
+    height: getResponsiveHeight(25),
+    resizeMode: 'contain',
+  },
   itemContainer: {
-    display: 'flex',
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: getResponsiveWidth(20),
@@ -216,6 +189,11 @@ const styles = StyleSheet.create({
   itemText: {
     fontSize: getResponsiveFontSize(15),
     fontFamily: 'Pretendard-Regular',
+  },
+  radioIcon: {
+    width: getResponsiveWidth(14),
+    height: getResponsiveHeight(14),
+    resizeMode: 'contain',
   },
   separator: {
     height: 1,
@@ -230,5 +208,26 @@ const styles = StyleSheet.create({
     color: '#F8B500',
     fontSize: getResponsiveFontSize(15),
     fontFamily: 'Pretendard-Medium',
+  },
+  modalContent: {
+    paddingHorizontal: getResponsiveWidth(10),
+  },
+  modalTitle: {
+    fontSize: getResponsiveFontSize(18),
+    fontFamily: 'Pretendard-SemiBold',
+    textAlign: 'center',
+    marginBottom: getResponsiveHeight(15),
+    marginTop: getResponsiveHeight(15),
+  },
+  inputBox: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: getResponsiveWidth(10),
+    paddingVertical: getResponsiveHeight(8),
+  },
+  input: {
+    fontFamily: 'Pretendard-Regular',
+    fontSize: getResponsiveFontSize(14),
   },
 });

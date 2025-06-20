@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef, useCallback} from 'react';
+import React, {useState, useEffect, useRef} from 'react';
 import {
   FlatList,
   Image,
@@ -52,12 +52,11 @@ export default function PostPage({route}) {
 
   useHideTabBar();
 
-  // ✅ PostPage unmount 시 헤더 복원
-useEffect(() => {
-  return () => {
-    navigation.setOptions({ headerShown: true });
-  };
-}, []);
+  useEffect(() => {
+    return () => {
+      navigation.setOptions({headerShown: true});
+    };
+  }, []);
 
   useEffect(() => {
     if (memory?.postId) {
@@ -85,7 +84,7 @@ useEffect(() => {
       ),
       headerRight: () => (
         <TouchableOpacity
-          style={{position: 'relative', elevation: 10, zIndex: 10}}
+          style={{marginRight: getResponsiveWidth(15)}}
           onPress={() => setShowDeleteOptions(prev => !prev)}>
           <Image
             source={require('../../../assets/images/trash.png')}
@@ -93,7 +92,6 @@ useEffect(() => {
               width: getResponsiveWidth(20),
               height: getResponsiveHeight(20),
               resizeMode: 'contain',
-              marginRight: getResponsiveWidth(15),
             }}
           />
         </TouchableOpacity>
@@ -168,9 +166,6 @@ useEffect(() => {
           pagingEnabled
           showsHorizontalScrollIndicator={false}
           keyExtractor={(item, index) => index.toString()}
-          initialNumToRender={1}
-          windowSize={2}
-          removeClippedSubviews
           onMomentumScrollEnd={e => {
             const index = Math.round(
               e.nativeEvent.contentOffset.x /
@@ -195,7 +190,6 @@ useEffect(() => {
             </View>
           )}
         />
-
         {!isFullImageMode && localImages.length > 1 && (
           <View style={styles.imageIndexContainer}>
             <Text style={[styles.imageIndexText, {color: 'yellow'}]}>
@@ -291,7 +285,6 @@ const styles = StyleSheet.create({
     width: Dimensions.get('window').width,
     flex: 1,
     resizeMode: 'contain',
-    backgroundColor: 'transparent',
   },
   imageIndexContainer: {
     position: 'absolute',
@@ -299,8 +292,8 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: 'row',
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    paddingHorizontal: 11,
-    paddingVertical: 3,
+    paddingHorizontal: getResponsiveWidth(11),
+    paddingVertical: getResponsiveHeight(3),
     borderRadius: 10,
     zIndex: 3,
   },

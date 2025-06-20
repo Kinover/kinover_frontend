@@ -32,12 +32,12 @@ const styles = StyleSheet.create({
   categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: getResponsiveWidth(7),
+    justifyContent: 'flex-start',
+    gap: getResponsiveWidth(5),
   },
   text: {
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(25),
-    // color: '#FFC84D',
     color: '#FFC84D',
     color: 'black',
   },

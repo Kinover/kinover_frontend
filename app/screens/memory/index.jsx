@@ -1,4 +1,4 @@
-import React, {useEffect, useLayoutEffect, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useState, useRef} from 'react';
 import {View, StyleSheet, Image, TouchableOpacity} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchMemoryThunk} from '../../redux/thunk/memoryThunk';
@@ -9,9 +9,6 @@ import CategoryDropdownButton from './navigator/categoryDropdownButton';
 import GalleryToggle from './navigator/galleryToggle';
 import {useRoute} from '@react-navigation/native';
 import CategoryBottomSheet from './navigator/categoryBottomSheet';
-import {useRef} from 'react';
-import {SafeAreaView} from 'react-native';
-import {HeaderTitle} from '@react-navigation/elements';
 
 export default function MemoryScreen({navigation}) {
   const dispatch = useDispatch();
@@ -30,13 +27,12 @@ export default function MemoryScreen({navigation}) {
     }
   }, [dispatch, family?.familyId]);
 
-  // ✅ 포커스될 때 카테고리 변경 적용
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       const categoryFromParams = route.params?.category;
       if (categoryFromParams?.title) {
         setSelectedCategoryTitle(categoryFromParams.title);
-        navigation.setParams({category: undefined}); // 초기화
+        navigation.setParams({category: undefined});
       }
     });
     return unsubscribe;
@@ -52,11 +48,11 @@ export default function MemoryScreen({navigation}) {
             setIsSheetOpen(true);
             sheetRef.current?.snapToIndex(0);
           }}
-          style={{paddingLeft: getResponsiveWidth(15)}}
+          style={{paddingLeft: getResponsiveWidth(20)}}
         />
       ),
       headerRight: () => (
-        <View style={{paddingRight: getResponsiveWidth(15)}}>
+        <View style={{paddingRight: getResponsiveWidth(20)}}>
           <GalleryToggle
             isGalleryView={isGalleryView}
             onToggle={setIsGalleryView}
@@ -124,7 +120,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
   },
-
   overlay: {
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },

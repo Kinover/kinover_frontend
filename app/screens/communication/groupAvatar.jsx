@@ -7,7 +7,7 @@ export default function GroupAvatar({images = [], size = 60}) {
   const imageStyle = (multiplier = 1) => ({
     width: size / multiplier,
     height: size / multiplier,
-    borderRadius: (size / multiplier) / 2,
+    borderRadius: size / multiplier / 2,
   });
 
   return (
@@ -22,19 +22,11 @@ export default function GroupAvatar({images = [], size = 60}) {
         <>
           <Image
             source={{uri: images[0]}}
-            style={[
-              styles.absolute,
-              imageStyle(1.6),
-              {top: 0, left: 0},
-            ]}
+            style={[styles.absolute, imageStyle(1.6), {top: 0, left: 0}]}
           />
           <Image
             source={{uri: images[1]}}
-            style={[
-              styles.absolute,
-              imageStyle(1.6),
-              {bottom: 0, right: 0},
-            ]}
+            style={[styles.absolute, imageStyle(1.6), {bottom: 0, right: 0}]}
           />
         </>
       )}
@@ -50,19 +42,11 @@ export default function GroupAvatar({images = [], size = 60}) {
           />
           <Image
             source={{uri: images[1]}}
-            style={[
-              styles.absolute,
-              imageStyle(1.8),
-              {bottom: 0, left: 0},
-            ]}
+            style={[styles.absolute, imageStyle(1.8), {bottom: 0, left: 0}]}
           />
           <Image
             source={{uri: images[2]}}
-            style={[
-              styles.absolute,
-              imageStyle(1.8),
-              {bottom: 0, right: 0},
-            ]}
+            style={[styles.absolute, imageStyle(1.8), {bottom: 0, right: 0}]}
           />
         </>
       )}
@@ -70,35 +54,19 @@ export default function GroupAvatar({images = [], size = 60}) {
         <>
           <Image
             source={{uri: images[0]}}
-            style={[
-              styles.absolute,
-              imageStyle(2),
-              {top: 0, left: 0},
-            ]}
+            style={[styles.absolute, imageStyle(2), {top: 0, left: 0}]}
           />
           <Image
             source={{uri: images[1]}}
-            style={[
-              styles.absolute,
-              imageStyle(2),
-              {top: 0, right: 0},
-            ]}
+            style={[styles.absolute, imageStyle(2), {top: 0, right: 0}]}
           />
           <Image
             source={{uri: images[2]}}
-            style={[
-              styles.absolute,
-              imageStyle(2),
-              {bottom: 0, left: 0},
-            ]}
+            style={[styles.absolute, imageStyle(2), {bottom: 0, left: 0}]}
           />
           <Image
             source={{uri: images[3]}}
-            style={[
-              styles.absolute,
-              imageStyle(2),
-              {bottom: 0, right: 0},
-            ]}
+            style={[styles.absolute, imageStyle(2), {bottom: 0, right: 0}]}
           />
         </>
       )}
@@ -114,5 +82,6 @@ const styles = StyleSheet.create({
   absolute: {
     position: 'absolute',
     resizeMode: 'cover',
+    borderColor: 'white',
   },
 });

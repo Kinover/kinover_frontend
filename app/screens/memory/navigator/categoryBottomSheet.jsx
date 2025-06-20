@@ -76,11 +76,12 @@ const styles = StyleSheet.create({
   },
   container: {
     paddingHorizontal: getResponsiveWidth(20),
-    paddingVertical:getResponsiveWidth(25),
+    paddingVertical: getResponsiveWidth(25),
   },
   title: {
     fontSize: getResponsiveFontSize(20),
-    fontFamily: 'Pretendard-SemiBold',
+    fontWeight: 'bold',
+    fontFamily: 'Pretendard-Regular',
     marginBottom: getResponsiveHeight(30),
     textAlign: 'left',
   },
@@ -88,27 +89,28 @@ const styles = StyleSheet.create({
     paddingBottom: getResponsiveHeight(20),
   },
   categoryItem: {
-    paddingVertical: getResponsiveHeight(17),
+    paddingVertical: getResponsiveHeight(20),
     paddingHorizontal: getResponsiveWidth(15),
-    borderRadius: 12.5,
+    borderRadius: 13,
     backgroundColor: 'white',
     borderColor: '#D9D9D9',
-    borderWidth: getResponsiveIconSize(2),
+    borderWidth: getResponsiveIconSize(1.4),
     marginBottom: getResponsiveHeight(8),
   },
   selectedItem: {
     backgroundColor: '#FFF6E1',
     borderColor: '#FFC84D',
-    borderWidth: 2,
+    borderWidth: 1.4,
   },
   categoryText: {
     fontSize: getResponsiveFontSize(15),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: 'Pretendard-Medium',
     textAlign: 'left',
     color: '#808080',
   },
   selectedText: {
     fontFamily: 'Pretendard-SemiBold',
+    fontWeight: 'bold',
     color: '#333',
   },
 });

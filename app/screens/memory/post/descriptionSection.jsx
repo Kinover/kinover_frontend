@@ -1,4 +1,3 @@
-// 📁 components/DescriptionSection.js
 import React from 'react';
 import {
   View,
@@ -45,7 +44,7 @@ export default function DescriptionSection({
       <SafeAreaView style={styles.description}>
         <ScrollView
           style={styles.contentContainer}
-          contentContainerStyle={{paddingBottom: '10%'}}
+          contentContainerStyle={{paddingBottom: getResponsiveHeight(40)}}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           nestedScrollEnabled={true}>
@@ -65,23 +64,17 @@ export default function DescriptionSection({
 
 const styles = StyleSheet.create({
   description: {
-    // flex: 1,
     width: '100%',
-    height: 'auto',
-    alignItems: 'center',
-    // backgroundColor: 'rgba(255,255,255,0)', // ← 완전 투명
-    backgroundColor: 'transparent',
-    zIndex: 5,
-    // backgroundColor:'pink',
     backgroundColor: 'rgba(245, 245, 245, 0.8)',
+    alignItems: 'center',
+    zIndex: 5,
   },
   fadeOutGradient: {
     position: 'absolute',
     bottom: 0,
-    height: '90%', // 예: 80~100 정도로 흐림 범위 넓히기
+    height: getResponsiveHeight(90),
     width: '100%',
   },
-
   headerContainer: {
     width: '100%',
     flexDirection: 'row',
@@ -90,7 +83,7 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(60),
     paddingHorizontal: getResponsiveWidth(10),
     zIndex: 10,
-    backgroundColor: 'rgba(255,255,255,0)', // ← 완전 투명
+    backgroundColor: 'rgba(255,255,255,0)',
   },
   writer: {
     flexDirection: 'row',
@@ -99,7 +92,7 @@ const styles = StyleSheet.create({
   },
   writerImage: {
     width: getResponsiveWidth(40),
-    height: getResponsiveHeight(40),
+    height: getResponsiveWidth(40),
     borderRadius: getResponsiveWidth(20),
     backgroundColor: 'white',
     borderColor: 'gray',
@@ -112,23 +105,25 @@ const styles = StyleSheet.create({
   commentButton: {
     width: getResponsiveWidth(45),
     height: getResponsiveHeight(40),
-    right: getResponsiveWidth(-5),
     resizeMode: 'contain',
-    bottom: -15,
+    marginRight: getResponsiveWidth(-5),
+    marginBottom: getResponsiveHeight(-15),
   },
   contentContainer: {
-    backgroundColor: 'rgba(245, 245, 245, 0.8)',
     width: '100%',
     paddingHorizontal: getResponsiveWidth(10),
+    backgroundColor: 'rgba(245, 245, 245, 0.8)',
   },
   content: {
     color: 'black',
     fontFamily: 'Pretendard-Light',
     fontSize: getResponsiveFontSize(15),
-    paddingVertical: getResponsiveWidth(5),
+    paddingVertical: getResponsiveHeight(5),
   },
   commentCount: {
-    left: 20,
-    bottom: 17.5,
+    position: 'absolute',
+    right: getResponsiveWidth(20),
+    bottom: getResponsiveHeight(2),
+    fontSize: getResponsiveFontSize(13),
   },
 });

@@ -33,7 +33,7 @@ export default function ChatRoomScreenTemplate({
     socketRef,
     isUserScrolling,
   } = useChatRoomScreen(chatRoom, userId, isKino);
-  
+
   useHideTabBar();
   useHeaderSetting(navigation, setIsSettingsOpen, chatRoom.roomName, isKino);
   useEffect(() => {

@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(20),
   },
   monthText: {
-    fontFamily: 'Pretendard-Bold',
+    fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(18),
   },
   monthChangeButtonGroup: {
