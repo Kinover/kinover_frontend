@@ -1,5 +1,12 @@
 import React from 'react';
-import {TouchableOpacity, Image, Text, View, StyleSheet, Platform} from 'react-native';
+import {
+  TouchableOpacity,
+  Image,
+  Text,
+  View,
+  StyleSheet,
+  Platform,
+} from 'react-native';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -8,20 +15,27 @@ import {
 } from '../../utils/responsive';
 import formatTime from '../../utils/formatTime';
 import GroupAvatar from './groupAvatar';
+import {useSelector} from 'react-redux';
 
 export default function ChatRoomItem({chatRoom, userId, navigation}) {
   const imageUri = chatRoom.memberImages?.[0];
   let name = chatRoom.roomName;
   const description =
-    chatRoom.latestMessageContent || '지금 첫 메시지를 보내고 대화를 열어보세요!';
+    chatRoom.latestMessageContent ||
+    '지금 첫 메시지를 보내 대화를 시작해보세요!';
   const screen = chatRoom.kino ? '키노상담소화면' : '채팅방화면';
   const time = chatRoom.latestMessageTime;
+  const userImage = useSelector(state => state.user.image);
 
   return (
     <TouchableOpacity
       style={styles.container}
       onPress={() => navigation.navigate(screen, {chatRoom, userId})}>
-      <GroupAvatar images={chatRoom.memberImages} size={getResponsiveIconSize(60)} />
+      <GroupAvatar
+        images={chatRoom.memberImages}
+        size={getResponsiveIconSize(55)}
+        userImage={userImage}
+      />
       <View style={styles.textContainer}>
         <View style={styles.headerRow}>
           <Text style={styles.name}>{chatRoom.kino ? '챗봇 키노' : name}</Text>
@@ -46,6 +60,7 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flex: 1,
+    flexDirection: 'column',
     justifyContent: 'center',
     paddingLeft: getResponsiveWidth(14),
   },

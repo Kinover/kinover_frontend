@@ -98,10 +98,31 @@ export default function HomeScreen() {
                 resizeMode="cover"
               />
             </TouchableOpacity>
-            <Image
-              style={styles.stateIcon}
-              source={require('../../assets/images/state-2.png')}
-            />
+            <TouchableOpacity
+              style={{
+                position: 'absolute',
+                borderWidth: getResponsiveIconSize(1.4),
+                width: getResponsiveIconSize(45),
+                height: getResponsiveIconSize(45),
+                borderRadius: getResponsiveIconSize(22.5),
+                right: -10,
+                bottom: getResponsiveHeight(5),
+                backgroundColor: 'rgba(200, 200, 200, 0.6)', // 💡 연한 회색 + 반투명
+                borderColor: 'gray', // 좀 더 흐린 회색 테두리
+                borderStyle: 'dashed',
+              }}>
+              <View>
+                <Text
+                  style={{
+                    color: '#747473',
+                    left: '35%',
+                    top: '20%',
+                    fontSize: getResponsiveFontSize(25),
+                  }}>
+                  ?
+                </Text>
+              </View>
+            </TouchableOpacity>
           </View>
 
           <Text style={styles.userNameHeader}>{user.name}</Text>
@@ -170,7 +191,7 @@ const styles = StyleSheet.create({
   bodyContainer: {
     backgroundColor: 'white',
     borderRadius: getResponsiveIconSize(20),
-    paddingHorizontal: getResponsiveWidth(24),
+    paddingHorizontal: getResponsiveWidth(27),
     paddingVertical: getResponsiveHeight(32),
     marginHorizontal: getResponsiveWidth(20),
     elevation: 5,
