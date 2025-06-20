@@ -1,12 +1,11 @@
-
 import React from 'react';
-import { Text, StyleSheet } from 'react-native';
+import { Text, StyleSheet, Platform } from 'react-native';
 import CustomModal from '../../../../../components/customModal';
 import {
-    getResponsiveHeight,
-    getResponsiveFontSize,
-    getResponsiveWidth,
-  } from '../../../../../utils/responsive';
+  getResponsiveHeight,
+  getResponsiveFontSize,
+  getResponsiveWidth,
+} from '../../../../../utils/responsive';
 
 export default function LeaveChatRoomModal({
   visible,
@@ -33,12 +32,12 @@ export default function LeaveChatRoomModal({
 
 const styles = StyleSheet.create({
   modalTitle: {
-    fontSize: 17,
+    fontSize: getResponsiveFontSize(17),
     textAlign: 'center',
     fontFamily: 'Pretendard-Medium',
-    fontWeight:Platform.OS=='ios'?null:'700',
+    fontWeight: Platform.OS === 'ios' ? undefined : '700',
     marginBottom: getResponsiveHeight(10),
-    marginTop:getResponsiveHeight(15),
+    marginTop: getResponsiveHeight(15),
   },
   modalText: {
     fontFamily: 'Pretendard-Regular',
@@ -46,19 +45,19 @@ const styles = StyleSheet.create({
   },
   modalButtonRow: {
     flexDirection: 'row',
-    gap: getResponsiveWidth(10),
     justifyContent: 'space-between',
+    gap: getResponsiveWidth(10),
   },
   confirmButton: {
     flex: 1,
     backgroundColor: '#FFC84D',
     paddingVertical: getResponsiveHeight(10),
-    borderRadius: 8,
+    borderRadius: getResponsiveWidth(8),
   },
   closeButton: {
     flex: 1,
     backgroundColor: '#E0E0E0',
     paddingVertical: getResponsiveHeight(10),
-    borderRadius: 8,
+    borderRadius: getResponsiveWidth(8),
   },
 });

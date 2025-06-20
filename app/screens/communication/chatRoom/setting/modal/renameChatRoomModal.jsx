@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { View, Text, TextInput, StyleSheet, Platform } from 'react-native';
 import CustomModal from '../../../../../components/customModal';
@@ -28,13 +27,14 @@ export default function RenameChatRoomModal({
       confirmTextStyle={[styles.modalText, { color: 'black' }]}
       buttonBottomStyle={styles.modalButtonRow}
     >
-      <View style={{ marginTop: getResponsiveHeight(15)}}>
+      <View style={{ marginTop: getResponsiveHeight(15) }}>
         <Text style={styles.modalTitle}>채팅방 이름을 수정하세요</Text>
         <TextInput
           placeholder="새 채팅방 이름"
           value={newRoomName}
           onChangeText={setNewRoomName}
           style={styles.textInput}
+          placeholderTextColor="#999"
         />
       </View>
     </CustomModal>
@@ -43,10 +43,10 @@ export default function RenameChatRoomModal({
 
 const styles = StyleSheet.create({
   modalTitle: {
-    fontSize: 17,
+    fontSize: getResponsiveFontSize(17),
     textAlign: 'center',
     fontFamily: 'Pretendard-Medium',
-    fontWeight:Platform.OS=='ios'?null:'700',
+    fontWeight: Platform.OS === 'ios' ? undefined : '700',
     marginBottom: getResponsiveHeight(20),
   },
   modalText: {
@@ -55,26 +55,27 @@ const styles = StyleSheet.create({
   },
   modalButtonRow: {
     flexDirection: 'row',
-    gap: getResponsiveWidth(10),
     justifyContent: 'space-between',
+    gap: getResponsiveWidth(10),
   },
   confirmButton: {
     flex: 1,
     backgroundColor: '#FFC84D',
     paddingVertical: getResponsiveHeight(10),
-    borderRadius: 8,
+    borderRadius: getResponsiveWidth(8),
   },
   closeButton: {
     flex: 1,
     backgroundColor: '#E0E0E0',
     paddingVertical: getResponsiveHeight(10),
-    borderRadius: 8,
+    borderRadius: getResponsiveWidth(8),
   },
   textInput: {
     borderWidth: 1,
     borderColor: '#ccc',
-    borderRadius: 6,
-    padding: 10,
+    borderRadius: getResponsiveWidth(6),
+    paddingVertical: getResponsiveHeight(8),
+    paddingHorizontal: getResponsiveWidth(12),
     fontSize: getResponsiveFontSize(14),
     backgroundColor: '#fff',
     fontFamily: 'Pretendard-Regular',

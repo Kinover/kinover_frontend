@@ -1,38 +1,38 @@
-import React from 'react';
-import {View, StyleSheet} from 'react-native';
-import ReceiveChat from './receiveChat';
-import SendChat from './sendChat';
-import ReceiveKinoChat from './receiveKinoChat';
-import SendKinoChat from './sendKinoChat';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  StyleSheet,
+  Text,
+} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import {useState} from 'react';
-import {useLayoutEffect} from 'react';
 import {useDispatch} from 'react-redux';
-import ChatSettings from '../setting/chatSetting';
-import {leaveChatRoomThunk} from '../../../../redux/thunk/chatRoomThunk';
-import {useEffect} from 'react';
 import {
   getResponsiveWidth,
   getResponsiveIconSize,
   getResponsiveHeight,
+  getResponsiveFontSize,
 } from '../../../../utils/responsive';
-import {Alert, Text} from 'react-native';
-import {RenderHeaderRightChatSetting} from '../../../../navigation/tabHeaderHelpers';
+
+import ReceiveChat from './receiveChat';
+import SendChat from './sendChat';
+import ReceiveKinoChat from './receiveKinoChat';
+import SendKinoChat from './sendKinoChat';
+
 export default function ChatMessageItem({
   chatRoom,
   message,
   currentUserId,
   isKino = false,
   isSameSender = false,
-  shouldShowDate = false, // ✅ 추가
+  shouldShowDate = false,
 }) {
   const isMe = message.senderId === currentUserId;
-  const marginBottom = isSameSender ? 15 : 25;
-  const dispatch = useDispatch();
-
-  let ChatComponent;
+  const marginBottom = isSameSender
+    ? getResponsiveHeight(15)
+    : getResponsiveHeight(25);
 
   const navigation = useNavigation();
+  const dispatch = useDispatch();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const formatDate = dateString => {
@@ -49,6 +49,7 @@ export default function ChatMessageItem({
     navigation.getParent()?.setOptions({tabBarStyle: {display: 'none'}});
   }, [navigation]);
 
+  let ChatComponent;
   if (isMe) {
     ChatComponent = isKino ? (
       <SendKinoChat
@@ -89,18 +90,17 @@ export default function ChatMessageItem({
       />
     );
   }
+
   return (
-    <>
-      <View
-        style={[styles.wrapper, isMe ? styles.alignRight : styles.alignLeft]}>
-        {shouldShowDate && (
-          <Text style={styles.dateSeparator}>
-            {formatDate(message.createdAt)}
-          </Text>
-        )}
-        {ChatComponent}
-      </View>
-    </>
+    <View
+      style={[styles.wrapper, isMe ? styles.alignRight : styles.alignLeft]}>
+      {shouldShowDate && (
+        <Text style={styles.dateSeparator}>
+          {formatDate(message.createdAt)}
+        </Text>
+      )}
+      {ChatComponent}
+    </View>
   );
 }
 
@@ -117,14 +117,13 @@ const styles = StyleSheet.create({
   },
   dateSeparator: {
     alignSelf: 'center',
-    fontSize: 12,
+    fontSize: getResponsiveFontSize(12),
     fontWeight: 'bold',
-    paddingHorizontal: getResponsiveWidth(5),
-    marginVertical: getResponsiveHeight(28),
-    backgroundColor: 'rgba(255, 202, 85, 0.7)', // 투명도 0.5로 설정
-    borderColor: 'transparent',
+    paddingHorizontal: getResponsiveWidth(8),
+    paddingVertical: getResponsiveHeight(4),
+    marginVertical: getResponsiveHeight(24),
+    backgroundColor: 'rgba(255, 202, 85, 0.7)',
     borderRadius: getResponsiveIconSize(20),
-    borderWidth: 9,
     color: '#666',
   },
 });

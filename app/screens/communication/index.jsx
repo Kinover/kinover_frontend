@@ -1,4 +1,3 @@
-// CommunicationScreen.js
 import React, {useEffect} from 'react';
 import {
   StyleSheet,
@@ -32,9 +31,15 @@ export default function CommunicationScreen({navigation}) {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}>
         {loading ? (
-          <ActivityIndicator size="large" color="#FFC84D" />
+          <ActivityIndicator
+            size="large"
+            color="#FFC84D"
+            style={styles.loader}
+          />
         ) : chatRoomList?.length > 0 ? (
           chatRoomList.map((chatRoom, index) => (
             <ChatRoomItem
@@ -72,5 +77,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: getResponsiveHeight(100),
     lineHeight: getResponsiveFontSize(24),
+    paddingHorizontal: getResponsiveWidth(10),
+  },
+  loader: {
+    alignSelf: 'center',
+    marginTop: getResponsiveHeight(100),
   },
 });

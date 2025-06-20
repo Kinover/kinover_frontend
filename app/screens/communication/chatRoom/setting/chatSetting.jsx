@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,
   Image,
   Modal,
   ScrollView,
@@ -30,8 +29,6 @@ import {
   getResponsiveIconSize,
 } from '../../../../utils/responsive';
 
-const {width} = Dimensions.get('window');
-
 export default function ChatSettings({
   isOpen,
   onClose,
@@ -43,7 +40,7 @@ export default function ChatSettings({
   isKino,
   onNavigateToKino,
 }) {
-  if (!isOpen) return null; // ✅ Modal 완전 제거
+  if (!isOpen) return null;
 
   const [isChangeKinoModalVisible, setIsChangeKinoModalVisible] =
     useState(false);
@@ -51,8 +48,9 @@ export default function ChatSettings({
   const [isRenameModalVisible, setIsRenameModalVisible] = useState(false);
   const [newRoomName, setNewRoomName] = useState('');
   const [showMembers, setShowMembers] = useState(false);
-  const translateX = useSharedValue(width);
-  const [isAlarmOn, setIsAlarmOn] = useState(true); // 기본값 true로 시작
+  const [isAlarmOn, setIsAlarmOn] = useState(true);
+
+  const translateX = useSharedValue(getResponsiveWidth(375));
 
   const chatRoomUsers = useSelector(state => state.chatRoom.chatRoomUsers);
   const familyId = useSelector(state => state.family.familyId);
@@ -68,7 +66,7 @@ export default function ChatSettings({
   useEffect(() => {
     translateX.value = isOpen
       ? withTiming(0, {duration: 300})
-      : withTiming(width, {duration: 300});
+      : withTiming(getResponsiveWidth(375), {duration: 300});
   }, [isOpen]);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -106,7 +104,7 @@ export default function ChatSettings({
   };
 
   const handleGoToKinoSelect = () => {
-    onClose(); // 먼저 모달 닫기
+    onClose();
     navigation.navigate('키노선택화면');
   };
 
@@ -117,7 +115,7 @@ export default function ChatSettings({
       animationType="none"
       onRequestClose={onClose}
       statusBarTranslucent={true}>
-      {/* 모달 내부 모달들 */}
+      {/* 내부 모달 */}
       <View>
         <LeaveChatRoomModal
           visible={isLeaveModalVisible}
@@ -141,7 +139,7 @@ export default function ChatSettings({
         />
       </View>
 
-      {/* 배경 블러/터치 */}
+      {/* 블러 + 백드롭 */}
       <BlurView
         style={[StyleSheet.absoluteFill, styles.blurOverlay]}
         blurType="light"
@@ -156,11 +154,7 @@ export default function ChatSettings({
           <Text style={styles.headerTitle}>채팅방 설정</Text>
           <TouchableOpacity onPress={() => setIsAlarmOn(prev => !prev)}>
             <Image
-              style={{
-                width: getResponsiveIconSize(20),
-                height: getResponsiveIconSize(20),
-                resizeMode: 'contain',
-              }}
+              style={styles.alarmIcon}
               source={
                 isAlarmOn
                   ? require('../../../../assets/images/navigator_alarm-button.png')
@@ -183,22 +177,14 @@ export default function ChatSettings({
             <TouchableOpacity
               onPress={() => setShowMembers(!showMembers)}
               style={styles.option}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                }}>
+              <View style={styles.optionRow}>
                 <Text style={styles.optionText}>멤버 목록</Text>
                 <Image
                   source={require('../../../../assets/images/down-yellow.png')}
-                  style={{
-                    resizeMode: 'contain',
-                    width: getResponsiveWidth(17),
-                    height: getResponsiveHeight(17),
-                    marginRight: getResponsiveWidth(5),
-                    transform: [{rotate: showMembers ? '0deg' : '180deg'}],
-                  }}
+                  style={[
+                    styles.arrowIcon,
+                    {transform: [{rotate: showMembers ? '0deg' : '180deg'}]},
+                  ]}
                 />
               </View>
               {showMembers && (
@@ -237,12 +223,6 @@ export default function ChatSettings({
           <TouchableOpacity style={styles.option} onPress={onShowMedia}>
             <Text style={styles.optionText}>사진 & 영상</Text>
           </TouchableOpacity>
-
-          {/* <TouchableOpacity
-            style={styles.option}
-            onPress={onToggleNotifications}>
-            <Text style={styles.optionText}>알림 설정</Text>
-          </TouchableOpacity> */}
         </View>
 
         <TouchableOpacity
@@ -268,7 +248,6 @@ const styles = StyleSheet.create({
   },
   blurOverlay: {
     flex: 1,
-    elevation: 10,
     position: 'absolute',
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
@@ -276,12 +255,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     right: 0,
-    width: width * 0.75,
+    width: getResponsiveWidth(280),
     height: '100%',
     backgroundColor: '#fff',
     borderLeftWidth: 1,
     borderColor: '#ddd',
-    paddingHorizontal: 30,
+    paddingHorizontal: getResponsiveWidth(20),
     paddingBottom: getResponsiveHeight(100),
     zIndex: 9999,
     elevation: 10,
@@ -290,7 +269,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: getResponsiveHeight(90),
-    marginBottom: getResponsiveHeight(40),
+    marginBottom: getResponsiveHeight(60),
     alignItems: 'center',
   },
   headerTitle: {
@@ -299,50 +278,46 @@ const styles = StyleSheet.create({
     color: '#FFC84D',
     fontWeight: 'bold',
   },
+  alarmIcon: {
+    width: getResponsiveIconSize(20),
+    height: getResponsiveIconSize(20),
+    resizeMode: 'contain',
+  },
   content: {
-    gap: 15,
+    gap: getResponsiveHeight(35),
   },
   option: {
-    flexDirection: 'column',
-    justifyContent: 'flex-start',
-    paddingVertical: 7,
     borderBottomWidth: 1,
     borderColor: '#ddd',
-    marginVertical: 10,
+    paddingVertical: getResponsiveHeight(7),
   },
   optionText: {
     fontSize: getResponsiveFontSize(17),
     fontFamily: 'Pretendard-Light',
   },
-  addMemberButton: {
+  optionRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: getResponsiveHeight(5),
   },
-  addIcon: {
-    width: getResponsiveIconSize(34),
-    height: getResponsiveIconSize(34),
+  arrowIcon: {
     resizeMode: 'contain',
-    marginRight: getResponsiveWidth(12),
-  },
-  addText: {
-    fontSize: getResponsiveFontSize(14),
-    color: '#FFB000',
-    fontFamily: 'Pretendard-Medium',
+    width: getResponsiveWidth(17),
+    height: getResponsiveHeight(17),
+    marginRight: getResponsiveWidth(5),
   },
   memberList: {
     width: '100%',
-    minHeight: '16%',
+    minHeight: getResponsiveHeight(120),
     borderRadius: getResponsiveIconSize(8),
     backgroundColor: 'rgba(255, 228, 167, 0.30)',
-    marginTop: 10,
-    overflow: 'hidden',
+    marginTop: getResponsiveHeight(10),
     padding: getResponsiveHeight(10),
   },
   memberItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: getResponsiveHeight(5),
+    paddingVertical: getResponsiveHeight(5),
   },
   memberImage: {
     width: getResponsiveIconSize(34),
@@ -356,13 +331,29 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Light',
     color: 'black',
   },
+  addMemberButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: getResponsiveHeight(5),
+    marginTop: getResponsiveHeight(10),
+  },
+  addIcon: {
+    width: getResponsiveIconSize(34),
+    height: getResponsiveIconSize(34),
+    resizeMode: 'contain',
+    marginRight: getResponsiveWidth(12),
+  },
+  addText: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#FFB000',
+    fontFamily: 'Pretendard-Medium',
+  },
   leaveOption: {
     position: 'absolute',
     bottom: getResponsiveHeight(30),
-    left: 20,
-    right: 20,
-    alignItems: 'flex-start',
-    paddingVertical: 12,
+    left: getResponsiveWidth(20),
+    right: getResponsiveWidth(20),
+    paddingVertical: getResponsiveHeight(12),
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderColor: '#eee',
