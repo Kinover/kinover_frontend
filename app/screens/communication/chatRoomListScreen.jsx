@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import React, {useEffect} from 'react';
+import {useSelector, useDispatch} from 'react-redux';
 import {
   View,
   Text,
@@ -14,11 +14,11 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../utils/responsive';
-import { fetchChatRoomListThunk } from '../../redux/thunk/chatRoomThunk';
+import {fetchChatRoomListThunk} from '../../redux/thunk/chatRoomThunk';
 
-export default function ChatRoomListScreen({ navigation }) {
+export default function ChatRoomListScreen({navigation}) {
   const dispatch = useDispatch();
-  const { chatRoomList, loading } = useSelector(state => state.chatRoom);
+  const {chatRoomList, loading} = useSelector(state => state.chatRoom);
   const user = useSelector(state => state.user);
   const family = useSelector(state => state.family);
 
@@ -29,7 +29,7 @@ export default function ChatRoomListScreen({ navigation }) {
   }, [dispatch, user.userId, family.familyId]);
 
   const handleNavigate = (screen, chatRoom) => {
-    navigation.navigate(screen, { chatRoom, user });
+    navigation.navigate(screen, {chatRoom, user});
   };
 
   const renderChatRoomItem = (chatRoom, index) => {
@@ -49,11 +49,10 @@ export default function ChatRoomListScreen({ navigation }) {
       <TouchableOpacity
         key={chatRoom.roomId}
         style={styles.bottomSheetElement}
-        onPress={() => handleNavigate(screen, chatRoom)}
-      >
+        onPress={() => handleNavigate(screen, chatRoom)}>
         <Image
           style={styles.elementImage}
-          source={{ 
+          source={{
             uri: chatRoom.kino
               ? 'https://i.postimg.cc/B6SmSRzS/Group-1171276570.jpg'
               : chatRoom.image,
@@ -61,7 +60,9 @@ export default function ChatRoomListScreen({ navigation }) {
         />
         <View style={styles.textContainer}>
           <Text style={styles.elementName}>{title}</Text>
-          <Text style={styles.elementDescription}>{description}</Text>
+          <Text style={styles.elementDescription}>
+            {chatRoom.latestMessageContent}
+          </Text>
         </View>
       </TouchableOpacity>
     );
@@ -85,7 +86,6 @@ export default function ChatRoomListScreen({ navigation }) {
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {

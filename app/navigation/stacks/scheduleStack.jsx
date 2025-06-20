@@ -13,7 +13,6 @@ export default function ScheduleStack() {
       screenOptions={({navigation}) => ({
         // ✅ 객체 구조분해 필수!
         headerShown: true,
-
         headerStyle: {
           borderBottomWidth: 0,
           shadowOpacity: 0,
@@ -23,22 +22,6 @@ export default function ScheduleStack() {
               ? getResponsiveHeight(120)
               : getResponsiveHeight(80),
         },
-
-        // headerTitleAlign: 'center',
-        // headerTitle: () => (
-        //   <View style={{paddingBottom: getResponsiveHeight(10)}}>
-        //     <Image
-        //       source={require('../../assets/images/kinover.png')}
-        //       style={{
-        //         width: getResponsiveWidth(49),
-        //         height: getResponsiveHeight(46),
-        //         resizeMode: 'contain',
-        //       }}
-        //     />
-        //   </View>
-        // ),
-        // headerLeft: () => null, // ✅ 올바른 접근
-
         headerTitleAlign: 'left',
         headerTitle: () => (
           <Text

@@ -24,7 +24,7 @@ import RNFS from 'react-native-fs';
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const IMAGE_SIZE = SCREEN_WIDTH / 4 - 4;
 
-export default function ChatInput({chatRoom, user, socketRef}) {
+export default function ChatInput({chatRoom, userId, socketRef}) {
   const [message, setMessage] = useState('');
   const [showGallery, setShowGallery] = useState(false);
   const [photos, setPhotos] = useState([]);
@@ -71,7 +71,7 @@ export default function ChatInput({chatRoom, user, socketRef}) {
       const newMessage = {
         content: message,
         chatRoomId: chatRoom.chatRoomId,
-        senderId: user.userId,
+        senderId: userId,
         messageType: 'text',
       };
       socket.send(JSON.stringify(newMessage));
@@ -97,7 +97,7 @@ export default function ChatInput({chatRoom, user, socketRef}) {
           JSON.stringify({
             messageType: 'IMAGE',
             chatRoomId: chatRoom.chatRoomId,
-            senderId: user.userId,
+            senderId: userId,
             imageUrls: fileNames,
           }),
         );

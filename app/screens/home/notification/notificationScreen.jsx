@@ -1,7 +1,7 @@
 import React, {useEffect} from 'react';
 import {View, Text} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
-import {fetchNotificationsThunk} from '../redux/thunk/notificationThunk';
+import {fetchNotificationsThunk} from '../../../redux/thunk/notificationThunk';
 
 export default function NotificationScreen() {
   const dispatch = useDispatch();

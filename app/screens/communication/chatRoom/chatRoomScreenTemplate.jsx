@@ -2,24 +2,23 @@
 import React, {useState, useEffect} from 'react';
 import {SafeAreaView, StyleSheet} from 'react-native';
 import {useDispatch} from 'react-redux';
-import {getToken} from '../utils/storage';
-import MessageFlatList from './messageFlatList';
-import ChatInput from '../screens/communication/chatRoom/chat/chatInput';
-import ChatSettings from '../screens/communication/chatRoom/setting/chatSetting';
-import {addMessage, setMessageList} from '../redux/slices/messageSlice';
-import useChatRoomScreen from '../hooks/useChatRoomScreen';
-import useHeaderSetting from '../hooks/useHeaderSetting';
-import {onLeaveChat} from '../hooks/onLeaveChat';
-import {fetchMessageThunk} from '../redux/thunk/messageThunk';
-import useHideTabBar from '../hooks/useHideTabBar';
+import {getToken} from '../../../utils/storage';
+import MessageFlatList from './chat/messageFlatList';
+import ChatInput from './chat/chatInput';
+import ChatSettings from './setting/chatSetting';
+import {addMessage, setMessageList} from '../../../redux/slices/messageSlice';
+import useChatRoomScreen from '../../../hooks/useChatRoomScreen';
+import useHeaderSetting from '../../../hooks/useHeaderSetting';
+import {onLeaveChat} from '../../../hooks/onLeaveChat';
+import {fetchMessageThunk} from '../../../redux/thunk/messageThunk';
+import useHideTabBar from '../../../hooks/useHideTabBar';
 
 export default function ChatRoomScreenTemplate({
   chatRoom,
-  user,
+  userId,
   isKino,
   navigation,
 }) {
-
   const dispatch = useDispatch();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const {
@@ -33,23 +32,20 @@ export default function ChatRoomScreenTemplate({
     setNoMoreMessages,
     socketRef,
     isUserScrolling,
-  } = useChatRoomScreen(chatRoom, user, isKino);
-
+  } = useChatRoomScreen(chatRoom, userId, isKino);
+  
   useHideTabBar();
-
   useHeaderSetting(navigation, setIsSettingsOpen, chatRoom.roomName, isKino);
-
   useEffect(() => {
     if (chatRoom?.chatRoomId) {
       dispatch(fetchMessageThunk(chatRoom.chatRoomId));
       setNoMoreMessages(false);
     }
   }, [chatRoom?.chatRoomId]);
-
   useEffect(() => {
     const connectWebSocket = async () => {
       const token = await getToken();
-      if (!chatRoom || !user?.userId || !token) return;
+      if (!chatRoom || !userId || !token) return;
 
       if (socketRef.current) socketRef.current.close();
 
@@ -72,7 +68,7 @@ export default function ChatRoomScreenTemplate({
 
     connectWebSocket();
     return () => socketRef.current?.close();
-  }, [chatRoom?.chatRoomId, user?.userId]);
+  }, [chatRoom?.chatRoomId, userId]);
 
   useEffect(() => {
     if (!isUserScrolling && messageList.length > 0) scrollToBottom();
@@ -84,7 +80,7 @@ export default function ChatRoomScreenTemplate({
         flatListRef={flatListRef}
         messageList={messageList}
         chatRoom={chatRoom}
-        userId={user.userId}
+        userId={userId}
         isKino={isKino}
         noMoreMessages={noMoreMessages}
         isFetchingMore={isFetchingMore}
@@ -94,7 +90,7 @@ export default function ChatRoomScreenTemplate({
       />
       <ChatInput
         chatRoom={chatRoom}
-        user={user}
+        userId={userId}
         socketRef={socketRef}
         setMessageList={setMessageList}
       />

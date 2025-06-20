@@ -6,7 +6,6 @@ import {
   Image,
   StyleSheet,
   ScrollView,
-  Modal,
   TextInput,
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
@@ -22,20 +21,18 @@ import {
   updateScheduleThunk,
   deleteScheduleThunk,
 } from '../../redux/thunk/scheduleThunk';
-import CustomModal from '../../utils/customModal';
+import CustomModal from '../../components/customModal';
 
 export default function Schedule({selectedDate}) {
   const dispatch = useDispatch();
   const {familyId} = useSelector(state => state.family);
-  const family = useSelector(state => state.family);
   const {scheduleList} = useSelector(state => state.schedule);
-  const {familyUserList} = useSelector(state => state.userFamily);
-  const currentUser = useSelector(state => state.user);
-  const [selectedUserId, setSelectedUserId] = useState('family');
+
   const [modalVisible, setModalVisible] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [title, setTitle] = useState('');
   const [memo, setMemo] = useState('');
+
   const formattedDate = selectedDate.toISOString().split('T')[0];
 
   useEffect(() => {
@@ -50,34 +47,6 @@ export default function Schedule({selectedDate}) {
     const dayOfWeek = dayMap[selectedDate.getDay()];
     return `${year}년 ${month}월 ${day}일 (${dayOfWeek})`;
   };
-
-  const handleDeleteSchedule = async () => {
-    if (editingSchedule?.scheduleId) {
-      await dispatch(deleteScheduleThunk(editingSchedule.scheduleId));
-      setModalVisible(false);
-      setTitle('');
-      setMemo('');
-      setEditingSchedule(null);
-    }
-  };
-
-  const filteredSchedules =
-    selectedUserId === 'family'
-      ? scheduleList.filter(item => item.userId === null)
-      : scheduleList.filter(item => item.userId === selectedUserId);
-
-  const selectedUser =
-    selectedUserId === 'family'
-      ? {userId: 'family', name: '가족'}
-      : familyUserList.find(user => user.userId === selectedUserId);
-
-  const scrollableTabs = ['family', ...familyUserList.map(u => u.userId)]
-    .filter(id => id !== selectedUserId)
-    .map(id =>
-      id === 'family'
-        ? {userId: 'family', name: '가족'}
-        : familyUserList.find(u => u.userId === id),
-    );
 
   const onAddSchedule = () => {
     setEditingSchedule(null);
@@ -98,9 +67,9 @@ export default function Schedule({selectedDate}) {
       title,
       memo,
       date: formattedDate,
-      personal: selectedUserId !== 'family',
-      userId: selectedUserId === 'family' ? null : selectedUserId,
-      familyId: familyId,
+      personal: false,
+      userId: null,
+      familyId,
     };
 
     if (editingSchedule) {
@@ -115,44 +84,30 @@ export default function Schedule({selectedDate}) {
     setMemo('');
   };
 
+  const handleDeleteSchedule = async () => {
+    if (editingSchedule?.scheduleId) {
+      await dispatch(deleteScheduleThunk(editingSchedule.scheduleId));
+      setModalVisible(false);
+      setTitle('');
+      setMemo('');
+      setEditingSchedule(null);
+    }
+  };
+
   return (
     <View contentContainerStyle={styles.container}>
       <Text style={styles.dateText}>{getFormattedDate()}</Text>
 
-      {/* 유저 탭 */}
-      <View style={styles.tabWrapper}>
-        <View style={styles.fixedUser}>
-          <TouchableOpacity style={[styles.tab, styles.tabSelected]}>
-            <Text style={styles.tabText}>{selectedUser.name}</Text>
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.scrollTabRow}>
-          {scrollableTabs.map(user => (
-            <TouchableOpacity
-              key={user.userId}
-              style={[styles.tab]}
-              onPress={() => setSelectedUserId(user.userId)}>
-              <Text style={styles.tabText}>{user.name}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
-
-      {/* 세로선 + 일정 카드 */}
+      {/* 일정 카드 영역 */}
       <View style={styles.timelineWrapper}>
-        <View style={styles.verticalLine} />
-        <View style={styles.verticalLine1} />
-
         <View style={styles.scheduleCards}>
-          {filteredSchedules.map(schedule => (
+          {scheduleList.map(schedule => (
             <View key={schedule.scheduleId} style={styles.card}>
-              <Text style={styles.cardTitle}>{schedule.title}</Text>
+              <Text style={styles.cardTitle}>
+                {schedule.userName || '가족'}
+              </Text>
               <Text style={styles.cardMemo}>
-                {schedule.memo || '@@메모 없음'}
+                {schedule.title || '@@메모 없음'}
               </Text>
               <TouchableOpacity
                 style={styles.memoIcon}
@@ -169,7 +124,8 @@ export default function Schedule({selectedDate}) {
             <Text style={styles.addCardText}>일정을 추가하세요</Text>
             <Image
               style={styles.plus}
-              source={require('../../assets/images/plusCircle2.png')}></Image>
+              source={require('../../assets/images/plusCircle2.png')}
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -200,9 +156,8 @@ export default function Schedule({selectedDate}) {
           fontFamily: 'Pretendard-Regular',
           textAlign: 'center',
         }}
-        showTrashButton={true} // ← 일정 모달일 때만 true
-        onTrashPress={handleDeleteSchedule} // ← 휴지통 버튼 누를 때 동작
-      >
+        showTrashButton={true}
+        onTrashPress={handleDeleteSchedule}>
         <TextInput
           value={title}
           onChangeText={setTitle}
@@ -318,12 +273,12 @@ const styles = StyleSheet.create({
     minHeight: getResponsiveHeight(72),
   },
   cardTitle: {
-    fontSize: getResponsiveFontSize(13),
+    fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-SemiBold',
-    marginBottom: 2,
+    marginBottom: 3,
   },
   cardMemo: {
-    fontSize: getResponsiveFontSize(11),
+    fontSize: getResponsiveFontSize(12),
     fontFamily: 'Pretendard-Regular',
     color: '#6E6E6E',
   },

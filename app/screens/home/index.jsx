@@ -27,7 +27,7 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../utils/responsive';
-import { modifyUserThunk } from '../../redux/thunk/userThunk';
+import {modifyUserThunk} from '../../redux/thunk/userThunk';
 
 export default function HomeScreen() {
   const dispatch = useDispatch();
@@ -46,11 +46,11 @@ export default function HomeScreen() {
   useFamilyStatusSocket(family.familyId);
 
   // 부모에서 넘겨주는 함수 예시
-const handleSave = async (name, description, imageUrl) => {
-  console.log(name,description,imageUrl)
-  await dispatch(modifyUserThunk({ name, description, image: imageUrl }));
-  setBottomSheetVisible(false);
-};
+  const handleSave = async (name, description, imageUrl) => {
+    console.log(name, description, imageUrl);
+    await dispatch(modifyUserThunk({name, description, image: imageUrl}));
+    setBottomSheetVisible(false);
+  };
   useEffect(() => {
     if (user.userId && family.familyId) {
       dispatch(fetchFamilyThunk(family.familyId));
@@ -123,7 +123,7 @@ const handleSave = async (name, description, imageUrl) => {
           )}
         </View>
       </SafeAreaView>
-      
+
       <UserBottomSheet
         sheetRef={userSheetRef}
         selectedUser={selectedUser}

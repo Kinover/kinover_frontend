@@ -1,7 +1,7 @@
 // components/common/MessageFlatList.jsx
 import React from 'react';
 import { FlatList, ActivityIndicator } from 'react-native';
-import ChatMessageItem from '../screens/communication/chatRoom/chat/chatMessageItem';
+import ChatMessageItem from './chatMessageItem';
 
 export default function MessageFlatList({
   flatListRef,

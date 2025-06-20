@@ -5,8 +5,8 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
-import { getResponsiveHeight } from '../utils/responsive';
-import CustomSwitch from '../utils/customSwitch';
+import { getResponsiveHeight } from '../../../utils/responsive';
+import CustomSwitch from '../../../components/customSwitch';
 
 export default function NotificationSettingScreen() {
   const [allNotification, setAllNotification] = useState(true);

@@ -14,8 +14,8 @@ import {
   useNavigation,
   useRoute,
 } from '@react-navigation/native';
-import GalleryToggle from './galleryToggle';
-import CategoryDropdownButton from './categoryDropdownButton';
+import GalleryToggle from './navigator/galleryToggle';
+import CategoryDropdownButton from './navigator/categoryDropdownButton';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchMemoryThunk} from '../../redux/thunk/memoryThunk';
 import {fetchCategoryThunk} from '../../redux/thunk/categoryThunk';

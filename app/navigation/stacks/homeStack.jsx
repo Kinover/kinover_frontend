@@ -1,14 +1,14 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import HomeScreen from '../../screens/home';
-import NotificationScreen from '../../components/notificationScreen';
-import {RenderHeaderLeft1, RenderHeaderLogo} from '../tabHeaderHelpers';
+import NotificationScreen from '../../screens/home/notification/notificationScreen';
+import {RenderHeaderLeft1, RenderHeaderLogo, RenderHeaderTitleLogo} from '../tabHeaderHelpers';
 import {RenderHeaderRightSetting} from '../tabHeaderHelpers';
 import {RenderGoBackButton} from '../tabHeaderHelpers';
 import {Image, Platform, View} from 'react-native';
 import {getResponsiveWidth, getResponsiveHeight} from '../../utils/responsive';
-import SettingScreen from '../../components/settingScreen';
-import NotificationSettingScreen from '../../components/notificationSettingScreen';
+import SettingScreen from '../../screens/home/setting/settingScreen';
+import NotificationSettingScreen from '../../screens/home/setting/notificationSettingScreen';
 
 const Stack = createStackNavigator();
 
@@ -29,18 +29,7 @@ export default function HomeStack() {
         },
         headerTitleAlign: 'center',
         headerShown: true,
-        headerTitle: () => (
-          <View style={{paddingBottom: getResponsiveHeight(10)}}>
-            <Image
-              source={require('../../assets/images/kinover.png')}
-              style={{
-                width: getResponsiveWidth(49),
-                height: getResponsiveHeight(46),
-                resizeMode: 'contain',
-              }}
-            />
-          </View>
-        ),
+        headerTitle: () => <RenderHeaderTitleLogo />,
       })}>
       <Stack.Screen
         name="감정화면"
@@ -58,6 +47,7 @@ export default function HomeStack() {
         component={NotificationScreen}
         options={({navigation}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          headerTitle: '',
         })}
       />
 
@@ -66,6 +56,7 @@ export default function HomeStack() {
         component={SettingScreen}
         options={({navigation}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          headerTitle: '',
         })}
       />
       <Stack.Screen
@@ -73,6 +64,7 @@ export default function HomeStack() {
         component={NotificationSettingScreen}
         options={({navigation}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          headerTitle: '',
         })}
       />
     </Stack.Navigator>

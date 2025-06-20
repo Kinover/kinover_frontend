@@ -1,22 +1,16 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import CommunicationScreen from '../../screens/communication';
-import {RenderHeaderRightSetting} from '../tabHeaderHelpers';
 import KinoChatRoom from '../../screens/communication/chatRoom/kinoChatRoom';
 import ChatSettings from '../../screens/communication/chatRoom/setting/chatSetting';
-import {
-  RenderHeaderRightChatSetting,
-  // RenderHeaderRight,
-  RenderHeaderLeft,
-  RenderHeaderLeft2,
-} from '../tabHeaderHelpers';
+import {RenderHeaderTitleLogo} from '../tabHeaderHelpers';
 import getResponsiveFontSize, {
   getResponsiveWidth,
   getResponsiveHeight,
 } from '../../utils/responsive';
 import {Image, View, Text} from 'react-native';
 import {RenderGoBackButton} from '../tabHeaderHelpers';
-import NotificationScreen from '../../components/notificationScreen';
+import NotificationScreen from '../../screens/home/notification/notificationScreen';
 import AddChatMemeberScreen from '../../screens/communication/chatRoom/setting/addChatMemberScreen';
 import CreateChatRoom from '../../screens/communication/createChatRoom';
 import ChatRoom from '../../screens/communication/chatRoom/chatRoom';
@@ -41,38 +35,11 @@ export default function CommunicationStack() {
         },
         headerTitleAlign: 'center',
         headerShown: true,
-        headerTitle: () => (
-          <View style={{paddingBottom: getResponsiveHeight(10)}}>
-            <Image
-              source={require('../../assets/images/kinover.png')}
-              style={{
-                width: getResponsiveWidth(49),
-                height: getResponsiveHeight(46),
-                resizeMode: 'contain',
-              }}
-            />
-          </View>
-        ),
       })}>
       <Stack.Screen
         name="소통화면"
         component={CommunicationScreen}
         options={({navigation}) => ({
-          // headerLeft: () => <RenderHeaderLeft2 navigation={navigation} />,
-          // headerRight: () => (
-          //   <RenderHeaderRightSetting navigation={navigation} />
-          // ),
-          // headerTitle: () => (
-          //   <Image
-          //     source={require('../../assets/images/kinover.png')}
-          //     style={{
-          //       width: getResponsiveWidth(49),
-          //       height: getResponsiveHeight(46),
-          //       marginBottom: getResponsiveHeight(10),
-          //       resizeMode: 'contain',
-          //     }}
-          //   />
-          // ),
           headerTitleAlign: 'left',
           headerTitle: () => (
             <Text
@@ -80,7 +47,7 @@ export default function CommunicationStack() {
                 fontSize: getResponsiveFontSize(26),
                 fontFamily: 'Pretendard-SemiBold',
                 textAlign: 'left',
-                textAlignVertical:'center'
+                textAlignVertical: 'center',
               }}>
               채팅
             </Text>
@@ -103,11 +70,6 @@ export default function CommunicationStack() {
         component={KinoChatRoom}
         options={({navigation, route}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-          // headerRight: () => (
-          //   <RenderHeaderRightChatSetting
-          //     setIsSettingsOpen={setIsSettingsOpen}
-          //   />
-          // ),
         })}
       />
 
@@ -116,11 +78,7 @@ export default function CommunicationStack() {
         component={KinoSelectScreen}
         options={({navigation, route}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-          // headerRight: () => (
-          //   <RenderHeaderRightChatSetting
-          //     setIsSettingsOpen={setIsSettingsOpen}
-          //   />
-          // ),
+          headerTitle: () => <RenderHeaderTitleLogo />,
         })}
       />
       <Stack.Screen

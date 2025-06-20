@@ -6,10 +6,8 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-import useHideTabBar from '../../../hooks/useHideTabBar';
 
 export default function KinoSelectScreen() {
-//   useHideTabBar();
 
   return (
     <View style={styles.container}>

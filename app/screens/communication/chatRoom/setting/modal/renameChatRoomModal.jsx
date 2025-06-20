@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { View, Text, TextInput, StyleSheet, Platform } from 'react-native';
-import CustomModal from '../../../../../utils/customModal';
+import CustomModal from '../../../../../components/customModal';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,

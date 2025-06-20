@@ -2,13 +2,13 @@ import React from 'react';
 import {Text, View, TouchableOpacity, StyleSheet} from 'react-native';
 // import CustomModal from '../../utils/customModal'; // 경로 확인!
 // import CustomModal from './customModal';
-import CustomModal from './customModal';
+import CustomModal from '../../../components/customModal';
 
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from './responsive';
+} from '../../../utils/responsive';
 
 export default function ImageDeleteModal({
   visible,

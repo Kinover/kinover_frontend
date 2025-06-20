@@ -37,7 +37,7 @@ export const renderTabBarIcon = (focused, focusedUri, defaultUri) => (
     style={{
       width: getResponsiveIconSize(25),
       height: getResponsiveIconSize(25),
-      marginTop: getResponsiveHeight(15),
+      marginTop: getResponsiveHeight(2),
       resizeMode: 'contain',
     }}
   />
@@ -49,11 +49,26 @@ export const renderTabBarLabel = (label, focused) => (
     style={{
       color: focused ? '#FFC84D' : 'gray',
       fontSize: getResponsiveFontSize(12),
-      marginTop: getResponsiveHeight(11),
+      marginTop: getResponsiveHeight(6),
     }}>
     {label}
   </Text>
 );
+
+export const RenderHeaderTitleLogo = () => {
+  return (
+    <View style={{paddingBottom: getResponsiveHeight(10)}}>
+      <Image
+        source={require('../assets/images/kinover.png')}
+        style={{
+          width: getResponsiveWidth(42),
+          height: getResponsiveHeight(42),
+          resizeMode: 'contain',
+        }}
+      />
+    </View>
+  );
+};
 
 // ✅ 감정기록 알림 이동 버튼
 export const RenderHeaderLeft1 = ({navigation}) =>

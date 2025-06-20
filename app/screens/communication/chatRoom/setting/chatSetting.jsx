@@ -52,6 +52,7 @@ export default function ChatSettings({
   const [newRoomName, setNewRoomName] = useState('');
   const [showMembers, setShowMembers] = useState(false);
   const translateX = useSharedValue(width);
+  const [isAlarmOn, setIsAlarmOn] = useState(true); // 기본값 true로 시작
 
   const chatRoomUsers = useSelector(state => state.chatRoom.chatRoomUsers);
   const familyId = useSelector(state => state.family.familyId);
@@ -153,6 +154,20 @@ export default function ChatSettings({
       <Animated.View style={[styles.container, animatedStyle]}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>채팅방 설정</Text>
+          <TouchableOpacity onPress={() => setIsAlarmOn(prev => !prev)}>
+            <Image
+              style={{
+                width: getResponsiveIconSize(20),
+                height: getResponsiveIconSize(20),
+                resizeMode: 'contain',
+              }}
+              source={
+                isAlarmOn
+                  ? require('../../../../assets/images/navigator_alarm-button.png')
+                  : require('../../../../assets/images/navigator_alarm-button-off4.png')
+              }
+            />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.content}>
@@ -223,11 +238,11 @@ export default function ChatSettings({
             <Text style={styles.optionText}>사진 & 영상</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.option}
             onPress={onToggleNotifications}>
             <Text style={styles.optionText}>알림 설정</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         <TouchableOpacity
@@ -276,6 +291,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: getResponsiveHeight(90),
     marginBottom: getResponsiveHeight(40),
+    alignItems: 'center',
   },
   headerTitle: {
     fontSize: getResponsiveFontSize(22),
