@@ -9,14 +9,19 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import LogoutModal from '../modal/logoutModal';
-import DeleteAccountModal from '../modal/deleteAccountModal'; // ✅ 계정탈퇴 모달 import
-import { getResponsiveHeight, getResponsiveIconSize } from '../../../utils/responsive';
+import DeleteAccountModal from '../modal/deleteAccountModal';
+import {
+  getResponsiveHeight,
+  getResponsiveIconSize,
+  getResponsiveWidth,
+  getResponsiveFontSize,
+} from '../../../utils/responsive';
 
 export default function SettingScreen() {
   const navigation = useNavigation();
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false); // ✅ 계정탈퇴 모달 상태
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const goToNotificationSettings = () => {
     navigation.navigate('알림설정화면');
@@ -103,14 +108,12 @@ export default function SettingScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* 로그아웃 모달 */}
+      {/* 모달들 */}
       <LogoutModal
         visible={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
         onConfirm={handleLogout}
       />
-
-      {/* 계정탈퇴 모달 */}
       <DeleteAccountModal
         visible={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
@@ -123,34 +126,34 @@ export default function SettingScreen() {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingTop: 20,
+    paddingHorizontal: getResponsiveWidth(20),
+    paddingTop: getResponsiveHeight(20),
     flex: 1,
   },
   header: {
-    fontSize: 26,
+    fontSize: getResponsiveFontSize(24),
     fontWeight: 'bold',
-    marginBottom: 30,
+    marginBottom: getResponsiveHeight(30),
     color: '#000',
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: getResponsiveFontSize(12),
     color: '#888',
-    marginTop: 10,
-    marginBottom: 10,
+    marginTop: getResponsiveHeight(10),
+    marginBottom: getResponsiveHeight(10),
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 15,
+    paddingVertical: getResponsiveHeight(12),
   },
   label: {
-    fontSize: 17,
+    fontSize: getResponsiveFontSize(16),
     color: '#222',
   },
   value: {
-    fontSize: 14,
+    fontSize: getResponsiveFontSize(13),
     color: '#555',
   },
   arrow: {
@@ -161,6 +164,6 @@ const styles = StyleSheet.create({
   section: {
     borderBottomWidth: 0.5,
     borderColor: '#E5E5E5',
-    paddingVertical: getResponsiveHeight(10),
+    paddingVertical: getResponsiveHeight(8),
   },
 });
