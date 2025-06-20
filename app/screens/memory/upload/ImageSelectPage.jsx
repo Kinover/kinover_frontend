@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useLayoutEffect } from 'react';
+import React, {useEffect, useState, useLayoutEffect} from 'react';
 import {
   View,
   FlatList,
@@ -8,18 +8,23 @@ import {
   Text,
   PermissionsAndroid,
   Platform,
-  Dimensions,
 } from 'react-native';
-import { CameraRoll } from '@react-native-camera-roll/camera-roll';
+import {CameraRoll} from '@react-native-camera-roll/camera-roll';
 import RNFS from 'react-native-fs';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
+  getResponsiveFontSize,
 } from '../../../utils/responsive';
+import {Dimensions} from 'react-native';
 
+// 한 줄당 3개 이미지 + 여백 고려
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const IMAGE_SIZE = SCREEN_WIDTH / 3 - 4;
+const IMAGE_MARGIN = getResponsiveWidth(2); // 이미지 사이 여백
+const NUM_COLUMNS = 3;
+const IMAGE_SIZE =
+  (SCREEN_WIDTH - IMAGE_MARGIN * (NUM_COLUMNS * 2)) / NUM_COLUMNS;
 
 export default function ImageSelectPage() {
   const [photos, setPhotos] = useState([]);
@@ -31,16 +36,17 @@ export default function ImageSelectPage() {
       const granted = await PermissionsAndroid.request(
         Platform.Version >= 33
           ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
-          : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE
+          : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
       );
       return granted === PermissionsAndroid.RESULTS.GRANTED;
     }
     return true;
   };
 
-  // ✅ iOS 전용: ph:// → file:// 경로로 복사
   const convertPhUriToFileUri = async (phUri, index) => {
-    const destPath = `${RNFS.TemporaryDirectoryPath}photo_ios_${Date.now()}_${index}.jpg`;
+    const destPath = `${
+      RNFS.TemporaryDirectoryPath
+    }photo_ios_${Date.now()}_${index}.jpg`;
     try {
       await RNFS.copyAssetsFileIOS(phUri, destPath, 0, 0);
       return 'file://' + destPath;
@@ -50,10 +56,10 @@ export default function ImageSelectPage() {
     }
   };
 
-  // ✅ Android 전용: content:// → file:// 로 복사
   const convertContentUriToFileUri = async (contentUri, index) => {
-    const destPath = `${RNFS.TemporaryDirectoryPath}photo_android_${Date.now()}_${index}.jpg`;
-  
+    const destPath = `${
+      RNFS.TemporaryDirectoryPath
+    }photo_android_${Date.now()}_${index}.jpg`;
     try {
       const base64Data = await RNFS.readFile(contentUri, 'base64');
       await RNFS.writeFile(destPath, base64Data, 'base64');
@@ -63,9 +69,7 @@ export default function ImageSelectPage() {
       return null;
     }
   };
-  
 
-  // ✅ 사진 불러오기
   const loadPhotos = async () => {
     const hasPermission = await requestPermission();
     if (!hasPermission) {
@@ -98,7 +102,6 @@ export default function ImageSelectPage() {
     }
   };
 
-  // ✅ 모든 플랫폼에서 file:// 경로로 변환 후 넘기기
   const handleNext = async () => {
     const convertedUris = await Promise.all(
       selected.map((uri, i) => {
@@ -108,43 +111,40 @@ export default function ImageSelectPage() {
         if (Platform.OS === 'android' && uri.startsWith('content://')) {
           return convertContentUriToFileUri(uri, i);
         }
-        return Promise.resolve(uri); // 이미 file:// 인 경우
-      })
+        return Promise.resolve(uri);
+      }),
     );
 
-    const validUris = convertedUris.filter(Boolean); // null 제거
-    navigation.navigate('카테고리선택화면', { selectedImages: validUris });
+    const validUris = convertedUris.filter(Boolean);
+    navigation.navigate('카테고리선택화면', {selectedImages: validUris});
   };
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <Text style={{ fontSize: 18, textAlign: 'center' }}>
+        <Text style={styles.headerTitle}>
           사진 선택하기 ({selected.length})
         </Text>
       ),
       headerRight: () => (
-        <TouchableOpacity onPress={handleNext} style={{ marginRight: 15 }}>
+        <TouchableOpacity
+          onPress={handleNext}
+          style={{marginRight: getResponsiveWidth(10)}}>
           <Image
             source={require('../../../assets/images/check-bt.png')}
-            style={{
-              width: 25,
-              height: 25,
-              resizeMode: 'contain',
-              right: getResponsiveWidth(10),
-            }}
+            style={styles.checkIcon}
           />
         </TouchableOpacity>
       ),
     });
   }, [selected]);
 
-  const renderItem = ({ item }) => {
+  const renderItem = ({item}) => {
     const isSelected = selected.includes(item.uri);
     return (
       <TouchableOpacity onPress={() => toggleSelect(item.uri)}>
         <View style={[styles.imageWrapper, isSelected && styles.selectedImage]}>
-          <Image source={{ uri: item.uri }} style={styles.image} />
+          <Image source={{uri: item.uri}} style={styles.image} />
           <View style={styles.checkCircleWrapper}>
             <View
               style={[
@@ -179,34 +179,47 @@ const styles = StyleSheet.create({
     borderColor: '#D3D3D3',
     paddingTop: getResponsiveHeight(2),
   },
-  galleryContainer: {},
-  selectedImage: {
-    borderWidth: 3,
-    borderColor: '#FFC84D',
+  headerTitle: {
+    fontSize: getResponsiveFontSize(18),
+    textAlign: 'center',
+    fontFamily: 'Pretendard-Regular',
+  },
+  checkIcon: {
+    width: getResponsiveWidth(25),
+    height: getResponsiveHeight(25),
+    resizeMode: 'contain',
+  },
+  galleryContainer: {
+    paddingHorizontal: getResponsiveWidth(2),
   },
   imageWrapper: {
     position: 'relative',
     width: IMAGE_SIZE,
     height: IMAGE_SIZE,
-    margin: 2,
+    margin: getResponsiveWidth(1),
+  },
+  selectedImage: {
+    borderWidth: 2,
+    borderColor: '#FFC84D',
   },
   image: {
     width: '100%',
     height: '100%',
+    resizeMode: 'cover',
   },
   checkCircleWrapper: {
     position: 'absolute',
-    top: 3,
-    right: 3,
-    width: 20,
-    height: 20,
+    top: getResponsiveHeight(3),
+    right: getResponsiveWidth(3),
+    width: getResponsiveWidth(20),
+    height: getResponsiveHeight(20),
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkCircle: {
-    width: 14,
-    height: 14,
-    borderRadius: 8,
+    width: getResponsiveWidth(14),
+    height: getResponsiveHeight(14),
+    borderRadius: getResponsiveWidth(7),
     borderWidth: 1,
     borderColor: '#666',
     backgroundColor: 'white',

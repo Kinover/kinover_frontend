@@ -9,6 +9,7 @@ import {
   Image,
   StyleSheet,
   SafeAreaView,
+  Platform,
 } from 'react-native';
 import getResponsiveFontSize, {
   getResponsiveHeight,
@@ -40,7 +41,7 @@ export default function CommentSection({
 
       <ScrollView
         style={styles.commentContentContainer}
-        contentContainerStyle={{paddingBottom: '10%'}}
+        contentContainerStyle={{paddingBottom: getResponsiveHeight(60)}}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         nestedScrollEnabled={true}>
@@ -88,52 +89,38 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     zIndex: 5,
   },
-
   commentHeader: {
     width: '100%',
-    height: '15%',
-    // backgroundColor: 'pink',
-    display: 'flex',
+    height: getResponsiveHeight(60),
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor:'#EDEDED'
+    backgroundColor: '#EDEDED',
   },
-
   commentContentContainer: {
     width: '100%',
     backgroundColor: '#EDEDED',
     borderTopColor: '#D3D3D3',
     borderTopWidth: 2,
-    // height: '25%',
   },
-
   commentBox: {
-    position: 'relative',
     width: '100%',
-    height: 'auto',
-    display: 'flex',
     flexDirection: 'row',
-    // backgroundColor:'yellow',
     gap: getResponsiveWidth(10),
     paddingHorizontal: getResponsiveWidth(6),
     paddingVertical: getResponsiveWidth(6),
     alignItems: 'flex-start',
-    justifyContent: 'flex-start',
   },
   commentWriterImage: {
     width: getResponsiveWidth(42),
-    height: getResponsiveHeight(42),
-    borderRadius: getResponsiveHeight(20),
-    // backgroundColor:'pink',
+    height: getResponsiveWidth(42),
+    borderRadius: getResponsiveWidth(21),
     borderColor: 'lightgray',
     borderWidth: 0.5,
     resizeMode: 'cover',
   },
   commentTextBox: {
-    display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-start',
-    justifyContent: 'flex-end',
     top: getResponsiveHeight(3),
     width: '85%',
     gap: getResponsiveHeight(2),
@@ -154,45 +141,40 @@ const styles = StyleSheet.create({
     top: getResponsiveHeight(7.5),
     fontFamily: 'Pretendard-Light',
   },
-
   back_bt: {
     width: getResponsiveWidth(30),
     height: getResponsiveHeight(20),
     resizeMode: 'contain',
   },
-
   commentInputContainer: {
-    display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    // position: 'absolute',
     width: '100%',
-    height: '20%',
-    backgroundColor: '#D9D9D9',
+    height: getResponsiveHeight(70),
     backgroundColor: 'white',
-
-    bottom: '0',
     paddingHorizontal: getResponsiveWidth(17.5),
     gap: getResponsiveWidth(12),
   },
   commentInputImage: {
     width: getResponsiveWidth(30),
-    height: getResponsiveHeight(30),
+    height: getResponsiveWidth(30),
     borderRadius: getResponsiveWidth(15),
-    resizeMode: 'contain',
+    resizeMode: 'cover',
     backgroundColor: 'white',
     borderWidth: 0.1,
-    resizeMode: 'cover',
   },
   commentInput: {
     width: '75%',
-    height: Platform.OS === 'android' ? '70%' : '60%',
-    borderBottomWidth: 0.5, // 언더바 두께
+    height:
+      Platform.OS === 'android'
+        ? getResponsiveHeight(40)
+        : getResponsiveHeight(35),
+    borderBottomWidth: 0.5,
+    fontSize: getResponsiveFontSize(13),
   },
   commentSendBt: {
     width: getResponsiveWidth(28),
-    height: getResponsiveHeight(28),
+    height: getResponsiveWidth(28),
     borderRadius: getResponsiveIconSize(14),
   },
 });

@@ -1,4 +1,3 @@
-// ✅ memoryFeed 리팩토링: ScrollView 제거하고 FlatList/MasonryList가 최상위 스크롤 담당
 import React, {useState, useEffect, useCallback} from 'react';
 import {
   View,
@@ -8,14 +7,11 @@ import {
   TouchableOpacity,
   FlatList,
 } from 'react-native';
-
 import {
   useFocusEffect,
   useNavigation,
   useRoute,
 } from '@react-navigation/native';
-import GalleryToggle from './navigator/galleryToggle';
-import CategoryDropdownButton from './navigator/categoryDropdownButton';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchMemoryThunk} from '../../redux/thunk/memoryThunk';
 import {fetchCategoryThunk} from '../../redux/thunk/categoryThunk';
@@ -88,7 +84,12 @@ export default function MemoryFeed({
     <TouchableOpacity
       onPress={() => navigation.navigate('게시글화면', {memory})}
       style={{paddingBottom: getResponsiveHeight(20)}}>
-      <Text style={{marginBottom: getResponsiveHeight(5)}}>
+      <Text
+        style={{
+          marginBottom: getResponsiveHeight(5),
+          fontSize: getResponsiveFontSize(12),
+          fontFamily: 'Pretendard-Regular',
+        }}>
         {formatDate(memory.createdAt)}
       </Text>
       <View>
@@ -146,60 +147,30 @@ export default function MemoryFeed({
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: 'white'},
-  headerContainer: {
-    paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(10),
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  categoryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(5),
-  },
-  categoryButtonText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(19),
-    color: '#FFC84D',
-  },
-  arrowIcon: {
-    resizeMode: 'contain',
-    width: getResponsiveWidth(12),
-    height: getResponsiveHeight(9),
-  },
-  toggleContainer: {
-    flexDirection: 'row',
-    gap: getResponsiveWidth(10),
-  },
-  galleryIcon: {
-    width: getResponsiveWidth(30),
-    height: getResponsiveHeight(30),
-    resizeMode: 'contain',
-  },
   galleryImage: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
-    borderRadius: 1,
+    borderRadius: getResponsiveWidth(1),
   },
   memoryImage: {
     width: '100%',
     height: getResponsiveHeight(300),
     resizeMode: 'cover',
     marginBottom: getResponsiveHeight(10),
+    borderRadius: getResponsiveWidth(4),
   },
   commentText: {
     position: 'absolute',
     right: getResponsiveWidth(8),
     bottom: getResponsiveHeight(17),
     zIndex: 5,
-    fontSize: getResponsiveFontSize(17),
+    fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-Regular',
     color: 'white',
   },
   categoryText: {
-    fontSize: getResponsiveFontSize(22),
+    fontSize: getResponsiveFontSize(18),
     fontFamily: 'Pretendard-Regular',
     marginBottom: getResponsiveHeight(5),
   },

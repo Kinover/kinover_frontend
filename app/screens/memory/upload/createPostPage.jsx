@@ -10,20 +10,19 @@ import {
 } from 'react-native';
 import {
   getResponsiveWidth,
+  getResponsiveHeight,
   getResponsiveFontSize,
 } from '../../../utils/responsive';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { getPresignedUrls, uploadImageToS3 } from '../../../api/imageUrlApi';
 import { uploadPostApi } from '../../../api/uploadPostApi';
+import { createCategoryThunk } from '../../../redux/thunk/categoryThunk';
 
-// ✅ 미디어 타입 추출 함수 (파일 확장자 기반)
 const getMediaTypeFromUri = (uri) => {
   if (!uri || typeof uri !== 'string') return 'UNKNOWN';
   const lower = uri.toLowerCase();
-
   if (lower.match(/\.(jpg|jpeg|png|gif|webp)$/)) return 'IMAGE';
   if (lower.match(/\.(mp4|mov|avi|wmv|flv|mkv)$/)) return 'VIDEO';
-
   return 'UNKNOWN';
 };
 
@@ -32,17 +31,16 @@ export default function CreatePostPage({ navigation, route }) {
   const [isUploading, setIsUploading] = useState(false);
   const user = useSelector(state => state.user);
   const family = useSelector(state => state.family);
+  const dispatch = useDispatch();
   const { selectedCategory, selectedImages } = route.params;
 
-  
   const handleUpload = async () => {
     if (isUploading) return;
     setIsUploading(true);
-  
+
     try {
-      // ✅ 1. 카테고리 임시 생성 처리
       let finalCategoryId = selectedCategory?.categoryId;
-  
+
       if (selectedCategory?.isTemporary) {
         const result = await dispatch(createCategoryThunk({
           title: selectedCategory.title,
@@ -50,21 +48,20 @@ export default function CreatePostPage({ navigation, route }) {
         }));
         finalCategoryId = result.payload.categoryId;
       }
-  
-      // ✅ 2. 이미지 업로드
+
       const fileNames = selectedImages.map(
         (_, i) =>
-          `img_${Date.now()}_${i}_${Math.floor(Math.random() * 1000)}.jpg`,
+          `img_${Date.now()}_${i}_${Math.floor(Math.random() * 1000)}.jpg`
       );
-  
+
       const presignedUrls = await getPresignedUrls(fileNames);
-  
+
       for (let i = 0; i < selectedImages.length; i++) {
         await uploadImageToS3(presignedUrls[i], selectedImages[i]);
       }
-  
+
       const postTypes = selectedImages.map(uri => getMediaTypeFromUri(uri));
-  
+
       const payload = {
         authorId: user.userId,
         categoryId: finalCategoryId,
@@ -73,12 +70,8 @@ export default function CreatePostPage({ navigation, route }) {
         content: text,
         familyId: family.familyId,
       };
-  
-      console.log('📦 게시글 업로드 payload:', JSON.stringify(payload, null, 2));
-  
+
       await uploadPostApi(payload);
-  
-      console.log('✅ 게시글 업로드 완료');
       navigation.navigate('추억화면', { selectedCategory });
     } catch (err) {
       console.error('게시글 업로드 실패:', err);
@@ -86,7 +79,7 @@ export default function CreatePostPage({ navigation, route }) {
       setIsUploading(false);
     }
   };
-  
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
@@ -95,15 +88,10 @@ export default function CreatePostPage({ navigation, route }) {
         </View>
       ),
       headerRight: () => (
-        <TouchableOpacity onPress={handleUpload} style={{ marginRight: 15 }}>
+        <TouchableOpacity onPress={handleUpload} style={{ marginRight: getResponsiveWidth(15) }}>
           <Image
             source={require('../../../assets/images/check-bt.png')}
-            style={{
-              width: 25,
-              height: 25,
-              resizeMode: 'contain',
-              right: getResponsiveWidth(10),
-            }}
+            style={styles.headerCheckIcon}
           />
         </TouchableOpacity>
       ),
@@ -139,13 +127,12 @@ const styles = StyleSheet.create({
     padding: getResponsiveWidth(10),
   },
   input: {
-    height: '70%',
+    height: getResponsiveHeight(400),
     borderWidth: 1,
     borderColor: '#888888',
     padding: getResponsiveWidth(10),
     fontSize: getResponsiveFontSize(16),
     fontFamily: 'Pretendard-Regular',
-    overflow: 'scroll',
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -163,5 +150,11 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: getResponsiveFontSize(20),
     textAlign: 'center',
+    fontFamily: 'Pretendard-Regular',
+  },
+  headerCheckIcon: {
+    width: getResponsiveWidth(25),
+    height: getResponsiveHeight(25),
+    resizeMode: 'contain',
   },
 });

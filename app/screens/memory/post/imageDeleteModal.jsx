@@ -1,9 +1,6 @@
 import React from 'react';
-import {Text, View, TouchableOpacity, StyleSheet} from 'react-native';
-// import CustomModal from '../../utils/customModal'; // 경로 확인!
-// import CustomModal from './customModal';
+import {StyleSheet} from 'react-native';
 import CustomModal from '../../../components/customModal';
-
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -29,20 +26,17 @@ export default function ImageDeleteModal({
       confirmTextStyle={styles.confirmText}
       buttonBottomStyle={styles.buttonRow}
       modalBoxStyle={styles.modalBox}
-      children={children}></CustomModal>
+    >
+      {children}
+    </CustomModal>
   );
 }
 
 const styles = StyleSheet.create({
   modalBox: {
-    width: getResponsiveWidth(300),
-  },
-  title: {
-    fontSize: getResponsiveFontSize(17),
-    fontFamily: 'Pretendard-SemiBold',
-    textAlign: 'center',
-    marginBottom: getResponsiveHeight(10),
-    marginTop: getResponsiveHeight(10),
+    width: getResponsiveWidth(300), // 👉 예: iPhone 14 기준 약 77%
+    maxWidth: '90%',
+    alignSelf: 'center',
   },
   buttonRow: {
     flexDirection: 'row',
