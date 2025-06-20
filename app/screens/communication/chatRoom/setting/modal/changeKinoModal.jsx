@@ -31,10 +31,10 @@ export default function ChangeKinoModal({visible, onClose, onConfirm}) {
 
 const styles = StyleSheet.create({
   modalTitle: {
-    fontSize: 18,
+    fontSize: getResponsiveFontSize(18),
     textAlign: 'center',
     fontFamily: 'Pretendard-SemiBold',
-    fontWeight: Platform.OS === 'ios' ? null : '700',
+    fontWeight: Platform.OS === 'ios' ? undefined : '700',
     marginBottom: getResponsiveHeight(8),
     marginTop: getResponsiveHeight(15),
   },
@@ -51,19 +51,19 @@ const styles = StyleSheet.create({
   },
   modalButtonRow: {
     flexDirection: 'row',
-    gap: getResponsiveWidth(10),
     justifyContent: 'space-between',
+    gap: getResponsiveWidth(10),
   },
   confirmButton: {
     flex: 1,
     backgroundColor: '#FFC84D',
     paddingVertical: getResponsiveHeight(10),
-    borderRadius: 8,
+    borderRadius: getResponsiveWidth(8),
   },
   closeButton: {
     flex: 1,
     backgroundColor: '#E0E0E0',
     paddingVertical: getResponsiveHeight(10),
-    borderRadius: 8,
+    borderRadius: getResponsiveWidth(8),
   },
 });

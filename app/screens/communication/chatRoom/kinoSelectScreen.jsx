@@ -8,11 +8,9 @@ import {
 } from '../../../utils/responsive';
 
 export default function KinoSelectScreen() {
-
   return (
     <View style={styles.container}>
       {/* 텍스트 인삿말 */}
-
       <View style={styles.textBlock}>
         <Text style={styles.greeting}>안녕하세요,</Text>
         <Text style={styles.kinoText}>
@@ -26,16 +24,13 @@ export default function KinoSelectScreen() {
         <TouchableOpacity style={styles.arrowButton}>
           <Image
             source={require('../../../assets/images/leftArrow.png')}
-            style={{
-              width: getResponsiveIconSize(25),
-              height: getResponsiveIconSize(25),
-              resizeMode: 'contain',
-            }}></Image>
+            style={styles.arrowIcon}
+          />
         </TouchableOpacity>
 
         <View style={styles.characterBackground}>
           <Image
-            source={require('../../../assets/images/blueKino.png')} // 실제 경로에 맞게 수정하세요
+            source={require('../../../assets/images/blueKino.png')}
             style={styles.character}
             resizeMode="contain"
           />
@@ -44,11 +39,8 @@ export default function KinoSelectScreen() {
         <TouchableOpacity style={styles.arrowButton}>
           <Image
             source={require('../../../assets/images/rightArrow.png')}
-            style={{
-              width: getResponsiveIconSize(25),
-              height: getResponsiveIconSize(25),
-              resizeMode: 'contain',
-            }}></Image>
+            style={styles.arrowIcon}
+          />
         </TouchableOpacity>
       </View>
 
@@ -79,7 +71,7 @@ const styles = StyleSheet.create({
   kinoText: {
     fontSize: getResponsiveFontSize(20),
     fontFamily: 'Pretendard-Light',
-    marginTop: 4,
+    marginTop: getResponsiveHeight(4),
   },
   kinoHighlight: {
     color: '#FFC84D',
@@ -88,7 +80,7 @@ const styles = StyleSheet.create({
   question: {
     fontSize: getResponsiveFontSize(20),
     fontFamily: 'Pretendard-Light',
-    marginTop: 4,
+    marginTop: getResponsiveHeight(4),
   },
   imageWrapper: {
     flexDirection: 'row',
@@ -103,10 +95,28 @@ const styles = StyleSheet.create({
   arrowButton: {
     paddingHorizontal: getResponsiveWidth(10),
   },
+  arrowIcon: {
+    width: getResponsiveIconSize(25),
+    height: getResponsiveIconSize(25),
+    resizeMode: 'contain',
+  },
+  characterBackground: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: getResponsiveWidth(160),
+    height: getResponsiveWidth(160),
+    borderRadius: getResponsiveWidth(80),
+    backgroundColor: 'rgba(255, 200, 77, 0.2)',
+    shadowColor: '#FFC84D',
+    shadowOffset: {width: 0, height: getResponsiveHeight(60)},
+    shadowOpacity: 0.8,
+    shadowRadius: 50,
+    elevation: 15,
+  },
   button: {
     backgroundColor: '#FFC84D',
-    borderRadius: 10,
-    width: '90%',
+    borderRadius: getResponsiveWidth(12),
+    width: getResponsiveWidth(330),
     alignSelf: 'center',
     paddingVertical: getResponsiveHeight(14),
     alignItems: 'center',
@@ -120,18 +130,5 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Regular',
     fontSize: getResponsiveFontSize(15),
     color: 'black',
-  },
-  characterBackground: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: getResponsiveWidth(30),
-    height: getResponsiveWidth(30),
-    borderRadius: getResponsiveWidth(15),
-    backgroundColor: 'rgba(255, 200, 77, 0.2)', // 연한 노랑
-    shadowColor: '#FFC84D',
-    shadowOffset: {width: 0, height: getResponsiveHeight(60)},
-    shadowOpacity: 0.8,
-    shadowRadius: 50,
-    elevation: 15, // Android
   },
 });

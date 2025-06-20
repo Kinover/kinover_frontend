@@ -11,10 +11,10 @@ import {
 } from 'react-native';
 import {BlurView} from '@react-native-community/blur';
 import ImageZoom from 'react-native-image-pan-zoom';
-import getResponsiveFontSize from '../../../../utils/responsive';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
+  getResponsiveFontSize,
 } from '../../../../utils/responsive';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
@@ -28,10 +28,11 @@ export default function ImageModal({visible, imageUri, onClose}) {
           style={StyleSheet.absoluteFill}
           blurType="dark"
           blurAmount={1}
-          reducedTransparencyFallbackColor="rgba(0,0,0,0.3)"></BlurView>
+          reducedTransparencyFallbackColor="rgba(0,0,0,0.3)"
+        />
       </View>
 
-      {/* 이미지 줌 영역 (닫기 방지) */}
+      {/* 이미지 줌 영역 */}
       <View style={styles.zoomContainer}>
         <ImageZoom
           cropWidth={screenWidth}
@@ -40,25 +41,16 @@ export default function ImageModal({visible, imageUri, onClose}) {
           imageHeight={screenHeight}>
           <Image
             source={{uri: imageUri}}
-            style={{
-              width: screenWidth,
-              height: screenHeight,
-              resizeMode: 'contain',
-            }}
+            style={styles.zoomImage}
+            resizeMode="contain"
           />
         </ImageZoom>
       </View>
+
       {/* 닫기 버튼 */}
       <View style={styles.closeButtonContainer}>
         <TouchableWithoutFeedback onPress={onClose}>
-          <Text
-            style={{
-              fontSize: getResponsiveFontSize(24),
-              color: '#FFC84D',
-              fontWeight: 'bold',
-            }}>
-            ✕
-          </Text>
+          <Text style={styles.closeText}>✕</Text>
         </TouchableWithoutFeedback>
       </View>
     </Modal>
@@ -68,18 +60,27 @@ export default function ImageModal({visible, imageUri, onClose}) {
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    // backgroundColor:
-    //   Platform.OS === 'ios' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.3)',
   },
   zoomContainer: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  zoomImage: {
+    width: screenWidth,
+    height: screenHeight,
+  },
   closeButtonContainer: {
     position: 'absolute',
-    top: Platform.OS == 'ios' ? 70 : 20,
-    right: 20,
+    top: Platform.OS === 'ios'
+      ? getResponsiveHeight(70)
+      : getResponsiveHeight(30),
+    right: getResponsiveWidth(20),
     zIndex: 10,
+  },
+  closeText: {
+    fontSize: getResponsiveFontSize(24),
+    color: '#FFC84D',
+    fontWeight: 'bold',
   },
 });

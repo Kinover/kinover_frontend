@@ -27,44 +27,34 @@ export default function AddChatMemberScreen({navigation, route}) {
   const chatRoomUsers = useSelector(state => state.chatRoom.chatRoomUsers);
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
   const loading = useSelector(state => state.userFamily.loading);
-
   const [selected, setSelected] = useState([]);
 
-  // 유저 데이터 불러오기
   useEffect(() => {
     if (family.familyId) {
       dispatch(fetchFamilyUserListThunk(family.familyId));
     }
   }, []);
 
-  // 헤더 구성
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <Text style={{fontSize: 18, textAlign: 'center'}}>새 멤버 초대</Text>
+        <Text style={styles.headerTitle}>새 멤버 초대</Text>
       ),
       headerRight: () => (
-        <TouchableOpacity onPress={handleNext} style={{marginRight: 15}}>
+        <TouchableOpacity onPress={handleNext} style={styles.headerRight}>
           <Image
             source={require('../../../../assets/images/check-bt.png')}
-            style={{
-              width: 25,
-              height: 25,
-              resizeMode: 'contain',
-              right: getResponsiveWidth(10),
-            }}
+            style={styles.headerIcon}
           />
         </TouchableOpacity>
       ),
     });
   }, [selected]);
 
-  // 채팅방에 아직 없는 유저 필터링
   const selectableUsers = familyUserList.filter(
     user => !chatRoomUsers.find(u => u.userId === user.userId),
   );
 
-  // 선택 토글
   const toggleUser = userId => {
     setSelected(prev =>
       prev.includes(userId)
@@ -73,7 +63,6 @@ export default function AddChatMemberScreen({navigation, route}) {
     );
   };
 
-  // 초대 요청
   const handleNext = async () => {
     if (selected.length === 0) return;
 
@@ -91,7 +80,7 @@ export default function AddChatMemberScreen({navigation, route}) {
         },
       );
 
-      navigation.goBack(); // 초대 후 뒤로 이동
+      navigation.goBack();
     } catch (err) {
       console.error('유저 초대 실패:', err);
     }
@@ -102,7 +91,7 @@ export default function AddChatMemberScreen({navigation, route}) {
       {loading ? (
         <ActivityIndicator size="large" color="#F8B500" />
       ) : (
-        <ScrollView style={{flex:1,}}>
+        <ScrollView style={{flex: 1}}>
           {selectableUsers.map(user => {
             const isSelected = selected.includes(user.userId);
             return (
@@ -113,29 +102,18 @@ export default function AddChatMemberScreen({navigation, route}) {
                   styles.userItem,
                   isSelected && styles.userItemSelected,
                 ]}>
-                <View
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: getResponsiveWidth(5),
-                  }}>
+                <View style={styles.userInfo}>
                   <Image source={{uri: user.image}} style={styles.userImage} />
                   <Text style={styles.userName}>{user.name}</Text>
                 </View>
-                <TouchableOpacity>
-                  <Image
-                    source={
-                      isSelected
-                        ? require('../../../../assets/images/selected-bt.png')
-                        : require('../../../../assets/images/unselected-bt.png')
-                    }
-                    style={{
-                      width: getResponsiveWidth(14),
-                      height: getResponsiveHeight(14),
-                      resizeMode: 'contain',
-                    }}></Image>
-                </TouchableOpacity>
+                <Image
+                  source={
+                    isSelected
+                      ? require('../../../../assets/images/selected-bt.png')
+                      : require('../../../../assets/images/unselected-bt.png')
+                  }
+                  style={styles.selectIcon}
+                />
               </TouchableOpacity>
             );
           })}
@@ -152,19 +130,33 @@ const styles = StyleSheet.create({
     borderTopWidth: 3,
     borderColor: '#D3D3D3',
   },
+  headerTitle: {
+    fontSize: getResponsiveFontSize(18),
+    textAlign: 'center',
+    fontFamily: 'Pretendard-Medium',
+  },
+  headerRight: {
+    marginRight: getResponsiveWidth(15),
+  },
+  headerIcon: {
+    width: getResponsiveIconSize(25),
+    height: getResponsiveIconSize(25),
+    resizeMode: 'contain',
+  },
   userItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: getResponsiveHeight(15),
-    // borderBottomWidth: 1,
-    // borderColor: '#ddd',
-    display: 'flex',
     justifyContent: 'space-between',
-    paddingHorizontal: getResponsiveWidth(22.5),
-    gap: getResponsiveWidth(10),
+    paddingVertical: getResponsiveHeight(15),
+    paddingHorizontal: getResponsiveWidth(22),
   },
   userItemSelected: {
     backgroundColor: '#FFF2CC',
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(5),
   },
   userImage: {
     width: getResponsiveIconSize(45),
@@ -176,5 +168,10 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: getResponsiveFontSize(16),
     fontFamily: 'Pretendard-Regular',
+  },
+  selectIcon: {
+    width: getResponsiveIconSize(14),
+    height: getResponsiveIconSize(14),
+    resizeMode: 'contain',
   },
 });

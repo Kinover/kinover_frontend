@@ -7,10 +7,10 @@ import {
   Image,
   ScrollView,
   ActivityIndicator,
-  TextInput,
 } from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
 import {createChatRoomThunk} from '../../redux/thunk/chatRoomThunk';
+import {fetchFamilyUserListThunk} from '../../redux/thunk/familyUserThunk';
 
 import {
   getResponsiveWidth,
@@ -18,7 +18,6 @@ import {
   getResponsiveHeight,
   getResponsiveIconSize,
 } from '../../utils/responsive';
-import {fetchFamilyUserListThunk} from '../../redux/thunk/familyUserThunk';
 
 export default function CreateChatRoom({navigation}) {
   const dispatch = useDispatch();
@@ -28,38 +27,41 @@ export default function CreateChatRoom({navigation}) {
   const loading = useSelector(state => state.userFamily.loading);
   const [selected, setSelected] = useState([]);
 
-  // 가족 유저 목록 불러오기
   useEffect(() => {
     if (family.familyId) {
       dispatch(fetchFamilyUserListThunk(family.familyId));
     }
-  }, []);
+  }, [dispatch, family.familyId]);
 
-  // 헤더 구성
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <Text style={{fontSize: 18, textAlign: 'center'}}>채팅방 만들기</Text>
+        <Text
+          style={{
+            fontSize: getResponsiveFontSize(17),
+            fontFamily: 'Pretendard-Medium',
+            textAlign: 'center',
+          }}>
+          채팅방 만들기
+        </Text>
       ),
       headerRight: () => (
         <TouchableOpacity
           onPress={handleCreateChatRoom}
-          style={{marginRight: 15}}>
+          style={{marginRight: getResponsiveWidth(10)}}>
           <Image
             source={require('../../assets/images/check-bt.png')}
             style={{
-              width: 25,
-              height: 25,
+              width: getResponsiveIconSize(24),
+              height: getResponsiveIconSize(24),
               resizeMode: 'contain',
-              right: getResponsiveWidth(10),
             }}
           />
         </TouchableOpacity>
       ),
     });
-  }, [selected]);
+  }, [navigation, selected]);
 
-  // 선택 토글
   const toggleUser = userId => {
     setSelected(prev =>
       prev.includes(userId)
@@ -68,7 +70,6 @@ export default function CreateChatRoom({navigation}) {
     );
   };
 
-  // 채팅방 생성 요청
   const handleCreateChatRoom = async () => {
     if (selected.length === 0) return;
 
@@ -88,7 +89,6 @@ export default function CreateChatRoom({navigation}) {
         }),
       ).unwrap();
 
-      console.log('🟢 채팅방 생성 성공:', result);
       navigation.navigate('소통화면');
     } catch (err) {
       console.error('🔴 채팅방 생성 실패:', err);
@@ -101,8 +101,6 @@ export default function CreateChatRoom({navigation}) {
 
   return (
     <View style={styles.container}>
-      {/* 채팅방 이름 입력 */}
-
       {loading ? (
         <ActivityIndicator size="large" color="#F8B500" />
       ) : (
@@ -144,18 +142,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopWidth: 0.5,
     borderColor: 'lightgray',
-  },
-  inputContainer: {
-    padding: getResponsiveWidth(20),
-    borderBottomWidth: 1,
-    borderColor: '#ddd',
-  },
-  input: {
-    fontSize: getResponsiveFontSize(16),
-    fontFamily: 'Pretendard-Regular',
-    borderBottomWidth: 0.5,
-    borderColor: '#B0B0B0',
-    paddingVertical: getResponsiveHeight(8),
   },
   userItem: {
     flexDirection: 'row',
