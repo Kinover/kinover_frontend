@@ -1,30 +1,33 @@
 // fetchChatRoomListThunk.js
 import axios from 'axios';
-import { Platform } from 'react-native';
 import {createAsyncThunk} from '@reduxjs/toolkit';
-import { getToken } from '../../utils/storage';
+import {getToken} from '../../utils/storage';
 import {
   setChatRoomList,
   setChatRoomUsers,
   setChatRoomLoading,
   setChatRoomError,
 } from '../slices/chatRoomSlice';
-import { fetchFamilyThunk } from './familyThunk';
+import {fetchFamilyThunk} from './familyThunk';
 
 export const fetchChatRoomListThunk = (familyId, userId) => {
-  return async (dispatch) => {
+  return async dispatch => {
     dispatch(setChatRoomLoading(true));
     try {
       const apiUrl = `https://kinover.shop/api/chatRoom/${familyId}/${userId}`;
 
       const token = await getToken();
 
-      const response = await axios.post(apiUrl, {}, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      const response = await axios.post(
+        apiUrl,
+        {},
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       dispatch(setChatRoomList(response.data));
       console.log('✅ 채팅방 목록 불러오기 성공:', response.data);
@@ -37,20 +40,23 @@ export const fetchChatRoomListThunk = (familyId, userId) => {
   };
 };
 
-
-export const fetchChatRoomUsersThunk = (chatRoomId) => {
-  return async (dispatch) => {
+export const fetchChatRoomUsersThunk = chatRoomId => {
+  return async dispatch => {
     dispatch(setChatRoomLoading(true));
 
     try {
       const token = await getToken();
       const apiUrl = `https://kinover.shop/api/chatRoom/${chatRoomId}/users/get`;
 
-      const response = await axios.post(apiUrl, {}, {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await axios.post(
+        apiUrl,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       dispatch(setChatRoomUsers(response.data));
       console.log('✅ 채팅방 내 유저 조회 성공:', response.data);
@@ -65,7 +71,7 @@ export const fetchChatRoomUsersThunk = (chatRoomId) => {
 
 export const leaveChatRoomThunk = createAsyncThunk(
   'chatRoom/leaveChatRoom',
-  async (chatRoomId, { rejectWithValue }) => {
+  async (chatRoomId, {rejectWithValue}) => {
     try {
       const token = await getToken();
 
@@ -76,7 +82,7 @@ export const leaveChatRoomThunk = createAsyncThunk(
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (!res.ok) {
@@ -89,24 +95,27 @@ export const leaveChatRoomThunk = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(error.message || '알 수 없는 에러');
     }
-  }
+  },
 );
 
 export const renameChatRoomThunk = createAsyncThunk(
   'chatRoom/renameChatRoom',
-  async ({ familyId, userId, chatRoomId, roomName }, { rejectWithValue, dispatch }) => {
+  async (
+    {familyId, userId, chatRoomId, roomName},
+    {rejectWithValue, dispatch},
+  ) => {
     try {
       const token = await getToken();
       const response = await fetch(
         `https://kinover.shop/api/chatRoom/${chatRoomId}/rename?roomName=${encodeURIComponent(
-          roomName
+          roomName,
         )}`,
         {
           method: 'PATCH',
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
 
       if (!response.ok) {
@@ -123,30 +132,65 @@ export const renameChatRoomThunk = createAsyncThunk(
       console.error('❌ 채팅방 이름 변경 중 에러:', err);
       return rejectWithValue(err.message || '알 수 없는 오류');
     }
-  }
+  },
 );
 
 // 채팅방 생성 Thunk
 export const createChatRoomThunk = createAsyncThunk(
   'chatRoom/create',
-  async ({ roomName, userIds }, { rejectWithValue }) => {
+  async ({roomName, userIds}, {rejectWithValue}) => {
     try {
-      console.log(`🟡 채팅방 생성 요청: roomName="${roomName}", userIds=${userIds}`);
+      console.log(
+        `🟡 채팅방 생성 요청: roomName="${roomName}", userIds=${userIds}`,
+      );
       const token = await getToken();
       const response = await axios.post(
-        `https://kinover.shop/api/chatRoom/create/${encodeURIComponent(roomName)}/${userIds}`,
+        `https://kinover.shop/api/chatRoom/create/${encodeURIComponent(
+          roomName,
+        )}/${userIds}`,
         null,
         {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       console.log('🟢 채팅방 생성 성공:', response.data);
       return response.data;
     } catch (error) {
-      console.error('🔴 채팅방 생성 실패:', error.response?.data || error.message);
+      console.error(
+        '🔴 채팅방 생성 실패:',
+        error.response?.data || error.message,
+      );
       return rejectWithValue(error.response?.data || '채팅방 생성 실패');
     }
-  }
+  },
+);
+
+// ✅ 채팅방 성격(personality) 변경 Thunk
+export const updateKinoPersonalityThunk = createAsyncThunk(
+  'chatRoom/updatePersonality',
+  async ({chatRoomId, personality}, {rejectWithValue}) => {
+    try {
+      const token = await getToken();
+
+      const response = await axios.patch(
+        `https://kinover.shop/api/chatRoom/${chatRoomId}/personality`,
+        {personality}, // JSON body 자동 직렬화
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      console.log('✅ 키노 변경 성공:', response.data);
+      return response.data;
+    } catch (err) {
+      const msg = err.response?.data || err.message || '알 수 없는 오류';
+      console.error('❌ 키노 변경 중 에러:', msg);
+      return rejectWithValue(msg);
+    }
+  },
 );

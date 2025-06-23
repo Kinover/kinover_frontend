@@ -12,7 +12,12 @@ export default function ChangeKinoModal({visible, onClose, onConfirm}) {
     <CustomModal
       visible={visible}
       onClose={onClose}
-      onConfirm={onConfirm}
+      onConfirm={() => {
+        onClose(); // 먼저 모달 닫기
+        setTimeout(() => {
+          onConfirm(); // 그 다음 화면 이동
+        }, 100); // 100ms 정도만 주면 충분해
+      }}
       confirmText="교체하기"
       closeText="취소하기"
       confirmButtonStyle={styles.confirmButton}

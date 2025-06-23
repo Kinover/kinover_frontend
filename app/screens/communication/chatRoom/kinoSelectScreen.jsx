@@ -1,13 +1,55 @@
-import React from 'react';
-import {View, Text, TouchableOpacity, Image, StyleSheet} from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { useDispatch } from 'react-redux';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
+import { updateKinoPersonalityThunk } from '../../../redux/thunk/chatRoomThunk';
+import { useRoute } from '@react-navigation/native';
+
+const characterImages = [
+  require('../../../assets/images/blueKino.png'),   // SUNNY
+  require('../../../assets/images/pinkKino.png'),   // SERENE
+  require('../../../assets/images/yellowKino.png'), // SNUGGLE
+];
+
+const personalityTypes = ['SUNNY', 'SERENE', 'SNUGGLE'];
 
 export default function KinoSelectScreen() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const dispatch = useDispatch();
+  const route = useRoute();
+  const { chatRoomId } = route.params;
+
+  const handlePrev = () => {
+    setCurrentIndex((prev) =>
+      prev === 0 ? characterImages.length - 1 : prev - 1
+    );
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) =>
+      prev === characterImages.length - 1 ? 0 : prev + 1
+    );
+  };
+
+  const handleKinoSelect = () => {
+    const selectedPersonality = personalityTypes[currentIndex];
+    dispatch(updateKinoPersonalityThunk({ chatRoomId, personality: selectedPersonality }))
+      .unwrap()
+      .then((res) => {
+        console.log('🎉 키노 유형 변경 완료:', res);
+        // 이후 화면 이동이나 토스트 등 추가 로직 작성 가능!
+      })
+      .catch((err) => {
+        console.error('🚨 키노 변경 실패:', err);
+        // 에러 처리 UI 추가 가능
+      });
+  };
+
   return (
     <View style={styles.container}>
       {/* 텍스트 인삿말 */}
@@ -19,9 +61,9 @@ export default function KinoSelectScreen() {
         <Text style={styles.question}>어떤 고민을 가지고 계신가요?</Text>
       </View>
 
-      {/* 캐릭터 이미지 + 방향 버튼 */}
+      {/* 캐릭터 캐러셀 */}
       <View style={styles.imageWrapper}>
-        <TouchableOpacity style={styles.arrowButton}>
+        <TouchableOpacity style={styles.arrowButton} onPress={handlePrev}>
           <Image
             source={require('../../../assets/images/leftArrow.png')}
             style={styles.arrowIcon}
@@ -30,13 +72,13 @@ export default function KinoSelectScreen() {
 
         <View style={styles.characterBackground}>
           <Image
-            source={require('../../../assets/images/blueKino.png')}
+            source={characterImages[currentIndex]}
             style={styles.character}
             resizeMode="contain"
           />
         </View>
 
-        <TouchableOpacity style={styles.arrowButton}>
+        <TouchableOpacity style={styles.arrowButton} onPress={handleNext}>
           <Image
             source={require('../../../assets/images/rightArrow.png')}
             style={styles.arrowIcon}
@@ -45,7 +87,7 @@ export default function KinoSelectScreen() {
       </View>
 
       {/* 하단 버튼 */}
-      <TouchableOpacity style={styles.button}>
+      <TouchableOpacity style={styles.button} onPress={handleKinoSelect}>
         <Text style={styles.buttonText}>교수님 상담사와 채팅하기</Text>
       </TouchableOpacity>
     </View>
@@ -108,7 +150,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveWidth(80),
     backgroundColor: 'rgba(255, 200, 77, 0.2)',
     shadowColor: '#FFC84D',
-    shadowOffset: {width: 0, height: getResponsiveHeight(60)},
+    shadowOffset: { width: 0, height: getResponsiveHeight(60) },
     shadowOpacity: 0.8,
     shadowRadius: 50,
     elevation: 15,
@@ -121,7 +163,7 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(14),
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,

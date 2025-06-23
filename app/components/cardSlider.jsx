@@ -12,7 +12,7 @@ import getResponsiveFontSize, {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveWidth,
-} from './responsive';
+} from '../utils/responsive';
 import {
   TapGestureHandler,
   GestureHandlerRootView,
