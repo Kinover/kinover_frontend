@@ -63,12 +63,12 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     justifyContent: 'center',
     paddingLeft: getResponsiveWidth(14),
+    gap:getResponsiveHeight(3.5),
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: getResponsiveHeight(6),
   },
   name: {
     fontFamily: 'Pretendard-Medium',

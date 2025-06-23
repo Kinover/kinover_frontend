@@ -40,8 +40,6 @@ export default function ChatSettings({
   isKino,
   onNavigateToKino,
 }) {
-  if (!isOpen) return null;
-
   const [isChangeKinoModalVisible, setIsChangeKinoModalVisible] =
     useState(false);
   const [isLeaveModalVisible, setIsLeaveModalVisible] = useState(false);
@@ -49,6 +47,7 @@ export default function ChatSettings({
   const [newRoomName, setNewRoomName] = useState('');
   const [showMembers, setShowMembers] = useState(false);
   const [isAlarmOn, setIsAlarmOn] = useState(true);
+  const [shouldNavigate, setShouldNavigate] = useState(false);
 
   const translateX = useSharedValue(getResponsiveWidth(375));
 
@@ -103,14 +102,26 @@ export default function ChatSettings({
     onLeaveChat(dispatch, navigation, chatRoomId);
   };
 
+  // ❶ 닫기 요청 → 상태 설정
   const handleGoToKinoSelect = () => {
-    onClose();
-    navigation.navigate('키노선택화면');
+    setShouldNavigate(true);
+    onClose(); // isOpen을 false로 바꿈
   };
+
+  // ❷ isOpen이 false로 바뀌고 모달 애니메이션 끝난 후 실행
+  useEffect(() => {
+    if (!isOpen && shouldNavigate) {
+      const timeout = setTimeout(() => {
+        navigation.navigate('키노선택화면', {chatRoomId});
+        setShouldNavigate(false); // 초기화
+      }, 300); // 애니메이션 duration과 동일하게
+      return () => clearTimeout(timeout);
+    }
+  }, [isOpen, shouldNavigate]);
 
   return (
     <Modal
-      visible={true}
+      visible={isOpen}
       transparent
       animationType="none"
       onRequestClose={onClose}
