@@ -17,7 +17,7 @@ import formatTime from '../../utils/formatTime';
 import GroupAvatar from './groupAvatar';
 import {useSelector} from 'react-redux';
 
-export default function ChatRoomItem({chatRoom, userId, navigation}) {
+function ChatRoomItem({chatRoom, userId, navigation}) {
   const imageUri = chatRoom.memberImages?.[0];
   let name = chatRoom.roomName;
   const description =
@@ -49,6 +49,10 @@ export default function ChatRoomItem({chatRoom, userId, navigation}) {
   );
 }
 
+export default React.memo(ChatRoomItem, (prevProps, nextProps) => {
+  return JSON.stringify(prevProps.chatRoom) === JSON.stringify(nextProps.chatRoom);
+});
+
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
@@ -62,7 +66,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'column',
     justifyContent: 'center',
-    paddingLeft: getResponsiveWidth(14),
+    paddingLeft: getResponsiveWidth(17),
     gap:getResponsiveHeight(3.5),
   },
   headerRow: {
@@ -85,3 +89,4 @@ const styles = StyleSheet.create({
     paddingRight: getResponsiveWidth(40),
   },
 });
+

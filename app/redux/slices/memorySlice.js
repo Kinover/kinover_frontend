@@ -17,7 +17,7 @@ const memorySlice = createSlice({
   initialState: initialMemoryState,
   reducers: {
     setMemoryList(state, action) {
-      state.memoryList = action.payload;
+      state.memoryList = [...action.payload];
     },
     setMemoryLoading(state, action) {
       state.loading = action.payload;

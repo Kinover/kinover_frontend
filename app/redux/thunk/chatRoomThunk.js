@@ -176,7 +176,7 @@ export const updateKinoPersonalityThunk = createAsyncThunk(
 
       const response = await axios.patch(
         `https://kinover.shop/api/chatRoom/${chatRoomId}/personality`,
-        {personality}, // JSON body 자동 직렬화
+        {personality},
         {
           headers: {
             'Content-Type': 'application/json',
@@ -185,11 +185,20 @@ export const updateKinoPersonalityThunk = createAsyncThunk(
         },
       );
 
-      console.log('✅ 키노 변경 성공:', response.data);
+      console.log('✅ [키노 성격 변경 성공]');
+      console.log('📌 요청 채팅방 ID:', chatRoomId);
+      console.log('🧠 변경된 성격:', personality);
+      console.log('📦 응답 데이터:', response.data);
+
       return response.data;
     } catch (err) {
       const msg = err.response?.data || err.message || '알 수 없는 오류';
-      console.error('❌ 키노 변경 중 에러:', msg);
+
+      console.error('❌ [키노 성격 변경 실패]');
+      console.error('📌 요청 채팅방 ID:', chatRoomId);
+      console.error('🧠 시도한 성격:', personality);
+      console.error('⚠️ 에러 내용:', msg);
+
       return rejectWithValue(msg);
     }
   },

@@ -17,6 +17,7 @@ export const fetchFamilyThunk = familyId => {
       const apiUrl = `https://kinover.shop/api/family/${familyId}`;
 
       const token = await getToken();
+      console.log("가족 토큰"+familyId);
 
       const response = await axios.post(
         apiUrl,

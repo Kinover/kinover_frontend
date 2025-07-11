@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TextInput, StyleSheet, Platform } from 'react-native';
+import {View, Text, TextInput, StyleSheet, Platform} from 'react-native';
 import CustomModal from '../../../../../components/customModal';
 import {
   getResponsiveHeight,
@@ -18,16 +18,20 @@ export default function RenameChatRoomModal({
     <CustomModal
       visible={visible}
       onClose={onClose}
-      onConfirm={onConfirm}
+      onConfirm={() => {
+        onClose(); // 먼저 모달 닫기
+        setTimeout(() => {
+          onConfirm(); // 그 다음 화면 이동
+        }, 100); // 100ms 정도만 주면 충분해
+      }}
       confirmText="변경"
       closeText="취소"
       confirmButtonStyle={styles.confirmButton}
       closeButtonStyle={styles.closeButton}
       closeTextStyle={styles.modalText}
-      confirmTextStyle={[styles.modalText, { color: 'black' }]}
-      buttonBottomStyle={styles.modalButtonRow}
-    >
-      <View style={{ marginTop: getResponsiveHeight(15) }}>
+      confirmTextStyle={[styles.modalText, {color: 'black'}]}
+      buttonBottomStyle={styles.modalButtonRow}>
+      <View style={{marginTop: getResponsiveHeight(15)}}>
         <Text style={styles.modalTitle}>채팅방 이름을 수정하세요</Text>
         <TextInput
           placeholder="새 채팅방 이름"

@@ -17,7 +17,7 @@ const scheduleSlice = createSlice({
   initialState,
   reducers: {
     setScheduleList(state, action) {
-      state.scheduleList = action.payload;
+      state.scheduleList = [...action.payload]; // 🔥 이렇게 레퍼런스 바꿔주면 리렌더 확실!
       state.error = null;
     },
     setScheduleLoading(state, action) {

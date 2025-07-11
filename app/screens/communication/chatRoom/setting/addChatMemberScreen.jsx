@@ -19,6 +19,7 @@ import {
   getResponsiveIconSize,
 } from '../../../../utils/responsive';
 import {fetchFamilyUserListThunk} from '../../../../redux/thunk/familyUserThunk';
+import useHideTabBar from '../../../../hooks/useHideTabBar';
 
 export default function AddChatMemberScreen({navigation, route}) {
   const {chatRoomId} = route.params;
@@ -29,6 +30,8 @@ export default function AddChatMemberScreen({navigation, route}) {
   const loading = useSelector(state => state.userFamily.loading);
   const [selected, setSelected] = useState([]);
 
+  useHideTabBar({ stayHidden: true });
+
   useEffect(() => {
     if (family.familyId) {
       dispatch(fetchFamilyUserListThunk(family.familyId));
@@ -37,9 +40,7 @@ export default function AddChatMemberScreen({navigation, route}) {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitle: () => (
-        <Text style={styles.headerTitle}>새 멤버 초대</Text>
-      ),
+      headerTitle: () => <Text style={styles.headerTitle}>새 멤버 초대</Text>,
       headerRight: () => (
         <TouchableOpacity onPress={handleNext} style={styles.headerRight}>
           <Image

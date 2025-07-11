@@ -28,49 +28,32 @@ export default function MemoryStack() {
     elevation: 0,
     height:
       Platform.OS === 'ios'
-        ? getResponsiveHeight(120)
+        ? getResponsiveHeight(107.5)
         : getResponsiveHeight(80),
   };
 
   return (
     <Stack.Navigator
-      initialRouteName="추억화면"
+      initialRouteName="추억"
       screenOptions={{
         headerShown: true,
         headerStyle: defaultHeaderStyle,
         headerTitleAlign: 'left',
         headerTitle: '',
         headerTitleContainerStyle: {
-          paddingLeft: getResponsiveWidth(5),
+          paddingLeft: getResponsiveWidth(15),
         },
       }}>
-      <Stack.Screen name="추억화면" component={MemoryScreen} />
+      <Stack.Screen name="추억" component={MemoryScreen} />
 
       <Stack.Screen
         name="게시글화면"
         component={PostPage}
         options={({route, navigation}) => ({
+          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          headerRight: () => <RenderHeaderDeletePost navigation={navigation} />,
           headerTitle: route.params?.memory?.title || '',
           headerTitleAlign: 'center',
-          headerTitleStyle: {
-            color: 'black',
-            fontSize: getResponsiveFontSize(17),
-            textAlign: 'center',
-            bottom: getResponsiveHeight(5),
-            fontFamily: 'Pretendard-Light',
-          },
-          headerLeft: () => (
-            <RenderGoBackButtonGallery navigation={navigation} />
-          ),
-          headerRight: () => <RenderHeaderDeletePost navigation={navigation} />,
-          headerTransparent: true,
-          headerStyle: {
-            backgroundColor: 'rgba(255,255,255,0.7)',
-            borderBottomWidth: 0,
-            shadowOpacity: 0,
-            elevation: 0,
-            height: getResponsiveHeight(90),
-          },
         })}
       />
 

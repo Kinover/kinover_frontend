@@ -18,6 +18,7 @@ import {
   getResponsiveHeight,
   getResponsiveIconSize,
 } from '../../utils/responsive';
+import useHideTabBar from '../../hooks/useHideTabBar';
 
 export default function CreateChatRoom({navigation}) {
   const dispatch = useDispatch();
@@ -26,6 +27,8 @@ export default function CreateChatRoom({navigation}) {
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
   const loading = useSelector(state => state.userFamily.loading);
   const [selected, setSelected] = useState([]);
+
+  useHideTabBar();
 
   useEffect(() => {
     if (family.familyId) {
@@ -89,7 +92,7 @@ export default function CreateChatRoom({navigation}) {
         }),
       ).unwrap();
 
-      navigation.navigate('소통화면');
+      navigation.navigate('소통');
     } catch (err) {
       console.error('🔴 채팅방 생성 실패:', err);
     }

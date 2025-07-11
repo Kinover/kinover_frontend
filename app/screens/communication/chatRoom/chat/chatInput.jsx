@@ -201,7 +201,7 @@ export default function ChatInput({chatRoom, userId, socketRef}) {
         <View style={styles.galleryContainer}>
           <FlatList
             data={photos}
-            keyExtractor={(item, index) => item.uri + index}
+            keyExtractor={(item, index) => item.uri + index} // 중복 방지
             renderItem={renderPhoto}
             numColumns={4}
             contentContainerStyle={styles.galleryContent}

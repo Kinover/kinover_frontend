@@ -131,7 +131,7 @@ export default function ImageSelectPage() {
           onPress={handleNext}
           style={{marginRight: getResponsiveWidth(10)}}>
           <Image
-            source={require('../../../assets/images/check-bt.png')}
+            source={require('../../../assets/icons/check.png')}
             style={styles.checkIcon}
           />
         </TouchableOpacity>
@@ -185,8 +185,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Regular',
   },
   checkIcon: {
-    width: getResponsiveWidth(25),
-    height: getResponsiveHeight(25),
+    width: getResponsiveWidth(30),
+    height: getResponsiveHeight(30),
+    marginRight: getResponsiveWidth(15),
     resizeMode: 'contain',
   },
   galleryContainer: {

@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect } from 'react';
+import React, {useState, useLayoutEffect} from 'react';
 import {
   StyleSheet,
   View,
@@ -13,12 +13,15 @@ import {
   getResponsiveHeight,
   getResponsiveFontSize,
 } from '../../../utils/responsive';
-import { useSelector, useDispatch } from 'react-redux';
-import { getPresignedUrls, uploadImageToS3 } from '../../../api/imageUrlApi';
-import { uploadPostApi } from '../../../api/uploadPostApi';
-import { createCategoryThunk } from '../../../redux/thunk/categoryThunk';
+import {useSelector, useDispatch} from 'react-redux';
+import {getPresignedUrls, uploadImageToS3} from '../../../api/imageUrlApi';
+import {uploadPostApi} from '../../../api/uploadPostApi';
+import {
+  createCategoryThunk,
+  fetchCategoryThunk,
+} from '../../../redux/thunk/categoryThunk';
 
-const getMediaTypeFromUri = (uri) => {
+const getMediaTypeFromUri = uri => {
   if (!uri || typeof uri !== 'string') return 'UNKNOWN';
   const lower = uri.toLowerCase();
   if (lower.match(/\.(jpg|jpeg|png|gif|webp)$/)) return 'IMAGE';
@@ -26,13 +29,13 @@ const getMediaTypeFromUri = (uri) => {
   return 'UNKNOWN';
 };
 
-export default function CreatePostPage({ navigation, route }) {
+export default function CreatePostPage({navigation, route}) {
   const [text, setText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const user = useSelector(state => state.user);
   const family = useSelector(state => state.family);
   const dispatch = useDispatch();
-  const { selectedCategory, selectedImages } = route.params;
+  const {selectedCategory, selectedImages} = route.params;
 
   const handleUpload = async () => {
     if (isUploading) return;
@@ -40,18 +43,31 @@ export default function CreatePostPage({ navigation, route }) {
 
     try {
       let finalCategoryId = selectedCategory?.categoryId;
+      let finalCategory = selectedCategory;
 
       if (selectedCategory?.isTemporary) {
-        const result = await dispatch(createCategoryThunk({
-          title: selectedCategory.title,
-          familyId: family.familyId,
-        }));
-        finalCategoryId = result.payload.categoryId;
+        const result = await dispatch(
+          createCategoryThunk({
+            title: selectedCategory.title,
+            familyId: family.familyId,
+          }),
+        );
+
+        if (createCategoryThunk.fulfilled.match(result)) {
+          finalCategoryId = result.payload.categoryId;
+          finalCategory = result.payload;
+
+          await dispatch(fetchCategoryThunk(family.familyId));
+          await new Promise(resolve => setTimeout(resolve, 300));
+        } else {
+          console.error('카테고리 생성 실패', result);
+          return;
+        }
       }
 
       const fileNames = selectedImages.map(
         (_, i) =>
-          `img_${Date.now()}_${i}_${Math.floor(Math.random() * 1000)}.jpg`
+          `img_${Date.now()}_${i}f_${Math.floor(Math.random() * 1000)}.jpg`,
       );
 
       const presignedUrls = await getPresignedUrls(fileNames);
@@ -72,7 +88,7 @@ export default function CreatePostPage({ navigation, route }) {
       };
 
       await uploadPostApi(payload);
-      navigation.navigate('추억화면', { selectedCategory });
+      navigation.navigate('추억화면', {selectedCategory: finalCategory});
     } catch (err) {
       console.error('게시글 업로드 실패:', err);
     } finally {
@@ -88,9 +104,11 @@ export default function CreatePostPage({ navigation, route }) {
         </View>
       ),
       headerRight: () => (
-        <TouchableOpacity onPress={handleUpload} style={{ marginRight: getResponsiveWidth(15) }}>
+        <TouchableOpacity
+          onPress={handleUpload}
+          style={{marginRight: getResponsiveWidth(15)}}>
           <Image
-            source={require('../../../assets/images/check-bt.png')}
+            source={require('../../../assets/icons/check.png')}
             style={styles.headerCheckIcon}
           />
         </TouchableOpacity>
@@ -153,8 +171,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Regular',
   },
   headerCheckIcon: {
-    width: getResponsiveWidth(25),
-    height: getResponsiveHeight(25),
+    width: getResponsiveWidth(30),
+    height: getResponsiveHeight(30),
+    marginRight: getResponsiveWidth(15),
     resizeMode: 'contain',
   },
 });

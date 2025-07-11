@@ -13,6 +13,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
+  getResponsiveIconSize,
 } from '../utils/responsive';
 
 export default function CustomModal({
@@ -84,7 +85,14 @@ export default function CustomModal({
               style={styles.closeXButton}
               onPress={onClose}
               hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-              <Text style={styles.closeXText}>×</Text>
+              <Image
+                style={{
+                  width: getResponsiveIconSize(10),
+                  height: getResponsiveIconSize(10),
+                }}
+                source={require('../assets/images/close-yellow.png')}
+              />
+              {/* </TouchableOpacity> */}
             </TouchableOpacity>
           </View>
 
@@ -140,7 +148,8 @@ const styles = StyleSheet.create({
     zIndex: 5,
   },
   closeXButton: {
-    marginRight: 10,
+    marginRight: 2,
+    marginTop: 10,
   },
   closeXText: {
     fontSize: getResponsiveFontSize(26),

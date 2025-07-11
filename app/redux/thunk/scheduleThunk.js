@@ -7,6 +7,7 @@ import {
   setScheduleLoading,
   setScheduleError,
 } from '../slices/scheduleSlice';
+import {createAsyncThunk} from '@reduxjs/toolkit';
 
 export const fetchSchedulesForFamilyAndDateThunk = (familyId, date) => {
   return async dispatch => {
@@ -160,3 +161,39 @@ export const deleteScheduleThunk = scheduleId => {
     }
   };
 };
+export const getScheduleCountPerDayThunk = createAsyncThunk(
+  'schedule/getCountPerDay',
+  async ({familyId, year, month}, thunkAPI) => {
+    try {
+      const token = await getToken();
+      const apiUrl = `https://kinover.shop/api/schedules/count-per-day`;
+
+      const response = await axios.get(apiUrl, {
+        params: {familyId, year, month},
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const originalData = response.data; // 예: { "2025-06-26": 1, ... }
+      const shiftedData = {};
+
+      Object.keys(originalData).forEach(key => {
+        const [y, m, d] = key.split('-').map(Number);
+        const originalDate = new Date(y, m - 1, d); // ✅ JS는 0-index month
+        originalDate.setDate(originalDate.getDate() + 1); // ✅ 하루 더함
+
+        const newY = originalDate.getFullYear();
+        const newM = String(originalDate.getMonth() + 1).padStart(2, '0');
+        const newD = String(originalDate.getDate()).padStart(2, '0');
+        const newKey = `${newY}-${newM}-${newD}`;
+
+        shiftedData[newKey] = originalData[key]; // 그대로 값 넣기
+      });
+
+      return shiftedData; // ➕ 하루 더한 날짜 기준으로 반환
+    } catch (err) {
+      return thunkAPI.rejectWithValue(err.response?.data || err.message);
+    }
+  },
+);

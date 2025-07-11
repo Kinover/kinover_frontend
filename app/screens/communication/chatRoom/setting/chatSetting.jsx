@@ -28,6 +28,8 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../../../utils/responsive';
+import { updateChatRoomNameInList } from '../../../../redux/slices/chatRoomSlice';
+
 
 export default function ChatSettings({
   isOpen,
@@ -85,6 +87,14 @@ export default function ChatSettings({
     )
       .unwrap()
       .then(() => {
+        // ✅ 이름 변경 후 Redux 상태도 업데이트!
+        dispatch(
+          updateChatRoomNameInList({
+            chatRoomId,
+            newRoomName,
+          }),
+        );
+
         setIsRenameModalVisible(false);
         setNewRoomName('');
       })

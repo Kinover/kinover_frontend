@@ -43,7 +43,7 @@ export default function CommunicationScreen({navigation}) {
         ) : chatRoomList?.length > 0 ? (
           chatRoomList.map((chatRoom, index) => (
             <ChatRoomItem
-              key={index}
+              key={chatRoom.chatRoomId}
               chatRoom={chatRoom}
               userId={userId}
               navigation={navigation}
@@ -64,12 +64,11 @@ export default function CommunicationScreen({navigation}) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#F9F9F9',
     paddingHorizontal: getResponsiveWidth(20),
     paddingTop: getResponsiveHeight(10),
   },
   scrollContent: {
-    paddingBottom: getResponsiveHeight(100),
   },
   noChatMessage: {
     fontSize: getResponsiveFontSize(16),

@@ -1,9 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {
-  View,
-  StyleSheet,
-  Text,
-} from 'react-native';
+import {View, StyleSheet, Text} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch} from 'react-redux';
 import {
@@ -92,12 +88,13 @@ export default function ChatMessageItem({
   }
 
   return (
-    <View
-      style={[styles.wrapper, isMe ? styles.alignRight : styles.alignLeft]}>
+    <View style={[styles.wrapper, isMe ? styles.alignRight : styles.alignLeft]}>
       {shouldShowDate && (
-        <Text style={styles.dateSeparator}>
-          {formatDate(message.createdAt)}
-        </Text>
+        <View style={styles.dateSeparator}>
+          <Text style={styles.dateSeparatorText}>
+            {formatDate(message.createdAt)}
+          </Text>
+        </View>
       )}
       {ChatComponent}
     </View>
@@ -107,7 +104,7 @@ export default function ChatMessageItem({
 const styles = StyleSheet.create({
   wrapper: {
     width: '100%',
-    paddingHorizontal: '3%',
+    paddingHorizontal: '4%',
   },
   alignRight: {
     alignItems: 'flex-end',
@@ -117,13 +114,17 @@ const styles = StyleSheet.create({
   },
   dateSeparator: {
     alignSelf: 'center',
-    fontSize: getResponsiveFontSize(12),
-    fontWeight: 'bold',
-    paddingHorizontal: getResponsiveWidth(8),
-    paddingVertical: getResponsiveHeight(4),
+    paddingHorizontal: getResponsiveWidth(15),
+    paddingVertical: getResponsiveHeight(7),
     marginVertical: getResponsiveHeight(24),
-    backgroundColor: 'rgba(255, 202, 85, 0.7)',
+    // backgroundColor: 'rgba(255, 202, 85, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.25)',
+
     borderRadius: getResponsiveIconSize(20),
-    color: '#666',
+  },
+  dateSeparatorText: {
+    fontSize: getResponsiveFontSize(12),
+    fontWeight: 'semibold',
+    color:'white',
   },
 });

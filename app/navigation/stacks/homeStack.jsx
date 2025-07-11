@@ -1,44 +1,47 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
+import {Platform} from 'react-native';
 import HomeScreen from '../../screens/home';
 import NotificationScreen from '../../screens/home/notification/notificationScreen';
-import {RenderHeaderLeft1, RenderHeaderLogo, RenderHeaderTitleLogo} from '../tabHeaderHelpers';
-import {RenderHeaderRightSetting} from '../tabHeaderHelpers';
-import {RenderGoBackButton} from '../tabHeaderHelpers';
-import {Image, Platform, View} from 'react-native';
-import {getResponsiveWidth, getResponsiveHeight} from '../../utils/responsive';
 import SettingScreen from '../../screens/home/setting/settingScreen';
 import NotificationSettingScreen from '../../screens/home/setting/notificationSettingScreen';
+import {
+  RenderHeaderHome,
+  RenderHeaderTitleLogo,
+  RenderGoBackButton,
+} from '../tabHeaderHelpers';
+import {getResponsiveHeight} from '../../utils/responsive';
+import StateScreen from '../../screens/home/stateScreen';
 
 const Stack = createStackNavigator();
 
-export default function HomeStack() {
+const getHeaderHeight = () =>
+  Platform.OS === 'ios' ? getResponsiveHeight(107.5) : getResponsiveHeight(80);
+
+const defaultHeaderStyle = {
+  height: getHeaderHeight(),
+  shadowColor: 'transparent',
+  elevation: 0,
+  borderBottomWidth: 0,
+};
+
+const HomeStack = () => {
   return (
     <Stack.Navigator
-      initialRouteName="감정화면"
-      screenOptions={({navigation}) => ({
-        // ✅ 객체 구조분해 필수!
-        headerStyle: {
-          borderBottomWidth: 0,
-          shadowOpacity: 0,
-          elevation: 0,
-          height:
-            Platform.OS == 'ios'
-              ? getResponsiveHeight(120)
-              : getResponsiveHeight(80),
-        },
+      initialRouteName="홈"
+      screenOptions={{
+        headerStyle: defaultHeaderStyle,
         headerTitleAlign: 'center',
         headerShown: true,
-        headerTitle: () => <RenderHeaderTitleLogo />,
-      })}>
+        headerLeft: () => <RenderHeaderTitleLogo />,
+        headerTitle: '',
+      }}>
       <Stack.Screen
-        name="감정화면"
+        name="홈"
         component={HomeScreen}
         options={({navigation}) => ({
-          headerLeft: () => <RenderHeaderLeft1 navigation={navigation} />,
-          headerRight: () => (
-            <RenderHeaderRightSetting navigation={navigation} />
-          ),
+          headerRight: () => <RenderHeaderHome navigation={navigation} />,
+          headerStyle: [defaultHeaderStyle, {backgroundColor: '#FFC84D'}],
         })}
       />
 
@@ -59,6 +62,7 @@ export default function HomeStack() {
           headerTitle: '',
         })}
       />
+
       <Stack.Screen
         name="알림설정화면"
         component={NotificationSettingScreen}
@@ -67,6 +71,17 @@ export default function HomeStack() {
           headerTitle: '',
         })}
       />
+
+      <Stack.Screen
+        name="감정상태화면"
+        component={StateScreen}
+        options={({navigation}) => ({
+          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          headerTitle: '',
+        })}
+      />
     </Stack.Navigator>
   );
-}
+};
+
+export default HomeStack;

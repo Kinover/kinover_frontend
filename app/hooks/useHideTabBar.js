@@ -1,8 +1,13 @@
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
-import { useCallback } from 'react';
-import { Platform } from 'react-native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import {useCallback, useLayoutEffect} from 'react';
+import {Platform} from 'react-native';
+import {
+  getResponsiveIconSize,
+  getResponsiveWidth,
+  getResponsiveHeight,
+} from '../utils/responsive';
 
-// ✅ TabNavigator를 확실하게 탐색하는 유틸
+// ✅ TabNavigator를 찾는 유틸
 function findTabNavigator(nav) {
   let currentNav = nav;
   for (let i = 0; i < 5; i++) {
@@ -14,31 +19,47 @@ function findTabNavigator(nav) {
   return null;
 }
 
-export default function useHideTabBar() {
+// ✅ 옵션을 받는 커스텀 훅
+export default function useHideTabBar({stayHidden = false} = {}) {
   const navigation = useNavigation();
 
-  useFocusEffect(
+  useLayoutEffect(
     useCallback(() => {
       const tabNavigation = findTabNavigator(navigation);
 
-      // ✅ 탭바 숨김
-      tabNavigation?.setOptions({
-        tabBarStyle: { display: 'none' },
+      if (!tabNavigation) {
+        console.warn('⚠️ TabNavigator 탐색 실패!');
+        return;
+      }
+
+      // 탭바 숨김
+      tabNavigation.setOptions({
+        tabBarStyle: {
+          display: 'none',
+        },
       });
 
       return () => {
-        // ✅ 탭바 복원
-        tabNavigation?.setOptions({
-          tabBarStyle: {
-            backgroundColor: '#fff',
-            borderTopWidth: 0.5,
-            borderTopColor: '#eee',
-            paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-            paddingTop: 8,
-            height: Platform.OS === 'ios' ? 90 : 90,
-          },
-        });
+        // 🟡 조건에 따라 복원 여부 결정
+        if (!stayHidden) {
+          tabNavigation.setOptions({
+            tabBarStyle: {
+              backgroundColor: 'white',
+              borderTopWidth: 0.5,
+              borderTopColor: '#eee',
+              paddingBottom: Platform.OS === 'ios' ? 20 : 10,
+              paddingTop: 8,
+              height: 90,
+              borderTopLeftRadius: getResponsiveIconSize(15),
+              borderTopRightRadius: getResponsiveIconSize(15),
+              shadowRadius: getResponsiveIconSize(5),
+              shadowColor: 'gray',
+              shadowOpacity: 0.1,
+              paddingHorizontal: getResponsiveWidth(15),
+            },
+          });
+        }
       };
-    }, [navigation])
+    }, [navigation, stayHidden]),
   );
 }

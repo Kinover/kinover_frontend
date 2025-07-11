@@ -1,14 +1,19 @@
 import React, {useEffect, useLayoutEffect, useState, useRef} from 'react';
-import {View, StyleSheet, Image, TouchableOpacity} from 'react-native';
+import {View, StyleSheet, TouchableOpacity, Image} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchMemoryThunk} from '../../redux/thunk/memoryThunk';
 import {fetchFamilyUserListThunk} from '../../redux/thunk/familyUserThunk';
 import MemoryFeed from './memoryFeed';
-import {getResponsiveHeight, getResponsiveWidth} from '../../utils/responsive';
+import {
+  getResponsiveHeight,
+  getResponsiveIconSize,
+  getResponsiveWidth,
+} from '../../utils/responsive';
 import CategoryDropdownButton from './navigator/categoryDropdownButton';
 import GalleryToggle from './navigator/galleryToggle';
 import {useRoute} from '@react-navigation/native';
 import CategoryBottomSheet from './navigator/categoryBottomSheet';
+import AlbumTabSelector from './albumTabSelector'; // 새로 만든 탭 컴포넌트
 
 export default function MemoryScreen({navigation}) {
   const dispatch = useDispatch();
@@ -19,6 +24,7 @@ export default function MemoryScreen({navigation}) {
   const categoryList = useSelector(state => state.category.categoryList);
   const [selectedCategoryTitle, setSelectedCategoryTitle] = useState('전체');
   const [isGalleryView, setIsGalleryView] = useState(false);
+  const [selectedTab, setSelectedTab] = useState('album'); // 'album' or 'allPhotos'
 
   useEffect(() => {
     if (family?.familyId) {
@@ -51,38 +57,22 @@ export default function MemoryScreen({navigation}) {
           style={{paddingLeft: getResponsiveWidth(20)}}
         />
       ),
-      headerRight: () => (
-        <View style={{paddingRight: getResponsiveWidth(20)}}>
-          <GalleryToggle
-            isGalleryView={isGalleryView}
-            onToggle={setIsGalleryView}
-          />
-        </View>
-      ),
-      headerTitle: () => (
-        <TouchableOpacity onPress={() => navigation.navigate('이미지선택화면')}>
-          <Image
-            source={require('../../assets/images/image-add-bt.png')}
-            style={{
-              width: getResponsiveWidth(35),
-              height: getResponsiveHeight(35),
-              resizeMode: 'contain',
-            }}
-          />
-        </TouchableOpacity>
-      ),
     });
-  }, [navigation, selectedCategoryTitle, isGalleryView]);
+  }, [navigation, selectedCategoryTitle]);
 
   return (
     <View style={styles.container}>
-      <View style={styles.barContainer} />
+      <View style={styles.tabWrapper}>
+        <AlbumTabSelector selected={selectedTab} onSelect={setSelectedTab} />
+      </View>
+
       <View style={styles.bodyContainer}>
         <MemoryFeed
           selectedCategoryTitle={selectedCategoryTitle}
           isGalleryView={isGalleryView}
           setSelectedCategoryTitle={setSelectedCategoryTitle}
           setIsGalleryView={setIsGalleryView}
+          selectedTab={selectedTab}
         />
       </View>
 
@@ -111,6 +101,17 @@ export default function MemoryScreen({navigation}) {
           sheetRef.current?.close();
         }}
       />
+
+      <TouchableOpacity>
+        <Image
+          source={require('../../assets/images/memory_floating-button.png')}
+          style={{
+            position: 'absolute',
+            right: getResponsiveWidth(10),
+            bottom: getResponsiveHeight(10),
+            objectFit: 'contain',
+          }}></Image>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -118,19 +119,25 @@ export default function MemoryScreen({navigation}) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    position: 'relative',
+    backgroundColor: '#F9F9F9',
   },
   overlay: {
     backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
-  barContainer: {
-    width: '100%',
-    height: getResponsiveHeight(5),
-    backgroundColor: '#D9D9D9',
+  tabWrapper: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+    paddingTop: getResponsiveHeight(8),
+    paddingHorizontal: getResponsiveWidth(20),
+    backgroundColor: 'white',
   },
   bodyContainer: {
+    position: 'relative',
     flex: 1,
+    width: '100%',
+    height: '100%',
     backgroundColor: 'white',
-    paddingBottom: getResponsiveHeight(10),
+    alignSelf: 'center',
   },
 });

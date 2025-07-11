@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import React, {useState} from 'react';
+import {View, Text, StyleSheet, Image, FlatList, TouchableOpacity} from 'react-native';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -7,6 +7,7 @@ import {
   getResponsiveIconSize,
 } from '../../../../utils/responsive';
 import formatTime from '../../../../utils/formatTime';
+import ImageModal from './imageModal';
 
 export default function SendKinoChat({
   chatTime,
@@ -14,47 +15,73 @@ export default function SendKinoChat({
   messageType = 'text',
   message,
 }) {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedImageUri, setSelectedImageUri] = useState('');
+
+  const handleImagePress = uri => {
+    setSelectedImageUri(uri);
+    setModalVisible(true);
+  };
+
+  const renderImages = () => {
+    if (imageUrls.length === 1) {
+      return (
+        <TouchableOpacity onPress={() => handleImagePress(imageUrls[0])}>
+          <Image
+            source={{uri: imageUrls[0]}}
+            style={styles.singleImage}
+            resizeMode="cover"
+          />
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <View style={[styles.sendBubble, styles.imagePadding]}>
+        <FlatList
+          data={imageUrls}
+          keyExtractor={(item, index) => item + index}
+          numColumns={3}
+          renderItem={({item}) => (
+            <TouchableOpacity onPress={() => handleImagePress(item)}>
+              <Image source={{uri: item}} style={styles.imageItem} />
+            </TouchableOpacity>
+          )}
+          scrollEnabled={false}
+          contentContainerStyle={styles.imageGrid}
+        />
+      </View>
+    );
+  };
+
   return (
     <View style={styles.sendContainer}>
       <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>
 
-      {messageType === 'image' && imageUrls.length === 1 ? (
-        <Image
-          source={{ uri: imageUrls[0] }}
-          style={styles.singleImage}
-          resizeMode="cover"
-        />
+      {messageType === 'image' ? (
+        renderImages()
       ) : (
-        <View
-          style={[
-            styles.sendBubble,
-            messageType === 'text' ? styles.textPadding : styles.imagePadding,
-          ]}
-        >
-          {messageType === 'image' ? (
-            <Image
-              source={{ uri: imageUrls[0] }}
-              style={styles.singleImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <Text style={styles.sendText}>{message}</Text>
-          )}
+        <View style={[styles.sendBubble, styles.textPadding]}>
+          <Text style={styles.sendText}>{message}</Text>
         </View>
       )}
+
+      <ImageModal
+        visible={modalVisible}
+        imageUri={selectedImageUri}
+        onClose={() => setModalVisible(false)}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   sendContainer: {
-    display: 'flex',
     flexDirection: 'row',
     alignItems: 'flex-end',
-    justifyContent: 'flex-end', // 오른쪽 정렬
+    justifyContent: 'flex-end',
     marginBottom: getResponsiveHeight(30),
   },
-
   sendBubble: {
     backgroundColor: '#FFECC3',
     borderRadius: getResponsiveIconSize(20),
@@ -70,7 +97,6 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(4.5),
     paddingHorizontal: getResponsiveWidth(4.5),
   },
-
   sendText: {
     fontFamily: 'Pretendard-Light',
     fontSize: getResponsiveFontSize(13),
@@ -78,16 +104,23 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     lineHeight: getResponsiveFontSize(18),
   },
-
   sendTime: {
     fontSize: getResponsiveFontSize(10),
     color: '#666',
     marginRight: getResponsiveWidth(5),
   },
-
+  imageGrid: {
+    gap: getResponsiveWidth(4),
+  },
+  imageItem: {
+    width: getResponsiveWidth(70),
+    height: getResponsiveWidth(70),
+    borderRadius: 4,
+    margin: 2,
+  },
   singleImage: {
     width: getResponsiveWidth(200),
-    aspectRatio: 1, // ✅ 원본 비율 유지
+    aspectRatio: 1,
     borderRadius: 10,
     alignSelf: 'flex-end',
   },

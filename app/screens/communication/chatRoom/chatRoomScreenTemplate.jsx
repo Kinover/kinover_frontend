@@ -1,6 +1,7 @@
 // components/common/ChatRoomScreenTemplate.jsx
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, use} from 'react';
 import {SafeAreaView, StyleSheet} from 'react-native';
+import {useSelector} from 'react-redux';
 import {useDispatch} from 'react-redux';
 import {getToken} from '../../../utils/storage';
 import MessageFlatList from './chat/messageFlatList';
@@ -33,15 +34,24 @@ export default function ChatRoomScreenTemplate({
     socketRef,
     isUserScrolling,
   } = useChatRoomScreen(chatRoom, userId, isKino);
-
+  const chatRoomList = useSelector(state => state.chatRoom.chatRoomList);
+  const currentChatRoom =
+    chatRoomList.find(room => room.chatRoomId === chatRoom.chatRoomId) ||
+    chatRoom;
   useHideTabBar();
-  useHeaderSetting(navigation, setIsSettingsOpen, chatRoom.roomName, isKino);
+  useHeaderSetting(
+    navigation,
+    setIsSettingsOpen,
+    currentChatRoom.roomName,
+    isKino,
+  );
   useEffect(() => {
     if (chatRoom?.chatRoomId) {
       dispatch(fetchMessageThunk(chatRoom.chatRoomId));
       setNoMoreMessages(false);
     }
   }, [chatRoom?.chatRoomId]);
+
   useEffect(() => {
     const connectWebSocket = async () => {
       const token = await getToken();
@@ -71,8 +81,10 @@ export default function ChatRoomScreenTemplate({
   }, [chatRoom?.chatRoomId, userId]);
 
   useEffect(() => {
-    if (!isUserScrolling && messageList.length > 0) scrollToBottom();
-  }, [messageList.length]);
+    if (!isUserScrolling && messageList.length > 0) {
+      scrollToBottom();
+    }
+  }, [messageList, isUserScrolling]);
 
   return (
     <SafeAreaView style={styles.container}>

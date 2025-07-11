@@ -1,58 +1,75 @@
 import React, {useState, useEffect} from 'react';
-import {
-  View,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  Image,
-  Platform,
-} from 'react-native';
+import {View, StyleSheet, Text, TouchableOpacity, Image} from 'react-native';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
+  getResponsiveIconSize,
   getResponsiveWidth,
 } from '../../utils/responsive';
 
-export default function Calendar({selectedDate, setSelectedDate}) {
+export default function Calendar({
+  selectedDate,
+  setSelectedDate,
+  scheduleCountPerDay = {},
+}) {
   const [monthDates, setMonthDates] = useState([]);
   const [currentMonth, setCurrentMonth] = useState(selectedDate.getMonth());
   const [currentYear, setCurrentYear] = useState(selectedDate.getFullYear());
 
-  const updateMonthDates = date => {
+  const getCountColorStyle = count => {
+    if (count >= 4) return {backgroundColor: '#FFB50E'}; // 파스텔 블루
+    if (count === 3) return {backgroundColor: '#FFD370'}; // 파스텔 퍼플
+    if (count === 2) return {backgroundColor: '#FFE5A9'}; // 파스텔 민트
+    if (count === 1) return {backgroundColor: '#FFF4D8'}; // 파스텔 옐로우
+    return {};
+  };
+
+  useEffect(() => {
+    setCurrentMonth(selectedDate.getMonth());
+    setCurrentYear(selectedDate.getFullYear());
+  }, [selectedDate]);
+
+  const getLocalDateKey = date => {
     const year = date.getFullYear();
-    const month = date.getMonth();
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
 
+  const updateMonthDates = () => {
+    const firstDay = new Date(currentYear, currentMonth, 1);
     const startDate = new Date(firstDay);
-    startDate.setDate(firstDay.getDate() - firstDay.getDay()); // 일요일부터
+    startDate.setDate(firstDay.getDate() - firstDay.getDay()); // 일요일부터 시작
 
-    const totalDays = 37; // 6줄 × 7칸
+    const totalDays = 37;
     const dates = [];
 
     for (let i = 0; i < totalDays; i++) {
-      const d = new Date(startDate);
-      d.setDate(startDate.getDate() + i);
+      const d = new Date(startDate); // ✅ 항상 복사
+      d.setDate(startDate.getDate() + i); // ✅ 안전하게 날짜 밀기
+
+      const count = scheduleCountPerDay[getLocalDateKey(d)] || 0;
+
       dates.push({
         date: d,
-        isSelected: d.toDateString() === date.toDateString(),
-        isCurrentMonth: d.getMonth() === month,
+        isSelected: getLocalDateKey(d) === getLocalDateKey(selectedDate),
+        isCurrentMonth: d.getMonth() === currentMonth,
+        count,
       });
     }
 
     setMonthDates(dates);
-    setCurrentMonth(month);
-    setCurrentYear(year);
   };
 
   useEffect(() => {
-    updateMonthDates(selectedDate);
-  }, [selectedDate]);
+    updateMonthDates();
+  }, [currentMonth, currentYear, scheduleCountPerDay, selectedDate]);
 
   const changeMonth = direction => {
     const newDate = new Date(currentYear, currentMonth + direction, 1);
+    setCurrentMonth(newDate.getMonth());
+    setCurrentYear(newDate.getFullYear());
     setSelectedDate(newDate);
-    updateMonthDates(newDate);
   };
 
   return (
@@ -89,21 +106,34 @@ export default function Calendar({selectedDate, setSelectedDate}) {
 
       {/* 날짜 그리드 */}
       <View style={styles.dateGrid}>
-        {monthDates.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={[
-              styles.dayBox,
-              item.isSelected && styles.selectedBox,
-              !item.isCurrentMonth && {opacity: 0.3},
-            ]}
-            onPress={() => setSelectedDate(item.date)}>
-            <Text
-              style={[styles.dateText, item.isSelected && styles.selectedText]}>
-              {item.date.getDate()}
-            </Text>
-          </TouchableOpacity>
-        ))}
+        {monthDates.map((item, index) => {
+          console.log(
+            `[DEBUG] ${item.date.toISOString().slice(0, 10)} | 일정 수: ${
+              item.count
+            } | 선택됨: ${item.isSelected} | 이번 달: ${item.isCurrentMonth}`,
+          );
+          console.log('[📦 키 목록]', Object.keys(scheduleCountPerDay));
+
+          return (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.dayBox,
+                getCountColorStyle(item.count),
+                item.isSelected && styles.selectedBox,
+                !item.isCurrentMonth && {opacity: 0.3},
+              ]}
+              onPress={() => setSelectedDate(item.date)}>
+              <Text
+                style={[
+                  styles.dateText,
+                  item.isSelected && styles.selectedText,
+                ]}>
+                {item.date.getDate()}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
     </View>
   );
@@ -111,9 +141,11 @@ export default function Calendar({selectedDate, setSelectedDate}) {
 
 const styles = StyleSheet.create({
   mainCalendarContainer: {
-    borderWidth: 1,
-    borderColor: '#FFC84D',
-    borderRadius: 20,
+    // borderWidth: 1,
+    // borderColor: '#FFC84D',
+    // backgroundColor:'transparent',
+    // backgroundColor: 'white',
+    // borderRadius: 20,
     padding: 16,
     marginBottom: getResponsiveHeight(20),
   },
@@ -150,6 +182,9 @@ const styles = StyleSheet.create({
     width: `${100 / 7}%`,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#F9F9F9',
   },
   dateText: {
     fontSize: getResponsiveFontSize(15),
@@ -158,6 +193,8 @@ const styles = StyleSheet.create({
   selectedBox: {
     backgroundColor: '#FFF3D2',
     borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#FFB000',
   },
   selectedText: {
     color: '#333',

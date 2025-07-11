@@ -21,7 +21,7 @@ const Stack = createStackNavigator();
 export default function CommunicationStack() {
   return (
     <Stack.Navigator
-      initialRouteName="소통화면"
+      initialRouteName="소통"
       screenOptions={({navigation}) => ({
         // ✅ 객체 구조분해 필수!
         headerStyle: {
@@ -30,22 +30,23 @@ export default function CommunicationStack() {
           elevation: 0,
           height:
             Platform.OS == 'ios'
-              ? getResponsiveHeight(120)
+              ? getResponsiveHeight(107.5)
               : getResponsiveHeight(80),
         },
         headerTitleAlign: 'center',
         headerShown: true,
       })}>
       <Stack.Screen
-        name="소통화면"
+        name="소통"
         component={CommunicationScreen}
         options={({navigation}) => ({
           headerTitleAlign: 'left',
           headerTitle: () => (
             <Text
               style={{
-                fontSize: getResponsiveFontSize(26),
-                fontFamily: 'Pretendard-SemiBold',
+                fontFamily: 'Pretendard-Bold',
+                fontSize: getResponsiveFontSize(22.5),
+                color: '#4D4D4D',
                 textAlign: 'left',
                 textAlignVertical: 'center',
               }}>
@@ -53,7 +54,7 @@ export default function CommunicationStack() {
             </Text>
           ),
           headerTitleContainerStyle: {
-            paddingLeft: getResponsiveWidth(5),
+            paddingLeft: getResponsiveWidth(15),
           },
         })}
       />
@@ -78,7 +79,7 @@ export default function CommunicationStack() {
         component={KinoSelectScreen}
         options={({navigation, route}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-          headerTitle: () => <RenderHeaderTitleLogo />,
+          headerTitle: () => '',
         })}
       />
       <Stack.Screen
