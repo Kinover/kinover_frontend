@@ -3,6 +3,7 @@ import axios from 'axios';
 import {Platform} from 'react-native';
 import {getToken} from '../../utils/storage';
 import {setUser, setUserLoading, setUserError} from '../slices/userSlice';
+import {updateFamilyUser} from '../slices/userFamilySlice';
 
 export const fetchUserThunk = () => {
   return async dispatch => {
@@ -44,7 +45,7 @@ export const modifyUserThunk = user => {
         },
       });
 
-      dispatch(setUser(response.data));
+      dispatch(updateFamilyUser(response.data));
       console.log('✅ 프로필 수정 완료:', response.data);
     } catch (error) {
       console.error('❌ 프로필 수정 실패:', error);

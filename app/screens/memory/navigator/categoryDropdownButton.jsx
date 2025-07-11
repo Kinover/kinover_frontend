@@ -36,10 +36,9 @@ const styles = StyleSheet.create({
     gap: getResponsiveWidth(5),
   },
   text: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(25),
-    color: '#FFC84D',
-    color: 'black',
+    fontFamily: 'Pretendard-Bold',
+    fontSize: getResponsiveFontSize(22.5),
+    color: '#4D4D4D',
   },
   icon: {
     resizeMode: 'contain',

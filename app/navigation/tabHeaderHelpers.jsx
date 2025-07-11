@@ -1,5 +1,6 @@
+// headerUtils.js
 import React from 'react';
-import {Image, Text, TouchableOpacity, View} from 'react-native';
+import {Image, Platform, Text, TouchableOpacity, View} from 'react-native';
 import {
   getResponsiveHeight,
   getResponsiveIconSize,
@@ -30,75 +31,113 @@ const createIconButton = (
   </TouchableOpacity>
 );
 
-// ✅ 탭바 아이콘 렌더러
+// ✅ 탭바 아이콘 및 라벨 렌더러
 export const renderTabBarIcon = (focused, focusedUri, defaultUri) => (
   <Image
     source={{uri: focused ? focusedUri : defaultUri}}
-    style={{
-      width: getResponsiveIconSize(25),
-      height: getResponsiveIconSize(25),
-      marginTop: getResponsiveHeight(2),
-      resizeMode: 'contain',
-    }}
+    style={
+      Platform.OS == 'ios'
+        ? {
+            width: getResponsiveIconSize(25),
+            height: getResponsiveIconSize(25),
+            resizeMode: 'contain',
+          }
+        : {
+            width: getResponsiveIconSize(27.5),
+            height: getResponsiveIconSize(27.5),
+            resizeMode: 'contain',
+          }
+    }
   />
 );
 
-// ✅ 탭바 라벨 렌더러
 export const renderTabBarLabel = (label, focused) => (
   <Text
-    style={{
+    style={Platform.OS == 'ios'?{
       color: focused ? '#FFC84D' : 'gray',
       fontSize: getResponsiveFontSize(12),
-      marginTop: getResponsiveHeight(6),
+      marginTop: getResponsiveHeight(8),
+    }:{
+      color: focused ? '#FFC84D' : 'gray',
+      fontSize: getResponsiveFontSize(13),
+      marginTop: getResponsiveHeight(8),
     }}>
     {label}
   </Text>
 );
 
-export const RenderHeaderTitleLogo = () => {
-  return (
-    <View style={{paddingBottom: getResponsiveHeight(10)}}>
-      <Image
-        source={require('../assets/images/kinover.png')}
-        style={{
-          width: getResponsiveWidth(42),
-          height: getResponsiveHeight(42),
-          resizeMode: 'contain',
-        }}
-      />
-    </View>
-  );
-};
+// ✅ 헤더 컴포넌트 모음
+export const RenderHeaderTitleLogo = () => (
+  <View style={{paddingBottom: getResponsiveHeight(20)}}>
+    <Image
+      source={require('../assets/icons/kino-logo.png')}
+      style={{
+        width: getResponsiveWidth(50),
+        height: getResponsiveHeight(50),
+        resizeMode: 'contain',
+        marginLeft: getResponsiveWidth(16),
+      }}
+    />
+  </View>
+);
 
-// ✅ 감정기록 알림 이동 버튼
+export const RenderHeaderHome = ({navigation}) => (
+  <View
+    style={{
+      flexDirection: 'row',
+      gap: getResponsiveWidth(15),
+      marginRight: getResponsiveWidth(20),
+      paddingBottom: getResponsiveWidth(10),
+    }}>
+    {createIconButton(
+      () =>
+        navigation.navigate('Tabs', {
+          screen: '홈',
+          params: {screen: '알림화면'},
+        }),
+      require('../assets/icons/bell-white.png'),
+      getResponsiveIconSize(30),
+      getResponsiveIconSize(30),
+    )}
+    {createIconButton(
+      () =>
+        navigation.navigate('Tabs', {
+          screen: '홈',
+          params: {screen: '설정화면'},
+        }),
+      require('../assets/icons/setting-white.png'),
+      getResponsiveIconSize(30),
+      getResponsiveIconSize(30),
+    )}
+  </View>
+);
+
 export const RenderHeaderLeft1 = ({navigation}) =>
   createIconButton(
     () =>
       navigation.navigate('Tabs', {
-        screen: '감정기록',
+        screen: '감정',
         params: {screen: '알림화면'},
       }),
     require('../assets/images/navigator_alarm-button.png'),
     getResponsiveIconSize(24),
     getResponsiveIconSize(26),
-    {marginLeft: getResponsiveWidth(20), resizeMode: 'contain'},
+    {marginLeft: getResponsiveWidth(20)},
   );
 
-// ✅ 설정화면 이동 버튼
 export const RenderHeaderRightSetting = ({navigation}) =>
   createIconButton(
     () =>
       navigation.navigate('Tabs', {
-        screen: '감정기록',
+        screen: '홈',
         params: {screen: '설정화면'},
       }),
     require('../assets/images/setting_bt.png'),
     getResponsiveIconSize(24),
     getResponsiveIconSize(26),
-    {marginRight: getResponsiveWidth(20), resizeMode: 'contain'},
+    {marginRight: getResponsiveWidth(20)},
   );
 
-// ✅ 채팅 설정 열기 버튼
 export const RenderHeaderRightChatSetting = ({setIsSettingsOpen}) =>
   createIconButton(
     () => setIsSettingsOpen(true),
@@ -108,10 +147,9 @@ export const RenderHeaderRightChatSetting = ({setIsSettingsOpen}) =>
     {marginRight: getResponsiveWidth(20)},
   );
 
-// ✅ 게시글 삭제 아이콘
 export const RenderHeaderDeletePost = () =>
   createIconButton(
-    () => {}, // 삭제 로직 필요 시 여기에 구현
+    () => {},
     require('../assets/images/trash.png'),
     20,
     20,
@@ -122,18 +160,16 @@ export const RenderHeaderDeletePost = () =>
     {zIndex: 999},
   );
 
-// ✅ 일반 뒤로가기 버튼
 export const RenderGoBackButton = ({navigation}) =>
   createIconButton(
     () => navigation.goBack(),
-    require('../assets/images/navigator_goback-button.png'),
-    12,
-    23,
+    require('../assets/icons/caretDown.png'),
+    30,
+    30,
     {marginLeft: getResponsiveWidth(20)},
     {zIndex: 999},
   );
 
-// ✅ 갤러리 뒤로가기 버튼
 export const RenderGoBackButtonGallery = ({navigation}) =>
   createIconButton(
     () => navigation.goBack(),
@@ -144,19 +180,15 @@ export const RenderGoBackButtonGallery = ({navigation}) =>
     {zIndex: 999},
   );
 
-// ✅ 로고 + 텍스트 헤더
 export const RenderHeaderLogo = ({navigation}) => (
   <TouchableOpacity
     onPress={() =>
       navigation.navigate('Tabs', {
-        screen: '감정기록',
+        screen: '홈',
         params: {screen: '알림화면'},
       })
     }
-    style={{
-      flexDirection: 'row',
-      alignItems: 'flex-end',
-    }}>
+    style={{flexDirection: 'row', alignItems: 'flex-end'}}>
     <Image
       source={require('../assets/images/kinover.png')}
       style={{

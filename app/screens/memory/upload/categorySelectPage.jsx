@@ -77,7 +77,7 @@ export default function CategorySelectPage({route}) {
           }}
           style={styles.headerRight}>
           <Image
-            source={require('../../../assets/images/check-bt.png')}
+            source={require('../../../assets/icons/check.png')}
             style={styles.checkImage}
           />
         </TouchableOpacity>
@@ -93,10 +93,7 @@ export default function CategorySelectPage({route}) {
           setSelectedIndex(index);
           setSelectedCategory(item);
         }}
-        style={[
-          styles.itemContainer,
-          isSelected && styles.selectedItem,
-        ]}>
+        style={[styles.itemContainer, isSelected && styles.selectedItem]}>
         <Text style={styles.itemText}>{item.title}</Text>
         <TouchableOpacity>
           <Image
@@ -117,7 +114,9 @@ export default function CategorySelectPage({route}) {
       <FlatList
         data={categoryList}
         renderItem={renderItem}
-        keyExtractor={(item, index) => item.categoryId?.toString() || item.title}
+        keyExtractor={(item, index) =>
+          item.categoryId?.toString() || item.title
+        }
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListFooterComponent={
           <TouchableOpacity
@@ -166,15 +165,16 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: getResponsiveFontSize(20),
-    fontFamily:'Pretendard-Regular',
+    fontFamily: 'Pretendard-Regular',
     textAlign: 'center',
   },
   headerRight: {
     marginRight: getResponsiveWidth(10),
   },
   checkImage: {
-    width: getResponsiveWidth(25),
-    height: getResponsiveHeight(25),
+    width: getResponsiveWidth(30),
+    height: getResponsiveHeight(30),
+    marginRight: getResponsiveWidth(15),
     resizeMode: 'contain',
   },
   itemContainer: {

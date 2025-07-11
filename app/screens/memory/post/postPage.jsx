@@ -1,38 +1,44 @@
+// PostPage.tsx
+
 import React, {useState, useEffect, useRef} from 'react';
+
 import {
+  Animated,
   FlatList,
   Image,
   Text,
   View,
   TouchableOpacity,
   Dimensions,
-  PanResponder,
   StyleSheet,
   Platform,
   SafeAreaView,
+  ImageBackground,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
+
 import getResponsiveFontSize, {
   getResponsiveHeight,
+  getResponsiveIconSize,
   getResponsiveWidth,
 } from '../../../utils/responsive';
+import useHideTabBar from '../../../hooks/useHideTabBar';
 import ImageDeleteModal from './imageDeleteModal';
+import DescriptionSection from './descriptionSection';
+import CommentSection from './commentSection';
+import MemoryImageCarousel from './memoryImageCarousel';
+
 import {
   deletePostThunk,
   deletePostImageThunk,
-  fetchMemoryThunk,
 } from '../../../redux/thunk/memoryThunk';
 import {
   fetchCommentsThunk,
   createCommentThunk,
 } from '../../../redux/thunk/commentThunk';
-import DescriptionSection from './descriptionSection';
-import CommentSection from './commentSection';
-import useHideTabBar from '../../../hooks/useHideTabBar';
 
 export default function PostPage({route}) {
-  const [isFullImageMode, setIsFullImageMode] = useState(false);
   const [commentIndex, setCommentIndex] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [showDeleteOptions, setShowDeleteOptions] = useState(false);
@@ -40,6 +46,10 @@ export default function PostPage({route}) {
   const [commentText, setCommentText] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [localImages, setLocalImages] = useState([]);
+  const SCREEN_WIDTH = Dimensions.get('window').width;
+
+  const imageAnim = useRef(new Animated.Value(0)).current;
+  const scrollX = useRef(new Animated.Value(0)).current;
 
   const navigation = useNavigation();
   const dispatch = useDispatch();
@@ -51,12 +61,6 @@ export default function PostPage({route}) {
   const memory = route.params.memory;
 
   useHideTabBar();
-
-  useEffect(() => {
-    return () => {
-      navigation.setOptions({headerShown: true});
-    };
-  }, []);
 
   useEffect(() => {
     if (memory?.postId) {
@@ -71,12 +75,11 @@ export default function PostPage({route}) {
       '';
 
     navigation.setOptions({
-      headerShown: !isFullImageMode,
       headerTitle: () => (
         <Text
           style={{
             fontFamily: 'Pretendard-Regular',
-            fontSize: getResponsiveFontSize(16),
+            fontSize: getResponsiveFontSize(18),
             color: 'black',
           }}>
           {categoryTitle}
@@ -84,20 +87,28 @@ export default function PostPage({route}) {
       ),
       headerRight: () => (
         <TouchableOpacity
-          style={{marginRight: getResponsiveWidth(15)}}
+          style={{marginRight: getResponsiveWidth(20)}}
           onPress={() => setShowDeleteOptions(prev => !prev)}>
           <Image
             source={require('../../../assets/images/trash.png')}
             style={{
-              width: getResponsiveWidth(20),
-              height: getResponsiveHeight(20),
+              width: getResponsiveWidth(25),
+              height: getResponsiveHeight(25),
               resizeMode: 'contain',
             }}
           />
         </TouchableOpacity>
       ),
     });
-  }, [isFullImageMode, categoryList, memory.categoryId]);
+  }, [categoryList, memory.categoryId]);
+
+  useEffect(() => {
+    Animated.timing(imageAnim, {
+      toValue: commentIndex ? 1 : 0,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [commentIndex]);
 
   const handleSendComment = () => {
     const trimmed = commentText.trim();
@@ -112,105 +123,65 @@ export default function PostPage({route}) {
     setCommentText('');
   };
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderRelease: (_, gesture) => {
-        const {dx, dy} = gesture;
-        if (Math.abs(dx) < 5 && Math.abs(dy) < 5) {
-          setIsFullImageMode(prev => !prev);
-        }
-      },
-    }),
-  ).current;
+  const handleDeletePost = () => {
+    navigation.goBack();
+    setTimeout(() => {
+      dispatch(deletePostThunk(memory.postId, familyId));
+    }, 50);
+  };
 
-  const handleDeleteConfirm = async () => {
-    setDeleteModalVisible(false);
-
-    if (deleteTarget === '게시물') {
-      navigation.goBack();
-      setTimeout(() => {
-        dispatch(deletePostThunk(memory.postId, familyId));
-      }, 50);
-    } else if (deleteTarget === '사진') {
-      const targetImage = localImages[currentImageIndex];
-      try {
-        await dispatch(
-          deletePostImageThunk(memory.postId, targetImage, familyId),
-        );
-        const updated = localImages.filter((_, i) => i !== currentImageIndex);
-        setLocalImages(updated);
-        setCurrentImageIndex(prev =>
-          prev >= updated.length ? updated.length - 1 : prev,
-        );
-
-        if (updated.length === 0) {
-          navigation.goBack();
-          setTimeout(() => {
-            dispatch(deletePostThunk(memory.postId, familyId));
-          }, 50);
-        }
-      } catch (err) {
-        console.error('❌ 이미지 삭제 실패:', err);
-      }
+  const handleDeleteImage = async () => {
+    const targetImage = localImages[currentImageIndex];
+    try {
+      await dispatch(
+        deletePostImageThunk(memory.postId, targetImage, familyId),
+      );
+      const updated = localImages.filter((_, i) => i !== currentImageIndex);
+      setLocalImages(updated);
+      setCurrentImageIndex(prev =>
+        prev >= updated.length ? updated.length - 1 : prev,
+      );
+      if (updated.length === 0) handleDeletePost();
+    } catch (err) {
+      console.error('❌ 이미지 삭제 실패:', err);
     }
+  };
+
+  const handleDeleteConfirm = () => {
+    setDeleteModalVisible(false);
+    deleteTarget === '게시물' ? handleDeletePost() : handleDeleteImage();
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.imageLayer}>
-        <FlatList
-          data={localImages}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          keyExtractor={(item, index) => index.toString()}
-          onMomentumScrollEnd={e => {
-            const index = Math.round(
-              e.nativeEvent.contentOffset.x /
-                e.nativeEvent.layoutMeasurement.width,
-            );
-            setCurrentImageIndex(index);
-          }}
-          contentContainerStyle={{
-            alignItems: 'center',
-            width: Dimensions.get('window').width * localImages.length,
-          }}
-          renderItem={({item}) => (
-            <View
-              {...panResponder.panHandlers}
-              style={{
-                width: Dimensions.get('window').width,
-                height: Dimensions.get('window').height,
-                justifyContent: 'center',
-                alignItems: 'center',
-              }}>
-              <Image style={styles.memoryImage} source={{uri: item}} />
-            </View>
-          )}
-        />
-        {!isFullImageMode && localImages.length > 1 && (
-          <View style={styles.imageIndexContainer}>
-            <Text style={[styles.imageIndexText, {color: 'yellow'}]}>
-              {currentImageIndex + 1}
-            </Text>
-            <Text style={styles.imageIndexText}> / {localImages.length}</Text>
-          </View>
-        )}
-      </View>
+      <MemoryImageCarousel
+        localImages={localImages || []}
+        imageAnim={imageAnim}
+        scrollX={scrollX}
+        currentImageIndex={currentImageIndex}
+        setCurrentImageIndex={setCurrentImageIndex}
+        setCommentIndex={setCommentIndex}
+      />
 
-      {!isFullImageMode && !commentIndex && (
+      {!commentIndex ? (
         <View style={styles.descriptionWrapper}>
+          <Image
+            source={require('../../../assets/images/section.png')}
+            resizeMode="contain"
+            style={{
+              position: 'absolute',
+              width: SCREEN_WIDTH, // ➕ 넓게 (예: 좌우 여백 없애기)
+              height: '100%',
+              zIndex: 0,
+            }}
+          />
           <DescriptionSection
             memory={memory}
             commentList={commentList}
             onPressComment={() => setCommentIndex(true)}
           />
         </View>
-      )}
-
-      {!isFullImageMode && commentIndex && (
+      ) : (
         <View style={styles.commentWrapper}>
           <CommentSection
             commentList={commentList}
@@ -242,7 +213,7 @@ export default function PostPage({route}) {
         </ImageDeleteModal>
       )}
 
-      {showDeleteOptions && !isFullImageMode && (
+      {showDeleteOptions && (
         <View style={styles.deleteOptions}>
           <TouchableOpacity
             style={styles.deleteOptionButton}
@@ -269,52 +240,26 @@ export default function PostPage({route}) {
   );
 }
 
+const SCREEN_WIDTH = Dimensions.get('window').width;
+
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: 'white'},
-  imageLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  memoryImage: {
-    width: Dimensions.get('window').width,
+  container: {
     flex: 1,
-    resizeMode: 'contain',
-  },
-  imageIndexContainer: {
-    position: 'absolute',
-    top: getResponsiveHeight(100),
-    alignSelf: 'center',
-    flexDirection: 'row',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    paddingHorizontal: getResponsiveWidth(11),
-    paddingVertical: getResponsiveHeight(3),
-    borderRadius: 10,
-    zIndex: 3,
-  },
-  imageIndexText: {
-    color: 'white',
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-SemiBold',
+    backgroundColor: '#F9F9F9',
   },
   descriptionWrapper: {
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    minHeight: '15%',
-    maxHeight: '30%',
+    minHeight: '28%',
+
     zIndex: 10,
   },
   commentWrapper: {
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    height: '35%',
+    height: '50%',
     zIndex: 10,
   },
   deleteOptions: {

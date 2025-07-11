@@ -27,18 +27,6 @@ export default function CommentSection({
 }) {
   return (
     <SafeAreaView style={styles.commentContainer}>
-      <View style={styles.commentHeader}>
-        <TouchableOpacity style={styles.backButton} onPress={onCloseComment}>
-          <Image
-            style={styles.back_bt}
-            source={require('../../../assets/images/backbt.png')}
-          />
-        </TouchableOpacity>
-        <View style={{height: '100%', justifyContent: 'center', width: '100%'}}>
-          <Text style={styles.commentTitle}>댓글</Text>
-        </View>
-      </View>
-
       <ScrollView
         style={styles.commentContentContainer}
         contentContainerStyle={{paddingBottom: getResponsiveHeight(60)}}
@@ -47,26 +35,28 @@ export default function CommentSection({
         nestedScrollEnabled={true}>
         {commentList.map(comment => (
           <View style={styles.commentBox} key={comment.commentId}>
-            <Image
-              style={styles.commentWriterImage}
-              source={{uri: comment.authorImage}}
-            />
-            <View style={styles.commentTextBox}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: getResponsiveWidth(10),
+              }}>
+              <Image
+                style={styles.commentWriterImage}
+                source={{uri: comment.authorImage}}
+              />
               <Text style={styles.commentWriter}>{comment.authorName}</Text>
-              <Text style={styles.commentContent}>{comment.content}</Text>
             </View>
-            <Text style={styles.commentCreatedAt}>
-              {comment.createdAt?.split('T')[0]}
-            </Text>
+            <Text style={styles.commentContent}>{comment.content}</Text>
           </View>
         ))}
       </ScrollView>
 
       <View style={styles.commentInputContainer}>
-        <Image style={styles.commentInputImage} source={{uri: user.image}} />
         <TextInput
           style={styles.commentInput}
-          placeholder="한마디 남기기.."
+          placeholder="댓글 달고 추억 쌓기...."
+          placeholderTextColor="#D9D9D9"
           value={commentText}
           onChangeText={onChangeComment}
           onSubmitEditing={onSubmitComment}
@@ -74,7 +64,7 @@ export default function CommentSection({
         <TouchableOpacity onPress={onSubmitComment}>
           <Image
             style={styles.commentSendBt}
-            source={require('../../../assets/images/comment-send-bt.png')}
+            source={require('../../../assets/icons/paperPlaneTilt.png')}
           />
         </TouchableOpacity>
       </View>
@@ -86,95 +76,66 @@ const styles = StyleSheet.create({
   commentContainer: {
     width: '100%',
     height: '100%',
-    backgroundColor: 'white',
+    backgroundColor: 'rgba(0, 0, 0, 0)',
     zIndex: 5,
-  },
-  commentHeader: {
-    width: '100%',
-    height: getResponsiveHeight(60),
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EDEDED',
   },
   commentContentContainer: {
     width: '100%',
-    backgroundColor: '#EDEDED',
-    borderTopColor: '#D3D3D3',
-    borderTopWidth: 2,
+    // backgroundColor: 'white',
   },
   commentBox: {
     width: '100%',
-    flexDirection: 'row',
+    flexDirection: 'column',
     gap: getResponsiveWidth(10),
-    paddingHorizontal: getResponsiveWidth(6),
-    paddingVertical: getResponsiveWidth(6),
+    paddingHorizontal: getResponsiveWidth(30),
+    paddingVertical: getResponsiveWidth(8),
     alignItems: 'flex-start',
   },
   commentWriterImage: {
-    width: getResponsiveWidth(42),
-    height: getResponsiveWidth(42),
-    borderRadius: getResponsiveWidth(21),
-    borderColor: 'lightgray',
-    borderWidth: 0.5,
-    resizeMode: 'cover',
+    width: getResponsiveWidth(36),
+    height: getResponsiveWidth(36),
+    borderRadius: getResponsiveWidth(18),
+    backgroundColor: '#D9D9D9',
   },
   commentTextBox: {
     flexDirection: 'column',
     alignItems: 'flex-start',
-    top: getResponsiveHeight(3),
-    width: '85%',
     gap: getResponsiveHeight(2),
   },
   commentWriter: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(15),
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(14.5),
+    color: '#000000',
   },
   commentContent: {
-    flexWrap: 'wrap',
     fontFamily: 'Pretendard-Regular',
     fontSize: getResponsiveFontSize(13),
-  },
-  commentCreatedAt: {
-    position: 'absolute',
-    fontSize: getResponsiveFontSize(9),
-    right: getResponsiveWidth(5),
-    top: getResponsiveHeight(7.5),
-    fontFamily: 'Pretendard-Light',
-  },
-  back_bt: {
-    width: getResponsiveWidth(30),
-    height: getResponsiveHeight(20),
-    resizeMode: 'contain',
+    color: '#000000',
   },
   commentInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    width: '100%',
-    height: getResponsiveHeight(70),
+    width: '85%',
+    height: getResponsiveHeight(40),
     backgroundColor: 'white',
-    paddingHorizontal: getResponsiveWidth(17.5),
-    gap: getResponsiveWidth(12),
-  },
-  commentInputImage: {
-    width: getResponsiveWidth(30),
-    height: getResponsiveWidth(30),
-    borderRadius: getResponsiveWidth(15),
-    resizeMode: 'cover',
-    backgroundColor: 'white',
-    borderWidth: 0.1,
+    paddingHorizontal: getResponsiveWidth(16),
+    borderWidth: 1,
+    borderColor: '#FFC84D',
+    borderRadius: getResponsiveWidth(10),
+    position: 'absolute',
+    bottom: '15%',
+    alignSelf: 'center',
   },
   commentInput: {
-    width: '75%',
-    height:
-      Platform.OS === 'android'
-        ? getResponsiveHeight(40)
-        : getResponsiveHeight(35),
-    borderBottomWidth: 0.5,
-    fontSize: getResponsiveFontSize(13),
+    flex: 1,
+    fontSize: getResponsiveFontSize(14),
+    paddingVertical: Platform.OS === 'android' ? getResponsiveHeight(5) : 0,
+    paddingHorizontal: getResponsiveWidth(3),
+    fontFamily: 'Pretendard-Regular',
   },
   commentSendBt: {
-    width: getResponsiveWidth(28),
-    height: getResponsiveWidth(28),
-    borderRadius: getResponsiveIconSize(14),
+    width: getResponsiveWidth(24),
+    height: getResponsiveWidth(24),
+    resizeMode: 'contain',
   },
 });

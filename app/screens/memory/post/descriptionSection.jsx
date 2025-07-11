@@ -32,13 +32,6 @@ export default function DescriptionSection({
             />
             <Text style={styles.writerName}>{memory.authorName}</Text>
           </View>
-          <TouchableOpacity onPress={onPressComment}>
-            <Image
-              style={styles.commentButton}
-              source={require('../../../assets/images/messageBubble.png')}
-            />
-            <Text style={styles.commentCount}>{commentList.length}</Text>
-          </TouchableOpacity>
         </View>
       </TouchableWithoutFeedback>
       <SafeAreaView style={styles.description}>
@@ -65,23 +58,22 @@ export default function DescriptionSection({
 const styles = StyleSheet.create({
   description: {
     width: '100%',
-    backgroundColor: 'rgba(245, 245, 245, 0.8)',
     alignItems: 'center',
     zIndex: 5,
   },
-  fadeOutGradient: {
-    position: 'absolute',
-    bottom: 0,
-    height: getResponsiveHeight(90),
-    width: '100%',
-  },
+  // fadeOutGradient: {
+  //   position: 'absolute',
+  //   bottom: 0,
+  //   height: getResponsiveHeight(90),
+  //   width: '100%',
+  // },
   headerContainer: {
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     height: getResponsiveHeight(60),
-    paddingHorizontal: getResponsiveWidth(10),
+    paddingHorizontal: getResponsiveWidth(40),
     zIndex: 10,
     backgroundColor: 'rgba(255,255,255,0)',
   },
@@ -99,7 +91,7 @@ const styles = StyleSheet.create({
     borderWidth: getResponsiveWidth(0.5),
   },
   writerName: {
-    fontSize: getResponsiveFontSize(18),
+    fontSize: getResponsiveFontSize(16),
     fontFamily: 'Pretendard-Regular',
   },
   commentButton: {
@@ -111,13 +103,12 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     width: '100%',
-    paddingHorizontal: getResponsiveWidth(10),
-    backgroundColor: 'rgba(245, 245, 245, 0.8)',
+    paddingHorizontal: getResponsiveWidth(40),
   },
   content: {
     color: 'black',
     fontFamily: 'Pretendard-Light',
-    fontSize: getResponsiveFontSize(15),
+    fontSize: getResponsiveFontSize(14),
     paddingVertical: getResponsiveHeight(5),
   },
   commentCount: {

@@ -24,7 +24,7 @@ const messageSlice = createSlice({
         .filter(m => !existingIds.has(m.messageId))
         .reverse();
 
-      state.messageList = [...state.messageList,...newMessages ];
+      state.messageList = [...state.messageList, ...newMessages];
       console.log('메세지리스트', state.messageList);
     },
 

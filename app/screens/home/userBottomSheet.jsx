@@ -10,7 +10,9 @@ import {
   Platform,
 } from 'react-native';
 import {KeyboardAvoidingView} from 'react-native';
-import BottomSheet, {BottomSheetView} from '@gorhom/bottom-sheet';
+import BottomSheet, {BottomSheetBackdrop} from '@gorhom/bottom-sheet';
+
+import {BottomSheetView} from '@gorhom/bottom-sheet';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -32,15 +34,13 @@ export default function UserBottomSheet({
   const [description, setDescription] = useState('');
   const [imageUrl, setImageUrl] = useState('');
 
+  const CLOUD_FRONT = '';
+
   useEffect(() => {
     if (selectedUser) {
       setName(selectedUser.name || '');
       setDescription(selectedUser.description || '');
-      setImageUrl(
-        selectedUser.image?.startsWith('http')
-          ? selectedUser.image
-          : `https://dzqa9jgkeds0b.cloudfront.net/${selectedUser.image}`,
-      );
+      setImageUrl(selectedUser.image || '');
     }
   }, [selectedUser]);
 
@@ -50,13 +50,12 @@ export default function UserBottomSheet({
     if (result.assets && result.assets.length > 0) {
       const selectedAsset = result.assets[0];
       const originalUri = selectedAsset.uri;
-      const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
       let fileName = selectedAsset.fileName || `img_${Date.now()}.jpg`;
-      fileName = fileName.replace(CLOUD_FRONT, '');
 
       try {
         let fileUri = originalUri;
 
+        // iOS: ph:// → file:// 복사
         if (Platform.OS === 'ios' && originalUri.startsWith('ph://')) {
           const destPath = `${
             RNFS.TemporaryDirectoryPath
@@ -65,6 +64,7 @@ export default function UserBottomSheet({
           fileUri = 'file://' + destPath;
         }
 
+        // Android: content:// → file:// 변환
         if (Platform.OS === 'android' && originalUri.startsWith('content://')) {
           const destPath = `${
             RNFS.TemporaryDirectoryPath
@@ -74,10 +74,18 @@ export default function UserBottomSheet({
           fileUri = 'file://' + destPath;
         }
 
+        // fileName이 URL일 경우 CloudFront 도메인 제거
+        if (fileName.startsWith(CLOUD_FRONT)) {
+          fileName = fileName.replace(CLOUD_FRONT, '');
+        } else if (fileName.startsWith('https://')) {
+          fileName = fileName.replace(/^https?:\/\/[^/]+\//, '');
+        }
+
+        // presigned URL 받아오기 및 업로드
         const presignedUrls = await getPresignedUrls([fileName]);
         const uploadUrl = presignedUrls[0];
+        await uploadImageToS3(uploadUrl, fileUri);
 
-        await uploadImageToS3(uploadUrl, fileUri); // 여기는 file:// 로 보장됨
         const uploadedImageUrl = `${CLOUD_FRONT}${fileName}`;
         setImageUrl(uploadedImageUrl);
       } catch (err) {
@@ -89,14 +97,6 @@ export default function UserBottomSheet({
 
   return (
     <>
-      {isVisible && (
-        <TouchableOpacity
-          style={styles.overlay}
-          activeOpacity={1}
-          onPress={onCancel}
-        />
-      )}
-
       <BottomSheet
         ref={sheetRef}
         index={-1}
@@ -108,14 +108,29 @@ export default function UserBottomSheet({
         handleComponent={() => null}
         backgroundStyle={{
           backgroundColor: 'transparent',
-          zIndex: 5,
-          elevation: 0,
-        }}>
+          zIndex: 100,
+          position: 'absolute', // ✅ 이 줄 추가
+          top: 0, // ✅ 이 줄 추가
+          left: 0, // ✅ 이 줄 추가
+          right: 0, // ✅ 이 줄 추가
+          bottom: 0, // ✅ 이 줄 추가
+        }}
+        backdropComponent={props => (
+          <BottomSheetBackdrop
+            {...props}
+            disappearsOnIndex={-1}
+            appearsOnIndex={0}
+            pressBehavior="close" // 배경 누르면 바텀시트 닫힘
+            style={{
+              ...StyleSheet.absoluteFillObject,
+              zIndex: 0,
+            }}
+          />
+        )}>
         <KeyboardAvoidingView
           style={{flex: 1}}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0} // 필요시 - 값 조정
-        >
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}>
           <BottomSheetView style={styles.container}>
             <Image
               style={{
@@ -128,6 +143,7 @@ export default function UserBottomSheet({
               }}
               source={require('../../assets/images/curved-back.png')}
             />
+
             <TouchableOpacity onPress={handleImagePick}>
               <View style={styles.profileimageContainer}>
                 <Image
@@ -141,20 +157,20 @@ export default function UserBottomSheet({
                 <View style={styles.profileImageOverlay}></View>
                 <Image
                   style={styles.profileImagePencil}
-                  source={require('../../assets/images/pencil.png')}></Image>
+                  source={require('../../assets/images/pencil.png')}
+                />
               </View>
             </TouchableOpacity>
 
             <View style={styles.inputRow}>
-              <Text style={styles.label}>이름</Text>
               <TextInput
                 style={styles.input}
                 value={name}
                 onChangeText={setName}
               />
             </View>
+
             <View style={styles.inputRow}>
-              <Text style={styles.label}>특징</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={description}
@@ -164,14 +180,15 @@ export default function UserBottomSheet({
                 placeholderTextColor="#999"
               />
             </View>
+
             <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => onSave(name, description, imageUrl)}>
-                <Text style={styles.buttonText}>저장</Text>
-              </TouchableOpacity>
               <TouchableOpacity style={styles.button} onPress={onCancel}>
                 <Text style={styles.buttonText}>취소</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => onSave(name, {trait: description}, imageUrl)}>
+                <Text style={styles.buttonText}>저장</Text>
               </TouchableOpacity>
             </View>
           </BottomSheetView>
@@ -180,6 +197,7 @@ export default function UserBottomSheet({
     </>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -188,10 +206,6 @@ const styles = StyleSheet.create({
     height: '100%',
     paddingVertical: getResponsiveHeight(20),
     paddingHorizontal: getResponsiveWidth(30),
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
   },
   profileimageContainer: {
     alignSelf: 'center',
@@ -243,11 +257,6 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(10),
     fontSize: getResponsiveFontSize(16),
     backgroundColor: '#fff',
-    shadowRadius: 1,
-    shadowColor: 'gray',
-    shadowOpacity: 0.7,
-    shadowOffset: {width: 0, height: 1},
-    elevation: 4,
   },
   textArea: {
     height: getResponsiveHeight(90),
@@ -262,9 +271,9 @@ const styles = StyleSheet.create({
   button: {
     flex: 1,
     backgroundColor: '#fff',
-    borderRadius: getResponsiveWidth(20),
+    borderRadius: getResponsiveWidth(10),
     paddingHorizontal: getResponsiveWidth(20),
-    paddingVertical: getResponsiveHeight(9),
+    paddingVertical: getResponsiveHeight(11.5),
   },
   buttonText: {
     fontFamily: 'Pretendard-Light',

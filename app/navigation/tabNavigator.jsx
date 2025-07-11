@@ -6,13 +6,38 @@ import HomeStack from './stacks/homeStack';
 import CommunicationStack from './stacks/communicationStack';
 import ScheduleStack from './stacks/scheduleStack';
 import MemoryStack from './stacks/memoryStack';
-import {renderTabBarIcon, renderTabBarLabel} from './tabHeaderHelpers';
+
+import {
+  renderTabBarIcon,
+  renderTabBarLabel,
+} from './tabHeaderHelpers';
+import {
+  getResponsiveIconSize,
+  getResponsiveWidth,
+} from '../utils/responsive';
 
 const Tab = createBottomTabNavigator();
 
+const IS_IOS = Platform.OS === 'ios';
+
+const tabBarBaseStyle = {
+  backgroundColor: 'white',
+  borderTopWidth: 0.5,
+  borderTopColor: '#eee',
+  paddingTop: 8,
+  height: 90,
+  borderTopLeftRadius: getResponsiveIconSize(15),
+  borderTopRightRadius: getResponsiveIconSize(15),
+  shadowRadius: getResponsiveIconSize(5),
+  shadowColor: 'gray',
+  shadowOpacity: 0.1,
+  elevation:100,
+  paddingHorizontal: getResponsiveWidth(15),
+};
+
 const TABS = [
   {
-    name: '감정기록',
+    name: '홈',
     component: HomeStack,
     icon: {
       focused: 'https://i.postimg.cc/SxNFGjZS/Vector-17.png',
@@ -20,7 +45,7 @@ const TABS = [
     },
   },
   {
-    name: '소통기록',
+    name: '소통',
     component: CommunicationStack,
     icon: {
       focused: 'https://i.postimg.cc/k45KQp31/chat.png',
@@ -28,7 +53,7 @@ const TABS = [
     },
   },
   {
-    name: '일정기록',
+    name: '일정',
     component: ScheduleStack,
     icon: {
       focused: 'https://i.postimg.cc/RZHzbYXC/Vector-9.png',
@@ -36,7 +61,7 @@ const TABS = [
     },
   },
   {
-    name: '추억기록',
+    name: '추억',
     component: MemoryStack,
     icon: {
       focused: 'https://i.postimg.cc/3NCVXHm0/Vector-16.png',
@@ -48,28 +73,22 @@ const TABS = [
 export default function TabNavigator() {
   return (
     <Tab.Navigator
-      initialRouteName="감정기록"
+      initialRouteName="홈"
       screenOptions={({route}) => {
         const currentTab = TABS.find(tab => tab.name === route.name);
 
         return {
-          keyboardHidesTabBar: true,
           headerShown: false,
-          tabBarLabel: ({focused}) => renderTabBarLabel(route.name, focused),
+          keyboardHidesTabBar: true,
+          tabBarStyle: tabBarBaseStyle,
+          tabBarLabel: ({focused}) =>
+            renderTabBarLabel(route.name, focused),
           tabBarIcon: ({focused}) =>
             renderTabBarIcon(
               focused,
               currentTab?.icon.focused,
-              currentTab?.icon.default,
+              currentTab?.icon.default
             ),
-          tabBarStyle: {
-            backgroundColor: '#fff',
-            borderTopWidth: 0.5,
-            borderTopColor: '#eee',
-            paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-            paddingTop: 8,
-            height: Platform.OS === 'ios' ? 90 : 90,
-          },
         };
       }}>
       {TABS.map(({name, component}) => (

@@ -45,7 +45,7 @@ const categorySlice = createSlice({
       })
       .addCase(createCategoryThunk.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.categoryList.push(action.payload);
+        state.categoryList = [...state.categoryList, action.payload];
       })
       .addCase(createCategoryThunk.rejected, (state, action) => {
         state.isLoading = false;

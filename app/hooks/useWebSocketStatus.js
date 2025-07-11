@@ -23,7 +23,7 @@ const useWebSocketStatus = () => {
       socket.onmessage = (event) => {
         console.log('[WS /status] 메시지 수신:', event.data);
       };
-
+      
       socket.onerror = (e) => {
         console.error('[WS /status] 오류:', e?.message || e);
       };

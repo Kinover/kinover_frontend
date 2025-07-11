@@ -54,7 +54,7 @@ const familySlice = createSlice({
       state.error = action.payload;
     },
     setOnlineUserIds: (state, action) => {
-      state.onlineUserIds = action.payload;
+      state.onlineUserIds = [...action.payload];
     },
     setLastActiveMap: (state, action) => {
       state.lastActiveMap = action.payload;

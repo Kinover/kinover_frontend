@@ -4,9 +4,9 @@
   <item android:drawable="@android:color/white" />
 
   <!-- 중앙에 로고 표시 -->
-  <item>
+  <!-- <item>
     <bitmap
       android:gravity="center"
       android:src="@drawable/splash_logo" />
-  </item>
+  </item> -->
 </layer-list>
