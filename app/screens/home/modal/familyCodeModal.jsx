@@ -1,5 +1,12 @@
 import React from 'react';
-import {Text, StyleSheet, Platform, View, Image} from 'react-native';
+import {
+  Text,
+  StyleSheet,
+  Platform,
+  View,
+  Image,
+  TouchableOpacity,
+} from 'react-native';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
@@ -7,7 +14,7 @@ import {
   getResponsiveIconSize,
 } from '../../../utils/responsive';
 import CustomModal from '../../../components/customModal';
-import {Clipboard} from '@react-native-clipboard/clipboard';
+import Clipboard from '@react-native-clipboard/clipboard'; // ✅ 이렇게!
 
 import {ToastAndroid, Alert, Pressable} from 'react-native';
 

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {forwardRef, useImperativeHandle, useRef} from 'react';
 import {
   Text,
   View,
@@ -7,8 +7,16 @@ import {
   Image,
   ScrollView,
   StyleSheet,
+  KeyboardAvoidingView,
 } from 'react-native';
+import {BottomSheetTextInput} from '@gorhom/bottom-sheet';
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
 import {BottomSheetView} from '@gorhom/bottom-sheet';
+
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -16,142 +24,172 @@ import {
   getResponsiveIconSize,
 } from '../../utils/responsive';
 
-export default function ScheduleEditorBottomSheet({
-  editingSchedule,
-  familyUserList,
-  selectedUserId,
-  setSelectedUserId,
-  title,
-  setTitle,
-  onSubmit,
-  onDelete,
-  onCancelEdit, // ✅ 추가
-  onCloseSheet,
-}) {
-  return (
-    <BottomSheetView style={{paddingHorizontal: 20}}>
-      <View style={styles.titleRow}>
-        <Text style={styles.sheetTitle}>
-          {editingSchedule ? '일정 수정' : '일정 추가'}
-        </Text>
+const ScheduleEditorBottomSheetModal = forwardRef((props, ref) => {
+  const {
+    editingSchedule,
+    familyUserList,
+    selectedUserId,
+    setSelectedUserId,
+    title,
+    setTitle,
+    onSubmit,
+    onDelete,
+    onCancelEdit,
+  } = props;
 
-        <View
-          style={{
-            flexDirection: 'row',
-            justifyContent: 'flex-end',
-            alignItems: 'center',
-            gap: getResponsiveWidth(10),
-          }}>
-          {editingSchedule && (
-            <TouchableOpacity onPress={onCancelEdit}>
+  const modalRef = useRef(null);
+  const snapPoints = ['50%'];
+
+  useImperativeHandle(ref, () => ({
+    present: () => modalRef.current?.present(),
+    dismiss: () => modalRef.current?.dismiss(),
+  }));
+
+  return (
+    <BottomSheetModal
+      ref={modalRef}
+      index={0}
+      snapPoints={snapPoints}
+      handleComponent={() => null}
+      keyboardBehavior="interactive" // ✅ 키보드와 상호작용
+      keyboardBlurBehavior="restore" // ✅ 포커스 해제 시 원위치
+      backgroundStyle={{backgroundColor: 'white'}}
+      backdropComponent={props => (
+        <BottomSheetBackdrop
+          {...props}
+          disappearsOnIndex={-1}
+          appearsOnIndex={0}
+          pressBehavior="close"
+        />
+      )}>
+      <BottomSheetView
+        style={{
+          paddingHorizontal: getResponsiveWidth(30),
+          paddingTop: getResponsiveHeight(30),
+          paddingBottom: getResponsiveHeight(60),
+        }}
+        keyboardBehavior="extend" // ✅ 추천 옵션
+        keyboardBlurBehavior="restore">
+        <View style={styles.titleRow}>
+          <Text style={styles.sheetTitle}>
+            {editingSchedule ? '일정 수정' : '일정 추가'}
+          </Text>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: getResponsiveWidth(10),
+            }}>
+            {editingSchedule && (
+              <TouchableOpacity onPress={onCancelEdit}>
+                <Image
+                  source={require('../../assets/images/back_.png')}
+                  style={styles.cancelIcon}
+                />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity onPress={() => modalRef.current?.dismiss()}>
               <Image
-                source={require('../../assets/images/back_.png')}
-                style={styles.cancelIcon}
+                source={require('../../assets/images/close-yellow.png')}
+                style={styles.exitIcon}
               />
             </TouchableOpacity>
-          )}
-          <TouchableOpacity onPress={onCloseSheet}>
-            <Image
-              source={require('../../assets/images/close-yellow.png')}
-              style={styles.exitIcon}></Image>
-          </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      <Text style={styles.subTitle}>유저 선택</Text>
+        <Text style={styles.subTitle}>유저 선택</Text>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{marginBottom: 20}}>
-        {/* 공동 일정용 "전체" 선택 버튼 */}
-        <TouchableOpacity
-          onPress={() => setSelectedUserId(null)}
-          style={{
-            alignItems: 'center',
-            marginRight: 12,
-            padding: 6,
-            borderRadius: 12,
-            borderWidth: 1.5,
-            borderColor: selectedUserId === null ? '#FFC84D' : '#E0E0E0',
-            backgroundColor: selectedUserId === null ? '#FFF5D1' : 'white',
-            width: 60,
-            height: 80,
-            justifyContent: 'center',
-          }}>
-          <Text
-            style={{
-              fontSize: getResponsiveFontSize(11),
-              fontFamily: 'Pretendard-Regular',
-            }}>
-            전체
-          </Text>
-        </TouchableOpacity>
-
-        {/* 각 가족 구성원 */}
-        {familyUserList.map(user => (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{marginBottom: 20}}>
           <TouchableOpacity
-            key={user.userId}
-            onPress={() => setSelectedUserId(user.userId)}
+            onPress={() => setSelectedUserId(null)}
             style={{
               alignItems: 'center',
               marginRight: 12,
               padding: 6,
-              paddingHorizontal: 16,
               borderRadius: 12,
               borderWidth: 1.5,
-              borderColor:
-                selectedUserId === user.userId ? '#FFC84D' : '#E0E0E0',
-              backgroundColor:
-                selectedUserId === user.userId ? '#FFF5D1' : 'white',
+              borderColor: selectedUserId === null ? '#FFC84D' : '#E0E0E0',
+              backgroundColor: selectedUserId === null ? '#FFF5D1' : 'white',
+              width: 60,
+              height: 80,
+              justifyContent: 'center',
             }}>
-            <Image
-              source={{uri: user.image}}
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                marginBottom: 6,
-              }}
-            />
             <Text
               style={{
                 fontSize: getResponsiveFontSize(11),
                 fontFamily: 'Pretendard-Regular',
               }}>
-              {user.name}
+              전체
             </Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
 
-      <Text style={styles.subTitle}>일정 내용</Text>
+          {familyUserList.map(user => (
+            <TouchableOpacity
+              key={user.userId}
+              onPress={() => setSelectedUserId(user.userId)}
+              style={{
+                alignItems: 'center',
+                marginRight: 12,
+                padding: 6,
+                paddingHorizontal: 16,
+                borderRadius: 12,
+                borderWidth: 1.5,
+                borderColor:
+                  selectedUserId === user.userId ? '#FFC84D' : '#E0E0E0',
+                backgroundColor:
+                  selectedUserId === user.userId ? '#FFF5D1' : 'white',
+              }}>
+              <Image
+                source={{uri: user.image}}
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 24,
+                  marginBottom: 6,
+                }}
+              />
+              <Text
+                style={{
+                  fontSize: getResponsiveFontSize(11),
+                  fontFamily: 'Pretendard-Regular',
+                }}>
+                {user.name}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
 
-      <TextInput
-        value={title}
-        onChangeText={setTitle}
-        placeholder="제목을 입력하세요"
-        placeholderTextColor="#BDBDBD"
-        style={styles.input}
-      />
+        <Text style={styles.subTitle}>일정 내용</Text>
 
-      <View style={styles.buttonRow}>
-        {editingSchedule && (
+        <BottomSheetTextInput
+          value={title}
+          onChangeText={setTitle}
+          placeholder="제목을 입력하세요"
+          placeholderTextColor="#BDBDBD"
+          style={styles.input}
+        />
+
+        <View style={styles.buttonRow}>
+          {editingSchedule && (
+            <TouchableOpacity
+              style={[styles.button, styles.deleteButton]}
+              onPress={onDelete}>
+              <Text style={styles.buttonText}>삭제</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
-            style={[styles.button, styles.deleteButton]}
-            onPress={onDelete}>
-            <Text style={styles.buttonText}>삭제</Text>
+            style={[styles.button, styles.saveButton]}
+            onPress={onSubmit}>
+            <Text style={[styles.buttonText, {color: 'white'}]}>저장</Text>
           </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={[styles.button, styles.saveButton]}
-          onPress={onSubmit}>
-          <Text style={[styles.buttonText, {color: 'white'}]}>저장</Text>
-        </TouchableOpacity>
-      </View>
-    </BottomSheetView>
+        </View>
+      </BottomSheetView>
+    </BottomSheetModal>
   );
-}
+});
 
 const styles = StyleSheet.create({
   sheetTitle: {
@@ -160,7 +198,6 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   titleRow: {
-    position: 'relative',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -172,10 +209,9 @@ const styles = StyleSheet.create({
   },
   exitIcon: {
     width: getResponsiveIconSize(15),
-    hegiht: getResponsiveIconSize(13),
+    height: getResponsiveIconSize(13),
     resizeMode: 'contain',
   },
-
   input: {
     borderRadius: 12,
     padding: 13,
@@ -215,3 +251,5 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(10),
   },
 });
+
+export default ScheduleEditorBottomSheetModal;

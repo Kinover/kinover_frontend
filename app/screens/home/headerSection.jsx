@@ -36,7 +36,9 @@ export default function HeaderSection({user, onUserPress}) {
         </TouchableOpacity>
       </View>
       <Text style={styles.userNameHeader}>{user.name}</Text>
-      <Text style={styles.trait}>이 사람을 한마디로 표현한다면?</Text>
+      <Text style={styles.trait}>
+        {user.trait ? user.trait : '이 사람을 한마디로 표현한다면?'}
+      </Text>
     </View>
   );
 }
@@ -86,7 +88,7 @@ const styles = StyleSheet.create({
   questionMark: {
     color: '#747473',
     left: '35%',
-    top: '20%',
+    top: '15%',
     fontSize: getResponsiveFontSize(20),
   },
   userNameHeader: {

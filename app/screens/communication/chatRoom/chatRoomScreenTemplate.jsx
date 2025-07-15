@@ -1,8 +1,13 @@
-// components/common/ChatRoomScreenTemplate.jsx
-import React, {useState, useEffect, use} from 'react';
-import {SafeAreaView, StyleSheet} from 'react-native';
-import {useSelector} from 'react-redux';
-import {useDispatch} from 'react-redux';
+import React, {useState, useEffect} from 'react';
+import {
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+  View,
+} from 'react-native';
+import {useSelector, useDispatch} from 'react-redux';
 import {getToken} from '../../../utils/storage';
 import MessageFlatList from './chat/messageFlatList';
 import ChatInput from './chat/chatInput';
@@ -22,6 +27,7 @@ export default function ChatRoomScreenTemplate({
 }) {
   const dispatch = useDispatch();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
   const {
     flatListRef,
     messageList,
@@ -34,17 +40,21 @@ export default function ChatRoomScreenTemplate({
     socketRef,
     isUserScrolling,
   } = useChatRoomScreen(chatRoom, userId, isKino);
+
   const chatRoomList = useSelector(state => state.chatRoom.chatRoomList);
   const currentChatRoom =
     chatRoomList.find(room => room.chatRoomId === chatRoom.chatRoomId) ||
     chatRoom;
+
   useHideTabBar();
+
   useHeaderSetting(
     navigation,
     setIsSettingsOpen,
     currentChatRoom.roomName,
     isKino,
   );
+
   useEffect(() => {
     if (chatRoom?.chatRoomId) {
       dispatch(fetchMessageThunk(chatRoom.chatRoomId));
@@ -87,37 +97,48 @@ export default function ChatRoomScreenTemplate({
   }, [messageList, isUserScrolling]);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <MessageFlatList
-        flatListRef={flatListRef}
-        messageList={messageList}
-        chatRoom={chatRoom}
-        userId={userId}
-        isKino={isKino}
-        noMoreMessages={noMoreMessages}
-        isFetchingMore={isFetchingMore}
-        loadOlderMessages={loadOlderMessages}
-        handleScroll={handleScroll}
-        scrollToBottom={scrollToBottom}
-      />
-      <ChatInput
-        chatRoom={chatRoom}
-        userId={userId}
-        socketRef={socketRef}
-        setMessageList={setMessageList}
-      />
-      <ChatSettings
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        chatRoomId={chatRoom.chatRoomId}
-        navigation={navigation}
-        onLeaveChat={onLeaveChat}
-        isKino={isKino}
-      />
-    </SafeAreaView>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 102.5 : 0} // 필요 시 조절
+      >
+        <View style={{flex: 1}}>
+          <MessageFlatList
+            flatListRef={flatListRef}
+            messageList={messageList}
+            chatRoom={chatRoom}
+            userId={userId}
+            isKino={isKino}
+            noMoreMessages={noMoreMessages}
+            isFetchingMore={isFetchingMore}
+            loadOlderMessages={loadOlderMessages}
+            handleScroll={handleScroll}
+            scrollToBottom={scrollToBottom}
+          />
+          <ChatInput
+            chatRoom={chatRoom}
+            userId={userId}
+            socketRef={socketRef}
+            setMessageList={setMessageList}
+          />
+          <ChatSettings
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            chatRoomId={chatRoom.chatRoomId}
+            navigation={navigation}
+            onLeaveChat={onLeaveChat}
+            isKino={isKino}
+          />
+        </View>
+      </KeyboardAvoidingView>
+    </TouchableWithoutFeedback>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#fff'},
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
 });

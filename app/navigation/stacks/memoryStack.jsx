@@ -40,9 +40,7 @@ export default function MemoryStack() {
         headerStyle: defaultHeaderStyle,
         headerTitleAlign: 'left',
         headerTitle: '',
-        headerTitleContainerStyle: {
-          paddingLeft: getResponsiveWidth(15),
-        },
+        headerTitleContainerStyle: {},
       }}>
       <Stack.Screen name="추억" component={MemoryScreen} />
 

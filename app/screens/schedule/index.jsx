@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
-import ScheduleEditorBottomSheet from './scheduleEditorBottomSheet'; // 👈 추가
+import ScheduleEditorBottomSheetModal from './scheduleEditorBottomSheet'; // 👈 추가
 import {BottomSheetBackdrop} from '@gorhom/bottom-sheet';
 
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -28,6 +28,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
+  getResponsiveIconSize,
 } from '../../utils/responsive';
 
 export default function ScheduleScreen() {
@@ -56,14 +57,14 @@ export default function ScheduleScreen() {
     setEditingSchedule(schedule);
     setTitle(schedule?.title || '');
     setSelectedUserId(schedule?.userId ?? currentUserId); // default to current user
-    bottomSheetRef.current?.expand();
+    bottomSheetRef.current?.present(); // ✅ 대신 이거!
   };
 
   const closeSheet = () => {
     setEditingSchedule(null);
     setTitle('');
     setSelectedUserId(null);
-    bottomSheetRef.current?.close();
+    bottomSheetRef.current?.dismiss();
   };
 
   const onSubmit = async () => {
@@ -137,9 +138,7 @@ export default function ScheduleScreen() {
   };
 
   return (
-    <SafeAreaView
-      style={{flex: 1, backgroundColor: '#F9F9F9'}}
-      edges={['']}>
+    <SafeAreaView style={{flex: 1, backgroundColor: '#F9F9F9'}} edges={['']}>
       <View style={{flex: 1, backgroundColor: '#F9F9F9'}}>
         {/* ✅ 메인 콘텐츠 */}
         <ScrollView
@@ -162,43 +161,27 @@ export default function ScheduleScreen() {
         </ScrollView>
 
         {/* ✅ 바텀시트 + 오버레이 (gorhom에서 자동 처리됨) */}
-        <BottomSheet
-          ref={bottomSheetRef}
-          index={-1}
-          snapPoints={snapPoints}
-          enablePanDownToClose
-          handleComponent={() => null}
-          onChange={index => setIsSheetOpen(index !== -1)}
-          backdropComponent={props => (
-            <BottomSheetBackdrop
-              {...props}
-              disappearsOnIndex={-1} // index가 -1이면 없어지고
-              appearsOnIndex={0} // index가 0 이상이면 나타남
-              pressBehavior="close" // 눌렀을 때 닫힘
-            />
-          )}>
-          <ScheduleEditorBottomSheet
-            editingSchedule={editingSchedule}
-            familyUserList={familyUserList}
-            selectedUserId={selectedUserId}
-            setSelectedUserId={setSelectedUserId}
-            title={title}
-            setTitle={setTitle}
-            onSubmit={onSubmit}
-            onDelete={handleDeleteSchedule}
-            onCancelEdit={handleCancelEdit}
-            onCloseSheet={handleClose}
-          />
-        </BottomSheet>
+        <ScheduleEditorBottomSheetModal
+  ref={bottomSheetRef}
+  editingSchedule={editingSchedule}
+  familyUserList={familyUserList}
+  selectedUserId={selectedUserId}
+  setSelectedUserId={setSelectedUserId}
+  title={title}
+  setTitle={setTitle}
+  onSubmit={onSubmit}
+  onDelete={handleDeleteSchedule}
+  onCancelEdit={handleCancelEdit}
+/>
       </View>
       <TouchableOpacity
         style={{
           position: 'absolute',
           bottom: getResponsiveHeight(15),
           right: getResponsiveWidth(15),
-          width: 75,
-          height: 75,
-          zIndex:0,
+          width: getResponsiveIconSize(75),
+          height: getResponsiveIconSize(75),
+          zIndex: 0,
         }}
         onPress={() => openSheet(null)}>
         <Image

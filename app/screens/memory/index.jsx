@@ -12,8 +12,8 @@ import {
 import CategoryDropdownButton from './navigator/categoryDropdownButton';
 import GalleryToggle from './navigator/galleryToggle';
 import {useRoute} from '@react-navigation/native';
-import CategoryBottomSheet from './navigator/categoryBottomSheet';
 import AlbumTabSelector from './albumTabSelector'; // 새로 만든 탭 컴포넌트
+import CategoryBottomSheetModal from './navigator/categoryBottomSheet';
 
 export default function MemoryScreen({navigation}) {
   const dispatch = useDispatch();
@@ -25,6 +25,7 @@ export default function MemoryScreen({navigation}) {
   const [selectedCategoryTitle, setSelectedCategoryTitle] = useState('전체');
   const [isGalleryView, setIsGalleryView] = useState(false);
   const [selectedTab, setSelectedTab] = useState('album'); // 'album' or 'allPhotos'
+  const categoryModalRef = useRef(null);
 
   useEffect(() => {
     if (family?.familyId) {
@@ -52,7 +53,7 @@ export default function MemoryScreen({navigation}) {
           selectedTitle={selectedCategoryTitle}
           onPress={() => {
             setIsSheetOpen(true);
-            sheetRef.current?.snapToIndex(0);
+            categoryModalRef.current?.present(); // ✅ 올바른 방식
           }}
           style={{paddingLeft: getResponsiveWidth(20)}}
         />
@@ -76,41 +77,27 @@ export default function MemoryScreen({navigation}) {
         />
       </View>
 
-      {isSheetOpen && (
-        <TouchableOpacity
-          style={[StyleSheet.absoluteFill, styles.overlay]}
-          activeOpacity={1}
-          onPress={() => {
-            setIsSheetOpen(false);
-            sheetRef.current?.close();
-          }}
-        />
-      )}
-      <CategoryBottomSheet
-        sheetRef={sheetRef}
-        isVisible={isSheetOpen}
+      <CategoryBottomSheetModal
+        ref={categoryModalRef}
         categoryList={categoryList}
-        selectedCategory={{title: selectedCategoryTitle}}
-        onSelectCategory={cat => {
-          setSelectedCategoryTitle(cat.title);
-          setIsSheetOpen(false);
-          sheetRef.current?.close();
-        }}
-        onCancel={() => {
-          setIsSheetOpen(false);
-          sheetRef.current?.close();
-        }}
+        selectedCategory={selectedCategoryTitle}
+        onSelectCategory={setSelectedCategoryTitle}
+        onCancel={() => categoryModalRef.current?.dismiss()}
       />
 
-      <TouchableOpacity>
+      <TouchableOpacity
+        style={{
+          position: 'absolute',
+          bottom: getResponsiveHeight(15),
+          right: getResponsiveWidth(15),
+          width: getResponsiveIconSize(75),
+          height: getResponsiveIconSize(75),
+          zIndex: 0,
+        }}
+        onPress={() => navigation.navigate('이미지선택화면')}>
         <Image
-          source={require('../../assets/images/memory_floating-button.png')}
-          style={{
-            position: 'absolute',
-            right: getResponsiveWidth(10),
-            bottom: getResponsiveHeight(10),
-            objectFit: 'contain',
-          }}></Image>
+          source={require('../../assets/icons/posting-floating-bt.png')}
+          style={{width: '100%', height: '100%', objectFit: 'contain'}}></Image>
       </TouchableOpacity>
     </View>
   );

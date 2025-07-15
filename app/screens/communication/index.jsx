@@ -6,7 +6,10 @@ import {
   ScrollView,
   Platform,
   ActivityIndicator,
+  Image,
+  TouchableOpacity,
 } from 'react-native';
+
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchChatRoomListThunk} from '../../redux/thunk/chatRoomThunk';
 import FloatingButton from '../../components/floatingButton';
@@ -15,6 +18,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
+  getResponsiveIconSize,
 } from '../../utils/responsive';
 
 export default function CommunicationScreen({navigation}) {
@@ -56,7 +60,22 @@ export default function CommunicationScreen({navigation}) {
         )}
       </ScrollView>
 
-      <FloatingButton navigation={navigation} type="communication" />
+      <TouchableOpacity
+        onPress={() => {
+          navigation.navigate('채팅방생성화면');
+        }}
+        style={{
+          position: 'absolute',
+          bottom: getResponsiveHeight(15),
+          right: getResponsiveWidth(15),
+          width: getResponsiveIconSize(75),
+          height: getResponsiveIconSize(75),
+          zIndex: 0,
+        }}>
+        <Image
+          source={require('../../assets/icons/chat-floating-bt.png')}
+          style={{width: '100%', height: '100%', objectFit: 'contain'}}></Image>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -68,8 +87,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(20),
     paddingTop: getResponsiveHeight(10),
   },
-  scrollContent: {
-  },
+  scrollContent: {},
   noChatMessage: {
     fontSize: getResponsiveFontSize(16),
     color: '#777',

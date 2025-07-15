@@ -1,4 +1,11 @@
-import React, {useMemo, useState, useEffect} from 'react';
+import React, {
+  useRef,
+  useMemo,
+  useState,
+  useEffect,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
 import {
   View,
   Text,
@@ -7,7 +14,11 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
-import BottomSheet, {BottomSheetView} from '@gorhom/bottom-sheet';
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -15,90 +26,100 @@ import {
   getResponsiveIconSize,
 } from '../../../utils/responsive';
 
-export default function CategoryBottomSheet({
-  sheetRef,
-  isVisible,
-  categoryList = [],
-  selectedCategory,
-  onSelectCategory,
-  onCancel,
-}) {
-  // const snapPoints = useMemo(() => ['80%'], []);
+const CategoryBottomSheetModal = forwardRef(
+  ({categoryList = [], selectedCategory, onSelectCategory, onCancel}, ref) => {
+    const modalRef = useRef(null);
+    const snapPoints = useMemo(() => ['60%']); // ✅ 최대 80%
+    const [tempSelected, setTempSelected] = useState(selectedCategory);
 
-  const snapPoints = useMemo(() => ['60%'], []);
-  const [tempSelected, setTempSelected] = useState(selectedCategory);
+    useImperativeHandle(ref, () => ({
+      present: () => modalRef.current?.present(),
+      dismiss: () => modalRef.current?.dismiss(),
+    }));
 
-  useEffect(() => {
-    setTempSelected(selectedCategory); // bottom sheet 열릴 때 초기화
-  }, [selectedCategory]);
+    useEffect(() => {
+      setTempSelected(selectedCategory);
+    }, [selectedCategory]);
 
-  const handleApply = () => {
-    onSelectCategory(tempSelected);
-    sheetRef.current?.close();
-  };
+    const handleApply = () => {
+      onSelectCategory(tempSelected);
+      modalRef.current?.dismiss();
+    };
 
-  return (
-    <BottomSheet
-      ref={sheetRef}
-      index={-1}
-      snapPoints={snapPoints}
-      enablePanDownToClose
-      handleComponent={() => null}
-      backgroundStyle={{
-        backgroundColor: 'white',
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-      }}>
-      <BottomSheetView style={styles.container}>
-        {/* 헤더 */}
-        <View style={styles.header}>
-          <Text style={styles.title}>카테고리 선택</Text>
-          <TouchableOpacity onPress={onCancel}>
-            <Image
-              style={styles.closeIcon}
-              source={require('../../../assets/images/close-yellow.png')}
-            />
-          </TouchableOpacity>
-        </View>
-
-        {/* 카테고리 리스트 */}
-        <ScrollView
-          contentContainerStyle={[styles.listContainer, {flexGrow: 1}]}
-          showsVerticalScrollIndicator={false}>
-          {[{title: '전체'}, ...categoryList].map((cat, index) => {
-            const isSelected = cat.title === tempSelected?.title;
-            return (
-              <TouchableOpacity
-                key={index}
-                style={[styles.categoryItem, isSelected && styles.selectedItem]}
-                onPress={() => setTempSelected(cat)}>
-                <Text
-                  style={[
-                    styles.categoryText,
-                    isSelected && styles.selectedText,
-                  ]}>
-                  {cat.title}
-                </Text>
+    return (
+      <BottomSheetModal
+        ref={modalRef}
+        index={0} // 초기엔 닫힌 상태
+        snapPoints={snapPoints}
+        handleComponent={() => null}
+        backdropComponent={props => (
+          <BottomSheetBackdrop
+            {...props}
+            disappearsOnIndex={-1}
+            appearsOnIndex={0}
+            pressBehavior="close"
+          />
+        )}
+        backgroundStyle={{
+          backgroundColor: 'white',
+          borderTopLeftRadius: 20,
+          borderTopRightRadius: 20,
+        }}>
+        <View style={{flex: 1, maxHeight: '100%'}}>
+          <BottomSheetScrollView
+            contentContainerStyle={[styles.container]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
+            <View style={styles.header}>
+              <Text style={styles.title}>카테고리 선택</Text>
+              <TouchableOpacity onPress={onCancel}>
                 <Image
-                  source={
-                    isSelected
-                      ? require('../../../assets/icons/check-yellow.png')
-                      : require('../../../assets/icons/check-gray.png')
-                  }
-                  style={styles.checkIcon}
+                  style={styles.closeIcon}
+                  source={require('../../../assets/images/close-yellow.png')}
                 />
               </TouchableOpacity>
-            );
-          })}
-          {/* 적용하기 버튼 */}
-          <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
-            <Text style={styles.applyButtonText}>적용하기</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </BottomSheetView>
-    </BottomSheet>
-  );
-}
+            </View>
+
+            {[{title: '전체'}, ...categoryList].map((cat, index) => {
+              const isSelected = cat.title === tempSelected?.title;
+              return (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.categoryItem,
+                    isSelected && styles.selectedItem,
+                  ]}
+                  onPress={() => setTempSelected(cat)}>
+                  <Text
+                    style={[
+                      styles.categoryText,
+                      isSelected && styles.selectedText,
+                    ]}>
+                    {cat.title}
+                  </Text>
+                  <Image
+                    source={
+                      isSelected
+                        ? require('../../../assets/icons/check-yellow.png')
+                        : require('../../../assets/icons/check-gray.png')
+                    }
+                    style={styles.checkIcon}
+                  />
+                </TouchableOpacity>
+              );
+            })}
+
+            <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
+              <Text style={styles.applyButtonText}>적용하기</Text>
+            </TouchableOpacity>
+          </BottomSheetScrollView>
+        </View>
+      </BottomSheetModal>
+    );
+  },
+);
+
+export default CategoryBottomSheetModal;
 
 const styles = StyleSheet.create({
   container: {
@@ -120,10 +141,6 @@ const styles = StyleSheet.create({
     width: getResponsiveIconSize(13),
     height: getResponsiveIconSize(13),
     resizeMode: 'contain',
-  },
-  listContainer: {
-    // flexGrow: 1,
-    paddingBottom: '90%',
   },
   categoryItem: {
     paddingVertical: getResponsiveHeight(20),

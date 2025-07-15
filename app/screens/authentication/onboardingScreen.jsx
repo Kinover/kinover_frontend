@@ -31,7 +31,32 @@ export default function OnboardingScreen() {
     try {
       const result = await KakaoLogin.login();
       console.log('✅ Login Success:', result);
-      dispatch(loginThunk(result.accessToken));
+
+      // 1. 로그인 API 호출 후 토큰 저장
+      await dispatch(loginThunk(result.accessToken));
+
+      // 2. 유저 정보 및 가족 정보 불러오기
+      await dispatch(fetchUserThunk());
+      await dispatch(fetchFamilyThunk('0e992098-1544-11f0-be5c-0a1e787a0cd7'));
+
+      // 3. 홈 화면으로 이동
+      navigation.reset({
+        routes: [
+          {
+            name: 'Tabs',
+            state: {
+              routes: [
+                {
+                  name: '홈',
+                  state: {
+                    routes: [{name: '홈'}],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      });
     } catch (error) {
       if (error.code === 'E_CANCELLED_OPERATION') {
         console.log('🚫 카카오 로그인 취소:', error.message);
@@ -147,6 +172,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Light',
     fontSize: getResponsiveFontSize(14),
     textAlign: 'center',
+    bottom: getResponsiveHeight(5.5),
     color: '#000',
   },
 });

@@ -264,9 +264,9 @@ const styles = StyleSheet.create({
   },
   deleteOptions: {
     position: 'absolute',
-    top: getResponsiveHeight(95),
-    right: getResponsiveWidth(15),
-    backgroundColor: 'rgba(245, 245, 245, 0.8)',
+    top: getResponsiveHeight(10),
+    right: getResponsiveWidth(20),
+    backgroundColor: 'rgba(220, 220, 220, 0.7)',
     borderRadius: 7,
     zIndex: 10,
   },
@@ -281,7 +281,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   divider: {
-    height: Platform.OS === 'android' ? 0.5 : 0.2,
+    height: Platform.OS === 'android' ? 0.5 : 0.5,
     backgroundColor: 'gray',
   },
   modalText: {
