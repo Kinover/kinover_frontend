@@ -6,24 +6,24 @@ import {
   getResponsiveWidth,
 } from '../../../utils/responsive';
 import CustomModal from '../../../components/customModal';
-
 export default function LogoutModal({ visible, onClose, onConfirm }) {
   return (
     <CustomModal
       visible={visible}
-      onClose={onConfirm}
-      onConfirm={onClose}
-      confirmText="취소"
-      closeText="로그아웃"
-      confirmButtonStyle={styles.closeButton}
-      closeButtonStyle={styles.confirmButton}
-      confirmTextStyle={styles.modalText}
-      closeTextStyle={[styles.modalText, { color: 'black' }]}
+      onClose={onClose} // ❗ 취소 → 닫기
+      onConfirm={onConfirm} // ❗ 로그아웃 → 처리 실행
+      confirmText="로그아웃"
+      closeText="취소"
+      confirmButtonStyle={styles.confirmButton}
+      closeButtonStyle={styles.closeButton}
+      confirmTextStyle={[styles.modalText, { color: 'black' }]}
+      closeTextStyle={styles.modalText}
       buttonBottomStyle={styles.modalButtonRow}>
       <Text style={styles.modalTitle}>로그아웃 하시겠습니까?</Text>
     </CustomModal>
   );
 }
+
 
 const styles = StyleSheet.create({
   modalTitle: {

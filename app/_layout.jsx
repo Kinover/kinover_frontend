@@ -1,3 +1,6 @@
+
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
+
 import React, {useState, useEffect} from 'react';
 import {View, StyleSheet, Image, Dimensions} from 'react-native';
 import {Provider} from 'react-redux';
@@ -8,52 +11,62 @@ import LottieView from 'lottie-react-native';
 import {AppNavigator} from './navigation';
 import ChatSettings from './screens/communication/chatRoom/setting/chatSetting';
 import {navigationRef} from './navigation/navigationRef';
+import {BottomSheetModalProvider} from '@gorhom/bottom-sheet';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
 
 export default function MyApp() {
   const [isSplashFinished, setIsSplashFinished] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   return (
-    <Provider store={store}>
-      <MenuProvider>
-        {isSplashFinished ? (
-          <>
-            <ChatSettings
-              isOpen={isSettingsOpen}
-              onClose={() => setIsSettingsOpen(false)}
-            />
-            <NavigationContainer ref={navigationRef}>
-              <AppNavigator setIsSettingsOpen={setIsSettingsOpen} />
-            </NavigationContainer>
-          </>
-        ) : (
-          <View style={styles.splashContainer}>
-            <Image
-              source={require('./assets/images/kinover.png')}
-              style={{
-                position: 'absolute',
-                top: '35.9%',
-                left: '26.7%',
-                width: '35%',
-                height: '22%',
-                resizeMode: 'contain',
-              }}></Image>
-            <LottieView
-              source={require('./assets/animations/kinoSplash_circle_expand.json')}
-              autoPlay
-              loop={false}
-              resizeMode="cover" // 이걸 꼭 넣어줘야 꽉 채움
-              style={{ position: 'absolute',
-              width: '100%',
-              height: '100%',
-              top: 0,
-              left: 0,}}
-              onAnimationFinish={() => setIsSplashFinished(true)}
-            />
-          </View>
-        )}
-      </MenuProvider>
-    </Provider>
+    <GestureHandlerRootView style={{flex: 1}}>
+      <SafeAreaProvider>
+        <BottomSheetModalProvider>
+          <Provider store={store}>
+            <MenuProvider>
+              {isSplashFinished ? (
+                <>
+                  <ChatSettings
+                    isOpen={isSettingsOpen}
+                    onClose={() => setIsSettingsOpen(false)}
+                  />
+                  <NavigationContainer ref={navigationRef}>
+                    <AppNavigator setIsSettingsOpen={setIsSettingsOpen} />
+                  </NavigationContainer>
+                </>
+              ) : (
+                <View style={styles.splashContainer}>
+                  <Image
+                    source={require('./assets/images/kinover.png')}
+                    style={{
+                      position: 'absolute',
+                      top: '35.9%',
+                      left: '26.7%',
+                      width: '35%',
+                      height: '22%',
+                      resizeMode: 'contain',
+                    }}></Image>
+                  <LottieView
+                    source={require('./assets/animations/kinoSplash_circle_expand.json')}
+                    autoPlay
+                    loop={false}
+                    resizeMode="cover" // 이걸 꼭 넣어줘야 꽉 채움
+                    style={{
+                      position: 'absolute',
+                      width: '100%',
+                      height: '100%',
+                      top: 0,
+                      left: 0,
+                    }}
+                    onAnimationFinish={() => setIsSplashFinished(true)}
+                  />
+                </View>
+              )}
+            </MenuProvider>
+          </Provider>
+        </BottomSheetModalProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 

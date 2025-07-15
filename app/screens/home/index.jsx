@@ -18,7 +18,7 @@ import {
   handleNotificationListeners,
 } from './notification/requestNotificationPermission';
 import FamilyCodeModal from './modal/familyCodeModal';
-import UserBottomSheet from './userBottomSheet';
+import UserBottomSheetModal from './userBottomSheet';
 
 import {fetchFamilyThunk} from '../../redux/thunk/familyThunk';
 import {fetchFamilyUserListThunk} from '../../redux/thunk/familyUserThunk';
@@ -77,7 +77,7 @@ export default function HomeScreen() {
 
   const handleUserPress = member => {
     setSelectedUser(member);
-    setTimeout(() => userSheetRef.current?.snapToIndex(0), 100);
+    setTimeout(() => userSheetRef.current?.present(), 100); // ✅ present()
   };
 
   const handleSave = async (name, description, imageUrl) => {
@@ -89,17 +89,19 @@ export default function HomeScreen() {
         image: imageUrl,
       }),
     );
+    userSheetRef.current?.dismiss(); // ✅ dismiss()
     setSelectedUser(null);
   };
 
   return (
-    <GestureHandlerRootView style={{flex: 1}}>
+    <>
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         <View style={styles.backgroundCurve} />
 
         <HeaderSection
           user={user}
-          onPressProfile={() => handleUserPress(user)}
+          onUserPress={() => handleUserPress(user)}
+          // onAddPress={() => setIsVisible(true)}
         />
 
         <MemberGridSection
@@ -116,23 +118,24 @@ export default function HomeScreen() {
         familyCode={family.familyId}
       />
 
-      <UserBottomSheet
-        sheetRef={userSheetRef}
+      <UserBottomSheetModal
+        ref={userSheetRef}
+        index={isVisible ? 0 : -1}
         selectedUser={selectedUser}
-        isVisible={!!selectedUser}
         onSave={handleSave}
         onCancel={() => {
           setSelectedUser(null);
-          userSheetRef.current?.close();
+          userSheetRef.current?.dismiss();
         }}
       />
-    </GestureHandlerRootView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    height: '100%',
     backgroundColor: '#FFC84D',
     paddingTop:
       Platform.OS === 'android'

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import LogoutModal from '../modal/logoutModal';
 import DeleteAccountModal from '../modal/deleteAccountModal';
 import {
@@ -16,9 +16,11 @@ import {
   getResponsiveWidth,
   getResponsiveFontSize,
 } from '../../../utils/responsive';
+import {useLogout} from './useLogout';
 
 export default function SettingScreen() {
   const navigation = useNavigation();
+  const logout = useLogout();
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -27,10 +29,6 @@ export default function SettingScreen() {
     navigation.navigate('알림설정화면');
   };
 
-  const handleLogout = () => {
-    console.log('🔓 로그아웃 실행');
-    setShowLogoutModal(false);
-  };
 
   const handleDeleteAccount = () => {
     console.log('⚠️ 계정탈퇴 실행');
@@ -92,14 +90,18 @@ export default function SettingScreen() {
       {/* 로그인 정보 */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>로그인 정보</Text>
-        <TouchableOpacity style={styles.row} onPress={() => setShowLogoutModal(true)}>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => setShowLogoutModal(true)}>
           <Text style={styles.label}>로그아웃</Text>
           <Image
             style={styles.arrow}
             source={require('../../../assets/images/rightArrow-gray.png')}
           />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.row} onPress={() => setShowDeleteModal(true)}>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => setShowDeleteModal(true)}>
           <Text style={styles.label}>계정탈퇴</Text>
           <Image
             style={styles.arrow}
@@ -112,7 +114,7 @@ export default function SettingScreen() {
       <LogoutModal
         visible={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
-        onConfirm={handleLogout}
+        onConfirm={logout}
       />
       <DeleteAccountModal
         visible={showDeleteModal}
