@@ -100,7 +100,7 @@ export default function ChatRoomScreenTemplate({
     <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
       <KeyboardAvoidingView
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 102.5 : 0} // 필요 시 조절
       >
         <View style={{flex: 1}}>

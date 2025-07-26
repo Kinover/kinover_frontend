@@ -53,15 +53,19 @@ export const renderTabBarIcon = (focused, focusedUri, defaultUri) => (
 
 export const renderTabBarLabel = (label, focused) => (
   <Text
-    style={Platform.OS == 'ios'?{
-      color: focused ? '#FFC84D' : 'gray',
-      fontSize: getResponsiveFontSize(12),
-      marginTop: getResponsiveHeight(8),
-    }:{
-      color: focused ? '#FFC84D' : 'gray',
-      fontSize: getResponsiveFontSize(13),
-      marginTop: getResponsiveHeight(8),
-    }}>
+    style={
+      Platform.OS == 'ios'
+        ? {
+            color: focused ? '#FFC84D' : 'gray',
+            fontSize: getResponsiveFontSize(12),
+            marginTop: getResponsiveHeight(8),
+          }
+        : {
+            color: focused ? '#FFC84D' : 'gray',
+            fontSize: getResponsiveFontSize(13),
+            marginTop: getResponsiveHeight(8),
+          }
+    }>
     {label}
   </Text>
 );
@@ -72,45 +76,57 @@ export const RenderHeaderTitleLogo = () => (
     <Image
       source={require('../assets/icons/kino-logo.png')}
       style={{
-        width: getResponsiveWidth(50),
-        height: getResponsiveHeight(50),
+        width: getResponsiveWidth(47),
+        height: getResponsiveHeight(47),
         resizeMode: 'contain',
-        marginLeft: getResponsiveWidth(16),
+        marginLeft: getResponsiveWidth(18),
       }}
     />
   </View>
 );
 
-export const RenderHeaderHome = ({navigation}) => (
-  <View
-    style={{
-      flexDirection: 'row',
-      gap: getResponsiveWidth(15),
-      marginRight: getResponsiveWidth(20),
-      paddingBottom: getResponsiveWidth(10),
-    }}>
-    {createIconButton(
-      () =>
-        navigation.navigate('Tabs', {
-          screen: '홈',
-          params: {screen: '알림화면'},
-        }),
-      require('../assets/icons/bell-white.png'),
-      getResponsiveIconSize(30),
-      getResponsiveIconSize(30),
-    )}
-    {createIconButton(
-      () =>
-        navigation.navigate('Tabs', {
-          screen: '홈',
-          params: {screen: '설정화면'},
-        }),
-      require('../assets/icons/setting-white.png'),
-      getResponsiveIconSize(30),
-      getResponsiveIconSize(30),
-    )}
-  </View>
-);
+export const RenderHeaderHome = ({navigation, currentScreen}) => {
+
+  const bellIcon =
+    currentScreen === '홈'
+      ? require('../assets/icons/bell-white.png')
+      : require('../assets/icons/bell.png');
+  const settingIcon =
+    currentScreen === '홈'
+      ? require('../assets/icons/setting-white.png')
+      : require('../assets/icons/setting.png');
+
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        gap: getResponsiveWidth(15),
+        marginRight: getResponsiveWidth(25),
+        paddingBottom: getResponsiveWidth(10),
+      }}>
+      {createIconButton(
+        () =>
+          navigation.navigate('Tabs', {
+            screen: currentScreen,
+            params: {screen: '알림화면'}, // 동적으로 화면 전환
+          }),
+        bellIcon,
+        getResponsiveIconSize(28),
+        getResponsiveIconSize(28),
+      )}
+      {createIconButton(
+        () =>
+          navigation.navigate('Tabs', {
+            screen: currentScreen,
+            params: {screen: '설정화면'}, // 동적으로 화면 전환
+          }),
+        settingIcon,
+        getResponsiveIconSize(28),
+        getResponsiveIconSize(28),
+      )}
+    </View>
+  );
+};
 
 export const RenderHeaderLeft1 = ({navigation}) =>
   createIconButton(
@@ -141,10 +157,10 @@ export const RenderHeaderRightSetting = ({navigation}) =>
 export const RenderHeaderRightChatSetting = ({setIsSettingsOpen}) =>
   createIconButton(
     () => setIsSettingsOpen(true),
-    require('../assets/images/dots.png'),
+    require('../assets/images/dots2.png'),
     21,
     25,
-    {marginRight: getResponsiveWidth(20)},
+    {marginRight: getResponsiveWidth(30)},
   );
 
 export const RenderHeaderDeletePost = () =>

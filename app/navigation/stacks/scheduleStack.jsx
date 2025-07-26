@@ -7,6 +7,11 @@ import {
   getResponsiveHeight,
   getResponsiveFontSize,
 } from '../../utils/responsive';
+import {RenderHeaderHome} from '../tabHeaderHelpers';
+import SettingScreen from '../../screens/home/setting/settingScreen';
+import NotificationScreen from '../../screens/home/notification/notificationScreen';
+import {RenderGoBackButton} from '../tabHeaderHelpers';
+import NotificationSettingScreen from '../../screens/home/setting/notificationSettingScreen';
 
 const Stack = createStackNavigator();
 
@@ -39,9 +44,38 @@ export default function ScheduleStack() {
         ),
         headerTitleContainerStyle: {
           paddingLeft: getResponsiveWidth(15),
+          paddingBottom: getResponsiveWidth(7.5),
         },
+        headerRight: () => (
+          <RenderHeaderHome navigation={navigation} currentScreen="일정" />
+        ),
       })}>
       <Stack.Screen name="일정" component={ScheduleScreen} />
+      <Stack.Screen
+        name="알림화면"
+        component={NotificationScreen}
+        options={({navigation}) => ({
+          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          headerTitle: '',
+        })}
+      />
+
+      <Stack.Screen
+        name="설정화면"
+        component={SettingScreen}
+        options={({navigation}) => ({
+          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          headerTitle: '',
+        })}
+      />
+      <Stack.Screen
+        name="알림설정화면"
+        component={NotificationSettingScreen}
+        options={({navigation}) => ({
+          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          headerTitle: '',
+        })}
+      />
     </Stack.Navigator>
   );
 }

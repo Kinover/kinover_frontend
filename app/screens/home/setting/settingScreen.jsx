@@ -16,7 +16,7 @@ import {
   getResponsiveWidth,
   getResponsiveFontSize,
 } from '../../../utils/responsive';
-import {useLogout} from './useLogout';
+import { useLogout } from '../hooks/useLogout';
 
 export default function SettingScreen() {
   const navigation = useNavigation();

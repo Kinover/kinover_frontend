@@ -1,17 +1,21 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
-import {Image, View, Text, Platform} from 'react-native';
+import {Platform} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 import MemoryScreen from '../../screens/memory';
-import PostPage from '../../screens/memory/post/postPage';
-import ImageSelectPage from '../../screens/memory/upload/ImageSelectPage';
-import CategorySelectPage from '../../screens/memory/upload/categorySelectPage';
-import CreatePostPage from '../../screens/memory/upload/createPostPage';
-import CategoryPage from '../../screens/memory/navigator/categoryPage';
-
+import PostPage from '../../screens/memory/pages/PostPage';
+import CategoryPage from '../../screens/memory/category/categoryPage';
+import CategorySelectPage from '../../screens/memory/pages/CategorySelectPage';
+import SettingScreen from '../../screens/home/setting/settingScreen';
+import CreatePostPage from '../../screens/memory/pages/CreatePostPage';
+import NotificationScreen from '../../screens/home/notification/notificationScreen';
+import NotificationSettingScreen from '../../screens/home/setting/notificationSettingScreen';
+import ImageSelectPage from '../../screens/memory/pages/ImageSelectPage';
 import {
   RenderGoBackButton,
   RenderGoBackButtonGallery,
   RenderHeaderDeletePost,
+  RenderHeaderHome,
 } from '../tabHeaderHelpers';
 
 import getResponsiveFontSize, {
@@ -19,9 +23,11 @@ import getResponsiveFontSize, {
   getResponsiveHeight,
 } from '../../utils/responsive';
 
+
 const Stack = createStackNavigator();
 
 export default function MemoryStack() {
+  const navigation = useNavigation();
   const defaultHeaderStyle = {
     borderBottomWidth: 0,
     shadowOpacity: 0,
@@ -41,6 +47,9 @@ export default function MemoryStack() {
         headerTitleAlign: 'left',
         headerTitle: '',
         headerTitleContainerStyle: {},
+        headerRight: () => (
+          <RenderHeaderHome navigation={navigation} currentScreen="추억" />
+        ),
       }}>
       <Stack.Screen name="추억" component={MemoryScreen} />
 
@@ -52,6 +61,32 @@ export default function MemoryStack() {
           headerRight: () => <RenderHeaderDeletePost navigation={navigation} />,
           headerTitle: route.params?.memory?.title || '',
           headerTitleAlign: 'center',
+        })}
+      />
+
+      <Stack.Screen
+        name="알림화면"
+        component={NotificationScreen}
+        options={({navigation}) => ({
+          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          headerTitle: '',
+        })}
+      />
+
+      <Stack.Screen
+        name="설정화면"
+        component={SettingScreen}
+        options={({navigation}) => ({
+          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          headerTitle: '',
+        })}
+      />
+      <Stack.Screen
+        name="알림설정화면"
+        component={NotificationSettingScreen}
+        options={({navigation}) => ({
+          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          headerTitle: '',
         })}
       />
 

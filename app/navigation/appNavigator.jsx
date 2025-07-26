@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React, {useState} from 'react';
 import {View, Image} from 'react-native';
 import {getResponsiveHeight, getResponsiveWidth} from '../utils/responsive';
 import {createStackNavigator} from '@react-navigation/stack';
@@ -12,6 +12,8 @@ export default function AppNavigator({}) {
     <AppStack.Navigator
       initialRouteName="Auth"
       screenOptions={({navigation}) => ({
+        headerBackTitleVisible: false,
+
         // ✅ 객체 구조분해 필수!
         headerStyle: {
           borderBottomWidth: 0,
@@ -43,8 +45,11 @@ export default function AppNavigator({}) {
       />
 
       {/* 메인 탭 */}
-      <AppStack.Screen name="Tabs" component={TabNavigator} />
+      <AppStack.Screen
+        name="Tabs"
+        component={TabNavigator}
+        options={{headerBackTitleVisible: false}}
+      />
     </AppStack.Navigator>
   );
 }
-

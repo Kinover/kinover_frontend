@@ -8,3 +8,14 @@
 #   http://developer.android.com/guide/developing/tools/proguard.html
 
 # Add any project specific keep options here:
+
+
+# Kakao SDK 보호 설정
+-keep class com.kakao.** { *; }
+-keep interface com.kakao.** { *; }
+
+# 기타 설정이 필요한 경우 대비
+-keepattributes *Annotation*
+-keepattributes Signature
+-keepattributes InnerClasses
+-keep class sun.misc.Unsafe { *; }

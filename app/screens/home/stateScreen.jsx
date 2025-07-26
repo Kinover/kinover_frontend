@@ -13,6 +13,9 @@ import {
   getResponsiveFontSize,
 } from '../../utils/responsive';
 import useHideTabBar from '../../hooks/useHideTabBar';
+import {useDispatch, useSelector} from 'react-redux';
+import {modifyUserThunk} from '../../redux/thunk/userThunk';
+import {useNavigation} from '@react-navigation/native'; // 이미 있을 수도 있어
 
 const EMOTIONS = [
   {
@@ -57,31 +60,54 @@ const EMOTIONS = [
   },
 ];
 
+const EmotionItem = ({item, isSelected, onPress}) => (
+  <TouchableOpacity
+    onPress={() => onPress(item.id)}
+    style={[styles.emotionBox, isSelected && styles.emotionBoxSelected]}>
+    <Image source={item.url} style={styles.emotionImage} resizeMode="contain" />
+    <Text
+      style={[styles.emotionText, isSelected && styles.emotionTextSelected]}>
+      {item.label}
+    </Text>
+  </TouchableOpacity>
+);
+
 export default function StateScreen() {
-  const [selectedEmotion, setSelectedEmotion] = useState(null);
+  const navigation = useNavigation(); // ✅ 추가
+  const dispatch = useDispatch();
+  const user = useSelector(state => state.user);
+  const userId = user.userId;
+  const [selectedEmotion, setSelectedEmotion] = useState(
+    user.emotion || 'neutral',
+  );
 
   useHideTabBar();
+
+  const handleSelectEmotion = emotion => {
+    setSelectedEmotion(emotion);
+  };
+
+  const handleConfirm = () => {
+    if (selectedEmotion) {
+      dispatch(modifyUserThunk({ userId: user.userId, emotion: selectedEmotion }))
+        .then(() => {
+          console.log('✅ 감정 저장 성공');
+          navigation.goBack();
+        })
+        .catch((err) => {
+          console.error('❌ 감정 저장 실패:', err);
+        });
+    }
+  };
 
   const renderEmotion = ({item}) => {
     const isSelected = selectedEmotion === item.id;
     return (
-      <TouchableOpacity
-        onPress={() => setSelectedEmotion(item.id)}
-        style={[styles.emotionBox, isSelected && styles.emotionBoxSelected]}>
-        <Image
-          source={item.url}
-          style={styles.emotionImage}
-          resizeMode="contain"
-        />
-
-        <Text
-          style={[
-            styles.emotionText,
-            isSelected && styles.emotionTextSelected,
-          ]}>
-          {item.label}
-        </Text>
-      </TouchableOpacity>
+      <EmotionItem
+        item={item}
+        isSelected={isSelected}
+        onPress={handleSelectEmotion}
+      />
     );
   };
 
@@ -96,17 +122,13 @@ export default function StateScreen() {
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.listContent}
       />
-
       <TouchableOpacity
         style={[
           styles.confirmButton,
           !selectedEmotion && {backgroundColor: '#ccc'},
         ]}
         disabled={!selectedEmotion}
-        onPress={() => {
-          console.log('선택된 감정:', selectedEmotion);
-          // 다음 로직 처리 (예: 서버 전송, 다음 화면 이동 등)
-        }}>
+        onPress={handleConfirm}>
         <Text style={styles.confirmButtonText}>선택완료</Text>
       </TouchableOpacity>
     </View>
@@ -116,14 +138,16 @@ export default function StateScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: getResponsiveHeight(40),
-    paddingHorizontal: getResponsiveWidth(24),
+    paddingTop: getResponsiveHeight(50),
+    paddingHorizontal: getResponsiveWidth(20),
     backgroundColor: '#F9F9F9',
+    alignContent: 'center',
+    justifyContent: 'center',
   },
   title: {
-    fontSize: getResponsiveFontSize(18),
-    fontFamily: 'Pretendard-Medium',
-    marginBottom: getResponsiveHeight(24),
+    fontSize: getResponsiveFontSize(21),
+    fontFamily: 'Pretendard-Regular',
+    marginBottom: getResponsiveHeight(25),
     textAlign: 'center',
   },
   listContent: {
@@ -136,7 +160,7 @@ const styles = StyleSheet.create({
   },
   emotionBox: {
     width: '45%',
-    height: getResponsiveHeight(100),
+    height: getResponsiveHeight(115),
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -170,13 +194,13 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
     marginBottom: getResponsiveHeight(50),
     backgroundColor: '#FFC84D',
-    paddingVertical: getResponsiveHeight(14),
+    paddingVertical: getResponsiveHeight(16),
     borderRadius: 8,
     alignItems: 'center',
   },
   confirmButtonText: {
     fontSize: getResponsiveFontSize(16),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: 'Pretendard-Bold',
     color: '#000',
   },
 });
