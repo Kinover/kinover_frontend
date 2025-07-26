@@ -40,7 +40,7 @@ const HomeStack = () => {
         name="홈"
         component={HomeScreen}
         options={({navigation}) => ({
-          headerRight: () => <RenderHeaderHome navigation={navigation} />,
+          headerRight: () => <RenderHeaderHome navigation={navigation} currentScreen='홈'/>,
           headerStyle: [defaultHeaderStyle, {backgroundColor: '#FFC84D'}],
         })}
       />

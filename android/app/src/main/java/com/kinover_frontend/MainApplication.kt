@@ -11,6 +11,7 @@ import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.facebook.react.defaults.DefaultReactNativeHost
 import com.facebook.react.soloader.OpenSourceMergedSoMapping
 import com.facebook.soloader.SoLoader
+import com.kakao.sdk.common.KakaoSdk
 
 class MainApplication : Application(), ReactApplication {
 
@@ -38,10 +39,15 @@ class MainApplication : Application(), ReactApplication {
     SoLoader.init(this, OpenSourceMergedSoMapping)
 
     // com.facebook.react.bridge.ReactBridge.init()
+    // KakaoSdk.init(this, "bce05be0c0a25b65bbb43adf582ff2f8") // 문자열 직접!
+    KakaoSdk.init(this, getString(R.string.kakao_app_key))
+
 
     if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {
       // If you opted-in for the New Architecture, we load the native entry point for this app.
       load()
     }
+
+
   }
 }

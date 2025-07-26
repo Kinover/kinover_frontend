@@ -30,7 +30,7 @@ export default function AddChatMemberScreen({navigation, route}) {
   const loading = useSelector(state => state.userFamily.loading);
   const [selected, setSelected] = useState([]);
 
-  useHideTabBar({ stayHidden: true });
+  useHideTabBar({stayHidden: true});
 
   useEffect(() => {
     if (family.familyId) {
@@ -41,11 +41,14 @@ export default function AddChatMemberScreen({navigation, route}) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => <Text style={styles.headerTitle}>새 멤버 초대</Text>,
+
       headerRight: () => (
-        <TouchableOpacity onPress={handleNext} style={styles.headerRight}>
+        <TouchableOpacity
+          onPress={handleNext}
+          style={{marginRight: getResponsiveWidth(10)}}>
           <Image
-            source={require('../../../../assets/images/check-bt.png')}
-            style={styles.headerIcon}
+            source={require('../../../../assets/icons/check.png')}
+            style={styles.headerCheckIcon}
           />
         </TouchableOpacity>
       ),
@@ -139,9 +142,11 @@ const styles = StyleSheet.create({
   headerRight: {
     marginRight: getResponsiveWidth(15),
   },
-  headerIcon: {
-    width: getResponsiveIconSize(25),
-    height: getResponsiveIconSize(25),
+
+  headerCheckIcon: {
+    width: getResponsiveWidth(30),
+    height: getResponsiveHeight(30),
+    marginRight: getResponsiveWidth(15),
     resizeMode: 'contain',
   },
   userItem: {

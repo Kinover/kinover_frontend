@@ -141,23 +141,20 @@ export default function Calendar({
 
 const styles = StyleSheet.create({
   mainCalendarContainer: {
-    // borderWidth: 1,
-    // borderColor: '#FFC84D',
-    // backgroundColor:'transparent',
-    // backgroundColor: 'white',
-    // borderRadius: 20,
-    padding: 16,
+    paddingTop: 12,
+    paddingHorizontal: 3,
     marginBottom: getResponsiveHeight(20),
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: getResponsiveHeight(20),
+    marginBottom: getResponsiveHeight(25),
+    paddingHorizontal: 10,
   },
   monthText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(18),
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(19),
   },
   monthChangeButtonGroup: {
     flexDirection: 'row',
@@ -171,7 +168,7 @@ const styles = StyleSheet.create({
   dayText: {
     width: `${100 / 7}%`,
     textAlign: 'center',
-    fontSize: getResponsiveFontSize(15),
+    fontSize: getResponsiveFontSize(18),
     fontFamily: 'Pretendard-Medium',
   },
   dateGrid: {
@@ -180,6 +177,7 @@ const styles = StyleSheet.create({
   },
   dayBox: {
     width: `${100 / 7}%`,
+    aspectRatio: 1,
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 999,
@@ -187,8 +185,8 @@ const styles = StyleSheet.create({
     borderColor: '#F9F9F9',
   },
   dateText: {
-    fontSize: getResponsiveFontSize(15),
     paddingVertical: getResponsiveHeight(12.5),
+    fontSize: getResponsiveFontSize(17),
   },
   selectedBox: {
     backgroundColor: '#FFF3D2',

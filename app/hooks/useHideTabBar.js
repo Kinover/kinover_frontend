@@ -45,17 +45,12 @@ export default function useHideTabBar({stayHidden = false} = {}) {
           tabNavigation.setOptions({
             tabBarStyle: {
               backgroundColor: 'white',
-              borderTopWidth: 0.5,
-              borderTopColor: '#eee',
-              paddingBottom: Platform.OS === 'ios' ? 20 : 10,
-              paddingTop: 8,
-              height: 90,
+              borderTopColor: '#F9F9F9',
               borderTopLeftRadius: getResponsiveIconSize(15),
               borderTopRightRadius: getResponsiveIconSize(15),
-              shadowRadius: getResponsiveIconSize(5),
-              shadowColor: 'gray',
-              shadowOpacity: 0.1,
+              paddingTop: 8,
               paddingHorizontal: getResponsiveWidth(15),
+              height: getResponsiveHeight(90),
             },
           });
         }

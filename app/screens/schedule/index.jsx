@@ -9,6 +9,8 @@ import {
   TouchableOpacity,
   Image,
 } from 'react-native';
+import {ActivityIndicator} from 'react-native';
+
 import ScheduleEditorBottomSheetModal from './scheduleEditorBottomSheet'; // 👈 추가
 import {BottomSheetBackdrop} from '@gorhom/bottom-sheet';
 
@@ -145,7 +147,10 @@ export default function ScheduleScreen() {
           style={styles.mainContainer}
           showsVerticalScrollIndicator={false}>
           {isLoading ? (
-            <Text>일정 정보 불러오는 중...</Text>
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#FFC84D" />
+              <Text style={styles.loadingText}>일정 불러오는 중이에요...</Text>
+            </View>
           ) : (
             <Calendar
               selectedDate={selectedDate}
@@ -162,17 +167,17 @@ export default function ScheduleScreen() {
 
         {/* ✅ 바텀시트 + 오버레이 (gorhom에서 자동 처리됨) */}
         <ScheduleEditorBottomSheetModal
-  ref={bottomSheetRef}
-  editingSchedule={editingSchedule}
-  familyUserList={familyUserList}
-  selectedUserId={selectedUserId}
-  setSelectedUserId={setSelectedUserId}
-  title={title}
-  setTitle={setTitle}
-  onSubmit={onSubmit}
-  onDelete={handleDeleteSchedule}
-  onCancelEdit={handleCancelEdit}
-/>
+          ref={bottomSheetRef}
+          editingSchedule={editingSchedule}
+          familyUserList={familyUserList}
+          selectedUserId={selectedUserId}
+          setSelectedUserId={setSelectedUserId}
+          title={title}
+          setTitle={setTitle}
+          onSubmit={onSubmit}
+          onDelete={handleDeleteSchedule}
+          onCancelEdit={handleCancelEdit}
+        />
       </View>
       <TouchableOpacity
         style={{
@@ -235,5 +240,17 @@ const styles = StyleSheet.create({
   buttonText: {
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(13),
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: getResponsiveHeight(100),
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: getResponsiveFontSize(13),
+    color: '#999',
+    fontFamily: 'Pretendard-Regular',
   },
 });

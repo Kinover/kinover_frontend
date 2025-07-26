@@ -68,11 +68,14 @@ export default function KinoSelectScreen() {
       .unwrap()
       .then(res => {
         console.log('🎉 키노 유형 변경 완료:', res);
-        // 이후 화면 이동이나 토스트 등 추가 로직 작성 가능!
+        // ✅ 선택 완료 후 소통 화면으로 이동!
+        navigation.reset({
+          index: 0,
+          routes: [{name: 'Tabs', params: {screen: '소통'}}],
+        });
       })
       .catch(err => {
         console.error('🚨 키노 변경 실패:', err);
-        // 에러 처리 UI 추가 가능
       });
   };
 
@@ -103,8 +106,6 @@ export default function KinoSelectScreen() {
           {highlightKinoName(kinoDescriptions[currentIndex])}
         </Text>
       </View>
-
-      
 
       {/* 캐릭터 캐러셀 */}
       <View style={styles.characterWrapper}>

@@ -1,20 +1,14 @@
 import React from 'react';
 import {Platform} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-
+import TabBarWrapper from './tabBarWrapper';
 import HomeStack from './stacks/homeStack';
 import CommunicationStack from './stacks/communicationStack';
 import ScheduleStack from './stacks/scheduleStack';
 import MemoryStack from './stacks/memoryStack';
 
-import {
-  renderTabBarIcon,
-  renderTabBarLabel,
-} from './tabHeaderHelpers';
-import {
-  getResponsiveIconSize,
-  getResponsiveWidth,
-} from '../utils/responsive';
+import {renderTabBarIcon, renderTabBarLabel} from './tabHeaderHelpers';
+import {getResponsiveHeight, getResponsiveIconSize, getResponsiveWidth} from '../utils/responsive';
 
 const Tab = createBottomTabNavigator();
 
@@ -22,19 +16,13 @@ const IS_IOS = Platform.OS === 'ios';
 
 const tabBarBaseStyle = {
   backgroundColor: 'white',
-  borderTopWidth: 0.5,
-  borderTopColor: '#eee',
-  paddingTop: 8,
-  height: 90,
+  borderTopColor: '#F9F9F9',
   borderTopLeftRadius: getResponsiveIconSize(15),
   borderTopRightRadius: getResponsiveIconSize(15),
-  shadowRadius: getResponsiveIconSize(5),
-  shadowColor: 'gray',
-  shadowOpacity: 0.1,
-  elevation:100,
+  paddingTop: 8,
   paddingHorizontal: getResponsiveWidth(15),
+  height: getResponsiveHeight(90)
 };
-
 const TABS = [
   {
     name: '홈',
@@ -74,6 +62,7 @@ export default function TabNavigator() {
   return (
     <Tab.Navigator
       initialRouteName="홈"
+      tabBar={props => <TabBarWrapper {...props} />}
       screenOptions={({route}) => {
         const currentTab = TABS.find(tab => tab.name === route.name);
 
@@ -81,13 +70,12 @@ export default function TabNavigator() {
           headerShown: false,
           keyboardHidesTabBar: true,
           tabBarStyle: tabBarBaseStyle,
-          tabBarLabel: ({focused}) =>
-            renderTabBarLabel(route.name, focused),
+          tabBarLabel: ({focused}) => renderTabBarLabel(route.name, focused),
           tabBarIcon: ({focused}) =>
             renderTabBarIcon(
               focused,
               currentTab?.icon.focused,
-              currentTab?.icon.default
+              currentTab?.icon.default,
             ),
         };
       }}>

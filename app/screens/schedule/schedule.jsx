@@ -44,26 +44,30 @@ function Schedule({selectedDate, onOpenSheet, refreshTrigger}) {
           {scheduleList.map(schedule => (
             <TouchableOpacity
               key={schedule.scheduleId}
-              onPress={() => onOpenSheet(schedule)}>
-              <View style={styles.card}>
-                <View
-                  style={{
-                    position: 'absolute',
-                    backgroundColor: '#FFC84D',
-                    top: '0%',
-                    left: 0,
-                    width: 9,
-                    height: '180%',
-                    borderTopLeftRadius: 50,
-                    borderBottomLeftRadius: 50,
-                  }}></View>
-                <Text style={styles.cardTitle}>
-                  {schedule.userName || '가족'}
-                </Text>
-                <Text style={styles.cardMemo}>
-                  {schedule.title || '제목 없음'}
-                </Text>
-              </View>
+              onPress={() => onOpenSheet(schedule)}
+              style={{
+                position: 'relative',
+                width: '100%',
+                height: getResponsiveHeight(70),
+              }}>
+              <Image
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  zIndex: 0,
+                  resizeMode: 'contain',
+                  width: '100%',
+                  height: '100%',
+                }}
+                source={require('../../assets/images/schedule.png')}
+              />
+              <Text style={styles.cardTitle}>
+                {schedule.userName || '가족'}
+              </Text>
+              <Text style={styles.cardMemo}>
+                {schedule.title || '제목 없음'}
+              </Text>
             </TouchableOpacity>
           ))}
           {scheduleList.length == 0 ? (
@@ -90,6 +94,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: getResponsiveWidth(10),
+    paddingBottom: getResponsiveHeight(30),
   },
   dateText: {
     fontSize: getResponsiveFontSize(16),
@@ -107,30 +112,21 @@ const styles = StyleSheet.create({
   },
   scheduleCards: {
     flex: 1,
-  },
-  card: {
-    backgroundColor: 'white',
-    borderRadius: 15,
-    shadowColor: 'gray',
-    shadowRadius: 1,
-    shadowOpacity: 0.3,
-    shadowOffset: {width: 0, height: 1},
-    borderColor: '#FFC84D',
-    paddingVertical: getResponsiveHeight(15),
-    paddingHorizontal: getResponsiveHeight(20),
-    marginBottom: getResponsiveHeight(15),
-    position: 'relative',
-    minHeight: getResponsiveHeight(68),
+    gap: getResponsiveHeight(10),
   },
   cardTitle: {
     fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-SemiBold',
     marginBottom: 2,
+    paddingTop: getResponsiveHeight(12),
+    paddingHorizontal: getResponsiveWidth(15),
   },
   cardMemo: {
     fontSize: getResponsiveFontSize(11),
     fontFamily: 'Pretendard-Regular',
     color: '#6E6E6E',
+    paddingHorizontal: getResponsiveWidth(15),
+    paddingTop: getResponsiveHeight(2.5),
   },
   memoIcon: {
     position: 'absolute',
@@ -141,51 +137,11 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
   },
-  addCard: {
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: '#FFC84D',
-    borderStyle: 'dashed',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#FFF',
-    minHeight: getResponsiveHeight(78),
-    flexDirection: 'row',
-    paddingHorizontal: getResponsiveWidth(20),
-    gap: 10,
-  },
-  addCardText: {
-    fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-Light',
-  },
+
   plus: {
     color: '#FFC84D',
     width: getResponsiveIconSize(20),
     height: getResponsiveIconSize(20),
     resizeMode: 'contain',
-  },
-
-  userTab: {
-    alignItems: 'center',
-    marginRight: 10,
-    padding: 5,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#f9f9f9',
-  },
-  userTabSelected: {
-    borderColor: '#FFC84D',
-    backgroundColor: '#FFF6E1',
-  },
-  userTabImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginBottom: 5,
-  },
-  userTabText: {
-    fontSize: getResponsiveFontSize(11),
-    fontFamily: 'Pretendard-Regular',
   },
 });

@@ -1,5 +1,5 @@
 // userSlice.js
-import { createSlice } from '@reduxjs/toolkit';
+import {createSlice} from '@reduxjs/toolkit';
 
 const initialUserState = {
   userId: null,
@@ -20,18 +20,24 @@ const userSlice = createSlice({
   initialState: initialUserState,
   reducers: {
     setUser(state, action) {
-      const { userId, birth, phoneNumber, image, name, email, status, updatedAt } = action.payload || {};
+      const {userId, birth, phoneNumber, image, name, email, emotion} =
+        action.payload || {};
       state.userId = userId ?? state.userId;
       state.birth = birth ?? state.birth;
       state.phoneNumber = phoneNumber ?? state.phoneNumber;
       state.image = image ?? state.image;
       state.name = name ?? state.name;
       state.email = email ?? state.email;
-      state.status = status ?? state.status;
-      state.updatedAt = updatedAt ?? state.updatedAt;
+      state.emotion = emotion ?? state.emotion;
     },
     setUserImage(state, action) {
       state.image = action.payload || state.image;
+    },
+    updateUser: (state, action) => {
+      return {
+        ...state,
+        ...action.payload, // 이름, 특징, 이미지 등 덮어쓰기
+      };
     },
     setUserLoading(state, action) {
       state.loading = action.payload;
@@ -55,6 +61,8 @@ export const {
   setUserError,
   login,
   logout,
+  updateUser, // ✅ 이거 추가!
+
 } = userSlice.actions;
 
 export default userSlice.reducer;

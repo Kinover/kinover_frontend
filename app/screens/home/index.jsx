@@ -18,8 +18,8 @@ import {
   handleNotificationListeners,
 } from './notification/requestNotificationPermission';
 import FamilyCodeModal from './modal/familyCodeModal';
-import UserBottomSheetModal from './userBottomSheet';
 
+import UserBottomSheetModal from './shared/userBottomSheet';
 import {fetchFamilyThunk} from '../../redux/thunk/familyThunk';
 import {fetchFamilyUserListThunk} from '../../redux/thunk/familyUserThunk';
 import {modifyUserThunk} from '../../redux/thunk/userThunk';
@@ -35,8 +35,8 @@ import {
 } from '../../utils/responsive';
 
 // 컴포넌트 분리
-import HeaderSection from './headerSection';
-import MemberGridSection from './memberGridSection';
+import HeaderSection from './shared/headerSection';
+import MemberGridSection from './shared/memberGridSection';
 import {requestNotificationPermission} from './notification/requestNotificationPermission';
 
 export default function HomeScreen() {
@@ -80,12 +80,12 @@ export default function HomeScreen() {
     setTimeout(() => userSheetRef.current?.present(), 100); // ✅ present()
   };
 
-  const handleSave = async (name, description, imageUrl) => {
+  const handleSave = async (name, trait, imageUrl) => {
     await dispatch(
       modifyUserThunk({
         userId: selectedUser.userId,
         name,
-        description,
+        trait,
         image: imageUrl,
       }),
     );
@@ -100,7 +100,7 @@ export default function HomeScreen() {
 
         <HeaderSection
           user={user}
-          onUserPress={() => handleUserPress(user)}
+          onUserPress={handleUserPress}
           // onAddPress={() => setIsVisible(true)}
         />
 
@@ -120,7 +120,6 @@ export default function HomeScreen() {
 
       <UserBottomSheetModal
         ref={userSheetRef}
-        index={isVisible ? 0 : -1}
         selectedUser={selectedUser}
         onSave={handleSave}
         onCancel={() => {
@@ -140,7 +139,7 @@ const styles = StyleSheet.create({
     paddingTop:
       Platform.OS === 'android'
         ? getResponsiveHeight(50)
-        : -getResponsiveHeight(30),
+        : -getResponsiveHeight(60),
   },
   backgroundCurve: {
     position: 'absolute',

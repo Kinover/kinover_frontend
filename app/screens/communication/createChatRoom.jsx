@@ -53,12 +53,8 @@ export default function CreateChatRoom({navigation}) {
           onPress={handleCreateChatRoom}
           style={{marginRight: getResponsiveWidth(10)}}>
           <Image
-            source={require('../../assets/images/check-bt.png')}
-            style={{
-              width: getResponsiveIconSize(24),
-              height: getResponsiveIconSize(24),
-              resizeMode: 'contain',
-            }}
+            source={require('../../assets/icons/check.png')}
+            style={styles.headerCheckIcon}
           />
         </TouchableOpacity>
       ),
@@ -175,6 +171,12 @@ const styles = StyleSheet.create({
   selectIcon: {
     width: getResponsiveWidth(14),
     height: getResponsiveHeight(14),
+    resizeMode: 'contain',
+  },
+  headerCheckIcon: {
+    width: getResponsiveWidth(30),
+    height: getResponsiveHeight(30),
+    marginRight: getResponsiveWidth(15),
     resizeMode: 'contain',
   },
 });

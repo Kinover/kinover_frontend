@@ -28,8 +28,7 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../../../utils/responsive';
-import { updateChatRoomNameInList } from '../../../../redux/slices/chatRoomSlice';
-
+import {updateChatRoomNameInList} from '../../../../redux/slices/chatRoomSlice';
 
 export default function ChatSettings({
   isOpen,
@@ -50,7 +49,7 @@ export default function ChatSettings({
   const [showMembers, setShowMembers] = useState(false);
   const [isAlarmOn, setIsAlarmOn] = useState(true);
   const [shouldNavigate, setShouldNavigate] = useState(false);
-
+  const [internalVisible, setInternalVisible] = useState(false);
   const translateX = useSharedValue(getResponsiveWidth(375));
 
   const chatRoomUsers = useSelector(state => state.chatRoom.chatRoomUsers);
@@ -65,9 +64,17 @@ export default function ChatSettings({
   }, [isOpen, chatRoomId, dispatch]);
 
   useEffect(() => {
-    translateX.value = isOpen
-      ? withTiming(0, {duration: 300})
-      : withTiming(getResponsiveWidth(375), {duration: 300});
+    if (isOpen) {
+      setInternalVisible(true); // 모달 먼저 열고
+      setTimeout(() => {
+        translateX.value = withTiming(0, {duration: 300});
+      }, 10);
+    } else {
+      translateX.value = withTiming(getResponsiveWidth(375), {duration: 300});
+      setTimeout(() => {
+        setInternalVisible(false); // 애니메이션 끝나고 모달 닫기
+      }, 300);
+    }
   }, [isOpen]);
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -131,7 +138,7 @@ export default function ChatSettings({
 
   return (
     <Modal
-      visible={isOpen}
+      visible={internalVisible}
       transparent
       animationType="none"
       onRequestClose={onClose}
@@ -204,7 +211,7 @@ export default function ChatSettings({
                   source={require('../../../../assets/images/down-yellow.png')}
                   style={[
                     styles.arrowIcon,
-                    {transform: [{rotate: showMembers ? '0deg' : '180deg'}]},
+                    {transform: [{rotate: showMembers ? '180deg' : '0deg'}]},
                   ]}
                 />
               </View>
@@ -339,6 +346,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: getResponsiveHeight(5),
+    padding: getResponsiveHeight(5),
+    marginBottom: getResponsiveHeight(5),
   },
   memberImage: {
     width: getResponsiveIconSize(34),
@@ -356,7 +365,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: getResponsiveHeight(5),
-    marginTop: getResponsiveHeight(10),
   },
   addIcon: {
     width: getResponsiveIconSize(34),

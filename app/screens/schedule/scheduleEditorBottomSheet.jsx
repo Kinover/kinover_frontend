@@ -23,6 +23,7 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../utils/responsive';
+import {BlurView} from '@react-native-community/blur';
 
 const ScheduleEditorBottomSheetModal = forwardRef((props, ref) => {
   const {
@@ -38,22 +39,23 @@ const ScheduleEditorBottomSheetModal = forwardRef((props, ref) => {
   } = props;
 
   const modalRef = useRef(null);
-  const snapPoints = ['50%'];
+  const snapPoints = ['80%'];
 
   useImperativeHandle(ref, () => ({
     present: () => modalRef.current?.present(),
     dismiss: () => modalRef.current?.dismiss(),
   }));
+  const isSelectedAll = selectedUserId === null || selectedUserId === '';
 
   return (
     <BottomSheetModal
       ref={modalRef}
       index={0}
       snapPoints={snapPoints}
-      handleComponent={() => null}
-      keyboardBehavior="interactive" // ✅ 키보드와 상호작용
-      keyboardBlurBehavior="restore" // ✅ 포커스 해제 시 원위치
       backgroundStyle={{backgroundColor: 'white'}}
+      handleIndicatorStyle={{backgroundColor: '#ccc', width: 55}} // 색과 크기 조절 가능
+      keyboardBehavior="extend" // ✅ 키보드와 상호작용
+      keyboardBlurBehavior="restore" // ✅ 포커스 해제 시 원위치
       backdropComponent={props => (
         <BottomSheetBackdrop
           {...props}
@@ -65,11 +67,9 @@ const ScheduleEditorBottomSheetModal = forwardRef((props, ref) => {
       <BottomSheetView
         style={{
           paddingHorizontal: getResponsiveWidth(30),
-          paddingTop: getResponsiveHeight(30),
+          paddingVertical: getResponsiveWidth(20),
           paddingBottom: getResponsiveHeight(60),
-        }}
-        keyboardBehavior="extend" // ✅ 추천 옵션
-        keyboardBlurBehavior="restore">
+        }}>
         <View style={styles.titleRow}>
           <Text style={styles.sheetTitle}>
             {editingSchedule ? '일정 수정' : '일정 추가'}
@@ -79,95 +79,154 @@ const ScheduleEditorBottomSheetModal = forwardRef((props, ref) => {
               flexDirection: 'row',
               alignItems: 'center',
               gap: getResponsiveWidth(10),
-            }}>
-            {editingSchedule && (
-              <TouchableOpacity onPress={onCancelEdit}>
-                <Image
-                  source={require('../../assets/images/back_.png')}
-                  style={styles.cancelIcon}
-                />
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity onPress={() => modalRef.current?.dismiss()}>
-              <Image
-                source={require('../../assets/images/close-yellow.png')}
-                style={styles.exitIcon}
-              />
-            </TouchableOpacity>
-          </View>
+            }}></View>
         </View>
 
-        <Text style={styles.subTitle}>유저 선택</Text>
+        <Text style={styles.subTitle}>유저를 선택해주세요</Text>
 
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          style={{marginBottom: 20}}>
-          <TouchableOpacity
-            onPress={() => setSelectedUserId(null)}
-            style={{
-              alignItems: 'center',
-              marginRight: 12,
-              padding: 6,
-              borderRadius: 12,
-              borderWidth: 1.5,
-              borderColor: selectedUserId === null ? '#FFC84D' : '#E0E0E0',
-              backgroundColor: selectedUserId === null ? '#FFF5D1' : 'white',
-              width: 60,
-              height: 80,
-              justifyContent: 'center',
-            }}>
+          style={{marginBottom: 35}}>
+          <TouchableOpacity style={{width: 70, height: 95, marginRight: 12}}>
+            <TouchableOpacity
+              onPress={() => setSelectedUserId('')}
+              style={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 70,
+                height: 70,
+                borderRadius: 35,
+                borderWidth: 2,
+                borderColor: isSelectedAll ? '#FFC84D' : '#E0E0E0',
+                backgroundColor: isSelectedAll ? '#FFF5D1' : 'white',
+                overflow: 'hidden',
+              }}>
+              {isSelectedAll && (
+                <>
+                  <BlurView
+                    style={[
+                      StyleSheet.absoluteFill,
+                      {zIndex: 10, borderRadius: 35},
+                    ]}
+                    blurType="dark"
+                    blurAmount={0.5}
+                    reducedTransparencyFallbackColor="#FFF"
+                  />
+                  <Image
+                    source={require('../../assets/icons/check-yellow.png')}
+                    style={{
+                      position: 'absolute',
+                      width: getResponsiveWidth(22.5),
+                      height: getResponsiveHeight(22.5),
+                      top: getResponsiveHeight(20),
+                      zIndex: 11,
+                      resizeMode: 'contain',
+                      alignSelf: 'center',
+                    }}
+                  />
+                </>
+              )}
+              <Text
+                style={{
+                  fontSize: getResponsiveFontSize(14),
+                  fontFamily: 'Pretendard-Bold',
+                  color: isSelectedAll ? 'gray' : '#C3C3C3',
+                  zIndex: 10,
+                  alignSelf: 'center',
+                }}>
+                ALL
+              </Text>
+            </TouchableOpacity>
             <Text
               style={{
-                fontSize: getResponsiveFontSize(11),
+                fontSize: getResponsiveFontSize(13),
                 fontFamily: 'Pretendard-Regular',
+                color: 'black',
+                zIndex: 11,
+                alignSelf: 'center',
+                marginTop: getResponsiveHeight(5),
               }}>
               전체
             </Text>
           </TouchableOpacity>
 
-          {familyUserList.map(user => (
-            <TouchableOpacity
-              key={user.userId}
-              onPress={() => setSelectedUserId(user.userId)}
-              style={{
-                alignItems: 'center',
-                marginRight: 12,
-                padding: 6,
-                paddingHorizontal: 16,
-                borderRadius: 12,
-                borderWidth: 1.5,
-                borderColor:
-                  selectedUserId === user.userId ? '#FFC84D' : '#E0E0E0',
-                backgroundColor:
-                  selectedUserId === user.userId ? '#FFF5D1' : 'white',
-              }}>
-              <Image
-                source={{uri: user.image}}
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 24,
-                  marginBottom: 6,
-                }}
-              />
-              <Text
-                style={{
-                  fontSize: getResponsiveFontSize(11),
-                  fontFamily: 'Pretendard-Regular',
-                }}>
-                {user.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {familyUserList.map(user => {
+            const isSelected = selectedUserId === user.userId;
+
+            return (
+              <TouchableOpacity
+                key={user.userId}
+                style={{width: 70, height: 95, marginRight: 12}}>
+                <TouchableOpacity
+                  onPress={() => setSelectedUserId(user.userId)}
+                  style={{
+                    alignContent: 'center',
+                    alignItems: 'center',
+                    width: 70,
+                    height: 70,
+                    borderRadius: 35,
+                    zIndex: 9,
+                    marginBottom: getResponsiveHeight(5),
+                    borderWidth: isSelected ? 2 : null,
+                    borderColor: isSelected ? '#FFC84D' : '#E0E0E0',
+                    overflow: 'hidden',
+                  }}>
+                  {isSelected && (
+                    <BlurView
+                      style={[
+                        StyleSheet.absoluteFill,
+                        {zIndex: 10, borderRadius: 35},
+                      ]}
+                      blurType="dark"
+                      blurAmount={0.5}
+                      reducedTransparencyFallbackColor="#FFF"
+                    />
+                  )}
+                  {isSelected && (
+                    <Image
+                      source={require('../../assets/icons/check-yellow.png')}
+                      style={{
+                        position: 'absolute',
+                        width: getResponsiveWidth(22.5),
+                        height: getResponsiveHeight(22.5),
+                        top: getResponsiveHeight(20),
+                        zIndex: 11,
+                        resizeMode: 'contain',
+                        alignSelf: 'center',
+                      }}
+                    />
+                  )}
+
+                  <Image
+                    source={{uri: user.image}}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: 35,
+                    }}
+                  />
+                </TouchableOpacity>
+                <Text
+                  style={{
+                    fontSize: getResponsiveFontSize(13),
+                    fontFamily: 'Pretendard-Regular',
+                    color: 'black',
+                    zIndex: 11,
+                    alignSelf: 'center',
+                  }}>
+                  {user.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
 
-        <Text style={styles.subTitle}>일정 내용</Text>
+        <Text style={styles.subTitle}>일정을 입력해주세요</Text>
 
         <BottomSheetTextInput
           value={title}
           onChangeText={setTitle}
-          placeholder="제목을 입력하세요"
           placeholderTextColor="#BDBDBD"
           style={styles.input}
         />
@@ -183,7 +242,7 @@ const ScheduleEditorBottomSheetModal = forwardRef((props, ref) => {
           <TouchableOpacity
             style={[styles.button, styles.saveButton]}
             onPress={onSubmit}>
-            <Text style={[styles.buttonText, {color: 'white'}]}>저장</Text>
+            <Text style={[styles.buttonText, {color: 'black'}]}>저장</Text>
           </TouchableOpacity>
         </View>
       </BottomSheetView>
@@ -196,6 +255,7 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(23),
     fontFamily: 'Pretendard-SemiBold',
     color: '#333',
+    marginBottom: getResponsiveHeight(20),
   },
   titleRow: {
     flexDirection: 'row',
@@ -207,15 +267,10 @@ const styles = StyleSheet.create({
     height: getResponsiveIconSize(18),
     resizeMode: 'contain',
   },
-  exitIcon: {
-    width: getResponsiveIconSize(15),
-    height: getResponsiveIconSize(13),
-    resizeMode: 'contain',
-  },
   input: {
-    borderRadius: 12,
+    borderRadius: 9,
     padding: 13,
-    backgroundColor: '#EDEDED',
+    backgroundColor: '#FFF8E9',
     fontFamily: 'Pretendard-Regular',
     marginBottom: 20,
     fontSize: getResponsiveFontSize(13),
@@ -228,7 +283,7 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    borderRadius: 13,
+    borderRadius: 9,
     alignItems: 'center',
     paddingVertical: getResponsiveHeight(14),
     paddingHorizontal: getResponsiveWidth(12),

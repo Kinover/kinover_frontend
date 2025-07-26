@@ -10,12 +10,15 @@ import getResponsiveFontSize, {
 } from '../../utils/responsive';
 import {Image, View, Text} from 'react-native';
 import {RenderGoBackButton} from '../tabHeaderHelpers';
-import NotificationScreen from '../../screens/home/notification/notificationScreen';
 import AddChatMemeberScreen from '../../screens/communication/chatRoom/setting/addChatMemberScreen';
 import CreateChatRoom from '../../screens/communication/createChatRoom';
 import ChatRoom from '../../screens/communication/chatRoom/chatRoom';
 import KinoSelectScreen from '../../screens/communication/chatRoom/kinoSelectScreen';
+import SettingScreen from '../../screens/home/setting/settingScreen';
+import NotificationScreen from '../../screens/home/notification/notificationScreen';
+import NotificationSettingScreen from '../../screens/home/setting/notificationSettingScreen';
 
+import {RenderHeaderHome} from '../tabHeaderHelpers';
 const Stack = createStackNavigator();
 
 export default function CommunicationStack() {
@@ -41,6 +44,7 @@ export default function CommunicationStack() {
         component={CommunicationScreen}
         options={({navigation}) => ({
           headerTitleAlign: 'left',
+          headerBackTitleVisible: false,
           headerTitle: () => (
             <Text
               style={{
@@ -55,17 +59,26 @@ export default function CommunicationStack() {
           ),
           headerTitleContainerStyle: {
             paddingLeft: getResponsiveWidth(15),
+            paddingBottom: getResponsiveWidth(7.5),
           },
+          headerRight: () => <RenderHeaderHome navigation={navigation} currentScreen='소통'/>,
         })}
       />
-      <Stack.Screen
+      {/* <Stack.Screen
         name="알림화면"
         component={NotificationScreen}
         options={({navigation}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}
+      /> */}
+     <Stack.Screen
+        name="알림설정화면"
+        component={NotificationSettingScreen}
+        options={({navigation}) => ({
+          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          headerTitle: '',
+        })}
       />
-
       <Stack.Screen
         name="키노상담소화면"
         component={KinoChatRoom}
@@ -80,6 +93,7 @@ export default function CommunicationStack() {
         options={({navigation, route}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: () => '',
+          headerBackTitleVisible: false, // ← 요거 꼭 추가!
         })}
       />
       <Stack.Screen
@@ -110,6 +124,24 @@ export default function CommunicationStack() {
         component={CreateChatRoom}
         options={({navigation}) => ({
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+        })}
+      />
+
+      <Stack.Screen
+        name="알림화면"
+        component={NotificationScreen}
+        options={({navigation}) => ({
+          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          headerTitle: '',
+        })}
+      />
+
+      <Stack.Screen
+        name="설정화면"
+        component={SettingScreen}
+        options={({navigation}) => ({
+          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          headerTitle: '',
         })}
       />
     </Stack.Navigator>
