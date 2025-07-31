@@ -137,7 +137,7 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
           isAllPhotos ? {justifyContent: 'flex-start'} : undefined
         }
         contentContainerStyle={{
-          paddingHorizontal: ITEM_MARGIN,
+          paddingHorizontal: ITEM_MARGIN/2,
           paddingTop: ITEM_MARGIN,
         }}
       />

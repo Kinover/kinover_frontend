@@ -97,42 +97,40 @@ export default function ChatRoomScreenTemplate({
   }, [messageList, isUserScrolling]);
 
   return (
-    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-      <KeyboardAvoidingView
-        style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 102.5 : 0} // 필요 시 조절
-      >
-        <View style={{flex: 1}}>
-          <MessageFlatList
-            flatListRef={flatListRef}
-            messageList={messageList}
-            chatRoom={chatRoom}
-            userId={userId}
-            isKino={isKino}
-            noMoreMessages={noMoreMessages}
-            isFetchingMore={isFetchingMore}
-            loadOlderMessages={loadOlderMessages}
-            handleScroll={handleScroll}
-            scrollToBottom={scrollToBottom}
-          />
-          <ChatInput
-            chatRoom={chatRoom}
-            userId={userId}
-            socketRef={socketRef}
-            setMessageList={setMessageList}
-          />
-          <ChatSettings
-            isOpen={isSettingsOpen}
-            onClose={() => setIsSettingsOpen(false)}
-            chatRoomId={chatRoom.chatRoomId}
-            navigation={navigation}
-            onLeaveChat={onLeaveChat}
-            isKino={isKino}
-          />
-        </View>
-      </KeyboardAvoidingView>
-    </TouchableWithoutFeedback>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 102.5 : 0} // 필요 시 조절
+    >
+      <View style={{flex: 1}}>
+        <MessageFlatList
+          flatListRef={flatListRef}
+          messageList={messageList}
+          chatRoom={chatRoom}
+          userId={userId}
+          isKino={isKino}
+          noMoreMessages={noMoreMessages}
+          isFetchingMore={isFetchingMore}
+          loadOlderMessages={loadOlderMessages}
+          handleScroll={handleScroll}
+          scrollToBottom={scrollToBottom}
+        />
+        <ChatInput
+          chatRoom={chatRoom}
+          userId={userId}
+          socketRef={socketRef}
+          setMessageList={setMessageList}
+        />
+        <ChatSettings
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          chatRoomId={chatRoom.chatRoomId}
+          navigation={navigation}
+          onLeaveChat={onLeaveChat}
+          isKino={isKino}
+        />
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 

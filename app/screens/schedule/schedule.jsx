@@ -119,13 +119,15 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-SemiBold',
     marginBottom: 2,
     paddingTop: getResponsiveHeight(12),
-    paddingHorizontal: getResponsiveWidth(15),
+    paddingHorizontal:
+      Platform.OS === 'ios' ? getResponsiveWidth(15) : getResponsiveWidth(20),
   },
   cardMemo: {
     fontSize: getResponsiveFontSize(11),
     fontFamily: 'Pretendard-Regular',
     color: '#6E6E6E',
-    paddingHorizontal: getResponsiveWidth(15),
+    paddingHorizontal:
+      Platform.OS === 'ios' ? getResponsiveWidth(15) : getResponsiveWidth(20),
     paddingTop: getResponsiveHeight(2.5),
   },
   memoIcon: {
@@ -145,3 +147,4 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
 });
+

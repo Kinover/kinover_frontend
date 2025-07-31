@@ -19,13 +19,13 @@ import {
   createCategoryThunk,
   fetchCategoryThunk,
 } from '../../../redux/thunk/categoryThunk';
+import {v4 as uuidv4} from 'uuid';
 
 export default function CategorySelectPage({route}) {
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const familyId = useSelector(state => state.family.familyId);
   const {categoryList} = useSelector(state => state.category);
-
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [addModalVisible, setAddModalVisible] = useState(false);
@@ -45,7 +45,7 @@ export default function CategorySelectPage({route}) {
   const handleAddCategory = () => {
     if (newCategory.trim()) {
       const tempCategory = {
-        categoryId: `temp-${Date.now()}`,
+        categoryId: uuidv4(), // ← UUID로 대체!
         title: newCategory.trim(),
         isTemporary: true,
       };
@@ -115,7 +115,7 @@ export default function CategorySelectPage({route}) {
         data={categoryList}
         renderItem={renderItem}
         keyExtractor={(item, index) =>
-          item.categoryId?.toString() || item.title
+          `${item.categoryId || item.title}-${index}`
         }
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListFooterComponent={

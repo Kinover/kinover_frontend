@@ -89,4 +89,3 @@ const styles = StyleSheet.create({
     paddingRight: getResponsiveWidth(40),
   },
 });
-

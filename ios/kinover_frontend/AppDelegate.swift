@@ -41,7 +41,3 @@ class AppDelegate: RCTAppDelegate {
     return super.application(app, open: url, options: options)
   }
 }
-
-
-
-

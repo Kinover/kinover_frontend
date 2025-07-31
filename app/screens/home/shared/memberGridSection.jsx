@@ -60,24 +60,24 @@ export default function MemberGridSection({
 
   const getEmotionImage = emotion => {
     switch (emotion) {
-      case 'annoyed':
+      case 'ANNOYED':
         return require('../../../assets/state/1.png');
-      case 'worried':
+      case 'WORRIED':
         return require('../../../assets/state/2.png');
-      case 'sad':
+      case 'DEPRESSED':
         return require('../../../assets/state/3.png');
-      case 'sorry':
+      case 'SORRY':
         return require('../../../assets/state/4.png');
-      case 'tired':
+      case 'TIRED':
         return require('../../../assets/state/5.png');
-      case null:
+      case 'NEUTRAL':
         return require('../../../assets/state/6.png');
-      case 'happy':
+      case 'HAPPY':
         return require('../../../assets/state/7.png');
-      case 'excited':
+      case 'EXCITED':
         return require('../../../assets/state/8.png');
       default:
-        return null;
+        return require('../../../assets/state/6.png'); // ✅ 기본 감정
     }
   };
 
@@ -180,3 +180,4 @@ const styles = StyleSheet.create({
     backgroundColor: '#2CC22E',
   },
 });
+

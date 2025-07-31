@@ -41,9 +41,11 @@
 	<string>bce05be0c0a25b65bbb43adf582ff2f8</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
-  		<string>kakaobce05be0c0a25b65bbb43adf582ff2f8</string>
-		<string>kakaolink</string>
+  		<!-- <string>kakaobce05be0c0a25b65bbb43adf582ff2f8</string> -->
 		<string>kakaokompassauth</string>
+		<string>kakaolink</string>
+		<string>kakaotalk</string> <!-- ✅ 이게 빠져있으면 앱 호출 안 됨 -->
+		<string>kakaoauth</string>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>

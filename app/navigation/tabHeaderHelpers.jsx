@@ -1,4 +1,3 @@
-// headerUtils.js
 import React from 'react';
 import {Image, Platform, Text, TouchableOpacity, View} from 'react-native';
 import {
@@ -76,6 +75,7 @@ export const RenderHeaderTitleLogo = () => (
     <Image
       source={require('../assets/icons/kino-logo.png')}
       style={{
+        top: getResponsiveHeight(6),
         width: getResponsiveWidth(47),
         height: getResponsiveHeight(47),
         resizeMode: 'contain',
@@ -86,7 +86,6 @@ export const RenderHeaderTitleLogo = () => (
 );
 
 export const RenderHeaderHome = ({navigation, currentScreen}) => {
-
   const bellIcon =
     currentScreen === '홈'
       ? require('../assets/icons/bell-white.png')
@@ -100,9 +99,8 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
     <View
       style={{
         flexDirection: 'row',
-        gap: getResponsiveWidth(15),
+        gap: getResponsiveWidth(12.5),
         marginRight: getResponsiveWidth(25),
-        paddingBottom: getResponsiveWidth(10),
       }}>
       {createIconButton(
         () =>
@@ -111,8 +109,8 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
             params: {screen: '알림화면'}, // 동적으로 화면 전환
           }),
         bellIcon,
-        getResponsiveIconSize(28),
-        getResponsiveIconSize(28),
+        getResponsiveIconSize(29),
+        getResponsiveIconSize(29),
       )}
       {createIconButton(
         () =>
@@ -121,8 +119,8 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
             params: {screen: '설정화면'}, // 동적으로 화면 전환
           }),
         settingIcon,
-        getResponsiveIconSize(28),
-        getResponsiveIconSize(28),
+        getResponsiveIconSize(29),
+        getResponsiveIconSize(29),
       )}
     </View>
   );
@@ -227,3 +225,5 @@ export const RenderHeaderLogo = ({navigation}) => (
     </Text>
   </TouchableOpacity>
 );
+
+ 

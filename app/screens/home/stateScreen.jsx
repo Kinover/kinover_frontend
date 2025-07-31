@@ -19,42 +19,42 @@ import {useNavigation} from '@react-navigation/native'; // 이미 있을 수도 
 
 const EMOTIONS = [
   {
-    id: 'annoyed',
+    id: 'ANNOYED',
     label: '짜증나요',
     url: require('../../assets/icons/state/annoyed.png'),
   },
   {
-    id: 'anxious',
+    id: 'WORRIED',
     label: '걱정돼요',
     url: require('../../assets/icons/state/anxious.png'),
   },
   {
-    id: 'depressed',
+    id: 'DEPRESSED',
     label: '우울해요',
     url: require('../../assets/icons/state/depressed.png'),
   },
   {
-    id: 'sorry',
+    id: 'SORRY',
     label: '미안해요',
     url: require('../../assets/icons/state/sorry.png'),
   },
   {
-    id: 'exhausted',
+    id: 'TIRED',
     label: '힘들어요',
     url: require('../../assets/icons/state/exhausted.png'),
   },
   {
-    id: 'excited',
+    id: 'EXCITED',
     label: '신나요',
     url: require('../../assets/icons/state/excited.png'),
   },
   {
-    id: 'neutral',
+    id: 'NEUTRAL',
     label: '평범해요',
     url: require('../../assets/icons/state/neutral.png'),
   },
   {
-    id: 'happy',
+    id: 'HAPPY',
     label: '행복해요',
     url: require('../../assets/icons/state/happy.png'),
   },
@@ -89,12 +89,12 @@ export default function StateScreen() {
 
   const handleConfirm = () => {
     if (selectedEmotion) {
-      dispatch(modifyUserThunk({ userId: user.userId, emotion: selectedEmotion }))
+      dispatch(modifyUserThunk({userId: user.userId, emotion: selectedEmotion}))
         .then(() => {
           console.log('✅ 감정 저장 성공');
           navigation.goBack();
         })
-        .catch((err) => {
+        .catch(err => {
           console.error('❌ 감정 저장 실패:', err);
         });
     }
@@ -204,3 +204,4 @@ const styles = StyleSheet.create({
     color: '#000',
   },
 });
+
