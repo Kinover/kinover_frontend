@@ -1,22 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-} from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {View, Text, StyleSheet, ScrollView} from 'react-native';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
 } from '../../../utils/responsive';
 import CustomSwitch from '../../../components/customSwitch';
+import useHideTabBar from '../../../hooks/useHideTabBar';
 
 export default function NotificationSettingScreen() {
   const [allNotification, setAllNotification] = useState(true);
   const [chatNotification, setChatNotification] = useState(true);
   const [postNotification, setPostNotification] = useState(true);
   const [commentNotification, setCommentNotification] = useState(true);
+
+  useHideTabBar({stayHidden:true});
 
   // ✅ 전체 알림 토글 시 하위 알림 동기화
   const handleToggleAllNotification = () => {

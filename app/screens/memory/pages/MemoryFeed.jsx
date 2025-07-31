@@ -24,7 +24,7 @@ import {
 
 import {WINDOW_WIDTH} from '@gorhom/bottom-sheet';
 
-const ITEM_MARGIN = getResponsiveWidth(4);
+const ITEM_MARGIN = getResponsiveWidth(2);
 
 export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
   const dispatch = useDispatch();
@@ -137,7 +137,6 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
           isAllPhotos ? {justifyContent: 'flex-start'} : undefined
         }
         contentContainerStyle={{
-          paddingHorizontal: ITEM_MARGIN/2,
           paddingTop: ITEM_MARGIN,
         }}
       />

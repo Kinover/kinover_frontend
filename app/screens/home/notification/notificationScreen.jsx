@@ -7,12 +7,15 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../../utils/responsive';
+import useHideTabBar from '../../../hooks/useHideTabBar';
 
 export default function NotificationScreen() {
   const dispatch = useDispatch();
   const {notifications, isLoading, error} = useSelector(
     state => state.notification,
   );
+
+  useHideTabBar();
 
   useEffect(() => {
     dispatch(fetchNotificationsThunk());
@@ -29,7 +32,7 @@ export default function NotificationScreen() {
     }
   };
 
-  const sanitizeUrl = (url) => {
+  const sanitizeUrl = url => {
     // 중복된 CDN prefix 제거
     return url.replace(
       /(https:\/\/dzqa9jgkeds0b\.cloudfront\.net\/)+/g,

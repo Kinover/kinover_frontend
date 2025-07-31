@@ -27,6 +27,7 @@ export default function ImageCarousel({
   setCurrentImageIndex, // 인덱스 변경 함수
   setCommentIndex, // 댓글창 토글 함수
   onImagePress, // 👈 추가
+  commentCount,
 }) {
   // 🔁 이미지 아이템 하나 렌더링 (캐러셀 안에 들어감)
   const renderImageItem = ({item, index}) => {
@@ -92,7 +93,7 @@ export default function ImageCarousel({
                   textAlign: 'center',
                   fontSize: getResponsiveFontSize(17),
                 }}>
-                {4}
+                {commentCount}
               </Text>
             </View>
 
