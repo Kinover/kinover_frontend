@@ -16,7 +16,8 @@ import {
   getResponsiveWidth,
   getResponsiveFontSize,
 } from '../../../utils/responsive';
-import { useLogout } from '../hooks/useLogout';
+import {useLogout} from '../hooks/useLogout';
+import useHideTabBar from '../../../hooks/useHideTabBar';
 
 export default function SettingScreen() {
   const navigation = useNavigation();
@@ -25,10 +26,11 @@ export default function SettingScreen() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  useHideTabBar();
+
   const goToNotificationSettings = () => {
     navigation.navigate('알림설정화면');
   };
-
 
   const handleDeleteAccount = () => {
     console.log('⚠️ 계정탈퇴 실행');

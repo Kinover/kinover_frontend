@@ -274,4 +274,3 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(5),
   },
 });
-
