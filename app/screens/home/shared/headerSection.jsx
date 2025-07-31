@@ -20,23 +20,25 @@ import {useSelector} from 'react-redux';
 export default function HeaderSection({user, onUserPress}) {
   const navigation = useNavigation();
 
+  // 유저 상태
+
   const getEmotionImage = emotion => {
     switch (emotion) {
-      case 'annoyed':
+      case 'ANNOYED':
         return require('../../../assets/state/1.png');
-      case 'worried':
+      case 'WORRIED':
         return require('../../../assets/state/2.png');
-      case 'sad':
+      case 'DEPRESSED':
         return require('../../../assets/state/3.png');
-      case 'sorry':
+      case 'SORRY':
         return require('../../../assets/state/4.png');
-      case 'tired':
+      case 'TIRED':
         return require('../../../assets/state/5.png');
-      case null:
+      case 'NEUTRAL':
         return require('../../../assets/state/6.png');
-      case 'happy':
+      case 'HAPPY':
         return require('../../../assets/state/7.png');
-      case 'excited':
+      case 'EXCITED':
         return require('../../../assets/state/8.png');
       default:
         return require('../../../assets/state/6.png'); // ✅ 기본 감정
@@ -79,9 +81,12 @@ const styles = StyleSheet.create({
     marginTop:
       Platform.OS === 'android'
         ? -getResponsiveHeight(10)
-        : getResponsiveHeight(15),
-    marginBottom: getResponsiveHeight(30),
-    zIndex: 1,
+        : getResponsiveHeight(25),
+    marginBottom:
+      Platform.OS === 'android'
+        ? getResponsiveHeight(30)
+        : getResponsiveHeight(25),
+    zIndex: 10,
     marginHorizontal: getResponsiveWidth(25),
   },
   headerBox: {
@@ -131,3 +136,4 @@ const styles = StyleSheet.create({
     color: 'gray',
   },
 });
+

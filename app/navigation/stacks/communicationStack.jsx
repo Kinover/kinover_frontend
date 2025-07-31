@@ -26,6 +26,8 @@ export default function CommunicationStack() {
     <Stack.Navigator
       initialRouteName="소통"
       screenOptions={({navigation}) => ({
+        gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+
         // ✅ 객체 구조분해 필수!
         headerStyle: {
           borderBottomWidth: 0,
@@ -43,25 +45,26 @@ export default function CommunicationStack() {
         name="소통"
         component={CommunicationScreen}
         options={({navigation}) => ({
-          headerTitleAlign: 'left',
+          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
           headerBackTitleVisible: false,
           headerTitle: () => (
             <Text
               style={{
                 fontFamily: 'Pretendard-Bold',
-                fontSize: getResponsiveFontSize(22.5),
+                fontSize: getResponsiveFontSize(24),
                 color: '#4D4D4D',
-                textAlign: 'left',
-                textAlignVertical: 'center',
+                textAlign: 'center',
               }}>
               채팅
             </Text>
           ),
+          headerTitleAlign: 'bottom',
           headerTitleContainerStyle: {
             paddingLeft: getResponsiveWidth(15),
-            paddingBottom: getResponsiveWidth(7.5),
           },
-          headerRight: () => <RenderHeaderHome navigation={navigation} currentScreen='소통'/>,
+          headerRight: () => (
+            <RenderHeaderHome navigation={navigation} currentScreen="소통" />
+          ),
         })}
       />
       {/* <Stack.Screen
@@ -71,10 +74,12 @@ export default function CommunicationStack() {
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}
       /> */}
-     <Stack.Screen
+      <Stack.Screen
         name="알림설정화면"
         component={NotificationSettingScreen}
         options={({navigation}) => ({
+          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}
@@ -83,6 +88,7 @@ export default function CommunicationStack() {
         name="키노상담소화면"
         component={KinoChatRoom}
         options={({navigation, route}) => ({
+          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}
       />
@@ -91,6 +97,8 @@ export default function CommunicationStack() {
         name="키노선택화면"
         component={KinoSelectScreen}
         options={({navigation, route}) => ({
+          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: () => '',
           headerBackTitleVisible: false, // ← 요거 꼭 추가!
@@ -100,6 +108,7 @@ export default function CommunicationStack() {
         name="채팅방화면"
         component={ChatRoom}
         options={({navigation, route}) => ({
+          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}
       />
@@ -107,6 +116,8 @@ export default function CommunicationStack() {
         name="채팅설정화면"
         component={ChatSettings}
         options={({navigation}) => ({
+          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}
       />
@@ -115,6 +126,8 @@ export default function CommunicationStack() {
         name="채팅방멤버추가화면"
         component={AddChatMemeberScreen}
         options={({navigation}) => ({
+          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}
       />
@@ -123,6 +136,8 @@ export default function CommunicationStack() {
         name="채팅방생성화면"
         component={CreateChatRoom}
         options={({navigation}) => ({
+          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}
       />
@@ -131,6 +146,8 @@ export default function CommunicationStack() {
         name="알림화면"
         component={NotificationScreen}
         options={({navigation}) => ({
+          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}
@@ -140,6 +157,8 @@ export default function CommunicationStack() {
         name="설정화면"
         component={SettingScreen}
         options={({navigation}) => ({
+          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}
@@ -147,3 +166,4 @@ export default function CommunicationStack() {
     </Stack.Navigator>
   );
 }
+

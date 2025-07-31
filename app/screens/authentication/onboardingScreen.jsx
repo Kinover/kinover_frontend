@@ -1,3 +1,5 @@
+// 🔐 카카오 로그인 후 토큰을 저장하도록 수정한 전체 OnboardingScreen 컴포넌트
+
 import React, {useEffect, useState, useRef} from 'react';
 import {
   TouchableOpacity,
@@ -7,7 +9,6 @@ import {
   Text,
   FlatList,
   Dimensions,
-  Animated,
   Platform,
 } from 'react-native';
 import * as KakaoLogin from '@react-native-seoul/kakao-login';
@@ -20,7 +21,11 @@ import {
   getResponsiveWidth,
 } from '../../utils/responsive';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {getHasFamily, getToken} from '../../utils/storage';
+import {
+  getHasFamily,
+  getToken,
+  saveLoginInfo,
+} from '../../utils/storage';
 import {setLoginSuccess} from '../../redux/slices/authSlice';
 import {fetchUserThunk} from '../../redux/thunk/userThunk';
 import {fetchFamilyThunk} from '../../redux/thunk/familyThunk';
@@ -28,12 +33,6 @@ import {fetchFamilyThunk} from '../../redux/thunk/familyThunk';
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
 export default function OnboardingScreen() {
-  const navigation = useNavigation();
-  const dispatch = useDispatch();
-  const [autoLoginDone, setAutoLoginDone] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
-  const flatListRef = useRef();
-
   const slides = [
     {
       key: '1',
@@ -84,26 +83,69 @@ export default function OnboardingScreen() {
     },
   ];
 
+  const navigation = useNavigation();
+  const dispatch = useDispatch();
+  const [isCheckingAutoLogin, setIsCheckingAutoLogin] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
+  const flatListRef = useRef();
+
+  const navigateToHome = () => {
+    navigation.reset({
+      routes: [
+        {
+          name: 'Tabs',
+          state: {
+            routes: [{name: '홈', state: {routes: [{name: '홈'}]}}],
+          },
+        },
+      ],
+    });
+  };
+
+  const handleAutoLogin = async () => {
+    try {
+      const token = await getToken();
+      const hasFamily = await getHasFamily();
+
+      console.log('🔐 자동 로그인 - 토큰:', token);
+      console.log('👨‍👩‍👧 hasFamily:', hasFamily);
+
+      if (token && hasFamily) {
+        dispatch(setLoginSuccess());
+        await dispatch(fetchUserThunk());
+        await dispatch(
+          fetchFamilyThunk('0e992098-1544-11f0-be5c-0a1e787a0cd7'),
+        );
+        navigateToHome();
+      }
+    } catch (err) {
+      console.error('🚨 자동 로그인 실패:', err);
+    } finally {
+      setIsCheckingAutoLogin(false);
+    }
+  };
+
+  useEffect(() => {
+    handleAutoLogin();
+  }, []);
+
   const login = async () => {
     try {
-      const redirectUri = 'kakaobce05be0c0a25b65bbb43adf582ff2f8://oauth';
-      const result = await KakaoLogin.login({redirectUri});
+      const result = await KakaoLogin.login();
+
       console.log('✅ Login Success:', result);
+
+      // ⬇️ 토큰 저장
+      await saveLoginInfo({
+        token: result.accessToken,
+        hasFamily: true,
+      });
 
       await dispatch(loginThunk(result.accessToken));
       await dispatch(fetchUserThunk());
       await dispatch(fetchFamilyThunk('0e992098-1544-11f0-be5c-0a1e787a0cd7'));
 
-      navigation.reset({
-        routes: [
-          {
-            name: 'Tabs',
-            state: {
-              routes: [{name: '홈', state: {routes: [{name: '홈'}]}}],
-            },
-          },
-        ],
-      });
+      navigateToHome();
     } catch (error) {
       if (error.code === 'E_CANCELLED_OPERATION') {
         console.log('🚫 카카오 로그인 취소:', error.message);
@@ -115,42 +157,6 @@ export default function OnboardingScreen() {
       }
     }
   };
-
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const token = await getToken();
-        const hasFamily = await getHasFamily();
-        console.log('🔐 토큰:', token);
-        console.log('👨‍👩‍👧 hasFamily:', hasFamily);
-
-        if (token && hasFamily) {
-          dispatch(setLoginSuccess());
-          await dispatch(fetchUserThunk());
-          await dispatch(
-            fetchFamilyThunk('0e992098-1544-11f0-be5c-0a1e787a0cd7'),
-          );
-
-          navigation.reset({
-            routes: [
-              {
-                name: 'Tabs',
-                state: {
-                  routes: [{name: '홈', state: {routes: [{name: '홈'}]}}],
-                },
-              },
-            ],
-          });
-        }
-      } catch (err) {
-        console.error('🚨 자동 로그인 실패:', err);
-      } finally {
-        setAutoLoginDone(true);
-      }
-    };
-
-    init();
-  }, []);
 
   const handleScroll = event => {
     const offsetX = event.nativeEvent.contentOffset.x;
@@ -186,7 +192,6 @@ export default function OnboardingScreen() {
                 resizeMode="contain"
               />
             )}
-
             {item.key !== '4' && (
               <Image
                 source={item.image}
@@ -206,29 +211,19 @@ export default function OnboardingScreen() {
                 resizeMode="contain"
               />
             )}
-
-            {item.key === '1' && (
-              <Text
-                style={[
-                  styles.slideText,
-                  {
-                    fontSize: getResponsiveFontSize(item.textSize),
+            <Text
+              style={[
+                styles.slideText,
+                {
+                  fontSize: getResponsiveFontSize(item.textSize),
+                  ...(item.key === '1' && {
                     alignSelf: 'baseline',
                     left: getResponsiveWidth(50),
-                  },
-                ]}>
-                {item.text}
-              </Text>
-            )}
-            {item.key !== '1' && (
-              <Text
-                style={[
-                  styles.slideText,
-                  {fontSize: getResponsiveFontSize(item.textSize)},
-                ]}>
-                {item.text}
-              </Text>
-            )}
+                  }),
+                },
+              ]}>
+              {item.text}
+            </Text>
           </View>
         )}
         horizontal
@@ -237,8 +232,6 @@ export default function OnboardingScreen() {
         onScroll={handleScroll}
         scrollEventThrottle={16}
       />
-
-      {/* 🔵 인디케이터 */}
       <View style={styles.indicatorContainer}>
         {slides.map((_, index) => (
           <View
@@ -250,12 +243,10 @@ export default function OnboardingScreen() {
           />
         ))}
       </View>
-
-      {/* 🔐 로그인 버튼 */}
       <View style={styles.bottomContainer}>
         <TouchableOpacity
-          onPress={autoLoginDone ? login : null}
-          disabled={!autoLoginDone}>
+          onPress={!isCheckingAutoLogin ? login : null}
+          disabled={isCheckingAutoLogin}>
           <Image
             style={styles.loginButton}
             source={require('../../assets/images/kakao-login-button.jpg')}
@@ -267,10 +258,7 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-  },
+  container: {flex: 1, backgroundColor: 'white'},
   slide: {
     width: SCREEN_WIDTH,
     height: getResponsiveHeight(500),
@@ -286,7 +274,6 @@ const styles = StyleSheet.create({
     height: '100%',
     bottom: -100,
   },
-
   slideText: {
     position: 'absolute',
     bottom: getResponsiveHeight(10),
@@ -302,7 +289,7 @@ const styles = StyleSheet.create({
     zIndex: 999,
   },
   highlight: {
-    color: '#FF8D29', // 원하는 하이라이트 색상
+    color: '#FF8D29',
     fontFamily: 'Pretendard-Bold',
     fontWeight: Platform.OS === 'android' ? 'bold' : 'bold',
   },
@@ -331,7 +318,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical:
       Platform.OS === 'ios' ? getResponsiveHeight(30) : getResponsiveHeight(40),
-
     backgroundColor: 'white',
     gap: getResponsiveHeight(16),
   },

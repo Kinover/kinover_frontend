@@ -4,13 +4,13 @@ import {
   Dimensions,
   FlatList,
   Image,
-  SafeAreaView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import ImageCarousel from '../modules/post/components/imageCarousel';
 import {
   getResponsiveFontSize,
@@ -18,16 +18,21 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
+
 import useHideTabBar from '../../../hooks/useHideTabBar';
 import ImageDeleteModal from '../modules/post/deleteOptionModal';
 import CommentSection from '../modules/post/components/commentSection';
 import DescriptionSection from '../modules/post/components/descriptionSection';
 import usePostPageViewModel from '../hooks/usePostPageViewModel';
 import {useSelector} from 'react-redux';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+
 export default function PostPage({route}) {
   const {memory, imageIndex} = route.params;
   const navigation = useNavigation();
-  const categoryList = useSelector(state => state.category.categoryList); // ✅
+  const categoryList = useSelector(state => state.category.categoryList);
   const flatListRef = useRef(null);
 
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -37,7 +42,6 @@ export default function PostPage({route}) {
 
   useHideTabBar();
 
-  // 🔄 댓글창 열릴 때 이미지 애니메이션
   useEffect(() => {
     Animated.timing(imageAnim, {
       toValue: vm.commentIndex ? 1 : 0,
@@ -57,7 +61,7 @@ export default function PostPage({route}) {
 
   useEffect(() => {
     if (imageIndex != null) {
-      vm.setCurrentImageIndex(imageIndex); // ✅ 초기 이미지 인덱스 세팅
+      vm.setCurrentImageIndex(imageIndex);
     }
   }, [imageIndex]);
 
@@ -66,7 +70,7 @@ export default function PostPage({route}) {
       cat => cat.categoryId === memory.categoryId,
     );
 
-    const categoryTitle = matchedCategory?.title || '게시물'; // ✅ 타이틀 추출
+    const categoryTitle = matchedCategory?.title || '게시물';
 
     navigation.setOptions({
       headerTitle: () => (
@@ -94,11 +98,12 @@ export default function PostPage({route}) {
         </TouchableOpacity>
       ),
     });
-  }, [memory, categoryList]); // ✅ 카테고리 리스트 변경되면 다시 설정
+  }, [memory, categoryList]);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container} pointerEvents="box-none">
       <ImageCarousel
+        commentCount={memory.commentCount}
         localImages={vm.localImages}
         imageAnim={imageAnim}
         scrollX={scrollX}
@@ -107,9 +112,8 @@ export default function PostPage({route}) {
         setCommentIndex={vm.setCommentIndex}
         onImagePress={() => vm.setIsImageFullScreen(true)}
       />
-
       {!vm.commentIndex && !vm.isImageFullScreen && (
-        <View style={styles.descriptionWrapper}>
+        <View style={styles.descriptionWrapper} pointerEvents="box-none">
           <DescriptionSection
             memory={memory}
             commentList={vm.commentList}
@@ -119,7 +123,7 @@ export default function PostPage({route}) {
       )}
 
       {vm.commentIndex && !vm.isImageFullScreen && (
-        <View style={styles.commentWrapper}>
+        <View style={styles.commentWrapper} pointerEvents="box-none">
           <CommentSection
             commentList={vm.commentList}
             commentText={vm.commentText}
@@ -131,27 +135,28 @@ export default function PostPage({route}) {
         </View>
       )}
 
-      {/* 🖼 전체 이미지 보기 모드 */}
       {vm.isImageFullScreen && (
         <View
           style={[StyleSheet.absoluteFillObject, {backgroundColor: '#F9F9F9'}]}>
           <FlatList
             ref={flatListRef}
-            key={`fullscreen-${vm.isImageFullScreen}-${imageIndex}`} // ✅ 리렌더 트리거
             data={vm.localImages}
+            key={`fullscreen-${vm.isImageFullScreen}-${imageIndex}`}
             horizontal
-            pagingEnabled
-            initialScrollIndex={vm.currentImageIndex}
+            pagingEnabled={true}
+            snapToAlignment="start"
+            decelerationRate="fast"
             showsHorizontalScrollIndicator={false}
             keyExtractor={(_, index) => index.toString()}
             getItemLayout={(_, index) => ({
-              length: Dimensions.get('window').width,
-              offset: Dimensions.get('window').width * index,
+              length: SCREEN_WIDTH,
+              offset: SCREEN_WIDTH * index,
               index,
             })}
+            initialScrollIndex={vm.currentImageIndex}
             onMomentumScrollEnd={e => {
               const index = Math.round(
-                e.nativeEvent.contentOffset.x / Dimensions.get('window').width,
+                e.nativeEvent.contentOffset.x / SCREEN_WIDTH,
               );
               vm.setCurrentImageIndex(index);
             }}
@@ -160,19 +165,15 @@ export default function PostPage({route}) {
                 activeOpacity={1}
                 onPress={() => vm.setIsImageFullScreen(false)}
                 style={{
-                  width: Dimensions.get('window').width,
-                  height: Dimensions.get('window').height,
+                  width: SCREEN_WIDTH,
+                  height: SCREEN_HEIGHT,
                   justifyContent: 'center',
                   alignItems: 'center',
                   alignSelf: 'center',
                 }}>
                 <Image
                   source={{uri: item}}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    resizeMode: 'contain',
-                  }}
+                  style={{width: '100%', height: '100%', resizeMode: 'contain'}}
                 />
               </TouchableOpacity>
             )}
@@ -180,7 +181,6 @@ export default function PostPage({route}) {
         </View>
       )}
 
-      {/* 삭제 모달 */}
       {vm.deleteModalVisible && (
         <ImageDeleteModal
           visible={vm.deleteModalVisible}
@@ -198,7 +198,6 @@ export default function PostPage({route}) {
         </ImageDeleteModal>
       )}
 
-      {/* 삭제 옵션 */}
       {vm.showDeleteOptions && !vm.isImageFullScreen && (
         <View style={styles.deleteOptions}>
           <TouchableOpacity
@@ -222,7 +221,7 @@ export default function PostPage({route}) {
           </TouchableOpacity>
         </View>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -235,15 +234,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    minHeight: '28%',
+    height: '22%',
     zIndex: 10,
   },
   commentWrapper: {
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    height: '50%',
-    zIndex: 10,
+    height: '45%',
+    zIndex: 1,
   },
   deleteOptions: {
     position: 'absolute',
@@ -264,7 +263,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   divider: {
-    height: Platform.OS === 'android' ? 0.5 : 0.5,
+    height: 0.5,
     backgroundColor: 'gray',
   },
   modalTitle: {
@@ -275,3 +274,4 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(5),
   },
 });
+

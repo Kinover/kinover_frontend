@@ -30,8 +30,10 @@ const HomeStack = () => {
     <Stack.Navigator
       initialRouteName="홈"
       screenOptions={{
+        gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+
         headerStyle: defaultHeaderStyle,
-        headerTitleAlign: 'center',
+        headerTitleAlign: 'bottom',
         headerShown: true,
         headerLeft: () => <RenderHeaderTitleLogo />,
         headerTitle: '',
@@ -40,7 +42,11 @@ const HomeStack = () => {
         name="홈"
         component={HomeScreen}
         options={({navigation}) => ({
-          headerRight: () => <RenderHeaderHome navigation={navigation} currentScreen='홈'/>,
+          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+
+          headerRight: () => (
+            <RenderHeaderHome navigation={navigation} currentScreen="홈" />
+          ),
           headerStyle: [defaultHeaderStyle, {backgroundColor: '#FFC84D'}],
         })}
       />
@@ -49,6 +55,8 @@ const HomeStack = () => {
         name="알림화면"
         component={NotificationScreen}
         options={({navigation}) => ({
+          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}
@@ -58,6 +66,8 @@ const HomeStack = () => {
         name="설정화면"
         component={SettingScreen}
         options={({navigation}) => ({
+          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}
@@ -67,6 +77,8 @@ const HomeStack = () => {
         name="알림설정화면"
         component={NotificationSettingScreen}
         options={({navigation}) => ({
+          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}
@@ -76,6 +88,8 @@ const HomeStack = () => {
         name="감정상태화면"
         component={StateScreen}
         options={({navigation}) => ({
+          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}
@@ -85,3 +99,4 @@ const HomeStack = () => {
 };
 
 export default HomeStack;
+

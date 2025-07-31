@@ -87,6 +87,7 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'white',
     paddingBottom: getResponsiveHeight(15),
+    paddingVertical: getResponsiveHeight(5),
     paddingHorizontal: getResponsiveWidth(29),
   },
   tab: {
@@ -96,6 +97,7 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(18),
     fontFamily: 'Pretendard-Bold',
     color: '#4A4A4A',
+    textAlignVertical: 'bottom',
   },
   selectedText: {
     color: '#FFC84D',
@@ -114,7 +116,8 @@ const styles = StyleSheet.create({
     width: BASE_UNDERLINE_WIDTH + 5,
     backgroundColor: '#FFC84D',
     position: 'absolute',
-    bottom: -15, // 탭 텍스트 바로 아래로 내리기 (필요에 따라 조절)
+    bottom: -13, // 탭 텍스트 바로 아래로 내리기 (필요에 따라 조절)
     left: 0,
   },
 });
+

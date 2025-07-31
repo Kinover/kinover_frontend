@@ -20,6 +20,8 @@ export default function ScheduleStack() {
     <Stack.Navigator
       initialRouteName="일정"
       screenOptions={({navigation}) => ({
+        gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+
         // ✅ 객체 구조분해 필수!
         headerShown: true,
         headerStyle: {
@@ -32,11 +34,12 @@ export default function ScheduleStack() {
               : getResponsiveHeight(80),
         },
         headerTitleAlign: 'left',
+
         headerTitle: () => (
           <Text
             style={{
               fontFamily: 'Pretendard-Bold',
-              fontSize: getResponsiveFontSize(22.5),
+              fontSize: getResponsiveFontSize(24),
               color: '#4D4D4D',
             }}>
             일정
@@ -44,7 +47,6 @@ export default function ScheduleStack() {
         ),
         headerTitleContainerStyle: {
           paddingLeft: getResponsiveWidth(15),
-          paddingBottom: getResponsiveWidth(7.5),
         },
         headerRight: () => (
           <RenderHeaderHome navigation={navigation} currentScreen="일정" />
@@ -55,6 +57,8 @@ export default function ScheduleStack() {
         name="알림화면"
         component={NotificationScreen}
         options={({navigation}) => ({
+          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}
@@ -64,6 +68,8 @@ export default function ScheduleStack() {
         name="설정화면"
         component={SettingScreen}
         options={({navigation}) => ({
+          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}
@@ -72,6 +78,8 @@ export default function ScheduleStack() {
         name="알림설정화면"
         component={NotificationSettingScreen}
         options={({navigation}) => ({
+          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}
@@ -79,3 +87,4 @@ export default function ScheduleStack() {
     </Stack.Navigator>
   );
 }
+

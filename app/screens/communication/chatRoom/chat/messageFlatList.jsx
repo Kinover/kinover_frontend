@@ -1,6 +1,6 @@
 // components/common/MessageFlatList.jsx
 import React from 'react';
-import { FlatList, ActivityIndicator } from 'react-native';
+import {FlatList, ActivityIndicator} from 'react-native';
 import ChatMessageItem from './chatMessageItem';
 
 export default function MessageFlatList({
@@ -20,7 +20,7 @@ export default function MessageFlatList({
       ref={flatListRef}
       data={messageList}
       keyExtractor={item => `${item.messageId}_${item.createdAt}`}
-      renderItem={({ item, index }) => {
+      renderItem={({item, index}) => {
         const next = messageList[index + 1];
         const prevDate = next?.createdAt
           ? new Date(next.createdAt).toDateString()
@@ -45,12 +45,14 @@ export default function MessageFlatList({
       ListFooterComponent={
         isFetchingMore && <ActivityIndicator size="small" color="#aaa" />
       }
-      contentContainerStyle={{ flexGrow: 1 }}
-      maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
+      // contentContainerStyle={{flexGrow: 1}}
+      // maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
       removeClippedSubviews={false}
       onScroll={handleScroll}
-      scrollEventThrottle={100}
+      scrollEventThrottle={30} // ✅ 이렇게 바꿔줘
       onScrollToIndexFailed={() => setTimeout(scrollToBottom, 300)}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
     />
   );
 }

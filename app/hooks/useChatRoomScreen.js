@@ -1,17 +1,31 @@
-import {useEffect, useRef} from 'react';
+// ✅ scrollToBottom 조건 수정: 유저가 가장 아래에 있을 때만 실행
+
+import {useEffect, useRef, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
-import useChatRoom from './useChatRoom';
+import {
+  fetchMoreMessagesThunk,
+  fetchMessageThunk,
+} from '../redux/thunk/messageThunk';
 import {getToken} from '../utils/storage';
-import {fetchMessageThunk} from '../redux/thunk/messageThunk';
 import {addMessage} from '../redux/slices/messageSlice';
 
 export default function useChatRoomScreen(chatRoom, user, isKino) {
   const flatListRef = useRef(null);
   const dispatch = useDispatch();
-  const {messageList} = useSelector(state => state.message);
+  const messageList = useSelector(state => state.message?.messageList || []);
+  const socketRef = useRef(null);
+
+  const [noMoreMessages, setNoMoreMessages] = useState(false);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const isAtBottomRef = useRef(true); // ✅ 가장 아래에 있는지 여부
 
   const scrollToBottom = () => {
-    if (flatListRef.current && messageList.length > 0) {
+    if (
+      isAtBottomRef.current &&
+      flatListRef.current &&
+      messageList.length > 0
+    ) {
       flatListRef.current.scrollToIndex({
         index: 0,
         animated: true,
@@ -20,15 +34,27 @@ export default function useChatRoomScreen(chatRoom, user, isKino) {
     }
   };
 
-  const {
-    socketRef,
-    noMoreMessages,
-    setNoMoreMessages,
-    isUserScrolling,
-    isFetchingMore,
-    loadOlderMessages,
-    handleScroll,
-  } = useChatRoom({chatRoom, user, scrollToBottom});
+  const handleScroll = event => {
+    const y = event.nativeEvent.contentOffset.y;
+    isAtBottomRef.current = y <= 50; // ✅ 스크롤 위치 감지
+    setIsUserScrolling(!isAtBottomRef.current);
+  };
+
+  const loadOlderMessages = async () => {
+    if (isFetchingMore || noMoreMessages || messageList.length === 0) return;
+
+    setIsFetchingMore(true);
+    const oldest = messageList[messageList.length - 1];
+    const {payload} = await dispatch(
+      fetchMoreMessagesThunk(chatRoom.chatRoomId, oldest.createdAt),
+    );
+
+    if (!payload || payload.length < 20) {
+      setNoMoreMessages(true);
+    }
+
+    setIsFetchingMore(false);
+  };
 
   useEffect(() => {
     if (chatRoom?.chatRoomId) {
@@ -52,7 +78,11 @@ export default function useChatRoomScreen(chatRoom, user, isKino) {
         try {
           const msg = JSON.parse(e.data);
           dispatch(addMessage(msg));
-          if (!isUserScrolling) scrollToBottom();
+          if (isAtBottomRef.current) {
+            setTimeout(() => {
+              scrollToBottom();
+            }, 100);
+          }
         } catch (err) {
           console.error('❌ 메시지 파싱 실패:', err);
         }
@@ -66,7 +96,9 @@ export default function useChatRoomScreen(chatRoom, user, isKino) {
   }, [chatRoom?.chatRoomId, user?.userId]);
 
   useEffect(() => {
-    if (!isUserScrolling && messageList.length > 0) scrollToBottom();
+    if (isAtBottomRef.current && messageList.length > 0) {
+      scrollToBottom();
+    }
   }, [messageList.length]);
 
   return {

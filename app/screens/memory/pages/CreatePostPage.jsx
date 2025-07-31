@@ -42,57 +42,77 @@ export default function CreatePostPage({navigation, route}) {
     setIsUploading(true);
 
     try {
-      let finalCategoryId = selectedCategory?.categoryId;
-      let finalCategory = selectedCategory;
+      console.log('[업로드 시작]');
+      console.log('선택된 카테고리:', selectedCategory);
+      console.log('선택된 이미지 수:', selectedImages?.length);
 
       if (selectedCategory?.isTemporary) {
+        console.log('[임시 카테고리 감지됨] → 카테고리 생성 시도');
+
         const result = await dispatch(
           createCategoryThunk({
+            categoryId: selectedCategory.categoryId,
             title: selectedCategory.title,
             familyId: family.familyId,
           }),
         );
 
         if (createCategoryThunk.fulfilled.match(result)) {
-          finalCategoryId = result.payload.categoryId;
-          finalCategory = result.payload;
+          console.log('✅ 카테고리 생성 성공:', result.payload);
 
-          await dispatch(fetchCategoryThunk(family.familyId));
+          // ✅ 먼저 기다렸다가
           await new Promise(resolve => setTimeout(resolve, 300));
+
+          console.log('📥 카테고리 목록 다시 불러오는 중...');
+          await dispatch(fetchCategoryThunk(family.familyId));
         } else {
-          console.error('카테고리 생성 실패', result);
+          console.error('❌ 카테고리 생성 실패:', result);
           return;
         }
       }
 
+      console.log('[파일 이름 생성 중]');
       const fileNames = selectedImages.map(
         (_, i) =>
           `img_${Date.now()}_${i}f_${Math.floor(Math.random() * 1000)}.jpg`,
       );
 
-      const presignedUrls = await getPresignedUrls(fileNames);
+      console.log('🪪 파일 이름 목록:', fileNames);
 
+      console.log('[Presigned URL 요청]');
+      const presignedUrls = await getPresignedUrls(fileNames);
+      console.log('✅ Presigned URLs:', presignedUrls);
+
+      console.log('[이미지 업로드 시작]');
       for (let i = 0; i < selectedImages.length; i++) {
+        console.log(`📤 S3 업로드: ${selectedImages[i]} → ${fileNames[i]}`);
         await uploadImageToS3(presignedUrls[i], selectedImages[i]);
       }
+      console.log('✅ 이미지 업로드 완료');
 
       const postTypes = selectedImages.map(uri => getMediaTypeFromUri(uri));
+      console.log('🧾 postTypes:', postTypes);
 
       const payload = {
         authorId: user.userId,
-        categoryId: finalCategoryId,
+        categoryId: selectedCategory.categoryId,
         imageUrls: fileNames,
         postTypes,
         content: text,
         familyId: family.familyId,
       };
 
+      console.log('[최종 업로드 payload]', payload);
+
       await uploadPostApi(payload);
-      navigation.navigate('추억', {selectedCategory: finalCategory});
+      console.log('🎉 게시글 업로드 성공!');
+
+      navigation.navigate('추억');
     } catch (err) {
-      console.error('게시글 업로드 실패:', err);
+      console.error('🚨 게시글 업로드 실패:', err);
     } finally {
       setIsUploading(false);
+      console.log('[업로드 종료]');
     }
   };
 

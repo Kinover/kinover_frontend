@@ -2,20 +2,16 @@ import React, {forwardRef, useImperativeHandle, useRef} from 'react';
 import {
   Text,
   View,
-  TextInput,
   TouchableOpacity,
   Image,
   ScrollView,
   StyleSheet,
-  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import {BottomSheetTextInput} from '@gorhom/bottom-sheet';
-import {
-  BottomSheetModal,
-  BottomSheetBackdrop,
-  BottomSheetScrollView,
-} from '@gorhom/bottom-sheet';
+import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
 import {BottomSheetView} from '@gorhom/bottom-sheet';
+import {BlurView} from '@react-native-community/blur';
 
 import {
   getResponsiveFontSize,
@@ -23,7 +19,6 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../utils/responsive';
-import {BlurView} from '@react-native-community/blur';
 
 const ScheduleEditorBottomSheetModal = forwardRef((props, ref) => {
   const {
@@ -35,27 +30,27 @@ const ScheduleEditorBottomSheetModal = forwardRef((props, ref) => {
     setTitle,
     onSubmit,
     onDelete,
-    onCancelEdit,
   } = props;
 
   const modalRef = useRef(null);
   const snapPoints = ['80%'];
+  const isSelectedAll = selectedUserId === null || selectedUserId === '';
 
   useImperativeHandle(ref, () => ({
     present: () => modalRef.current?.present(),
     dismiss: () => modalRef.current?.dismiss(),
   }));
-  const isSelectedAll = selectedUserId === null || selectedUserId === '';
 
   return (
     <BottomSheetModal
       ref={modalRef}
       index={0}
       snapPoints={snapPoints}
+      enableContentPanningGesture={false}
       backgroundStyle={{backgroundColor: 'white'}}
-      handleIndicatorStyle={{backgroundColor: '#ccc', width: 55}} // 색과 크기 조절 가능
-      keyboardBehavior="extend" // ✅ 키보드와 상호작용
-      keyboardBlurBehavior="restore" // ✅ 포커스 해제 시 원위치
+      handleIndicatorStyle={{backgroundColor: '#ccc', width: 55}}
+      keyboardBehavior="extend"
+      keyboardBlurBehavior="restore"
       backdropComponent={props => (
         <BottomSheetBackdrop
           {...props}
@@ -74,21 +69,18 @@ const ScheduleEditorBottomSheetModal = forwardRef((props, ref) => {
           <Text style={styles.sheetTitle}>
             {editingSchedule ? '일정 수정' : '일정 추가'}
           </Text>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: getResponsiveWidth(10),
-            }}></View>
         </View>
 
         <Text style={styles.subTitle}>유저를 선택해주세요</Text>
 
+        {/* ✅ 유저 리스트 스크롤 영역만 스크롤 가능 */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          keyboardShouldPersistTaps="always" // ✅ 안드로이드에서 중요
+          contentContainerStyle={{paddingBottom: 10}}
           style={{marginBottom: 35}}>
-          <TouchableOpacity style={{width: 70, height: 95, marginRight: 12}}>
+          <View style={{width: 70, height: 95, marginRight: 12}}>
             <TouchableOpacity
               onPress={() => setSelectedUserId('')}
               style={{
@@ -104,15 +96,26 @@ const ScheduleEditorBottomSheetModal = forwardRef((props, ref) => {
               }}>
               {isSelectedAll && (
                 <>
-                  <BlurView
-                    style={[
-                      StyleSheet.absoluteFill,
-                      {zIndex: 10, borderRadius: 35},
-                    ]}
-                    blurType="dark"
-                    blurAmount={0.5}
-                    reducedTransparencyFallbackColor="#FFF"
-                  />
+                  {Platform.OS === 'ios' ? (
+                    <BlurView
+                      style={[
+                        StyleSheet.absoluteFill,
+                        {zIndex: 10, borderRadius: 35},
+                      ]}
+                      blurType="dark"
+                      blurAmount={5}
+                      reducedTransparencyFallbackColor="#FFF"
+                    />
+                  ) : (
+                    <View
+                      style={{
+                        ...StyleSheet.absoluteFillObject,
+                        zIndex: 10,
+                        borderRadius: 35,
+                        backgroundColor: 'rgba(0,0,0,0.1)',
+                      }}
+                    />
+                  )}
                   <Image
                     source={require('../../assets/icons/check-yellow.png')}
                     style={{
@@ -149,13 +152,12 @@ const ScheduleEditorBottomSheetModal = forwardRef((props, ref) => {
               }}>
               전체
             </Text>
-          </TouchableOpacity>
+          </View>
 
           {familyUserList.map(user => {
             const isSelected = selectedUserId === user.userId;
-
             return (
-              <TouchableOpacity
+              <View
                 key={user.userId}
                 style={{width: 70, height: 95, marginRight: 12}}>
                 <TouchableOpacity
@@ -172,17 +174,27 @@ const ScheduleEditorBottomSheetModal = forwardRef((props, ref) => {
                     borderColor: isSelected ? '#FFC84D' : '#E0E0E0',
                     overflow: 'hidden',
                   }}>
-                  {isSelected && (
-                    <BlurView
-                      style={[
-                        StyleSheet.absoluteFill,
-                        {zIndex: 10, borderRadius: 35},
-                      ]}
-                      blurType="dark"
-                      blurAmount={0.5}
-                      reducedTransparencyFallbackColor="#FFF"
-                    />
-                  )}
+                  {isSelected &&
+                    (Platform.OS === 'ios' ? (
+                      <BlurView
+                        style={[
+                          StyleSheet.absoluteFill,
+                          {zIndex: 10, borderRadius: 35},
+                        ]}
+                        blurType="dark"
+                        blurAmount={5}
+                        reducedTransparencyFallbackColor="#FFF"
+                      />
+                    ) : (
+                      <View
+                        style={{
+                          ...StyleSheet.absoluteFillObject,
+                          zIndex: 10,
+                          borderRadius: 35,
+                          backgroundColor: 'rgba(0,0,0,0.3)',
+                        }}
+                      />
+                    ))}
                   {isSelected && (
                     <Image
                       source={require('../../assets/icons/check-yellow.png')}
@@ -197,7 +209,6 @@ const ScheduleEditorBottomSheetModal = forwardRef((props, ref) => {
                       }}
                     />
                   )}
-
                   <Image
                     source={{uri: user.image}}
                     style={{
@@ -217,13 +228,12 @@ const ScheduleEditorBottomSheetModal = forwardRef((props, ref) => {
                   }}>
                   {user.name}
                 </Text>
-              </TouchableOpacity>
+              </View>
             );
           })}
         </ScrollView>
 
         <Text style={styles.subTitle}>일정을 입력해주세요</Text>
-
         <BottomSheetTextInput
           value={title}
           onChangeText={setTitle}
@@ -261,11 +271,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  cancelIcon: {
-    width: getResponsiveIconSize(20),
-    height: getResponsiveIconSize(18),
-    resizeMode: 'contain',
   },
   input: {
     borderRadius: 9,
@@ -308,3 +313,4 @@ const styles = StyleSheet.create({
 });
 
 export default ScheduleEditorBottomSheetModal;
+

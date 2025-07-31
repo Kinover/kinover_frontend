@@ -34,11 +34,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     gap: getResponsiveWidth(5),
-    paddingBottom: getResponsiveWidth(7.5),
   },
   text: {
     fontFamily: 'Pretendard-Bold',
-    fontSize: getResponsiveFontSize(22.5),
+    fontSize: getResponsiveFontSize(24),
     color: '#4D4D4D',
   },
   icon: {
@@ -47,3 +46,4 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(20),
   },
 });
+
