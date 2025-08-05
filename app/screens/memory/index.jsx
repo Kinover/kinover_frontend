@@ -7,6 +7,7 @@ import AnimatedAlbumTabSelector from './shared/albumTabSelector';
 import CategoryBottomSheetModal from './category/categoryBottomSheet';
 import {useSelector} from 'react-redux';
 import {useRef} from 'react';
+import CategoryDropdownButton from './category/categoryDropdownButton';
 
 import {
   getResponsiveHeight,
@@ -24,29 +25,12 @@ export default function MemoryScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerLeft: () => (
-        <TouchableOpacity
-          style={{
-            paddingHorizontal: 31,
-            paddingBottom: getResponsiveHeight(7.5),
-            flexDirection: 'row',
-            alignItems: 'center',
-          }}
+        <CategoryDropdownButton
+          selectedTitle={'전체'}
+          style={{marginLeft: getResponsiveWidth(31)}}
           onPress={() => {
             categorySheetRef.current?.present();
-          }}>
-          <Text
-            style={{
-              fontSize: 22,
-              fontWeight: 'bold',
-              color: '#4D4D4D',
-            }}>
-            {selectedCategory?.title || '전체'}
-          </Text>
-          {/* <Image
-            source={require('../../assets/images/dropdown.png')} // 너의 드롭다운 화살표
-            style={{width: 20, height: 20, marginLeft: 6}}
-          /> */}
-        </TouchableOpacity>
+          }}></CategoryDropdownButton>
       ),
     });
   }, [navigation, selectedCategory]);
