@@ -106,10 +106,8 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
           })
         }
         style={{
-          width: (WINDOW_WIDTH - ITEM_MARGIN * 4) / 4,
+          width: (WINDOW_WIDTH - ITEM_MARGIN * 3) / 4,
           aspectRatio: 1,
-          marginBottom: ITEM_MARGIN,
-          marginRight: ITEM_MARGIN,
         }}>
         <Image source={{uri: item.uri}} style={styles.galleryImage} />
       </TouchableOpacity>
@@ -134,10 +132,13 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
           isAllPhotos ? renderImageItem : ({item}) => renderListItem(item)
         }
         columnWrapperStyle={
-          isAllPhotos ? {justifyContent: 'flex-start'} : undefined
+          isAllPhotos
+            ? {justifyContent: 'flex-start', gap: ITEM_MARGIN}
+            : undefined
         }
         contentContainerStyle={{
           paddingTop: ITEM_MARGIN,
+          gap: ITEM_MARGIN,
         }}
       />
     </View>

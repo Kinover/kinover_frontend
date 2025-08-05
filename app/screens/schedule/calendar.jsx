@@ -98,9 +98,9 @@ export default function Calendar({
       {/* 요일 헤더 */}
       <View style={styles.weekRow}>
         {['일', '월', '화', '수', '목', '금', '토'].map(day => (
-          <Text key={day} style={styles.dayText}>
-            {day}
-          </Text>
+          <View key={day} style={{flex: 1, alignItems: 'center'}}>
+            <Text style={styles.dayText}>{day}</Text>
+          </View>
         ))}
       </View>
 
@@ -162,11 +162,12 @@ const styles = StyleSheet.create({
   },
   weekRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    alignContent: 'center',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: getResponsiveHeight(10),
   },
   dayText: {
-    width: `${100 / 7}%`,
     textAlign: 'center',
     fontSize: getResponsiveFontSize(18),
     fontFamily: 'Pretendard-Medium',
@@ -177,6 +178,7 @@ const styles = StyleSheet.create({
   },
   dayBox: {
     width: `${100 / 7}%`,
+    height: `${100 / 7}%`,
     aspectRatio: 1,
     justifyContent: 'center',
     alignItems: 'center',
