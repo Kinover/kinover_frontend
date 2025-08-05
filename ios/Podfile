@@ -1,29 +1,26 @@
+platform :ios, '16.0'
 ENV['RCT_NEW_ARCH_ENABLED'] = '0'
 
 require Pod::Executable.execute_command('node', ['-p',
-  'require.resolve(
-    "react-native/scripts/react_native_pods.rb",
-    {paths: [process.argv[1]]},
-  )', __dir__]).strip
-
-platform :ios, '16.0'
+  'require.resolve("react-native/scripts/react_native_pods.rb", {paths: [process.argv[1]]})',
+  __dir__
+]).strip
 
 prepare_react_native_project!
 
-linkage = ENV['USE_FRAMEWORKS']
-if linkage != nil
-  Pod::UI.puts "Configuring Pod with #{linkage}ally linked Frameworks".green
-  use_frameworks! :linkage => linkage.to_sym
-end
+inhibit_all_warnings! # 불필요한 경고 무시
 
 target 'kinover_frontend' do
   config = use_native_modules!
 
-  # ✅ Firebase 관련 문제 해결을 위한 설정
+  # ✅ Firebase만 modular_headers 붙이기
   pod 'GoogleUtilities', :modular_headers => true
   pod 'FirebaseCoreInternal', :modular_headers => true
   pod 'FirebaseCore', :modular_headers => true
 
+  # ⚠️ react-native-screens는 그냥 path만!
+  pod 'lottie-react-native', :path => '../node_modules/lottie-react-native', :modular_headers => true
+  pod 'kakao-login', :path => '../node_modules/@react-native-seoul/kakao-login', :modular_headers => true
 
   use_react_native!(
     :path => config[:reactNativePath],
