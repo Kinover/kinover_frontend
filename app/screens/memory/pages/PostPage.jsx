@@ -11,45 +11,65 @@ import {
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import ImageCarousel from '../modules/post/components/imageCarousel';
+
+import ImageCarousel from '../modules/post/components/imageCarousel'; // 기본 이미지 캐러셀 컴포넌트
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
+} from '../../../utils/responsive'; // 반응형 사이즈 유틸
 
-import useHideTabBar from '../../../hooks/useHideTabBar';
-import ImageDeleteModal from '../modules/post/deleteOptionModal';
-import CommentSection from '../modules/post/components/commentSection';
-import DescriptionSection from '../modules/post/components/descriptionSection';
-import usePostPageViewModel from '../hooks/usePostPageViewModel';
-import {useSelector} from 'react-redux';
+import useHideTabBar from '../../../hooks/useHideTabBar'; // 하단 탭바 숨김 처리 훅
+import ImageDeleteModal from '../modules/post/deleteOptionModal'; // 삭제 확인 모달
+import CommentSection from '../modules/post/components/commentSection'; // 댓글 섹션
+import DescriptionSection from '../modules/post/components/descriptionSection'; // 게시글 설명 섹션
+import usePostPageViewModel from '../hooks/usePostPageViewModel'; // ViewModel 훅
+import {useSelector} from 'react-redux'; // Redux 상태 가져오기
 
+// 화면 크기 상수화
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function PostPage({route}) {
+  // route에서 전달된 게시글 정보와 시작 이미지 인덱스
   const {memory, imageIndex} = route.params;
   const navigation = useNavigation();
   const categoryList = useSelector(state => state.category.categoryList);
-  const flatListRef = useRef(null);
+  const flatListRef = useRef(null); // 전체화면 이미지 캐러셀을 위한 ref
 
+  // 애니메이션용 Animated 값
   const scrollX = useRef(new Animated.Value(0)).current;
   const imageAnim = useRef(new Animated.Value(0)).current;
 
+  // ViewModel 훅 (상태 및 로직 분리)
   const vm = usePostPageViewModel(memory);
 
+  useEffect(() => {
+    // layout이 완료된 다음 스크롤되게 setTimeout 사용
+    if (flatListRef.current && vm.currentImageIndex != null) {
+      setTimeout(() => {
+        flatListRef.current.scrollToIndex({
+          index: vm.currentImageIndex,
+          animated: false,
+        });
+      }, 0);
+    }
+  }, [vm.currentImageIndex]);
+
+  // 하단 탭바 숨기기
   useHideTabBar();
 
+  // 댓글모드 여부에 따른 이미지 캐러셀 애니메이션
   useEffect(() => {
     Animated.timing(imageAnim, {
-      toValue: vm.commentIndex ? 1 : 0,
+      toValue: vm.commentIndex ? 1 : 0, // 댓글모드일 때 1, 아닐 때 0
       duration: 300,
       useNativeDriver: false,
     }).start();
   }, [vm.commentIndex]);
 
+  // 전체화면 이미지 모드 진입 시, 해당 이미지 인덱스로 FlatList 스크롤 이동
   useEffect(() => {
     if (flatListRef.current && imageIndex != null) {
       flatListRef.current.scrollToIndex({
@@ -59,17 +79,18 @@ export default function PostPage({route}) {
     }
   }, [imageIndex]);
 
+  // ViewModel의 currentImageIndex 설정 (최초 진입 시)
   useEffect(() => {
     if (imageIndex != null) {
       vm.setCurrentImageIndex(imageIndex);
     }
   }, [imageIndex]);
 
+  // 헤더 타이틀 및 우측 휴지통 버튼 설정
   useEffect(() => {
     const matchedCategory = categoryList.find(
       cat => cat.categoryId === memory.categoryId,
     );
-
     const categoryTitle = matchedCategory?.title || '게시물';
 
     navigation.setOptions({
@@ -101,19 +122,24 @@ export default function PostPage({route}) {
   }, [memory, categoryList]);
 
   return (
-    <View style={styles.container} pointerEvents="box-none">
-      <ImageCarousel
-        commentCount={memory.commentCount}
-        localImages={vm.localImages}
-        imageAnim={imageAnim}
-        scrollX={scrollX}
-        currentImageIndex={vm.currentImageIndex}
-        setCurrentImageIndex={vm.setCurrentImageIndex}
-        setCommentIndex={vm.setCommentIndex}
-        onImagePress={() => vm.setIsImageFullScreen(true)}
-      />
+    <View style={styles.container}>
+      {/* 이미지 캐러셀 */}
+      {vm.localImages && (
+        <ImageCarousel
+          commentCount={memory.commentCount}
+          localImages={vm.localImages}
+          imageAnim={imageAnim}
+          scrollX={scrollX}
+          currentImageIndex={vm.currentImageIndex}
+          setCurrentImageIndex={vm.setCurrentImageIndex}
+          setCommentIndex={vm.setCommentIndex}
+          onImagePress={() => vm.setIsImageFullScreen(true)}
+        />
+      )}
+
+      {/* 게시글 설명 UI (댓글 모드 아님 + 전체 이미지 아님) */}
       {!vm.commentIndex && !vm.isImageFullScreen && (
-        <View style={styles.descriptionWrapper} pointerEvents="box-none">
+        <View style={styles.descriptionWrapper}>
           <DescriptionSection
             memory={memory}
             commentList={vm.commentList}
@@ -122,8 +148,9 @@ export default function PostPage({route}) {
         </View>
       )}
 
+      {/* 댓글 모드 UI */}
       {vm.commentIndex && !vm.isImageFullScreen && (
-        <View style={styles.commentWrapper} pointerEvents="box-none">
+        <View style={styles.commentWrapper}>
           <CommentSection
             commentList={vm.commentList}
             commentText={vm.commentText}
@@ -135,52 +162,7 @@ export default function PostPage({route}) {
         </View>
       )}
 
-      {vm.isImageFullScreen && (
-        <View
-          style={[StyleSheet.absoluteFillObject, {backgroundColor: '#F9F9F9'}]}>
-          <FlatList
-            ref={flatListRef}
-            data={vm.localImages}
-            key={`fullscreen-${vm.isImageFullScreen}-${imageIndex}`}
-            horizontal
-            pagingEnabled={true}
-            snapToAlignment="start"
-            decelerationRate="fast"
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(_, index) => index.toString()}
-            getItemLayout={(_, index) => ({
-              length: SCREEN_WIDTH,
-              offset: SCREEN_WIDTH * index,
-              index,
-            })}
-            initialScrollIndex={vm.currentImageIndex}
-            onMomentumScrollEnd={e => {
-              const index = Math.round(
-                e.nativeEvent.contentOffset.x / SCREEN_WIDTH,
-              );
-              vm.setCurrentImageIndex(index);
-            }}
-            renderItem={({item}) => (
-              <TouchableOpacity
-                activeOpacity={1}
-                onPress={() => vm.setIsImageFullScreen(false)}
-                style={{
-                  width: SCREEN_WIDTH,
-                  height: SCREEN_HEIGHT,
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  alignSelf: 'center',
-                }}>
-                <Image
-                  source={{uri: item}}
-                  style={{width: '100%', height: '100%', resizeMode: 'contain'}}
-                />
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      )}
-
+      {/* 삭제 확인 모달 */}
       {vm.deleteModalVisible && (
         <ImageDeleteModal
           visible={vm.deleteModalVisible}
@@ -198,6 +180,7 @@ export default function PostPage({route}) {
         </ImageDeleteModal>
       )}
 
+      {/* 휴지통 버튼 누르면 나타나는 삭제 옵션 메뉴 */}
       {vm.showDeleteOptions && !vm.isImageFullScreen && (
         <View style={styles.deleteOptions}>
           <TouchableOpacity
@@ -235,7 +218,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: '100%',
     height: '22%',
-    zIndex: 10,
+    zIndex: 1,
   },
   commentWrapper: {
     position: 'absolute',
@@ -250,7 +233,7 @@ const styles = StyleSheet.create({
     right: getResponsiveWidth(20),
     backgroundColor: 'rgba(220, 220, 220, 0.7)',
     borderRadius: 7,
-    zIndex: 10,
+    zIndex: 11,
   },
   deleteOptionButton: {
     paddingVertical: getResponsiveHeight(10),

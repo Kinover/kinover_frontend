@@ -203,3 +203,58 @@ export const updateKinoPersonalityThunk = createAsyncThunk(
     }
   },
 );
+
+export const toggleChatRoomNotificationThunk = createAsyncThunk(
+  'chatRoom/toggleNotification',
+  async ({userId, chatRoomId, isOn}, {rejectWithValue}) => {
+    try {
+      const token = await getToken();
+
+      const url = `https://kinover.shop/api/chatRoom/notification/chatroom?userId=${userId}&chatRoomId=${chatRoomId}&isOn=${isOn}`;
+
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        return rejectWithValue(`알림 설정 실패: ${res.status}`);
+      }
+
+      console.log(`✅ 알림 ${isOn ? 'ON' : 'OFF'} 설정 완료 for ${chatRoomId}`);
+      return {chatRoomId, isOn};
+    } catch (err) {
+      return rejectWithValue(err.message || '알 수 없는 에러');
+    }
+  },
+);
+
+// 🔄 유저 전체 채팅방 알림 ON/OFF 설정
+export const toggleAllChatRoomNotificationThunk = createAsyncThunk(
+  'chatRoom/toggleAllNotification',
+  async ({userId, isOn}, {rejectWithValue}) => {
+    try {
+      const token = await getToken();
+      const url = `https://kinover.shop/api/chatRoom/notification/user?userId=${userId}&isOn=${isOn}`;
+
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        return rejectWithValue(`전체 채팅방 알림 설정 실패: ${res.status}`);
+      }
+
+      const result = await res.text(); // 서버 응답은 단순 문자열일 수도 있어!
+      console.log(`✅ 전체 알림 ${isOn ? 'ON' : 'OFF'} 설정 완료`);
+      return {userId, isOn};
+    } catch (err) {
+      return rejectWithValue(err.message || '알 수 없는 에러');
+    }
+  },
+);

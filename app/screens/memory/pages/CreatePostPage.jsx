@@ -1,4 +1,4 @@
-import React, {useState, useLayoutEffect} from 'react';
+import React, {useState, useLayoutEffect, useMemo, useCallback} from 'react';
 import {
   StyleSheet,
   View,
@@ -13,108 +13,101 @@ import {
   getResponsiveHeight,
   getResponsiveFontSize,
 } from '../../../utils/responsive';
-import {useSelector, useDispatch} from 'react-redux';
+import {useSelector} from 'react-redux';
 import {getPresignedUrls, uploadImageToS3} from '../../../api/imageUrlApi';
 import {uploadPostApi} from '../../../api/uploadPostApi';
-import {
-  createCategoryThunk,
-  fetchCategoryThunk,
-} from '../../../redux/thunk/categoryThunk';
 
+// ----- utils -----
 const getMediaTypeFromUri = uri => {
-  if (!uri || typeof uri !== 'string') return 'UNKNOWN';
+  if (!uri || typeof uri !== 'string') return 'unknown';
   const lower = uri.toLowerCase();
-  if (lower.match(/\.(jpg|jpeg|png|gif|webp)$/)) return 'IMAGE';
-  if (lower.match(/\.(mp4|mov|avi|wmv|flv|mkv)$/)) return 'VIDEO';
-  return 'UNKNOWN';
+  if (lower.match(/\.(jpg|jpeg|png|gif|webp)$/)) return 'image';
+  if (lower.match(/\.(mp4|mov|avi|wmv|flv|mkv)$/)) return 'video';
+  return 'unknown';
 };
+
+// UUID (crypto.randomUUID 지원되면 그거 써도 됨)
+const genUuid = () =>
+  (globalThis.crypto?.randomUUID?.() ??
+    'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    }));
 
 export default function CreatePostPage({navigation, route}) {
   const [text, setText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
+
   const user = useSelector(state => state.user);
   const family = useSelector(state => state.family);
-  const dispatch = useDispatch();
-  const {selectedCategory, selectedImages} = route.params;
 
-  const handleUpload = async () => {
+  const {selectedCategory, selectedImages} = route.params ?? {};
+
+  const categoryId = String(selectedCategory?.categoryId);
+  // if (!categoryId) throw new Error('카테고리 ID가 없어요.'); // 방어 코드
+
+  const categoryTitle = selectedCategory?.title ?? '';
+
+  const handleUpload = useCallback(async () => {
     if (isUploading) return;
     setIsUploading(true);
 
     try {
-      console.log('[업로드 시작]');
-      console.log('선택된 카테고리:', selectedCategory);
-      console.log('선택된 이미지 수:', selectedImages?.length);
-
-      if (selectedCategory?.isTemporary) {
-        console.log('[임시 카테고리 감지됨] → 카테고리 생성 시도');
-
-        const result = await dispatch(
-          createCategoryThunk({
-            categoryId: selectedCategory.categoryId,
-            title: selectedCategory.title,
-            familyId: family.familyId,
-          }),
-        );
-
-        if (createCategoryThunk.fulfilled.match(result)) {
-          console.log('✅ 카테고리 생성 성공:', result.payload);
-
-          // ✅ 먼저 기다렸다가
-          await new Promise(resolve => setTimeout(resolve, 300));
-
-          console.log('📥 카테고리 목록 다시 불러오는 중...');
-          await dispatch(fetchCategoryThunk(family.familyId));
-        } else {
-          console.error('❌ 카테고리 생성 실패:', result);
-          return;
-        }
+      if (!categoryTitle) throw new Error('카테고리 제목이 없어요.');
+      if (!Array.isArray(selectedImages) || selectedImages.length === 0) {
+        throw new Error('이미지를 선택해주세요.');
       }
 
-      console.log('[파일 이름 생성 중]');
-      const fileNames = selectedImages.map(
-        (_, i) =>
-          `img_${Date.now()}_${i}f_${Math.floor(Math.random() * 1000)}.jpg`,
-      );
+      // 1) 파일 이름(확장자 유지 권장)
+      const now = Date.now();
+      const fileNames = selectedImages.map((uri, i) => {
+        const ext = (uri?.split('.').pop() || 'jpg').toLowerCase();
+        return `img_${now}_${i}_${Math.floor(Math.random() * 1000)}.${ext}`;
+      });
 
-      console.log('🪪 파일 이름 목록:', fileNames);
-
-      console.log('[Presigned URL 요청]');
+      // 2) Presigned URL 요청 & 업로드
       const presignedUrls = await getPresignedUrls(fileNames);
-      console.log('✅ Presigned URLs:', presignedUrls);
-
-      console.log('[이미지 업로드 시작]');
+      if (!Array.isArray(presignedUrls) || presignedUrls.length !== fileNames.length) {
+        throw new Error('Presigned URL 응답 형식이 올바르지 않습니다.');
+      }
       for (let i = 0; i < selectedImages.length; i++) {
-        console.log(`📤 S3 업로드: ${selectedImages[i]} → ${fileNames[i]}`);
         await uploadImageToS3(presignedUrls[i], selectedImages[i]);
       }
-      console.log('✅ 이미지 업로드 완료');
 
-      const postTypes = selectedImages.map(uri => getMediaTypeFromUri(uri));
-      console.log('🧾 postTypes:', postTypes);
-
+      // 3) 게시글 업로드 (카테고리 API 사용 X, id+title만 전송)
+      const postTypes = selectedImages.map(getMediaTypeFromUri);
       const payload = {
         authorId: user.userId,
-        categoryId: selectedCategory.categoryId,
-        imageUrls: fileNames,
-        postTypes,
+        familyId: String(family.familyId),
+        categoryId,                 // ✅ 항상 포함
+        categoryTitle,              // ✅ 항상 포함
+        imageUrls: fileNames,       // 파일명 배열
+        postTypes,                  // 'image' | 'video'
         content: text,
-        familyId: family.familyId,
       };
 
-      console.log('[최종 업로드 payload]', payload);
-
       await uploadPostApi(payload);
-      console.log('🎉 게시글 업로드 성공!');
-
       navigation.navigate('추억');
     } catch (err) {
-      console.error('🚨 게시글 업로드 실패:', err);
+      console.error('🚨 게시글 업로드 실패:', {
+        status: err?.response?.status ?? err?.status ?? err?.code,
+        message: err?.message,
+        responseData: err?.response?.data,
+      });
     } finally {
       setIsUploading(false);
-      console.log('[업로드 종료]');
     }
-  };
+  }, [
+    isUploading,
+    selectedImages,
+    text,
+    user.userId,
+    family.familyId,
+    categoryId,
+    categoryTitle,
+    navigation,
+  ]);
 
   useLayoutEffect(() => {
     navigation.setOptions({

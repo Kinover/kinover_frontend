@@ -7,22 +7,56 @@ import {
 } from '../../../utils/responsive';
 import CustomSwitch from '../../../components/customSwitch';
 import useHideTabBar from '../../../hooks/useHideTabBar';
+import {useDispatch, useSelector} from 'react-redux';
+
+import {toggleAllChatRoomNotificationThunk} from '../../../redux/thunk/chatRoomThunk';
+import {toggleCommentNotificationThunk} from '../../../redux/thunk/commentThunk';
+import {togglePostNotificationThunk} from '../../../redux/thunk/memoryThunk';
 
 export default function NotificationSettingScreen() {
+  const dispatch = useDispatch();
+  const userId = useSelector(
+    state => state.user.userId?.toString?.() || state.user.userId,
+  );
+
   const [allNotification, setAllNotification] = useState(true);
   const [chatNotification, setChatNotification] = useState(true);
   const [postNotification, setPostNotification] = useState(true);
   const [commentNotification, setCommentNotification] = useState(true);
 
-  useHideTabBar({stayHidden:true});
+  useHideTabBar({stayHidden: true});
 
-  // ✅ 전체 알림 토글 시 하위 알림 동기화
+  // ✅ 전체 알림 토글 시 하위 알림도 변경 + API 호출
   const handleToggleAllNotification = () => {
     const newValue = !allNotification;
     setAllNotification(newValue);
     setChatNotification(newValue);
     setPostNotification(newValue);
     setCommentNotification(newValue);
+    // dispatch(toggleAllNotificationsThunk({userId, isOn: newValue}));
+
+    // ✅ 각 알림 API 직접 호출
+    dispatch(toggleAllChatRoomNotificationThunk({userId, isOn: newValue}));
+    dispatch(togglePostNotificationThunk({userId, isOn: newValue}));
+    dispatch(toggleCommentNotificationThunk({userId, isOn: newValue}));
+  };
+
+  const handleToggleChatNotification = () => {
+    const newValue = !chatNotification;
+    setChatNotification(newValue);
+    dispatch(toggleAllChatRoomNotificationThunk({userId, isOn: newValue}));
+  };
+
+  const handleTogglePostNotification = () => {
+    const newValue = !postNotification;
+    setPostNotification(newValue);
+    dispatch(togglePostNotificationThunk({userId, isOn: newValue}));
+  };
+
+  const handleToggleCommentNotification = () => {
+    const newValue = !commentNotification;
+    setCommentNotification(newValue);
+    dispatch(toggleCommentNotificationThunk({userId, isOn: newValue}));
   };
 
   // ✅ 하위 알림이 하나라도 false면 전체 알림도 false
@@ -53,7 +87,7 @@ export default function NotificationSettingScreen() {
           <Text style={styles.label}>채팅방 알림</Text>
           <CustomSwitch
             isEnabled={chatNotification}
-            toggleSwitch={() => setChatNotification(prev => !prev)}
+            toggleSwitch={handleToggleChatNotification}
           />
         </View>
       </View>
@@ -63,7 +97,7 @@ export default function NotificationSettingScreen() {
           <Text style={styles.label}>게시물 알림</Text>
           <CustomSwitch
             isEnabled={postNotification}
-            toggleSwitch={() => setPostNotification(prev => !prev)}
+            toggleSwitch={handleTogglePostNotification}
           />
         </View>
       </View>
@@ -73,7 +107,7 @@ export default function NotificationSettingScreen() {
           <Text style={styles.label}>댓글 알림</Text>
           <CustomSwitch
             isEnabled={commentNotification}
-            toggleSwitch={() => setCommentNotification(prev => !prev)}
+            toggleSwitch={handleToggleCommentNotification}
           />
         </View>
       </View>

@@ -1,5 +1,7 @@
 // fetchUserThunk.js
 import axios from 'axios';
+import {createAsyncThunk} from '@reduxjs/toolkit';
+
 import {Platform} from 'react-native';
 import {getToken} from '../../utils/storage';
 import {
@@ -68,3 +70,31 @@ export const modifyUserThunk = updatedUser => {
     }
   };
 };
+
+export const deleteUserThunk = createAsyncThunk(
+  'user/deleteUser',
+  async (_, {rejectWithValue, dispatch}) => {
+    try {
+      const token = await getToken();
+
+      const response = await axios.delete('https://kinover.shop/api/user/delete', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      console.log('✅ 회원 탈퇴 성공:', response.data);
+
+      // ✅ 로그아웃 효과: 사용자 정보 초기화 & 토큰 삭제
+      dispatch(setUser(null));
+      await removeToken(); // storage.js에 있는 거 맞지?
+
+      return response.data;
+    } catch (error) {
+      const errorMsg =
+        error.response?.data?.message || error.message || '알 수 없는 오류';
+      console.error('❌ 회원 탈퇴 실패:', errorMsg);
+      return rejectWithValue(errorMsg);
+    }
+  },
+);

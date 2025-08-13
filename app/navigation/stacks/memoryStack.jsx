@@ -29,6 +29,7 @@ export default function MemoryStack() {
   const navigation = useNavigation();
   const defaultHeaderStyle = {
     borderBottomWidth: 0,
+    display:'flex',
     shadowOpacity: 0,
     elevation: 0,
     height:
@@ -42,7 +43,6 @@ export default function MemoryStack() {
       initialRouteName="추억"
       screenOptions={{
         gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
-
         headerShown: true,
         headerStyle: defaultHeaderStyle,
         headerTitleAlign: 'left',
@@ -59,7 +59,6 @@ export default function MemoryStack() {
         component={PostPage}
         options={({route, navigation}) => ({
           gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
-
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerRight: () => <RenderHeaderDeletePost navigation={navigation} />,
           headerTitle: route.params?.memory?.title || '',

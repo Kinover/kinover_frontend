@@ -13,13 +13,13 @@ export default function AppNavigator({}) {
       initialRouteName="Auth"
       screenOptions={({navigation}) => ({
         headerBackTitleVisible: false,
-
         // ✅ 객체 구조분해 필수!
         headerStyle: {
           borderBottomWidth: 0,
           shadowOpacity: 0,
           elevation: 0,
           height: getResponsiveHeight(120),
+          display:'flex',
         },
         headerTitleAlign: 'center',
         headerShown: false,

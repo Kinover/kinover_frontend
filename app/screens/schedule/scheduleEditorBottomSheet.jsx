@@ -79,7 +79,7 @@ const ScheduleEditorBottomSheetModal = forwardRef((props, ref) => {
           showsHorizontalScrollIndicator={false}
           keyboardShouldPersistTaps="always" // ✅ 안드로이드에서 중요
           contentContainerStyle={{paddingBottom: 10}}
-          style={{marginBottom: 35}}>
+          style={{marginBottom: 20}}>
           <View style={{width: 70, height: 95, marginRight: 12}}>
             <TouchableOpacity
               onPress={() => setSelectedUserId('')}
@@ -239,19 +239,23 @@ const ScheduleEditorBottomSheetModal = forwardRef((props, ref) => {
           onChangeText={setTitle}
           placeholderTextColor="#BDBDBD"
           style={styles.input}
+          placeholder="예) 병원 예약, 가족 모임 등"
         />
 
         <View style={styles.buttonRow}>
           {editingSchedule && (
             <TouchableOpacity
               style={[styles.button, styles.deleteButton]}
-              onPress={onDelete}>
+              onPress={onDelete}
+              hitSlop={8}>
               <Text style={styles.buttonText}>삭제</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
             style={[styles.button, styles.saveButton]}
-            onPress={onSubmit}>
+            onPress={onSubmit}
+            hitSlop={8} // 위/아래/좌/우 각각 8px 확장
+          >
             <Text style={[styles.buttonText, {color: 'black'}]}>저장</Text>
           </TouchableOpacity>
         </View>
@@ -313,4 +317,3 @@ const styles = StyleSheet.create({
 });
 
 export default ScheduleEditorBottomSheetModal;
-

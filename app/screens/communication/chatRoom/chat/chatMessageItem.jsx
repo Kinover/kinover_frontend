@@ -114,17 +114,18 @@ const styles = StyleSheet.create({
   },
   dateSeparator: {
     alignSelf: 'center',
+    // alignItems: 'center',
     paddingHorizontal: getResponsiveWidth(15),
     paddingVertical: getResponsiveHeight(7),
     marginVertical: getResponsiveHeight(24),
     // backgroundColor: 'rgba(255, 202, 85, 0.7)',
     backgroundColor: 'rgba(0, 0, 0, 0.25)',
-
     borderRadius: getResponsiveIconSize(20),
   },
   dateSeparatorText: {
     fontSize: getResponsiveFontSize(12),
     fontWeight: 'semibold',
-    color:'white',
+    color: 'white',
+    alignContent: 'center',
   },
 });

@@ -17,7 +17,7 @@ export const fetchMemoryThunk = (familyId, categoryId = null) => {
       let apiUrl = `https://kinover.shop/api/posts?familyId=${familyId}`;
       if (categoryId) {
         apiUrl += `&categoryId=${categoryId}`;
-      } 
+      }
 
       console.log('🌐 GET 요청 URL:', apiUrl);
 
@@ -105,6 +105,36 @@ export const deletePostImageThunk = (postId, imageUrlToDelete, familyId) => {
     } finally {
       dispatch(setMemoryLoading(false));
       console.log('📤 이미지 삭제 요청 종료');
+    }
+  };
+};
+
+// 게시글 알림 ON/OFF
+export const togglePostNotificationThunk = ({userId, isOn}) => {
+  return async dispatch => {
+    try {
+      const token = await getToken();
+      console.log(`🔔 게시글 알림 설정 요청: userId=${userId}, isOn=${isOn}`);
+
+      await axios.patch(
+        `https://kinover.shop/api/posts/notification/post`,
+        null,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          params: {
+            userId,
+            isOn,
+          },
+        },
+      );
+
+      console.log('✅ 게시글 알림 설정 변경 성공');
+    } catch (error) {
+      console.error('❌ 게시글 알림 설정 변경 실패:', error.message);
+      dispatch(setMemoryError(error.message));
     }
   };
 };

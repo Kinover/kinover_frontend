@@ -82,3 +82,35 @@ export const deleteCommentThunk = (commentId, postId) => {
     }
   };
 };
+
+// ✅ 댓글 알림 ON/OFF
+export const toggleCommentNotificationThunk = ({userId, isOn}) => {
+  return async dispatch => {
+    try {
+      const token = await getToken();
+      console.log(
+        `🔔 댓글 알림 설정 요청: userId=${userId}, isOn=${isOn}`,
+      );
+
+      await axios.patch(
+        `${BASE_URL}/notification/comment`,
+        null,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          params: {
+            userId,
+            isOn,
+          },
+        },
+      );
+
+      console.log('✅ 댓글 알림 설정 변경 성공');
+    } catch (error) {
+      console.error('❌ 댓글 알림 설정 변경 실패:', error.message);
+      dispatch(setCommentError(error.message));
+    }
+  };
+};

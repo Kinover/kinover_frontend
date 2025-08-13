@@ -45,7 +45,7 @@ export default function CategorySelectPage({route}) {
   const handleAddCategory = () => {
     if (newCategory.trim()) {
       const tempCategory = {
-        categoryId: uuidv4(), // ← UUID로 대체!
+        categoryId: '', // ← UUID로 대체!
         title: newCategory.trim(),
         isTemporary: true,
       };
