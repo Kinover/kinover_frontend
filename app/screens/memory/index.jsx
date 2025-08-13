@@ -26,8 +26,7 @@ export default function MemoryScreen() {
     navigation.setOptions({
       headerLeft: () => (
         <CategoryDropdownButton
-          selectedTitle={'전체'}
-          style={{marginLeft: getResponsiveWidth(31)}}
+          selectedTitle={selectedCategory?.title || '전체'}
           onPress={() => {
             categorySheetRef.current?.present();
           }}></CategoryDropdownButton>

@@ -98,9 +98,11 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
   return (
     <View
       style={{
+        display:'flex',
         flexDirection: 'row',
         gap: getResponsiveWidth(12.5),
         marginRight: getResponsiveWidth(25),
+
       }}>
       {createIconButton(
         () =>

@@ -14,6 +14,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
+import {toggleChatRoomNotificationThunk} from '../../../../redux/thunk/chatRoomThunk';
 import {useSelector, useDispatch} from 'react-redux';
 import LeaveChatRoomModal from './modal/leaveChatRoomModal';
 import RenameChatRoomModal from './modal/renameChatRoomModal';
@@ -80,6 +81,26 @@ export default function ChatSettings({
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{translateX: translateX.value}],
   }));
+
+  const handleToggleAlarm = () => {
+    const newIsOn = !isAlarmOn;
+    setIsAlarmOn(newIsOn);
+
+    dispatch(
+      toggleChatRoomNotificationThunk({
+        chatRoomId,
+        userId,
+        isOn: newIsOn,
+      }),
+    )
+      .unwrap()
+      .then(() => {
+        console.log('🔔 알림 설정 변경 성공');
+      })
+      .catch(err => {
+        console.warn('❌ 알림 설정 변경 실패:', err);
+      });
+  };
 
   const handleRenameChatRoom = () => {
     if (!newRoomName.trim()) return;
@@ -180,7 +201,7 @@ export default function ChatSettings({
       <Animated.View style={[styles.container, animatedStyle]}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>채팅방 설정</Text>
-          <TouchableOpacity onPress={() => setIsAlarmOn(prev => !prev)}>
+          <TouchableOpacity onPress={handleToggleAlarm}>
             <Image
               style={styles.alarmIcon}
               source={
@@ -296,7 +317,10 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: getResponsiveHeight(90),
+    marginTop:
+      Platform.OS === 'android'
+        ? getResponsiveHeight(40)
+        : getResponsiveHeight(90),
     marginBottom: getResponsiveHeight(60),
     alignItems: 'center',
   },

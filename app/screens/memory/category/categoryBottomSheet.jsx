@@ -25,12 +25,17 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
+import {useWindowDimensions} from 'react-native';
 
 const CategoryBottomSheetModal = forwardRef(
   ({categoryList = [], selectedCategory, onSelectCategory, onCancel}, ref) => {
     const modalRef = useRef(null);
     const snapPoints = useMemo(() => ['60%']); // ✅ 최대 80%
     const [tempSelected, setTempSelected] = useState(selectedCategory);
+
+    const {height} = useWindowDimensions();
+    // const MAX_DYNAMIC = Math.min(height * 0.8, 620);
+    const MAX_DYNAMIC = height * 0.75;
 
     useImperativeHandle(ref, () => ({
       present: () => modalRef.current?.present(),
@@ -51,6 +56,8 @@ const CategoryBottomSheetModal = forwardRef(
         ref={modalRef}
         index={0} // 초기엔 닫힌 상태
         snapPoints={snapPoints}
+        enableDynamicSizing // ✅ 컨텐츠 높이에 맞춤
+        maxDynamicContentSize={MAX_DYNAMIC} // ✅ 최대 높이 제한
         handleIndicatorStyle={{backgroundColor: '#ccc', width: 55}} // 색과 크기 조절 가능
         backdropComponent={props => (
           <BottomSheetBackdrop
@@ -127,7 +134,6 @@ const styles = StyleSheet.create({
   },
   title: {
     paddingHorizontal: getResponsiveWidth(30),
-
     fontSize: getResponsiveFontSize(23),
     fontFamily: 'Pretendard-SemiBold',
     textAlign: 'left',
@@ -140,7 +146,7 @@ const styles = StyleSheet.create({
   categoryItem: {
     marginHorizontal: getResponsiveWidth(22),
     paddingVertical: getResponsiveHeight(20),
-    paddingHorizontal: getResponsiveWidth(10),
+    paddingHorizontal: getResponsiveWidth(15),
     backgroundColor: 'white',
     borderRadius: 13,
     marginBottom: getResponsiveHeight(8),
@@ -154,7 +160,7 @@ const styles = StyleSheet.create({
     // borderWidth: 1.4,
   },
   categoryText: {
-    fontSize: getResponsiveFontSize(15),
+    fontSize: getResponsiveFontSize(17),
     fontFamily: 'Pretendard-Medium',
     textAlign: 'left',
     color: '#808080',
@@ -165,11 +171,14 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   checkIcon: {
-    width: getResponsiveIconSize(17),
+    width: getResponsiveIconSize(20),
     height: getResponsiveIconSize(14),
     resizeMode: 'contain',
   },
   applyButton: {
+    marginHorizontal: getResponsiveWidth(22),
+    paddingVertical: getResponsiveHeight(20),
+    paddingHorizontal: getResponsiveWidth(15),
     borderRadius: 13,
     backgroundColor: '#FFC749',
     paddingVertical: getResponsiveHeight(20),

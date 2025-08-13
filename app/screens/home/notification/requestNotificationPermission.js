@@ -2,6 +2,7 @@ import {PermissionsAndroid, Platform} from 'react-native';
 import {getApp} from 'firebase/app';
 
 import {getMessaging, requestPermission} from 'firebase/messaging';
+import messaging from '@react-native-firebase/messaging';
 
 import axios from 'axios';
 import {getToken} from '../../../utils/storage';

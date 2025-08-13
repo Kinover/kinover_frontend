@@ -18,10 +18,10 @@ export default function CategoryDropdownButton({
   style,
 }) {
   return (
-    <TouchableOpacity style={[styles.categoryButton, style]} onPress={onPress}>
+    <TouchableOpacity style={[styles.categoryButton]} onPress={onPress}>
       <Text style={styles.text}>{selectedTitle}</Text>
       <Image
-        source={require('../../../assets/images/arrow-down.png')}
+        source={require('../../../assets/icons/category-down.png')}
         style={styles.icon}
       />
     </TouchableOpacity>
@@ -30,20 +30,25 @@ export default function CategoryDropdownButton({
 
 const styles = StyleSheet.create({
   categoryButton: {
+    display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
+    alignContent:'center',
     justifyContent: 'flex-start',
-    gap: getResponsiveWidth(5),
+    height:'auto',
+    gap: getResponsiveWidth(10),
+    marginLeft: getResponsiveWidth(31),
   },
   text: {
     fontFamily: 'Pretendard-Bold',
     fontSize: getResponsiveFontSize(24),
     color: '#4D4D4D',
+    textAlign:'center',
   },
   icon: {
     resizeMode: 'contain',
     width: getResponsiveWidth(20),
-    height: getResponsiveHeight(20),
+    height: getResponsiveWidth(20),
+    alignSelf: 'center',
   },
 });
-

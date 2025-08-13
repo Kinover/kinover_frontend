@@ -18,7 +18,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
 import BottomSheet, {BottomSheetView} from '@gorhom/bottom-sheet';
 
-import Calendar from './calendar';
+import CalendarToggle from './calendar';
 import Schedule from './schedule';
 import {
   getScheduleCountPerDayThunk,
@@ -152,7 +152,7 @@ export default function ScheduleScreen() {
               <Text style={styles.loadingText}>일정 불러오는 중이에요...</Text>
             </View>
           ) : (
-            <Calendar
+            <CalendarToggle
               selectedDate={selectedDate}
               setSelectedDate={setSelectedDate}
               scheduleCountPerDay={scheduleCountPerDay}

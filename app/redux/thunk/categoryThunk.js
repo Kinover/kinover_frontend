@@ -84,14 +84,18 @@ export const fetchCategoryThunk = createAsyncThunk(
 );
 
 // ✅ 카테고리 생성 Thunk
+// 예시
 export const createCategoryThunk = createAsyncThunk(
   'category/create',
-  async ({title, familyId}, {rejectWithValue}) => {
+  async ({ title, familyId }, { rejectWithValue }) => {
     try {
-      const data = await createCategory(title, familyId);
-      return data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+      const res = await api.post('/api/categories', { title, familyId });
+      return res.data; // {categoryId, title, ...}
+    } catch (e) {
+      const status = e?.response?.status || 500;
+      const message = e?.response?.data?.message || e.message;
+      return rejectWithValue({ status, message });
     }
-  },
+  }
 );
+
