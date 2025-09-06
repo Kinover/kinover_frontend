@@ -1,11 +1,15 @@
 import React from 'react';
-import {Image, Platform, Text, TouchableOpacity, View} from 'react-native';
+import {Platform, Text, TouchableOpacity, View} from 'react-native';
+
 import {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveFontSize,
   getResponsiveWidth,
 } from '../utils/responsive';
+import {jsiConfigureProps} from 'react-native-reanimated/lib/typescript/core';
+import {useSelector} from 'react-redux';
+import FastImage from 'react-native-fast-image';
 
 // ✅ 공통 아이콘 버튼 생성기
 const createIconButton = (
@@ -17,38 +21,60 @@ const createIconButton = (
   additionalStyle = {},
 ) => (
   <TouchableOpacity onPress={navigationFunc}>
-    <Image
+    <FastImage
       source={imageSource}
       style={{
         width: getResponsiveWidth(width),
         height: getResponsiveHeight(height),
-        resizeMode: 'contain',
         ...margin,
         ...additionalStyle,
       }}
+      resizeMode={FastImage.resizeMode.contain}
     />
   </TouchableOpacity>
 );
 
 // ✅ 탭바 아이콘 및 라벨 렌더러
-export const renderTabBarIcon = (focused, focusedUri, defaultUri) => (
-  <Image
-    source={{uri: focused ? focusedUri : defaultUri}}
-    style={
-      Platform.OS == 'ios'
-        ? {
-            width: getResponsiveIconSize(25),
-            height: getResponsiveIconSize(25),
-            resizeMode: 'contain',
-          }
-        : {
-            width: getResponsiveIconSize(27.5),
-            height: getResponsiveIconSize(27.5),
-            resizeMode: 'contain',
-          }
-    }
-  />
-);
+
+// ✅ 공통 TabBar 아이콘
+export const renderTabBarIcon = (focused, focusedUri, defaultUri, tabName) => {
+  const hasUnread = useSelector(state => state.notification.hasUnread);
+
+  return (
+    <View style={{position: 'relative'}}>
+      <FastImage
+        source={{uri: focused ? focusedUri : defaultUri}}
+        style={
+          Platform.OS === 'ios'
+            ? {
+                width: getResponsiveIconSize(25),
+                height: getResponsiveIconSize(25),
+                resizeMode: 'contain',
+              }
+            : {
+                width: getResponsiveIconSize(27.5),
+                height: getResponsiveIconSize(27.5),
+                resizeMode: 'contain',
+              }
+        }
+      />
+      {/* ✅ 알림 탭일 때만 빨간 점 */}
+      {tabName === '알림' && hasUnread && (
+        <View
+          style={{
+            position: 'absolute',
+            top: -2,
+            right: -2,
+            width: 8,
+            height: 8,
+            borderRadius: 4,
+            backgroundColor: 'red',
+          }}
+        />
+      )}
+    </View>
+  );
+};
 
 export const renderTabBarLabel = (label, focused) => (
   <Text
@@ -72,7 +98,7 @@ export const renderTabBarLabel = (label, focused) => (
 // ✅ 헤더 컴포넌트 모음
 export const RenderHeaderTitleLogo = () => (
   <View style={{paddingBottom: getResponsiveHeight(20)}}>
-    <Image
+    <FastImage
       source={require('../assets/icons/kino-logo.png')}
       style={{
         top: getResponsiveHeight(6),
@@ -98,11 +124,9 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
   return (
     <View
       style={{
-        display:'flex',
+        // display:'flex',
         flexDirection: 'row',
-        gap: getResponsiveWidth(12.5),
         marginRight: getResponsiveWidth(25),
-
       }}>
       {createIconButton(
         () =>
@@ -114,6 +138,9 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
         getResponsiveIconSize(29),
         getResponsiveIconSize(29),
       )}
+      <View
+        style={{width: getResponsiveWidth(12.5), justifyContent: 'flex-end'}}
+      />
       {createIconButton(
         () =>
           navigation.navigate('Tabs', {
@@ -167,12 +194,9 @@ export const RenderHeaderDeletePost = () =>
   createIconButton(
     () => {},
     require('../assets/images/trash.png'),
-    20,
-    20,
-    {
-      marginRight: getResponsiveWidth(20),
-      marginBottom: getResponsiveHeight(12),
-    },
+    24, // 조금 크게
+    24,
+    {marginRight: getResponsiveWidth(20)},
     {zIndex: 999},
   );
 
@@ -205,7 +229,7 @@ export const RenderHeaderLogo = ({navigation}) => (
       })
     }
     style={{flexDirection: 'row', alignItems: 'flex-end'}}>
-    <Image
+    <FastImage
       source={require('../assets/images/kinover.png')}
       style={{
         width: getResponsiveWidth(70),
@@ -227,5 +251,3 @@ export const RenderHeaderLogo = ({navigation}) => (
     </Text>
   </TouchableOpacity>
 );
-
- 

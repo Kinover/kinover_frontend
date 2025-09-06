@@ -20,6 +20,8 @@ import {
   fetchCategoryThunk,
 } from '../../../redux/thunk/categoryThunk';
 import {v4 as uuidv4} from 'uuid';
+import useHideTabBar from '../../../hooks/useHideTabBar';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function CategorySelectPage({route}) {
   const navigation = useNavigation();
@@ -30,6 +32,8 @@ export default function CategorySelectPage({route}) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [newCategory, setNewCategory] = useState('');
+
+  useHideTabBar({stayHidden: true});
 
   useEffect(() => {
     if (familyId) dispatch(fetchCategoryThunk(familyId));
@@ -45,7 +49,7 @@ export default function CategorySelectPage({route}) {
   const handleAddCategory = () => {
     if (newCategory.trim()) {
       const tempCategory = {
-        categoryId: '', // ← UUID로 대체!
+        categoryId: null, // ← UUID로 대체!
         title: newCategory.trim(),
         isTemporary: true,
       };
@@ -62,7 +66,7 @@ export default function CategorySelectPage({route}) {
     navigation.setOptions({
       headerTitle: () => (
         <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>카테고리 선택</Text>
+          <Text style={styles.headerTitle}>카테고리 지정</Text>
         </View>
       ),
       headerRight: () => (
@@ -110,7 +114,7 @@ export default function CategorySelectPage({route}) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <FlatList
         data={categoryList}
         renderItem={renderItem}
@@ -118,12 +122,15 @@ export default function CategorySelectPage({route}) {
           `${item.categoryId || item.title}-${index}`
         }
         ItemSeparatorComponent={() => <View style={styles.separator} />}
-        ListFooterComponent={
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setAddModalVisible(true)}>
-            <Text style={styles.addText}>카테고리 추가</Text>
-          </TouchableOpacity>
+        ListHeaderComponent={
+          <>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => setAddModalVisible(true)}>
+              <Text style={styles.addText}>카테고리 추가</Text>
+            </TouchableOpacity>
+            <View style={styles.separator} />
+          </>
         }
       />
       <CategoryModal
@@ -147,7 +154,7 @@ export default function CategorySelectPage({route}) {
           </View>
         }
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -155,8 +162,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    borderTopWidth: 3,
-    borderColor: '#D3D3D3',
+    borderTopWidth: 2,
+    borderColor: '#E5E5E5',
   },
   headerCenter: {
     width: '100%',
@@ -164,9 +171,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: getResponsiveFontSize(20),
-    fontFamily: 'Pretendard-Regular',
+    fontSize: Platform.OS==='ios'?getResponsiveFontSize(20):getResponsiveFontSize(18),
     textAlign: 'center',
+    textAlignVertical: 'center',
+    fontFamily: 'Pretendard-Regular',
+    fontWeight:'semibold',
+    color: '#101010',
+    lineHeight:getResponsiveHeight(30),
   },
   headerRight: {
     marginRight: getResponsiveWidth(10),
@@ -180,7 +191,9 @@ const styles = StyleSheet.create({
   itemContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: getResponsiveWidth(20),
+    alignItems: 'center',
+    alignContent: 'center',
+    paddingVertical: getResponsiveWidth(22.5),
     paddingHorizontal: getResponsiveWidth(25),
   },
   selectedItem: {
@@ -189,19 +202,22 @@ const styles = StyleSheet.create({
   itemText: {
     fontSize: getResponsiveFontSize(15),
     fontFamily: 'Pretendard-Regular',
+    color: 'black',
+    textAlign: 'center',
+    textAlignVertical: 'center',
   },
   radioIcon: {
-    width: getResponsiveWidth(14),
-    height: getResponsiveHeight(14),
+    width: getResponsiveWidth(15),
+    height: getResponsiveHeight(15),
     resizeMode: 'contain',
   },
   separator: {
     height: 1,
     backgroundColor: '#eee',
-    marginHorizontal: getResponsiveWidth(10),
+    marginHorizontal: getResponsiveWidth(5),
   },
   addButton: {
-    paddingVertical: getResponsiveWidth(20),
+    paddingVertical: getResponsiveWidth(22.5),
     paddingHorizontal: getResponsiveWidth(25),
   },
   addText: {
@@ -213,7 +229,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(10),
   },
   modalTitle: {
-    fontSize: getResponsiveFontSize(18),
+    color:'black',
+    fontSize: Platform.OS==='android'?getResponsiveFontSize(20):getResponsiveFontSize(22),    color:'black',
     fontFamily: 'Pretendard-SemiBold',
     textAlign: 'center',
     marginBottom: getResponsiveHeight(15),
@@ -224,10 +241,10 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 8,
     paddingHorizontal: getResponsiveWidth(10),
-    paddingVertical: getResponsiveHeight(8),
+    paddingVertical: Platform.OS==='ios'?getResponsiveHeight(12):getResponsiveHeight(2),
   },
   input: {
     fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(14),
+    fontSize: getResponsiveFontSize(16),
   },
 });

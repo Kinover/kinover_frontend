@@ -1,12 +1,6 @@
 import React, {useState, useEffect, useCallback} from 'react';
-import {
-  View,
-  StyleSheet,
-  Text,
-  Image,
-  TouchableOpacity,
-  FlatList,
-} from 'react-native';
+import {View, StyleSheet, Text, TouchableOpacity, FlatList} from 'react-native';
+import FastImage from 'react-native-fast-image';
 import {
   useFocusEffect,
   useNavigation,
@@ -83,7 +77,7 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
       onPress={() => navigation.navigate('게시글화면', {memory})}
       style={styles.memoryItem}>
       <Text style={styles.dateText}>{formatDate(memory.createdAt)}</Text>
-      <Image style={styles.memoryImage} source={{uri: memory.imageUrls?.[0]}} />
+      <FastImage style={styles.memoryImage} source={{uri: memory.imageUrls?.[0]}} />
       <Text style={styles.commentText}>댓글 {memory.commentCount}</Text>
       <Text style={styles.categoryText}>
         {getCategoryLabel(memory.categoryId)}
@@ -109,7 +103,7 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
           width: (WINDOW_WIDTH - ITEM_MARGIN * 3) / 4,
           aspectRatio: 1,
         }}>
-        <Image source={{uri: item.uri}} style={styles.galleryImage} />
+        <FastImage source={{uri: item.uri}} style={styles.galleryImage} />
       </TouchableOpacity>
     );
   };
@@ -122,6 +116,7 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
       <FlatList
         key={isAllPhotos ? 'allPhotos' : 'album'}
         data={data}
+        showsVerticalScrollIndicator={false}
         keyExtractor={(item, index) =>
           isAllPhotos
             ? `${item.uri}_${index}`
@@ -146,7 +141,7 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F9F9F9'},
+  container: {flex: 1, backgroundColor: '#F9F9F9',},
   memoryItem: {
     paddingVertical: getResponsiveHeight(20),
     paddingHorizontal: getResponsiveWidth(30),
@@ -191,7 +186,7 @@ const styles = StyleSheet.create({
   },
   contentText: {
     fontFamily: 'Pretendard-Light',
-    fontSize: getResponsiveFontSize(12),
+    fontSize: getResponsiveFontSize(13),
     maxHeight: getResponsiveHeight(50),
     color: '#444',
   },

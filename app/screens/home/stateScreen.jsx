@@ -1,11 +1,12 @@
-import React, {useState} from 'react';
+import React, {useRef} from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
+  TouchableWithoutFeedback,
   StyleSheet,
   FlatList,
   Image,
+  Animated,
 } from 'react-native';
 import {
   getResponsiveHeight,
@@ -15,81 +16,97 @@ import {
 import useHideTabBar from '../../hooks/useHideTabBar';
 import {useDispatch, useSelector} from 'react-redux';
 import {modifyUserThunk} from '../../redux/thunk/userThunk';
-import {useNavigation} from '@react-navigation/native'; // 이미 있을 수도 있어
+import {useNavigation} from '@react-navigation/native';
 
 const EMOTIONS = [
-  {
-    id: 'ANNOYED',
-    label: '짜증나요',
-    url: require('../../assets/icons/state/annoyed.png'),
-  },
-  {
-    id: 'WORRIED',
-    label: '걱정돼요',
-    url: require('../../assets/icons/state/anxious.png'),
-  },
-  {
-    id: 'DEPRESSED',
-    label: '우울해요',
-    url: require('../../assets/icons/state/depressed.png'),
-  },
-  {
-    id: 'SORRY',
-    label: '미안해요',
-    url: require('../../assets/icons/state/sorry.png'),
-  },
-  {
-    id: 'TIRED',
-    label: '힘들어요',
-    url: require('../../assets/icons/state/exhausted.png'),
-  },
-  {
-    id: 'EXCITED',
-    label: '신나요',
-    url: require('../../assets/icons/state/excited.png'),
-  },
-  {
-    id: 'NEUTRAL',
-    label: '평범해요',
-    url: require('../../assets/icons/state/neutral.png'),
-  },
-  {
-    id: 'HAPPY',
-    label: '행복해요',
-    url: require('../../assets/icons/state/happy.png'),
-  },
+  {id: 'ANNOYED', label: '짜증나요', url: require('../../assets/icons/state/annoyed.png')},
+  {id: 'WORRIED', label: '걱정돼요', url: require('../../assets/icons/state/anxious.png')},
+  {id: 'DEPRESSED', label: '우울해요', url: require('../../assets/icons/state/depressed.png')},
+  {id: 'SORRY', label: '미안해요', url: require('../../assets/icons/state/sorry.png')},
+  {id: 'TIRED', label: '힘들어요', url: require('../../assets/icons/state/exhausted.png')},
+  {id: 'EXCITED', label: '신나요', url: require('../../assets/icons/state/excited.png')},
+  {id: 'NEUTRAL', label: '평범해요', url: require('../../assets/icons/state/neutral.png')},
+  {id: 'HAPPY', label: '행복해요', url: require('../../assets/icons/state/happy.png')},
 ];
 
-const EmotionItem = ({item, isSelected, onPress}) => (
-  <TouchableOpacity
-    onPress={() => onPress(item.id)}
-    style={[styles.emotionBox, isSelected && styles.emotionBoxSelected]}>
-    <Image source={item.url} style={styles.emotionImage} resizeMode="contain" />
-    <Text
-      style={[styles.emotionText, isSelected && styles.emotionTextSelected]}>
-      {item.label}
-    </Text>
-  </TouchableOpacity>
-);
+const EmotionItem = ({item, isSelected, onPress}) => {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const bgAnim = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
+
+  // 선택 여부가 바뀔 때 부드럽게 색 전환
+  React.useEffect(() => {
+    Animated.timing(bgAnim, {
+      toValue: isSelected ? 1 : 0,
+      duration: 100, // 색 전환 속도 (ms)
+      useNativeDriver: false,
+    }).start();
+  }, [isSelected]);
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.93,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      useNativeDriver: false,
+    }).start();
+  };
+
+  const backgroundColor = bgAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['white', '#FFF5D1'], // 기본 → 선택된 색
+  });
+
+  const borderColor = bgAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['#F4F4F4', '#FFC84D'],
+  });
+
+  return (
+    <TouchableWithoutFeedback
+      onPress={() => onPress(item.id)}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}>
+      <Animated.View
+        style={[
+          styles.emotionBox,
+          {
+            transform: [{scale: scaleAnim}],
+            backgroundColor,
+            borderColor,
+            borderWidth: 1.5,
+          },
+        ]}>
+        <Image source={item.url} style={styles.emotionImage} resizeMode="contain" />
+        <Text style={[styles.emotionText, isSelected && styles.emotionTextSelected]}>
+          {item.label}
+        </Text>
+      </Animated.View>
+    </TouchableWithoutFeedback>
+  );
+};
 
 export default function StateScreen() {
-  const navigation = useNavigation(); // ✅ 추가
+  const navigation = useNavigation();
   const dispatch = useDispatch();
   const user = useSelector(state => state.user);
-  const userId = user.userId;
-  const [selectedEmotion, setSelectedEmotion] = useState(
-    user.emotion || 'neutral',
-  );
+  const [selectedEmotion, setSelectedEmotion] = React.useState(user.emotion || 'NEUTRAL');
 
   useHideTabBar();
 
-  const handleSelectEmotion = emotion => {
-    setSelectedEmotion(emotion);
-  };
-
   const handleConfirm = () => {
     if (selectedEmotion) {
-      dispatch(modifyUserThunk({userId: user.userId, emotion: selectedEmotion}))
+      dispatch(
+        modifyUserThunk({
+          userId: user.userId,
+          trait: user.trait,
+          emotion: selectedEmotion,
+        }),
+      )
         .then(() => {
           console.log('✅ 감정 저장 성공');
           navigation.goBack();
@@ -102,13 +119,7 @@ export default function StateScreen() {
 
   const renderEmotion = ({item}) => {
     const isSelected = selectedEmotion === item.id;
-    return (
-      <EmotionItem
-        item={item}
-        isSelected={isSelected}
-        onPress={handleSelectEmotion}
-      />
-    );
+    return <EmotionItem item={item} isSelected={isSelected} onPress={setSelectedEmotion} />;
   };
 
   return (
@@ -121,16 +132,13 @@ export default function StateScreen() {
         numColumns={2}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.listContent}
+        showsVerticalScrollIndicator={false}
       />
-      <TouchableOpacity
-        style={[
-          styles.confirmButton,
-          !selectedEmotion && {backgroundColor: '#ccc'},
-        ]}
-        disabled={!selectedEmotion}
-        onPress={handleConfirm}>
-        <Text style={styles.confirmButtonText}>선택완료</Text>
-      </TouchableOpacity>
+      <TouchableWithoutFeedback onPress={handleConfirm}>
+        <View style={[styles.confirmButton, !selectedEmotion && {backgroundColor: '#ccc'}]}>
+          <Text style={styles.confirmButtonText}>선택 완료</Text>
+        </View>
+      </TouchableWithoutFeedback>
     </View>
   );
 }
@@ -141,11 +149,10 @@ const styles = StyleSheet.create({
     paddingTop: getResponsiveHeight(50),
     paddingHorizontal: getResponsiveWidth(20),
     backgroundColor: '#F9F9F9',
-    alignContent: 'center',
-    justifyContent: 'center',
   },
   title: {
-    fontSize: getResponsiveFontSize(21),
+    color: 'black',
+    fontSize: getResponsiveFontSize(22),
     fontFamily: 'Pretendard-Regular',
     marginBottom: getResponsiveHeight(25),
     textAlign: 'center',
@@ -161,29 +168,23 @@ const styles = StyleSheet.create({
   emotionBox: {
     width: '45%',
     height: getResponsiveHeight(115),
-    borderRadius: 8,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'white',
-    shadowOffset: {width: 0, height: 1},
-    shadowColor: 'gray',
-    shadowRadius: 1,
-    shadowOpacity: 0.3,
+    shadowOffset: {width: 0, height: 2},
+    shadowColor: '#000',
+    shadowRadius: 5,
+    shadowOpacity: 0.08,
     marginHorizontal: 10,
   },
   emotionImage: {
     width: getResponsiveWidth(60),
     height: getResponsiveWidth(60),
-    marginBottom: getResponsiveHeight(6),
-  },
-  emotionBoxSelected: {
-    backgroundColor: '#FFF5D1',
-    borderColor: '#FFC84D',
-    borderWidth: 1.5,
+    marginBottom: getResponsiveHeight(8),
   },
   emotionText: {
-    fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(13.5),
+    fontFamily: 'Pretendard-Regular',
     color: '#333',
   },
   emotionTextSelected: {
@@ -195,13 +196,12 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(50),
     backgroundColor: '#FFC84D',
     paddingVertical: getResponsiveHeight(16),
-    borderRadius: 8,
+    borderRadius: 10,
     alignItems: 'center',
   },
   confirmButtonText: {
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(17),
     fontFamily: 'Pretendard-Bold',
-    color: '#000',
+    color: 'white',
   },
 });
-

@@ -31,7 +31,6 @@ const HomeStack = () => {
       initialRouteName="홈"
       screenOptions={{
         gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
-
         headerStyle: defaultHeaderStyle,
         headerTitleAlign: 'bottom',
         headerShown: true,

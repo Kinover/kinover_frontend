@@ -1,12 +1,12 @@
-import {PermissionsAndroid, Platform} from 'react-native';
-import {getApp} from 'firebase/app';
+// notification/requestNotificationPermission.js
 
-import {getMessaging, requestPermission} from 'firebase/messaging';
+import { PermissionsAndroid, Platform, Alert } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
-
 import axios from 'axios';
-import {getToken} from '../../../utils/storage';
-import {navigate} from '../../../navigation/navigationRef';
+import { getToken as getJWT } from '../../../utils/storage';
+import { navigate } from '../../../navigation/navigationRef';
+
+const SERVER_URL = 'https://kinover.shop/api/fcm/register';
 
 export async function requestNotificationPermission() {
   if (Platform.OS === 'android') {
@@ -21,73 +21,133 @@ export async function requestNotificationPermission() {
     return granted === PermissionsAndroid.RESULTS.GRANTED;
   }
 
-  if (Platform.OS === 'ios' && (await isSupported())) {
+  // iOS
+  const auth = await messaging().requestPermission();
+  const ok =
+    auth === messaging.AuthorizationStatus.AUTHORIZED ||
+    auth === messaging.AuthorizationStatus.PROVISIONAL;
+
+  if (ok) {
     try {
-      const messaging = getMessaging(getApp());
-      const status = await requestPermission(messaging);
-      return status === 'granted' || status === 'provisional';
-    } catch (err) {
-      console.error('iOS 권한 요청 실패:', err);
-      return false;
+      await messaging().setAutoInitEnabled(true);
+      await messaging().registerDeviceForRemoteMessages();
+      const apns = await messaging().getAPNSToken();
+      console.log('[iOS] APNs token:', apns);
+    } catch (e) {
+      console.log('[iOS] register/init error:', e);
     }
   }
-
-  return false;
+  return ok;
 }
 
-const SERVER_URL = 'https://kinover.shop/api/fcm/register';
+// 🔁 토큰 재시도 유틸 (최대 5회, 1s 간격)
+async function getFcmTokenWithRetry(maxTry = 5, delayMs = 1000) {
+  for (let i = 1; i <= maxTry; i++) {
+    try {
+      const t = await messaging().getToken();
+      if (t) return t;
+    } catch {}
+    await new Promise(r => setTimeout(r, delayMs));
+  }
+  return null;
+}
 
-export async function getFcmTokenAndSend() {
+// FCM 토큰 → 서버 전송
+export async function getFcmTokenAndSend(userId) {
   try {
-    const fcmToken = await messaging().getToken();
-    const accessToken = await getToken(); // 로그인한 유저의 JWT 토큰
+    const fcmToken = await getFcmTokenWithRetry();
+    console.log('[FCM] token:', fcmToken);
 
-    const headers = {
-      Authorization: `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    };
+    if (!fcmToken) {
+      console.warn('⚠️ FCM 토큰이 비어 있음. (실기기/권한/APNs Key/Bundle ID 확인)');
+      return;
+    }
 
-    const body = {
-      fcmToken: fcmToken,
-    };
+    const accessToken = await getJWT();
+    if (!accessToken) {
+      console.warn('⚠️ JWT 없음 → 로그인 후 재시도');
+      return;
+    }
 
-    const response = await axios.post(SERVER_URL, body, {headers});
-
-    console.log('✅ FCM 토큰 서버 전송 성공:', response.data);
-  } catch (error) {
-    console.error(
-      '❌ FCM 토큰 전송 실패:',
-      error?.response?.data || error.message,
+    const res = await axios.post(
+      SERVER_URL,
+      { fcmToken, userId }, // 서버 스키마에 맞게 필드명 확인
+      { headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' } },
     );
+    console.log('✅ 서버 전송 성공:', res.status);
+  } catch (err) {
+    console.log('❌ 서버 전송 실패 status:', err?.response?.status);
+    console.log('❌ data:', err?.response?.data);
+    console.log('❌ msg:', err?.message);
   }
 }
 
+// 포그라운드/클릭/토큰갱신 리스너 (구독 해제 함수 반환)
+
 export function handleNotificationListeners() {
-  // 앱이 열려 있을 때 (포그라운드)
-  messaging().onMessage(async remoteMessage => {
-    Alert.alert(
-      remoteMessage.notification?.title || '알림',
-      remoteMessage.notification?.body || '알림 내용 없음',
-    );
+  const unsubOnMessage = messaging().onMessage(async m => {
+    // ✅ 새 알림 빨간 점 표시
+    store.dispatch(setHasUnread(true));
+    Alert.alert(m.notification?.title || '알림', m.notification?.body || '알림 내용 없음');
   });
 
-  // 앱이 백그라운드 상태에서 알림 누른 경우
-  messaging().onNotificationOpenedApp(remoteMessage => {
-    console.log('알림 눌러서 앱 열림 (백그라운드)', remoteMessage);
-    navigateToNotification();
+  const unsubOpened = messaging().onNotificationOpenedApp(() => {
+    navigate('알림화면'); // 네이게이션 스택 이름 맞게 수정!
+    store.dispatch(setHasUnread(false)); // ✅ 알림 확인 → 빨간 점 해제
   });
 
-  // 앱이 꺼진 상태에서 알림 눌러서 실행된 경우
-  messaging()
-    .getInitialNotification()
-    .then(remoteMessage => {
-      if (remoteMessage) {
-        console.log('앱 종료 상태에서 알림 클릭으로 실행됨', remoteMessage);
-        navigateToNotification();
-      }
-    });
+  messaging().getInitialNotification().then(m => {
+    if (m) {
+      navigate('알림화면');
+      store.dispatch(setHasUnread(false));
+    }
+  });
+
+  const unsubTokenRefresh = messaging().onTokenRefresh(async token => {
+    const accessToken = await getJWT();
+    if (!accessToken) return;
+    try {
+      await axios.post(
+        SERVER_URL,
+        { fcmToken: token },
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      console.log('🔄 갱신 토큰 서버 반영 성공');
+    } catch (e) {
+      console.log('🔄 갱신 토큰 전송 실패', e);
+    }
+  });
+
+  return () => {
+    try { unsubOnMessage(); } catch {}
+    try { unsubOpened(); } catch {}
+    try { unsubTokenRefresh(); } catch {}
+  };
 }
 
-function navigateToNotification() {
-  navigate('Notification'); // 알림 상세 페이지로 이동!
+// 백그라운드/종료 상태 데이터 메시지 처리 등록 (index.js에서 "한 번" 호출)
+export function registerBackgroundMessageHandler() {
+  messaging().setBackgroundMessageHandler(async remoteMessage => {
+    try {
+      const data  = remoteMessage?.data || {};
+      const title = remoteMessage?.notification?.title || data.title || '알림';
+      const body  = remoteMessage?.notification?.body  || data.body  || '새 소식이 있어요';
+
+      console.log('[BG] messageId:', remoteMessage?.messageId);
+      console.log('[BG] data:', data);
+
+      // (선택) 데이터-only일 때 배너 띄우려면 notifee 사용 가능
+      const notifee = (await import('@notifee/react-native')).default;
+      const channelId = Platform.OS === 'android'
+        ? await notifee.createChannel({ id: 'default', name: 'Default' })
+        : undefined;
+      await notifee.displayNotification({
+        title, body,
+        android: channelId ? { channelId } : undefined,
+        data,
+      });
+    } catch (e) {
+      console.log('[BG] handler error:', e);
+    }
+  });
 }

@@ -26,30 +26,28 @@ export default function RenameChatRoomModal({
       }}
       confirmText="변경"
       closeText="취소"
-      confirmButtonStyle={styles.confirmButton}
-      closeButtonStyle={styles.closeButton}
-      closeTextStyle={styles.modalText}
-      confirmTextStyle={[styles.modalText, {color: 'black'}]}
+      title="변경할 이름을 입력해주세요"
       buttonBottomStyle={styles.modalButtonRow}>
-      <View style={{marginTop: getResponsiveHeight(15)}}>
-        <Text style={styles.modalTitle}>채팅방 이름을 수정하세요</Text>
-        <TextInput
-          placeholder="새 채팅방 이름"
-          value={newRoomName}
-          onChangeText={setNewRoomName}
-          style={styles.textInput}
-          placeholderTextColor="#999"
-        />
-      </View>
+      <TextInput
+        placeholder="새 채팅방 이름"
+        value={newRoomName}
+        onChangeText={setNewRoomName}
+        style={styles.textInput}
+        placeholderTextColor="#999"
+      />
     </CustomModal>
   );
 }
 
 const styles = StyleSheet.create({
   modalTitle: {
-    fontSize: getResponsiveFontSize(17),
+    color: 'black',
+    fontSize:
+      Platform.OS === 'android'
+        ? getResponsiveFontSize(20)
+        : getResponsiveFontSize(22),
     textAlign: 'center',
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: 'Pretendard-Semibold',
     fontWeight: Platform.OS === 'ios' ? undefined : '700',
     marginBottom: getResponsiveHeight(20),
   },
@@ -78,10 +76,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ccc',
     borderRadius: getResponsiveWidth(6),
-    paddingVertical: getResponsiveHeight(8),
+    paddingVertical: getResponsiveHeight(12),
     paddingHorizontal: getResponsiveWidth(12),
-    fontSize: getResponsiveFontSize(14),
+    fontSize: getResponsiveFontSize(17),
     backgroundColor: '#fff',
     fontFamily: 'Pretendard-Regular',
+    marginVertical: getResponsiveHeight(12),
   },
 });

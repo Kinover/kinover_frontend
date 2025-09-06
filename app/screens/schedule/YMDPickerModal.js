@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  FlatList,
+  Image,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import {Picker} from '@react-native-picker/picker';
 import {
@@ -18,6 +21,169 @@ import {
 const pad2 = n => n.toString().padStart(2, '0');
 const daysInMonth = (y, m) => new Date(y, m, 0).getDate(); // m: 1~12
 
+// ---- ✅ 간단 커스텀 Select (Android용, 옵션 칸 크게) ----
+function Select({value, options = [], onChange, title, placeholder = '선택'}) {
+  const [open, setOpen] = useState(false);
+  const selected = options.find(o => o.value === value);
+  const selectedIndexRaw = options.findIndex(o => o.value === value);
+  const selectedIndex = selectedIndexRaw >= 0 ? selectedIndexRaw : 0;
+
+  return (
+    <>
+      <TouchableOpacity
+        style={sel.field}
+        onPress={() => setOpen(true)}
+        activeOpacity={0.8}>
+        <Text style={[sel.valueText, !selected && sel.placeholder]}>
+          {selected ? selected.label : placeholder}
+        </Text>
+        <Text style={sel.chevron}>▾</Text>
+      </TouchableOpacity>
+
+      <Modal
+        visible={open}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setOpen(false)}>
+        <View style={sel.backdrop}>
+          <View style={sel.sheet}>
+            {!!title && (
+              <View style={sel.stickyHeader}>
+                <Text style={sel.title}>{title}</Text>
+              </View>
+            )}
+
+            <FlatList
+              data={options}
+              keyExtractor={(it, idx) => String(it.value ?? idx)}
+              initialScrollIndex={selectedIndex}
+              getItemLayout={(_, index) => ({
+                length: 56,
+                offset: 56 * index,
+                index,
+              })}
+              renderItem={({item}) => {
+                const isSel = item.value === value;
+                return (
+                  <TouchableOpacity
+                    style={[sel.option, isSel && sel.optionSelected]}
+                    onPress={() => {
+                      onChange(item.value);
+                      setOpen(false);
+                    }}
+                    activeOpacity={0.7}
+                    android_ripple={{borderless: false}}>
+                    <Text
+                      style={[sel.optionText, isSel && sel.optionTextSelected]}>
+                      {item.label}
+                    </Text>
+                    {isSel && (
+                      <Image
+                        style={{
+                          position: 'absolute',
+                          right: getResponsiveWidth(15),
+                          width: getResponsiveWidth(16),
+                          height: getResponsiveHeight(13),
+                          resizeMode: 'contain',
+                        }}
+                        source={require('../../assets/icons/check-yellow.png')}></Image>
+                    )}
+                  </TouchableOpacity>
+                );
+              }}
+              ItemSeparatorComponent={() => <View style={sel.divider} />}
+              contentContainerStyle={{paddingBottom: 8}}
+              bounces={false}
+            />
+
+            <TouchableOpacity style={sel.close} onPress={() => setOpen(false)}>
+              <Text style={sel.closeText}>닫기</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </>
+  );
+}
+
+const sel = StyleSheet.create({
+  field: {
+    height: 46,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E5E5EA',
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center', // 값 중앙
+    backgroundColor: '#FFF',
+    width: '100%',
+  },
+  valueText: {fontFamily: 'Pretendard-Medium', color: '#111', fontSize: 16},
+  placeholder: {color: '#999'},
+  chevron: {fontSize: 16, position: 'absolute', right: 12}, // ▾는 오른쪽 고정
+  backdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    padding: 18,
+  },
+  sheet: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    maxHeight: '60%',
+    minWidth: '90%',
+    alignSelf: 'center',
+    elevation: 12,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: {width: 0, height: 8},
+  },
+  stickyHeader: {
+    paddingTop: 14,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F2F2F2',
+    backgroundColor: '#FFF',
+  },
+  title: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: 18,
+    color: '#111',
+    textAlign: 'center',
+  },
+  option: {
+    paddingHorizontal: 16,
+    minHeight: 56, // ✅ 머티리얼 권장 터치 타겟
+    justifyContent: 'center',
+    alignItems: 'center', // ✅ 가로 중앙
+    flexDirection: 'row',
+  },
+  optionSelected: {backgroundColor: '#FFF6DA'},
+  optionText: {
+    fontFamily: 'Pretendard-Regular',
+    fontSize: 17,
+    color: '#111',
+    textAlign: 'center',
+    flex: 1,
+  },
+  optionTextSelected: {fontFamily: 'Pretendard-SemiBold', fontWeight: 'bold'},
+  check: {position: 'absolute', right: 16, fontSize: 16, color: '#111'},
+  divider: {height: 1, backgroundColor: '#EFEFEF', marginHorizontal: 12},
+  close: {
+    marginTop: 6,
+    alignSelf: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+  },
+  closeText: {fontFamily: 'Pretendard-Medium', color: '#4A4A4A'},
+});
+
+// ---- ✅ YMDPickerModal ----
 export default function YMDPickerModal({
   visible,
   onClose,
@@ -30,7 +196,6 @@ export default function YMDPickerModal({
   const [month, setMonth] = useState(initialDate.getMonth() + 1); // 1~12
   const [day, setDay] = useState(initialDate.getDate());
 
-  // visible 열릴 때 초기화
   useEffect(() => {
     if (visible) {
       setYear(initialDate.getFullYear());
@@ -52,7 +217,6 @@ export default function YMDPickerModal({
     return Array.from({length: len}, (_, i) => i + 1);
   }, [year, month]);
 
-  // 월/년 바뀌면 기존 day가 넘치지 않도록 보정
   useEffect(() => {
     const len = daysInMonth(year, month);
     if (day > len) setDay(len);
@@ -63,78 +227,111 @@ export default function YMDPickerModal({
     onConfirm(selected);
   };
 
+  const isAndroid = Platform.OS === 'android';
+
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
       onRequestClose={onClose}>
-      <View style={styles.backdrop}>
-        <View style={styles.card}>
-          <Text style={styles.title}>날짜 선택</Text>
+      <TouchableWithoutFeedback>
+        <View style={styles.backdrop}>
+          <View style={styles.card}>
+            <Text style={styles.title}>날짜 선택</Text>
 
-          <View style={styles.row}>
-            {/* Year */}
-            <View style={styles.col}>
-              <Text style={styles.colLabel}>년</Text>
-              <Picker
-                selectedValue={year}
-                onValueChange={setYear}
-                itemStyle={styles.pickerItem}
-                style={styles.picker}
-                mode={Platform.OS === 'android' ? 'dropdown' : undefined} // ✅ Android 드롭다운
-              >
-                {yearOptions.map(y => (
-                  <Picker.Item key={y} label={`${y}`} value={y} />
-                ))}
-              </Picker>
+            <View style={styles.row}>
+              {/* Year */}
+              <View style={styles.col}>
+                <Text style={styles.colLabel}>년</Text>
+                {isAndroid ? (
+                  <Select
+                    value={year}
+                    onChange={setYear}
+                    title="년 선택"
+                    options={yearOptions.map(y => ({
+                      label: String(y),
+                      value: y,
+                    }))}
+                  />
+                ) : (
+                  <Picker
+                    selectedValue={year}
+                    onValueChange={setYear}
+                    itemStyle={styles.iosPickerItem}
+                    style={styles.picker}>
+                    {yearOptions.map(y => (
+                      <Picker.Item key={y} label={`${y}`} value={y} />
+                    ))}
+                  </Picker>
+                )}
+              </View>
+
+              {/* Month */}
+              <View style={styles.col}>
+                <Text style={styles.colLabel}>월</Text>
+                {isAndroid ? (
+                  <Select
+                    value={month}
+                    onChange={setMonth}
+                    title="월 선택"
+                    options={monthOptions.map(m => ({
+                      label: pad2(m),
+                      value: m,
+                    }))}
+                  />
+                ) : (
+                  <Picker
+                    selectedValue={month}
+                    onValueChange={setMonth}
+                    itemStyle={styles.iosPickerItem}
+                    style={styles.picker}>
+                    {monthOptions.map(m => (
+                      <Picker.Item key={m} label={pad2(m)} value={m} />
+                    ))}
+                  </Picker>
+                )}
+              </View>
+
+              {/* Day */}
+              <View style={styles.col}>
+                <Text style={styles.colLabel}>일</Text>
+                {isAndroid ? (
+                  <Select
+                    value={day}
+                    onChange={setDay}
+                    title="일 선택"
+                    options={dayOptions.map(d => ({label: pad2(d), value: d}))}
+                  />
+                ) : (
+                  <Picker
+                    selectedValue={day}
+                    onValueChange={setDay}
+                    itemStyle={styles.iosPickerItem}
+                    style={styles.picker}>
+                    {dayOptions.map(d => (
+                      <Picker.Item key={d} label={pad2(d)} value={d} />
+                    ))}
+                  </Picker>
+                )}
+              </View>
             </View>
 
-            {/* Month */}
-            <View style={styles.col}>
-              <Text style={styles.colLabel}>월</Text>
-              <Picker
-                selectedValue={month}
-                onValueChange={setMonth}
-                itemStyle={styles.pickerItem}
-                style={styles.picker}
-                mode={Platform.OS === 'android' ? 'dropdown' : undefined}>
-                {monthOptions.map(m => (
-                  <Picker.Item key={m} label={pad2(m)} value={m} />
-                ))}
-              </Picker>
+            <View style={styles.actions}>
+              <TouchableOpacity
+                style={[styles.btn, styles.cancel]}
+                onPress={onClose}>
+                <Text style={styles.cancelText}>취소</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.btn, styles.confirm]}
+                onPress={handleConfirm}>
+                <Text style={styles.confirmText}>확인</Text>
+              </TouchableOpacity>
             </View>
-
-            {/* Day */}
-            <View style={styles.col}>
-              <Text style={styles.colLabel}>일</Text>
-              <Picker
-                selectedValue={day}
-                onValueChange={setDay}
-                itemStyle={styles.pickerItem}
-                style={styles.picker}
-                mode={Platform.OS === 'android' ? 'dropdown' : undefined}>
-                {dayOptions.map(d => (
-                  <Picker.Item key={d} label={pad2(d)} value={d} />
-                ))}
-              </Picker>
-            </View>
-          </View>
-
-          <View style={styles.actions}>
-            <TouchableOpacity
-              style={[styles.btn, styles.cancel]}
-              onPress={onClose}>
-              <Text style={styles.cancelText}>취소</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.btn, styles.confirm]}
-              onPress={handleConfirm}>
-              <Text style={styles.confirmText}>확인</Text>
-            </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }
@@ -149,9 +346,8 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '100%',
-    // height:'40%',
-    maxWidth: 480, // ✅ 너무 넓지 않게
-    borderRadius: 14,
+    maxWidth: getResponsiveWidth(500),
+    borderRadius: 20,
     backgroundColor: '#FFF',
     paddingVertical: getResponsiveHeight(20),
     paddingHorizontal: getResponsiveWidth(20),
@@ -159,6 +355,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(18),
+    fontWeight:'700',
     color: '#111',
     textAlign: 'center',
     marginBottom: getResponsiveHeight(20),
@@ -167,26 +364,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     marginTop: getResponsiveHeight(6),
     alignItems: 'center',
+    gap: 8,
   },
-  col: {flex: 1, alignItems: 'center'},
+  col: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 6,
+    minWidth: 96,
+    paddingHorizontal: 4,
+  },
   colLabel: {
     fontFamily: 'Pretendard-Medium',
     fontSize: getResponsiveFontSize(14),
     color: '#777',
-    marginBottom: 4,
   },
   picker: {width: '100%'},
+  iosPickerItem: {
+    fontSize: getResponsiveFontSize(12),
+    lineHeight: 20,
+    textAlign: 'center',
+  },
   pickerItem: {height: getResponsiveHeight(120)},
   actions: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,
-    marginTop: getResponsiveHeight(6),
+    marginTop: getResponsiveHeight(20),
   },
   btn: {
     flex: 1,
     textAlignVertical: 'center',
-    paddingVertical: 10,
+    paddingVertical: 14,
     paddingHorizontal: 14,
     borderRadius: 8,
   },
@@ -194,12 +402,16 @@ const styles = StyleSheet.create({
   confirm: {backgroundColor: '#FFC84D'},
   cancelText: {
     textAlign: 'center',
-    color: '#333',
-    fontFamily: 'Pretendard-Medium',
+    color: '#A1A5AF',
+
+    fontSize: getResponsiveFontSize(15),
+    fontFamily: 'Pretendard-bold',
   },
   confirmText: {
-    color: '#111',
+    color: 'white',
     textAlign: 'center',
-    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(15),
+
+    fontFamily: 'Pretendard-bold',
   },
 });

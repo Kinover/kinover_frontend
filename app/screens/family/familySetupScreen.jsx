@@ -4,9 +4,12 @@ import {
   StyleSheet,
   TouchableOpacity,
   Text,
-  Image,
   TextInput,
-  Alert, // Alert 추가
+  Alert,
+  KeyboardAvoidingView,
+  TouchableNativeFeedback,
+  TouchableWithoutFeedback,
+  Keyboard, // Alert 추가
 } from 'react-native';
 import getResponsiveFontSize, {
   getResponsiveHeight,
@@ -16,6 +19,8 @@ import getResponsiveFontSize, {
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchFamilyThunk} from '../../redux/thunk/familyThunk';
+import FastImage from 'react-native-fast-image';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 export default function FamilySetupScreen() {
   // 상태 정의: 코드 입력 여부 및 입력된 가족 코드
@@ -65,59 +70,69 @@ export default function FamilySetupScreen() {
       Alert.alert('가족 코드를 입력해주세요.');
     }
   };
-
   return (
-    <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>가족 모임이 있나요?</Text>
-        <Text style={styles.headerSubTitle}>
-          가족과 함께 특별한 순간을 만들어보세요!
-        </Text>
-      </View>
+    <KeyboardAvoidingView
+      style={{flex: 1}}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <SafeAreaView style={styles.container} edges={[ 'bottom']}>
+          <View style={styles.headerContainer}>
+            <Text style={styles.headerTitle}>가족 모임이 있나요?</Text>
+            <Text style={styles.headerSubTitle}>
+              가족과 함께 특별한 순간을 만들어보세요!
+            </Text>
+          </View>
 
-      <View style={styles.bottomContainer}>
-        <Image
-          style={styles.mainImage}
-          source={require('../../assets/images/familySetup_kinoFamily.png')}></Image>
-
-        <View style={styles.buttonContainer}>
-          {!isInputVisible ? (
-            // 버튼을 클릭하면 텍스트 입력 필드로 바뀌도록 구현
-            <TouchableOpacity style={styles.button} onPress={handleButtonClick}>
-              <Text style={styles.buttonText}>
-                가족 코드 입력하고 바로 참여해 보세요!
-              </Text>
-            </TouchableOpacity>
-          ) : (
-            // 텍스트 입력 필드
-            <TextInput
-              style={styles.inputField}
-              placeholder="가족 코드 입력"
-              value={familyCode}
-              onSubmitEditing={handleSubmitCode}
-              onChangeText={handleInputChange}
-              keyboardType="numeric" // 가족 코드가 숫자일 경우 숫자 키패드 사용
+          {/* absolute 제거 → flex로 자연스럽게 밀림 */}
+          <View style={styles.bottomContainer}>
+            <FastImage
+              style={styles.mainImage}
+              resizeMode="contain"
+              source={require('../../assets/images/familySetup_kinoFamily.png')}
             />
-          )}
 
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => navigation.navigate('가족생성화면')}>
-            <Text style={styles.buttonText}>새 가족 모임을 만들어보세요!</Text>
-          </TouchableOpacity>
+            <View style={styles.buttonContainer}>
+              {!isInputVisible ? (
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={handleButtonClick}>
+                  <Text style={styles.buttonText}>
+                    가족 코드 입력하고 바로 참여해 보세요!
+                  </Text>
+                </TouchableOpacity>
+              ) : (
+                <TextInput
+                  style={styles.inputField}
+                  placeholder="가족 코드 입력"
+                  value={familyCode}
+                  onSubmitEditing={handleSubmitCode}
+                  onChangeText={handleInputChange}
+                  keyboardType="numeric"
+                />
+              )}
 
-          <TouchableOpacity
-            onPress={() =>
-              navigation.navigate('Tabs', {
-                screen: '감정기록',
-                params: {screen: '감정화면'},
-              })
-            }>
-            <Text style={styles.text}>모임 설정 다음에 하기</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => navigation.navigate('가족설정완료화면')}>
+                <Text style={styles.buttonText}>
+                  새 가족 모임을 만들어보세요!
+                </Text>
+              </TouchableOpacity>
+
+              {/* <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate('Tabs', {
+                    screen: '감정기록',
+                    params: {screen: '감정화면'},
+                  })
+                }>
+                <Text style={styles.text}>모임 설정 다음에 하기</Text>
+              </TouchableOpacity> */}
+            </View>
+          </View>
+        </SafeAreaView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -125,45 +140,49 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     display: 'flex',
+    position:'relative',
     alignItems: 'center',
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
     backgroundColor: 'white',
   },
   headerContainer: {
     display: 'flex',
+    flex:1,
     flexDirection: 'column',
     alignContent: 'center',
     justifyContent: 'center',
     gap: getResponsiveHeight(5),
-    marginTop: getResponsiveHeight(150),
   },
   headerTitle: {
-    fontSize: getResponsiveFontSize(25),
+    fontSize: getResponsiveFontSize(27),
     justifyContent: 'center',
     textAlign: 'center',
-    fontFamily: 'Pretendard-Regular',
+    fontFamily:'Pretendard-Regular',
+    color:'black',
   },
   headerSubTitle: {
-    fontSize: getResponsiveFontSize(15.6),
+    fontSize: getResponsiveFontSize(17),
     justifyContent: 'center',
     textAlign: 'center',
     color: '#5F5F5F',
     fontFamily: 'Pretendard-Regular',
   },
   bottomContainer: {
-    position: 'absolute',
+    flex:1,
     width: '100%',
-    display: 'flex',
-    height: 'auto',
-    flexDirection: 'column',
+    alignSelf:'flex-end',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
     gap: getResponsiveHeight(30),
-    bottom: getResponsiveHeight(70),
+    // backgroundColor: 'pink',
   },
+
   mainImage: {
-    width: getResponsiveWidth(319.66),
-    height: getResponsiveHeight(156.48),
+    width: '100%',
+    height: '34%',
+    // resizeMode: 'contain',
+    objectFit: 'contain',
+    // backgroundColor:'yellow',
   },
   buttonContainer: {
     gap: getResponsiveHeight(10),
@@ -177,18 +196,21 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    fontSize: getResponsiveFontSize(15.6),
+    fontSize: getResponsiveFontSize(17),
+    lineHeight: getResponsiveHeight(30),
     textAlign: 'center',
     fontFamily: 'Pretendard-Regular',
+    color: 'black',
   },
   inputField: {
     width: getResponsiveWidth(331),
     height: getResponsiveHeight(60),
     borderRadius: getResponsiveIconSize(10),
     backgroundColor: '#F0F0F0',
-    paddingLeft: getResponsiveWidth(20),
     fontSize: getResponsiveFontSize(15.6),
     textAlign: 'center',
+    justifyContent: 'center',
+    textAlignVertical: 'center',
   },
   text: {
     fontSize: getResponsiveFontSize(12.2),

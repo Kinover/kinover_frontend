@@ -13,13 +13,9 @@ export default function CategoryModal({visible, onClose, onConfirm, content}) {
       visible={visible}
       onClose={onClose}
       onConfirm={onConfirm}
-      closeText="취소하기"
-      confirmText="추가하기"
+      closeText="취소"
+      confirmText="추가"
       modalBoxStyle={styles.modalBox}
-      closeTextStyle={styles.closeText}
-      confirmTextStyle={styles.confirmText}
-      confirmButtonStyle={styles.confirmButton}
-      closeButtonStyle={styles.closeButton}
       buttonBottomStyle={styles.buttonRow}
       children={content}
     />

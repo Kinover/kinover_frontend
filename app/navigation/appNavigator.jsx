@@ -19,10 +19,11 @@ export default function AppNavigator({}) {
           shadowOpacity: 0,
           elevation: 0,
           height: getResponsiveHeight(120),
-          display:'flex',
+          display: 'flex',
         },
         headerTitleAlign: 'center',
         headerShown: false,
+        headerBackTitle: '', // ✅ iOS에서 <Auth 같은 텍스트 제거
         headerTitle: () => (
           <View style={{paddingBottom: getResponsiveHeight(10)}}>
             <Image
@@ -41,14 +42,21 @@ export default function AppNavigator({}) {
       <AppStack.Screen
         name="Auth"
         component={AuthNavigator}
-        options={{headerShown: false}}
+        options={{
+          headerShown: false,
+          headerBackTitle: '', // ✅ iOS에서 <Auth 같은 텍스트 제거
+          headerBackTitleVisible: false,
+        }}
       />
 
       {/* 메인 탭 */}
       <AppStack.Screen
         name="Tabs"
         component={TabNavigator}
-        options={{headerBackTitleVisible: false}}
+        options={{
+          headerBackTitleVisible: false,
+          headerBackTitle: '', // ✅ iOS에서 <Auth 같은 텍스트 제거
+        }}
       />
     </AppStack.Navigator>
   );

@@ -5,18 +5,14 @@ import {
   StyleSheet,
   ScrollView,
   View,
-  TextInput,
   TouchableOpacity,
   Image,
 } from 'react-native';
 import {ActivityIndicator} from 'react-native';
 
-import ScheduleEditorBottomSheetModal from './scheduleEditorBottomSheet'; // 👈 추가
-import {BottomSheetBackdrop} from '@gorhom/bottom-sheet';
-
+import ScheduleEditorBottomSheetModal from './scheduleEditorBottomSheet';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
-import BottomSheet, {BottomSheetView} from '@gorhom/bottom-sheet';
 
 import CalendarToggle from './calendar';
 import Schedule from './schedule';
@@ -35,137 +31,212 @@ import {
 
 export default function ScheduleScreen() {
   const dispatch = useDispatch();
+
+  const {familyId} = useSelector(state => state.family);
+  const familyUserList = useSelector(state => state.userFamily.familyUserList);
+  const currentUserId = useSelector(state => state.user.userId);
+
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [scheduleCountPerDay, setScheduleCountPerDay] = useState({});
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const {familyId} = useSelector(state => state.family);
-  const familyUserList = useSelector(state => state.userFamily.familyUserList);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [title, setTitle] = useState('');
 
-  const currentUserId = useSelector(state => state.user.userId);
-
   const bottomSheetRef = useRef(null);
   const snapPoints = useMemo(() => ['50%'], []);
 
-  const formattedDate = selectedDate.toISOString().split('T')[0];
+  const toLocalYMD = d => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const formattedDate = toLocalYMD(selectedDate);
+  const year = selectedDate.getFullYear();
+  const month = selectedDate.getMonth() + 1;
+
   const lastFetchedYearMonth = useRef('');
 
   const openSheet = schedule => {
-    setEditingSchedule(schedule);
+    setEditingSchedule(schedule || null);
     setTitle(schedule?.title || '');
-    setSelectedUserId(schedule?.userId ?? currentUserId); // default to current user
-    bottomSheetRef.current?.present(); // ✅ 대신 이거!
+    setSelectedUserId(schedule?.userId ?? currentUserId);
+    bottomSheetRef.current?.present?.();
   };
 
   const closeSheet = () => {
     setEditingSchedule(null);
     setTitle('');
     setSelectedUserId(null);
-    bottomSheetRef.current?.dismiss();
+    bottomSheetRef.current?.dismiss?.();
   };
 
-  const onSubmit = async () => {
-    if (!selectedUserId || !title.trim()) return;
+  // ✅ count 즉시 반영용 낙관적 업데이트
+  const bumpCount = (ymd, delta) => {
+    setScheduleCountPerDay(prev => {
+      const next = {...prev};
+      const cur = Number(next[ymd] ?? 0);
+      const val = cur + delta;
+      if (val <= 0) {
+        delete next[ymd];
+      } else {
+        next[ymd] = val;
+      }
+      return next;
+    });
+  };
+
+  const onSubmit = async finalTitle => {
+    if (!finalTitle?.trim()) return;
 
     const payload = {
-      title,
+      title: finalTitle.trim(),
       date: formattedDate,
       personal: !!selectedUserId,
       userId: selectedUserId,
       familyId,
     };
 
-    if (editingSchedule) {
-      payload.scheduleId = editingSchedule.scheduleId;
-      await dispatch(updateScheduleThunk(payload));
-    } else {
-      await dispatch(addScheduleThunk(payload));
-    }
-
-    setRefreshTrigger(prev => prev + 1);
-    closeSheet();
-  };
-
-  const handleCancelEdit = () => {
-    setTitle(editingSchedule.title); // 원래 일정 제목으로 복구
-    setSelectedUserId(editingSchedule.userId ?? null); // 유저 선택 복구
-  };
-
-  const handleDeleteSchedule = async () => {
-    if (editingSchedule?.scheduleId) {
-      await dispatch(deleteScheduleThunk(editingSchedule.scheduleId));
+    try {
+      if (editingSchedule) {
+        await dispatch(
+          updateScheduleThunk(
+            {...payload, scheduleId: editingSchedule.scheduleId},
+            {
+              familyId,
+              date: formattedDate,
+              year,
+              month,
+              userId: selectedUserId,
+            },
+          ),
+        ).unwrap();
+      } else {
+        bumpCount(formattedDate, 1);
+        await dispatch(
+          addScheduleThunk(payload, {
+            familyId,
+            date: formattedDate,
+            year,
+            month,
+            userId: selectedUserId,
+          }),
+        ).unwrap();
+      }
+    } finally {
+      lastFetchedYearMonth.current = '';
+      await dispatch(
+        getScheduleCountPerDayThunk({familyId, year, month}),
+      ).unwrap();
       setRefreshTrigger(prev => prev + 1);
       closeSheet();
     }
   };
 
-  useEffect(() => {
-    if (!familyId || !selectedDate) return;
-
-    const year = selectedDate.getFullYear();
-    const month = selectedDate.getMonth() + 1;
-    const paddedMonth = month.toString().padStart(2, '0');
-    const yearMonthKey = `${year}-${paddedMonth}`;
-
-    if (lastFetchedYearMonth.current === yearMonthKey) return;
-
-    setIsLoading(true);
-    dispatch(getScheduleCountPerDayThunk({familyId, year, month})).then(res => {
-      const raw =
-        typeof res.payload === 'string'
-          ? JSON.parse(res.payload)
-          : res.payload || {};
-
-      const normalized = {};
-      Object.keys(raw).forEach(key => {
-        const [y, m, d] = key.split('-');
-        const paddedKey = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-        normalized[paddedKey] = raw[key];
-      });
-
-      console.log('[🐾 정상화된 키들]', Object.keys(normalized));
-      setScheduleCountPerDay(normalized);
-      lastFetchedYearMonth.current = yearMonthKey;
-      setIsLoading(false);
-    });
-  }, [selectedDate, familyId]);
-
-  const handleClose = () => {
-    closeSheet();
+  // 편집 취소 시 복구
+  const handleCancelEdit = () => {
+    if (!editingSchedule) return;
+    setTitle(editingSchedule.title);
+    setSelectedUserId(editingSchedule.userId ?? null);
   };
 
+  // ✅ 삭제
+  const handleDeleteSchedule = async () => {
+    if (!editingSchedule?.scheduleId) return;
+    try {
+      // 💥 낙관적 -1
+      bumpCount(editingSchedule.date ?? formattedDate, -1);
+      await dispatch(
+        deleteScheduleThunk(editingSchedule.scheduleId, {
+          familyId,
+          date: formattedDate,
+          year,
+          month,
+          userId: selectedUserId,
+        }),
+      ).unwrap();
+    } finally {
+      lastFetchedYearMonth.current = ''; // 캐시 무시
+      await dispatch(
+        getScheduleCountPerDayThunk({familyId, year, month}),
+      ).unwrap();
+      setRefreshTrigger(prev => prev + 1);
+      closeSheet();
+    }
+  };
+
+  // ✅ 월 단위 카운트 최초/월 변경/refreshTrigger 변경 시 fetch
+  useEffect(() => {
+    if (!familyId) return;
+
+    const paddedMonth = String(month).padStart(2, '0');
+    const yearMonthKey = `${year}-${paddedMonth}`;
+
+    setIsLoading(true);
+    dispatch(getScheduleCountPerDayThunk({familyId, year, month}))
+      .then(res => {
+        const raw =
+          typeof res.payload === 'string'
+            ? JSON.parse(res.payload)
+            : res.payload || {};
+
+        const normalized = {};
+        Object.keys(raw).forEach(key => {
+          const [y, m, d] = key.split('-');
+          const paddedKey = `${y}-${String(m).padStart(2, '0')}-${String(
+            d,
+          ).padStart(2, '0')}`;
+          normalized[paddedKey] = raw[key];
+        });
+
+        setScheduleCountPerDay(normalized);
+        lastFetchedYearMonth.current = yearMonthKey;
+      })
+      .finally(() => setIsLoading(false));
+  }, [familyId, year, month, refreshTrigger]);
+
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: '#F9F9F9'}} edges={['']}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: '#F9F9F9',
+        width: '100%',
+        alignContent: 'center',
+        alignItems: 'center',
+      }}>
       <View style={{flex: 1, backgroundColor: '#F9F9F9'}}>
         {/* ✅ 메인 콘텐츠 */}
         <ScrollView
           style={styles.mainContainer}
           showsVerticalScrollIndicator={false}>
           {isLoading ? (
+            // 🔒 로딩 중에는 날짜/일정 컴포넌트 전혀 렌더 안 함
             <View style={styles.loadingContainer}>
               <ActivityIndicator size="large" color="#FFC84D" />
-              <Text style={styles.loadingText}>일정 불러오는 중이에요...</Text>
+              {/* <Text style={styles.loadingText}>일정을 불러오는 중입니다.</Text> */}
             </View>
           ) : (
-            <CalendarToggle
-              selectedDate={selectedDate}
-              setSelectedDate={setSelectedDate}
-              scheduleCountPerDay={scheduleCountPerDay}
-            />
+            <>
+              <CalendarToggle
+                selectedDate={selectedDate}
+                setSelectedDate={setSelectedDate}
+                scheduleCountPerDay={scheduleCountPerDay}
+              />
+
+              <Schedule
+                selectedDate={selectedDate}
+                onOpenSheet={openSheet}
+                refreshTrigger={refreshTrigger}
+              />
+            </>
           )}
-          <Schedule
-            selectedDate={selectedDate}
-            onOpenSheet={openSheet}
-            refreshTrigger={refreshTrigger}
-          />
         </ScrollView>
 
-        {/* ✅ 바텀시트 + 오버레이 (gorhom에서 자동 처리됨) */}
+        {/* ✅ 바텀시트 */}
         <ScheduleEditorBottomSheetModal
           ref={bottomSheetRef}
           editingSchedule={editingSchedule}
@@ -179,6 +250,8 @@ export default function ScheduleScreen() {
           onCancelEdit={handleCancelEdit}
         />
       </View>
+
+      {/* 플로팅 추가 버튼 (원하면 로딩 때 숨기고 싶으면 { !isLoading && (...) } 로 감싸면 돼) */}
       <TouchableOpacity
         style={{
           position: 'absolute',
@@ -191,9 +264,10 @@ export default function ScheduleScreen() {
         onPress={() => openSheet(null)}>
         <Image
           source={require('../../assets/icons/schedule-bt.png')}
-          style={{width: '100%', height: '100%', objectFit: 'contain'}}></Image>
+          style={{width: '100%', height: '100%', objectFit: 'contain'}}
+        />
       </TouchableOpacity>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -243,9 +317,12 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: getResponsiveHeight(100),
+    alignSelf: 'center',
+    paddingTop: '70%',
   },
   loadingText: {
     marginTop: 10,

@@ -1,37 +1,32 @@
+// metro.config.js (React Native 0.78 / non-Expo)
 const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
 
-// 기본 설정 가져오기
 const defaultConfig = getDefaultConfig(__dirname);
+const { assetExts, sourceExts } = defaultConfig.resolver;
 
-const {
-  resolver: { sourceExts, assetExts },
-} = getDefaultConfig(__dirname);
-
-const config = {
+module.exports = mergeConfig(defaultConfig, {
   transformer: {
+    // SVG를 JS로 변환
+    babelTransformerPath: require.resolve('react-native-svg-transformer'),
     getTransformOptions: async () => ({
       transform: {
         experimentalImportSupport: false,
         inlineRequires: true,
       },
     }),
-    // SVG 파일을 변환할 transformer 지정
-    babelTransformerPath: require.resolve('react-native-svg-transformer'),
   },
   resolver: {
-    // SVG는 assetExts에서 제거하고, sourceExts에서 추가
-    assetExts: [...assetExts, 'ttf', 'woff', 'woff2'], // 폰트 파일 확장자 추가
-    sourceExts: [...sourceExts, 'svg'], // SVG를 sourceExts에 추가
+    // ⚠️ SVG는 assetExts에서 제거하고 sourceExts에 추가해야 함
+    assetExts: assetExts.filter(ext => ext !== 'svg').concat(['ttf', 'woff', 'woff2']),
+    sourceExts: [...sourceExts, 'svg'],
   },
   server: {
-    port: 8081, // 원하는 포트 번호로 변경
+    port: 8081,
     enhanceMiddleware: (middleware) => {
       return (req, res, next) => {
-        // 요청 URL이 '/api'로 시작하면 프록시 서버로 리다이렉트
         if (req.url.startsWith('/api')) {
           req.url = req.url.replace('/api', '');
-          // 프록시 서버로 요청을 보내도록 설정
-          req.headers['host'] = 'localhost'; // 프록시 서버 주소
+          req.headers['host'] = 'localhost';
           next();
         } else {
           middleware(req, res, next);
@@ -39,6 +34,4 @@ const config = {
       };
     },
   },
-};
-
-module.exports = mergeConfig(defaultConfig, config);
+});

@@ -1,12 +1,12 @@
 import React from 'react';
-import { View, Image, Text, StyleSheet, FlatList } from 'react-native';
+import {View, Image, Text, StyleSheet, FlatList,Platform} from 'react-native';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../../../utils/responsive';
-import formatTime from "../../../../utils/formatTime";
+import formatTime from '../../../../utils/formatTime';
 
 export default function ReceiveKinoChat({
   message,
@@ -19,7 +19,7 @@ export default function ReceiveKinoChat({
     if (imageUrls.length === 1) {
       return (
         <Image
-          source={{ uri: imageUrls[0] }}
+          source={{uri: imageUrls[0]}}
           style={styles.singleImage}
           resizeMode="cover"
         />
@@ -31,8 +31,8 @@ export default function ReceiveKinoChat({
         data={imageUrls}
         keyExtractor={(item, index) => item + index}
         numColumns={3}
-        renderItem={({ item }) => (
-          <Image source={{ uri: item }} style={styles.imageItem} />
+        renderItem={({item}) => (
+          <Image source={{uri: item}} style={styles.imageItem} />
         )}
         scrollEnabled={false}
         contentContainerStyle={styles.imageGrid}
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     position: 'relative',
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginBottom: getResponsiveHeight(30),
+    marginBottom: getResponsiveHeight(20),
   },
 
   textContainer: {
@@ -85,14 +85,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFC84D',
     borderRadius: getResponsiveIconSize(20),
     paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(20),
+    paddingHorizontal: getResponsiveWidth(14.5),
     maxWidth: '85%',
     flexShrink: 1,
   },
 
   receivedText: {
     fontFamily: 'Pretendard-Light',
-    fontSize: getResponsiveFontSize(13),
+    fontSize:
+      Platform.OS === 'android'
+        ? getResponsiveFontSize(14)
+        : getResponsiveFontSize(15),
     color: 'black',
     flexWrap: 'wrap',
     lineHeight: getResponsiveFontSize(18),
@@ -102,6 +105,8 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(10),
     color: '#666',
     marginLeft: getResponsiveWidth(5),
+    lineHeight:getResponsiveFontSize(12),
+    marginBottom: getResponsiveHeight(2),
   },
 
   singleImage: {

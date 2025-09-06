@@ -11,6 +11,7 @@ import {
 import {useSelector, useDispatch} from 'react-redux';
 import {createChatRoomThunk} from '../../redux/thunk/chatRoomThunk';
 import {fetchFamilyUserListThunk} from '../../redux/thunk/familyUserThunk';
+import {CommonActions} from '@react-navigation/native';
 
 import {
   getResponsiveWidth,
@@ -41,9 +42,16 @@ export default function CreateChatRoom({navigation}) {
       headerTitle: () => (
         <Text
           style={{
-            fontSize: getResponsiveFontSize(17),
-            fontFamily: 'Pretendard-Medium',
+            fontSize:
+              Platform.OS === 'ios'
+                ? getResponsiveFontSize(20)
+                : getResponsiveFontSize(18),
             textAlign: 'center',
+            textAlignVertical: 'center',
+            fontFamily: 'Pretendard-Regular',
+            fontWeight: 'semibold',
+            color: '#101010',
+            lineHeight: getResponsiveHeight(30),
           }}>
           채팅방 만들기
         </Text>
@@ -88,7 +96,12 @@ export default function CreateChatRoom({navigation}) {
         }),
       ).unwrap();
 
-      navigation.navigate('소통');
+      navigation.dispatch(
+        CommonActions.reset({
+          index: 0,
+          routes: [{name: '소통'}], // 채팅 목록(또는 채팅 홈) 라우트 이름
+        }),
+      );
     } catch (err) {
       console.error('🔴 채팅방 생성 실패:', err);
     }
@@ -139,7 +152,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    borderTopWidth: 0.5,
+    borderTopWidth: 2,
     borderColor: 'lightgray',
   },
   userItem: {
@@ -147,7 +160,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: getResponsiveHeight(15),
     justifyContent: 'space-between',
-    paddingHorizontal: getResponsiveWidth(22.5),
+    paddingHorizontal: getResponsiveWidth(20),
   },
   userItemSelected: {
     backgroundColor: '#FFF2CC',
@@ -167,11 +180,15 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: getResponsiveFontSize(16),
     fontFamily: 'Pretendard-Regular',
+    color: 'black',
+    lineHeight:getResponsiveHeight(20),
+    textAlignVertical:'center',
   },
   selectIcon: {
     width: getResponsiveWidth(14),
     height: getResponsiveHeight(14),
     resizeMode: 'contain',
+    marginRight:getResponsiveWidth(5),
   },
   headerCheckIcon: {
     width: getResponsiveWidth(30),

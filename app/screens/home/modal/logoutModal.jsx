@@ -14,12 +14,9 @@ export default function LogoutModal({ visible, onClose, onConfirm }) {
       onConfirm={onConfirm} // ❗ 로그아웃 → 처리 실행
       confirmText="로그아웃"
       closeText="취소"
-      confirmButtonStyle={styles.confirmButton}
-      closeButtonStyle={styles.closeButton}
-      confirmTextStyle={[styles.modalText, { color: 'black' }]}
-      closeTextStyle={styles.modalText}
+     
       buttonBottomStyle={styles.modalButtonRow}>
-      <Text style={styles.modalTitle}>로그아웃 하시겠습니까?</Text>
+      <Text style={styles.modalTitle}>로그아웃 할까요?</Text>
     </CustomModal>
   );
 }
@@ -27,7 +24,8 @@ export default function LogoutModal({ visible, onClose, onConfirm }) {
 
 const styles = StyleSheet.create({
   modalTitle: {
-    fontSize: getResponsiveFontSize(17),
+    color:'black',
+    fontSize: Platform.OS==='android'?getResponsiveFontSize(20):getResponsiveFontSize(22),
     textAlign: 'center',
     fontFamily: 'Pretendard-SemiBold',
     fontWeight: Platform.OS === 'ios' ? '600' : '700',

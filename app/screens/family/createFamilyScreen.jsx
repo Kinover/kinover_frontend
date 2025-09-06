@@ -14,15 +14,11 @@ import {
   getResponsiveIconSize,
   getResponsiveWidth,
 } from '../../utils/responsive';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 export default function CreateFamilyScreen() {
   const [familyName, setFamilyName] = useState('');
-  const [familyRole, setFamilyRole] = useState('');
   const [isEditingFamilyName, setIsEditingFamilyName] = useState(false);
-  const [isEditingFamilyRole, setIsEditingFamilyRole] = useState(false);
-  const [isColorPickerVisible, setIsColorPickerVisible] = useState(false);
-  const [selectedColor, setSelectedColor] = useState(null);
 
   const handleFamilyNameClick = () => {
     setIsEditingFamilyName(true);
@@ -32,142 +28,29 @@ export default function CreateFamilyScreen() {
     setIsEditingFamilyName(false);
   };
 
-  const handleFamilyRoleClick = () => {
-    setIsEditingFamilyRole(true);
-  };
-
-  const handleFamilyRoleBlur = () => {
-    setIsEditingFamilyRole(false);
-  };
-
-  const toggleColorPicker = () => {
-    setIsColorPickerVisible(!isColorPickerVisible);
-  };
-
-  const handleColorSelect = color => {
-    setSelectedColor(color);
-    setIsColorPickerVisible(false); // 색상 선택 후 박스 숨기기
-  };
-
   return (
     <SafeAreaView style={styles.container} edges={['top,bottom,left,right']}>
       {/* 가족 이름 입력 */}
-      <View style={styles.elementContainer}>
-        {isEditingFamilyName ? (
-          <TextInput
-            style={[styles.input, styles.elementText]}
-            placeholder=""
-            value={familyName}
-            onChangeText={setFamilyName}
-            onBlur={handleFamilyNameBlur}
-            autoFocus
-          />
-        ) : (
-          <TouchableOpacity onPress={handleFamilyNameClick}>
-            <Text style={styles.elementText}>
-              {familyName ? (
-                <Text>{familyName}</Text> // 입력한 가족 이름 표시
-              ) : (
-                <>
-                  <Text style={[styles.yellowText, styles.semiboldFont]}>
-                    가족 이름
-                  </Text>
-                  을 입력해주세요
-                </>
-              )}
-            </Text>
-          </TouchableOpacity>
-        )}
+
+      <View
+        style={{
+          flex: 1,
+          width: '100%',
+          height: '100%',
+          paddingHorizontal: '5%',
+          gap: getResponsiveHeight(60),
+        }}>
+        <Text style={{color: 'black', fontSize: getResponsiveFontSize(30)}}>
+          {`가족명을\n입력하세요`}
+        </Text>
+
+        <TextInput
+          style={{
+            borderColor: 'lightgray',
+            borderWidth: 1,
+            borderRadius: getResponsiveIconSize(10),
+          }}></TextInput>
       </View>
-
-      {/* 가족 역할 입력 */}
-      <View style={styles.elementContainer}>
-        {isEditingFamilyRole ? (
-          <TextInput
-            style={[styles.input, styles.elementText]}
-            placeholder=""
-            value={familyRole}
-            onChangeText={setFamilyRole}
-            onBlur={handleFamilyRoleBlur}
-            autoFocus
-          />
-        ) : (
-          <TouchableOpacity onPress={handleFamilyRoleClick}>
-            <Text style={styles.elementText}>
-              {familyRole ? (
-                <Text>{familyRole}</Text> // 입력한 가족 역할 표시
-              ) : (
-                <>
-                  <Text style={[styles.yellowText, styles.semiboldFont]}>
-                    나의 역할
-                  </Text>
-                  을 입력해주세요
-                </>
-              )}
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* 나의 색깔을 골라주세요 */}
-      <TouchableOpacity
-        style={styles.elementContainer}
-        onPress={toggleColorPicker}>
-        {!selectedColor ? (
-          <Text style={styles.elementText}>
-            <Text style={[styles.yellowText, styles.semiboldFont]}>
-              나의 색깔
-            </Text>
-            을 골라주세요
-          </Text>
-        ) : (
-          <Text style={[styles.elementText, {color: selectedColor,fontFamily:'Pretendard-Bold'}]}>
-            나의 색깔
-          </Text>
-        )}
-
-        {/* 색상 선택 박스 */}
-        {isColorPickerVisible && (
-          <View style={styles.colorPickerContainer}>
-            <View style={styles.colorCircleRow}>
-              <TouchableOpacity
-                style={[styles.colorCircle, {backgroundColor: '#FFCFE5'}]}
-                onPress={() => handleColorSelect('#FFCFE5')}
-              />
-              <TouchableOpacity
-                style={[styles.colorCircle, {backgroundColor: '#FFC84D'}]}
-                onPress={() => handleColorSelect('#FFC84D')}
-              />
-              <TouchableOpacity
-                style={[styles.colorCircle, {backgroundColor: '#334EA7'}]}
-                onPress={() => handleColorSelect('#334EA7')}
-              />
-              <TouchableOpacity
-                style={[styles.colorCircle, {backgroundColor: '#FF7676'}]}
-                onPress={() => handleColorSelect('#FF7676')}
-              />
-            </View>
-            <View style={styles.colorCircleRow}>
-              <TouchableOpacity
-                style={[styles.colorCircle, {backgroundColor: '#ADD8E6'}]}
-                onPress={() => handleColorSelect('#ADD8E6')}
-              />
-              <TouchableOpacity
-                style={[styles.colorCircle, {backgroundColor: '#C1D693'}]}
-                onPress={() => handleColorSelect('#C1D693')}
-              />
-              <TouchableOpacity
-                style={[styles.colorCircle, {backgroundColor: '#FBDCFF'}]} // 추가된 색상
-                onPress={() => handleColorSelect('#FBDCFF')}
-              />
-              <TouchableOpacity
-                style={[styles.colorCircle, {backgroundColor: '#A7A7A7'}]} // 추가된 색상
-                onPress={() => handleColorSelect('#A7A7A7')}
-              />
-            </View>
-          </View>
-        )}
-      </TouchableOpacity>
 
       <TouchableOpacity style={styles.button}>
         <Text style={styles.buttonText}>생성 완료</Text>
@@ -182,7 +65,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     display: 'flex',
     paddingHorizontal: getResponsiveWidth(20),
-    paddingTop: getResponsiveHeight(150),
+    paddingTop: getResponsiveHeight(120),
     gap: getResponsiveHeight(30),
     alignItems: 'center',
     justifyContent: 'flex-start',
@@ -248,7 +131,7 @@ const styles = StyleSheet.create({
 
   button: {
     position: 'absolute',
-    bottom: getResponsiveHeight(100),
+    bottom: getResponsiveHeight(50),
     backgroundColor: '#FFC84D',
     width: getResponsiveWidth(331),
     height: getResponsiveHeight(60),

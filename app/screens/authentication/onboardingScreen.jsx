@@ -4,8 +4,8 @@ import React, {useEffect, useState, useRef} from 'react';
 import {
   TouchableOpacity,
   View,
-  StyleSheet,
   Image,
+  StyleSheet,
   Text,
   FlatList,
   Dimensions,
@@ -21,11 +21,7 @@ import {
   getResponsiveWidth,
 } from '../../utils/responsive';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {
-  getHasFamily,
-  getToken,
-  saveLoginInfo,
-} from '../../utils/storage';
+import {getHasFamily, getToken, saveLoginInfo} from '../../utils/storage';
 import {setLoginSuccess} from '../../redux/slices/authSlice';
 import {fetchUserThunk} from '../../redux/thunk/userThunk';
 import {fetchFamilyThunk} from '../../redux/thunk/familyThunk';
@@ -38,6 +34,7 @@ export default function OnboardingScreen() {
       key: '1',
       image: require('../../assets/onboarding/slide1.png'),
       textSize: 26,
+      textSize_ios: 27,
       text: (
         <>
           우리 가족, {'\n'}오늘은
@@ -49,6 +46,7 @@ export default function OnboardingScreen() {
       key: '2',
       image: require('../../assets/onboarding/slide2.png'),
       textSize: 23,
+      textSize_ios: 26.5,
       text: (
         <>
           소소한 대화부터 고민 상담까지 {'\n'}채팅으로
@@ -60,6 +58,7 @@ export default function OnboardingScreen() {
       key: '3',
       image: require('../../assets/onboarding/slide3.png'),
       textSize: 26,
+      textSize_ios: 28,
       text: (
         <>
           가족 일정, {'\n'}
@@ -74,6 +73,7 @@ export default function OnboardingScreen() {
       key: '4',
       image: require('../../assets/onboarding/slide4.png'),
       textSize: 23,
+      textSize_ios: 26.5,
       text: (
         <>
           <Text style={styles.highlight}>소중한 순간들</Text>을 {'\n'}
@@ -89,13 +89,27 @@ export default function OnboardingScreen() {
   const [currentPage, setCurrentPage] = useState(0);
   const flatListRef = useRef();
 
+  // const navigateToHome = () => {
+  //   navigation.reset({
+  //     routes: [
+  //       {
+  //         name: 'Tabs',
+  //         state: {
+  //           routes: [{name: '홈', state: {routes: [{name: '홈'}]}}],
+  //         },
+  //       },
+  //     ],
+  //   });
+  // };
+
+
   const navigateToHome = () => {
     navigation.reset({
       routes: [
         {
-          name: 'Tabs',
+          name: 'Auth',
           state: {
-            routes: [{name: '홈', state: {routes: [{name: '홈'}]}}],
+            routes: [{name: '가족설정화면', state: {routes: [{name: '가족설정화면'}]}}],
           },
         },
       ],
@@ -106,7 +120,6 @@ export default function OnboardingScreen() {
     try {
       const token = await getToken();
       const hasFamily = await getHasFamily();
-
       console.log('🔐 자동 로그인 - 토큰:', token);
       console.log('👨‍👩‍👧 hasFamily:', hasFamily);
 
@@ -132,7 +145,6 @@ export default function OnboardingScreen() {
   const login = async () => {
     try {
       const result = await KakaoLogin.login();
-
       console.log('✅ Login Success:', result);
 
       // ⬇️ 토큰 저장
@@ -144,7 +156,6 @@ export default function OnboardingScreen() {
       await dispatch(loginThunk(result.accessToken));
       await dispatch(fetchUserThunk());
       await dispatch(fetchFamilyThunk('0e992098-1544-11f0-be5c-0a1e787a0cd7'));
-
       navigateToHome();
     } catch (error) {
       if (error.code === 'E_CANCELLED_OPERATION') {
@@ -172,27 +183,27 @@ export default function OnboardingScreen() {
         ref={flatListRef}
         data={slides}
         keyExtractor={item => item.key}
-        renderItem={({item}) => (
-          <View style={styles.slide}>
-            <Image
-              source={require('../../assets/onboarding/background.png')}
-              style={styles.backgroundImage}
-              resizeMode="contain"
-            />
-            {item.key === '4' && currentPage === 3 && (
+        removeClippedSubviews={false}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScroll={handleScroll}
+        scrollEventThrottle={16}
+        renderItem={({item}) => {
+          // ✅ 플랫폼별 텍스트 크기 선택
+          const effectiveSize =
+            Platform.OS === 'ios'
+              ? item.textSize_ios ?? item.textSize
+              : item.textSize;
+
+          return (
+            <View style={styles.slide}>
               <Image
-                source={item.image}
-                style={{
-                  position: 'absolute',
-                  width: '150%',
-                  height: '75%',
-                  top: getResponsiveHeight(30),
-                  zIndex: 0,
-                }}
+                source={require('../../assets/onboarding/background.png')}
+                style={styles.backgroundImage}
                 resizeMode="contain"
               />
-            )}
-            {item.key !== '4' && (
+
               <Image
                 source={item.image}
                 style={[
@@ -202,36 +213,37 @@ export default function OnboardingScreen() {
                     top: getResponsiveHeight(80),
                   },
                   item.key === '2' && {
-                    width: '100%',
+                    width: '70%',
                     resizeMode: 'cover',
                     top: getResponsiveHeight(70),
                   },
                   item.key === '3' && {width: '70%'},
+                  item.key === '4' && {
+                    width: '100%',
+                    resizeMode: 'cover',
+                    // objectFit은 RN에서 완벽히 표준이 아님. 필요시 유지 가능.
+                    zIndex: 999,
+                  },
                 ]}
                 resizeMode="contain"
               />
-            )}
-            <Text
-              style={[
-                styles.slideText,
-                {
-                  fontSize: getResponsiveFontSize(item.textSize),
-                  ...(item.key === '1' && {
+
+              <Text
+                style={[
+                  styles.slideText,
+                  {fontSize: getResponsiveFontSize(effectiveSize)}, // ✅ 여기서만 폰트 크기 지정
+                  item.key === '1' && {
                     alignSelf: 'baseline',
                     left: getResponsiveWidth(50),
-                  }),
-                },
-              ]}>
-              {item.text}
-            </Text>
-          </View>
-        )}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        onScroll={handleScroll}
-        scrollEventThrottle={16}
+                  },
+                ]}>
+                {item.text}
+              </Text>
+            </View>
+          );
+        }}
       />
+
       <View style={styles.indicatorContainer}>
         {slides.map((_, index) => (
           <View
@@ -243,6 +255,7 @@ export default function OnboardingScreen() {
           />
         ))}
       </View>
+
       <View style={styles.bottomContainer}>
         <TouchableOpacity
           onPress={!isCheckingAutoLogin ? login : null}
@@ -266,7 +279,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
-    bottom: Platform.OS === 'android' ? -50 : 0,
+    overflow: 'visible',
   },
   backgroundImage: {
     position: 'absolute',
@@ -274,10 +287,13 @@ const styles = StyleSheet.create({
     height: '100%',
     bottom: -100,
   },
+  // ⚠️ 폰트 크기는 여기서 지정하지 않음 (플랫폼별/슬라이드별로 inline에서 처리)
   slideText: {
     position: 'absolute',
-    bottom: getResponsiveHeight(10),
-    fontSize: getResponsiveFontSize(23),
+    bottom:
+      Platform.OS === 'android'
+        ? getResponsiveHeight(-50)
+        : getResponsiveHeight(0),
     fontFamily: 'Pretendard-Bold',
     fontWeight: Platform.OS === 'android' ? 'bold' : 'bold',
     color: '#333',
@@ -285,7 +301,8 @@ const styles = StyleSheet.create({
   slideImage: {
     position: 'absolute',
     width: '100%',
-    height: getResponsiveHeight(320),
+    height: '80%',
+    top: getResponsiveHeight(50),
     zIndex: 999,
   },
   highlight: {
@@ -298,7 +315,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom:
-      Platform.OS === 'ios' ? getResponsiveHeight(70) : getResponsiveHeight(50),
+      Platform.OS === 'ios' ? getResponsiveHeight(70) : getResponsiveHeight(20),
     gap: getResponsiveWidth(18),
   },
   indicatorDot: {

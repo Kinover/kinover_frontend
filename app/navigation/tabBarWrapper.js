@@ -1,5 +1,6 @@
 // components/TabBarWrapper.js
 import React from 'react';
+import { Platform } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {BottomTabBar} from '@react-navigation/bottom-tabs';
 import {View} from 'react-native';

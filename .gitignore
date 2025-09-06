@@ -79,3 +79,7 @@ android.zip
 # 🔐 Keystore
 android/keystore.properties
 android/app/my-release-key.keystore
+# Expo
+.expo
+dist/
+web-build/

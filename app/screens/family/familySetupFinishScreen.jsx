@@ -3,7 +3,6 @@ import {
   View,
   StyleSheet,
   Text,
-  Image,
   Touchable,
   TouchableOpacity,
 } from 'react-native';
@@ -14,31 +13,32 @@ import {
   getResponsiveIconSize,
 } from '../../utils/responsive';
 import {useNavigation} from '@react-navigation/native';
-import { useSelector } from 'react-redux';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {useSelector} from 'react-redux';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import FastImage from 'react-native-fast-image';
 
 export default function FamilySetupFinishScreen() {
   const navigation = useNavigation();
-  const family=useSelector(state=>state.family);
+  const family = useSelector(state => state.family);
 
-  const handleButtonClick=()=>{
-    navigation.navigate('Tabs')
-  }
+  const handleButtonClick = () => {
+    navigation.navigate('Tabs');
+  };
   return (
-    <SafeAreaView style={styles.container} edges={['top,bottom,left,right']}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.headerContainer}>
-        <Text
-          style={
-            styles.headerTitle
-          }>{`"${family.name}" 가족 모임에\n 추가되었어요!`}</Text>
+        <Text style={styles.headerTitle}>{`가족 모임이 생성되었어요`}</Text>
+        <Text style={styles.headerSubTitle}>
+          가족을 초대해 함께 추억을 쌓아가보세요
+        </Text>
       </View>
 
-      <Image
+      <FastImage
         style={styles.mainImage}
         source={{
           // uri: 'https://i.postimg.cc/x8zj6zpJ/Group-1171276550.png',
-          uri:'https://i.postimg.cc/43KyH0FN/Group-1171276550.jpg',
-        }}></Image>
+          uri: 'https://i.postimg.cc/43KyH0FN/Group-1171276550.jpg',
+        }}></FastImage>
 
       <View style={styles.buttonContainer}>
         <TouchableOpacity style={styles.button} onPress={handleButtonClick}>
@@ -66,16 +66,22 @@ const styles = StyleSheet.create({
     alignContent: 'center',
     justifyContent: 'center',
     gap: getResponsiveHeight(5),
-    fontFamily:'Pretendard-Regular',
+    fontFamily: 'Pretendard-Regular',
     marginTop: getResponsiveHeight(135),
-
   },
   headerTitle: {
-    fontSize: getResponsiveFontSize(25),
+    fontSize: getResponsiveFontSize(27),
     justifyContent: 'center',
     textAlign: 'center',
-    fontFamily:'Pretendard-Regular',
-
+    fontFamily: 'Pretendard-Regular',
+    color: 'black',
+  },
+  headerSubTitle: {
+    fontSize: getResponsiveFontSize(17),
+    justifyContent: 'center',
+    textAlign: 'center',
+    color: '#5F5F5F',
+    fontFamily: 'Pretendard-Regular',
   },
   mainImage: {
     width: getResponsiveIconSize(181),
@@ -85,7 +91,7 @@ const styles = StyleSheet.create({
   buttonContainer: {},
   buttonContainer: {
     position: 'absolute',
-    bottom: getResponsiveHeight(100),
+    bottom: getResponsiveHeight(90),
     gap: getResponsiveHeight(10),
   },
   button: {
@@ -95,10 +101,11 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveIconSize(10),
     justifyContent: 'center',
   },
-
   buttonText: {
-    fontFamily:'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(15.6),
+    fontSize: getResponsiveFontSize(17),
+    lineHeight: getResponsiveHeight(30),
     textAlign: 'center',
+    fontFamily: 'Pretendard-Regular',
+    color: 'black',
   },
 });

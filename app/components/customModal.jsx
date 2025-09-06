@@ -30,8 +30,11 @@ export default function CustomModal({
   confirmText,
   closeText,
   buttonBottomStyle,
-  showTrashButton = false, // ✅ 추가: 일정 모달일 때만 true
-  onTrashPress, // ✅ 추가: 휴지통 버튼 클릭 이벤트
+  showTrashButton = false,
+  onTrashPress,
+  showCloseButton = false,
+  title,        // ✅ 새로 추가
+  subText,      // ✅ 새로 추가
 }) {
   return (
     <Modal
@@ -58,14 +61,14 @@ export default function CustomModal({
         reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.4)"
       />
 
-      <View style={[styles.overlay]}>
+      <View style={styles.overlay}>
         <View style={[styles.modalBox, modalBoxStyle]}>
-          {/* 닫기(X) + 휴지통 버튼 */}
+          {/* 상단 버튼 */}
           <View
             style={[
               styles.topButtonRow,
-              showTrashButton && {
-                justifyContent: 'space-between',
+              (showTrashButton || showCloseButton) && {
+                justifyContent: showTrashButton ? 'space-between' : 'flex-end',
                 width: '100%',
               },
             ]}>
@@ -81,29 +84,39 @@ export default function CustomModal({
                 />
               </TouchableOpacity>
             )}
-            <TouchableOpacity
-              style={styles.closeXButton}
-              onPress={onClose}
-              hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-              <Image
-                style={{
-                  width: getResponsiveIconSize(10),
-                  height: getResponsiveIconSize(10),
-                }}
-                source={require('../assets/images/close-yellow.png')}
-              />
-              {/* </TouchableOpacity> */}
-            </TouchableOpacity>
+
+            {showCloseButton && (
+              <TouchableOpacity
+                style={styles.closeXButton}
+                onPress={onClose}
+                hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+                <Image
+                  style={{
+                    width: getResponsiveIconSize(10),
+                    height: getResponsiveIconSize(10),
+                  }}
+                  source={require('../assets/images/close-yellow.png')}
+                />
+              </TouchableOpacity>
+            )}
           </View>
 
+          {/* ✅ 기본 title / subText */}
+          {title && <Text style={styles.modalTitle}>{title}</Text>}
+          {subText && <Text style={styles.modalSubText}>{subText}</Text>}
+
+          {/* children 영역 */}
           <View style={[styles.contentWrapper, contentStyle]}>{children}</View>
 
+          {/* 버튼 */}
           <View style={[styles.buttonBottom, buttonBottomStyle]}>
             {closeText && (
               <TouchableOpacity
                 onPress={onClose}
                 style={[styles.closeButton, closeButtonStyle]}>
-                <Text style={closeTextStyle}>{closeText}</Text>
+                <Text style={[styles.closeText, closeTextStyle]}>
+                  {closeText}
+                </Text>
               </TouchableOpacity>
             )}
 
@@ -111,7 +124,9 @@ export default function CustomModal({
               <TouchableOpacity
                 onPress={onConfirm}
                 style={[styles.confirmButton, confirmButtonStyle]}>
-                <Text style={confirmTextStyle}>{confirmText}</Text>
+                <Text style={[styles.confirmText, confirmTextStyle]}>
+                  {confirmText}
+                </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -129,12 +144,15 @@ const styles = StyleSheet.create({
   },
   modalBox: {
     position: 'relative',
-    width: getResponsiveWidth(320),
+    width:
+      Platform.OS === 'android'
+        ? getResponsiveWidth(300)
+        : getResponsiveWidth(280),
     height: 'auto',
-    padding: 20,
+    padding: 15,
     backgroundColor: 'white',
-    borderRadius: 10,
-    paddingTop: getResponsiveHeight(30),
+    borderRadius: Platform.OS === 'android' ? 25 : 20,
+    paddingTop: getResponsiveHeight(20),
     zIndex: 50,
     elevation: 10,
   },
@@ -147,13 +165,70 @@ const styles = StyleSheet.create({
     gap: 10,
     zIndex: 5,
   },
-  closeXButton: {
-    marginRight: 2,
-    marginTop: 10,
+  modalTitle: {
+    color: 'black',
+    fontSize:
+      Platform.OS === 'android'
+        ? getResponsiveFontSize(19)
+        : getResponsiveFontSize(22),
+    textAlign: 'center',
+    fontFamily: 'Pretendard-SemiBold',
+    fontWeight: Platform.OS === 'ios' ? undefined : '700',
+    marginBottom: getResponsiveHeight(12.5),
+    marginTop: getResponsiveHeight(11),
   },
-  closeXText: {
-    fontSize: getResponsiveFontSize(26),
-    color: '#FFC84D',
+  modalSubText: {
+    textAlign: 'center',
+    color: '#6E6E6E',
+    fontFamily: 'Pretendard-Regular',
+    fontSize:
+      Platform.OS === 'android'
+        ? getResponsiveFontSize(14)
+        : getResponsiveFontSize(16),
+    lineHeight: getResponsiveHeight(20),
+    marginBottom: getResponsiveHeight(10),
+  },
+  contentWrapper: {
+    marginBottom: 10,
+  },
+  buttonBottom: {
+    display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignContent: 'center',
+    gap: 10,
+  },
+  closeButton: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    padding: 10,
+    backgroundColor: '#F4F6FA',
+    borderRadius: 8,
+    width: '100%',
+    paddingVertical: getResponsiveHeight(14),
+  },
+  confirmButton: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    padding: 10,
+    backgroundColor: '#FFC84D',
+    borderRadius: 8,
+    width: '100%',
+    paddingVertical: getResponsiveHeight(14),
+  },
+  closeText: {
+    color: '#A1A5AF',
+    fontWeight: '500',
+    fontFamily: 'Pretendard-Regular',
+    fontSize: getResponsiveFontSize(16),
+  },
+  confirmText: {
+    color: 'white',
+    fontWeight: '500',
+    fontFamily: 'Pretendard-Regular',
+    fontSize: getResponsiveFontSize(16),
   },
   trashButton: {
     padding: 4,
@@ -161,35 +236,5 @@ const styles = StyleSheet.create({
   trashIcon: {
     width: getResponsiveWidth(16),
     height: getResponsiveHeight(16),
-  },
-  contentWrapper: {
-    marginBottom: 20,
-  },
-  buttonBottom: {
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 10,
-  },
-  closeButton: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    padding: 10,
-    backgroundColor: '#ddd',
-    borderRadius: 8,
-    width: '100%',
-    textAlign: 'center',
-  },
-  confirmButton: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    padding: 10,
-    backgroundColor: '#FFC84D',
-    borderRadius: 8,
-    width: '100%',
-    textAlign: 'center',
   },
 });

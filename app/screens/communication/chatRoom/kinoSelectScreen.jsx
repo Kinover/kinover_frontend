@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Dimensions,
   Animated,
+  Platform,
 } from 'react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import {useDispatch} from 'react-redux';
@@ -150,7 +151,7 @@ export default function KinoSelectScreen() {
               // loop 모드에서 가장 정확
               setCurrentIndex(Math.round(absProgress));
             }}
-            scrollAnimationDuration={450}
+            scrollAnimationDuration={600}
             renderItem={({item, index}) => (
               <View style={styles.characterCard}>
                 <Image
@@ -246,26 +247,35 @@ const styles = StyleSheet.create({
   },
 
   textBlock: {
-    paddingHorizontal: getResponsiveWidth(6),
+    paddingHorizontal: getResponsiveWidth(20),
     marginBottom: getResponsiveHeight(10),
   },
   kinoText: {
-    fontSize: getResponsiveFontSize(17.5),
+    fontSize:
+      Platform.OS === 'ios'
+        ? getResponsiveFontSize(20)
+        : getResponsiveFontSize(18.5),
     fontFamily: 'Pretendard-Light',
+    fontWeight: Platform.OS === 'android' ? '100' : '200',
     lineHeight: getResponsiveHeight(24),
+    color: 'black',
   },
   kinoHighlight: {
     color: '#FFC84D',
     fontFamily: 'Pretendard-SemiBold',
+    fontWeight: Platform.OS === 'android' ? '800' : '600',
   },
 
   carouselRow: {
+    position: 'absolute',
+    alignSelf: 'center',
     marginTop: getResponsiveHeight(10),
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: getResponsiveWidth(10),
+    top: '35%',
   },
   carouselHolder: {
     flex: 1,
@@ -343,11 +353,13 @@ const styles = StyleSheet.create({
     // elevation: 7,
   },
   buttonText: {
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: 'Pretendard-SemiBold',
+    fontWeight: '700',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(15)
-        : getResponsiveFontSize(17),
-    color: 'black',
+        ? getResponsiveFontSize(17)
+        : getResponsiveFontSize(19),
+    color: 'white',
+    lineHeight: 22,
   },
 });

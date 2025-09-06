@@ -18,6 +18,10 @@ import useHeaderSetting from '../../../hooks/useHeaderSetting';
 import {onLeaveChat} from '../../../hooks/onLeaveChat';
 import {fetchMessageThunk} from '../../../redux/thunk/messageThunk';
 import useHideTabBar from '../../../hooks/useHideTabBar';
+import {
+  setActiveChatRoom,
+  applyMessagePreview,
+} from '../../../redux/slices/chatRoomSlice';
 
 export default function ChatRoomScreenTemplate({
   chatRoom,
@@ -63,6 +67,16 @@ export default function ChatRoomScreenTemplate({
   }, [chatRoom?.chatRoomId]);
 
   useEffect(() => {
+    // ✅ 현재 들어온 방을 redux에 기록
+    dispatch(setActiveChatRoom(chatRoom.chatRoomId));
+
+    return () => {
+      // ✅ 화면 나갈 때 activeChatRoom 해제
+      dispatch(setActiveChatRoom(null));
+    };
+  }, [chatRoom.chatRoomId, dispatch]);
+
+  useEffect(() => {
     const connectWebSocket = async () => {
       const token = await getToken();
       if (!chatRoom || !userId || !token) return;
@@ -77,6 +91,14 @@ export default function ChatRoomScreenTemplate({
         try {
           const msg = JSON.parse(e.data);
           dispatch(addMessage(msg));
+
+          dispatch(
+            applyMessagePreview({
+              chatRoomId: msg.chatRoomId ?? chatRoom.chatRoomId,
+              message: msg,
+              isSelf: msg.senderId === userId, // 내가 보낸 echo라면 true
+            }),
+          );
           if (!isUserScrolling) scrollToBottom();
         } catch (err) {
           console.error('❌ 수신 메시지 파싱 실패:', err);
@@ -120,6 +142,7 @@ export default function ChatRoomScreenTemplate({
           userId={userId}
           socketRef={socketRef}
           setMessageList={setMessageList}
+          enableMediaPicker={!isKino} // ✅ 키노채팅이면 false
         />
         <ChatSettings
           isOpen={isSettingsOpen}
