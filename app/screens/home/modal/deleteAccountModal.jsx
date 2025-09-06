@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, Platform } from 'react-native';
+import React, {useState} from 'react';
+import {View, Text, StyleSheet, TextInput, Platform} from 'react-native';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
@@ -7,7 +7,7 @@ import {
 } from '../../../utils/responsive';
 import CustomModal from '../../../components/customModal';
 
-export default function DeleteAccountModal({ visible, onClose, onConfirm }) {
+export default function DeleteAccountModal({visible, onClose, onConfirm}) {
   const [showConfirmInputModal, setShowConfirmInputModal] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
 
@@ -38,29 +38,27 @@ export default function DeleteAccountModal({ visible, onClose, onConfirm }) {
         onClose={handleFirstConfirm}
         onConfirm={handleCloseAll}
         confirmText="취소"
-        closeText="탈퇴하기"
+        closeText="탈퇴"
         confirmButtonStyle={styles.closeButton}
         closeButtonStyle={styles.confirmButton}
         confirmTextStyle={styles.modalText}
-        closeTextStyle={[styles.modalText, { color: '#fff' }]}
-        buttonBottomStyle={styles.modalButtonRow}>
-        <Text style={styles.modalTitle}>탈퇴 하시겠습니까?</Text>
-      </CustomModal>
+        closeTextStyle={[styles.modalText, {color: '#fff'}]}
+        buttonBottomStyle={styles.modalButtonRow}
+        title={'계정을 삭제할까요?'}
+        subText={'가족과의 모든 연결과 기록이 함께 사라집니다.'}></CustomModal>
 
       <CustomModal
         visible={visible && showConfirmInputModal}
         onClose={handleFinalConfirm}
         onConfirm={handleCloseAll}
         confirmText="취소"
-        closeText="입력하기"
+        closeText="확인"
         confirmButtonStyle={styles.closeButton}
         closeButtonStyle={styles.inputConfirmButton}
         confirmTextStyle={styles.modalText}
-        closeTextStyle={[styles.modalText, { color: '#fff' }]}
-        buttonBottomStyle={styles.modalButtonRow}>
-        <Text style={styles.modalTitle}>
-          탈퇴 하시려면 아래에{'\n'}‘탈퇴합니다’를 입력하세요
-        </Text>
+        closeTextStyle={[styles.modalText, {color: '#fff'}]}
+        buttonBottomStyle={styles.modalButtonRow}
+        title={" 탈퇴 하시려면 아래에\n‘탈퇴합니다’를 입력해주세요"}>
         <TextInput
           placeholder="탈퇴합니다"
           placeholderTextColor="#ccc"
@@ -75,7 +73,11 @@ export default function DeleteAccountModal({ visible, onClose, onConfirm }) {
 
 const styles = StyleSheet.create({
   modalTitle: {
-    fontSize: getResponsiveFontSize(17),
+    color: 'black',
+    fontSize:
+      Platform.OS === 'android'
+        ? getResponsiveFontSize(20)
+        : getResponsiveFontSize(22),
     textAlign: 'center',
     fontFamily: 'Pretendard-SemiBold',
     fontWeight: Platform.OS === 'ios' ? '600' : '700',
@@ -83,9 +85,19 @@ const styles = StyleSheet.create({
     marginTop: getResponsiveHeight(12),
     lineHeight: getResponsiveHeight(24),
   },
+  modalSubText: {
+    textAlign: 'center',
+    color: '#6E6E6E',
+    fontFamily: 'Pretendard-Regular',
+    fontSize:
+      Platform.OS === 'android'
+        ? getResponsiveFontSize(15)
+        : getResponsiveFontSize(16),
+    lineHeight: getResponsiveHeight(20),
+    marginBottom: getResponsiveHeight(5),
+  },
   modalText: {
     fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(13.5),
   },
   modalButtonRow: {
     flexDirection: 'row',
@@ -93,22 +105,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   confirmButton: {
-    flex: 1,
     backgroundColor: '#FF4D4D',
-    paddingVertical: getResponsiveHeight(11),
-    borderRadius: getResponsiveWidth(8),
   },
   inputConfirmButton: {
-    flex: 1,
+    // flex: 1,
     backgroundColor: '#FF4D4D',
-    paddingVertical: getResponsiveHeight(11),
-    borderRadius: getResponsiveWidth(8),
   },
   closeButton: {
-    flex: 1,
+    // flex: 1,
     backgroundColor: '#E0E0E0',
-    paddingVertical: getResponsiveHeight(11),
-    borderRadius: getResponsiveWidth(8),
   },
   input: {
     borderWidth: 1,
@@ -116,10 +121,10 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveWidth(6),
     paddingVertical: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(12),
-    fontSize: getResponsiveFontSize(14),
+    fontSize: getResponsiveFontSize(17),
     fontFamily: 'Pretendard-Regular',
     color: '#000',
     backgroundColor: '#fff',
-    marginTop: getResponsiveHeight(12),
+    marginVertical: getResponsiveHeight(12),
   },
 });

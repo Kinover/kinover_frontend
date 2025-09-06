@@ -1,7 +1,7 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import ScheduleScreen from '../../screens/schedule';
-import {Image, View, Text} from 'react-native';
+import {  Text,  Platform,} from 'react-native';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -34,19 +34,24 @@ export default function ScheduleStack() {
               : getResponsiveHeight(80),
         },
         headerTitleAlign: 'left',
-
+        headerLeft: () => null,
         headerTitle: () => (
           <Text
             style={{
               fontFamily: 'Pretendard-Bold',
+              fontWeight: 'bold',
               fontSize: getResponsiveFontSize(24),
-              color: '#4D4D4D',
+              // color: '#4D4D4D',
+              color: 'black',
+              lineHeight: getResponsiveHeight(30),
+              textAlignVertical:'center',
+
             }}>
             일정
           </Text>
         ),
         headerTitleContainerStyle: {
-          paddingLeft: getResponsiveWidth(15),
+          paddingLeft: getResponsiveWidth(12),
         },
         headerRight: () => (
           <RenderHeaderHome navigation={navigation} currentScreen="일정" />
@@ -58,6 +63,7 @@ export default function ScheduleStack() {
         component={NotificationScreen}
         options={({navigation}) => ({
           gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+          headerRight: () => null,
 
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
@@ -69,6 +75,7 @@ export default function ScheduleStack() {
         component={SettingScreen}
         options={({navigation}) => ({
           gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+          headerRight: () => null,
 
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
@@ -79,6 +86,7 @@ export default function ScheduleStack() {
         component={NotificationSettingScreen}
         options={({navigation}) => ({
           gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+          headerRight: () => null,
 
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
@@ -87,4 +95,3 @@ export default function ScheduleStack() {
     </Stack.Navigator>
   );
 }
-

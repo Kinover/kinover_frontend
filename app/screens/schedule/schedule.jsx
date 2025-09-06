@@ -1,4 +1,5 @@
-import React, {useEffect} from 'react';
+// Schedule.jsx
+import React, {useEffect, useMemo} from 'react';
 import {
   View,
   Text,
@@ -22,10 +23,25 @@ function Schedule({selectedDate, onOpenSheet, refreshTrigger}) {
   const {familyId} = useSelector(state => state.family);
   const {scheduleList} = useSelector(state => state.schedule);
 
+  // ✅ 로컬 타임존 기준 YYYY-MM-DD (UTC 섞임 방지)
+  const formatLocalYMD = d => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  // 의존성 깔끔화를 위해 selectedDate를 로컬 YMD로 메모
+  const selectedYMD = useMemo(
+    () => formatLocalYMD(selectedDate),
+    [selectedDate],
+  );
+
   useEffect(() => {
-    const formattedDate = selectedDate.toISOString().split('T')[0];
-    dispatch(fetchSchedulesForFamilyAndDateThunk(familyId, formattedDate));
-  }, [dispatch, familyId, selectedDate, refreshTrigger]); // ✅ refreshTrigger 추가
+    if (!familyId || !selectedYMD) return;
+    // thunk 시그니처: (familyId, date)
+    dispatch(fetchSchedulesForFamilyAndDateThunk(familyId, selectedYMD));
+  }, [dispatch, familyId, selectedYMD, refreshTrigger]);
 
   const getFormattedDate = () => {
     const dayMap = ['일', '월', '화', '수', '목', '금', '토'];
@@ -56,32 +72,36 @@ function Schedule({selectedDate, onOpenSheet, refreshTrigger}) {
                   top: 0,
                   left: 0,
                   zIndex: 0,
-                  resizeMode: 'contain',
+                  resizeMode: 'cover',
+                  objectFit: 'contain',
                   width: '100%',
                   height: '100%',
                 }}
                 source={require('../../assets/images/schedule.png')}
               />
-              <Text style={styles.cardTitle}>
-                {schedule.userName || '가족'}
-              </Text>
-              <Text style={styles.cardMemo}>
-                {schedule.title || '제목 없음'}
-              </Text>
+              <View>
+                <Text style={styles.cardTitle}>
+                  {schedule.userName || '가족'}
+                </Text>
+                <Text style={styles.cardMemo}>
+                  {schedule.title || '제목 없음'}
+                </Text>
+              </View>
             </TouchableOpacity>
           ))}
-          {scheduleList.length == 0 ? (
+          {scheduleList.length === 0 ? (
             <Text
               style={{
                 marginTop: getResponsiveHeight(60),
-                color: 'gray',
+                // color: 'gray',
+                color: '#C0C0C0',
                 alignSelf: 'center',
+                textAlign:'center',
+                textAlignVertical:'center',
               }}>
-              일정이 없습니다.
+              {"일정이 비어 있어요.\n새로운 일정을 추가해볼까요?"}
             </Text>
-          ) : (
-            <></>
-          )}
+          ) : null}
         </View>
       </View>
     </View>
@@ -97,12 +117,14 @@ const styles = StyleSheet.create({
     paddingBottom: getResponsiveHeight(30),
   },
   dateText: {
-    fontSize: getResponsiveFontSize(16),
+    color: 'black',
+    fontSize: getResponsiveFontSize(17),
     fontFamily: 'Pretendard-SemiBold',
     marginTop: getResponsiveHeight(15),
     marginBottom: getResponsiveHeight(20),
     alignSelf: 'flex-start',
-    fontWeight: Platform.OS === 'ios' ? null : 'bold',
+    // iOS/Android 모두 자연스럽게 보이도록 폰트패밀리 위주로 사용
+    fontWeight: Platform.OS === 'ios' ? undefined : 'bold',
   },
   timelineWrapper: {
     position: 'relative',
@@ -115,16 +137,26 @@ const styles = StyleSheet.create({
     gap: getResponsiveHeight(10),
   },
   cardTitle: {
-    fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-SemiBold',
-    marginBottom: 2,
-    paddingTop: getResponsiveHeight(12),
+    color: 'black',
+    fontSize:
+      Platform.OS === 'android'
+        ? getResponsiveFontSize(14)
+        : getResponsiveFontSize(15.5),
+    fontWeight: Platform.OS === 'android' ? '500' : undefined,
+    marginBottom: Platform.OS === 'android' ? 0 : 3,
+    paddingTop:
+      Platform.OS === 'android'
+        ? getResponsiveHeight(11)
+        : getResponsiveHeight(13),
     paddingHorizontal:
       Platform.OS === 'ios' ? getResponsiveWidth(15) : getResponsiveWidth(20),
   },
   cardMemo: {
-    fontSize: getResponsiveFontSize(11),
-    fontFamily: 'Pretendard-Regular',
+    fontSize:
+      Platform.OS === 'android'
+        ? getResponsiveFontSize(13)
+        : getResponsiveFontSize(13.5),
+    fontWeight: Platform.OS === 'android' ? '500' : undefined,
     color: '#6E6E6E',
     paddingHorizontal:
       Platform.OS === 'ios' ? getResponsiveWidth(15) : getResponsiveWidth(20),
@@ -139,7 +171,6 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
   },
-
   plus: {
     color: '#FFC84D',
     width: getResponsiveIconSize(20),

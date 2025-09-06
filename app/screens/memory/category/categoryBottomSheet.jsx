@@ -11,8 +11,10 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
   Image,
+  SafeAreaView,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import {
   BottomSheetModal,
@@ -28,13 +30,12 @@ import {
 import {useWindowDimensions} from 'react-native';
 
 const CategoryBottomSheetModal = forwardRef(
-  ({categoryList = [], selectedCategory, onSelectCategory, onCancel}, ref) => {
+  ({categoryList = [], selectedCategory, onSelectCategory}, ref) => {
     const modalRef = useRef(null);
-    const snapPoints = useMemo(() => ['60%']); // ✅ 최대 80%
+    const snapPoints = useMemo(() => ['50%'], []);
     const [tempSelected, setTempSelected] = useState(selectedCategory);
 
     const {height} = useWindowDimensions();
-    // const MAX_DYNAMIC = Math.min(height * 0.8, 620);
     const MAX_DYNAMIC = height * 0.75;
 
     useImperativeHandle(ref, () => ({
@@ -54,11 +55,10 @@ const CategoryBottomSheetModal = forwardRef(
     return (
       <BottomSheetModal
         ref={modalRef}
-        index={0} // 초기엔 닫힌 상태
-        snapPoints={snapPoints}
-        enableDynamicSizing // ✅ 컨텐츠 높이에 맞춤
-        maxDynamicContentSize={MAX_DYNAMIC} // ✅ 최대 높이 제한
-        handleIndicatorStyle={{backgroundColor: '#ccc', width: 55}} // 색과 크기 조절 가능
+        index={0}
+        snapPoints={['60%']} // ✅ 고정 높이
+        enableContentPanningGesture={false} // ✅ 위아래 이동 불가
+        handleIndicatorStyle={{width: 0}}
         backdropComponent={props => (
           <BottomSheetBackdrop
             {...props}
@@ -72,15 +72,16 @@ const CategoryBottomSheetModal = forwardRef(
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
         }}>
-        <View style={{flex: 1, maxHeight: '100%'}}>
-          <BottomSheetScrollView
-            contentContainerStyle={[styles.container]}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}>
-            <View style={styles.header}>
-              <Text style={styles.title}>카테고리 선택</Text>
-            </View>
+        <SafeAreaView style={styles.sheetContainer}>
+          <View style={styles.header}>
+            <Text style={styles.title}>카테고리 선택</Text>
+          </View>
 
+          {/* ✅ 스크롤 영역 */}
+          <BottomSheetScrollView
+            style={styles.scrollArea}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}>
             {[{title: '전체'}, ...categoryList].map((cat, index) => {
               const isSelected = cat.title === tempSelected?.title;
               return (
@@ -109,12 +110,14 @@ const CategoryBottomSheetModal = forwardRef(
                 </TouchableOpacity>
               );
             })}
-
+          </BottomSheetScrollView>
+          {/* ✅ 고정 버튼 */}
+          <View style={styles.footer}>
             <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
               <Text style={styles.applyButtonText}>적용하기</Text>
             </TouchableOpacity>
-          </BottomSheetScrollView>
-        </View>
+          </View>
+        </SafeAreaView>
       </BottomSheetModal>
     );
   },
@@ -123,71 +126,92 @@ const CategoryBottomSheetModal = forwardRef(
 export default CategoryBottomSheetModal;
 
 const styles = StyleSheet.create({
-  container: {
-    paddingVertical: getResponsiveWidth(20),
+  sheetContainer: {
+    // flex: 1,
+    height: Platform.OS === 'android' ? '55%' : '55%',
+  },
+  scrollArea: {
+    flex: 1,
+  },
+  scrollContent: {
+    // paddingVertical: getResponsiveHeight(10),
+    // paddingBottom: '50%', // ✅ footer랑 겹치지 않게 여유 확보
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    marginBottom: getResponsiveHeight(20),
     alignItems: 'center',
-    marginBottom: getResponsiveHeight(30),
+    // borderBottomColor:'lightgray',
+    // paddingBottom:20,
+    // borderBottomWidth:0.3,
   },
   title: {
-    paddingHorizontal: getResponsiveWidth(30),
-    fontSize: getResponsiveFontSize(23),
-    fontFamily: 'Pretendard-SemiBold',
-    textAlign: 'left',
-  },
-  closeIcon: {
-    width: getResponsiveIconSize(13),
-    height: getResponsiveIconSize(13),
-    resizeMode: 'contain',
+    fontSize:
+      Platform.OS === 'android'
+        ? getResponsiveFontSize(18)
+        : getResponsiveFontSize(20),
+    fontFamily: 'Pretendard-Bold',
+    fontWeight: '700',
+    color: '#222',
   },
   categoryItem: {
-    marginHorizontal: getResponsiveWidth(22),
-    paddingVertical: getResponsiveHeight(20),
     paddingHorizontal: getResponsiveWidth(15),
+    marginHorizontal: getResponsiveWidth(15),
+    paddingVertical: getResponsiveHeight(22),
+    // paddingHorizontal: getResponsiveWidth(20),
     backgroundColor: 'white',
-    borderRadius: 13,
-    marginBottom: getResponsiveHeight(8),
+    borderRadius: 10,
+    marginBottom: getResponsiveHeight(10),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   selectedItem: {
-    backgroundColor: '#FFF6E1',
+    // backgroundColor: '#FFF6E1',
+
+    backgroundColor: '#FFFAEF',
+
     // borderColor: '#FFC84D',
-    // borderWidth: 1.4,
+    // borderWidth: 1.2,
   },
   categoryText: {
-    fontSize: getResponsiveFontSize(17),
+    fontSize:
+      Platform.OS === 'android'
+        ? getResponsiveFontSize(17)
+        : getResponsiveFontSize(18),
     fontFamily: 'Pretendard-Medium',
-    textAlign: 'left',
-    color: '#808080',
+    color: '#666',
+    textAlign: 'center',
+    textAlignVertical: 'center',
   },
   selectedText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontWeight: 'bold',
-    color: '#333',
+    fontFamily: 'Pretendard-Bold',
+    fontWeight: '700',
+    color: '#FFC84D',
+    textAlign: 'center',
+    textAlignVertical: 'center',
   },
   checkIcon: {
-    width: getResponsiveIconSize(20),
-    height: getResponsiveIconSize(14),
+    width: getResponsiveIconSize(18),
+    height: getResponsiveIconSize(18),
     resizeMode: 'contain',
+    objectFit: 'contain',
+  },
+  footer: {
+    // position:'absolute',
+    // bottom:'20',
+    paddingHorizontal: getResponsiveWidth(15),
   },
   applyButton: {
-    marginHorizontal: getResponsiveWidth(22),
-    paddingVertical: getResponsiveHeight(20),
-    paddingHorizontal: getResponsiveWidth(15),
-    borderRadius: 13,
+    flex: 1,
+    paddingVertical: getResponsiveHeight(18),
+    borderRadius: 10,
     backgroundColor: '#FFC749',
-    paddingVertical: getResponsiveHeight(20),
-    paddingHorizontal: getResponsiveWidth(18),
+    alignItems: 'center',
   },
   applyButtonText: {
     color: 'white',
     fontFamily: 'Pretendard-Bold',
-    fontSize: getResponsiveFontSize(15),
-    alignSelf: 'center',
+    fontWeight: '700',
+    fontSize: getResponsiveFontSize(17),
   },
 });

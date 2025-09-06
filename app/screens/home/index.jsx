@@ -1,25 +1,18 @@
-import React, {useRef, useEffect, useState, useCallback} from 'react';
-import {
-  View,
-  StyleSheet,
-  Text,
-  Image,
-  TouchableOpacity,
-  Platform,
-  Dimensions,
-} from 'react-native';
+import React, {useRef, useEffect, useState} from 'react';
+import {View, StyleSheet, Platform, ScrollView} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {useNavigation} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {GestureHandlerRootView} from 'react-native-gesture-handler';
 
 import {
+  requestNotificationPermission,
   getFcmTokenAndSend,
   handleNotificationListeners,
 } from './notification/requestNotificationPermission';
-import FamilyCodeModal from './modal/familyCodeModal';
 
+import FamilyCodeModal from './modal/familyCodeModal';
 import UserBottomSheetModal from './shared/userBottomSheet';
+
 import {fetchFamilyThunk} from '../../redux/thunk/familyThunk';
 import {fetchFamilyUserListThunk} from '../../redux/thunk/familyUserThunk';
 import {modifyUserThunk} from '../../redux/thunk/userThunk';
@@ -27,17 +20,11 @@ import {modifyUserThunk} from '../../redux/thunk/userThunk';
 import useWebSocketStatus from '../../hooks/useWebSocketStatus';
 import useFamilyStatusSocket from '../../hooks/useFamilyStatusSocket';
 
-import {
-  getResponsiveWidth,
-  getResponsiveHeight,
-  getResponsiveFontSize,
-  getResponsiveIconSize,
-} from '../../utils/responsive';
+import {getResponsiveWidth, getResponsiveHeight} from '../../utils/responsive';
 
 // 컴포넌트 분리
 import HeaderSection from './shared/headerSection';
 import MemberGridSection from './shared/memberGridSection';
-import {requestNotificationPermission} from './notification/requestNotificationPermission';
 
 export default function HomeScreen() {
   const dispatch = useDispatch();
@@ -48,26 +35,52 @@ export default function HomeScreen() {
   const family = useSelector(state => state.family);
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
   const onlineUserIds = useSelector(state => state.status.onlineUserIds);
+  console.log('홈화면 온라인유저아이디 배열', onlineUserIds);
+  const lastActiveMap = useSelector(state => state.family.lastActiveMap);
+  console.log('홈화면 최종접속 배열', lastActiveMap);
 
   const [isVisible, setIsVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
   const familyMembers = familyUserList.filter(m => m.userId !== user.userId);
 
+  /**
+   * 🔔 알림 리스너: 앱 시작 시 1회 등록, 언마운트 시 해제
+   * (handleNotificationListeners가 unsubscribe 함수를 반환해야 함)
+   */
   useEffect(() => {
-    const fetchData = async () => {
-      await requestNotificationPermission();
-      await getFcmTokenAndSend(user.userId);
-      handleNotificationListeners(); // FCM listener 등록도 여기에!
+    const unsubscribe = handleNotificationListeners();
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe();
     };
+  }, []);
 
-    if (user?.userId) {
-      fetchData();
-    }
-  }, [user.userId]);
+  /**
+   * 🔑 권한 요청 → FCM 토큰 발급/전송
+   * userId가 있을 때만 실행
+   */
+  useEffect(() => {
+    if (!user?.userId) return;
+
+    let mounted = true;
+    (async () => {
+      const granted = await requestNotificationPermission();
+      if (!mounted) return;
+      if (granted) {
+        await getFcmTokenAndSend(user.userId); // 서버가 userId 받으면 함께 전송
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [user?.userId]);
+
+  // 웹소켓
   useWebSocketStatus(user.userId);
   useFamilyStatusSocket(family.familyId);
 
+  // 패밀리/멤버 데이터 로드
   useEffect(() => {
     if (user.userId && family.familyId) {
       dispatch(fetchFamilyThunk(family.familyId));
@@ -77,7 +90,7 @@ export default function HomeScreen() {
 
   const handleUserPress = member => {
     setSelectedUser(member);
-    setTimeout(() => userSheetRef.current?.present(), 100); // ✅ present()
+    setTimeout(() => userSheetRef.current?.present(), 100);
   };
 
   const handleSave = async (name, trait, imageUrl) => {
@@ -89,29 +102,31 @@ export default function HomeScreen() {
         image: imageUrl,
       }),
     );
-    userSheetRef.current?.dismiss(); // ✅ dismiss()
+    userSheetRef.current?.dismiss();
     setSelectedUser(null);
   };
 
   return (
-    <>
-      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <View style={styles.container}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        style={{
+          width: '100%',
+          height: '100%',
+          paddingBottom: getResponsiveHeight(20),
+        }}>
         <View style={styles.backgroundCurve} />
 
-        <HeaderSection
-          user={user}
-          onUserPress={handleUserPress}
-          // onAddPress={() => setIsVisible(true)}
-        />
+        <HeaderSection user={user} onUserPress={handleUserPress} />
 
         <MemberGridSection
           members={familyMembers}
           onlineUserIds={onlineUserIds}
+          lastActiveMap={lastActiveMap}
           onUserPress={handleUserPress}
           onAddPress={() => setIsVisible(true)}
         />
-      </SafeAreaView>
-
+      </ScrollView>
       <FamilyCodeModal
         visible={isVisible}
         onClose={() => setIsVisible(false)}
@@ -127,7 +142,7 @@ export default function HomeScreen() {
           userSheetRef.current?.dismiss();
         }}
       />
-    </>
+    </View>
   );
 }
 
@@ -135,15 +150,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     height: '100%',
+    width: '100%',
     backgroundColor: '#FFC84D',
-    paddingTop:
-      Platform.OS === 'android'
-        ? getResponsiveHeight(50)
-        : -getResponsiveHeight(60),
   },
   backgroundCurve: {
     position: 'absolute',
-    bottom: -getResponsiveHeight(90),
+    bottom: -getResponsiveHeight(130),
     width: '250%',
     left: '-75%',
     height: '100%',

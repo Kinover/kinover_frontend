@@ -15,12 +15,8 @@ export default function ImageDeleteModal({
       visible={visible}
       onClose={onClose}
       onConfirm={onConfirm}
-      closeText="취소하기"
-      confirmText="삭제하기"
-      closeButtonStyle={styles.closeButton}
-      confirmButtonStyle={styles.confirmButton}
-      closeTextStyle={styles.closeText}
-      confirmTextStyle={styles.confirmText}
+      closeText="취소"
+      confirmText="삭제"
       buttonBottomStyle={styles.buttonRow}
       modalBoxStyle={styles.modalBox}
     >
@@ -31,7 +27,7 @@ export default function ImageDeleteModal({
 
 const styles = StyleSheet.create({
   modalBox: {
-    width: getResponsiveWidth(300), // 👉 예: iPhone 14 기준 약 77%
+    width: getResponsiveWidth(320), // 👉 예: iPhone 14 기준 약 77%
     maxWidth: '90%',
     alignSelf: 'center',
   },

@@ -4,9 +4,10 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Image,
   Modal,
+  Image,
   ScrollView,
+  Platform,
 } from 'react-native';
 import {BlurView} from '@react-native-community/blur';
 import Animated, {
@@ -30,6 +31,7 @@ import {
   getResponsiveIconSize,
 } from '../../../../utils/responsive';
 import {updateChatRoomNameInList} from '../../../../redux/slices/chatRoomSlice';
+import FastImage from 'react-native-fast-image';
 
 export default function ChatSettings({
   isOpen,
@@ -269,9 +271,9 @@ export default function ChatSettings({
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity style={styles.option} onPress={onShowMedia}>
+          {/* <TouchableOpacity style={styles.option} onPress={onShowMedia}>
             <Text style={styles.optionText}>사진 & 영상</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         <TouchableOpacity
@@ -280,6 +282,13 @@ export default function ChatSettings({
           <Text style={[styles.optionText, styles.leaveText]}>
             채팅방 나가기
           </Text>
+          {/* <FastImage
+            source={require('../../../../assets/icons/exit.png')}
+            style={{
+              width: getResponsiveIconSize(22),
+              height: getResponsiveIconSize(22),
+              resizeMode:'contain',
+            }}></FastImage> */}
         </TouchableOpacity>
       </Animated.View>
     </Modal>
@@ -328,6 +337,8 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(22),
     fontFamily: 'Pretendard-Regular',
     color: '#FFC84D',
+    // color: 'black',
+
     fontWeight: 'bold',
   },
   alarmIcon: {
@@ -344,6 +355,7 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(7),
   },
   optionText: {
+    color: 'black',
     fontSize: getResponsiveFontSize(17),
     fontFamily: 'Pretendard-Light',
   },
@@ -410,6 +422,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderColor: '#eee',
+    // justifyContent:'flex-end',
+    alignItems:'flex-end',
   },
   leaveText: {
     fontFamily: 'Pretendard-Regular',

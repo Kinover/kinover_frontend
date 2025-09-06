@@ -7,6 +7,8 @@ import {
   setMessageError,
   setSendMessage,
 } from '../slices/messageSlice';
+import {applyMessagePreview, bumpListRevision} from '../slices/chatRoomSlice';
+
 
 // ✅ 초기 메시지 로딩 (덮어쓰기)
 export const fetchMessageThunk = (chatRoomId, before = null, limit = 20) => {
@@ -27,7 +29,11 @@ export const fetchMessageThunk = (chatRoomId, before = null, limit = 20) => {
       });
 
       console.log('fetchMesssage', response.data);
+
       dispatch(setMessageList(response.data)); // ✅ 최신 → 오래된 순서 그대로
+
+      dispatch(bumpListRevision()); // ⭐️ 선택 (보수적으로 리렌더 보장)
+
     } catch (error) {
       dispatch(setMessageError(error.message));
     } finally {
@@ -54,7 +60,9 @@ export const fetchMoreMessagesThunk = (chatRoomId, beforeTime) => {
 
       console.log('fetchMoreMesssage', response.data);
 
+
       dispatch(appendMessageList(response.data)); // ✅ 뒤에 붙이기
+
       return {payload: response.data};
     } catch (error) {
       console.error('추가 메시지 로딩 실패:', error);
@@ -79,6 +87,18 @@ export const sendMessageThunk = (message, chatRoomId) => {
       });
 
       dispatch(setSendMessage(response.data));
+
+      // ✅ 리스트 프리뷰 갱신
+      dispatch(
+        applyMessagePreview({
+          chatRoomId,
+          message: response.data,
+          isSelf: true,
+        }),
+      );
+
+      dispatch(bumpListRevision()); // ⭐️ 선택 (보수적으로 리렌더 보장)
+
       dispatch(fetchMessageThunk(chatRoomId)); // ✅ 오타 수정
     } catch (error) {
       dispatch(setMessageError(error.message));

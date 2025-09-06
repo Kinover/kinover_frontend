@@ -26,40 +26,66 @@ export default function NotificationSettingScreen() {
 
   useHideTabBar({stayHidden: true});
 
-  // ✅ 전체 알림 토글 시 하위 알림도 변경 + API 호출
-  const handleToggleAllNotification = () => {
+  // ✅ 전체 알림 토글 시
+  const handleToggleAllNotification = async () => {
     const newValue = !allNotification;
     setAllNotification(newValue);
     setChatNotification(newValue);
     setPostNotification(newValue);
     setCommentNotification(newValue);
-    // dispatch(toggleAllNotificationsThunk({userId, isOn: newValue}));
 
-    // ✅ 각 알림 API 직접 호출
-    dispatch(toggleAllChatRoomNotificationThunk({userId, isOn: newValue}));
-    dispatch(togglePostNotificationThunk({userId, isOn: newValue}));
-    dispatch(toggleCommentNotificationThunk({userId, isOn: newValue}));
+    if (!userId) {
+      console.warn('⚠️ userId 없음 → 전체 알림 토글 취소');
+      return;
+    }
+
+    try {
+      // 서버에 전체 알림 API가 없다면 각각 호출
+      await dispatch(toggleAllChatRoomNotificationThunk({userId, isOn: newValue}));
+      await dispatch(togglePostNotificationThunk({userId, isOn: newValue}));
+      await dispatch(toggleCommentNotificationThunk({userId, isOn: newValue}));
+    } catch (e) {
+      console.log('❌ 전체 알림 토글 실패:', e);
+    }
   };
 
-  const handleToggleChatNotification = () => {
+  const handleToggleChatNotification = async () => {
     const newValue = !chatNotification;
     setChatNotification(newValue);
-    dispatch(toggleAllChatRoomNotificationThunk({userId, isOn: newValue}));
+
+    if (!userId) return;
+    try {
+      await dispatch(toggleAllChatRoomNotificationThunk({userId, isOn: newValue}));
+    } catch (e) {
+      console.log('❌ 채팅방 알림 토글 실패:', e);
+    }
   };
 
-  const handleTogglePostNotification = () => {
+  const handleTogglePostNotification = async () => {
     const newValue = !postNotification;
     setPostNotification(newValue);
-    dispatch(togglePostNotificationThunk({userId, isOn: newValue}));
+
+    if (!userId) return;
+    try {
+      await dispatch(togglePostNotificationThunk({userId, isOn: newValue}));
+    } catch (e) {
+      console.log('❌ 게시물 알림 토글 실패:', e);
+    }
   };
 
-  const handleToggleCommentNotification = () => {
+  const handleToggleCommentNotification = async () => {
     const newValue = !commentNotification;
     setCommentNotification(newValue);
-    dispatch(toggleCommentNotificationThunk({userId, isOn: newValue}));
+
+    if (!userId) return;
+    try {
+      await dispatch(toggleCommentNotificationThunk({userId, isOn: newValue}));
+    } catch (e) {
+      console.log('❌ 댓글 알림 토글 실패:', e);
+    }
   };
 
-  // ✅ 하위 알림이 하나라도 false면 전체 알림도 false
+  // ✅ 하위 알림 상태에 따라 전체 알림 값 자동 업데이트
   useEffect(() => {
     if (chatNotification && postNotification && commentNotification) {
       setAllNotification(true);

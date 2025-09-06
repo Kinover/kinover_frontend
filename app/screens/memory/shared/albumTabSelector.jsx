@@ -1,5 +1,12 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, Animated} from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+  Animated,
+} from 'react-native';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -87,20 +94,27 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'white',
     paddingBottom: getResponsiveHeight(15),
-    paddingVertical: getResponsiveHeight(5),
-    paddingHorizontal: getResponsiveWidth(29),
+    paddingVertical:
+      Platform.OS === 'android'
+        ? getResponsiveHeight(5)
+        : getResponsiveHeight(5),
+    paddingHorizontal: getResponsiveWidth(27.5),
   },
   tab: {
     marginRight: getResponsiveWidth(25),
   },
   tabText: {
     fontSize: getResponsiveFontSize(18),
-    fontFamily: 'Pretendard-Bold',
+    fontFamily: 'Pretendard-SemiBold',
+    fontWeight: 'semibold',
     color: '#4A4A4A',
     textAlignVertical: 'bottom',
   },
   selectedText: {
-    color: '#FFC84D',
+    color: 'black',
+    fontWeight: 'bold',
+    fontFamily: 'Pretendard-bold',
+    // color: '#FFC84D',
   },
 
   tabRowContainer: {
@@ -114,10 +128,11 @@ const styles = StyleSheet.create({
   underline: {
     height: 2,
     width: BASE_UNDERLINE_WIDTH + 5,
-    backgroundColor: '#FFC84D',
+    // backgroundColor: '#FFC84D',
+    // backgroundColor: '#4A4A4A',
+    backgroundColor: 'black',
     position: 'absolute',
-    bottom: -13, // 탭 텍스트 바로 아래로 내리기 (필요에 따라 조절)
+    bottom: -11, // 탭 텍스트 바로 아래로 내리기 (필요에 따라 조절)
     left: 0,
   },
 });
-

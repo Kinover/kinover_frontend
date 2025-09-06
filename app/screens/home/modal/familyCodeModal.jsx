@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  Text,
-  StyleSheet,
-  Platform,
-  View,
-  Image,
-  TouchableOpacity,
-} from 'react-native';
+import {Text, StyleSheet, Platform, View, TouchableOpacity} from 'react-native';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
@@ -17,23 +10,22 @@ import CustomModal from '../../../components/customModal';
 import Clipboard from '@react-native-clipboard/clipboard'; // ✅ 이렇게!
 
 import {ToastAndroid, Alert, Pressable} from 'react-native';
+import FastImage from 'react-native-fast-image';
 
 export default function FamilyCodeModal({visible, onClose, familyCode}) {
   return (
     <CustomModal
+      showCloseButton={false}
       visible={visible}
       onClose={onClose}
       onConfirm={onClose}
-      confirmText="닫기"
-      confirmButtonStyle={styles.confirmButton}
-      confirmTextStyle={styles.modalText}
-      buttonBottomStyle={styles.modalButtonRow}>
+      confirmText="확인"
+      buttonBottomStyle={styles.modalButtonRow}
+      title={'가족 초대 코드'}
+      subText={'복사 아이콘을 눌러,\n함께할 가족에게 코드를 알려주세요'}>
       {/* 추가된 가족코드 안내 문구 */}
-      <Text style={styles.modalTitle}>가족 코드는 다음과 같습니다.</Text>
-
       <View style={styles.codeContainer}>
         <Text style={styles.codeText}>{familyCode}</Text>
-
         <Pressable
           onPress={() => {
             Clipboard.setString(familyCode);
@@ -43,29 +35,26 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
               Alert.alert('복사되었습니다');
             }
           }}>
-          <Image
+          <FastImage
             source={require('../../../assets/icons/copy.png')}
             style={styles.copyIcon}
             resizeMode="contain"
           />
         </Pressable>
       </View>
-
-      <Text style={styles.helperText}>
-        복사 아이콘을 눌러, 함께할 가족에게 코드를 알려주세요
-      </Text>
     </CustomModal>
   );
 }
 
 const styles = StyleSheet.create({
   modalTitle: {
-    fontSize: getResponsiveFontSize(17),
+    color: 'black',
+    fontSize: getResponsiveFontSize(22),
     textAlign: 'center',
     fontFamily: 'Pretendard-SemiBold',
     fontWeight: Platform.OS === 'ios' ? '600' : '700',
-    marginBottom: getResponsiveHeight(5),
-    marginTop: getResponsiveHeight(20),
+    marginBottom: getResponsiveHeight(10),
+    marginTop: getResponsiveHeight(10),
     lineHeight: getResponsiveHeight(24),
   },
   codeContainer: {
@@ -97,11 +86,11 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveWidth(8),
   },
   helperText: {
-    fontSize: getResponsiveFontSize(11.5),
+    fontSize: getResponsiveFontSize(14),
     color: '#999',
     fontFamily: 'Pretendard-Regular',
     textAlign: 'center',
-    marginTop: getResponsiveHeight(4),
+    marginBottom: getResponsiveHeight(8),
   },
   codeContainer: {
     backgroundColor: '#F5F5F5',
@@ -115,7 +104,7 @@ const styles = StyleSheet.create({
   },
   codeText: {
     flex: 1, // 아이콘과 공간 나눔
-    fontSize: getResponsiveFontSize(13),
+    fontSize: getResponsiveFontSize(11),
     fontFamily: 'Pretendard-SemiBold',
     color: '#333',
     letterSpacing: 1,

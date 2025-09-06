@@ -9,7 +9,6 @@ import {
   View,
   Text,
 } from 'react-native';
-import {BlurView} from '@react-native-community/blur';
 import ImageZoom from 'react-native-image-pan-zoom';
 import {
   getResponsiveHeight,
@@ -23,14 +22,7 @@ export default function ImageModal({visible, imageUri, onClose}) {
   return (
     <Modal transparent={true} visible={visible} animationType="fade">
       {/* 전체 백그라운드 */}
-      {/* <View style={styles.overlay}>
-        <BlurView
-          style={StyleSheet.absoluteFill}
-          blurType="dark"
-          blurAmount={1}
-          reducedTransparencyFallbackColor="rgba(0,0,0,0.3)"
-        />
-      </View> */}
+
       <View style={styles.overlay} />
 
       {/* 이미지 줌 영역 */}
@@ -51,7 +43,25 @@ export default function ImageModal({visible, imageUri, onClose}) {
       {/* 닫기 버튼 */}
       <View style={styles.closeButtonContainer}>
         <TouchableWithoutFeedback onPress={onClose}>
-          <Text style={styles.closeText}>✕</Text>
+          {/* <View
+            style={{
+              zIndex: 0,
+              width: getResponsiveFontSize(25),
+              height: getResponsiveFontSize(25),
+              borderRadius: getResponsiveFontSize(12.5),
+              backgroundColor: 'lightgray',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            <Text style={styles.closeText}>✕</Text>
+          </View> */}
+          <Image
+            source={require('../../../../assets/icons/close(1).png')}
+            style={{
+              width: getResponsiveWidth(22.5),
+              height: getResponsiveHeight(22.5),
+              resizeMode:'contain',
+            }}></Image>
         </TouchableWithoutFeedback>
       </View>
     </Modal>
@@ -75,13 +85,17 @@ const styles = StyleSheet.create({
   closeButtonContainer: {
     position: 'absolute',
     top:
-      Platform.OS === 'ios' ? getResponsiveHeight(70) : getResponsiveHeight(30),
-    right: getResponsiveWidth(20),
+      Platform.OS === 'ios' ? getResponsiveHeight(65) : getResponsiveHeight(30),
+    right: getResponsiveWidth(15),
     zIndex: 10,
   },
   closeText: {
-    fontSize: getResponsiveFontSize(24),
-    color: '#FFC84D',
+    zIndex: 10,
+    fontSize:
+      Platform.OS === 'ios'
+        ? getResponsiveFontSize(15.5)
+        : getResponsiveFontSize(10.5),
+    color: 'gray',
     fontWeight: 'bold',
   },
 });

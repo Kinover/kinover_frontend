@@ -19,20 +19,19 @@ export default function LeaveChatRoomModal({visible, onClose, onConfirm}) {
         }, 100); // 100ms 정도만 주면 충분해
       }}
       confirmText="나가기"
-      closeText="취소하기"
-      confirmButtonStyle={styles.confirmButton}
-      closeButtonStyle={styles.closeButton}
-      closeTextStyle={styles.modalText}
-      confirmTextStyle={[styles.modalText, {color: 'black'}]}
-      buttonBottomStyle={styles.modalButtonRow}>
-      <Text style={styles.modalTitle}>정말 채팅방을 나가시겠습니까?</Text>
-    </CustomModal>
+      closeText="취소"
+      buttonBottomStyle={styles.modalButtonRow}
+      title="채팅방을 나갈까요?"></CustomModal>
   );
 }
 
 const styles = StyleSheet.create({
   modalTitle: {
-    fontSize: getResponsiveFontSize(17),
+    color: 'black',
+    fontSize:
+      Platform.OS === 'android'
+        ? getResponsiveFontSize(20)
+        : getResponsiveFontSize(22),
     textAlign: 'center',
     fontFamily: 'Pretendard-Medium',
     fontWeight: Platform.OS === 'ios' ? undefined : '700',

@@ -8,19 +8,29 @@ import {
   Image,
   TouchableOpacity,
   SafeAreaView,
+  Platform,
 } from 'react-native';
-// import LinearGradient from 'react-native-linear-gradient';
-import {getResponsiveFontSize,getResponsiveHeight,getResponsiveWidth,getResponsiveIconSize} from '../../../../../utils/responsive';
+import {
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveWidth,
+  getResponsiveIconSize,
+} from '../../../../../utils/responsive';
 
+export default function DescriptionSection({memory, onContentLayout}) {
+  if (!memory) return null; // ✅ 데이터 아직이면 렌더 안 함
 
-export default function DescriptionSection({
-  memory,
-  commentList,
-  onPressComment,
-  onContentLayout,
-}) {
   return (
-    <>
+    <View
+      style={{
+        // backgroundColor: 'white',
+        // borderTopWidth: 1,
+        // borderTopLeftRadius: getResponsiveIconSize(30),
+        // borderTopRightRadius: getResponsiveIconSize(30),
+        // backgroundColor: 'white',
+        // borderTopColor: 'white',
+        // height:'100%',
+      }}>
       <TouchableWithoutFeedback>
         <View style={styles.headerContainer}>
           <View style={styles.writer}>
@@ -49,7 +59,7 @@ export default function DescriptionSection({
           pointerEvents="none"
         /> */}
       </SafeAreaView>
-    </>
+    </View>
   );
 }
 
@@ -59,38 +69,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 5,
   },
-  // fadeOutGradient: {
-  //   position: 'absolute',
-  //   bottom: 0,
-  //   height: getResponsiveHeight(90),
-  //   width: '100%',
-  // },
+
   headerContainer: {
     width: '100%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     height: getResponsiveHeight(60),
-    paddingHorizontal: getResponsiveWidth(40),
+    paddingHorizontal: getResponsiveWidth(30),
     zIndex: 10,
     backgroundColor: 'rgba(255,255,255,0)',
+    alignItems:'center',
+    alignContent:'center',
   },
   writer: {
     flexDirection: 'row',
+    flex: 1,
+    alignContent: 'center',
     alignItems: 'center',
     gap: getResponsiveWidth(10),
   },
   writerImage: {
-    width: getResponsiveWidth(40),
-    height: getResponsiveWidth(40),
+    width:
+      Platform.OS === 'ios' ? getResponsiveWidth(39) : getResponsiveWidth(36.5),
+    height:
+      Platform.OS === 'ios' ? getResponsiveWidth(39) : getResponsiveWidth(36.5),
     borderRadius: getResponsiveWidth(20),
     backgroundColor: 'white',
     borderColor: 'gray',
-    borderWidth: getResponsiveWidth(0.5),
+    borderWidth: getResponsiveWidth(0.25),
   },
   writerName: {
-    fontSize: getResponsiveFontSize(16),
+    color: 'black',
+    fontSize:
+      Platform.OS === 'ios'
+        ? getResponsiveFontSize(21)
+        : getResponsiveFontSize(18),
     fontFamily: 'Pretendard-Regular',
+    textAlignVertical: 'center',
+    lineHeight:getResponsiveHeight(40)
   },
   commentButton: {
     width: getResponsiveWidth(45),
@@ -101,13 +118,17 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     width: '100%',
-    paddingHorizontal: getResponsiveWidth(40),
+    paddingHorizontal: getResponsiveWidth(30),
   },
   content: {
     color: 'black',
     fontFamily: 'Pretendard-Light',
-    fontSize: getResponsiveFontSize(14),
-    paddingVertical: getResponsiveHeight(5),
+    fontSize:
+      Platform.OS === 'ios'
+        ? getResponsiveFontSize(17)
+        : getResponsiveFontSize(15),
+    paddingVertical: getResponsiveHeight(3),
+    textAlignVertical: 'center',
   },
   commentCount: {
     position: 'absolute',

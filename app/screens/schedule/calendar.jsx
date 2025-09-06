@@ -1,12 +1,18 @@
 import React, {useMemo, useState, useEffect} from 'react';
-import {View, Text, TouchableOpacity, Image, StyleSheet} from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  useWindowDimensions,
+} from 'react-native';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
-  getResponsiveIconSize,
   getResponsiveWidth,
 } from '../../utils/responsive';
-import YMDPickerModal from './YMDPickerModal'; // ← 추가
+import YMDPickerModal from './YMDPickerModal';
 
 export default function CalendarToggle({
   selectedDate,
@@ -14,34 +20,53 @@ export default function CalendarToggle({
   scheduleCountPerDay = {},
   initialMode = 'month', // 'month' | 'week'
 }) {
+  const {width: screenWidth} = useWindowDimensions();
+
   const [mode, setMode] = useState(initialMode);
   const [currentMonth, setCurrentMonth] = useState(selectedDate.getMonth());
   const [currentYear, setCurrentYear] = useState(selectedDate.getFullYear());
-  const [showYMD, setShowYMD] = useState(false); // ← 추가
+  const [showYMD, setShowYMD] = useState(false);
 
   useEffect(() => {
     setCurrentMonth(selectedDate.getMonth());
     setCurrentYear(selectedDate.getFullYear());
   }, [selectedDate]);
 
+  // 🔧 공통 셀 크기 계산 (주/월 동일) + 좌우 여백
+  const OUTER_HPAD = getResponsiveWidth(20);
+  const GAP = getResponsiveWidth(6);
+  const availableWidth = screenWidth - OUTER_HPAD * 2;
+  const cellSize = Math.floor((availableWidth - GAP * 6) / 7); // 7열 + 간격 6개
+  const gridWidth = cellSize * 7 + GAP * 6;
+
   // 색 단계
   const COUNT_COLORS = {
-    1: '#FFF4D8',
-    2: '#FFE5A9',
-    3: '#FFD370',
-    4: '#FFB50E', // 4+
+    1: '#FFC74D', // 더 진한 옐로우
+    2: '#FFB300', // 골드빛 강한 노랑
+    3: '#FF9F00', // 오렌지빛 머스터드
+    4: '#E68900', // 진한 오렌지-브라운
   };
 
-  // 카운트 뱃지 렌더
   const renderCountBadge = count => {
     if (!count || count <= 0) return null;
     const level = count >= 4 ? 4 : count;
+    const size = cellSize * 0.22;
     return (
-      <View style={[styles.countBadge, {backgroundColor: COUNT_COLORS[level]}]}>
-        {/* <Text style={styles.countBadgeText}>{count}</Text> */}
-      </View>
+      <View
+        style={[
+          styles.countBadge,
+          {
+            backgroundColor: COUNT_COLORS[level],
+            width: size,
+            height: size,
+            borderRadius: size / 2,
+          },
+        ]}
+      />
     );
   };
+
+  // YYYY-MM-DD (로컬 기준)
   const getLocalDateKey = date => {
     const y = date.getFullYear();
     const m = (date.getMonth() + 1).toString().padStart(2, '0');
@@ -50,14 +75,14 @@ export default function CalendarToggle({
   };
 
   const getCountColorStyle = count => {
-    if (count >= 4) return {backgroundColor: '#FFB50E'};
-    if (count === 3) return {backgroundColor: '#FFD370'};
-    if (count === 2) return {backgroundColor: '#FFE5A9'};
-    if (count === 1) return {backgroundColor: '#FFF4D8'};
+    if (count >= 4) return {backgroundColor: '#FFB84D99'}; // 조금 진한 오렌지-노랑
+    if (count === 3) return {backgroundColor: '#FFC94D77'}; // 골드빛 진노랑
+    if (count === 2) return {backgroundColor: '#FFD84D55'}; // 선명한 노랑
+    if (count === 1) return {backgroundColor: '#FFEB4D33'}; // 기본 노랑보다 살짝 진하게
     return {};
   };
 
-  // 월간: 6행(42칸) 그리드 생성
+  // 월간: 6행(42칸)
   const monthDates = useMemo(() => {
     const firstDay = new Date(currentYear, currentMonth, 1);
     const start = new Date(firstDay);
@@ -69,15 +94,14 @@ export default function CalendarToggle({
       const key = getLocalDateKey(d);
       arr.push({
         date: d,
-        count: scheduleCountPerDay[key] || 0,
         isCurrentMonth: d.getMonth() === currentMonth,
         isSelected: key === getLocalDateKey(selectedDate),
       });
     }
     return arr;
-  }, [currentMonth, currentYear, scheduleCountPerDay, selectedDate]);
+  }, [currentMonth, currentYear, selectedDate]);
 
-  // 주간: 선택된 날짜가 포함된 주(일~토)
+  // 주간: 선택 주(일~토)
   const weekDates = useMemo(() => {
     const startOfWeek = new Date(selectedDate);
     startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay());
@@ -87,14 +111,12 @@ export default function CalendarToggle({
       const key = getLocalDateKey(d);
       return {
         date: d,
-        count: scheduleCountPerDay[key] || 0,
         isSelected: key === getLocalDateKey(selectedDate),
       };
     });
-  }, [selectedDate, scheduleCountPerDay]);
+  }, [selectedDate]);
 
   const changeMonth = dir => {
-    // dir: -1 / +1
     const newDate = new Date(currentYear, currentMonth + dir, 1);
     setCurrentMonth(newDate.getMonth());
     setCurrentYear(newDate.getFullYear());
@@ -102,7 +124,6 @@ export default function CalendarToggle({
   };
 
   const changeWeek = dir => {
-    // dir: -1 / +1 (주 이동)
     const d = new Date(selectedDate);
     d.setDate(selectedDate.getDate() + dir * 7);
     setSelectedDate(d);
@@ -114,27 +135,25 @@ export default function CalendarToggle({
       : `${selectedDate.getFullYear()}년 ${selectedDate.getMonth() + 1}월`;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {paddingHorizontal: OUTER_HPAD}]}>
       {/* 헤더 */}
-      <View style={styles.header}>
+      <View style={[styles.header, {width: gridWidth, alignSelf: 'center'}]}>
         <View
           style={{
             flex: 1,
             flexDirection: 'row',
-            alignContent: 'center',
             alignItems: 'center',
             gap: getResponsiveWidth(10),
           }}>
           <Text style={styles.monthText}>{headerLabel}</Text>
-
-          {/* ✅ Y/M/D 버튼 추가 */}
           <TouchableOpacity
             style={styles.iconBtn}
             onPress={() => setShowYMD(true)}
             hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
             <Image
               style={{flex: 1, width: '100%', height: '100%'}}
-              source={require('../../assets/icons/calendar.png')}></Image>
+              source={require('../../assets/icons/calendar.png')}
+            />
           </TouchableOpacity>
         </View>
 
@@ -170,12 +189,11 @@ export default function CalendarToggle({
 
           <View style={styles.modeToggle}>
             <TouchableOpacity
-              style={[styles.toggleChip, styles.toggleActive]} // 항상 칩 모양 유지
+              style={[styles.toggleChip, styles.toggleActive]}
               onPress={() => setMode(m => (m === 'month' ? 'week' : 'month'))}
               hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
               <Text style={[styles.toggleText, styles.toggleTextActive]}>
                 {mode === 'month' ? '주' : '월'}
-                {/* 현재 모드에 맞춰 라벨 변경 */}
               </Text>
             </TouchableOpacity>
           </View>
@@ -183,68 +201,102 @@ export default function CalendarToggle({
       </View>
 
       {/* 요일 헤더 */}
-      <View style={styles.weekRow}>
+      <View style={[styles.weekRow, {width: gridWidth, alignSelf: 'center'}]}>
         {['일', '월', '화', '수', '목', '금', '토'].map(d => (
-          <View key={d} style={{flex: 1, alignItems: 'center'}}>
+          <View key={d} style={{width: cellSize, alignItems: 'center'}}>
             <Text style={styles.dayText}>{d}</Text>
           </View>
         ))}
       </View>
 
-      {/* 콘텐츠 */}
+      {/* 월간 */}
       {mode === 'month' ? (
-        <View style={styles.dateGrid}>
-          {monthDates.map((item, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={[
-                styles.dayBox,
-                getCountColorStyle(item.count),
-                item.isSelected && styles.selectedBox,
-                !item.isCurrentMonth && {opacity: 0.3},
-              ]}
-              onPress={() => setSelectedDate(item.date)}
-              hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
-              <Text
+        <View
+          style={[
+            styles.dateGrid,
+            {
+              width: gridWidth,
+              columnGap: GAP,
+              rowGap: GAP,
+              alignSelf: 'center',
+            },
+          ]}>
+          {monthDates.map((item, idx) => {
+            const key = getLocalDateKey(item.date);
+            const count = scheduleCountPerDay[key] || 0; // ← 보정 없이 그대로 사용
+            return (
+              <TouchableOpacity
+                key={idx}
                 style={[
-                  styles.dateText,
-                  item.isSelected && styles.selectedText,
-                ]}>
-                {item.date.getDate()}
-              </Text>
-              {renderCountBadge(item.count)}
-            </TouchableOpacity>
-          ))}
+                  styles.dayCell,
+                  {
+                    width: cellSize,
+                    height: cellSize,
+                    borderRadius: cellSize / 2,
+                  },
+                  getCountColorStyle(count),
+                  item.isSelected && styles.selectedBox,
+                  !item.isCurrentMonth && {opacity: 0.35},
+                ]}
+                onPress={() => setSelectedDate(item.date)}
+                hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
+                <Text
+                  style={[
+                    styles.dateText,
+                    item.isSelected && styles.selectedText,
+                  ]}>
+                  {item.date.getDate()}
+                </Text>
+                {/* {renderCountBadge(count)} */}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       ) : (
-        <View style={styles.weekGrid}>
-          {weekDates.map((item, idx) => (
-            <TouchableOpacity
-              key={idx}
-              style={[
-                styles.weekDayBox,
-                getCountColorStyle(item.count),
-                item.isSelected && styles.selectedBox,
-              ]}
-              onPress={() => setSelectedDate(item.date)}
-              hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
-              <Text
+        // 주간
+        <View
+          style={[
+            styles.weekGrid,
+            {width: gridWidth, columnGap: GAP, alignSelf: 'center'},
+          ]}>
+          {weekDates.map((item, idx) => {
+            const key = getLocalDateKey(item.date);
+            const count = scheduleCountPerDay[key] || 0; // ← 보정 없이 그대로 사용
+            return (
+              <TouchableOpacity
+                key={idx}
                 style={[
-                  styles.dateText,
-                  item.isSelected && styles.selectedText,
-                ]}>
-                {item.date.getDate()}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                  styles.dayCell,
+                  {
+                    width: cellSize,
+                    height: cellSize,
+                    borderRadius: cellSize / 2,
+                  },
+                  getCountColorStyle(count),
+                  item.isSelected && styles.selectedBox,
+                ]}
+                onPress={() => setSelectedDate(item.date)}
+                hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
+                <Text
+                  style={[
+                    styles.dateText,
+                    item.isSelected && styles.selectedText,
+                  ]}>
+                  {item.date.getDate()}
+                </Text>
+                {/* {renderCountBadge(count)} */}
+              </TouchableOpacity>
+            );
+          })}
         </View>
       )}
+
       <YMDPickerModal
         visible={showYMD}
         onClose={() => setShowYMD(false)}
         onConfirm={date => {
           setShowYMD(false);
-          setSelectedDate(date); // 선택 반영 → Month/Week 자동 동기화
+          setSelectedDate(date);
         }}
         initialDate={selectedDate}
         minYear={2000}
@@ -262,51 +314,60 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(20),
   },
   header: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     alignContent: 'center',
+    alignSelf: 'center',
     justifyContent: 'space-between',
     marginBottom: getResponsiveHeight(16),
-    paddingHorizontal: 10,
+    paddingHorizontal: getResponsiveWidth(10),
   },
   monthText: {
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(19),
+    fontWeight: '700',
+    fontSize: Platform.OS === 'android' ?getResponsiveFontSize(21):getResponsiveFontSize(23),
     color: '#1E1E1E',
     alignSelf: 'center',
+    lineHeight: Platform.OS === 'android' ? 22 : 'auto',
+    textAlignVertical: 'bottom',
   },
   modeToggle: {
     flexDirection: 'row',
     backgroundColor: '#F3F3F3',
     borderRadius: 999,
     alignItems: 'center',
-    alignContent: 'center',
-    alignSelf: 'center',
     justifyContent: 'center',
-    textAlign: 'center',
-    textAlignVertical: 'center',
   },
   toggleChip: {
-    paddingVertical: getResponsiveHeight(5),
+    paddingVertical: getResponsiveHeight(4),
     paddingHorizontal: getResponsiveWidth(12),
-    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignContent: 'center',
+    borderRadius: 40,
   },
-  toggleActive: {
-    backgroundColor: 'lightgray',
-  },
+  toggleActive: {backgroundColor: 'lightgray'},
   toggleText: {
     fontFamily: 'Pretendard-Medium',
     fontSize: getResponsiveFontSize(13),
-    color: '#7C7C7C',
+    // color: '#7C7C7C',
+    color: 'white',
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    lineHeight: 16,
   },
   toggleTextActive: {
-    color: '#1E1E1E',
+    // color: '#1E1E1E',
+    color: 'white',
+    textAlignVertical: 'center',
+    textAlign: 'center',
+
     fontFamily: 'Pretendard-SemiBold',
   },
   navButtons: {
     flexDirection: 'row',
     gap: 10,
+    alignItems: 'center',
   },
   navIcon: {
     width: 15,
@@ -316,69 +377,44 @@ const styles = StyleSheet.create({
 
   weekRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: getResponsiveHeight(10),
-    paddingHorizontal: 2,
   },
   dayText: {
     textAlign: 'center',
-    fontSize: getResponsiveFontSize(16),
-    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(16.5),
+    fontFamily: 'Pretendard-SemiBold',
+    fontWeight: '700',
     color: '#444',
   },
 
-  // month grid
+  // ✅ 공통 셀 스타일 (주/월 동일 크기)
+  dayCell: {
+    alignContent: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#F9F9F9',
+    textAlign: 'center',
+    textAlignVertical: 'center',
+  },
+
+  // 월/주 컨테이너
   dateGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
-  navButtons: {
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'center',
-  },
-  pickBtn: {
-    paddingVertical: getResponsiveHeight(6),
-    paddingHorizontal: getResponsiveWidth(10),
-    backgroundColor: '#F3F3F3',
-    borderRadius: 8,
-  },
-  pickBtnText: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(12),
-    color: '#333',
-  },
-  dayBox: {
-    width: `${100 / 7}%`,
-    height: `${100 / 7}%`,
-    aspectRatio: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#F9F9F9',
-  },
-
-  // week grid
   weekGrid: {
     flexDirection: 'row',
-    gap: 2,
-    paddingHorizontal: 2,
-  },
-  weekDayBox: {
-    flex: 1,
-    aspectRatio: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#F9F9F9',
+    flexWrap: 'nowrap',
+    justifyContent: 'flex-start',
   },
 
   dateText: {
     fontSize: getResponsiveFontSize(17),
     fontFamily: 'Pretendard-Regular',
+    color: '#111',
   },
   selectedBox: {
     backgroundColor: '#FFF3D2',
@@ -389,11 +425,15 @@ const styles = StyleSheet.create({
     color: '#333',
     fontFamily: 'Pretendard-SemiBold',
   },
+  countBadge: {
+    position: 'absolute',
+    bottom: getResponsiveHeight(6),
+    right: getResponsiveWidth(6),
+  },
   iconBtn: {
     position: 'relative',
     width: getResponsiveWidth(20),
     height: getResponsiveWidth(20),
-    // backgroundColor: '#F3F3F3',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',

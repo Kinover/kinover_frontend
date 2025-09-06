@@ -2,11 +2,11 @@
 import React from 'react';
 import {
   View,
-  Image,
   Text,
   TouchableOpacity,
   StyleSheet,
   Platform,
+  Image,
 } from 'react-native';
 import {
   getResponsiveFontSize,
@@ -15,12 +15,11 @@ import {
   getResponsiveWidth,
 } from '../../../utils/responsive';
 import {useNavigation} from '@react-navigation/native';
-import {useSelector} from 'react-redux';
+
+const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 
 export default function HeaderSection({user, onUserPress}) {
   const navigation = useNavigation();
-
-  // 유저 상태
 
   const getEmotionImage = emotion => {
     switch (emotion) {
@@ -41,7 +40,7 @@ export default function HeaderSection({user, onUserPress}) {
       case 'EXCITED':
         return require('../../../assets/state/8.png');
       default:
-        return require('../../../assets/state/6.png'); // ✅ 기본 감정
+        return require('../../../assets/state/6.png');
     }
   };
 
@@ -55,7 +54,15 @@ export default function HeaderSection({user, onUserPress}) {
         )}
         <TouchableOpacity onPress={() => navigation.navigate('감정상태화면')}>
           <Image
-            src={user.image}
+            source={
+              user?.image
+                ? {
+                    uri: user.image.startsWith('http')
+                      ? user.image
+                      : CLOUD_FRONT + user.image,
+                  }
+                : require('../../../assets/images/default.png')
+            }
             style={styles.profileImage}
             resizeMode="cover"
           />
@@ -68,7 +75,7 @@ export default function HeaderSection({user, onUserPress}) {
       />
       <Text style={styles.userNameHeader}>{user.name}</Text>
       <Text style={styles.trait}>
-        {user.trait ? user.trait : '이 사람을 한마디로 표현한다면?'}
+        {user?.trait || '이 사람을 한마디로 표현한다면?'}
       </Text>
     </View>
   );
@@ -80,11 +87,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop:
       Platform.OS === 'android'
-        ? -getResponsiveHeight(10)
+        ? -getResponsiveHeight(-25)
         : getResponsiveHeight(25),
     marginBottom:
       Platform.OS === 'android'
-        ? getResponsiveHeight(30)
+        ? getResponsiveHeight(20)
         : getResponsiveHeight(25),
     zIndex: 10,
     marginHorizontal: getResponsiveWidth(25),
@@ -101,7 +108,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveIconSize(10),
     width: '100%',
     height: getResponsiveHeight(160),
-    zIndex: -5, // 배경으로 내려줌
+    zIndex: -5,
   },
   imageWrapper: {
     position: 'relative',
@@ -115,18 +122,20 @@ const styles = StyleSheet.create({
     height: getResponsiveIconSize(160),
     resizeMode: 'contain',
     top: -getResponsiveHeight(65),
-    zIndex: 0, // 👈 프로필보다 뒤
+    zIndex: 0,
   },
   profileImage: {
     width: getResponsiveIconSize(94),
     height: getResponsiveIconSize(94),
     borderRadius: getResponsiveWidth(47),
-    zIndex: 1, // 👈 감정이미지보다 앞
+    zIndex: 1,
   },
   userNameHeader: {
     fontFamily: 'Pretendard-Medium',
+    fontWeight: '600',
     fontSize: getResponsiveFontSize(22),
     marginTop: getResponsiveHeight(15),
+    color: 'black',
   },
   trait: {
     fontFamily: 'Pretendard-Light',
@@ -136,4 +145,3 @@ const styles = StyleSheet.create({
     color: 'gray',
   },
 });
-

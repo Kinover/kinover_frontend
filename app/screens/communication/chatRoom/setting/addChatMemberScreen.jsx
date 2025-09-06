@@ -4,10 +4,10 @@ import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   ScrollView,
   ActivityIndicator,
 } from 'react-native';
+
 import axios from 'axios';
 import {useSelector, useDispatch} from 'react-redux';
 
@@ -20,6 +20,7 @@ import {
 } from '../../../../utils/responsive';
 import {fetchFamilyUserListThunk} from '../../../../redux/thunk/familyUserThunk';
 import useHideTabBar from '../../../../hooks/useHideTabBar';
+import FastImage from 'react-native-fast-image';
 
 export default function AddChatMemberScreen({navigation, route}) {
   const {chatRoomId} = route.params;
@@ -46,7 +47,7 @@ export default function AddChatMemberScreen({navigation, route}) {
         <TouchableOpacity
           onPress={handleNext}
           style={{marginRight: getResponsiveWidth(10)}}>
-          <Image
+          <FastImage
             source={require('../../../../assets/icons/check.png')}
             style={styles.headerCheckIcon}
           />

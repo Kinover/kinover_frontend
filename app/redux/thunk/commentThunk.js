@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getToken } from '../../utils/storage';
+import {getToken} from '../../utils/storage';
 import {
   setCommentList,
   setCommentLoading,
@@ -9,8 +9,8 @@ import {
 const BASE_URL = 'https://kinover.shop/api/comments';
 
 // ✅ 댓글 조회
-export const fetchCommentsThunk = (postId) => {
-  return async (dispatch) => {
+export const fetchCommentsThunk = postId => {
+  return async dispatch => {
     dispatch(setCommentLoading(true));
     console.log(`📨 댓글 목록 불러오기 요청: postId = ${postId}`);
     try {
@@ -33,8 +33,8 @@ export const fetchCommentsThunk = (postId) => {
 };
 
 // ✅ 댓글 추가
-export const createCommentThunk = (commentData) => {
-  return async (dispatch) => {
+export const createCommentThunk = commentData => {
+  return async dispatch => {
     dispatch(setCommentLoading(true));
     console.log('📨 댓글 추가 요청:', commentData);
     try {
@@ -60,12 +60,14 @@ export const createCommentThunk = (commentData) => {
 
 // ✅ 댓글 삭제
 export const deleteCommentThunk = (commentId, postId) => {
-  return async (dispatch) => {
+  return async dispatch => {
     dispatch(setCommentLoading(true));
     console.log(`🗑 댓글 삭제 요청: commentId = ${commentId}`);
+    const id = String(commentId).trim();
+
     try {
       const token = await getToken();
-      await axios.delete(`${BASE_URL}/${commentId}`, {
+      await axios.delete(`${BASE_URL}/${encodeURIComponent(id)}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -88,24 +90,18 @@ export const toggleCommentNotificationThunk = ({userId, isOn}) => {
   return async dispatch => {
     try {
       const token = await getToken();
-      console.log(
-        `🔔 댓글 알림 설정 요청: userId=${userId}, isOn=${isOn}`,
-      );
+      console.log(`🔔 댓글 알림 설정 요청: userId=${userId}, isOn=${isOn}`);
 
-      await axios.patch(
-        `${BASE_URL}/notification/comment`,
-        null,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          params: {
-            userId,
-            isOn,
-          },
+      await axios.patch(`${BASE_URL}/notification/comment`, null, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
-      );
+        params: {
+          userId,
+          isOn,
+        },
+      });
 
       console.log('✅ 댓글 알림 설정 변경 성공');
     } catch (error) {

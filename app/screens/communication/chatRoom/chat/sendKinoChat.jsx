@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {View, Text, StyleSheet, Image, FlatList, TouchableOpacity} from 'react-native';
+import {View, Text, StyleSheet, Image, FlatList,Platform, TouchableOpacity} from 'react-native';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'flex-end',
-    marginBottom: getResponsiveHeight(30),
+    marginBottom: getResponsiveHeight(20),
   },
   sendBubble: {
     backgroundColor: '#FFECC3',
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   },
   textPadding: {
     paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(17),
+    paddingHorizontal: getResponsiveWidth(14.5),
   },
   imagePadding: {
     paddingVertical: getResponsiveHeight(4.5),
@@ -99,15 +99,20 @@ const styles = StyleSheet.create({
   },
   sendText: {
     fontFamily: 'Pretendard-Light',
-    fontSize: getResponsiveFontSize(13),
-    color: 'black',
+    fontSize:
+      Platform.OS === 'android'
+        ? getResponsiveFontSize(14)
+        : getResponsiveFontSize(15),    color: 'black',
     flexWrap: 'wrap',
     lineHeight: getResponsiveFontSize(18),
+    
   },
   sendTime: {
     fontSize: getResponsiveFontSize(10),
     color: '#666',
     marginRight: getResponsiveWidth(5),
+    lineHeight:getResponsiveFontSize(12),
+    marginBottom: getResponsiveHeight(2),
   },
   imageGrid: {
     gap: getResponsiveWidth(4),

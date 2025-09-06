@@ -29,7 +29,7 @@ export default function MemoryStack() {
   const navigation = useNavigation();
   const defaultHeaderStyle = {
     borderBottomWidth: 0,
-    display:'flex',
+    display: 'flex',
     shadowOpacity: 0,
     elevation: 0,
     height:
@@ -71,6 +71,7 @@ export default function MemoryStack() {
         component={NotificationScreen}
         options={({navigation}) => ({
           gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+          headerRight: () => null,
 
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
@@ -82,6 +83,7 @@ export default function MemoryStack() {
         component={SettingScreen}
         options={({navigation}) => ({
           gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+          headerRight: () => null,
 
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
@@ -92,6 +94,7 @@ export default function MemoryStack() {
         component={NotificationSettingScreen}
         options={({navigation}) => ({
           gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+          headerRight: () => null,
 
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
@@ -119,4 +122,3 @@ export default function MemoryStack() {
     </Stack.Navigator>
   );
 }
-

@@ -1,38 +1,52 @@
-import React, {useState, useEffect, useRef, useImperativeHandle} from 'react';
-import {forwardRef} from 'react';
-import {Keyboard, TouchableWithoutFeedback} from 'react-native';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useImperativeHandle,
+  forwardRef,
+  useMemo,
+} from 'react';
 import {
-  BottomSheetTextInput,
-} from '@gorhom/bottom-sheet';
-import {
+  Dimensions,
+  Keyboard,
+  Platform,
   View,
   Text,
-  TextInput,
   StyleSheet,
   TouchableOpacity,
-  Image,
   Alert,
-  Platform,
+  TouchableWithoutFeedback,
 } from 'react-native';
-import {BottomSheetModal,BottomSheetView, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
+import {
+  BottomSheetModal,
+  BottomSheetScrollView,
+  BottomSheetBackdrop,
+  BottomSheetTextInput,
+} from '@gorhom/bottom-sheet';
 import {launchImageLibrary} from 'react-native-image-picker';
 import RNFS from 'react-native-fs';
 import getResponsiveFontSize, {
   getResponsiveWidth,
   getResponsiveHeight,
-  getResponsiveIconSize,
 } from '../../../utils/responsive';
-
 import {getPresignedUrls, uploadImageToS3} from '../../../api/imageUrlApi';
+import FastImage from 'react-native-fast-image';
+
+const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
+const windowHeight = Dimensions.get('window').height;
 
 const UserBottomSheetModal = forwardRef(
   ({selectedUser, onSave, onCancel}, ref) => {
-    const snapPoints = ['85%'];
-    const [name, setName] = useState('');
-    const [imageUrl, setImageUrl] = useState('');
-    const [trait, setTrait] = useState('');
+    const snapPoints = useMemo(() => ['60%', '90%'], []);
+    const nameRef = useRef('');
+    const traitRef = useRef('');
+    const imageUrlRef = useRef('');
+
+    const [previewImage, setPreviewImage] = useState('');
+    const [nameKey, setNameKey] = useState(0);
+    const [traitKey, setTraitKey] = useState(0);
+
     const localRef = useRef(null);
-    const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/'; // CloudFront 주소 입력
 
     useImperativeHandle(ref, () => ({
       present: () => localRef.current?.present(),
@@ -40,36 +54,61 @@ const UserBottomSheetModal = forwardRef(
     }));
 
     useEffect(() => {
-      if (selectedUser) {
-        setName(selectedUser.name || '');
-        setTrait(selectedUser.trait || '');
-        setImageUrl(selectedUser.image || '');
-      }
+      const n = selectedUser?.name ?? '';
+      const t = selectedUser?.trait ?? '';
+      const img = selectedUser?.image ?? '';
+      nameRef.current = n;
+      traitRef.current = t;
+      imageUrlRef.current = img;
+      setPreviewImage(img); // ✅ 초기 이미지 세팅
+      setNameKey(k => k + 1);
+      setTraitKey(k => k + 1);
     }, [selectedUser]);
+
+    useEffect(() => {
+      if (Platform.OS === 'android') {
+        const sub = Keyboard.addListener('keyboardDidShow', () => {
+          localRef.current?.snapToIndex(1);
+        });
+        return () => sub.remove();
+      }
+    }, []);
 
     const handleImagePick = async () => {
       const result = await launchImageLibrary({mediaType: 'photo'});
-      if (result.assets?.length) {
-        const selectedAsset = result.assets[0];
-        let fileUri = selectedAsset.uri;
-        let fileName = selectedAsset.fileName || `img_${Date.now()}.jpg`;
+      if (!result.assets?.length) return;
 
-        try {
-          if (Platform.OS === 'ios' && fileUri.startsWith('ph://')) {
-            const destPath = `${RNFS.TemporaryDirectoryPath}photo_${Date.now()}`
-              .jpg;
-            await RNFS.copyAssetsFileIOS(fileUri, destPath, 0, 0);
-            fileUri = 'file://' + destPath;
-          }
+      const selectedAsset = result.assets[0];
+      let fileUri = selectedAsset.uri;
+      const fileName = selectedAsset.fileName || `img_${Date.now()}.jpg`;
 
-          const presignedUrls = await getPresignedUrls([fileName]);
-          await uploadImageToS3(presignedUrls[0], fileUri);
+      // ✅ 먼저 미리보기 반영
+      setPreviewImage(fileUri);
 
-          setImageUrl(`${CLOUD_FRONT}${fileName}`); // 보기용으로 전체 주소
-        } catch (err) {
-          Alert.alert('업로드 실패', '이미지 업로드 중 문제가 발생했어요.');
+      try {
+        if (Platform.OS === 'ios' && fileUri.startsWith('ph://')) {
+          const destPath = `${RNFS.TemporaryDirectoryPath}photo_${Date.now()}.jpg`;
+          await RNFS.copyAssetsFileIOS(fileUri, destPath, 0, 0);
+          fileUri = 'file://' + destPath;
         }
+
+        const [presignedUrl] = await getPresignedUrls([fileName]);
+        await uploadImageToS3(presignedUrl, fileUri);
+
+        // ✅ 업로드 성공 시 서버 URL 저장
+        imageUrlRef.current = `${CLOUD_FRONT}${fileName}`;
+        setPreviewImage(`${CLOUD_FRONT}${fileName}`);
+      } catch (err) {
+        Alert.alert('업로드 실패', '이미지 업로드 중 문제가 발생했어요.');
       }
+    };
+
+    const handleSave = () => {
+      const img = imageUrlRef.current;
+      const finalImageUrl = img.startsWith(CLOUD_FRONT)
+        ? img.replace(CLOUD_FRONT, '')
+        : img;
+      onSave(nameRef.current, traitRef.current, finalImageUrl);
     };
 
     return (
@@ -77,87 +116,119 @@ const UserBottomSheetModal = forwardRef(
         ref={localRef}
         index={0}
         snapPoints={snapPoints}
-        handleIndicatorStyle={{backgroundColor: '#ccc', width: 55}} // 색과 크기 조절 가능
-        backgroundStyle={{backgroundColor: 'white'}}
-        keyboardBehavior="extend" // ✅ 키보드와 상호작용
-        keyboardBlurBehavior="restore" // ✅ 포커스 해제 시 원위치
+        animationConfigs={{
+          damping: 20,
+          stiffness: 200,
+          mass: 1,
+        }}
+        keyboardBehavior="interactive"
+        android_keyboardInputMode="adjustResize"
+        keyboardBlurBehavior="restore"
+        style={{flex: 1}}
         backdropComponent={props => (
           <BottomSheetBackdrop
             {...props}
             onPress={() => {
               Keyboard.dismiss();
+              localRef.current?.snapToIndex(0);
             }}
             disappearsOnIndex={-1}
             appearsOnIndex={0}
             pressBehavior="close"
           />
-        )}>
-        <BottomSheetView style={styles.container}>
+        )}
+        backgroundStyle={{backgroundColor: 'white'}}
+        handleIndicatorStyle={{width: 0}}>
+        <BottomSheetScrollView
+          contentContainerStyle={[
+            styles.container,
+            {minHeight: windowHeight + (Platform.OS === 'ios' ? 100 : 0)},
+          ]}
+          keyboardShouldPersistTaps="handled">
           <TouchableWithoutFeedback
-            // onPress={Keyboard.dismiss}
-            accessible={false}
             onPress={() => {
               Keyboard.dismiss();
+              localRef.current?.snapToIndex(0);
             }}>
-            <View>
+            <View style={{flex: 1}}>
               <TouchableOpacity
                 style={{width: '50%', alignSelf: 'center'}}
                 onPress={handleImagePick}>
                 <View style={styles.profileimageContainer}>
-                  <Image
+                  <FastImage
                     source={
-                      imageUrl
-                        ? {uri: imageUrl}
+                      previewImage
+                        ? {uri: previewImage}
                         : require('../../../assets/images/default.png')
                     }
                     style={styles.profileImage}
                   />
                   <View style={styles.profileImageOverlay} />
-                  <Image
+                  <FastImage
                     style={styles.profileImagePencil}
                     source={require('../../../assets/images/pencil.png')}
                   />
                 </View>
               </TouchableOpacity>
 
-              <Text style={styles.label}>이름</Text>
+              <Text style={styles.label}>우리 가족만의 별명은?</Text>
               <BottomSheetTextInput
+                key={`name-${nameKey}`}
                 style={styles.input}
-                value={name}
-                onChangeText={setName}
-                placeholder="이름을 입력해주세요"
+                defaultValue={nameRef.current}
+                onFocus={() =>
+                  setTimeout(() => localRef.current?.snapToIndex(1), 50)
+                }
+                onChangeText={text => {
+                  nameRef.current = text;
+                }}
                 placeholderTextColor="#999"
+                autoCorrect={false}
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                importantForAutofill="no"
               />
 
-              <Text style={styles.label}>이 사람을 한마디로 표현한다면?</Text>
+              <Text style={styles.label}>
+                {nameRef.current} 님은 어떤 사람인가요?
+              </Text>
               <BottomSheetTextInput
+                key={`trait-${traitKey}`}
                 style={[styles.input, styles.textArea]}
-                defaultValue={trait}
-                onChangeText={setTrait}
-                placeholderTextColor="#999"
+                defaultValue={traitRef.current}
                 multiline
+                onFocus={() =>
+                  setTimeout(() => localRef.current?.snapToIndex(1), 50)
+                }
+                onChangeText={text => {
+                  traitRef.current = text;
+                }}
+                placeholderTextColor="#999"
+                autoCorrect={false}
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                importantForAutofill="no"
               />
 
               <View style={styles.buttonRow}>
                 <TouchableOpacity
-                  style={[styles.button, {backgroundColor: '#FFF0D0'}]}
+                  style={[styles.button, {backgroundColor: '#F4F6FA'}]}
                   onPress={onCancel}>
-                  <Text style={styles.buttonText}>취소</Text>
+                  <Text style={[styles.buttonText, {color: '#A1A5AF'}]}>
+                    취소
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.button, {backgroundColor: '#FFC749'}]}
-                  onPress={() => {
-                    const finalImageUrl = imageUrl.startsWith(CLOUD_FRONT)
-                      ? imageUrl.replace(CLOUD_FRONT, '')
-                      : imageUrl;
-                    onSave(name, trait, finalImageUrl);
-                  }}>
+                  onPress={handleSave}>
                   <Text style={styles.buttonText}>저장</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </TouchableWithoutFeedback>
-        </BottomSheetView>
+        </BottomSheetScrollView>
       </BottomSheetModal>
     );
   },
@@ -165,8 +236,8 @@ const UserBottomSheetModal = forwardRef(
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: getResponsiveWidth(40),
-    paddingTop: getResponsiveHeight(20),
+    paddingHorizontal: getResponsiveWidth(25),
+    paddingTop: getResponsiveHeight(10),
     paddingBottom: getResponsiveHeight(60),
   },
   profileimageContainer: {
@@ -187,16 +258,19 @@ const styles = StyleSheet.create({
   },
   profileImagePencil: {
     position: 'absolute',
-    bottom: 35,
+    bottom: 37.5,
     right: 35,
     width: 25,
     height: 25,
   },
   label: {
+    fontSize: getResponsiveFontSize(16.5),
+    fontFamily: 'Pretendard-Light',
+    color: 'black',
+    fontWeight: Platform.OS === 'android' ? '600' : '500',
     left: getResponsiveWidth(5),
-    marginBottom: getResponsiveHeight(5),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#575757',
+    marginBottom: getResponsiveHeight(8),
+    marginTop: getResponsiveHeight(7),
   },
   input: {
     backgroundColor: 'rgba(255, 239, 202, 0.42)',
@@ -204,8 +278,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginBottom: 15,
-    fontSize: getResponsiveFontSize(14),
+    fontSize: getResponsiveFontSize(16),
     includeFontPadding: false,
+    fontFamily: 'Pretendard-Light',
   },
   textArea: {
     height: 100,
@@ -218,13 +293,14 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    padding: 12,
+    padding: 14,
     borderRadius: 8,
   },
   buttonText: {
     textAlign: 'center',
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(14),
+    fontSize: getResponsiveFontSize(16),
+    color: 'white',
   },
 });
 

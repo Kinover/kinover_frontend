@@ -1,6 +1,9 @@
 // components/common/GroupAvatar.jsx
 import React from 'react';
-import {View, Image, StyleSheet} from 'react-native';
+import {View,  StyleSheet} from 'react-native';
+import FastImage from 'react-native-fast-image';
+
+
 
 export default function GroupAvatar({images = [], size = 60,userImage}) {
     const filteredImages = userImage
@@ -17,18 +20,18 @@ export default function GroupAvatar({images = [], size = 60,userImage}) {
   return (
     <View style={[styles.container, {width: size, height: size}]}>
       {count === 1 && (
-        <Image
+        <FastImage
           source={{uri: filteredImages[0]}}
           style={[styles.absolute, imageStyle(1)]}
         />
       )}
       {count === 2 && (
         <>
-          <Image
+          <FastImage
             source={{uri: filteredImages[0]}}
             style={[styles.absolute, imageStyle(1.6), {top: 0, left: 0}]}
           />
-          <Image
+          <FastImage
             source={{uri: filteredImages[1]}}
             style={[styles.absolute, imageStyle(1.6), {bottom: 0, right: 0}]}
           />
@@ -36,7 +39,7 @@ export default function GroupAvatar({images = [], size = 60,userImage}) {
       )}
       {count === 3 && (
         <>
-          <Image
+          <FastImage
             source={{uri: filteredImages[0]}}
             style={[
               styles.absolute,
@@ -44,11 +47,11 @@ export default function GroupAvatar({images = [], size = 60,userImage}) {
               {top: 0, left: size * 0.25},
             ]}
           />
-          <Image
+          <FastImage
             source={{uri: filteredImages[1]}}
             style={[styles.absolute, imageStyle(1.8), {bottom: 0, left: 0}]}
           />
-          <Image
+          <FastImage
             source={{uri: filteredImages[2]}}
             style={[styles.absolute, imageStyle(1.8), {bottom: 0, right: 0}]}
           />
@@ -56,19 +59,19 @@ export default function GroupAvatar({images = [], size = 60,userImage}) {
       )}
       {count === 4 && (
         <>
-          <Image
+          <FastImage
             source={{uri: filteredImages[0]}}
             style={[styles.absolute, imageStyle(2), {top: 0, left: 0}]}
           />
-          <Image
+          <FastImage
             source={{uri: filteredImages[1]}}
             style={[styles.absolute, imageStyle(2), {top: 0, right: 0}]}
           />
-          <Image
+          <FastImage
             source={{uri: filteredImages[2]}}
             style={[styles.absolute, imageStyle(2), {bottom: 0, left: 0}]}
           />
-          <Image
+          <FastImage
             source={{uri: filteredImages[3]}}
             style={[styles.absolute, imageStyle(2), {bottom: 0, right: 0}]}
           />
