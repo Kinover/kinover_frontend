@@ -42,7 +42,9 @@ export default function ImageModal({visible, imageUri, onClose}) {
 
       {/* 닫기 버튼 */}
       <View style={styles.closeButtonContainer}>
-        <TouchableWithoutFeedback onPress={onClose}>
+        <TouchableWithoutFeedback
+          onPress={onClose}
+          hitSlop={{top: 15, bottom: 15, left: 15, right: 15}}>
           {/* <View
             style={{
               zIndex: 0,
@@ -55,12 +57,13 @@ export default function ImageModal({visible, imageUri, onClose}) {
             }}>
             <Text style={styles.closeText}>✕</Text>
           </View> */}
+
           <Image
-            source={require('../../../../assets/icons/close(1).png')}
+            source={require('../../../../assets/images/clearBt1.png')}
             style={{
               width: getResponsiveWidth(22.5),
               height: getResponsiveHeight(22.5),
-              resizeMode:'contain',
+              resizeMode: 'contain',
             }}></Image>
         </TouchableWithoutFeedback>
       </View>

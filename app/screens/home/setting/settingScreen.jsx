@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   Image,
+  Linking, // ✅ 추가
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import LogoutModal from '../modal/logoutModal';
@@ -35,6 +36,13 @@ export default function SettingScreen() {
   const handleDeleteAccount = () => {
     console.log('⚠️ 계정탈퇴 실행');
     setShowDeleteModal(false);
+  };
+
+  // ✅ 외부 링크 열기 함수
+  const openLink = (url) => {
+    Linking.openURL(url).catch(err =>
+      console.error('링크 열기 실패: ', err),
+    );
   };
 
   return (
@@ -73,14 +81,22 @@ export default function SettingScreen() {
       {/* 약관 및 정책 */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>약관 및 정책</Text>
-        <TouchableOpacity style={styles.row}>
+
+        {/* 서비스 이용약관 */}
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => openLink('https://www.notion.so/2129f61bad50805589f6edfcac083179')}>
           <Text style={styles.label}>서비스 이용약관</Text>
           <Image
             style={styles.arrow}
             source={require('../../../assets/images/rightArrow-gray.png')}
           />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.row}>
+
+        {/* 개인정보 처리방침 */}
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => openLink('https://www.notion.so/2129f61bad5080f6bd29e269f5f319b1')}>
           <Text style={styles.label}>개인정보처리방침</Text>
           <Image
             style={styles.arrow}
