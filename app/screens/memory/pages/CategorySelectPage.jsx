@@ -1,4 +1,4 @@
-import React, {useState, useLayoutEffect, useEffect} from 'react';
+import React, {useState, useLayoutEffect, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
   Image,
   TextInput,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import getResponsiveFontSize, {
   getResponsiveHeight,
@@ -33,7 +33,11 @@ export default function CategorySelectPage({route}) {
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [newCategory, setNewCategory] = useState('');
 
-  useHideTabBar({stayHidden: true});
+  if (route.params?.from === '소통') {
+    useHideTabBar({stayHidden: false});
+  } else {
+    useHideTabBar({stayHidden: true});
+  }
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -63,12 +67,12 @@ export default function CategorySelectPage({route}) {
       headerLeft: () => (
         <TouchableOpacity
           onPress={() => {
-            if (route.params?.selectedImages?.length > 0) {
-              // 업로드 플로우 → 소통 스택 루트로 이동
-              navigation.navigate('소통', {screen: '소통화면'});
-            } else {
-              navigation.goBack();
-            }
+            // if (route.params?.selectedImages?.length > 0) {
+            //   // 업로드 플로우 → 소통 스택 루트로 이동
+            // navigation.navigate('', {screen: '소통화면'});
+            // } else {
+            navigation.goBack();
+            // }
           }}
           style={{marginLeft: getResponsiveWidth(20)}}>
           <Image

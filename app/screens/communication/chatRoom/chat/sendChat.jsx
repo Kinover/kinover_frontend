@@ -80,7 +80,7 @@ export default function SendChat({
 
               navigation.navigate('추억', {
                 screen: '카테고리선택화면',
-                params: {selectedImages: convertedUris},
+                params: {selectedImages: convertedUris, from: '소통'},
               });
             }}>
             <FastImage

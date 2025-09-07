@@ -1,6 +1,6 @@
-import React, {useState, useLayoutEffect} from 'react';
+import React, {useState, useLayoutEffect, useEffect, useCallback} from 'react';
 import {View, StyleSheet, Text, TouchableOpacity, Image} from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 
 import MemoryFeed from './pages/MemoryFeed';
 import AnimatedAlbumTabSelector from './shared/albumTabSelector';
@@ -76,6 +76,5 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9F9F9',
-    
   },
 });
