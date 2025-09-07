@@ -36,7 +36,7 @@ const PAGE_SIZE = 60;
 export default function ImageSelectPage() {
   const [photos, setPhotos] = useState([]);
   const [selected, setSelected] = useState([]);
-
+  
   // 페이징/로딩 상태
   const [endCursor, setEndCursor] = useState(null);
   const [hasNextPage, setHasNextPage] = useState(true);
@@ -44,6 +44,16 @@ export default function ImageSelectPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const navigation = useNavigation();
+
+  // const route = useRoute();
+
+
+  // // ✅ 넘어온 이미지(preselectedImages)가 있으면 selected 초기화
+  // useEffect(() => {
+  //   if (route.params?.preselectedImages?.length > 0) {
+  //     setSelected(route.params.preselectedImages);
+  //   }
+  // }, [route.params?.preselectedImages]);
 
   // ===== 권한 요청 =====
   const requestPermission = async () => {

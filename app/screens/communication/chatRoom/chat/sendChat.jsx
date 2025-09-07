@@ -16,7 +16,7 @@ import {
 import formatTime from '../../../../utils/formatTime';
 import ImageModal from './imageModal';
 import FastImage from 'react-native-fast-image';
-
+import {useNavigation, useRoute} from '@react-navigation/native';
 
 export default function SendChat({
   chatTime,
@@ -27,7 +27,9 @@ export default function SendChat({
 }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImageUri, setSelectedImageUri] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
+  const navigation = useNavigation();
   // === 같은 분 그룹의 '마지막만 시간' 로직 (보낸 쪽은 key에 'ME') ===
   const [showTime, setShowTime] = useState(false);
   const idRef = useRef(Math.random().toString(36).slice(2));
@@ -40,8 +42,8 @@ export default function SendChat({
   }, [key, timeMs]);
   // =========================================================
 
-  const handleImagePress = uri => {
-    setSelectedImageUri(uri);
+  const handleImagePress = (uri, index) => {
+    setSelectedIndex(index);
     setModalVisible(true);
   };
 
@@ -54,9 +56,69 @@ export default function SendChat({
             style={styles.singleImage}
             resizeMode="cover"
           />
+          {/* ✅ 우하단 글쓰기 버튼 */}
+          <TouchableOpacity
+            style={styles.floatingButton}
+            onPress={async () => {
+              const convertedUris = [];
+
+              for (let i = 0; i < imageUrls.length; i++) {
+                const uri = imageUrls[i];
+                if (Platform.OS === 'ios' && uri.startsWith('ph://')) {
+                  const converted = await convertPhUriToFileUri(uri, i);
+                  if (converted) convertedUris.push(converted);
+                } else if (
+                  Platform.OS === 'android' &&
+                  uri.startsWith('content://')
+                ) {
+                  const converted = await convertContentUriToFileUri(uri, i);
+                  if (converted) convertedUris.push(converted);
+                } else {
+                  convertedUris.push(uri);
+                }
+              }
+
+              navigation.navigate('추억', {
+                screen: '카테고리선택화면',
+                params: {selectedImages: convertedUris},
+              });
+            }}>
+            <FastImage
+              source={require('../../../../assets/icons/writeBt1.png')}
+              style={styles.floatingIcon}
+              resizeMode="contain"
+            />
+          </TouchableOpacity>
         </TouchableOpacity>
       );
     }
+
+    const convertPhUriToFileUri = async (phUri, index) => {
+      const destPath = `${
+        RNFS.TemporaryDirectoryPath
+      }photo_ios_${Date.now()}_${index}.jpg`;
+      try {
+        await RNFS.copyAssetsFileIOS(phUri, destPath, 0, 0);
+        return 'file://' + destPath;
+      } catch (err) {
+        console.error('📛 iOS ph:// 변환 실패:', err.message);
+        return null;
+      }
+    };
+
+    const convertContentUriToFileUri = async (contentUri, index) => {
+      const destPath = `${
+        RNFS.TemporaryDirectoryPath
+      }photo_android_${Date.now()}_${index}.jpg`;
+      try {
+        const base64Data = await RNFS.readFile(contentUri, 'base64');
+        await RNFS.writeFile(destPath, base64Data, 'base64');
+        return 'file://' + destPath;
+      } catch (err) {
+        console.error('📛 Android content:// 변환 실패:', err.message);
+        return null;
+      }
+    };
 
     return (
       <View style={[styles.sendBubble, styles.imagePadding]}>
@@ -64,14 +126,47 @@ export default function SendChat({
           data={imageUrls}
           keyExtractor={(item, index) => item + index}
           numColumns={3}
-          renderItem={({item}) => (
-            <TouchableOpacity onPress={() => handleImagePress(item)}>
+          renderItem={({item, index}) => (
+            <TouchableOpacity onPress={() => handleImagePress(item, index)}>
               <FastImage source={{uri: item}} style={styles.imageItem} />
             </TouchableOpacity>
           )}
           scrollEnabled={false}
           contentContainerStyle={styles.imageGrid}
         />
+        {/* ✅ 우하단 글쓰기 버튼 */}
+        <TouchableOpacity
+          style={styles.floatingButton}
+          onPress={async () => {
+            const convertedUris = [];
+
+            for (let i = 0; i < imageUrls.length; i++) {
+              const uri = imageUrls[i];
+              if (Platform.OS === 'ios' && uri.startsWith('ph://')) {
+                const converted = await convertPhUriToFileUri(uri, i);
+                if (converted) convertedUris.push(converted);
+              } else if (
+                Platform.OS === 'android' &&
+                uri.startsWith('content://')
+              ) {
+                const converted = await convertContentUriToFileUri(uri, i);
+                if (converted) convertedUris.push(converted);
+              } else {
+                convertedUris.push(uri);
+              }
+            }
+
+            navigation.navigate('추억', {
+              screen: '카테고리선택화면',
+              params: {selectedImages: convertedUris},
+            });
+          }}>
+          <FastImage
+            source={require('../../../../assets/icons/writeBt1.png')}
+            style={styles.floatingIcon}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
       </View>
     );
   };
@@ -91,7 +186,8 @@ export default function SendChat({
 
       <ImageModal
         visible={modalVisible}
-        imageUri={selectedImageUri}
+        imageUrls={imageUrls}
+        initialIndex={selectedIndex}
         onClose={() => setModalVisible(false)}
       />
     </View>
@@ -186,6 +282,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'flex-end', // 👉 오른쪽 정렬
   },
+
   sendBubble: {
     backgroundColor: '#FFECC3',
     borderRadius: getResponsiveIconSize(20),
@@ -215,7 +312,6 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(10),
     color: '#666',
     marginRight: getResponsiveWidth(5),
-    lineHeight:getResponsiveFontSize(12),
     marginBottom: getResponsiveHeight(2),
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
@@ -233,5 +329,25 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: 10,
     alignSelf: 'flex-end', // 👉 오른쪽 끝에 붙임
+  },
+
+  floatingButton: {
+    position: 'absolute',
+    bottom: getResponsiveHeight(-5),
+    right: getResponsiveWidth(-5),
+    backgroundColor: 'white', // 필요 시 대비용 배경
+    borderRadius: getResponsiveWidth(999),
+    padding: 7,
+    elevation: 3, // 안드로이드 그림자
+    shadowColor: '#000', // iOS 그림자
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  floatingIcon: {
+    width: getResponsiveWidth(14),
+    height: getResponsiveWidth(14),
+    objectFit: 'contain',
+    resizeMode: 'contain',
   },
 });

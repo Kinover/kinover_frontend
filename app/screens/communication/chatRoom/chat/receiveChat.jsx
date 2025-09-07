@@ -17,7 +17,6 @@ import formatTime from '../../../../utils/formatTime';
 import ImageModal from './imageModal';
 import FastImage from 'react-native-fast-image';
 
-
 export default function ReceiveChat({
   userProfileImage,
   userName,
@@ -30,6 +29,7 @@ export default function ReceiveChat({
 }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedImageUri, setSelectedImageUri] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
   // --- 마지막만 시간 표시 로직 ---
   const [showTime, setShowTime] = useState(false);
@@ -45,8 +45,8 @@ export default function ReceiveChat({
   }, [key, timeMs]);
   // -----------------------------
 
-  const handleImagePress = uri => {
-    setSelectedImageUri(uri);
+  const handleImagePress = (uri, index) => {
+    setSelectedIndex(index);
     setModalVisible(true);
   };
 
@@ -55,8 +55,8 @@ export default function ReceiveChat({
       data={imageUrls}
       keyExtractor={(item, index) => item + index}
       numColumns={3}
-      renderItem={({item}) => (
-        <TouchableOpacity onPress={() => handleImagePress(item)}>
+      renderItem={({item, index}) => (
+        <TouchableOpacity onPress={() => handleImagePress(item, index)}>
           <FastImage source={{uri: item}} style={styles.imageItem} />
         </TouchableOpacity>
       )}
@@ -64,7 +64,6 @@ export default function ReceiveChat({
       contentContainerStyle={styles.imageGrid}
     />
   );
-
   return (
     <View
       style={[
@@ -119,7 +118,8 @@ export default function ReceiveChat({
 
       <ImageModal
         visible={modalVisible}
-        imageUri={selectedImageUri}
+        imageUrls={imageUrls}
+        initialIndex={selectedIndex}
         onClose={() => setModalVisible(false)}
       />
     </View>
@@ -273,7 +273,7 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(10),
     color: '#666',
     marginLeft: getResponsiveWidth(5),
-    lineHeight:getResponsiveFontSize(12),
+    lineHeight: getResponsiveFontSize(12),
     marginBottom: getResponsiveHeight(2),
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
