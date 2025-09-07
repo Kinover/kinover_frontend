@@ -36,7 +36,7 @@ const PAGE_SIZE = 60;
 export default function ImageSelectPage() {
   const [photos, setPhotos] = useState([]);
   const [selected, setSelected] = useState([]);
-  
+
   // 페이징/로딩 상태
   const [endCursor, setEndCursor] = useState(null);
   const [hasNextPage, setHasNextPage] = useState(true);
@@ -46,7 +46,6 @@ export default function ImageSelectPage() {
   const navigation = useNavigation();
 
   // const route = useRoute();
-
 
   // // ✅ 넘어온 이미지(preselectedImages)가 있으면 selected 초기화
   // useEffect(() => {
@@ -182,7 +181,10 @@ export default function ImageSelectPage() {
     }
 
     // ✅ 선택된 순서 그대로 전달
-    navigation.navigate('카테고리선택화면', {selectedImages: convertedUris});
+    navigation.navigate('카테고리선택화면', {
+      selectedImages: convertedUris,
+      from: '이미지선택화면',
+    });
   };
 
   useHideTabBar();
@@ -278,13 +280,16 @@ const styles = StyleSheet.create({
     paddingTop: getResponsiveHeight(2),
   },
   headerTitle: {
-    fontSize: Platform.OS==='ios'?getResponsiveFontSize(20):getResponsiveFontSize(18),
+    fontSize:
+      Platform.OS === 'ios'
+        ? getResponsiveFontSize(20)
+        : getResponsiveFontSize(18),
     textAlign: 'center',
     textAlignVertical: 'center',
     fontFamily: 'Pretendard-Regular',
-    fontWeight:'semibold',
+    fontWeight: 'semibold',
     color: '#101010',
-    lineHeight:getResponsiveHeight(30),
+    lineHeight: getResponsiveHeight(30),
   },
   checkIcon: {
     width: getResponsiveWidth(30),
@@ -302,7 +307,7 @@ const styles = StyleSheet.create({
   },
   tileSelectedOverlay: {
     ...StyleSheet.absoluteFillObject,
-  
+
     zIndex: 1,
     backgroundColor: 'rgba(128, 128, 128, 0.6)',
   },
