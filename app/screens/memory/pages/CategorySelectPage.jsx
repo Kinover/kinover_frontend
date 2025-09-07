@@ -21,7 +21,7 @@ import {
 } from '../../../redux/thunk/categoryThunk';
 import {v4 as uuidv4} from 'uuid';
 import useHideTabBar from '../../../hooks/useHideTabBar';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 export default function CategorySelectPage({route}) {
   const navigation = useNavigation();
@@ -34,6 +34,55 @@ export default function CategorySelectPage({route}) {
   const [newCategory, setNewCategory] = useState('');
 
   useHideTabBar({stayHidden: true});
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: () => (
+        <View style={styles.headerCenter}>
+          <Text style={styles.headerTitle}>카테고리 지정</Text>
+        </View>
+      ),
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => {
+            if (selectedCategory) {
+              navigation.navigate('게시글작성화면', {
+                selectedCategory,
+                selectedImages: route.params?.selectedImages,
+              });
+            }
+          }}
+          style={styles.headerRight}>
+          <Image
+            source={require('../../../assets/icons/check.png')}
+            style={styles.checkImage}
+          />
+        </TouchableOpacity>
+      ),
+      // ✅ headerLeft 커스텀: 소통 스택 루트로 이동
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => {
+            if (route.params?.selectedImages?.length > 0) {
+              // 업로드 플로우 → 소통 스택 루트로 이동
+              navigation.navigate('소통', {screen: '소통화면'});
+            } else {
+              navigation.goBack();
+            }
+          }}
+          style={{marginLeft: getResponsiveWidth(20)}}>
+          <Image
+            source={require('../../../assets/icons/caretDown.png')}
+            style={{
+              width: getResponsiveWidth(30),
+              height: getResponsiveHeight(30),
+              resizeMode: 'contain',
+            }}
+          />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, selectedCategory, route.params?.selectedImages]);
 
   useEffect(() => {
     if (familyId) dispatch(fetchCategoryThunk(familyId));
@@ -171,13 +220,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize: Platform.OS==='ios'?getResponsiveFontSize(20):getResponsiveFontSize(18),
+    fontSize:
+      Platform.OS === 'ios'
+        ? getResponsiveFontSize(20)
+        : getResponsiveFontSize(18),
     textAlign: 'center',
     textAlignVertical: 'center',
     fontFamily: 'Pretendard-Regular',
-    fontWeight:'semibold',
+    fontWeight: 'semibold',
     color: '#101010',
-    lineHeight:getResponsiveHeight(30),
+    lineHeight: getResponsiveHeight(30),
   },
   headerRight: {
     marginRight: getResponsiveWidth(10),
@@ -229,8 +281,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(10),
   },
   modalTitle: {
-    color:'black',
-    fontSize: Platform.OS==='android'?getResponsiveFontSize(20):getResponsiveFontSize(22),    color:'black',
+    color: 'black',
+    fontSize:
+      Platform.OS === 'android'
+        ? getResponsiveFontSize(20)
+        : getResponsiveFontSize(22),
+    color: 'black',
     fontFamily: 'Pretendard-SemiBold',
     textAlign: 'center',
     marginBottom: getResponsiveHeight(15),
@@ -241,7 +297,8 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 8,
     paddingHorizontal: getResponsiveWidth(10),
-    paddingVertical: Platform.OS==='ios'?getResponsiveHeight(12):getResponsiveHeight(2),
+    paddingVertical:
+      Platform.OS === 'ios' ? getResponsiveHeight(12) : getResponsiveHeight(2),
   },
   input: {
     fontFamily: 'Pretendard-Regular',

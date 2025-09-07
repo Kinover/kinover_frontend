@@ -235,7 +235,11 @@ export default function CreatePostPage({navigation, route}) {
             >
               <Image
                 source={require('../../../assets/images/clearBt1.png')}
-                style={{width: '100%', height: '100%'}}></Image>
+                style={{
+                  width: getResponsiveWidth(22.5),
+                  height: getResponsiveHeight(22.5),
+                  resizeMode: 'contain',
+                }}></Image>
             </Pressable>
           </View>
         </Modal>
@@ -306,13 +310,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerText: {
-    fontSize: Platform.OS==='ios'?getResponsiveFontSize(20):getResponsiveFontSize(18),
+    fontSize:
+      Platform.OS === 'ios'
+        ? getResponsiveFontSize(20)
+        : getResponsiveFontSize(18),
     textAlign: 'center',
     textAlignVertical: 'center',
     fontFamily: 'Pretendard-Regular',
-    fontWeight:'semibold',
+    fontWeight: 'semibold',
     color: '#101010',
-    lineHeight:getResponsiveHeight(30),
+    lineHeight: getResponsiveHeight(30),
   },
   headerCheckIcon: {
     width: getResponsiveWidth(28),
@@ -340,8 +347,8 @@ const styles = StyleSheet.create({
   modalCloseArea: {
     position: 'absolute',
     top:
-      Platform.OS === 'ios' ? getResponsiveHeight(55) : getResponsiveHeight(35),
-    right: 15,
+      Platform.OS === 'ios' ? getResponsiveHeight(50) : getResponsiveHeight(25),
+    right: getResponsiveWidth(15),
     width: getResponsiveIconSize(25),
     height: getResponsiveIconSize(25),
   },
@@ -353,18 +360,16 @@ const styles = StyleSheet.create({
   imageCountBadge: {
     position: 'absolute',
     top:
-      Platform.OS === 'android'
-        ? getResponsiveHeight(30)
-        : getResponsiveHeight(55),
+      Platform.OS === 'ios' ? getResponsiveHeight(50) : getResponsiveHeight(20),
     alignSelf: 'center',
     backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 12,
     paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
+    paddingVertical: 4,
   },
   imageCountText: {
     color: '#fff',
-    fontSize: 14,
+    fontSize: getResponsiveFontSize(15),
     fontWeight: '600',
   },
 });
