@@ -7,17 +7,20 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
-import {fetchNotificationsThunk} from '../../../redux/thunk/notificationThunk';
+import {fetchNotificationsThunk} from '../../redux/thunk/notificationThunk';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
-import useHideTabBar from '../../../hooks/useHideTabBar';
+} from '../../utils/responsive';
+import useHideTabBar from '../../hooks/common/useHideTabBar';
 import {useNavigation} from '@react-navigation/native';
-import {openNotification} from '../../../utils/openNotification';
+// import {openNotification} from '../../../utils/notification/openNotification';
 import FastImage from 'react-native-fast-image';
-import { setHasUnread } from '../../../redux/slices/notificationSlice';
+import { setHasUnread } from '../../redux/slices/notificationSlice';
+import YellowSpinner from '../../components/common/yellowSpinner';
+import { openNotification } from '../../utils/notification/openNotification';
+
 
 export default function NotificationScreen() {
   const dispatch = useDispatch();
@@ -140,7 +143,7 @@ export default function NotificationScreen() {
   if (isLoading) {
     return (
       <View style={[styles.container, {justifyContent: 'center'}]}>
-        <Text style={styles.loading}>불러오는 중</Text>
+        <YellowSpinner></YellowSpinner>
       </View>
     );
   }

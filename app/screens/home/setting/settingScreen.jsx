@@ -17,8 +17,8 @@ import {
   getResponsiveWidth,
   getResponsiveFontSize,
 } from '../../../utils/responsive';
-import {useLogout} from '../hooks/useLogout';
-import useHideTabBar from '../../../hooks/useHideTabBar';
+import {useLogout} from '../../../hooks/auth/useLogout';
+import useHideTabBar from '../../../hooks/common/useHideTabBar';
 
 export default function SettingScreen() {
   const navigation = useNavigation();
@@ -157,7 +157,7 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   sectionTitle: {
-    fontSize: getResponsiveFontSize(12),
+    fontSize: getResponsiveFontSize(14),
     color: '#888',
     marginTop: getResponsiveHeight(10),
     marginBottom: getResponsiveHeight(10),
@@ -169,11 +169,11 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(12),
   },
   label: {
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(18),
     color: '#222',
   },
   value: {
-    fontSize: getResponsiveFontSize(13),
+    fontSize: getResponsiveFontSize(17),
     color: '#555',
   },
   arrow: {

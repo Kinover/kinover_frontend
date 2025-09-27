@@ -18,6 +18,7 @@ import {
   getResponsiveIconSize,
 } from '../../utils/responsive';
 import FastImage from 'react-native-fast-image';
+import YellowSpinner from '../../components/common/yellowSpinner';
 
 export default function CommunicationScreen({navigation}) {
   const dispatch = useDispatch();
@@ -52,7 +53,9 @@ export default function CommunicationScreen({navigation}) {
   return (
     <View style={styles.container}>
       {loading && chatRoomList.length === 0 ? (
-        <ActivityIndicator size="large" color="#FFC84D" style={styles.loader} />
+        <View style={styles.loaderWrapper}>
+          <YellowSpinner />
+        </View>
       ) : (
         <FlatList
           data={chatRoomList}
@@ -90,7 +93,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9F9F9',
-    paddingHorizontal: getResponsiveWidth(20),
+    paddingHorizontal: getResponsiveWidth(18),
   },
   listContent: {
     paddingBottom: getResponsiveHeight(100),
@@ -112,5 +115,10 @@ const styles = StyleSheet.create({
     width: getResponsiveIconSize(75),
     height: getResponsiveIconSize(75),
     zIndex: 0,
+  },
+  loaderWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

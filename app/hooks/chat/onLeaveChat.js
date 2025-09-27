@@ -1,5 +1,5 @@
 import { Alert } from 'react-native';
-import { leaveChatRoomThunk } from '../redux/thunk/chatRoomThunk';
+import { leaveChatRoomThunk } from '../../redux/thunk/chatRoomThunk';
 
 export const onLeaveChat = (dispatch, navigation, chatRoomId) => {
   dispatch(leaveChatRoomThunk(chatRoomId))

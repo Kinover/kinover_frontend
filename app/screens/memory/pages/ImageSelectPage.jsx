@@ -5,14 +5,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   Text,
-  PermissionsAndroid,
   Platform,
   Alert,
   Image,
   Dimensions,
   Linking,
 } from 'react-native';
-import {CameraRoll} from '@react-native-camera-roll/camera-roll';
 import RNFS from 'react-native-fs';
 import {useNavigation} from '@react-navigation/native';
 import {
@@ -21,7 +19,12 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-import useHideTabBar from '../../../hooks/useHideTabBar';
+import useHideTabBar from '../../../hooks/common/useHideTabBar';
+
+// ✅ 유틸 import
+import {convertPhUriToFileUri, convertContentUriToFileUri} from '../../../utils/photo/photoUriConverter';
+import {toggleSelectImage, getSelectOrder} from '../../../utils/photo/selection';
+import {loadGalleryPhotos} from '../../../utils/photo/gallery';
 
 // ====== 이미지 그리드 설정 ======
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -45,85 +48,16 @@ export default function ImageSelectPage() {
 
   const navigation = useNavigation();
 
-  // const route = useRoute();
-
-  // // ✅ 넘어온 이미지(preselectedImages)가 있으면 selected 초기화
-  // useEffect(() => {
-  //   if (route.params?.preselectedImages?.length > 0) {
-  //     setSelected(route.params.preselectedImages);
-  //   }
-  // }, [route.params?.preselectedImages]);
-
-  // ===== 권한 요청 =====
-  const requestPermission = async () => {
-    if (Platform.OS === 'android') {
-      const granted = await PermissionsAndroid.request(
-        Platform.Version >= 33
-          ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
-          : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    }
-    return true;
-  };
-
-  // ===== iOS ph:// → file:// 변환 =====
-  const convertPhUriToFileUri = async (phUri, index) => {
-    const destPath = `${
-      RNFS.TemporaryDirectoryPath
-    }photo_ios_${Date.now()}_${index}.jpg`;
-    try {
-      await RNFS.copyAssetsFileIOS(phUri, destPath, 0, 0);
-      return 'file://' + destPath;
-    } catch (err) {
-      console.error('📛 iOS ph:// 변환 실패:', err.message);
-      return null;
-    }
-  };
-
-  // ===== Android content:// → file:// 변환 =====
-  const convertContentUriToFileUri = async (contentUri, index) => {
-    const destPath = `${
-      RNFS.TemporaryDirectoryPath
-    }photo_android_${Date.now()}_${index}.jpg`;
-    try {
-      const base64Data = await RNFS.readFile(contentUri, 'base64');
-      await RNFS.writeFile(destPath, base64Data, 'base64');
-      return 'file://' + destPath;
-    } catch (err) {
-      console.error('📛 Android content:// 변환 실패:', err.message);
-      return null;
-    }
-  };
-
   // ===== 사진 불러오기 =====
   const loadPhotos = async (after = null) => {
-    const hasPermission = await requestPermission();
-    if (!hasPermission) {
-      console.log('⛔ 권한 거절됨');
-      return;
+    const {photos: newPhotos, endCursor, hasNextPage} = await loadGalleryPhotos(after, PAGE_SIZE);
+    if (after) {
+      setPhotos(prev => [...prev, ...newPhotos]);
+    } else {
+      setPhotos(newPhotos);
     }
-
-    try {
-      const params = {
-        first: PAGE_SIZE,
-        assetType: 'Photos',
-        ...(after ? {after} : {}),
-      };
-      const res = await CameraRoll.getPhotos(params);
-      const photoData = res.edges.map(edge => edge.node.image);
-
-      if (after) {
-        setPhotos(prev => [...prev, ...photoData]);
-      } else {
-        setPhotos(photoData);
-      }
-
-      setEndCursor(res.page_info?.end_cursor ?? null);
-      setHasNextPage(!!res.page_info?.has_next_page);
-    } catch (err) {
-      console.log('❌ getPhotos 실패:', err);
-    }
+    setEndCursor(endCursor);
+    setHasNextPage(hasNextPage);
   };
 
   useEffect(() => {
@@ -147,15 +81,7 @@ export default function ImageSelectPage() {
 
   // ===== 선택 토글 =====
   const toggleSelect = uri => {
-    setSelected(prev =>
-      prev.includes(uri) ? prev.filter(u => u !== uri) : [...prev, uri],
-    );
-  };
-
-  // ✅ 선택 순서 (1부터)
-  const getSelectOrder = uri => {
-    const idx = selected.indexOf(uri);
-    return idx === -1 ? null : idx + 1;
+    setSelected(prev => toggleSelectImage(prev, uri));
   };
 
   // ===== 다음 버튼 =====
@@ -217,7 +143,7 @@ export default function ImageSelectPage() {
   // ====== 렌더 ======
   const renderItem = ({item}) => {
     const isSelected = selected.includes(item.uri);
-    const order = getSelectOrder(item.uri);
+    const order = getSelectOrder(selected, item.uri);
 
     return (
       <TouchableOpacity
@@ -307,7 +233,6 @@ const styles = StyleSheet.create({
   },
   tileSelectedOverlay: {
     ...StyleSheet.absoluteFillObject,
-
     zIndex: 1,
     backgroundColor: 'rgba(128, 128, 128, 0.6)',
   },
@@ -320,7 +245,6 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
-  // ✅ 순서 뱃지 스타일
   orderBadge: {
     position: 'absolute',
     top: getResponsiveWidth(4),

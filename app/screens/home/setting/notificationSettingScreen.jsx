@@ -6,7 +6,7 @@ import {
   getResponsiveFontSize,
 } from '../../../utils/responsive';
 import CustomSwitch from '../../../components/customSwitch';
-import useHideTabBar from '../../../hooks/useHideTabBar';
+import useHideTabBar from '../../../hooks/common/useHideTabBar';
 import {useDispatch, useSelector} from 'react-redux';
 
 import {toggleAllChatRoomNotificationThunk} from '../../../redux/thunk/chatRoomThunk';
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(8),
   },
   label: {
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(18),
     color: '#222',
   },
 });

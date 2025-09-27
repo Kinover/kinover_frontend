@@ -7,19 +7,20 @@ import {
   Image,
   ScrollView,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
 import {createChatRoomThunk} from '../../redux/thunk/chatRoomThunk';
 import {fetchFamilyUserListThunk} from '../../redux/thunk/familyUserThunk';
 import {CommonActions} from '@react-navigation/native';
-
 import {
   getResponsiveWidth,
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveIconSize,
 } from '../../utils/responsive';
-import useHideTabBar from '../../hooks/useHideTabBar';
+import useHideTabBar from '../../hooks/common/useHideTabBar';
+import ToastModal from '../../components/common/toastModal'; // ✅ 추가
 
 export default function CreateChatRoom({navigation}) {
   const dispatch = useDispatch();
@@ -27,7 +28,9 @@ export default function CreateChatRoom({navigation}) {
   const currentUserId = useSelector(state => state.user.userId);
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
   const loading = useSelector(state => state.userFamily.loading);
+
   const [selected, setSelected] = useState([]);
+  const [toastVisible, setToastVisible] = useState(false); // ✅ 토스트 상태 추가
 
   useHideTabBar();
 
@@ -47,9 +50,8 @@ export default function CreateChatRoom({navigation}) {
                 ? getResponsiveFontSize(20)
                 : getResponsiveFontSize(18),
             textAlign: 'center',
-            textAlignVertical: 'center',
             fontFamily: 'Pretendard-Regular',
-            fontWeight: 'semibold',
+            fontWeight: '600',
             color: '#101010',
             lineHeight: getResponsiveHeight(30),
           }}>
@@ -89,19 +91,25 @@ export default function CreateChatRoom({navigation}) {
     const autoRoomName = selectedUserNames.join(', ');
 
     try {
-      const result = await dispatch(
+      await dispatch(
         createChatRoomThunk({
           roomName: autoRoomName,
           userIds: idsStr,
         }),
       ).unwrap();
 
-      navigation.dispatch(
-        CommonActions.reset({
-          index: 0,
-          routes: [{name: '소통'}], // 채팅 목록(또는 채팅 홈) 라우트 이름
-        }),
-      );
+      // ✅ 성공 시 토스트 띄우기
+      setToastVisible(true);
+
+      // ✅ 일정 시간 후 "소통" 화면으로 이동
+      setTimeout(() => {
+        navigation.dispatch(
+          CommonActions.reset({
+            index: 0,
+            routes: [{name: '소통'}],
+          }),
+        );
+      }, 1200);
     } catch (err) {
       console.error('🔴 채팅방 생성 실패:', err);
     }
@@ -144,6 +152,14 @@ export default function CreateChatRoom({navigation}) {
           })}
         </ScrollView>
       )}
+
+      {/* ✅ 채팅방 생성 완료 토스트 */}
+      <ToastModal
+        visible={toastVisible}
+        message="채팅방을 생성했어요"
+        onClose={() => setToastVisible(false)}
+        duration={1000}
+      />
     </View>
   );
 }
@@ -181,14 +197,14 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(16),
     fontFamily: 'Pretendard-Regular',
     color: 'black',
-    lineHeight:getResponsiveHeight(20),
-    textAlignVertical:'center',
+    lineHeight: getResponsiveHeight(20),
+    textAlignVertical: 'center',
   },
   selectIcon: {
     width: getResponsiveWidth(14),
     height: getResponsiveHeight(14),
     resizeMode: 'contain',
-    marginRight:getResponsiveWidth(5),
+    marginRight: getResponsiveWidth(5),
   },
   headerCheckIcon: {
     width: getResponsiveWidth(30),

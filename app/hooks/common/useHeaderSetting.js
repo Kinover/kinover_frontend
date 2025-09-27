@@ -1,6 +1,6 @@
 import {useLayoutEffect} from 'react';
 import {Text} from 'react-native';
-import {RenderHeaderRightChatSetting} from '../navigation/tabHeaderHelpers';
+import {RenderHeaderRightChatSetting} from '../../navigation/tabHeaderHelpers';
 
 export default function useHeaderSetting(
   navigation,

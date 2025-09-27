@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Image,
   TouchableOpacity,
-  SafeAreaView,
   Platform,
 } from 'react-native';
 import {
@@ -16,21 +15,15 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../../../../utils/responsive';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function DescriptionSection({memory, onContentLayout}) {
-  if (!memory) return null; // ✅ 데이터 아직이면 렌더 안 함
+  const insets = useSafeAreaInsets(); // ✅ 하단 inset 가져오기
+
+  if (!memory) return null;
 
   return (
-    <View
-      style={{
-        // backgroundColor: 'white',
-        // borderTopWidth: 1,
-        // borderTopLeftRadius: getResponsiveIconSize(30),
-        // borderTopRightRadius: getResponsiveIconSize(30),
-        // backgroundColor: 'white',
-        // borderTopColor: 'white',
-        // height:'100%',
-      }}>
+    <View>
       <TouchableWithoutFeedback>
         <View style={styles.headerContainer}>
           <View style={styles.writer}>
@@ -42,7 +35,12 @@ export default function DescriptionSection({memory, onContentLayout}) {
           </View>
         </View>
       </TouchableWithoutFeedback>
-      <SafeAreaView style={styles.description}>
+
+      {/* ✅ SafeAreaView + paddingBottom */}
+      <SafeAreaView
+        edges={['bottom']}
+        style={[styles.description, {paddingBottom: insets.bottom + getResponsiveHeight(10)}]}
+      >
         <ScrollView
           style={styles.contentContainer}
           contentContainerStyle={{paddingBottom: getResponsiveHeight(40)}}
@@ -53,11 +51,6 @@ export default function DescriptionSection({memory, onContentLayout}) {
             {memory.content}
           </Text>
         </ScrollView>
-        {/* <LinearGradient
-          colors={['rgba(245, 245, 245, 0)', 'rgba(245, 245, 245, 1)']}
-          style={styles.fadeOutGradient}
-          pointerEvents="none"
-        /> */}
       </SafeAreaView>
     </View>
   );
@@ -66,10 +59,10 @@ export default function DescriptionSection({memory, onContentLayout}) {
 const styles = StyleSheet.create({
   description: {
     width: '100%',
+    height:'100%',
     alignItems: 'center',
     zIndex: 5,
   },
-
   headerContainer: {
     width: '100%',
     flexDirection: 'row',
@@ -79,21 +72,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(30),
     zIndex: 10,
     backgroundColor: 'rgba(255,255,255,0)',
-    alignItems:'center',
-    alignContent:'center',
   },
   writer: {
     flexDirection: 'row',
     flex: 1,
-    alignContent: 'center',
     alignItems: 'center',
     gap: getResponsiveWidth(10),
   },
   writerImage: {
-    width:
-      Platform.OS === 'ios' ? getResponsiveWidth(39) : getResponsiveWidth(36.5),
-    height:
-      Platform.OS === 'ios' ? getResponsiveWidth(39) : getResponsiveWidth(36.5),
+    width: Platform.OS === 'ios' ? getResponsiveWidth(39) : getResponsiveWidth(36.5),
+    height: Platform.OS === 'ios' ? getResponsiveWidth(39) : getResponsiveWidth(36.5),
     borderRadius: getResponsiveWidth(20),
     backgroundColor: 'white',
     borderColor: 'gray',
@@ -101,39 +89,25 @@ const styles = StyleSheet.create({
   },
   writerName: {
     color: 'black',
-    fontSize:
-      Platform.OS === 'ios'
-        ? getResponsiveFontSize(21)
-        : getResponsiveFontSize(18),
+    fontSize: Platform.OS === 'ios'
+      ? getResponsiveFontSize(21)
+      : getResponsiveFontSize(18),
     fontFamily: 'Pretendard-Regular',
     textAlignVertical: 'center',
-    lineHeight:getResponsiveHeight(40)
-  },
-  commentButton: {
-    width: getResponsiveWidth(45),
-    height: getResponsiveHeight(40),
-    resizeMode: 'contain',
-    marginRight: getResponsiveWidth(-5),
-    marginBottom: getResponsiveHeight(-15),
+    lineHeight:getResponsiveHeight(40),
   },
   contentContainer: {
     width: '100%',
+    height:'100%',
     paddingHorizontal: getResponsiveWidth(30),
   },
   content: {
     color: 'black',
     fontFamily: 'Pretendard-Light',
-    fontSize:
-      Platform.OS === 'ios'
-        ? getResponsiveFontSize(17)
-        : getResponsiveFontSize(15),
+    fontSize: Platform.OS === 'ios'
+      ? getResponsiveFontSize(17)
+      : getResponsiveFontSize(15),
     paddingVertical: getResponsiveHeight(3),
     textAlignVertical: 'center',
-  },
-  commentCount: {
-    position: 'absolute',
-    right: getResponsiveWidth(20),
-    bottom: getResponsiveHeight(2),
-    fontSize: getResponsiveFontSize(13),
   },
 });

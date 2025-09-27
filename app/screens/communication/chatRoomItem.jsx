@@ -21,8 +21,8 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
     kino,
     latestMessageContent,
     latestMessageTime,
-    unreadCount = 0,
     memberImages,
+    unreadCount = 0,
   } = chatRoom;
 
   const screen = kino ? '키노상담소화면' : '채팅방화면';
@@ -56,20 +56,6 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
             ellipsizeMode="tail">
             {title}
           </Text>
-
-          <View style={styles.metaCol}>
-            <Text style={styles.time}>
-              {latestMessageTime ? formatPreviewTime(latestMessageTime) : ''}
-            </Text>
-
-            {unreadCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </Text>
-              </View>
-            )}
-          </View>
         </View>
 
         {/* 최근 메시지 프리뷰 */}
@@ -78,10 +64,29 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
             styles.description,
             unreadCount > 0 && styles.descriptionUnread,
           ]}
-          numberOfLines={1}
+          numberOfLines={2}
           ellipsizeMode="tail">
           {description}
         </Text>
+      </View>
+      <View style={styles.metaCol}>
+        <Text style={styles.time}>
+          {latestMessageTime ? formatPreviewTime(latestMessageTime) : ''}
+        </Text>
+
+        {unreadCount > 0 && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </Text>
+          </View>
+        )}
+
+        {unreadCount == 0 && (
+          <View style={[styles.badge, {backgroundColor: 'transparent'}]}>
+            <Text style={styles.badgeText}>0</Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -92,15 +97,14 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: getResponsiveWidth(15),
-    paddingHorizontal: getResponsiveWidth(2),
+    gap: getResponsiveWidth(12.5),
     paddingVertical: getResponsiveHeight(10),
     width: '100%',
     height: getResponsiveHeight(80),
   },
   textArea: {
     flex: 1,
-    gap: getResponsiveHeight(6),
+    gap: getResponsiveHeight(4),
   },
   headerRow: {
     flexDirection: 'row',
@@ -111,19 +115,21 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Medium',
     fontSize: getResponsiveFontSize(16),
     color: '#101010',
-    lineHeight: getResponsiveHeight(25),
+    lineHeight: getResponsiveHeight(22),
     textAlignVertical: 'center',
   },
   nameUnread: {
     fontFamily: 'Pretendard-SemiBold',
   },
   metaCol: {
-    marginLeft: getResponsiveWidth(10),
+    display: 'flex',
+    flexDirection: 'column',
+    gap: getResponsiveHeight(2),
     alignItems: 'flex-end',
-    minWidth: getResponsiveWidth(52),
-    gap: getResponsiveHeight(4),
+    justifyContent: 'flex-end',
   },
   time: {
+    top: 0,
     fontSize: getResponsiveFontSize(11),
     color: '#8B8B8B',
     lineHeight: getResponsiveHeight(20),
@@ -134,27 +140,26 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(12.5),
     color: '#5A5A5A',
     lineHeight: getResponsiveHeight(18),
-    textAlignVertical:'top',
-    paddingRight: getResponsiveWidth(25),
+    textAlignVertical: 'top',
+    flexWrap: 'wrap',
   },
   descriptionUnread: {
     fontFamily: 'Pretendard-Medium',
     color: '#2A2A2A',
   },
   badge: {
-    position: 'absolute',
-    top: getResponsiveHeight(22.5),
-    minWidth: getResponsiveWidth(20),
-    height: getResponsiveWidth(20),
-    paddingHorizontal: getResponsiveWidth(6),
-    borderRadius: getResponsiveHeight(10),
+    right: 0,
+    padding: getResponsiveHeight(5),
+    minWidth: getResponsiveWidth(23),
+    borderRadius: 999,
     backgroundColor: '#FFC84D',
     justifyContent: 'center',
     alignItems: 'center',
+    textAlign: 'center',
   },
   badgeText: {
     color: '#FFFFFF',
-    fontSize: getResponsiveFontSize(10),
+    fontSize: getResponsiveFontSize(11),
     fontFamily: 'Pretendard-SemiBold',
   },
 });

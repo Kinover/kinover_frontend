@@ -14,7 +14,7 @@ import {useDispatch} from 'react-redux';
 import {useNavigation, useRoute} from '@react-navigation/native';
 
 import KinoConfirmModal from './kinoConfirmModal';
-import useHideTabBar from '../../../hooks/useHideTabBar';
+import useHideTabBar from '../../../hooks/common/useHideTabBar';
 import {updateKinoPersonalityThunk} from '../../../redux/thunk/chatRoomThunk';
 
 import {

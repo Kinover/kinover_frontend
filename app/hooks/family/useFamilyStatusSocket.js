@@ -1,8 +1,8 @@
 import {useEffect, useRef} from 'react';
 import {useDispatch} from 'react-redux';
-import {getToken} from '../utils/storage';
-import {setOnlineUserIds} from '../redux/slices/statusSlice';
-import {setLastActiveMap} from '../redux/slices/familySlice';
+import {getToken} from '../../utils/storage';
+import {setOnlineUserIds} from '../../redux/slices/statusSlice';
+import {setLastActiveMap} from '../../redux/slices/familySlice';
 
 const useFamilyStatusSocket = (familyId) => {
   const dispatch = useDispatch();

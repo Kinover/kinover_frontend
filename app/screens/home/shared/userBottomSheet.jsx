@@ -24,13 +24,14 @@ import {
   BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
 import {launchImageLibrary} from 'react-native-image-picker';
-import RNFS from 'react-native-fs';
 import getResponsiveFontSize, {
   getResponsiveWidth,
   getResponsiveHeight,
 } from '../../../utils/responsive';
-import {getPresignedUrls, uploadImageToS3} from '../../../api/imageUrlApi';
 import FastImage from 'react-native-fast-image';
+import {convertPhUriToFileUri} from '../../../utils/photo/photoUriConverter';
+import {uploadImageWithPresignedUrl} from '../../../utils/photo/upload'; // 새로 만들면 좋음
+
 
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 const windowHeight = Dimensions.get('window').height;
@@ -73,31 +74,29 @@ const UserBottomSheetModal = forwardRef(
         return () => sub.remove();
       }
     }, []);
-
     const handleImagePick = async () => {
       const result = await launchImageLibrary({mediaType: 'photo'});
       if (!result.assets?.length) return;
-
+    
       const selectedAsset = result.assets[0];
       let fileUri = selectedAsset.uri;
       const fileName = selectedAsset.fileName || `img_${Date.now()}.jpg`;
-
-      // ✅ 먼저 미리보기 반영
+    
+      // ✅ 미리보기 반영
       setPreviewImage(fileUri);
-
+    
       try {
         if (Platform.OS === 'ios' && fileUri.startsWith('ph://')) {
-          const destPath = `${RNFS.TemporaryDirectoryPath}photo_${Date.now()}.jpg`;
-          await RNFS.copyAssetsFileIOS(fileUri, destPath, 0, 0);
-          fileUri = 'file://' + destPath;
+          fileUri = await convertPhUriToFileUri(fileUri, 0);
+          if (!fileUri) return;
         }
-
-        const [presignedUrl] = await getPresignedUrls([fileName]);
-        await uploadImageToS3(presignedUrl, fileUri);
-
-        // ✅ 업로드 성공 시 서버 URL 저장
+    
+        // ✅ 업로드 유틸 활용
+        await uploadImageWithPresignedUrl(fileUri, fileName);
+    
+        // 성공 시 presigned 기반 서버 경로 세팅
         imageUrlRef.current = `${CLOUD_FRONT}${fileName}`;
-        setPreviewImage(`${CLOUD_FRONT}${fileName}`);
+        setPreviewImage(imageUrlRef.current);
       } catch (err) {
         Alert.alert('업로드 실패', '이미지 업로드 중 문제가 발생했어요.');
       }

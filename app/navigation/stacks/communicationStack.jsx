@@ -15,7 +15,7 @@ import CreateChatRoom from '../../screens/communication/createChatRoom';
 import ChatRoom from '../../screens/communication/chatRoom/chatRoom';
 import KinoSelectScreen from '../../screens/communication/chatRoom/kinoSelectScreen';
 import SettingScreen from '../../screens/home/setting/settingScreen';
-import NotificationScreen from '../../screens/home/notification/notificationScreen';
+import NotificationScreen from '../../screens/notification/notificationScreen';
 import NotificationSettingScreen from '../../screens/home/setting/notificationSettingScreen';
 
 import {RenderHeaderHome} from '../tabHeaderHelpers';

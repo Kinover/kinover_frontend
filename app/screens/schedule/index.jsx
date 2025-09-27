@@ -11,7 +11,6 @@ import {
 import {ActivityIndicator} from 'react-native';
 
 import ScheduleEditorBottomSheetModal from './scheduleEditorBottomSheet';
-import {SafeAreaView} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
 
 import CalendarToggle from './calendar';
@@ -28,6 +27,7 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../utils/responsive';
+import YellowSpinner from '../../components/common/yellowSpinner';
 
 export default function ScheduleScreen() {
   const dispatch = useDispatch();
@@ -199,6 +199,15 @@ export default function ScheduleScreen() {
       .finally(() => setIsLoading(false));
   }, [familyId, year, month, refreshTrigger]);
 
+  if (isLoading)
+    return (
+      // 🔒 로딩 중에는 날짜/일정 컴포넌트 전혀 렌더 안 함
+      <View style={styles.loadingContainer}>
+        <YellowSpinner />
+        {/* 로딩 메시지를 원할 경우 아래 텍스트 사용 */}
+      </View>
+    );
+
   return (
     <View
       style={{
@@ -213,27 +222,19 @@ export default function ScheduleScreen() {
         <ScrollView
           style={styles.mainContainer}
           showsVerticalScrollIndicator={false}>
-          {isLoading ? (
-            // 🔒 로딩 중에는 날짜/일정 컴포넌트 전혀 렌더 안 함
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#FFC84D" />
-              {/* <Text style={styles.loadingText}>일정을 불러오는 중입니다.</Text> */}
-            </View>
-          ) : (
-            <>
-              <CalendarToggle
-                selectedDate={selectedDate}
-                setSelectedDate={setSelectedDate}
-                scheduleCountPerDay={scheduleCountPerDay}
-              />
+          <>
+            <CalendarToggle
+              selectedDate={selectedDate}
+              setSelectedDate={setSelectedDate}
+              scheduleCountPerDay={scheduleCountPerDay}
+            />
 
-              <Schedule
-                selectedDate={selectedDate}
-                onOpenSheet={openSheet}
-                refreshTrigger={refreshTrigger}
-              />
-            </>
-          )}
+            <Schedule
+              selectedDate={selectedDate}
+              onOpenSheet={openSheet}
+              refreshTrigger={refreshTrigger}
+            />
+          </>
         </ScrollView>
 
         {/* ✅ 바텀시트 */}
@@ -317,12 +318,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    width: '100%',
-    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    alignSelf: 'center',
-    paddingTop: '70%',
   },
   loadingText: {
     marginTop: 10,

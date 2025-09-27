@@ -2,7 +2,7 @@ import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import {Platform} from 'react-native';
 import HomeScreen from '../../screens/home';
-import NotificationScreen from '../../screens/home/notification/notificationScreen';
+import NotificationScreen from '../../screens/notification/notificationScreen';
 import SettingScreen from '../../screens/home/setting/settingScreen';
 import NotificationSettingScreen from '../../screens/home/setting/notificationSettingScreen';
 import {
