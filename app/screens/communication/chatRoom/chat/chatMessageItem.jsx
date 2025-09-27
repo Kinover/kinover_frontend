@@ -21,6 +21,7 @@ export default function ChatMessageItem({
   isKino = false,
   isSameSender = false, // 부모에서 연속 여부 힌트
   shouldShowDate = false,
+  isGrouped, // 👈 그대로 ReceiveChat에 넘겨줌
 }) {
   const navigation = useNavigation();
   const dispatch = useDispatch();
@@ -44,32 +45,32 @@ export default function ChatMessageItem({
   };
 
   // ✅ isGrouped 계산 (이전 메시지 시간이 있으면 더 엄격, 없으면 isSameSender만으로 폴백)
-  const isGrouped = useMemo(() => {
-    const prevAt = message.prevCreatedAt; // 선택적으로 넘겨줄 수 있음
-    if (prevAt) {
-      return isSameSender && isSameMinute(prevAt, message.createdAt);
-    }
-    return isSameSender; // 폴백: 연속 보낸 사람만 같으면 묶음 처리
-  }, [isSameSender, message.prevCreatedAt, message.createdAt]);
+  // const isGrouped = useMemo(() => {
+  //   const prevAt = message.prevCreatedAt; // 선택적으로 넘겨줄 수 있음
+  //   if (prevAt) {
+  //     return isSameSender && isSameMinute(prevAt, message.createdAt);
+  //   }
+  //   return isSameSender; // 폴백: 연속 보낸 사람만 같으면 묶음 처리
+  // }, [isSameSender, message.prevCreatedAt, message.createdAt]);
 
-  // 간격: 그룹이면 위 간격/아래 간격 모두 타이트
-  const spacingStyle = useMemo(() => {
-    return {
-      marginTop: getResponsiveHeight(2),
-      marginBottom: getResponsiveHeight(8),
-    };
-  }, [isGrouped]);
-
-  const formatDate = (dateString) => {
+  const formatDate = dateString => {
     const date = new Date(dateString);
-  
+
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
     const day = date.getDate();
-  
-    const weekdays = ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'];
+
+    const weekdays = [
+      '일요일',
+      '월요일',
+      '화요일',
+      '수요일',
+      '목요일',
+      '금요일',
+      '토요일',
+    ];
     const weekday = weekdays[date.getDay()];
-  
+
     return `${year}년 ${month}월 ${day}일 ${weekday}`;
   };
 
@@ -84,7 +85,6 @@ export default function ChatMessageItem({
       <SendKinoChat
         message={message.content}
         chatTime={message.createdAt}
-        style={spacingStyle}
         imageUrls={message.imageUrls}
         messageType={message.messageType}
         isGrouped={isGrouped} // 넘겨두면 컴포넌트에서 쓸 수 있음(옵셔널)
@@ -93,7 +93,6 @@ export default function ChatMessageItem({
       <SendChat
         message={message.content}
         chatTime={message.createdAt}
-        style={spacingStyle}
         imageUrls={message.imageUrls}
         messageType={message.messageType}
         isGrouped={isGrouped}
@@ -108,7 +107,6 @@ export default function ChatMessageItem({
         userProfileImage={message.senderImage}
         message={message.content}
         chatTime={message.createdAt}
-        style={spacingStyle}
         messageType={message.messageType}
         imageUrls={message.imageUrls}
         isGrouped={isGrouped}
@@ -119,7 +117,6 @@ export default function ChatMessageItem({
         userProfileImage={message.senderImage}
         message={message.content}
         chatTime={message.createdAt}
-        style={spacingStyle}
         messageType={message.messageType}
         imageUrls={message.imageUrls}
         isGrouped={isGrouped}
@@ -161,12 +158,12 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveIconSize(20),
   },
   dateSeparatorText: {
-    textAlign:'center',
-    textAlignVertical:'center',
+    textAlign: 'center',
+    textAlignVertical: 'center',
     fontSize: getResponsiveFontSize(13),
     fontWeight: 'semibold',
     color: 'white',
     alignContent: 'center',
-    lineHeight:getResponsiveHeight(18),
+    lineHeight: getResponsiveHeight(18),
   },
 });

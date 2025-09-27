@@ -1,5 +1,6 @@
-import React, {useState} from 'react';
-import {View, Text, StyleSheet, Image, FlatList,Platform, TouchableOpacity} from 'react-native';
+import React, {useEffect, useRef, useState} from 'react';
+import {View, Text, StyleSheet, TouchableOpacity, Platform, FlatList} from 'react-native';
+import FastImage from 'react-native-fast-image';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -9,83 +10,104 @@ import {
 import formatTime from '../../../../utils/formatTime';
 import ImageModal from './imageModal';
 
+import {
+  registerTimeLast,
+  unregisterTimeLast,
+  minuteKey,
+  toEpochMs,
+} from '../../../../utils/chat/timeRegistry';
+import {getSpacingStyle} from '../../../../utils/chat/getSpacingStyle';
+
 export default function SendKinoChat({
   chatTime,
   imageUrls = [],
   messageType = 'text',
   message,
+  isGrouped = false,
+  isSameSender = false,
 }) {
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedImageUri, setSelectedImageUri] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(0);
 
-  const handleImagePress = uri => {
-    setSelectedImageUri(uri);
+  // === 마지막만 시간 표시 ===
+  const [showTime, setShowTime] = useState(false);
+  const idRef = useRef(Math.random().toString(36).slice(2));
+  const key = `KINO_ME|${minuteKey(chatTime)}`;
+  const timeMs = toEpochMs(chatTime);
+
+  useEffect(() => {
+    registerTimeLast(key, idRef.current, timeMs, setShowTime);
+    return () => unregisterTimeLast(key, idRef.current);
+  }, [key, timeMs]);
+
+  // === 간격 계산 ===
+  const spacingStyle = getSpacingStyle({isGrouped, isSameSender});
+
+  const handleImagePress = (uri, index) => {
+    setSelectedIndex(index);
     setModalVisible(true);
   };
 
-  const renderImages = () => {
-    if (imageUrls.length === 1) {
-      return (
-        <TouchableOpacity onPress={() => handleImagePress(imageUrls[0])}>
-          <Image
-            source={{uri: imageUrls[0]}}
-            style={styles.singleImage}
-            resizeMode="cover"
-          />
-        </TouchableOpacity>
-      );
-    }
-
-    return (
-      <View style={[styles.sendBubble, styles.imagePadding]}>
-        <FlatList
-          data={imageUrls}
-          keyExtractor={(item, index) => item + index}
-          numColumns={3}
-          renderItem={({item}) => (
-            <TouchableOpacity onPress={() => handleImagePress(item)}>
-              <Image source={{uri: item}} style={styles.imageItem} />
-            </TouchableOpacity>
-          )}
-          scrollEnabled={false}
-          contentContainerStyle={styles.imageGrid}
-        />
-      </View>
-    );
-  };
+  const renderImages = () => (
+    <View style={[styles.sendBubble, styles.imagePadding]}>
+      <FlatList
+        data={imageUrls}
+        keyExtractor={(item, index) => item + index}
+        numColumns={3}
+        renderItem={({item, index}) => (
+          <TouchableOpacity onPress={() => handleImagePress(item, index)}>
+            <FastImage source={{uri: item}} style={styles.imageItem} />
+          </TouchableOpacity>
+        )}
+        scrollEnabled={false}
+        contentContainerStyle={styles.imageGrid}
+      />
+    </View>
+  );
 
   return (
-    <View style={styles.sendContainer}>
-      <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>
+    <View style={[styles.sendContainer, spacingStyle]}>
+      {showTime && <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>}
 
-      {messageType === 'image' ? (
-        renderImages()
-      ) : (
-        <View style={[styles.sendBubble, styles.textPadding]}>
-          <Text style={styles.sendText}>{message}</Text>
-        </View>
-      )}
+      {messageType === 'image'
+        ? imageUrls.length === 1
+          ? (
+            <TouchableOpacity onPress={() => handleImagePress(imageUrls[0], 0)}>
+              <FastImage
+                source={{uri: imageUrls[0]}}
+                style={styles.singleImage}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+          )
+          : renderImages()
+        : (
+          <View style={[styles.sendBubble, styles.textPadding]}>
+            <Text style={styles.sendText}>{message}</Text>
+          </View>
+        )}
 
       <ImageModal
         visible={modalVisible}
-        imageUri={selectedImageUri}
+        imageUrls={imageUrls}
+        initialIndex={selectedIndex}
         onClose={() => setModalVisible(false)}
       />
     </View>
   );
 }
 
+/* ===== 스타일 ===== */
 const styles = StyleSheet.create({
   sendContainer: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'flex-end',
-    marginBottom: getResponsiveHeight(20),
   },
   sendBubble: {
     backgroundColor: '#FFECC3',
     borderRadius: getResponsiveIconSize(20),
-    maxWidth: '85%',
+    maxWidth: getResponsiveWidth(260),
     flexShrink: 1,
     alignSelf: 'flex-end',
   },
@@ -102,21 +124,19 @@ const styles = StyleSheet.create({
     fontSize:
       Platform.OS === 'android'
         ? getResponsiveFontSize(14)
-        : getResponsiveFontSize(15),    color: 'black',
+        : getResponsiveFontSize(15),
+    color: 'black',
     flexWrap: 'wrap',
     lineHeight: getResponsiveFontSize(18),
-    
   },
   sendTime: {
     fontSize: getResponsiveFontSize(10),
     color: '#666',
     marginRight: getResponsiveWidth(5),
-    lineHeight:getResponsiveFontSize(12),
     marginBottom: getResponsiveHeight(2),
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
-  imageGrid: {
-    gap: getResponsiveWidth(4),
-  },
+  imageGrid: {gap: getResponsiveWidth(4)},
   imageItem: {
     width: getResponsiveWidth(70),
     height: getResponsiveWidth(70),

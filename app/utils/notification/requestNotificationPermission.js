@@ -3,8 +3,8 @@
 import { PermissionsAndroid, Platform, Alert } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import axios from 'axios';
-import { getToken as getJWT } from '../../../utils/storage';
-import { navigate } from '../../../navigation/navigationRef';
+import { getToken as getJWT } from '../storage';
+import { navigate } from '../../navigation/navigationRef';
 
 const SERVER_URL = 'https://kinover.shop/api/fcm/register';
 
@@ -150,4 +150,25 @@ export function registerBackgroundMessageHandler() {
       console.log('[BG] handler error:', e);
     }
   });
+}
+
+// FCM 토큰 삭제
+export async function deleteFcmToken() {
+  try {
+    await messaging().deleteToken();
+    console.log('🗑️ FCM 토큰 삭제 완료');
+
+    // 서버에도 반영해주기 (선택)
+    // const accessToken = await getJWT();
+    // if (accessToken) {
+    //   await axios.post(
+    //     `${SERVER_URL}/delete`, // 서버에 맞는 삭제 엔드포인트 필요
+    //     {},
+    //     { headers: { Authorization: `Bearer ${accessToken}` } },
+    //   );
+    //   console.log('🗑️ 서버 토큰 삭제 반영 완료');
+    // }
+  } catch (err) {
+    console.log('❌ FCM 토큰 삭제 실패:', err);
+  }
 }

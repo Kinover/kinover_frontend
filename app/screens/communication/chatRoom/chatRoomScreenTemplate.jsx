@@ -13,11 +13,11 @@ import MessageFlatList from './chat/messageFlatList';
 import ChatInput from './chat/chatInput';
 import ChatSettings from './setting/chatSetting';
 import {addMessage, setMessageList} from '../../../redux/slices/messageSlice';
-import useChatRoomScreen from '../../../hooks/useChatRoomScreen';
-import useHeaderSetting from '../../../hooks/useHeaderSetting';
-import {onLeaveChat} from '../../../hooks/onLeaveChat';
+import useChatRoomScreen from '../../../hooks/chat/useChatRoomScreen';
+import useHeaderSetting from '../../../hooks/common/useHeaderSetting';
+import {onLeaveChat} from '../../../hooks/chat/onLeaveChat';
 import {fetchMessageThunk} from '../../../redux/thunk/messageThunk';
-import useHideTabBar from '../../../hooks/useHideTabBar';
+import useHideTabBar from '../../../hooks/common/useHideTabBar';
 import {
   setActiveChatRoom,
   applyMessagePreview,

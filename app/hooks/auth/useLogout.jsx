@@ -3,8 +3,9 @@ import * as KakaoLogin from '@react-native-seoul/kakao-login';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch} from 'react-redux';
 import {resetAuthState} from '../redux/slices/authSlice';
+import { deleteFcmToken } from '../../notification/requestNotificationPermission';
 
-import {deleteLoginInfo} from '../../../utils/storage';
+import {deleteLoginInfo} from '../../utils/storage';
 
 export const useLogout = () => {
   const navigation = useNavigation();
@@ -13,10 +14,8 @@ export const useLogout = () => {
   const logout = async () => {
     try {
       await KakaoLogin.logout(); // ✅ 토큰 삭제
+      await deleteFcmToken();
       deleteLoginInfo();
-      //   await removeToken();
-      //   //   await removeHasFamily();
-      //   //   dispatch(resetAuthState());
 
       navigation.reset({
         index: 0,

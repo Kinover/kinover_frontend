@@ -5,9 +5,9 @@ import {useDispatch, useSelector} from 'react-redux';
 import {
   fetchMoreMessagesThunk,
   fetchMessageThunk,
-} from '../redux/thunk/messageThunk';
-import {getToken} from '../utils/storage';
-import {addMessage} from '../redux/slices/messageSlice';
+} from '../../redux/thunk/messageThunk';
+import {getToken} from '../../utils/storage';
+import {addMessage} from '../../redux/slices/messageSlice';
 
 export default function useChatRoomScreen(chatRoom, user, isKino) {
   const flatListRef = useRef(null);

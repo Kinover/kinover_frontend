@@ -6,7 +6,7 @@ import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../utils/responsive';
+} from '../../utils/responsive';
 
 export default function useHeaderOptions({
   isFullImageMode,

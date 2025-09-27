@@ -5,31 +5,36 @@ import {
   TouchableOpacity,
   StyleSheet,
   FlatList,
-  PermissionsAndroid,
   Platform,
   Dimensions,
   SafeAreaView,
   Text,
   Image,
 } from 'react-native';
-import {SlideInUp} from 'react-native-reanimated';
-import {CameraRoll} from '@react-native-camera-roll/camera-roll';
+import FastImage from 'react-native-fast-image';
+import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
 import uuid from 'react-native-uuid';
+
 import {getPresignedUrls, uploadImageToS3} from '../../../../api/imageUrlApi';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
   getResponsiveIconSize,
 } from '../../../../utils/responsive';
-import RNFS from 'react-native-fs';
-import FastImage from 'react-native-fast-image';
-import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
+
+// ✅ 유틸 import
+import {convertPhUriToFileUri} from '../../../../utils/photo/photoUriConverter';
+import {
+  getSelectOrder,
+  toggleSelectImage,
+} from '../../../../utils/photo/selection';
+import {loadGalleryPhotos} from '../../../../utils/photo/gallery';
 
 // ====== ✅ 격자 계산 상수 ======
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const NUM_COLUMNS = 3; // ▶ 열 개수(원하면 3/5로 조정)
-const GAP = getResponsiveWidth(2); // ▶ 이미지 사이 간격
-const PADDING_H = getResponsiveWidth(2); // ▶ 좌우 패딩
+const NUM_COLUMNS = 3;
+const GAP = getResponsiveWidth(2);
+const PADDING_H = getResponsiveWidth(2);
 const IMAGE_SIZE =
   (SCREEN_WIDTH - PADDING_H * 2 - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
 // =================================
@@ -55,38 +60,16 @@ export default function ChatInput({
   const [selectedImages, setSelectedImages] = useState([]);
   const inputRef = useRef(null);
 
-  const requestPermission = async () => {
-    if (!enableMediaPicker) return false;
-    if (Platform.OS === 'android') {
-      const granted = await PermissionsAndroid.request(
-        Platform.Version >= 33
-          ? PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES
-          : PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
-      );
-      return granted === PermissionsAndroid.RESULTS.GRANTED;
-    }
-    return true;
-  };
-
+  // ===== 갤러리 불러오기 (유틸 사용)
   const loadPhotos = async (after = null) => {
     if (!enableMediaPicker) return;
-    const hasPermission = await requestPermission();
-    if (!hasPermission) return;
-
-    try {
-      const res = await CameraRoll.getPhotos({
-        first: PAGE_SIZE,
-        assetType: 'Photos',
-        ...(after ? {after} : {}),
-      });
-
-      const photoData = res.edges.map(edge => edge.node.image);
-      setPhotos(prev => (after ? [...prev, ...photoData] : photoData));
-      setEndCursor(res.page_info?.end_cursor ?? null);
-      setHasNextPage(!!res.page_info?.has_next_page);
-    } catch (err) {
-      console.log('❌ getPhotos 실패:', err);
-    }
+    const {photos: newPhotos, endCursor, hasNextPage} = await loadGalleryPhotos(
+      after,
+      PAGE_SIZE,
+    );
+    setPhotos(prev => (after ? [...prev, ...newPhotos] : newPhotos));
+    setEndCursor(endCursor);
+    setHasNextPage(hasNextPage);
   };
 
   useEffect(() => {
@@ -113,6 +96,7 @@ export default function ChatInput({
     setIsRefreshing(false);
   };
 
+  // ===== 메시지 전송
   const handleSend = async () => {
     const socket = socketRef?.current;
     if (!socket || socket.readyState !== 1) {
@@ -170,39 +154,16 @@ export default function ChatInput({
     setShowGallery(prev => !prev);
   };
 
-  const convertPhUriToFileUri = async (phUri, index) => {
-    const destPath = `${
-      RNFS.TemporaryDirectoryPath
-    }photo_${Date.now()}_${index}.jpg`;
-    try {
-      await RNFS.copyAssetsFileIOS(phUri, destPath, 0, 0);
-      return 'file://' + destPath;
-    } catch (err) {
-      console.error('📛 ph:// 변환 실패:', err.message);
-      return null;
-    }
-  };
-
-  const toggleSelectImage = uri => {
-    if (selectedImages.includes(uri)) {
-      setSelectedImages(prev => prev.filter(img => img !== uri));
-    } else {
-      setSelectedImages(prev => [...prev, uri]);
-    }
-  };
-
-  // ✅ 선택 순서(1부터) 반환, 미선택이면 null
-  const getSelectOrder = uri => {
-    const idx = selectedImages.indexOf(uri);
-    return idx === -1 ? null : idx + 1;
+  const handleToggleImage = uri => {
+    setSelectedImages(prev => toggleSelectImage(prev, uri));
   };
 
   const renderPhoto = ({item}) => {
     const isSelected = selectedImages.includes(item.uri);
-    const order = getSelectOrder(item.uri);
+    const order = getSelectOrder(selectedImages, item.uri);
 
     return (
-      <TouchableOpacity onPress={() => toggleSelectImage(item.uri)}>
+      <TouchableOpacity onPress={() => handleToggleImage(item.uri)}>
         <View style={styles.tile}>
           <Image source={{uri: item.uri}} style={styles.tileImage} />
           {isSelected && <View style={styles.tileSelectedOverlay} />}
@@ -268,7 +229,7 @@ export default function ChatInput({
       {/* 갤러리 (무한 스크롤 & 당겨서 새로고침) */}
       {enableMediaPicker && (
         <Animated.View
-          key={showGallery ? 'open' : 'close'} // 상태 변화 감지
+          key={showGallery ? 'open' : 'close'}
           entering={showGallery ? SlideInDown.duration(150) : undefined}
           exiting={SlideOutDown.duration(50)}
           style={[
@@ -345,8 +306,6 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   clearIcon: {width: getResponsiveWidth(18), height: getResponsiveWidth(18)},
-
-  // ====== ✅ 격자(그리드) 스타일 ======
   galleryContainer: {
     maxHeight: getResponsiveHeight(300),
     backgroundColor: '#fff',

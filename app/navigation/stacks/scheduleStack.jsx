@@ -9,7 +9,7 @@ import {
 } from '../../utils/responsive';
 import {RenderHeaderHome} from '../tabHeaderHelpers';
 import SettingScreen from '../../screens/home/setting/settingScreen';
-import NotificationScreen from '../../screens/home/notification/notificationScreen';
+import NotificationScreen from '../../screens/notification/notificationScreen';
 import {RenderGoBackButton} from '../tabHeaderHelpers';
 import NotificationSettingScreen from '../../screens/home/setting/notificationSettingScreen';
 

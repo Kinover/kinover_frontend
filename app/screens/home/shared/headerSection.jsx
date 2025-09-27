@@ -15,43 +15,64 @@ import {
   getResponsiveWidth,
 } from '../../../utils/responsive';
 import {useNavigation} from '@react-navigation/native';
+const AVATAR = getResponsiveIconSize(110);
 
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
+
+const getEmotionImage = emotion => {
+  switch (emotion) {
+    case 'ANNOYED':
+      return require('../../../assets/state/1.png');
+    case 'WORRIED':
+      return require('../../../assets/state/2.png');
+    case 'DEPRESSED':
+      return require('../../../assets/state/3.png');
+    case 'SORRY':
+      return require('../../../assets/state/4.png');
+    case 'TIRED':
+      return require('../../../assets/state/5.png');
+    case 'NEUTRAL':
+      return require('../../../assets/state/6.png');
+    case 'HAPPY':
+      return require('../../../assets/state/7.png');
+    case 'EXCITED':
+      return require('../../../assets/state/8.png');
+    default:
+      return null;
+  }
+};
 
 export default function HeaderSection({user, onUserPress}) {
   const navigation = useNavigation();
 
-  const getEmotionImage = emotion => {
-    switch (emotion) {
-      case 'ANNOYED':
-        return require('../../../assets/state/1.png');
-      case 'WORRIED':
-        return require('../../../assets/state/2.png');
-      case 'DEPRESSED':
-        return require('../../../assets/state/3.png');
-      case 'SORRY':
-        return require('../../../assets/state/4.png');
-      case 'TIRED':
-        return require('../../../assets/state/5.png');
-      case 'NEUTRAL':
-        return require('../../../assets/state/6.png');
-      case 'HAPPY':
-        return require('../../../assets/state/7.png');
-      case 'EXCITED':
-        return require('../../../assets/state/8.png');
-      default:
-        return require('../../../assets/state/6.png');
+  // ✅ 24시간 내 감정만 표시
+  let finalEmotion = user?.emotion;
+  if (!user?.emotionUpdatedAt) {
+    finalEmotion = null;
+  } else {
+    const updatedTime = new Date(user.emotionUpdatedAt).getTime();
+    if (!Number.isNaN(updatedTime)) {
+      const now = Date.now();
+      const diff = now - updatedTime;
+      if (diff > 24 * 60 * 60 * 1000) {
+        finalEmotion = null;
+      }
+    } else {
+      finalEmotion = null;
     }
-  };
+  }
 
-  const emotionImage = getEmotionImage(user.emotion);
+  const emotionImage = finalEmotion ? getEmotionImage(finalEmotion) : null;
 
   return (
     <View style={styles.headerContainer}>
       <View style={styles.imageWrapper}>
-        {emotionImage && (
+        {/* 감정 이미지 (배경) */}
+        {!!emotionImage && (
           <Image source={emotionImage} style={styles.emotionImage} />
         )}
+
+        {/* 프로필 이미지 */}
         <TouchableOpacity onPress={() => navigation.navigate('감정상태화면')}>
           <Image
             source={
@@ -63,16 +84,24 @@ export default function HeaderSection({user, onUserPress}) {
                   }
                 : require('../../../assets/images/default.png')
             }
-            style={styles.profileImage}
+            style={[
+              styles.profileImage,
+              emotionImage
+                ? styles.profileImageWithEmotion
+                : styles.profileImageWithoutEmotion,
+            ]}
             resizeMode="cover"
           />
         </TouchableOpacity>
       </View>
 
+      {/* 배경 박스 */}
       <TouchableOpacity
         onPress={() => onUserPress(user)}
         style={styles.headerBox}
       />
+
+      {/* 이름 / 특징 */}
       <Text style={styles.userNameHeader}>{user.name}</Text>
       <Text style={styles.trait}>
         {user?.trait || '이 사람을 한마디로 표현한다면?'}
@@ -88,7 +117,7 @@ const styles = StyleSheet.create({
     marginTop:
       Platform.OS === 'android'
         ? -getResponsiveHeight(-25)
-        : getResponsiveHeight(25),
+        : getResponsiveHeight(0),
     marginBottom:
       Platform.OS === 'android'
         ? getResponsiveHeight(20)
@@ -112,23 +141,31 @@ const styles = StyleSheet.create({
   },
   imageWrapper: {
     position: 'relative',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     marginTop: getResponsiveHeight(40),
+    width: AVATAR * 1.25,
+    height: AVATAR * 1.25,
   },
   emotionImage: {
     position: 'absolute',
-    width: getResponsiveIconSize(160),
-    height: getResponsiveIconSize(160),
+    width: AVATAR * 1.55,
+    height: AVATAR * 1.55,
     resizeMode: 'contain',
-    top: -getResponsiveHeight(65),
+    bottom: 0,
     zIndex: 0,
   },
   profileImage: {
-    width: getResponsiveIconSize(94),
-    height: getResponsiveIconSize(94),
-    borderRadius: getResponsiveWidth(47),
+    borderRadius: 999,
     zIndex: 1,
+  },
+  profileImageWithEmotion: {
+    width: AVATAR,
+    height: AVATAR,
+  },
+  profileImageWithoutEmotion: {
+    width: AVATAR * 1.35,
+    height: AVATAR * 1.35,
   },
   userNameHeader: {
     fontFamily: 'Pretendard-Medium',

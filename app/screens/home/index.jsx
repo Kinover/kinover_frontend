@@ -8,7 +8,7 @@ import {
   requestNotificationPermission,
   getFcmTokenAndSend,
   handleNotificationListeners,
-} from './notification/requestNotificationPermission';
+} from '../../utils/notification/requestNotificationPermission';
 
 import FamilyCodeModal from './modal/familyCodeModal';
 import UserBottomSheetModal from './shared/userBottomSheet';
@@ -17,14 +17,15 @@ import {fetchFamilyThunk} from '../../redux/thunk/familyThunk';
 import {fetchFamilyUserListThunk} from '../../redux/thunk/familyUserThunk';
 import {modifyUserThunk} from '../../redux/thunk/userThunk';
 
-import useWebSocketStatus from '../../hooks/useWebSocketStatus';
-import useFamilyStatusSocket from '../../hooks/useFamilyStatusSocket';
+import useWebSocketStatus from '../../hooks/family/useWebSocketStatus';
+import useFamilyStatusSocket from '../../hooks/family/useFamilyStatusSocket';
 
 import {getResponsiveWidth, getResponsiveHeight} from '../../utils/responsive';
 
 // 컴포넌트 분리
 import HeaderSection from './shared/headerSection';
 import MemberGridSection from './shared/memberGridSection';
+import YellowSpinner from '../../components/common/yellowSpinner';
 
 export default function HomeScreen() {
   const dispatch = useDispatch();
@@ -41,6 +42,11 @@ export default function HomeScreen() {
 
   const [isVisible, setIsVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+
+  const familyLoaded = !!family?.familyId;
+  const membersLoaded = familyUserList.length > 0;
+
+  const isLoading = !familyLoaded || !membersLoaded;
 
   const familyMembers = familyUserList.filter(m => m.userId !== user.userId);
 
@@ -106,7 +112,16 @@ export default function HomeScreen() {
     setSelectedUser(null);
   };
 
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <YellowSpinner />
+      </SafeAreaView>
+    );
+  }
+
   return (
+    
     <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -163,5 +178,12 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: getResponsiveWidth(600),
     borderTopRightRadius: getResponsiveWidth(600),
     zIndex: -1,
+  },
+
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: '#FFC84D', // 기존 배경색
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

@@ -13,8 +13,6 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
-  TouchableWithoutFeedback,
-  TouchableWithoutFeedbackComponent,
 } from 'react-native';
 import Animated, {ZoomIn, ZoomOut} from 'react-native-reanimated';
 import {
@@ -26,7 +24,9 @@ import {
 import {useSelector} from 'react-redux';
 import {getPresignedUrls, uploadImageToS3} from '../../../api/imageUrlApi';
 import {uploadPostApi} from '../../../api/uploadPostApi';
-import useHideTabBar from '../../../hooks/useHideTabBar';
+import useHideTabBar from '../../../hooks/common/useHideTabBar';
+import CustomModal from '../../../components/common/customModal';
+import ToastModal from '../../../components/common/toastModal';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -53,6 +53,9 @@ export default function CreatePostPage({navigation, route}) {
   const [modalVisible, setModalVisible] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  // ✅ 업로드 완료 모달
+  const [successModalVisible, setSuccessModalVisible] = useState(false);
+
   const categoryId = selectedCategory?.categoryId;
   const categoryTitle = selectedCategory?.title ?? '';
 
@@ -73,15 +76,18 @@ export default function CreatePostPage({navigation, route}) {
       if (!Array.isArray(selectedImages) || selectedImages.length === 0) {
         throw new Error('이미지를 선택해주세요.');
       }
+
       const now = Date.now();
       const fileNames = selectedImages.map((uri, i) => {
         const ext = (uri?.split('.').pop() || 'jpg').toLowerCase();
         return `img_${now}_${i}_${Math.floor(Math.random() * 1000)}.${ext}`;
       });
+
       const presignedUrls = await getPresignedUrls(fileNames);
       for (let i = 0; i < selectedImages.length; i++) {
         await uploadImageToS3(presignedUrls[i], selectedImages[i]);
       }
+
       const postTypes = selectedImages.map(getMediaTypeFromUri);
       const payload = {
         authorId: user.userId,
@@ -93,7 +99,9 @@ export default function CreatePostPage({navigation, route}) {
         content: text,
       };
       await uploadPostApi(payload);
-      navigation.navigate('추억');
+
+      // ✅ 업로드 성공 → 모달 띄우기
+      setSuccessModalVisible(true);
     } catch (err) {
       console.error('🚨 업로드 실패:', err);
     } finally {
@@ -178,15 +186,6 @@ export default function CreatePostPage({navigation, route}) {
                   }}>
                   <Image source={{uri: item}} style={styles.previewImage} />
                 </Pressable>
-                {/* 삭제 */}
-                {/* <TouchableOpacity
-                  style={styles.removeButton}
-                  activeOpacity={0.8}
-                  onPress={() => handleRemoveImage(item)}>
-                  <Image
-                    source={require('../../../assets/images/clearBt1.png')}
-                    style={{width: '100%', height: '100%'}}></Image>
-                </TouchableOpacity> */}
               </Animated.View>
             )}
           />
@@ -194,9 +193,7 @@ export default function CreatePostPage({navigation, route}) {
 
         {/* 풀스크린 뷰어 */}
         <Modal visible={modalVisible} transparent={true} animationType="fade">
-          <View
-            style={styles.modalOverlay}
-            onPress={() => setModalVisible(false)}>
+          <View style={styles.modalOverlay}>
             <FlatList
               data={selectedImages}
               horizontal
@@ -231,18 +228,28 @@ export default function CreatePostPage({navigation, route}) {
             <Pressable
               style={styles.modalCloseArea}
               onPress={() => setModalVisible(false)}
-              hitSlop={{top: 15, bottom: 15, left: 15, right: 15}} // ✅ 터치 범위 확장
-            >
+              hitSlop={{top: 15, bottom: 15, left: 15, right: 15}}>
               <Image
                 source={require('../../../assets/images/clearBt1.png')}
                 style={{
                   width: getResponsiveWidth(22.5),
                   height: getResponsiveHeight(22.5),
                   resizeMode: 'contain',
-                }}></Image>
+                }}
+              />
             </Pressable>
           </View>
         </Modal>
+
+        {/* 업로드 완료 모달 */}
+        <ToastModal
+          message="게시글을 업로드했어요"
+          visible={successModalVisible}
+          onClose={() => {
+            setSuccessModalVisible(false);
+            navigation.navigate('추억');
+          }}
+        />
       </View>
     </KeyboardAvoidingView>
   );
@@ -281,21 +288,6 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(110),
     borderRadius: 12,
   },
-  removeButton: {
-    position: 'absolute',
-    top: 6,
-    right: 6,
-    borderRadius: 50,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  removeButtonText: {
-    color: 'white',
-    fontSize: getResponsiveFontSize(14),
-    fontWeight: 'bold',
-  },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
@@ -314,8 +306,6 @@ const styles = StyleSheet.create({
       Platform.OS === 'ios'
         ? getResponsiveFontSize(20)
         : getResponsiveFontSize(18),
-    textAlign: 'center',
-    textAlignVertical: 'center',
     fontFamily: 'Pretendard-Regular',
     fontWeight: 'semibold',
     color: '#101010',
@@ -352,11 +342,6 @@ const styles = StyleSheet.create({
     width: getResponsiveIconSize(25),
     height: getResponsiveIconSize(25),
   },
-  modalCloseText: {
-    color: '#fff',
-    fontSize: 26,
-    fontWeight: 'bold',
-  },
   imageCountBadge: {
     position: 'absolute',
     top:
@@ -371,5 +356,29 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: getResponsiveFontSize(15),
     fontWeight: '600',
+  },
+  successOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  successBox: {
+    backgroundColor: 'white',
+    paddingVertical: 20,
+    paddingHorizontal: 30,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: '#F8B500',
+  },
+  successText: {
+    fontSize: getResponsiveFontSize(16),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#101010',
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: getResponsiveHeight(10),
   },
 });

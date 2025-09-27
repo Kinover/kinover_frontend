@@ -1,4 +1,5 @@
-import React, {useEffect, useRef, useMemo} from 'react';
+// PostPage.jsx
+import React, {useEffect, useRef, useMemo, useState} from 'react';
 import {
   Animated,
   Dimensions,
@@ -9,16 +10,16 @@ import {
   View,
   Image,
 } from 'react-native';
-
 import {useNavigation} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {fetchPostByIdThunk} from '../../../redux/thunk/memoryThunk';
+
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../../utils/responsive';
-import useHideTabBar from '../../../hooks/useHideTabBar';
+import useHideTabBar from '../../../hooks/common/useHideTabBar';
 import ImageDeleteModal from '../modules/post/deleteOptionModal';
 import CommentSection from '../modules/post/components/commentSection';
 import DescriptionSection from '../modules/post/components/descriptionSection';
@@ -26,9 +27,8 @@ import usePostPageViewModel from '../hooks/usePostPageViewModel';
 import {useDispatch, useSelector} from 'react-redux';
 import {deleteCommentThunk} from '../../../redux/thunk/commentThunk';
 import ImageCarousel from '../modules/post/components/imageCarousel';
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const SCREEN_HEIGHT = Dimensions.get('window').height;
+import ToastModal from '../../../components/common/toastModal';
+import CustomModal from '../../../components/common/customModal';
 
 export default function PostPage({route}) {
   const dispatch = useDispatch();
@@ -79,23 +79,14 @@ export default function PostPage({route}) {
 
   useHideTabBar();
 
-  // 🔥 삭제 옵션 애니메이션
   const deleteAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (vm.showDeleteOptions) {
-      Animated.timing(deleteAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
-    } else {
-      Animated.timing(deleteAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }).start();
-    }
+    Animated.timing(deleteAnim, {
+      toValue: vm.showDeleteOptions ? 1 : 0,
+      duration: vm.showDeleteOptions ? 200 : 150,
+      useNativeDriver: true,
+    }).start();
   }, [vm.showDeleteOptions]);
 
   const deleteOptionsStyle = {
@@ -104,19 +95,40 @@ export default function PostPage({route}) {
       {
         translateY: deleteAnim.interpolate({
           inputRange: [0, 1],
-          outputRange: [-10, 0], // 위에서 내려오기
+          outputRange: [-10, 0],
         }),
       },
       {
         scale: deleteAnim.interpolate({
           inputRange: [0, 1],
-          outputRange: [0.95, 1], // 작게 시작 → 커지기
+          outputRange: [0.95, 1],
         }),
       },
     ],
   };
 
-  // 상단 헤더 구성
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [showCommentSection, setShowCommentSection] = useState(false);
+
+  useEffect(() => {
+    if (vm.commentIndex) {
+      setTimeout(() => {
+        setShowCommentSection(true);
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }).start();
+      }, 100);
+    } else {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => setShowCommentSection(false));
+    }
+  }, [vm.commentIndex]);
+
   useEffect(() => {
     const matchedCategory = categoryList.find(
       cat => cat.categoryId === memory?.categoryId,
@@ -140,9 +152,6 @@ export default function PostPage({route}) {
     });
   }, [memory, categoryList]);
 
-  const handleDeleteComment = commentId => {
-    dispatch(deleteCommentThunk({commentId, postId}));
-  };
 
   if (!memory) return <SafeAreaView style={styles.container} />;
 
@@ -174,8 +183,22 @@ export default function PostPage({route}) {
         </View>
       )}
 
-      {vm.commentIndex && !vm.isImageFullScreen && (
-        <View style={styles.commentWrapper}>
+      {showCommentSection && !vm.isImageFullScreen && (
+        <Animated.View
+          style={[
+            styles.commentWrapper,
+            {
+              opacity: fadeAnim,
+              transform: [
+                {
+                  translateY: fadeAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [20, 0],
+                  }),
+                },
+              ],
+            },
+          ]}>
           <CommentSection
             commentList={vm.commentList}
             commentText={vm.commentText}
@@ -183,20 +206,42 @@ export default function PostPage({route}) {
             onSubmitComment={vm.handleSendComment}
             onCloseComment={() => vm.setCommentIndex(false)}
             user={vm.user}
-            onDeleteComment={handleDeleteComment}
+            onDeleteComment={commentId => vm.openDeleteCommentModal(commentId)}
           />
-        </View>
+        </Animated.View>
       )}
 
+      {vm.commentDeleteModalVisible && (
+        <CustomModal
+          visible={vm.commentDeleteModalVisible}
+          onClose={() => vm.setCommentDeleteModalVisible(false)}
+          onConfirm={vm.confirmDeleteComment}
+          title="댓글을 삭제할까요?"
+          closeText="취소"
+          confirmText="삭제"
+          buttonBottomStyle={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            gap: getResponsiveWidth(10),
+          }}
+        />
+      )}
       {vm.deleteModalVisible && (
         <ImageDeleteModal
           visible={vm.deleteModalVisible}
           onClose={() => vm.setDeleteModalVisible(false)}
-          onConfirm={() =>
-            vm.deleteTarget === '게시물'
-              ? vm.handleDeletePost()
-              : vm.handleDeleteImage()
-          }>
+          onConfirm={async () => {
+            vm.setDeleteModalVisible(false);
+            try {
+              if (vm.deleteTarget === '게시물') {
+                await vm.handleDeletePost();
+              } else {
+                await vm.handleDeleteImage();
+              }
+            } catch (e) {
+              console.error('삭제 실패:', e);
+            }
+          }}>
           <Text style={styles.modalTitle}>
             {vm.deleteTarget === '게시물'
               ? '게시물을 삭제할까요?'
@@ -214,25 +259,30 @@ export default function PostPage({route}) {
         </ImageDeleteModal>
       )}
 
-      {
-        <Animated.View style={[styles.deleteOptions, deleteOptionsStyle]}>
-          {['게시물', '사진'].map(option => (
-            <TouchableOpacity
-              key={option}
-              style={styles.deleteOptionButton}
-              onPress={() => {
-                vm.setShowDeleteOptions(false);
-                vm.setDeleteTarget(option);
-                vm.setDeleteModalVisible(true);
-              }}>
-              <Text style={styles.deleteOptionText}>
-                {option === '게시물' ? '게시물 전체 삭제' : '이 사진만 삭제'}
-              </Text>
-            </TouchableOpacity>
-          ))}
-          <View style={styles.divider} />
-        </Animated.View>
-      }
+      <Animated.View style={[styles.deleteOptions, deleteOptionsStyle]}>
+        {['게시물', '사진'].map(option => (
+          <TouchableOpacity
+            key={option}
+            style={styles.deleteOptionButton}
+            onPress={() => {
+              vm.setShowDeleteOptions(false);
+              vm.setDeleteTarget(option);
+              vm.setDeleteModalVisible(true);
+            }}>
+            <Text style={styles.deleteOptionText}>
+              {option === '게시물' ? '게시물 전체 삭제' : '이 사진만 삭제'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+        <View style={styles.divider} />
+      </Animated.View>
+
+      <ToastModal
+        visible={vm.toastVisible}
+        message={vm.toastMessage}
+        onClose={() => vm.setToastVisible(false)}
+        duration={1500}
+      />
     </SafeAreaView>
   );
 }
@@ -240,36 +290,37 @@ export default function PostPage({route}) {
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#F9F9F9'},
   headerTitle: {
-    fontSize: Platform.OS==='ios'?getResponsiveFontSize(20):getResponsiveFontSize(18),
+    fontSize:
+      Platform.OS === 'ios'
+        ? getResponsiveFontSize(20)
+        : getResponsiveFontSize(18),
     textAlign: 'center',
-    textAlignVertical: 'center',
     fontFamily: 'Pretendard-Regular',
-    fontWeight:'semibold',
+    fontWeight: '600',
     color: '#101010',
-    lineHeight:getResponsiveHeight(30),
+    lineHeight: getResponsiveHeight(30),
   },
   descriptionWrapper: {
-    position: 'relative',
-    alignSelf: 'flex-end',
     width: '100%',
-    height: Platform.OS==='ios'?'22%':'24%',
+    height: Platform.OS === 'ios' ? '22%' : '24%',
     zIndex: 1,
   },
   commentWrapper: {
-    position: 'relative',
-    alignSelf: 'flex-end',
+    position: 'absolute',
+    bottom: 0,
     width: '100%',
-    height: Platform.OS === 'android' ? '56.5%' : '56%',
-    zIndex: 1,
+    height: Platform.OS === 'android' ? '56.5%' : '59%',
+    backgroundColor: '#F9F9F9',
+    zIndex: 2,
   },
   deleteOptions: {
     position: 'absolute',
     top: getResponsiveHeight(10),
     right: getResponsiveWidth(20),
-    backgroundColor: 'rgba(220, 220, 220, 0.86)',
+    backgroundColor: 'rgba(220,220,220,0.86)',
     borderRadius: 7,
     zIndex: 11,
-    paddingHorizontal:5,
+    paddingHorizontal: 5,
   },
   deleteOptionButton: {
     paddingVertical: getResponsiveHeight(10),
@@ -279,10 +330,8 @@ const styles = StyleSheet.create({
     color: 'black',
     fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-Light',
-    textAlign: 'center',
   },
   divider: {
-    bottom: '50%',
     height: 0.5,
     backgroundColor: 'gray',
   },
@@ -295,8 +344,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontFamily: 'Pretendard-SemiBold',
     textAlign: 'center',
-    marginTop: getResponsiveHeight(10),
-    marginBottom: getResponsiveHeight(10),
+    marginVertical: getResponsiveHeight(10),
   },
   headerIcon: {
     width: getResponsiveWidth(25),

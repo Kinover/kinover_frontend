@@ -1,8 +1,12 @@
 import React from 'react';
 import {StyleSheet} from 'react-native';
-import CustomModal from '../../../../components/customModal';
-import {getResponsiveFontSize,getResponsiveHeight,getResponsiveWidth,getResponsiveIconSize} from '../../../../utils/responsive';
-
+import CustomModal from '../../../../components/common/customModal';
+import {
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveWidth,
+  getResponsiveIconSize,
+} from '../../../../utils/responsive';
 
 export default function ImageDeleteModal({
   visible,
@@ -10,6 +14,8 @@ export default function ImageDeleteModal({
   onConfirm,
   children,
 }) {
+
+  if(!visible) return null;
   return (
     <CustomModal
       visible={visible}
@@ -18,8 +24,7 @@ export default function ImageDeleteModal({
       closeText="취소"
       confirmText="삭제"
       buttonBottomStyle={styles.buttonRow}
-      modalBoxStyle={styles.modalBox}
-    >
+      modalBoxStyle={[styles.modalBox]}>
       {children}
     </CustomModal>
   );
@@ -27,9 +32,10 @@ export default function ImageDeleteModal({
 
 const styles = StyleSheet.create({
   modalBox: {
-    width: getResponsiveWidth(320), // 👉 예: iPhone 14 기준 약 77%
+    width: getResponsiveWidth(320),
     maxWidth: '90%',
     alignSelf: 'center',
+    position: 'relative', // ✅ zIndex 적용되도록 position 추가
   },
   buttonRow: {
     flexDirection: 'row',

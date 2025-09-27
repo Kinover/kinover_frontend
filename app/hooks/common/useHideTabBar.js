@@ -5,7 +5,7 @@ import {
   getResponsiveIconSize,
   getResponsiveWidth,
   getResponsiveHeight,
-} from '../utils/responsive';
+} from '../../utils/responsive';
 
 // ✅ TabNavigator를 찾는 유틸
 function findTabNavigator(nav) {

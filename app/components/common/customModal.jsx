@@ -14,8 +14,7 @@ import {
   getResponsiveWidth,
   getResponsiveFontSize,
   getResponsiveIconSize,
-} from '../utils/responsive';
-
+} from '../../utils/responsive';
 export default function CustomModal({
   visible,
   onClose,
@@ -33,9 +32,12 @@ export default function CustomModal({
   showTrashButton = false,
   onTrashPress,
   showCloseButton = false,
-  title,        // ✅ 새로 추가
-  subText,      // ✅ 새로 추가
+  title,
+  subText,
+  titleImage, // ✅ 새로 추가
+  titleImageStyle, // ✅ 커스텀 스타일도 지원
 }) {
+  if (!visible) return null;
   return (
     <Modal
       animationType="fade"
@@ -60,7 +62,6 @@ export default function CustomModal({
         blurAmount={2}
         reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.4)"
       />
-
       <View style={styles.overlay}>
         <View style={[styles.modalBox, modalBoxStyle]}>
           {/* 상단 버튼 */}
@@ -78,13 +79,12 @@ export default function CustomModal({
                 style={styles.trashButton}
                 hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
                 <Image
-                  source={require('../assets/images/trash.png')}
+                  source={require('../../assets/images/trash.png')}
                   style={styles.trashIcon}
                   resizeMode="contain"
                 />
               </TouchableOpacity>
             )}
-
             {showCloseButton && (
               <TouchableOpacity
                 style={styles.closeXButton}
@@ -95,19 +95,25 @@ export default function CustomModal({
                     width: getResponsiveIconSize(10),
                     height: getResponsiveIconSize(10),
                   }}
-                  source={require('../assets/images/close-yellow.png')}
+                  source={require('../../assets/images/close-yellow.png')}
                 />
               </TouchableOpacity>
             )}
           </View>
 
+          {/* ✅ 타이틀 이미지 */}
+          {titleImage && (
+            <Image
+              source={titleImage}
+              style={[styles.titleImage, titleImageStyle]}
+              resizeMode="contain"
+            />
+          )}
           {/* ✅ 기본 title / subText */}
           {title && <Text style={styles.modalTitle}>{title}</Text>}
           {subText && <Text style={styles.modalSubText}>{subText}</Text>}
-
           {/* children 영역 */}
           <View style={[styles.contentWrapper, contentStyle]}>{children}</View>
-
           {/* 버튼 */}
           <View style={[styles.buttonBottom, buttonBottomStyle]}>
             {closeText && (
@@ -119,7 +125,6 @@ export default function CustomModal({
                 </Text>
               </TouchableOpacity>
             )}
-
             {onConfirm && (
               <TouchableOpacity
                 onPress={onConfirm}
@@ -135,13 +140,8 @@ export default function CustomModal({
     </Modal>
   );
 }
-
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  overlay: {flex: 1, justifyContent: 'center', alignItems: 'center'},
   modalBox: {
     position: 'relative',
     width:
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   },
   modalSubText: {
     textAlign: 'center',
-    color: '#6E6E6E',
+    color: '#999999',
     fontFamily: 'Pretendard-Regular',
     fontSize:
       Platform.OS === 'android'
@@ -188,9 +188,7 @@ const styles = StyleSheet.create({
     lineHeight: getResponsiveHeight(20),
     marginBottom: getResponsiveHeight(10),
   },
-  contentWrapper: {
-    marginBottom: 10,
-  },
+  contentWrapper: {marginBottom: 10},
   buttonBottom: {
     display: 'flex',
     flexDirection: 'column',
@@ -230,11 +228,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Regular',
     fontSize: getResponsiveFontSize(16),
   },
-  trashButton: {
-    padding: 4,
-  },
-  trashIcon: {
-    width: getResponsiveWidth(16),
-    height: getResponsiveHeight(16),
-  },
+  trashButton: {padding: 4},
+  trashIcon: {width: getResponsiveWidth(16), height: getResponsiveHeight(16)},
 });

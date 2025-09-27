@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
+  Image
 } from 'react-native';
 
 import axios from 'axios';
@@ -19,7 +20,7 @@ import {
   getResponsiveIconSize,
 } from '../../../../utils/responsive';
 import {fetchFamilyUserListThunk} from '../../../../redux/thunk/familyUserThunk';
-import useHideTabBar from '../../../../hooks/useHideTabBar';
+import useHideTabBar from '../../../../hooks/common/useHideTabBar';
 import FastImage from 'react-native-fast-image';
 
 export default function AddChatMemberScreen({navigation, route}) {
@@ -132,8 +133,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: 'white',
-    borderTopWidth: 3,
-    borderColor: '#D3D3D3',
+    borderTopWidth: 2,
+    borderColor: '#E5E5E5',
   },
   headerTitle: {
     fontSize: getResponsiveFontSize(18),

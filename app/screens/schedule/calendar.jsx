@@ -325,7 +325,7 @@ const styles = StyleSheet.create({
   monthText: {
     fontFamily: 'Pretendard-SemiBold',
     fontWeight: '700',
-    fontSize: Platform.OS === 'android' ?getResponsiveFontSize(21):getResponsiveFontSize(23),
+    fontSize: Platform.OS === 'android' ?getResponsiveFontSize(20):getResponsiveFontSize(21),
     color: '#1E1E1E',
     alignSelf: 'center',
     lineHeight: Platform.OS === 'android' ? 22 : 'auto',
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
   },
   toggleChip: {
     paddingVertical: getResponsiveHeight(4),
-    paddingHorizontal: getResponsiveWidth(12),
+    paddingHorizontal: getResponsiveWidth(10),
     alignItems: 'center',
     justifyContent: 'center',
     alignContent: 'center',
@@ -382,7 +382,7 @@ const styles = StyleSheet.create({
   },
   dayText: {
     textAlign: 'center',
-    fontSize: getResponsiveFontSize(16.5),
+    fontSize: getResponsiveFontSize(15.5),
     fontFamily: 'Pretendard-SemiBold',
     fontWeight: '700',
     color: '#444',
@@ -412,7 +412,7 @@ const styles = StyleSheet.create({
   },
 
   dateText: {
-    fontSize: getResponsiveFontSize(17),
+    fontSize: getResponsiveFontSize(15.5),
     fontFamily: 'Pretendard-Regular',
     color: '#111',
   },

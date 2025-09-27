@@ -6,6 +6,7 @@ import {useNavigation} from '@react-navigation/native';
 import {
   fetchCommentsThunk,
   createCommentThunk,
+  deleteCommentThunk,
 } from '../../../redux/thunk/commentThunk';
 import {
   deletePostThunk,
@@ -20,7 +21,6 @@ export default function usePostPageViewModel(memory) {
   const familyId = useSelector(state => state.family.familyId);
   const {commentList} = useSelector(state => state.comment);
 
-  // ✅ 안전 기본값(훅 내부 어디서도 null 접근 안 나게)
   const safePostId = memory?.postId ?? null;
   const safeImages = useMemo(
     () => memory?.imageUrls ?? [],
@@ -30,24 +30,32 @@ export default function usePostPageViewModel(memory) {
   const [commentText, setCommentText] = useState('');
   const [commentIndex, setCommentIndex] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [localImages, setLocalImages] = useState(safeImages); // ← 초기값도 안전
+  const [localImages, setLocalImages] = useState(safeImages);
 
   const [isImageFullScreen, setIsImageFullScreen] = useState(false);
   const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState('');
   const [showDeleteOptions, setShowDeleteOptions] = useState(false);
 
+  // ✅ 댓글 삭제 모달 상태 추가
+  const [commentDeleteModalVisible, setCommentDeleteModalVisible] =
+    useState(false);
+  const [commentToDelete, setCommentToDelete] = useState(null);
+
+  // ✅ 토스트 관련 상태
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
   // ✅ 메모리/이미지 변경 시 로컬 이미지 동기화
   useEffect(() => {
     setLocalImages(safeImages);
-    // 현재 인덱스가 범위를 넘어가면 보정
     setCurrentImageIndex(idx => {
       if (safeImages.length === 0) return 0;
       return Math.min(idx, safeImages.length - 1);
     });
   }, [safeImages]);
 
-  // ✅ 댓글 목록 가져오기 (postId 있을 때만)
+  // ✅ 댓글 목록 가져오기
   useEffect(() => {
     if (safePostId) {
       dispatch(fetchCommentsThunk(safePostId));
@@ -66,16 +74,44 @@ export default function usePostPageViewModel(memory) {
       }),
     );
     setCommentText('');
+    setToastMessage('댓글을 추가했어요');
+    setToastVisible(true);
   }, [commentText, dispatch, safePostId, user?.userId]);
+
+  const openDeleteCommentModal = useCallback(
+    commentId => {
+      setCommentToDelete(commentId);
+      setCommentDeleteModalVisible(true);
+    },
+    [setCommentToDelete, setCommentDeleteModalVisible],
+  );
+
+  const [isDeleting, setIsDeleting] = useState(false);
+
+const confirmDeleteComment = useCallback(async () => {
+  if (!commentToDelete || !safePostId || isDeleting) return;
+  setIsDeleting(true);
+  try {
+    await dispatch(deleteCommentThunk(commentToDelete, safePostId));
+    setToastMessage('댓글을 삭제했어요');
+    setToastVisible(true);
+  } catch (e) {
+    console.error('댓글 삭제 실패:', e);
+  } finally {
+    setCommentDeleteModalVisible(false);
+    setCommentToDelete(null);
+    setIsDeleting(false);
+  }
+}, [commentToDelete, safePostId, isDeleting, dispatch]);
+
 
   const handleDeletePost = useCallback(async () => {
     if (!safePostId || !familyId) return;
     try {
-      // ⚠️ thunk 시그니처가 (payloadObj) 형태라면 이렇게:
-      // await dispatch(deletePostThunk({postId: safePostId, familyId}));
-      // 만약 (postId, familyId) 시그니처라면 위 한 줄을 아래로 교체:
       await dispatch(deletePostThunk(safePostId, familyId));
       navigation.goBack();
+      setToastMessage('게시글이 삭제되었어요');
+      setToastVisible(true);
     } catch (error) {
       console.warn('게시글 삭제 실패:', error);
     }
@@ -86,28 +122,19 @@ export default function usePostPageViewModel(memory) {
 
     const targetImage = localImages[currentImageIndex];
     try {
-      // ⚠️ thunk 시그니처 확인: 보통 객체로 받게끔 만듭니다.
-      // await dispatch(
-      //   deletePostImageThunk({
-      //     postId: safePostId,
-      //     imageUrl: targetImage,
-      //     familyId,
-      //   }),
-      // );
-      // (시그니처가 (postId, imageUrl, familyId)면 위를 아래로 교체)
       await dispatch(deletePostImageThunk(safePostId, targetImage, familyId));
 
-      // 낙관적 업데이트
       const updated = localImages.filter((_, i) => i !== currentImageIndex);
       setLocalImages(updated);
+
       if (updated.length === 0) {
-        // 마지막 이미지 삭제되면 포스트도 삭제
         await handleDeletePost();
       } else {
-        // 인덱스 보정
         setCurrentImageIndex(idx =>
           idx >= updated.length ? Math.max(0, updated.length - 1) : idx,
         );
+        setToastMessage('이미지가 삭제되었어요');
+        setToastVisible(true);
       }
     } catch (e) {
       console.warn('이미지 삭제 실패:', e);
@@ -143,5 +170,17 @@ export default function usePostPageViewModel(memory) {
     handleSendComment,
     handleDeletePost,
     handleDeleteImage,
+
+    commentDeleteModalVisible,
+    setCommentDeleteModalVisible,
+    commentToDelete,
+    openDeleteCommentModal,
+    confirmDeleteComment,
+
+    // ✅ 토스트 상태 반환
+    toastVisible,
+    setToastVisible,
+    toastMessage,
+    setToastMessage,
   };
 }

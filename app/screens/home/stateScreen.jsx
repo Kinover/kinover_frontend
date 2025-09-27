@@ -13,7 +13,7 @@ import {
   getResponsiveWidth,
   getResponsiveFontSize,
 } from '../../utils/responsive';
-import useHideTabBar from '../../hooks/useHideTabBar';
+import useHideTabBar from '../../hooks/common/useHideTabBar';
 import {useDispatch, useSelector} from 'react-redux';
 import {modifyUserThunk} from '../../redux/thunk/userThunk';
 import {useNavigation} from '@react-navigation/native';

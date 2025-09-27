@@ -1,11 +1,19 @@
 import React, {useState} from 'react';
-import {View, Text, StyleSheet, TextInput, Platform} from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  Platform,
+  AppState,
+} from 'react-native';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
   getResponsiveWidth,
+  getResponsiveIconSize,
 } from '../../../utils/responsive';
-import CustomModal from '../../../components/customModal';
+import CustomModal from '../../../components/common/customModal';
 
 export default function DeleteAccountModal({visible, onClose, onConfirm}) {
   const [showConfirmInputModal, setShowConfirmInputModal] = useState(false);
@@ -45,6 +53,14 @@ export default function DeleteAccountModal({visible, onClose, onConfirm}) {
         closeTextStyle={[styles.modalText, {color: '#fff'}]}
         buttonBottomStyle={styles.modalButtonRow}
         title={'계정을 삭제할까요?'}
+        titleImage={require('../../../assets/icons/warning-light.png')} // 👈 추가
+        titleImageStyle={{
+          width: getResponsiveIconSize(50), // 문자열 ❌ → 숫자 ⭕
+          height: getResponsiveIconSize(50),
+          alignSelf: 'center',
+          borderRadius: 999,
+          marginVertical: getResponsiveHeight(5),
+        }}
         subText={'가족과의 모든 연결과 기록이 함께 사라집니다.'}></CustomModal>
 
       <CustomModal
@@ -58,7 +74,7 @@ export default function DeleteAccountModal({visible, onClose, onConfirm}) {
         confirmTextStyle={styles.modalText}
         closeTextStyle={[styles.modalText, {color: '#fff'}]}
         buttonBottomStyle={styles.modalButtonRow}
-        title={" 탈퇴 하시려면 아래에\n‘탈퇴합니다’를 입력해주세요"}>
+        title={' 탈퇴 하시려면 아래에\n‘탈퇴합니다’를 입력해주세요'}>
         <TextInput
           placeholder="탈퇴합니다"
           placeholderTextColor="#ccc"
@@ -88,7 +104,7 @@ const styles = StyleSheet.create({
   modalSubText: {
     textAlign: 'center',
     color: '#6E6E6E',
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: 'Pretendard-SemiBold',
     fontSize:
       Platform.OS === 'android'
         ? getResponsiveFontSize(15)

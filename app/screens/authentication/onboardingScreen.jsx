@@ -89,32 +89,32 @@ export default function OnboardingScreen() {
   const [currentPage, setCurrentPage] = useState(0);
   const flatListRef = useRef();
 
-  // const navigateToHome = () => {
-  //   navigation.reset({
-  //     routes: [
-  //       {
-  //         name: 'Tabs',
-  //         state: {
-  //           routes: [{name: '홈', state: {routes: [{name: '홈'}]}}],
-  //         },
-  //       },
-  //     ],
-  //   });
-  // };
-
-
   const navigateToHome = () => {
     navigation.reset({
       routes: [
         {
-          name: 'Auth',
+          name: 'Tabs',
           state: {
-            routes: [{name: '가족설정화면', state: {routes: [{name: '가족설정화면'}]}}],
+            routes: [{name: '홈', state: {routes: [{name: '홈'}]}}],
           },
         },
       ],
     });
   };
+
+
+  // const navigateToHome = () => {
+  //   navigation.reset({
+  //     routes: [
+  //       {
+  //         name: 'Auth',
+  //         state: {
+  //           routes: [{name: '가족설정화면', state: {routes: [{name: '가족설정화면'}]}}],
+  //         },
+  //       },
+  //     ],
+  //   });
+  // };
 
   const handleAutoLogin = async () => {
     try {

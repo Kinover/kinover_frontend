@@ -1,5 +1,5 @@
 import React from 'react';
-import CustomModal from '../../../components/customModal';
+import CustomModal from '../../../components/common/customModal';
 
 export default function KinoConfirmModal({visible, onConfirm, onClose}) {
   return (

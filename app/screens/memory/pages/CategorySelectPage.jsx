@@ -20,7 +20,7 @@ import {
   fetchCategoryThunk,
 } from '../../../redux/thunk/categoryThunk';
 import {v4 as uuidv4} from 'uuid';
-import useHideTabBar from '../../../hooks/useHideTabBar';
+import useHideTabBar from '../../../hooks/common/useHideTabBar';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 export default function CategorySelectPage({route}) {
