@@ -5,7 +5,7 @@ import 'react-native-gesture-handler'; // ✅ 가장 위
 import 'react-native-reanimated'; // ✅ 두 번째로 위
 import {AppRegistry} from 'react-native';
 import {name as appName} from './app.json';
-import {registerBackgroundMessageHandler } from './app/screens/home/notification/requestNotificationPermission';
+import {registerBackgroundMessageHandler } from './app/utils/notification/requestNotificationPermission';
 import MyApp from './app/_layout';
 
 registerBackgroundMessageHandler();

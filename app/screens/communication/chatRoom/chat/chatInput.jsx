@@ -15,6 +15,7 @@ import FastImage from 'react-native-fast-image';
 import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
 import uuid from 'react-native-uuid';
 
+
 import {getPresignedUrls, uploadImageToS3} from '../../../../api/imageUrlApi';
 import {
   getResponsiveWidth,
@@ -29,6 +30,7 @@ import {
   toggleSelectImage,
 } from '../../../../utils/photo/selection';
 import {loadGalleryPhotos} from '../../../../utils/photo/gallery';
+import formatDuration from '../../../../utils/photo/formatDuration';
 
 // ====== ✅ 격자 계산 상수 ======
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -63,10 +65,11 @@ export default function ChatInput({
   // ===== 갤러리 불러오기 (유틸 사용)
   const loadPhotos = async (after = null) => {
     if (!enableMediaPicker) return;
-    const {photos: newPhotos, endCursor, hasNextPage} = await loadGalleryPhotos(
-      after,
-      PAGE_SIZE,
-    );
+    const {
+      photos: newPhotos,
+      endCursor,
+      hasNextPage,
+    } = await loadGalleryPhotos(after, PAGE_SIZE);
     setPhotos(prev => (after ? [...prev, ...newPhotos] : newPhotos));
     setEndCursor(endCursor);
     setHasNextPage(hasNextPage);
@@ -161,11 +164,21 @@ export default function ChatInput({
   const renderPhoto = ({item}) => {
     const isSelected = selectedImages.includes(item.uri);
     const order = getSelectOrder(selectedImages, item.uri);
-
+  
     return (
       <TouchableOpacity onPress={() => handleToggleImage(item.uri)}>
         <View style={styles.tile}>
           <Image source={{uri: item.uri}} style={styles.tileImage} />
+  
+          {/* 영상 표시 */}
+          {item.isVideo && (
+            <View style={styles.videoBadge}>
+              <Text style={styles.videoBadgeText}>
+                {formatDuration(item.duration)}
+              </Text>
+            </View>
+          )}
+  
           {isSelected && <View style={styles.tileSelectedOverlay} />}
           {isSelected && (
             <View style={styles.orderBadge}>
@@ -176,6 +189,7 @@ export default function ChatInput({
       </TouchableOpacity>
     );
   };
+  
 
   return (
     <SafeAreaView>
@@ -365,4 +379,21 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(4),
     color: '#666',
   },
+  videoBadge: {
+    position: 'absolute',
+    bottom: getResponsiveWidth(6),
+    right: getResponsiveWidth(6),
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    zIndex: 2,
+  },
+  videoBadgeText: {
+    color: '#fff',
+    fontSize: getResponsiveIconSize(12),
+    fontWeight: '600',
+  },
+  
 });
+

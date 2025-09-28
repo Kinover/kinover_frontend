@@ -22,9 +22,16 @@ import {
 import useHideTabBar from '../../../hooks/common/useHideTabBar';
 
 // ✅ 유틸 import
-import {convertPhUriToFileUri, convertContentUriToFileUri} from '../../../utils/photo/photoUriConverter';
-import {toggleSelectImage, getSelectOrder} from '../../../utils/photo/selection';
+import {
+  convertPhUriToFileUri,
+  convertContentUriToFileUri,
+} from '../../../utils/photo/photoUriConverter';
+import {
+  toggleSelectImage,
+  getSelectOrder,
+} from '../../../utils/photo/selection';
 import {loadGalleryPhotos} from '../../../utils/photo/gallery';
+import formatDuration from '../../../utils/photo/formatDuration';
 
 // ====== 이미지 그리드 설정 ======
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -50,7 +57,11 @@ export default function ImageSelectPage() {
 
   // ===== 사진 불러오기 =====
   const loadPhotos = async (after = null) => {
-    const {photos: newPhotos, endCursor, hasNextPage} = await loadGalleryPhotos(after, PAGE_SIZE);
+    const {
+      photos: newPhotos,
+      endCursor,
+      hasNextPage,
+    } = await loadGalleryPhotos(after, PAGE_SIZE);
     if (after) {
       setPhotos(prev => [...prev, ...newPhotos]);
     } else {
@@ -151,6 +162,16 @@ export default function ImageSelectPage() {
         activeOpacity={0.8}>
         <View style={[styles.imageWrapper, isSelected && styles.selectedImage]}>
           <Image source={{uri: item.uri}} style={styles.image} />
+
+          {/* 🎥 영상일 경우 시간 배지 */}
+          {item.isVideo && (
+            <View style={styles.videoBadge}>
+              <Text style={styles.videoBadgeText}>
+                {formatDuration(item.duration)}
+              </Text>
+            </View>
+          )}
+
           {/* ✅ 선택 순서 뱃지 */}
           {isSelected && (
             <>
@@ -285,5 +306,20 @@ const styles = StyleSheet.create({
     color: 'white',
     textAlign: 'center',
     fontSize: getResponsiveFontSize(12),
+  },
+  videoBadge: {
+    position: 'absolute',
+    bottom: getResponsiveWidth(4),
+    right: getResponsiveWidth(4),
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    zIndex: 2,
+  },
+  videoBadgeText: {
+    color: '#fff',
+    fontSize: getResponsiveIconSize(12),
+    fontWeight: '600',
   },
 });
