@@ -68,56 +68,20 @@ export default function CreatePostPage({navigation, route}) {
     [setSelectedImages],
   );
 
-  const handleUpload = useCallback(async () => {
-    if (isUploading) return;
-    setIsUploading(true);
-    try {
-      if (!categoryTitle) throw new Error('카테고리 제목이 없어요.');
-      if (!Array.isArray(selectedImages) || selectedImages.length === 0) {
-        throw new Error('이미지를 선택해주세요.');
-      }
+  const handleUpload = async () => {
+    const now = Date.now();
+    const fileNames = selectedImages.map((uri, i) => {
+      let ext = (uri.split('.').pop() || 'jpg').toLowerCase();
+      if (ext === 'mov') ext = 'mp4'; // mov → mp4
+      return `media_${now}_${i}_${Math.floor(Math.random() * 1000)}.${ext}`;
+    });
 
-      const now = Date.now();
-      const fileNames = selectedImages.map((uri, i) => {
-        const ext = (uri?.split('.').pop() || 'jpg').toLowerCase();
-        return `img_${now}_${i}_${Math.floor(Math.random() * 1000)}.${ext}`;
-      });
+    const presignedUrls = await getPresignedUrls(fileNames);
 
-      const presignedUrls = await getPresignedUrls(fileNames);
-      for (let i = 0; i < selectedImages.length; i++) {
-        await uploadImageToS3(presignedUrls[i], selectedImages[i]);
-      }
-
-      const postTypes = selectedImages.map(getMediaTypeFromUri);
-      const payload = {
-        authorId: user.userId,
-        familyId: String(family.familyId),
-        categoryId,
-        categoryTitle,
-        imageUrls: fileNames,
-        postTypes,
-        content: text,
-      };
-      await uploadPostApi(payload);
-
-      // ✅ 업로드 성공 → 모달 띄우기
-      setSuccessModalVisible(true);
-    } catch (err) {
-      console.error('🚨 업로드 실패:', err);
-    } finally {
-      setIsUploading(false);
+    for (let i = 0; i < selectedImages.length; i++) {
+      await uploadFileToS3(presignedUrls[i], selectedImages[i], fileNames[i]);
     }
-  }, [
-    isUploading,
-    selectedImages,
-    text,
-    user.userId,
-    family.familyId,
-    categoryId,
-    categoryTitle,
-    navigation,
-  ]);
-
+  };
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (

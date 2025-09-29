@@ -10,9 +10,11 @@ import LottieView from 'lottie-react-native';
 
 import ChatSettings from './screens/communication/chatRoom/setting/chatSetting';
 import {navigationRef} from './navigation/navigationRef';
-import {BottomSheetModalProvider} from '@gorhom/bottom-sheet';
+// import {BottomSheetModalProvider} from '@gorhom/bottom-sheet';
+
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import { AppNavigator } from './navigation';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 
 export default function MyApp() {
   const [isSplashFinished, setIsSplashFinished] = useState(false);
