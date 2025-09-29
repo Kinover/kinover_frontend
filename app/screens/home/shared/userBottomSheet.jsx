@@ -30,7 +30,7 @@ import getResponsiveFontSize, {
 } from '../../../utils/responsive';
 import FastImage from 'react-native-fast-image';
 import {convertPhUriToFileUri} from '../../../utils/photo/photoUriConverter';
-import {uploadImageWithPresignedUrl} from '../../../utils/photo/upload'; // 새로 만들면 좋음
+import {uploadImageWithPresignedUrl} from '../../../utils/photo/uploadFile'; // 새로 만들면 좋음
 
 
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
