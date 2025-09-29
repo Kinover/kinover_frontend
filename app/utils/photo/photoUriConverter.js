@@ -1,12 +1,49 @@
+// utils/photo/photoUriConverter.js
 import RNFS from 'react-native-fs';
+import { Platform } from 'react-native';
 
-export async function convertPhUriToFileUri(phUri, index) {
-  const destPath = `${RNFS.TemporaryDirectoryPath}/photo_${Date.now()}_${index}.jpg`;
+/**
+ * iOS: ph:// → file:// (사진/영상 구분)
+ */
+export async function convertPhUriToFileUri(phUri, index, isVideo = false) {
+  const ext = isVideo ? 'mp4' : 'jpg';
+  const destPath = `${RNFS.TemporaryDirectoryPath}/asset_${Date.now()}_${index}.${ext}`;
+
   try {
-    await RNFS.copyAssetsFileIOS(phUri, destPath, 0, 0);
+    if (isVideo) {
+      // 🎥 영상 변환
+      await RNFS.copyAssetsVideoIOS(phUri, destPath);
+    } else {
+      // 🖼️ 사진 변환
+      await RNFS.copyAssetsFileIOS(phUri, destPath, 0, 0);
+    }
     return 'file://' + destPath;
   } catch (err) {
-    console.error('📛 ph:// 변환 실패:', err.message);
+    console.error('📛 ph:// 변환 실패:', err.message, phUri);
+    return null;
+  }
+}
+
+/**
+ * Android: content:// → file:// 변환
+ */
+export async function convertContentUriToFileUri(
+  contentUri,
+  index,
+  isVideo = false,
+) {
+  if (Platform.OS !== 'android' || !contentUri.startsWith('content://')) {
+    return contentUri;
+  }
+
+  const ext = isVideo ? 'mp4' : 'jpg';
+  const destPath = `${RNFS.TemporaryDirectoryPath}/asset_${Date.now()}_${index}.${ext}`;
+
+  try {
+    await RNFS.copyFile(contentUri, destPath);
+    return 'file://' + destPath;
+  } catch (err) {
+    console.error('📛 content:// 변환 실패:', err.message, contentUri);
     return null;
   }
 }

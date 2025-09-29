@@ -18,7 +18,6 @@ export const getPresignedUrls = async fileNames => {
       },
     );
     console.log('📡 Presigned 응답 데이터:', response.data);
-
     return response.data; // Array of presigned URLs
   } catch (error) {
     console.error(
@@ -39,7 +38,9 @@ function base64ToArrayBuffer(base64) {
   }
   return bytes.buffer;
 }
-export const uploadImageToS3 = async (uploadUrl, fileUri) => {
+
+// ✅ 이미지/영상 업로드
+export const uploadFileToS3 = async (uploadUrl, fileUri, fileName) => {
   try {
     const base64Data = await RNFS.readFile(
       fileUri.replace('file://', ''),
@@ -47,14 +48,24 @@ export const uploadImageToS3 = async (uploadUrl, fileUri) => {
     );
     const arrayBuffer = base64ToArrayBuffer(base64Data);
 
+    // 🔑 MIME 타입 결정
+    let contentType = 'application/octet-stream'; // fallback
+    if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) {
+      contentType = 'image/jpeg';
+    } else if (fileName.endsWith('.png')) {
+      contentType = 'image/png';
+    } else if (fileName.endsWith('.mp4') || fileName.endsWith('.mov')) {
+      contentType = 'video/mp4';
+    }
+
     const res = await fetch(uploadUrl, {
       method: 'PUT',
-      headers: {'Content-Type': 'image/jpeg'},
+      headers: {'Content-Type': contentType},
       body: arrayBuffer,
     });
 
     if (!res.ok) throw new Error(`S3 업로드 실패: ${res.status}`);
-    console.log('✅ 업로드 성공');
+    console.log(`✅ 업로드 성공 (${fileName}, ${contentType})`);
   } catch (err) {
     console.error('🚨 S3 업로드 에러:', err.message);
     throw err;
