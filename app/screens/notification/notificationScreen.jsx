@@ -16,7 +16,7 @@ import {
 import useHideTabBar from '../../hooks/common/useHideTabBar';
 import {useNavigation} from '@react-navigation/native';
 // import {openNotification} from '../../../utils/notification/openNotification';
-import FastImage from 'react-native-fast-image';
+import FastImage from 'react-native-fast-image2';
 import { setHasUnread } from '../../redux/slices/notificationSlice';
 import YellowSpinner from '../../components/common/yellowSpinner';
 import { openNotification } from '../../utils/notification/openNotification';

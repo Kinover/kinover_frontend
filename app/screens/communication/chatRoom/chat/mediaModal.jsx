@@ -8,42 +8,39 @@ import {
   View,
   FlatList,
   Text,
-  TouchableOpacity,
+  Platform,
 } from 'react-native';
 import ImageZoom from 'react-native-image-pan-zoom';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
-  getResponsiveIconSize,
 } from '../../../../utils/responsive';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import {useNavigation} from '@react-navigation/native';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
-export default function ImageModal({
+export default function MediaModal({
   visible,
-  imageUrls = [],
+  mediaUrls = [],
   initialIndex = 0,
   onClose,
 }) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const navigation = useNavigation();
+
   return (
     <Modal transparent={true} visible={visible} animationType="fade">
       {/* 배경 */}
       <View style={styles.overlay} />
 
-      {/* <SafeAreaView edges={['top', 'bottom', 'left', 'right']} style={{flex:1}}> */}
       {/* ✅ 상단 인디케이터 */}
-      {imageUrls?.length > 1 && (
+      {mediaUrls?.length > 1 && (
         <View style={styles.indicatorContainer}>
           <Text style={styles.indicatorText}>
-            {currentIndex + 1} / {imageUrls?.length}
+            {currentIndex + 1} / {mediaUrls?.length}
           </Text>
         </View>
       )}
+
       {/* 닫기 버튼 */}
       <View style={styles.closeButtonContainer}>
         <TouchableWithoutFeedback onPress={onClose}>
@@ -57,11 +54,10 @@ export default function ImageModal({
           />
         </TouchableWithoutFeedback>
       </View>
-      {/* </SafeAreaView> */}
 
-      {/* 이미지 슬라이드 영역 */}
+      {/* ✅ 이미지 슬라이드 영역 */}
       <FlatList
-        data={imageUrls}
+        data={mediaUrls}
         keyExtractor={(item, index) => item + index}
         horizontal
         pagingEnabled
@@ -91,20 +87,6 @@ export default function ImageModal({
           </View>
         )}
       />
-      {/* <TouchableOpacity
-        style={{
-          position: 'absolute',
-          bottom: getResponsiveHeight(15),
-          right: getResponsiveWidth(10),
-          width: getResponsiveIconSize(60),
-          height: getResponsiveIconSize(60),
-          zIndex: 0,
-        }}
-        onPress={() => navigation.navigate('이미지선택화면')}>
-        <Image
-          source={require('../../../../assets/icons/posting-floating-bt.png')}
-          style={{width: '100%', height: '100%', objectFit: 'contain'}}></Image>
-      </TouchableOpacity> */}
     </Modal>
   );
 }

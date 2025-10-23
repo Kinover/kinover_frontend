@@ -17,7 +17,7 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../utils/responsive';
-import FastImage from 'react-native-fast-image';
+import FastImage from 'react-native-fast-image2';
 import YellowSpinner from '../../components/common/yellowSpinner';
 
 export default function CommunicationScreen({navigation}) {

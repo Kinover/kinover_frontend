@@ -3,7 +3,7 @@
 import { PermissionsAndroid, Platform, Alert } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import axios from 'axios';
-import { getToken as getJWT } from '../storage';
+import { getToken as getJWT } from '../../utils/storage';
 import { navigate } from '../../navigation/navigationRef';
 
 const SERVER_URL = 'https://kinover.shop/api/fcm/register';

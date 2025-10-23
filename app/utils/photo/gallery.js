@@ -7,6 +7,7 @@ import {
   convertPhUriToFileUri,
   convertContentUriToFileUri,
 } from './photoUriConverter';
+import uuid from 'react-native-uuid';
 
 // 🎥 영상 duration 추출 함수
 export async function getVideoDuration(uri, playableDuration) {
@@ -80,7 +81,7 @@ export async function loadGalleryPhotos(after = null, pageSize = 60) {
       }
 
       return {
-        ...image,
+        uri: image.uri,
         type,
         isVideo: type.startsWith('video'),
         duration,
@@ -97,4 +98,22 @@ export async function loadGalleryPhotos(after = null, pageSize = 60) {
 
 function normalizeUri(uri) {
   return uri.split('#')[0];
+}
+
+// 📂 파일 확장자 자동 맞추기
+export function getFileNameWithExtension(file, index) {
+  if (!file?.uri) return `${uuid.v4()}_${index}.jpg`;
+
+  let extension = 'jpg';
+  const lower = file.uri.toLowerCase();
+
+  if (file.isVideo || lower.endsWith('.mp4') || lower.endsWith('.mov')) {
+    extension = 'mp4';
+  } else if (lower.endsWith('.png')) {
+    extension = 'png';
+  } else if (lower.endsWith('.jpeg')) {
+    extension = 'jpeg';
+  }
+
+  return `${uuid.v4()}_${index}.${extension}`;
 }

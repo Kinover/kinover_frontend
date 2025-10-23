@@ -11,7 +11,6 @@ import {
   Dimensions,
   Linking,
 } from 'react-native';
-import RNFS from 'react-native-fs';
 import {useNavigation} from '@react-navigation/native';
 import {
   getResponsiveHeight,
@@ -45,7 +44,7 @@ const PAGE_SIZE = 60;
 
 export default function ImageSelectPage() {
   const [photos, setPhotos] = useState([]);
-  const [selected, setSelected] = useState([]);
+  const [selected, setSelected] = useState([]); // ✅ 객체 배열로 관리
 
   // 페이징/로딩 상태
   const [endCursor, setEndCursor] = useState(null);
@@ -91,8 +90,8 @@ export default function ImageSelectPage() {
   };
 
   // ===== 선택 토글 =====
-  const toggleSelect = uri => {
-    setSelected(prev => toggleSelectImage(prev, uri));
+  const toggleSelect = item => {
+    setSelected(prev => toggleSelectImage(prev, item)); // ✅ photo 객체 넘김
   };
 
   // ===== 다음 버튼 =====
@@ -104,13 +103,14 @@ export default function ImageSelectPage() {
 
     const convertedUris = [];
     for (let i = 0; i < selected.length; i++) {
-      const uri = selected[i];
+      const file = selected[i];
+      let uri = file.uri;
 
       if (Platform.OS === 'ios' && uri.startsWith('ph://')) {
-        const converted = await convertPhUriToFileUri(uri, i);
+        const converted = await convertPhUriToFileUri(uri, i, file.isVideo);
         if (converted) convertedUris.push(converted);
       } else if (Platform.OS === 'android' && uri.startsWith('content://')) {
-        const converted = await convertContentUriToFileUri(uri, i);
+        const converted = await convertContentUriToFileUri(uri, i, file.isVideo);
         if (converted) convertedUris.push(converted);
       } else {
         convertedUris.push(uri);
@@ -153,12 +153,12 @@ export default function ImageSelectPage() {
 
   // ====== 렌더 ======
   const renderItem = ({item}) => {
-    const isSelected = selected.includes(item.uri);
+    const isSelected = selected.some(f => f.uri === item.uri); // ✅ 객체 비교
     const order = getSelectOrder(selected, item.uri);
 
     return (
       <TouchableOpacity
-        onPress={() => toggleSelect(item.uri)}
+        onPress={() => toggleSelect(item)}
         activeOpacity={0.8}>
         <View style={[styles.imageWrapper, isSelected && styles.selectedImage]}>
           <Image source={{uri: item.uri}} style={styles.image} />
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textAlignVertical: 'center',
     fontFamily: 'Pretendard-Regular',
-    fontWeight: 'semibold',
+    fontWeight: '600',
     color: '#101010',
     lineHeight: getResponsiveHeight(30),
   },

@@ -28,10 +28,9 @@ import getResponsiveFontSize, {
   getResponsiveWidth,
   getResponsiveHeight,
 } from '../../../utils/responsive';
-import FastImage from 'react-native-fast-image';
+import FastImage from 'react-native-fast-image2';
 import {convertPhUriToFileUri} from '../../../utils/photo/photoUriConverter';
-import {uploadImageWithPresignedUrl} from '../../../utils/photo/uploadFile'; // 새로 만들면 좋음
-
+import {uploadImageWithPresignedUrl} from '../../../utils/photo/uploadFile'; // presigned 업로드 유틸
 
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 const windowHeight = Dimensions.get('window').height;
@@ -47,6 +46,9 @@ const UserBottomSheetModal = forwardRef(
     const [nameKey, setNameKey] = useState(0);
     const [traitKey, setTraitKey] = useState(0);
 
+    // ✅ 원래 상태 보관용 ref
+    const initialDataRef = useRef({name: '', trait: '', image: ''});
+
     const localRef = useRef(null);
 
     useImperativeHandle(ref, () => ({
@@ -54,14 +56,22 @@ const UserBottomSheetModal = forwardRef(
       dismiss: () => localRef.current?.dismiss(),
     }));
 
+    // 선택된 유저 바뀔 때마다 초기값 세팅
     useEffect(() => {
       const n = selectedUser?.name ?? '';
       const t = selectedUser?.trait ?? '';
       const img = selectedUser?.image ?? '';
+
+      // 원본 상태 저장
+      initialDataRef.current = {name: n, trait: t, image: img};
+
+      // 현재 입력값도 초기화
       nameRef.current = n;
       traitRef.current = t;
       imageUrlRef.current = img;
-      setPreviewImage(img); // ✅ 초기 이미지 세팅
+      setPreviewImage(img);
+
+      // 리렌더 강제
       setNameKey(k => k + 1);
       setTraitKey(k => k + 1);
     }, [selectedUser]);
@@ -74,27 +84,28 @@ const UserBottomSheetModal = forwardRef(
         return () => sub.remove();
       }
     }, []);
+
     const handleImagePick = async () => {
       const result = await launchImageLibrary({mediaType: 'photo'});
       if (!result.assets?.length) return;
-    
+
       const selectedAsset = result.assets[0];
       let fileUri = selectedAsset.uri;
       const fileName = selectedAsset.fileName || `img_${Date.now()}.jpg`;
-    
+
       // ✅ 미리보기 반영
       setPreviewImage(fileUri);
-    
+
       try {
         if (Platform.OS === 'ios' && fileUri.startsWith('ph://')) {
           fileUri = await convertPhUriToFileUri(fileUri, 0);
           if (!fileUri) return;
         }
-    
-        // ✅ 업로드 유틸 활용
+
+        // ✅ 업로드 실행
         await uploadImageWithPresignedUrl(fileUri, fileName);
-    
-        // 성공 시 presigned 기반 서버 경로 세팅
+
+        // 서버에 업로드 성공 후 URL 반영
         imageUrlRef.current = `${CLOUD_FRONT}${fileName}`;
         setPreviewImage(imageUrlRef.current);
       } catch (err) {
@@ -108,6 +119,20 @@ const UserBottomSheetModal = forwardRef(
         ? img.replace(CLOUD_FRONT, '')
         : img;
       onSave(nameRef.current, traitRef.current, finalImageUrl);
+      localRef.current?.dismiss();
+    };
+
+    const handleCancel = () => {
+      // ✅ 원래 유저 상태로 복원 (바텀시트 닫지 않음)
+      const {name, trait, image} = initialDataRef.current;
+      nameRef.current = name;
+      traitRef.current = trait;
+      imageUrlRef.current = image;
+      setPreviewImage(image);
+
+      // TextInput도 리셋시키려고 키 변경
+      setNameKey(k => k + 1);
+      setTraitKey(k => k + 1);
     };
 
     return (
@@ -115,11 +140,7 @@ const UserBottomSheetModal = forwardRef(
         ref={localRef}
         index={0}
         snapPoints={snapPoints}
-        animationConfigs={{
-          damping: 20,
-          stiffness: 200,
-          mass: 1,
-        }}
+        animationConfigs={{damping: 20, stiffness: 200, mass: 1}}
         keyboardBehavior="interactive"
         android_keyboardInputMode="adjustResize"
         keyboardBlurBehavior="restore"
@@ -150,6 +171,7 @@ const UserBottomSheetModal = forwardRef(
               localRef.current?.snapToIndex(0);
             }}>
             <View style={{flex: 1}}>
+              {/* 프로필 이미지 */}
               <TouchableOpacity
                 style={{width: '50%', alignSelf: 'center'}}
                 onPress={handleImagePick}>
@@ -170,6 +192,7 @@ const UserBottomSheetModal = forwardRef(
                 </View>
               </TouchableOpacity>
 
+              {/* 별명 입력 */}
               <Text style={styles.label}>우리 가족만의 별명은?</Text>
               <BottomSheetTextInput
                 key={`name-${nameKey}`}
@@ -182,13 +205,9 @@ const UserBottomSheetModal = forwardRef(
                   nameRef.current = text;
                 }}
                 placeholderTextColor="#999"
-                autoCorrect={false}
-                autoComplete="off"
-                autoCapitalize="none"
-                spellCheck={false}
-                importantForAutofill="no"
               />
 
+              {/* 특징 입력 */}
               <Text style={styles.label}>
                 {nameRef.current} 님은 어떤 사람인가요?
               </Text>
@@ -204,17 +223,13 @@ const UserBottomSheetModal = forwardRef(
                   traitRef.current = text;
                 }}
                 placeholderTextColor="#999"
-                autoCorrect={false}
-                autoComplete="off"
-                autoCapitalize="none"
-                spellCheck={false}
-                importantForAutofill="no"
               />
 
+              {/* 버튼 영역 */}
               <View style={styles.buttonRow}>
                 <TouchableOpacity
                   style={[styles.button, {backgroundColor: '#F4F6FA'}]}
-                  onPress={onCancel}>
+                  onPress={handleCancel}>
                   <Text style={[styles.buttonText, {color: '#A1A5AF'}]}>
                     취소
                   </Text>

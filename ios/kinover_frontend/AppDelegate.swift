@@ -1,41 +1,50 @@
 import UIKit
 import React
-import React_RCTAppDelegate
-import ReactAppDependencyProvider
 import KakaoSDKAuth
 import UserNotifications
 import FirebaseCore
 
-@main
-class AppDelegate: RCTAppDelegate, UNUserNotificationCenterDelegate {
+@UIApplicationMain
+class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
 
-  override func application(
+  var window: UIWindow?
+  var bridge: RCTBridge?
+
+  func application(
     _ application: UIApplication,
-    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
-    self.moduleName = "kinover_frontend"
-    self.dependencyProvider = RCTAppDependencyProvider()
 
-    FirebaseApp.configure() // RNFB가 이 설정을 사용함
+    FirebaseApp.configure() // RNFB 초기화
     UNUserNotificationCenter.current().delegate = self
     application.registerForRemoteNotifications()
 
-    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+    let bridge = RCTBridge(delegate: self, launchOptions: launchOptions)
+    let rootView = RCTRootView(bridge: bridge!, moduleName: "kinover_frontend", initialProperties: nil)
+
+    let rootViewController = UIViewController()
+    rootViewController.view = rootView
+    self.window = UIWindow(frame: UIScreen.main.bounds)
+    self.window?.rootViewController = rootViewController
+    self.window?.makeKeyAndVisible()
+
+    return true
   }
 
-  override func sourceURL(for bridge: RCTBridge) -> URL? { self.bundleURL() }
-  override func bundleURL() -> URL? {
-  #if DEBUG
-    return RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index")
-  #else
-    return Bundle.main.url(forResource: "main", withExtension: "jsbundle")
-  #endif
+  func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+    if AuthApi.isKakaoTalkLoginUrl(url) {
+      return AuthController.handleOpenUrl(url: url)
+    }
+    return false
   }
+}
 
-  override func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
-    if AuthApi.isKakaoTalkLoginUrl(url) { return AuthController.handleOpenUrl(url: url) }
-    return super.application(app, open: url, options: options)
+extension AppDelegate: RCTBridgeDelegate {
+  func sourceURL(for bridge: RCTBridge!) -> URL! {
+    #if DEBUG
+      return RCTBundleURLProvider.sharedSettings().jsBundleURL(forBundleRoot: "index")
+    #else
+      return Bundle.main.url(forResource: "main", withExtension: "jsbundle")
+    #endif
   }
-
-  // (didRegisterForRemoteNotificationsWithDeviceToken / MessagingDelegate 등은 필요 없음)
 }

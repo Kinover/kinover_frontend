@@ -15,7 +15,7 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import FastImage from 'react-native-fast-image';
+import FastImage from 'react-native-fast-image2';
 
 export default function FamilySetupFinishScreen() {
   const navigation = useNavigation();

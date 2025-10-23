@@ -21,7 +21,7 @@ import {
   getResponsiveWidth,
 } from '../../../../../utils/responsive';
 import {RectButton, Swipeable} from 'react-native-gesture-handler';
-import FastImage from 'react-native-fast-image';
+import FastImage from 'react-native-fast-image2';
 
 const ACTION_W = getResponsiveWidth(70);
 
