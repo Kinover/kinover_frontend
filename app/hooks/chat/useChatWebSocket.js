@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
-import { getToken } from '../utils/storage'; // AsyncStorage 등에서 꺼내는 함수
+import { getToken } from '../../utils/storage'; // AsyncStorage 등에서 꺼내는 함수
 
 export default function useChatWebSocket({ onMessage, onOpen, onClose }) {
   const socketRef = useRef(null);

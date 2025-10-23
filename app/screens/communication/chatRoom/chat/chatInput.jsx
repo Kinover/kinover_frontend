@@ -1,3 +1,4 @@
+// ChatInput.js
 import React, {useState, useRef, useEffect} from 'react';
 import {
   View,
@@ -11,35 +12,32 @@ import {
   Text,
   Image,
 } from 'react-native';
-import FastImage from 'react-native-fast-image';
+import FastImage from 'react-native-fast-image2';
 import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
-import uuid from 'react-native-uuid';
-
-
-import {getPresignedUrls, uploadImageToS3} from '../../../../api/imageUrlApi';
+import {getPresignedUrls, uploadFileToS3} from '../../../../api/imageUrlApi';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
   getResponsiveIconSize,
 } from '../../../../utils/responsive';
 
-// ✅ 유틸 import
 import {convertPhUriToFileUri} from '../../../../utils/photo/photoUriConverter';
 import {
   getSelectOrder,
   toggleSelectImage,
 } from '../../../../utils/photo/selection';
-import {loadGalleryPhotos} from '../../../../utils/photo/gallery';
+import {
+  getFileNameWithExtension,
+  loadGalleryPhotos,
+} from '../../../../utils/photo/gallery';
 import formatDuration from '../../../../utils/photo/formatDuration';
 
-// ====== ✅ 격자 계산 상수 ======
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const NUM_COLUMNS = 3;
 const GAP = getResponsiveWidth(2);
 const PADDING_H = getResponsiveWidth(2);
 const IMAGE_SIZE =
   (SCREEN_WIDTH - PADDING_H * 2 - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
-// =================================
 
 const PAGE_SIZE = 60;
 
@@ -52,17 +50,13 @@ export default function ChatInput({
   const [message, setMessage] = useState('');
   const [showGallery, setShowGallery] = useState(false);
   const [photos, setPhotos] = useState([]);
-
-  // 페이징
   const [endCursor, setEndCursor] = useState(null);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-
   const [selectedImages, setSelectedImages] = useState([]);
   const inputRef = useRef(null);
 
-  // ===== 갤러리 불러오기 (유틸 사용)
   const loadPhotos = async (after = null) => {
     if (!enableMediaPicker) return;
     const {
@@ -99,7 +93,6 @@ export default function ChatInput({
     setIsRefreshing(false);
   };
 
-  // ===== 메시지 전송
   const handleSend = async () => {
     const socket = socketRef?.current;
     if (!socket || socket.readyState !== 1) {
@@ -123,16 +116,20 @@ export default function ChatInput({
 
     if (selectedImages.length > 0) {
       try {
-        const fileNames = selectedImages.map(() => `${uuid.v4()}.jpg`);
+        const fileNames = selectedImages.map((file, index) =>
+          getFileNameWithExtension(file, index),
+        );
+        console.log('📂 요청 fileNames:', fileNames);
+
         const presignedUrls = await getPresignedUrls(fileNames);
 
         for (let i = 0; i < selectedImages.length; i++) {
-          let fileUri = selectedImages[i];
+          let fileUri = selectedImages[i].uri;
           if (Platform.OS === 'ios' && fileUri.startsWith('ph://')) {
-            fileUri = await convertPhUriToFileUri(fileUri, i);
+            fileUri = await convertPhUriToFileUri(fileUri, i, selectedImages[i].isVideo);
             if (!fileUri) continue;
           }
-          await uploadImageToS3(presignedUrls[i], fileUri);
+          await uploadFileToS3(presignedUrls[i], fileUri, fileNames[i]);
         }
 
         socket.send(
@@ -143,7 +140,7 @@ export default function ChatInput({
             imageUrls: fileNames,
           }),
         );
-        console.log('🖼️ 여러 이미지 전송됨:', fileNames);
+        console.log('🖼️ 여러 이미지/영상 전송됨:', fileNames);
         setShowGallery(false);
         setSelectedImages([]);
       } catch (error) {
@@ -157,20 +154,18 @@ export default function ChatInput({
     setShowGallery(prev => !prev);
   };
 
-  const handleToggleImage = uri => {
-    setSelectedImages(prev => toggleSelectImage(prev, uri));
+  const handleToggleImage = item => {
+    setSelectedImages(prev => toggleSelectImage(prev, item));
   };
 
   const renderPhoto = ({item}) => {
-    const isSelected = selectedImages.includes(item.uri);
+    const isSelected = selectedImages.some(f => f.uri === item.uri);
     const order = getSelectOrder(selectedImages, item.uri);
-  
+
     return (
-      <TouchableOpacity onPress={() => handleToggleImage(item.uri)}>
+      <TouchableOpacity onPress={() => handleToggleImage(item)}>
         <View style={styles.tile}>
           <Image source={{uri: item.uri}} style={styles.tileImage} />
-  
-          {/* 영상 표시 */}
           {item.isVideo && (
             <View style={styles.videoBadge}>
               <Text style={styles.videoBadgeText}>
@@ -178,7 +173,6 @@ export default function ChatInput({
               </Text>
             </View>
           )}
-  
           {isSelected && <View style={styles.tileSelectedOverlay} />}
           {isSelected && (
             <View style={styles.orderBadge}>
@@ -189,7 +183,6 @@ export default function ChatInput({
       </TouchableOpacity>
     );
   };
-  
 
   return (
     <SafeAreaView>
@@ -240,7 +233,6 @@ export default function ChatInput({
         </TouchableOpacity>
       </View>
 
-      {/* 갤러리 (무한 스크롤 & 당겨서 새로고침) */}
       {enableMediaPicker && (
         <Animated.View
           key={showGallery ? 'open' : 'close'}
@@ -272,6 +264,8 @@ export default function ChatInput({
     </SafeAreaView>
   );
 }
+
+
 
 const styles = StyleSheet.create({
   innerContainer: {
@@ -394,6 +388,4 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveIconSize(12),
     fontWeight: '600',
   },
-  
 });
-

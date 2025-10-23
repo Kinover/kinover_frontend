@@ -7,7 +7,7 @@ import {
   TouchableOpacity,
   Platform,
 } from 'react-native';
-import FastImage from 'react-native-fast-image';
+import FastImage from 'react-native-fast-image2';
 
 import {
   getResponsiveWidth,
@@ -16,7 +16,7 @@ import {
   getResponsiveIconSize,
 } from '../../../../utils/responsive';
 import formatTime from '../../../../utils/formatTime';
-import ImageModal from './imageModal';
+import MediaModal from './mediaModal';
 
 import {
   registerTimeLast,
@@ -34,7 +34,7 @@ export default function ReceiveChat({
   chatTime,
   style,
   messageType = 'text',
-  imageUrls = [],
+  mediaUrls = [],
   isGrouped = false,     // 같은 사람 + 같은 분
   isSameSender = false,  // 같은 사람
 }) {
@@ -65,7 +65,7 @@ export default function ReceiveChat({
 
   const renderImages = () => (
     <FlatList
-      data={imageUrls}
+      data={mediaUrls}
       keyExtractor={(item, index) => item + index}
       numColumns={3}
       renderItem={({item, index}) => (
@@ -99,10 +99,10 @@ export default function ReceiveChat({
         {!isGrouped && <Text style={styles.userName}>{userName}</Text>}
 
         <View style={styles.messageLine}>
-          {messageType === 'image' && imageUrls.length === 1 ? (
-            <TouchableOpacity onPress={() => handleImagePress(imageUrls[0], 0)}>
+          {messageType === 'image' && mediaUrls.length === 1 ? (
+            <TouchableOpacity onPress={() => handleImagePress(mediaUrls[0], 0)}>
               <FastImage
-                source={{uri: imageUrls[0]}}
+                source={{uri: mediaUrls[0]}}
                 style={styles.singleImage}
                 resizeMode="cover"
               />
@@ -130,9 +130,9 @@ export default function ReceiveChat({
         </View>
       </View>
 
-      <ImageModal
+      <MediaModal
         visible={modalVisible}
-        imageUrls={imageUrls}
+        mediaUrls={mediaUrls}
         initialIndex={selectedIndex}
         onClose={() => setModalVisible(false)}
       />

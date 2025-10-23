@@ -94,7 +94,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         enableContentPanningGesture={false}
         backgroundStyle={{backgroundColor: 'white'}}
         // handleIndicatorStyle={{backgroundColor: '#ccc', width: 55}}
-        handleIndicatorStyle={{width:0}}
+        handleIndicatorStyle={{width: 0}}
         keyboardBehavior="extend"
         keyboardBlurBehavior="restore"
         android_keyboardInputMode="adjustResize"
@@ -118,15 +118,28 @@ const ScheduleEditorBottomSheetModal = forwardRef(
               </Text>
             </View>
 
-            <Text style={styles.subTitle}>일정을 등록할 가족을 선택해주세요</Text>
+            <Text style={styles.subTitle}>
+              일정을 등록할 가족을 선택해주세요
+            </Text>
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
               keyboardShouldPersistTaps="always"
-              contentContainerStyle={{paddingVertical:5 
-              }}
-              style={{backgroundColor:'white', borderRadius:10, marginBottom: 20}}>
-              <View style={{width: 70, height: 95, marginLeft: 6,marginRight: 12, alignItems:'center',justifyContent:'center'}}>
+              contentContainerStyle={{paddingVertical: 5}}
+              style={{
+                backgroundColor: 'white',
+                borderRadius: 10,
+                marginBottom: 20,
+              }}>
+              <View
+                style={{
+                  width: 70,
+                  height: 95,
+                  marginLeft: 6,
+                  marginRight: 12,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
                 <TouchableOpacity
                   style={[
                     styles.avatarBtn,
@@ -171,7 +184,13 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                 return (
                   <View
                     key={user.userId}
-                    style={{width: 70, height: 95, marginRight: 12,alignItems:'center',justifyContent:'center'}}>
+                    style={{
+                      width: 70,
+                      height: 95,
+                      marginRight: 12,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
                     <TouchableOpacity
                       key={user.userId}
                       style={[styles.avatarBtn]}
@@ -217,10 +236,10 @@ const ScheduleEditorBottomSheetModal = forwardRef(
               defaultValue={scheduleRef.current}
               onChangeText={text => (scheduleRef.current = text)}
               onFocus={() =>
-                setTimeout(() => modalRef.current?.snapToIndex(2), 50)
+                setTimeout(() => modalRef.current?.snapToIndex(1), 50)
               }
               placeholder="예) 병원 예약, 가족 모임"
-              placeholderTextColor={"lightgray"}
+              placeholderTextColor={'lightgray'}
               style={styles.input}
               autoCorrect={false}
               autoCapitalize="none"
@@ -279,9 +298,9 @@ const styles = StyleSheet.create({
   // ✅ 섹션 타이틀
   subTitle: {
     fontSize: getResponsiveFontSize(16.5),
-    fontFamily:'Pretendard-Light',
+    fontFamily: 'Pretendard-Light',
     color: 'gray',
-    fontWeight:Platform.OS==='android'?'600':'500',
+    fontWeight: Platform.OS === 'android' ? '600' : '500',
     marginBottom: getResponsiveHeight(12),
     marginTop: getResponsiveHeight(5),
   },
@@ -306,7 +325,10 @@ const styles = StyleSheet.create({
     zIndex: 0,
   },
   avatarLabel: {
-    fontSize: Platform.OS==='ios'?getResponsiveFontSize(14):getResponsiveFontSize(12.5),
+    fontSize:
+      Platform.OS === 'ios'
+        ? getResponsiveFontSize(14)
+        : getResponsiveFontSize(12.5),
     fontFamily: 'Pretendard-Medium',
     color: '#333',
     textAlign: 'center',
@@ -325,13 +347,13 @@ const styles = StyleSheet.create({
 
   // ✅ 입력 필드F9F9F9
   input: {
-    textAlignVertical:'top',
+    textAlignVertical: 'top',
     backgroundColor: '#F9F9F9',
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#E5E5E5',
     padding: 14,
-    height:getResponsiveHeight(100),
+    height: getResponsiveHeight(100),
     marginBottom: 10,
     fontSize: getResponsiveFontSize(15),
   },

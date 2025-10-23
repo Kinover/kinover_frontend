@@ -19,7 +19,7 @@ import getResponsiveFontSize, {
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchFamilyThunk} from '../../redux/thunk/familyThunk';
-import FastImage from 'react-native-fast-image';
+import FastImage from 'react-native-fast-image2';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 export default function FamilySetupScreen() {

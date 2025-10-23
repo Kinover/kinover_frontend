@@ -31,7 +31,7 @@ import {
   getResponsiveIconSize,
 } from '../../../../utils/responsive';
 import {updateChatRoomNameInList} from '../../../../redux/slices/chatRoomSlice';
-import FastImage from 'react-native-fast-image';
+import FastImage from 'react-native-fast-image2';
 
 export default function ChatSettings({
   isOpen,

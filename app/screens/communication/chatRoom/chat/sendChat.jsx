@@ -1,6 +1,13 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {View, Text, StyleSheet, FlatList, TouchableOpacity, Platform} from 'react-native';
-import FastImage from 'react-native-fast-image';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Platform,
+} from 'react-native';
+import FastImage from 'react-native-fast-image2';
 import {useNavigation} from '@react-navigation/native';
 
 import {
@@ -10,7 +17,7 @@ import {
   getResponsiveIconSize,
 } from '../../../../utils/responsive';
 import formatTime from '../../../../utils/formatTime';
-import ImageModal from './imageModal';
+import MediaModal from './mediaModal';
 
 import {
   registerTimeLast,
@@ -23,7 +30,7 @@ import {getSpacingStyle} from '../../../../utils/chat/getSpacingStyle';
 export default function SendChat({
   chatTime,
   message,
-  imageUrls = [],
+  mediaUrls = [],
   messageType = 'text',
   style,
   isGrouped = false,
@@ -56,7 +63,7 @@ export default function SendChat({
   const renderImages = () => (
     <View style={[styles.sendBubble, styles.imagePadding]}>
       <FlatList
-        data={imageUrls}
+        data={mediaUrls}
         keyExtractor={(item, index) => item + index}
         numColumns={3}
         renderItem={({item, index}) => (
@@ -74,11 +81,26 @@ export default function SendChat({
     <View style={[styles.sendContainer, spacingStyle, style]}>
       {showTime && <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>}
 
-      {messageType === 'image' ? (
-        imageUrls.length === 1 ? (
-          <TouchableOpacity onPress={() => handleImagePress(imageUrls[0])}>
+      {messageType === 'video' ? (
+        <TouchableOpacity onPress={() => handleImagePress(mediaUrls[0], 0)}>
+          <View>
             <FastImage
-              source={{uri: imageUrls[0]}}
+              source={{uri: videoThumb}}
+              style={styles.singleImage}
+              resizeMode="cover"
+            />
+            <View style={styles.videoBadge}>
+              <Text style={styles.videoBadgeText}>
+                {formatDuration(videoDuration)}
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      ) : messageType === 'image' ? (
+        mediaUrls.length === 1 ? (
+          <TouchableOpacity onPress={() => handleImagePress(mediaUrls[0])}>
+            <FastImage
+              source={{uri: mediaUrls[0]}}
               style={styles.singleImage}
               resizeMode="cover"
             />
@@ -92,9 +114,10 @@ export default function SendChat({
         </View>
       )}
 
-      <ImageModal
+      <MediaModal
         visible={modalVisible}
-        imageUrls={imageUrls}
+        mediaUrls={mediaUrls}
+        mediaType={messageType}
         initialIndex={selectedIndex}
         onClose={() => setModalVisible(false)}
       />
@@ -153,5 +176,19 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: 10,
     alignSelf: 'flex-end',
+  },
+  videoBadge: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  videoBadgeText: {
+    color: '#fff',
+    fontSize: getResponsiveFontSize(12),
+    fontWeight: '600',
   },
 });

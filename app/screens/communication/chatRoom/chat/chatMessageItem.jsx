@@ -44,15 +44,6 @@ export default function ChatMessageItem({
     );
   };
 
-  // ✅ isGrouped 계산 (이전 메시지 시간이 있으면 더 엄격, 없으면 isSameSender만으로 폴백)
-  // const isGrouped = useMemo(() => {
-  //   const prevAt = message.prevCreatedAt; // 선택적으로 넘겨줄 수 있음
-  //   if (prevAt) {
-  //     return isSameSender && isSameMinute(prevAt, message.createdAt);
-  //   }
-  //   return isSameSender; // 폴백: 연속 보낸 사람만 같으면 묶음 처리
-  // }, [isSameSender, message.prevCreatedAt, message.createdAt]);
-
   const formatDate = dateString => {
     const date = new Date(dateString);
 
@@ -85,7 +76,6 @@ export default function ChatMessageItem({
       <SendKinoChat
         message={message.content}
         chatTime={message.createdAt}
-        imageUrls={message.imageUrls}
         messageType={message.messageType}
         isGrouped={isGrouped} // 넘겨두면 컴포넌트에서 쓸 수 있음(옵셔널)
       />
@@ -93,7 +83,7 @@ export default function ChatMessageItem({
       <SendChat
         message={message.content}
         chatTime={message.createdAt}
-        imageUrls={message.imageUrls}
+        mediaUrls={message.imageUrls}
         messageType={message.messageType}
         isGrouped={isGrouped}
       />
@@ -108,7 +98,6 @@ export default function ChatMessageItem({
         message={message.content}
         chatTime={message.createdAt}
         messageType={message.messageType}
-        imageUrls={message.imageUrls}
         isGrouped={isGrouped}
       />
     ) : (
@@ -118,7 +107,7 @@ export default function ChatMessageItem({
         message={message.content}
         chatTime={message.createdAt}
         messageType={message.messageType}
-        imageUrls={message.imageUrls}
+        mediaUrls={message.imageUrls}
         isGrouped={isGrouped}
       />
     );

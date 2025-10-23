@@ -9,7 +9,7 @@ import {
 } from '../utils/responsive';
 import {jsiConfigureProps} from 'react-native-reanimated/lib/typescript/core';
 import {useSelector} from 'react-redux';
-import FastImage from 'react-native-fast-image';
+import FastImage from 'react-native-fast-image2';
 
 // ✅ 공통 아이콘 버튼 생성기
 const createIconButton = (

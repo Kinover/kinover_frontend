@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {View, Text, StyleSheet, FlatList, TouchableOpacity, Platform} from 'react-native';
-import FastImage from 'react-native-fast-image';
+import FastImage from 'react-native-fast-image2';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -8,7 +8,7 @@ import {
   getResponsiveIconSize,
 } from '../../../../utils/responsive';
 import formatTime from '../../../../utils/formatTime';
-import ImageModal from './imageModal';
+import ImageModal from './mediaModal';
 
 import {
   registerTimeLast,

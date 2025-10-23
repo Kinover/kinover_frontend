@@ -1,6 +1,6 @@
 import React, {useState, useEffect, useCallback} from 'react';
 import {View, StyleSheet, Text, TouchableOpacity, FlatList} from 'react-native';
-import FastImage from 'react-native-fast-image';
+import FastImage from 'react-native-fast-image2';
 import {
   useFocusEffect,
   useNavigation,

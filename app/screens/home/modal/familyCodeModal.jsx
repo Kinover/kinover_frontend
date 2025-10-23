@@ -10,7 +10,7 @@ import CustomModal from '../../../components/common/customModal';
 import Clipboard from '@react-native-clipboard/clipboard'; // ✅ 이렇게!
 
 import {ToastAndroid, Alert, Pressable} from 'react-native';
-import FastImage from 'react-native-fast-image';
+import FastImage from 'react-native-fast-image2';
 
 export default function FamilyCodeModal({visible, onClose, familyCode}) {
   return (

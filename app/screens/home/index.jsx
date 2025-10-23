@@ -4,12 +4,6 @@ import {useDispatch, useSelector} from 'react-redux';
 import {useNavigation} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import {
-  requestNotificationPermission,
-  getFcmTokenAndSend,
-  handleNotificationListeners,
-} from '../../utils/notification/requestNotificationPermission';
-
 import FamilyCodeModal from './modal/familyCodeModal';
 import UserBottomSheetModal from './shared/userBottomSheet';
 
@@ -17,15 +11,19 @@ import {fetchFamilyThunk} from '../../redux/thunk/familyThunk';
 import {fetchFamilyUserListThunk} from '../../redux/thunk/familyUserThunk';
 import {modifyUserThunk} from '../../redux/thunk/userThunk';
 
-import useWebSocketStatus from '../../hooks/family/useWebSocketStatus';
-import useFamilyStatusSocket from '../../hooks/family/useFamilyStatusSocket';
-
 import {getResponsiveWidth, getResponsiveHeight} from '../../utils/responsive';
 
 // 컴포넌트 분리
 import HeaderSection from './shared/headerSection';
 import MemberGridSection from './shared/memberGridSection';
 import YellowSpinner from '../../components/common/yellowSpinner';
+import {
+  requestNotificationPermission,
+  getFcmTokenAndSend,
+  handleNotificationListeners,
+} from '../../utils/notification/requestNotificationPermission';
+import useWebSocketStatus from '../../hooks/family/useWebSocketStatus';
+import useFamilyStatusSocket from '../../hooks/family/useFamilyStatusSocket';
 
 export default function HomeScreen() {
   const dispatch = useDispatch();
@@ -121,7 +119,6 @@ export default function HomeScreen() {
   }
 
   return (
-    
     <View style={styles.container}>
       <ScrollView
         showsVerticalScrollIndicator={false}
