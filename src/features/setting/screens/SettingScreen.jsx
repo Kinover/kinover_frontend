@@ -1,0 +1,190 @@
+import React, {useState} from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Image,
+  Linking, // ✅ 추가
+} from 'react-native';
+
+import {useNavigation} from '@react-navigation/native';
+import LogoutModal from '../../home/components/LogoutModal';
+import DeleteAccountModal from '../../home/components/DeleteAccountModal';
+import {
+  getResponsiveHeight,
+  getResponsiveIconSize,
+  getResponsiveWidth,
+  getResponsiveFontSize,
+} from '../../../utils/responsive';
+import {useLogout} from '../../auth/hooks/useLogout';
+import useHideTabBar from '../../../hooks/useHideTabBar';
+
+export default function SettingScreen() {
+  const navigation = useNavigation();
+  const logout = useLogout();
+
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  useHideTabBar();
+
+  const goToNotificationSettings = () => {
+    navigation.navigate('알림설정화면');
+  };
+
+  const handleDeleteAccount = () => {
+    console.log('⚠️ 계정탈퇴 실행');
+    setShowDeleteModal(false);
+  };
+
+  // ✅ 외부 링크 열기 함수
+  const openLink = (url) => {
+    Linking.openURL(url).catch(err =>
+      console.error('링크 열기 실패: ', err),
+    );
+  };
+
+  return (
+    <ScrollView style={styles.container}>
+      <Text style={styles.header}>설정</Text>
+
+      {/* 알림 */}
+      <View style={styles.section}>
+        <TouchableOpacity style={styles.row} onPress={goToNotificationSettings}>
+          <Text style={styles.label}>알림</Text>
+          <Image
+            style={styles.arrow}
+            source={require('../../../assets/images/rightArrow-gray.png')}
+          />
+        </TouchableOpacity>
+      </View>
+
+      {/* 버전 정보 */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>버전정보</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>현재버전</Text>
+          <Text style={styles.value}>1.1.0</Text>
+        </View>
+      </View>
+
+      {/* 고객지원 */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>고객지원</Text>
+        <View style={styles.row}>
+          <Text style={styles.label}>문의하기</Text>
+          <Text style={styles.value}>kinover.service@gmail.com</Text>
+        </View>
+      </View>
+
+      {/* 약관 및 정책 */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>약관 및 정책</Text>
+
+        {/* 서비스 이용약관 */}
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => openLink('https://www.notion.so/2129f61bad50805589f6edfcac083179')}>
+          <Text style={styles.label}>서비스 이용약관</Text>
+          <Image
+            style={styles.arrow}
+            source={require('../../../assets/images/rightArrow-gray.png')}
+          />
+        </TouchableOpacity>
+
+        {/* 개인정보 처리방침 */}
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => openLink('https://www.notion.so/2129f61bad5080f6bd29e269f5f319b1')}>
+          <Text style={styles.label}>개인정보처리방침</Text>
+          <Image
+            style={styles.arrow}
+            source={require('../../../assets/images/rightArrow-gray.png')}
+          />
+        </TouchableOpacity>
+      </View>
+
+      {/* 로그인 정보 */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>로그인 정보</Text>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => setShowLogoutModal(true)}>
+          <Text style={styles.label}>로그아웃</Text>
+          <Image
+            style={styles.arrow}
+            source={require('../../../assets/images/rightArrow-gray.png')}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => setShowDeleteModal(true)}>
+          <Text style={styles.label}>계정탈퇴</Text>
+          <Image
+            style={styles.arrow}
+            source={require('../../../assets/images/rightArrow-gray.png')}
+          />
+        </TouchableOpacity>
+      </View>
+
+      {/* 모달들 */}
+      <LogoutModal
+        visible={showLogoutModal}
+        onClose={() => setShowLogoutModal(false)}
+        onConfirm={logout}
+      />
+      <DeleteAccountModal
+        visible={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteAccount}
+      />
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    backgroundColor: '#fff',
+    paddingHorizontal: getResponsiveWidth(20),
+    paddingTop: getResponsiveHeight(20),
+    flex: 1,
+  },
+  header: {
+    fontSize: getResponsiveFontSize(24),
+    fontWeight: 'bold',
+    marginBottom: getResponsiveHeight(30),
+    color: '#000',
+  },
+  sectionTitle: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#888',
+    marginTop: getResponsiveHeight(10),
+    marginBottom: getResponsiveHeight(10),
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: getResponsiveHeight(12),
+  },
+  label: {
+    fontSize: getResponsiveFontSize(18),
+    color: '#222',
+  },
+  value: {
+    fontSize: getResponsiveFontSize(17),
+    color: '#555',
+  },
+  arrow: {
+    width: getResponsiveIconSize(12.5),
+    height: getResponsiveIconSize(12.5),
+    resizeMode: 'contain',
+  },
+  section: {
+    borderBottomWidth: 0.5,
+    borderColor: '#E5E5E5',
+    paddingVertical: getResponsiveHeight(8),
+  },
+});
