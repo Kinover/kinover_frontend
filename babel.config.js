@@ -8,6 +8,11 @@ module.exports = {
         root: ['./src'],
         alias: {
           '@': './src',
+          store: './src/store',
+          features: './src/features',
+          utils: './src/utils',
+          assets: './src/assets',
+          app: './src/app',
         },
         extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
       },
@@ -15,6 +20,6 @@ module.exports = {
     [
       'react-native-reanimated/plugin',
       {relativeSourceLocation: true},
-    ], // ✅ plugins 배열의 맨 마지막
+    ],
   ],
 };

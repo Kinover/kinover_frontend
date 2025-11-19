@@ -1,6 +1,13 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, Platform, FlatList} from 'react-native';
-import FastImage from 'react-native-fast-image2';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Platform,
+  FlatList,
+} from 'react-native';
+import FastImage from '@d11/react-native-fast-image';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -69,23 +76,23 @@ export default function SendKinoChat({
     <View style={[styles.sendContainer, spacingStyle]}>
       {showTime && <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>}
 
-      {messageType === 'image'
-        ? imageUrls.length === 1
-          ? (
-            <TouchableOpacity onPress={() => handleImagePress(imageUrls[0], 0)}>
-              <FastImage
-                source={{uri: imageUrls[0]}}
-                style={styles.singleImage}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
-          )
-          : renderImages()
-        : (
-          <View style={[styles.sendBubble, styles.textPadding]}>
-            <Text style={styles.sendText}>{message}</Text>
-          </View>
-        )}
+      {messageType === 'image' ? (
+        imageUrls.length === 1 ? (
+          <TouchableOpacity onPress={() => handleImagePress(imageUrls[0], 0)}>
+            <FastImage
+              source={{uri: imageUrls[0]}}
+              style={styles.singleImage}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
+        ) : (
+          renderImages()
+        )
+      ) : (
+        <View style={[styles.sendBubble, styles.textPadding]}>
+          <Text style={styles.sendText}>{message}</Text>
+        </View>
+      )}
 
       <ImageModal
         visible={modalVisible}

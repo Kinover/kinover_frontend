@@ -4,5 +4,5 @@ module.exports = {
       packageName: 'com.kinover_frontend', // 👈 이 값!
     },
   },
-  assets: ['./app/assets/fonts'],
+  assets: ['./src/assets/fonts'],
 };

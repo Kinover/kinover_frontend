@@ -31,16 +31,14 @@ import {
   getResponsiveWidth,
   getResponsiveHeight,
 } from '../../../utils/responsive';
-import FastImage from 'react-native-fast-image2';
+import FastImage from '@d11/react-native-fast-image';
 import {convertPhUriToFileUri} from '../../../utils/photoUriConverter';
 import {uploadImageWithPresignedUrl} from 'utils/uploadImageWithPresignedUrl';
-// import {uploadImageWithPresignedUrl} from '../../../utils/uploadFile'; // presigned 업로드 유틸
 
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 const windowHeight = Dimensions.get('window').height;
 
-UserBottomSheetModal.displayName = 'UserBottomSheetModal';
-const UserBottomSheetModal = forwardRef(({selectedUser, onSave}, ref) => {
+function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
   const snapPoints = useMemo(() => ['60%', '90%'], []);
   const nameRef = useRef('');
   const traitRef = useRef('');
@@ -258,7 +256,7 @@ const UserBottomSheetModal = forwardRef(({selectedUser, onSave}, ref) => {
       </BottomSheetScrollView>
     </BottomSheetModal>
   );
-});
+}
 
 const styles = StyleSheet.create({
   container: {
@@ -329,5 +327,7 @@ const styles = StyleSheet.create({
     color: 'white',
   },
 });
+const UserBottomSheetModal = forwardRef(UserBottomSheetModalBase);
+UserBottomSheetModal.displayName = 'UserBottomSheetModal';
 
 export default UserBottomSheetModal;

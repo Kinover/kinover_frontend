@@ -5,7 +5,11 @@ import {useDispatch, useSelector} from 'react-redux';
 import {fetchMoreMessagesThunk, fetchMessageThunk} from '../store/messageThunk';
 import {getToken} from '../../../utils/storage';
 import {addMessage} from '../store/messageSlice';
-const messageList = useSelector(state => state.message?.messageList || []);
+
+
+
+export default function useChatRoomScreen(chatRoom, user, isKino) {
+  const messageList = useSelector(state => state.message?.messageList || []);
 
 const flatListRef = useRef(null);
 
@@ -21,7 +25,6 @@ const scrollToBottom = () => {
   }
 };
 
-export default function useChatRoomScreen(chatRoom, user, isKino) {
   const dispatch = useDispatch();
   const socketRef = useRef(null);
 

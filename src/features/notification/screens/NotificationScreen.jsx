@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
-import { fetchNotificationsThunk } from '../store/notificationThunk';
+import {fetchNotificationsThunk} from '../store/notificationThunk';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -16,10 +16,10 @@ import {
 } from 'utils/responsive';
 import useHideTabBar from 'hooks/useHideTabBar';
 import {useNavigation} from '@react-navigation/native';
-import FastImage from 'react-native-fast-image2';
-import { setHasUnread } from '../store/notificationSlice';
+import FastImage from '@d11/react-native-fast-image';
+import {setHasUnread} from '../store/notificationSlice';
 import YellowSpinner from 'components/YellowSpinner';
-import { openNotification } from '../utils/openNotification';
+import {openNotification} from '../utils/openNotification';
 
 const isSameDay = (a, b) =>
   a.getFullYear() === b.getFullYear() &&
@@ -62,7 +62,9 @@ export default function NotificationScreen() {
 
   // ========= 유틸 =========
   const sanitizeUrl = url => {
-    if (!url || typeof url !== 'string') {return '';}
+    if (!url || typeof url !== 'string') {
+      return '';
+    }
     // 중복된 CDN prefix 제거
     return url.replace(
       /(https:\/\/dzqa9jgkeds0b\.cloudfront\.net\/)+/g,
@@ -71,7 +73,9 @@ export default function NotificationScreen() {
   };
 
   const formatWhen = iso => {
-    if (!iso) {return '';}
+    if (!iso) {
+      return '';
+    }
 
     const d = new Date(iso);
 
@@ -84,7 +88,9 @@ export default function NotificationScreen() {
 
     // 12시간제로 변환
     hours = hours % 12;
-    if (hours === 0) {hours = 12;}
+    if (hours === 0) {
+      hours = 12;
+    }
 
     // 분은 항상 2자리로 표시
     const minuteStr = minutes.toString().padStart(2, '0');

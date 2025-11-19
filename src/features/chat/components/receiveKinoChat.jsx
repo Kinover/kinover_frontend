@@ -1,6 +1,13 @@
 import React, {useEffect, useRef, useState} from 'react';
-import {View, Text, StyleSheet, FlatList, TouchableOpacity, Platform} from 'react-native';
-import FastImage from 'react-native-fast-image2';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Platform,
+} from 'react-native';
+import FastImage from '@d11/react-native-fast-image';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -68,24 +75,27 @@ export default function ReceiveKinoChat({
     <View style={[styles.receivedContainer, spacingStyle]}>
       <View style={styles.textContainer}>
         <View style={styles.messageContainer}>
-          {messageType === 'image'
-            ? imageUrls.length === 1
-              ? (
-                <TouchableOpacity onPress={() => handleImagePress(imageUrls[0], 0)}>
-                  <FastImage
-                    source={{uri: imageUrls[0]}}
-                    style={styles.singleImage}
-                    resizeMode="cover"
-                  />
-                </TouchableOpacity>
-              )
-              : renderImages()
-            : (
-              <View style={styles.receivedBubble}>
-                <Text style={styles.receivedText}>{message}</Text>
-              </View>
-            )}
-          {showTime && <Text style={styles.receivedTime}>{formatTime(chatTime)}</Text>}
+          {messageType === 'image' ? (
+            imageUrls.length === 1 ? (
+              <TouchableOpacity
+                onPress={() => handleImagePress(imageUrls[0], 0)}>
+                <FastImage
+                  source={{uri: imageUrls[0]}}
+                  style={styles.singleImage}
+                  resizeMode="cover"
+                />
+              </TouchableOpacity>
+            ) : (
+              renderImages()
+            )
+          ) : (
+            <View style={styles.receivedBubble}>
+              <Text style={styles.receivedText}>{message}</Text>
+            </View>
+          )}
+          {showTime && (
+            <Text style={styles.receivedTime}>{formatTime(chatTime)}</Text>
+          )}
         </View>
       </View>
 

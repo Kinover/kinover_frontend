@@ -13,8 +13,7 @@ import {
 } from '../../utils/responsive';
 import {useNavigation} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import FastImage from 'react-native-fast-image2';
-
+import FastImage from '@d11/react-native-fast-image';
 export default function FamilySetupFinishScreen() {
   const navigation = useNavigation();
 
