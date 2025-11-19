@@ -41,10 +41,9 @@
 	<string>bce05be0c0a25b65bbb43adf582ff2f8</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
-  		<!-- <string>kakaobce05be0c0a25b65bbb43adf582ff2f8</string> -->
 		<string>kakaokompassauth</string>
 		<string>kakaolink</string>
-		<string>kakaotalk</string> <!-- ✅ 이게 빠져있으면 앱 호출 안 됨 -->
+		<string>kakaotalk</string>
 		<string>kakaoauth</string>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
@@ -56,27 +55,27 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 		<key>NSExceptionDomains</key>
-  <dict>
-    <key>kinover.shop</key>
-    <dict>
-      <key>NSExceptionAllowsInsecureHTTPLoads</key>
-      <true/>
-      <key>NSIncludesSubdomains</key>
-      <true/>
-    </dict>
-    <key>43.200.47.242</key>
-    <dict>
-      <key>NSExceptionAllowsInsecureHTTPLoads</key>
-      <true/>
-      <key>NSIncludesSubdomains</key>
-      <true/>
-    </dict>
-  </dict>	
+		<dict>
+			<key>kinover.shop</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+			<key>43.200.47.242</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
+		</dict>
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>카메라를 사용하려면 접근 권한이 필요합니다.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
+	<string/>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>사진을 저장하려면 접근 권한이 필요합니다.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

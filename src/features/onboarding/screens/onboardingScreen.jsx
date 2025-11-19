@@ -19,12 +19,86 @@ import {
   getResponsiveWidth,
 } from '../../../utils/responsive';
 
-import { useAutoLogin } from 'features/auth/hooks/useAutoLogin';
-import { useKakaoLogin } from 'features/auth/hooks/useKakaoLogin';
-import { useOnboardingPager } from '../hooks/useOnboardingPager';
-import { useNavigateToHome } from '../hooks/useNavigateToHome';
+import {useAutoLogin} from 'features/auth/hooks/useAutoLogin';
+import {useKakaoLogin} from 'features/auth/hooks/useKakaoLogin';
+import {useOnboardingPager} from '../hooks/useOnboardingPager';
+import {useNavigateToHome} from '../hooks/useNavigateToHome';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
+
+const styles = StyleSheet.create({
+  container: {flex: 1, backgroundColor: 'white'},
+  slide: {
+    width: SCREEN_WIDTH,
+    height: getResponsiveHeight(500),
+    backgroundColor: 'white',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+    overflow: 'visible',
+  },
+  backgroundImage: {
+    position: 'absolute',
+    width: '200%',
+    height: '100%',
+    bottom: -100,
+  },
+  slideText: {
+    position: 'absolute',
+    bottom:
+      Platform.OS === 'android'
+        ? getResponsiveHeight(-50)
+        : getResponsiveHeight(0),
+    fontFamily: 'Pretendard-Bold',
+    fontWeight: Platform.OS === 'android' ? 'bold' : 'bold',
+    color: '#333',
+  },
+  slideImage: {
+    position: 'absolute',
+    width: '100%',
+    height: '80%',
+    top: getResponsiveHeight(50),
+    zIndex: 999,
+  },
+  highlight: {
+    color: '#FF8D29',
+    fontFamily: 'Pretendard-Bold',
+    fontWeight: Platform.OS === 'android' ? 'bold' : 'bold',
+  },
+  indicatorContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom:
+      Platform.OS === 'ios' ? getResponsiveHeight(70) : getResponsiveHeight(20),
+    gap: getResponsiveWidth(18),
+  },
+  indicatorDot: {
+    width: getResponsiveWidth(7),
+    height: getResponsiveWidth(7),
+    borderRadius: 999,
+    backgroundColor: '#DDD0B1',
+  },
+  activeDot: {
+    backgroundColor: '#FFB000',
+    width: getResponsiveWidth(7),
+    height: getResponsiveWidth(7),
+  },
+  bottomContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingVertical:
+      Platform.OS === 'ios' ? getResponsiveHeight(30) : getResponsiveHeight(40),
+    backgroundColor: 'white',
+    gap: getResponsiveHeight(16),
+  },
+  loginButton: {
+    width: getResponsiveWidth(343),
+    height: getResponsiveHeight(51),
+    borderRadius: getResponsiveWidth(10),
+  },
+});
 
 const slides = [
   {
@@ -43,7 +117,7 @@ const slides = [
     key: '2',
     image: require('../../../assets/onboarding/slide2.png'),
     textSize: 23,
-    textSize_ios: 26.5,
+    textSize_ios: 24.5,
     text: (
       <>
         소소한 대화부터 고민 상담까지 {'\n'}채팅으로
@@ -55,7 +129,7 @@ const slides = [
     key: '3',
     image: require('../../../assets/onboarding/slide3.png'),
     textSize: 26,
-    textSize_ios: 28,
+    textSize_ios: 27,
     text: (
       <>
         가족 일정, {'\n'}
@@ -70,7 +144,7 @@ const slides = [
     key: '4',
     image: require('../../../assets/onboarding/slide4.png'),
     textSize: 23,
-    textSize_ios: 26.5,
+    textSize_ios: 24.5,
     text: (
       <>
         <Text style={styles.highlight}>소중한 순간들</Text>을 {'\n'}
@@ -176,77 +250,3 @@ export default function OnboardingScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: 'white'},
-  slide: {
-    width: SCREEN_WIDTH,
-    height: getResponsiveHeight(500),
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-    position: 'relative',
-    overflow: 'visible',
-  },
-  backgroundImage: {
-    position: 'absolute',
-    width: '200%',
-    height: '100%',
-    bottom: -100,
-  },
-  slideText: {
-    position: 'absolute',
-    bottom:
-      Platform.OS === 'android'
-        ? getResponsiveHeight(-50)
-        : getResponsiveHeight(0),
-    fontFamily: 'Pretendard-Bold',
-    fontWeight: Platform.OS === 'android' ? 'bold' : 'bold',
-    color: '#333',
-  },
-  slideImage: {
-    position: 'absolute',
-    width: '100%',
-    height: '80%',
-    top: getResponsiveHeight(50),
-    zIndex: 999,
-  },
-  highlight: {
-    color: '#FF8D29',
-    fontFamily: 'Pretendard-Bold',
-    fontWeight: Platform.OS === 'android' ? 'bold' : 'bold',
-  },
-  indicatorContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom:
-      Platform.OS === 'ios' ? getResponsiveHeight(70) : getResponsiveHeight(20),
-    gap: getResponsiveWidth(18),
-  },
-  indicatorDot: {
-    width: getResponsiveWidth(7),
-    height: getResponsiveWidth(7),
-    borderRadius: 999,
-    backgroundColor: '#DDD0B1',
-  },
-  activeDot: {
-    backgroundColor: '#FFB000',
-    width: getResponsiveWidth(7),
-    height: getResponsiveWidth(7),
-  },
-  bottomContainer: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingVertical:
-      Platform.OS === 'ios' ? getResponsiveHeight(30) : getResponsiveHeight(40),
-    backgroundColor: 'white',
-    gap: getResponsiveHeight(16),
-  },
-  loginButton: {
-    width: getResponsiveWidth(343),
-    height: getResponsiveHeight(51),
-    borderRadius: getResponsiveWidth(10),
-  },
-});

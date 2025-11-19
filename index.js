@@ -1,13 +1,13 @@
 /**
  * @format
  */
-import 'react-native-gesture-handler';    // ✅ 가장 위
-import 'react-native-reanimated';        // ✅ 두 번째
+import 'react-native-gesture-handler'; // ✅ 가장 위
+import 'react-native-reanimated'; // ✅ 두 번째
 
 import {AppRegistry} from 'react-native';
 import {name as appName} from './app.json';
-import MyApp from './src/app/App';
-import {registerBackgroundMessageHandler} from './src/features/notification/utils/requestNotificationPermission';
+import App from './src/app/App';
+import { registerBackgroundMessageHandler } from './src/features/notification/utils/requestNotificationPermission';
 
 // ✅ polyfill
 if (!Array.prototype.findLastIndex) {
@@ -35,4 +35,4 @@ if (!Array.prototype.findLastIndex) {
 registerBackgroundMessageHandler();
 
 // ✅ 딱 한 번만 등록
-AppRegistry.registerComponent(appName, () => MyApp);
+AppRegistry.registerComponent(appName, () => App);

@@ -27,7 +27,6 @@ import {
 import { useScheduleBottomSheetModal } from '../hooks/useScheduleBottomSheetModal';
 import { useIsAllSelected } from '../hooks/useIsAllSelected';
 
-ScheduleEditorBottomSheetModal.displayName = 'ScheduleEditorBottomSheetModal';
 const ScheduleEditorBottomSheetModal = forwardRef(
   (
     {
@@ -261,6 +260,9 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     );
   },
 );
+
+ScheduleEditorBottomSheetModal.displayName = 'ScheduleEditorBottomSheetModal';
+
 
 const styles = StyleSheet.create({
   container: {

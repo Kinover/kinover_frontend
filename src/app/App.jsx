@@ -1,4 +1,5 @@
-// src/app/App.tsx
+// src/app/App.jsx
+
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import React, {useState} from 'react';
 import {View, StyleSheet, Image} from 'react-native';
@@ -9,10 +10,15 @@ import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {BottomSheetModalProvider} from '@gorhom/bottom-sheet';
 import LottieView from 'lottie-react-native';
 
-import store from 'store/store';
-import ChatSettings from 'features/chat/screens/chatSetting';
-import { navigationRef } from './navigation/navigationRef';
-import { AppNavigator } from './navigation';
+// ⬇️ 지윤 alias 쓰고 싶으면 이걸로
+// import store from '@/store/store';
+
+// ⬇️ alias 못 쓰면 이걸로 (확실하게 동작함)
+import store from '../store/store';
+
+import ChatSettings from '../features/chat/screens/chatSetting';
+import {navigationRef} from './navigation/navigationRef';
+import AppNavigator from './navigation/appNavigator';
 
 export default function App() {
   const [isSplashFinished, setIsSplashFinished] = useState(false);
@@ -25,40 +31,25 @@ export default function App() {
           <Provider store={store}>
             <MenuProvider>
               {isSplashFinished ? (
-                <>
+                <NavigationContainer ref={navigationRef}>
                   <ChatSettings
                     isOpen={isSettingsOpen}
                     onClose={() => setIsSettingsOpen(false)}
                   />
-                  <NavigationContainer ref={navigationRef}>
-                    <AppNavigator setIsSettingsOpen={setIsSettingsOpen} />
-                  </NavigationContainer>
-                </>
+                  <AppNavigator setIsSettingsOpen={setIsSettingsOpen} />
+                </NavigationContainer>
               ) : (
                 <View style={styles.splashContainer}>
                   <Image
-                    source={require('@/assets/images/kinover.png')}
-                    style={{
-                      position: 'absolute',
-                      top: '35.9%',
-                      left: '26.7%',
-                      width: '35%',
-                      height: '22%',
-                      resizeMode: 'contain',
-                    }}
+                    source={require('../assets/images/kinover.png')}
+                    style={styles.logo}
                   />
                   <LottieView
-                    source={require('@/assets/animations/kinoSplash_circle_expand.json')}
+                    source={require('../assets/animations/kinoSplash_circle_expand.json')}
                     autoPlay
                     loop={false}
                     resizeMode="cover"
-                    style={{
-                      position: 'absolute',
-                      width: '100%',
-                      height: '100%',
-                      top: 0,
-                      left: 0,
-                    }}
+                    style={styles.splashAnimation}
                     onAnimationFinish={() => setIsSplashFinished(true)}
                   />
                 </View>
@@ -80,4 +71,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
   },
+  logo: {
+    position:'absolute',
+    width: 180,
+    height: 180,
+    bottom:'43.5%',
+    right:'34.5%',
+    resizeMode: 'contain',
+  },
+  splashAnimation: {
+    width: '100%',
+    height: '100%',
+  },
 });
+

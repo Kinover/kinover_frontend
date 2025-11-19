@@ -1,7 +1,7 @@
 // utils/photo/gallery.js
-import { CameraRoll } from '@react-native-camera-roll/camera-roll';
 import {requestMediaPermission} from './requestMediaPermission';
 import uuid from 'react-native-uuid';
+import { CameraRoll } from '@react-native-camera-roll/camera-roll';
 
 // 📸 사진만 로드
 export async function loadGalleryPhotos(after = null, pageSize = 60) {

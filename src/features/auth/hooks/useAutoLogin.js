@@ -4,9 +4,6 @@ import {useEffect} from 'react';
 import {useDispatch} from 'react-redux';
 import {getHasFamily, getToken} from '../../../utils/storage';
 import { setLoginSuccess } from '../store/authSlice';
-// import { fetchUserThunk } from 'features/home/store/userThunk';
-// import { fetchUserThunk } from 'features/home/store/userThunk';
-// import { fetchFamilyThunk } from 'features/home/store/familyThunk';
 import { fetchUserThunk } from 'features/home/store/userThunk';
 import { fetchFamilyThunk } from 'features/home/store/familyThunk';
 // 가족 ID는 필요하면 파라미터로 바꿔도 됨

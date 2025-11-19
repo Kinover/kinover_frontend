@@ -1,5 +1,5 @@
 import React from 'react';
-import {Text, StyleSheet, Platform, View} from 'react-native';
+import {Text, StyleSheet, Platform, View,ToastAndroid, Alert, Pressable} from 'react-native';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
@@ -8,10 +8,7 @@ import {
 } from '../../../utils/responsive';
 import CustomModal from '../../../components/CustomModal';
 import Clipboard from '@react-native-clipboard/clipboard'; // ✅ 이렇게!
-
-import {ToastAndroid, Alert, Pressable} from 'react-native';
-import FastImage from 'react-native-fast-image2';
-
+import FastImage from '@d11/react-native-fast-image';
 export default function FamilyCodeModal({visible, onClose, familyCode}) {
   return (
     <CustomModal

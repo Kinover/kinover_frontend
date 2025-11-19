@@ -31,13 +31,15 @@ module.exports = {
     'react/prop-types': 'off',
     'no-unused-vars': 'off',
 
-    // ⬇️ 모듈 자체를 못 찾는 건 계속 잡게 두고
+    // 모듈 자체 못 찾는 건 에러
     'import/no-unresolved': 'error',
 
-    // ⬇️ export 타입 헷갈려서 자꾸 시비 거는 애들만 끔
+    // ✅ default / named 임포트 꼬인 건 계속 잡기
+    'import/default': 'error',
+    'import/named': 'error',
+
+    // ❌ react-native 타입 파일 때문에 자꾸 깨져서 끔
     'import/namespace': 'off',
-    'import/default': 'off',
-    'import/named': 'off',
   },
 
   settings: {
@@ -48,9 +50,7 @@ module.exports = {
       },
     },
     'import/ignore': [
-      // picker-select는 계속 무시
       'react-native-picker-select(/.*)?',
-      // 필요하면 여기다 다른 패키지도 추가 가능
     ],
   },
 };

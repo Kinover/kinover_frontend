@@ -1,11 +1,8 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, {  useCallback} from 'react';
+import React, {useCallback} from 'react';
 import {View, StyleSheet, Text, TouchableOpacity, FlatList} from 'react-native';
-import FastImage from 'react-native-fast-image2';
-import {
-  useFocusEffect,
-  useNavigation,
-} from '@react-navigation/native';
+import FastImage from '@d11/react-native-fast-image';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchMemoryThunk} from '../store/memoryThunk';
 import {fetchCategoryThunk} from '../store/categoryThunk';
@@ -77,7 +74,10 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
       onPress={() => navigation.navigate('게시글화면', {memory})}
       style={styles.memoryItem}>
       <Text style={styles.dateText}>{formatDate(memory.createdAt)}</Text>
-      <FastImage style={styles.memoryImage} source={{uri: memory.imageUrls?.[0]}} />
+      <FastImage
+        style={styles.memoryImage}
+        source={{uri: memory.imageUrls?.[0]}}
+      />
       <Text style={styles.commentText}>댓글 {memory.commentCount}</Text>
       <Text style={styles.categoryText}>
         {getCategoryLabel(memory.categoryId)}
@@ -141,7 +141,7 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F9F9F9',},
+  container: {flex: 1, backgroundColor: '#F9F9F9'},
   memoryItem: {
     paddingVertical: getResponsiveHeight(20),
     paddingHorizontal: getResponsiveWidth(30),
