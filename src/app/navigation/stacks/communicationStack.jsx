@@ -3,12 +3,12 @@ import {createStackNavigator} from '@react-navigation/stack';
 import CommunicationScreen from '../../../features/chat/screens';
 import KinoChatRoom from '../../../features/chat/screens/kinoChatRoomScreen';
 import ChatSettings from '../../../features/chat/screens/chatSetting';
-import getResponsiveFontSize, {
+import  {getResponsiveFontSize,
   getResponsiveWidth,
   getResponsiveHeight,
 } from '../../../utils/responsive';
 import {Text, Platform} from 'react-native';
-import {RenderGoBackButton} from '../helpers/tabHeaderHelpers';
+import {RenderGoBackButton,RenderHeaderHome} from '../helpers/tabHeaderHelpers';
 import AddChatMemeberScreen from '../../../features/chat/screens/addChatMemberScreen';
 import CreateChatRoom from '../../../features/chat/screens/createChatRoomScreen';
 import ChatRoom from '../../../features/chat/screens/chatRoomScreen';
@@ -17,7 +17,6 @@ import SettingScreen from '../../../features/setting/screens/SettingScreen';
 import NotificationScreen from '../../../features/notificationScreen';
 import NotificationSettingScreen from '../../../features/setting/screens/NotificationSettingScreen';
 
-import {RenderHeaderHome} from '../helpers/tabHeaderHelpers';
 const Stack = createStackNavigator();
 
 export default function CommunicationStack() {

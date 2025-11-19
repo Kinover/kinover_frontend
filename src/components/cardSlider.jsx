@@ -8,7 +8,7 @@ import {
   Animated,
 } from 'react-native';
 import Carousel from 'react-native-reanimated-carousel';
-import getResponsiveFontSize, {
+import  {getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveWidth,

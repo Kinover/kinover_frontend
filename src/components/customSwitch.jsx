@@ -1,8 +1,6 @@
 import React, {useState} from 'react';
-import {View, Text, TouchableOpacity, Animated} from 'react-native';
+import {View,  TouchableOpacity, Animated} from 'react-native';
 import {
-  getResponsiveFontSize,
-  getResponsiveHeight,
   getResponsiveWidth,
 } from '../utils/responsive';
 

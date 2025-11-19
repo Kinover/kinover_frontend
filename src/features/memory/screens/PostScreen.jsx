@@ -27,8 +27,8 @@ import DescriptionSection from '../components/DescriptionSection';
 import usePostPageViewModel from '../hooks/usePostPageViewModel';
 import {useDispatch, useSelector} from 'react-redux';
 import ImageCarousel from '../components/ImageCarousel';
-import ToastModal from '../../../components/toastModal';
-import CustomModal from '../../../components/customModal';
+import ToastModal from '../../../components/ToastModal';
+import CustomModal from '../../../components/CustomModal';
 
 export default function PostPage({route}) {
   const dispatch = useDispatch();

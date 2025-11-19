@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import React from 'react';
-import CustomModal from '../../../components/customModal';
+import CustomModal from '../../../components/CustomModal';
 
 export default function KinoConfirmModal({visible, onConfirm, onClose}) {
   return (

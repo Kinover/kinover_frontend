@@ -1,14 +1,12 @@
 import React, {useEffect, useState} from 'react';
 import {View, Text, Button} from 'react-native';
-import {useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 import {applyMessagePreview, bumpListRevision} from '../features/chat/store/chatRoomSlice';
-import { fetchChatRoomListThunk } from '../features/chat/store/chatRoomThunk';
 
 const WebSocketComponent = ({token, chatRoomId, userId}) => {
   const [messages, setMessages] = useState([]);
   const [socket, setSocket] = useState(null);
   const dispatch = useDispatch();
-  const familyId=useSelector(state=>state.familyId);
 
   useEffect(() => {
     if (!token || !userId) return;

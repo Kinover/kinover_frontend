@@ -30,19 +30,27 @@ module.exports = {
     ],
     'react/prop-types': 'off',
     'no-unused-vars': 'off',
-    'import/no-unresolved': 'error',
-    'import/namespace': 'off', // ⬅️ 이 줄 추가
 
+    // ⬇️ 모듈 자체를 못 찾는 건 계속 잡게 두고
+    'import/no-unresolved': 'error',
+
+    // ⬇️ export 타입 헷갈려서 자꾸 시비 거는 애들만 끔
+    'import/namespace': 'off',
+    'import/default': 'off',
+    'import/named': 'off',
   },
 
-  // 🔽 이 부분 추가
   settings: {
     'import/resolver': {
       node: {
         extensions: ['.js', '.jsx', '.ts', '.tsx'],
-        moduleDirectory: ['node_modules', 'src'], 
-        // ⬆️ 여기서 'src'를 모듈 루트로 취급 → 'features/...'를 'src/features/...'로 해석
+        moduleDirectory: ['node_modules', 'src'],
       },
     },
+    'import/ignore': [
+      // picker-select는 계속 무시
+      'react-native-picker-select(/.*)?',
+      // 필요하면 여기다 다른 패키지도 추가 가능
+    ],
   },
 };

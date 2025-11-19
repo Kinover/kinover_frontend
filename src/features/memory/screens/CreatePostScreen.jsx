@@ -24,7 +24,7 @@ import {
 } from '../../../utils/responsive';
 import {getPresignedUrls, uploadFileToS3} from '../../../api/imageUrlApi';
 import useHideTabBar from '../../../hooks/useHideTabBar';
-import ToastModal from '../../../components/toastModal';
+import ToastModal from '../../../components/ToastModal';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 

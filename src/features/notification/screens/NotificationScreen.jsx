@@ -18,7 +18,7 @@ import useHideTabBar from 'hooks/useHideTabBar';
 import {useNavigation} from '@react-navigation/native';
 import FastImage from 'react-native-fast-image2';
 import { setHasUnread } from '../store/notificationSlice';
-import YellowSpinner from 'components/yellowSpinner';
+import YellowSpinner from 'components/YellowSpinner';
 import { openNotification } from '../utils/openNotification';
 
 const isSameDay = (a, b) =>

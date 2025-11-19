@@ -1,19 +1,18 @@
 // src/app/App.tsx
-import 'react-native-gesture-handler';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import React, {useState} from 'react';
 import {View, StyleSheet, Image} from 'react-native';
 import {NavigationContainer} from '@react-navigation/native';
 import {Provider} from 'react-redux';
 import {MenuProvider} from 'react-native-popup-menu';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {BottomSheetModalProvider} from '@gorhom/bottom-sheet';
 import LottieView from 'lottie-react-native';
 
-import store from '@/redux/store';                       // alias 쓰면 이렇게
-import ChatSettings from '@/features/chat/screens/chatSetting';
-import {navigationRef} from '@/app/navigations/navigationRef';
-import {AppNavigator} from '@/app/navigations';
+import store from 'store/store';
+import ChatSettings from 'features/chat/screens/chatSetting';
+import { navigationRef } from './navigation/navigationRef';
+import { AppNavigator } from './navigation';
 
 export default function App() {
   const [isSplashFinished, setIsSplashFinished] = useState(false);
