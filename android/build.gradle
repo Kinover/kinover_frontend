@@ -11,14 +11,17 @@ buildscript {
         google()
         mavenCentral()
         maven { url 'https://devrepo.kakao.com/nexus/content/groups/public/' }
-
     }
     dependencies {
-        classpath("com.android.tools.build:gradle")
+        // 🔹 여기에 네가 원래 RN 템플릿에서 쓰던 AGP 버전 넣기 (예: 8.5.0, 8.6.0 등)
+        classpath("com.android.tools.build:gradle:8.5.0")
+
         classpath("com.facebook.react:react-native-gradle-plugin")
-        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
-        classpath("com.google.gms:google-services:4.4.0") // 최신 버전 사용
+
+        // 🔹 위에 ext.kotlinVersion 써서 버전 연결
+        classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
+
+        // 🔹 4.4.0 대신 4.4.1 쓰는 걸 추천 (4.4.0 이슈 있었음)
+        classpath("com.google.gms:google-services:4.4.1")
     }
 }
-
-apply plugin: "com.facebook.react.rootproject"
