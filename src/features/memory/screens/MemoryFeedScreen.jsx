@@ -14,28 +14,52 @@ import {
 } from '../../../utils/responsive';
 
 import {WINDOW_WIDTH} from '@gorhom/bottom-sheet';
+import SkeletonPhotoGridItem from '../components/SkeletonPhotoGridItem';
+import SkeletonMemoryItem from '../components/SkeletonMemoryItem';
 
 const ITEM_MARGIN = getResponsiveWidth(2);
 
 export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
   const dispatch = useDispatch();
   const navigation = useNavigation();
-  // const route = useRoute();
+
   const familyId = useSelector(state => state.family.familyId);
   const {memoryList} = useSelector(state => state.memory);
   const categoryList = useSelector(state => state.category.categoryList);
-  // const category = route?.params?.category;
 
-  // useEffect(() => {
-  //   if (category) {setTitle(category.title);}
-  // }, [category]);
-
+  // ✅ 항상 실행되게 맨 위에서 선언
   useFocusEffect(
     useCallback(() => {
+      if (!familyId) return;
       dispatch(fetchMemoryThunk(familyId));
       dispatch(fetchCategoryThunk(familyId));
     }, [dispatch, familyId]),
   );
+
+  // ✅ 매 렌더마다 현재 상태로부터 "파생"해서 계산
+  const isLoading = !memoryList || memoryList.length === 0;
+
+  if (isLoading) {
+    return (
+      <View style={{flex: 1, paddingTop: 4}}>
+        {selectedTab === 'allPhotos' ? (
+          <FlatList
+            data={Array(12).fill(0)}
+            numColumns={4}
+            columnWrapperStyle={{gap: ITEM_MARGIN}}
+            keyExtractor={(_, idx) => `skeleton-photo-${idx}`}
+            renderItem={() => <SkeletonPhotoGridItem />}
+          />
+        ) : (
+          <FlatList
+            data={Array(5).fill(0)}
+            keyExtractor={(_, idx) => `skeleton-memory-${idx}`}
+            renderItem={() => <SkeletonMemoryItem />}
+          />
+        )}
+      </View>
+    );
+  }
 
   const filteredMemoryList =
     selectedCategoryTitle === '전체'
@@ -96,7 +120,7 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
         onPress={() =>
           navigation.navigate('게시글화면', {
             memory: item.memory,
-            imageIndex: imageIndexInPost, // ✅ 추가
+            imageIndex: imageIndexInPost,
           })
         }
         style={{
