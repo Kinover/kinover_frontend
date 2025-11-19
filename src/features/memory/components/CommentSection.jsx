@@ -21,8 +21,7 @@ import {
 } from '../../../utils/responsive';
 // eslint-disable-next-line import/named
 import { Swipeable} from 'react-native-gesture-handler';
-import FastImage from 'react-native-fast-image2';
-
+import FastImage from '@d11/react-native-fast-image';
 const ACTION_W = getResponsiveWidth(70);
 
 export default function CommentSection({

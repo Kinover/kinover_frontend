@@ -8,7 +8,7 @@ import {
   getResponsiveWidth,
 } from '../../../utils/responsive';
 import {useSelector} from 'react-redux';
-import FastImage from 'react-native-fast-image2';
+import FastImage from '@d11/react-native-fast-image';
 
 // ✅ 공통 아이콘 버튼 생성기
 const createIconButton = (

@@ -1,21 +1,20 @@
+// babel.config.js
 module.exports = {
   presets: ['module:@react-native/babel-preset'],
   plugins: [
     [
       'module-resolver',
       {
-        root: ['./src'],          // ✅ 기준 경로
+        root: ['./src'],
         alias: {
-          '@': './src',           // ✅ "@/..." → "src/..."
+          '@': './src',
         },
         extensions: ['.js', '.jsx', '.ts', '.tsx', '.json'],
       },
     ],
     [
       'react-native-reanimated/plugin',
-      {
-        relativeSourceLocation: true,
-      },
-    ], // ⛔ reanimated는 꼭 맨 마지막!
+      {relativeSourceLocation: true},
+    ], // ✅ plugins 배열의 맨 마지막
   ],
 };

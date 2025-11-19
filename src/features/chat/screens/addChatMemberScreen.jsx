@@ -21,7 +21,7 @@ import {
 } from '../../../utils/responsive';
 import {fetchFamilyUserListThunk} from '../../home/store/familyUserThunk';
 import useHideTabBar from '../../../hooks/useHideTabBar';
-import FastImage from 'react-native-fast-image2';
+import FastImage from '@d11/react-native-fast-image';
 
 export default function AddChatMemberScreen({navigation, route}) {
   const {chatRoomId} = route.params;
