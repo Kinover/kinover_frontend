@@ -5,7 +5,7 @@ import {
   getResponsiveFontSize,
   getResponsiveWidth,
 } from '../../../utils/responsive';
-import CustomModal from '../../../components/customModal';
+import CustomModal from '../../../components/CustomModal';
 export default function LogoutModal({ visible, onClose, onConfirm }) {
   return (
     <CustomModal

@@ -6,7 +6,7 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-import CustomModal from '../../../components/customModal';
+import CustomModal from '../../../components/CustomModal';
 import Clipboard from '@react-native-clipboard/clipboard'; // ✅ 이렇게!
 
 import {ToastAndroid, Alert, Pressable} from 'react-native';

@@ -20,7 +20,7 @@ import {
   getResponsiveIconSize,
 } from '../../../utils/responsive';
 import useHideTabBar from '../../../hooks/useHideTabBar';
-import ToastModal from '../../../components/toastModal'; // ✅ 추가
+import ToastModal from '../../../components/ToastModal'; // ✅ 추가
 
 export default function CreateChatRoom({navigation}) {
   const dispatch = useDispatch();

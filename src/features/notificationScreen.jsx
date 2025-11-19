@@ -15,7 +15,7 @@ import {
   getResponsiveWidth,
 } from '../utils/responsive';
 import useHideTabBar from '../hooks/useHideTabBar';
-import YellowSpinner from '../components/yellowSpinner';
+import YellowSpinner from '../components/YellowSpinner';
 import { useNotificationList } from './notification/hooks/useNotificationList';
 
 

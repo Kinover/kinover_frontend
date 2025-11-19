@@ -17,7 +17,7 @@ import {
   getResponsiveIconSize,
 } from '../../../utils/responsive';
 import FastImage from 'react-native-fast-image2';
-import YellowSpinner from '../../../components/yellowSpinner';
+import YellowSpinner from '../../../components/YellowSpinner';
 
 export default function CommunicationScreen({navigation}) {
   const dispatch = useDispatch();

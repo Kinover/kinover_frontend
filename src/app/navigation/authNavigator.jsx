@@ -5,8 +5,7 @@ import {createStackNavigator} from '@react-navigation/stack';
 import OnboardingScreen from '../../features/onboarding/screens/onboardingScreen';
 import FamilySetupScreen from '../../features/family/familySetupScreen';
 import FamilySetupFinishScreen from '../../features/family/familySetupFinishScreen';
-import CreateFamilyScreen from '../../features/family/createFamilyScreen';
-
+import CreateFamilyScreen from 'features/family/CreateFamilyScreen';
 const AuthStack = createStackNavigator();
 
 export default function AuthNavigator() {

@@ -15,7 +15,7 @@ import {getResponsiveWidth, getResponsiveHeight} from '../../../utils/responsive
 // 컴포넌트 분리
 import HeaderSection from '../components/HeaderSection';
 import MemberGridSection from '../components/MemberGridSection';
-import YellowSpinner from '../../../components/yellowSpinner';
+import YellowSpinner from '../../../components/YellowSpinner';
 import {
   requestNotificationPermission,
   getFcmTokenAndSend,

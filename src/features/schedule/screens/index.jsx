@@ -19,7 +19,7 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-import YellowSpinner from '../../../components/yellowSpinner';
+import YellowSpinner from '../../../components/YellowSpinner';
 
 import {useScheduleDate} from '../hooks/useScheduleDate';
 import {useScheduleCounts} from '../hooks/useScheduleCounts';

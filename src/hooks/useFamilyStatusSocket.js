@@ -5,9 +5,6 @@ import {
   setLastActiveMap,
   setOnlineUserIds,
 } from '../features/home/store/familySlice';
-import {URLSearchParams} from 'react-native-url-polyfill';
-
-
 
 const useFamilyStatusSocket = familyId => {
   const dispatch = useDispatch();
@@ -24,10 +21,11 @@ const useFamilyStatusSocket = familyId => {
       }
 
       // ✅ iOS ATS: wss + 파라미터 인코딩
-      const qs = new URLSearchParams({
-        token,
-        familyId: String(familyId),
-      }).toString();
+      const qs =
+        'token=' +
+        encodeURIComponent(token) +
+        '&familyId=' +
+        encodeURIComponent(String(familyId));
       const url = `ws://kinover.shop:9090/family-status?${qs}`;
       console.log('[WS /family-status] 연결 시도:', url);
 
@@ -75,7 +73,9 @@ const useFamilyStatusSocket = familyId => {
         console.log('[WS /family-status] WebSocket 연결 해제');
         try {
           socketRef.current.close();
-        } catch { /* empty */ }
+        } catch {
+          /* empty */
+        }
         socketRef.current = null;
       }
     };

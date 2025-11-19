@@ -12,7 +12,7 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-import CustomModal from '../../../components/customModal';
+import CustomModal from '../../../components/CustomModal';
 
 export default function DeleteAccountModal({visible, onClose, onConfirm}) {
   const [showConfirmInputModal, setShowConfirmInputModal] = useState(false);

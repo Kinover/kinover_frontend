@@ -1,9 +1,7 @@
 // components/TabBarWrapper.js
 import React from 'react';
-import { Platform } from 'react-native';
+import { Platform,View,StyleSheet } from 'react-native';
 import {BottomTabBar} from '@react-navigation/bottom-tabs';
-import {View} from 'react-native';
-import {StyleSheet} from 'react-native';
 
 export default function TabBarWrapper(props) {
   return (

@@ -7,10 +7,9 @@ import {
   getResponsiveHeight,
   getResponsiveFontSize,
 } from '../../../utils/responsive';
-import {RenderHeaderHome} from '../helpers/tabHeaderHelpers';
+import {RenderHeaderHome,RenderGoBackButton} from '../helpers/tabHeaderHelpers';
 import SettingScreen from '../../../features/setting/screens/SettingScreen';
 import NotificationScreen from '../../../features/notificationScreen';
-import {RenderGoBackButton} from '../helpers/tabHeaderHelpers';
 import NotificationSettingScreen from '../../../features/setting/screens/NotificationSettingScreen';
 
 const Stack = createStackNavigator();
