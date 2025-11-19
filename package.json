@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@d11/react-native-fast-image": "^8.13.0",
     "@gorhom/bottom-sheet": "^4.4.6",
     "@notifee/react-native": "^9.1.8",
     "@react-native-async-storage/async-storage": "^2.1.2",
@@ -38,7 +39,6 @@
     "react-native-bootsplash": "^6.3.10",
     "react-native-calendars": "^1.1312.1",
     "react-native-dropdown-picker": "^5.4.6",
-    "react-native-fast-image2": "^8.3.11",
     "react-native-fonts": "^0.0.0",
     "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "^2.29.0",

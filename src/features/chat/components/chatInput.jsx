@@ -12,7 +12,7 @@ import {
   Text,
   Image,
 } from 'react-native';
-import FastImage from 'react-native-fast-image2';
+import FastImage from '@d11/react-native-fast-image';
 // eslint-disable-next-line import/named
 import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
 import {getPresignedUrls, uploadFileToS3} from '../../../api/imageUrlApi';
