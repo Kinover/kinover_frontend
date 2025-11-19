@@ -219,7 +219,7 @@ export default function ChatInput({
               style={styles.clearButton}
               onPress={() => setMessage('')}>
               <FastImage
-                source={require('../../../../assets/images/clearBt.png')}
+                source={require('../../../assets/images/clearBt.png')}
                 style={styles.clearIcon}
               />
             </TouchableOpacity>

@@ -145,7 +145,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                   )}
                   {isSelectedAll && (
                     <Image
-                      source={require('../../assets/icons/check-yellow.png')}
+                      source={require('../../../assets/icons/check-yellow.png')}
                       style={styles.checkIcon}
                     />
                   )}
@@ -193,7 +193,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                       )}
                       {isSel && (
                         <Image
-                          source={require('../../assets/icons/check-yellow.png')}
+                          source={require('../../../assets/icons/check-yellow.png')}
                           style={styles.checkIcon}
                         />
                       )}

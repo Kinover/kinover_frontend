@@ -57,7 +57,7 @@ export default function MemoryScreen() {
         }}
         onPress={navigateToImageSelect}>
         <Image
-          source={require('../../assets/icons/posting-floating-bt.png')}
+          source={require('../../../assets/icons/posting-floating-bt.png')}
           style={{width: '100%', height: '100%', objectFit: 'contain'}}
         />
       </TouchableOpacity>

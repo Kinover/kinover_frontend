@@ -133,7 +133,7 @@ export default function ScheduleScreen() {
         }}
         onPress={() => openSheet(null)}>
         <Image
-          source={require('../../assets/icons/schedule-bt.png')}
+          source={require('../../../assets/icons/schedule-bt.png')}
           style={{width: '100%', height: '100%', objectFit: 'contain'}}
         />
       </TouchableOpacity>

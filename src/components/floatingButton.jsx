@@ -17,11 +17,11 @@ export default function FloatingButton({type, navigation}) {
 
   const getImageSource = () => {
     if (type === 'communication') {
-      return require('../assets/images/createNewChatRoom-bt.png');
+      return require('@/assets/images/createNewChatRoom-bt.png');
     } else if (type === 'memory') {
-      return require('../assets/images/memory_floating-button.png');
+      return require('@/assets/images/memory_floating-button.png');
     } else if (type === 'challenge') {
-      return require('../assets/images/communication_floating-button.png');
+      return require('@/assets/images/communication_floating-button.png');
     }
   };
 

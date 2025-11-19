@@ -19,14 +19,14 @@ import {modifyUserThunk} from '../store/userThunk';
 import {useNavigation} from '@react-navigation/native';
 
 const EMOTIONS = [
-  {id: 'ANNOYED', label: '짜증나요', url: require('../../assets/icons/state/annoyed.png')},
-  {id: 'WORRIED', label: '걱정돼요', url: require('../../assets/icons/state/anxious.png')},
-  {id: 'DEPRESSED', label: '우울해요', url: require('../../assets/icons/state/depressed.png')},
-  {id: 'SORRY', label: '미안해요', url: require('../../assets/icons/state/sorry.png')},
-  {id: 'TIRED', label: '힘들어요', url: require('../../assets/icons/state/exhausted.png')},
-  {id: 'EXCITED', label: '신나요', url: require('../../assets/icons/state/excited.png')},
-  {id: 'NEUTRAL', label: '평범해요', url: require('../../assets/icons/state/neutral.png')},
-  {id: 'HAPPY', label: '행복해요', url: require('../../assets/icons/state/happy.png')},
+  {id: 'ANNOYED', label: '짜증나요', url: require('../../../assets/icons/state/annoyed.png')},
+  {id: 'WORRIED', label: '걱정돼요', url: require('../../../assets/icons/state/anxious.png')},
+  {id: 'DEPRESSED', label: '우울해요', url: require('../../../assets/icons/state/depressed.png')},
+  {id: 'SORRY', label: '미안해요', url: require('../../../assets/icons/state/sorry.png')},
+  {id: 'TIRED', label: '힘들어요', url: require('../../../assets/icons/state/exhausted.png')},
+  {id: 'EXCITED', label: '신나요', url: require('../../../assets/icons/state/excited.png')},
+  {id: 'NEUTRAL', label: '평범해요', url: require('../../../assets/icons/state/neutral.png')},
+  {id: 'HAPPY', label: '행복해요', url: require('../../../assets/icons/state/happy.png')},
 ];
 
 const EmotionItem = ({item, isSelected, onPress}) => {

@@ -66,7 +66,7 @@ export default function NotificationScreen() {
                 source={
                   row.leftImageUrl
                     ? {uri: row.leftImageUrl}
-                    : require('../../assets/images/default.png')
+                    : require('../assets/images/default.png')
                 }
                 style={styles.profileImage}
               />

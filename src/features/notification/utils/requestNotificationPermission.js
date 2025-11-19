@@ -1,5 +1,5 @@
 // notification/requestNotificationPermission.js
-import store from '../store/store';
+import store from 'store/store';
 import { PermissionsAndroid, Platform, Alert } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import axios from 'axios';

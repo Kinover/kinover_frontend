@@ -49,7 +49,7 @@ function Schedule({selectedDate, onOpenSheet, refreshTrigger}) {
                   width: '100%',
                   height: '100%',
                 }}
-                source={require('../../assets/images/schedule.png')}
+                source={require('../../../assets/images/schedule.png')}
               />
               <View>
                 <Text style={styles.cardTitle}>

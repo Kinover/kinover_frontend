@@ -80,7 +80,7 @@ export default function CommunicationScreen({navigation}) {
         onPress={() => navigation.navigate('채팅방생성화면')}
         style={styles.fab}>
         <FastImage
-          source={require('../../assets/icons/chat-floating-bt.png')}
+          source={require('../../../assets/icons/chat-floating-bt.png')}
           style={{width: '100%', height: '100%', objectFit: 'contain'}}
         />
       </TouchableOpacity>

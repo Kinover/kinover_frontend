@@ -204,8 +204,8 @@ export default function ChatSettings({
               style={styles.alarmIcon}
               source={
                 isAlarmOn
-                  ? require('../../../../assets/images/navigator_alarm-button.png')
-                  : require('../../../../assets/images/navigator_alarm-button-off4.png')
+                  ? require('../../../assets/images/navigator_alarm-button.png')
+                  : require('../../../assets/images/navigator_alarm-button-off4.png')
               }
             />
           </TouchableOpacity>
@@ -227,7 +227,7 @@ export default function ChatSettings({
               <View style={styles.optionRow}>
                 <Text style={styles.optionText}>멤버 목록</Text>
                 <Image
-                  source={require('../../../../assets/images/down-yellow.png')}
+                  source={require('../../../assets/images/down-yellow.png')}
                   style={[
                     styles.arrowIcon,
                     {transform: [{rotate: showMembers ? '180deg' : '0deg'}]},
@@ -249,7 +249,7 @@ export default function ChatSettings({
                     onPress={handleShowMembers}
                     style={styles.addMemberButton}>
                     <Image
-                      source={require('../../../../assets/images/addMember-bt.png')}
+                      source={require('../../../assets/images/addMember-bt.png')}
                       style={styles.addIcon}
                     />
                     <Text style={styles.addText}>새 멤버 초대</Text>

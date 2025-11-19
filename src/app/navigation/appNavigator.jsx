@@ -27,7 +27,7 @@ export default function AppNavigator({_}) {
         headerTitle: () => (
           <View style={{paddingBottom: getResponsiveHeight(10)}}>
             <Image
-              source={require('../assets/images/kinover.png')}
+              source={require('@/assets/images/kinover.png')}
               style={{
                 width: getResponsiveWidth(49),
                 height: getResponsiveHeight(46),

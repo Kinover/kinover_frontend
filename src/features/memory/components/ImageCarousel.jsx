@@ -128,7 +128,7 @@ export default function ImageCarousel({
         <View style={styles.commentSection}>
           <TouchableOpacity onPress={handleCommentToggle}>
             <Image
-              source={require('../../../../../assets/icons/chatCircleDots.png')}
+              source={require('../../../assets/icons/chatCircleDots.png')}
               style={styles.icon}
             />
           </TouchableOpacity>
