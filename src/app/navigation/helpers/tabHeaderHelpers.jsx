@@ -98,7 +98,7 @@ export const renderTabBarLabel = (label, focused) => (
 export const RenderHeaderTitleLogo = () => (
   <View style={{paddingBottom: getResponsiveHeight(20)}}>
     <FastImage
-      source={require('../assets/icons/kino-logo.png')}
+      source={require('@/assets/icons/kino-logo.png')}
       style={{
         top: getResponsiveHeight(6),
         width: getResponsiveWidth(47),
@@ -113,12 +113,12 @@ export const RenderHeaderTitleLogo = () => (
 export const RenderHeaderHome = ({navigation, currentScreen}) => {
   const bellIcon =
     currentScreen === '홈'
-      ? require('../assets/icons/bell-white.png')
-      : require('../assets/icons/bell.png');
+      ? require('@/assets/icons/bell-white.png')
+      : require('@/assets/icons/bell.png');
   const settingIcon =
     currentScreen === '홈'
-      ? require('../assets/icons/setting-white.png')
-      : require('../assets/icons/setting.png');
+      ? require('@/assets/icons/setting-white.png')
+      : require('@/assets/icons/setting.png');
 
   return (
     <View
@@ -161,7 +161,7 @@ export const RenderHeaderLeft1 = ({navigation}) =>
         screen: '감정',
         params: {screen: '알림화면'},
       }),
-    require('../assets/images/navigator_alarm-button.png'),
+    require('@/assets/images/navigator_alarm-button.png'),
     getResponsiveIconSize(24),
     getResponsiveIconSize(26),
     {marginLeft: getResponsiveWidth(20)},
@@ -174,7 +174,7 @@ export const RenderHeaderRightSetting = ({navigation}) =>
         screen: '홈',
         params: {screen: '설정화면'},
       }),
-    require('../assets/images/setting_bt.png'),
+    require('@/assets/images/setting_bt.png'),
     getResponsiveIconSize(24),
     getResponsiveIconSize(26),
     {marginRight: getResponsiveWidth(20)},
@@ -183,7 +183,7 @@ export const RenderHeaderRightSetting = ({navigation}) =>
 export const RenderHeaderRightChatSetting = ({setIsSettingsOpen}) =>
   createIconButton(
     () => setIsSettingsOpen(true),
-    require('../assets/images/dots2.png'),
+    require('@/assets/images/dots2.png'),
     21,
     25,
     {marginRight: getResponsiveWidth(30)},
@@ -192,7 +192,7 @@ export const RenderHeaderRightChatSetting = ({setIsSettingsOpen}) =>
 export const RenderHeaderDeletePost = () =>
   createIconButton(
     () => {},
-    require('../assets/images/trash.png'),
+    require('@/assets/images/trash.png'),
     24, // 조금 크게
     24,
     {marginRight: getResponsiveWidth(20)},
@@ -202,7 +202,7 @@ export const RenderHeaderDeletePost = () =>
 export const RenderGoBackButton = ({navigation}) =>
   createIconButton(
     () => navigation.goBack(),
-    require('../assets/icons/caretDown.png'),
+    require('@/assets/icons/caretDown.png'),
     30,
     30,
     {marginLeft: getResponsiveWidth(20)},
@@ -212,7 +212,7 @@ export const RenderGoBackButton = ({navigation}) =>
 export const RenderGoBackButtonGallery = ({navigation}) =>
   createIconButton(
     () => navigation.goBack(),
-    require('../assets/images/navigator_goback-button.png'),
+    require('@/assets/images/navigator_goback-button.png'),
     9,
     20,
     {marginLeft: getResponsiveWidth(25)},
@@ -229,7 +229,7 @@ export const RenderHeaderLogo = ({navigation}) => (
     }
     style={{flexDirection: 'row', alignItems: 'flex-end'}}>
     <FastImage
-      source={require('../assets/images/kinover.png')}
+      source={require('@/assets/images/kinover.png')}
       style={{
         width: getResponsiveWidth(70),
         height: getResponsiveHeight(70),

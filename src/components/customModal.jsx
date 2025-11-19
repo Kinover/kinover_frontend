@@ -79,7 +79,7 @@ export default function CustomModal({
                 style={styles.trashButton}
                 hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
                 <Image
-                  source={require('../../assets/images/trash.png')}
+                  source={require('@/assets/images/trash.png')}
                   style={styles.trashIcon}
                   resizeMode="contain"
                 />
@@ -95,7 +95,7 @@ export default function CustomModal({
                     width: getResponsiveIconSize(10),
                     height: getResponsiveIconSize(10),
                   }}
-                  source={require('../../assets/images/close-yellow.png')}
+                  source={require('@/assets/images/close-yellow.png')}
                 />
               </TouchableOpacity>
             )}

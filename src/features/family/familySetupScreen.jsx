@@ -88,7 +88,7 @@ export default function FamilySetupScreen() {
             <FastImage
               style={styles.mainImage}
               resizeMode="contain"
-              source={require('../../assets/images/familySetup_kinoFamily.png')}
+              source={require('@/assets/images/familySetup_kinoFamily.png')}
             />
 
             <View style={styles.buttonContainer}>

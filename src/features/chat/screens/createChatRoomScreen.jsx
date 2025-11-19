@@ -63,7 +63,7 @@ export default function CreateChatRoom({navigation}) {
           onPress={handleCreateChatRoom}
           style={{marginRight: getResponsiveWidth(10)}}>
           <Image
-            source={require('../../assets/icons/check.png')}
+            source={require('../../../assets/icons/check.png')}
             style={styles.headerCheckIcon}
           />
         </TouchableOpacity>
@@ -142,8 +142,8 @@ export default function CreateChatRoom({navigation}) {
                 <Image
                   source={
                     isSelected
-                      ? require('../../assets/images/selected-bt.png')
-                      : require('../../assets/images/unselected-bt.png')
+                      ? require('../../../assets/images/selected-bt.png')
+                      : require('../../../assets/images/unselected-bt.png')
                   }
                   style={styles.selectIcon}
                 />

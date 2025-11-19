@@ -46,7 +46,7 @@ export default function MediaModal({
       <View style={styles.closeButtonContainer}>
         <TouchableWithoutFeedback onPress={onClose}>
           <Image
-            source={require('../../../../assets/images/clearBt1.png')}
+            source={require('../../../assets/images/clearBt1.png')}
             style={{
               width: getResponsiveWidth(22.5),
               height: getResponsiveHeight(22.5),

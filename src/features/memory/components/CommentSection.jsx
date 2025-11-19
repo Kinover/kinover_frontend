@@ -204,7 +204,7 @@ export default function CommentSection({
               <TouchableOpacity onPress={onSubmitComment}>
                 <FastImage
                   style={styles.commentSendBt}
-                  source={require('../../../../../assets/icons/paperPlaneTilt.png')}
+                  source={require('../../../assets/icons/paperPlaneTilt.png')}
                 />
               </TouchableOpacity>
             </View>

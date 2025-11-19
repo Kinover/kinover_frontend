@@ -49,7 +49,7 @@ export default function AddChatMemberScreen({navigation, route}) {
           onPress={handleNext}
           style={{marginRight: getResponsiveWidth(10)}}>
           <FastImage
-            source={require('../../../../assets/icons/check.png')}
+            source={require('../../../assets/icons/check.png')}
             style={styles.headerCheckIcon}
           />
         </TouchableOpacity>
@@ -115,8 +115,8 @@ export default function AddChatMemberScreen({navigation, route}) {
                 <Image
                   source={
                     isSelected
-                      ? require('../../../../assets/images/selected-bt.png')
-                      : require('../../../../assets/images/unselected-bt.png')
+                      ? require('../../../assets/images/selected-bt.png')
+                      : require('../../../assets/images/unselected-bt.png')
                   }
                   style={styles.selectIcon}
                 />

@@ -29,7 +29,7 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 const slides = [
   {
     key: '1',
-    image: require('../../assets/onboarding/slide1.png'),
+    image: require('../../../assets/onboarding/slide1.png'),
     textSize: 26,
     textSize_ios: 27,
     text: (
@@ -41,7 +41,7 @@ const slides = [
   },
   {
     key: '2',
-    image: require('../../assets/onboarding/slide2.png'),
+    image: require('../../../assets/onboarding/slide2.png'),
     textSize: 23,
     textSize_ios: 26.5,
     text: (
@@ -53,7 +53,7 @@ const slides = [
   },
   {
     key: '3',
-    image: require('../../assets/onboarding/slide3.png'),
+    image: require('../../../assets/onboarding/slide3.png'),
     textSize: 26,
     textSize_ios: 28,
     text: (
@@ -68,7 +68,7 @@ const slides = [
   },
   {
     key: '4',
-    image: require('../../assets/onboarding/slide4.png'),
+    image: require('../../../assets/onboarding/slide4.png'),
     textSize: 23,
     textSize_ios: 26.5,
     text: (
@@ -109,7 +109,7 @@ export default function OnboardingScreen() {
           return (
             <View style={styles.slide}>
               <Image
-                source={require('../../assets/onboarding/background.png')}
+                source={require('../../../assets/onboarding/background.png')}
                 style={styles.backgroundImage}
                 resizeMode="contain"
               />
@@ -169,7 +169,7 @@ export default function OnboardingScreen() {
         <TouchableOpacity onPress={login}>
           <Image
             style={styles.loginButton}
-            source={require('../../assets/images/kakao-login-button.jpg')}
+            source={require('../../../assets/images/kakao-login-button.jpg')}
           />
         </TouchableOpacity>
       </View>

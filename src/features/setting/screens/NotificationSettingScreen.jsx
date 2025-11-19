@@ -5,7 +5,7 @@ import {
   getResponsiveWidth,
   getResponsiveFontSize,
 } from '../../../utils/responsive';
-import CustomSwitch from '../../../components/customSwitch';
+import CustomSwitch from '../../../components/CustomSwitch';
 import useHideTabBar from '../../../hooks/useHideTabBar';
 import {useDispatch, useSelector} from 'react-redux';
 

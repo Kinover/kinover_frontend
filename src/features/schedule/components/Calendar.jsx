@@ -84,7 +84,7 @@ export default function CalendarToggle({
             hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
             <Image
               style={{flex: 1, width: '100%', height: '100%'}}
-              source={require('../../assets/icons/calendar.png')}
+              source={require('../../../assets/icons/calendar.png')}
             />
           </TouchableOpacity>
         </View>

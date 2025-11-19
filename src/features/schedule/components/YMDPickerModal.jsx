@@ -90,7 +90,7 @@ function Select({value, options = [], onChange, title, placeholder = '선택'}) 
                           height: getResponsiveHeight(13),
                           resizeMode: 'contain',
                         }}
-                        source={require('../../assets/icons/check-yellow.png')}
+                        source={require('../../../assets/icons/check-yellow.png')}
                       />
                     )}
                   </TouchableOpacity>
