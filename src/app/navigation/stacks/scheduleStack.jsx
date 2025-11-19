@@ -9,7 +9,7 @@ import {
 } from '../../../utils/responsive';
 import {RenderHeaderHome,RenderGoBackButton} from '../helpers/tabHeaderHelpers';
 import SettingScreen from '../../../features/setting/screens/SettingScreen';
-import NotificationScreen from '../../../features/notificationScreen';
+import NotificationScreen from '../../../features/NotificationScreen';
 import NotificationSettingScreen from '../../../features/setting/screens/NotificationSettingScreen';
 
 const Stack = createStackNavigator();

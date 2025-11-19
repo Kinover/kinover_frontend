@@ -14,7 +14,7 @@ import CreateChatRoom from '../../../features/chat/screens/createChatRoomScreen'
 import ChatRoom from '../../../features/chat/screens/chatRoomScreen';
 import KinoSelectScreen from '../../../features/chat/screens/kinoSelectScreen';
 import SettingScreen from '../../../features/setting/screens/SettingScreen';
-import NotificationScreen from '../../../features/notificationScreen';
+import NotificationScreen from '../../../features/NotificationScreen';
 import NotificationSettingScreen from '../../../features/setting/screens/NotificationSettingScreen';
 
 const Stack = createStackNavigator();

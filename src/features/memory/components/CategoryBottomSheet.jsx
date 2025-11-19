@@ -26,12 +26,10 @@ import {
   getResponsiveIconSize,
 } from '../../../utils/responsive';
 
-
 const CategoryBottomSheetModal = forwardRef(
   ({categoryList = [], selectedCategory, onSelectCategory}, ref) => {
     const modalRef = useRef(null);
     const [tempSelected, setTempSelected] = useState(selectedCategory);
-
 
     useImperativeHandle(ref, () => ({
       present: () => modalRef.current?.present(),
@@ -117,8 +115,7 @@ const CategoryBottomSheetModal = forwardRef(
     );
   },
 );
-CategoryBottomSheetModal.displayName =
-  'CategoryBottomSheetModal';
+CategoryBottomSheetModal.displayName = 'CategoryBottomSheetModal';
 
 export default CategoryBottomSheetModal;
 

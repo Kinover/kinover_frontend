@@ -17,6 +17,16 @@ export function useNavigateToHome() {
         },
       ],
     });
+    navigation.reset({
+      routes: [
+        {
+          name: 'Auth',
+          state: {
+            routes: [{name: '유저정보세팅화면', state: {routes: [{name: '유저정보세팅화면'}]}}],
+          },
+        },
+      ],
+    });
   }, [navigation]);
 
   return navigateToHome;
