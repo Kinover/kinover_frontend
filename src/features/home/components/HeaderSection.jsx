@@ -1,13 +1,5 @@
-// components/HeaderSection.tsx
 import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-  Image,
-} from 'react-native';
+import {View, Text, TouchableOpacity, StyleSheet, Image} from 'react-native';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -15,8 +7,8 @@ import {
   getResponsiveWidth,
 } from '../../../utils/responsive';
 import {useNavigation} from '@react-navigation/native';
-const AVATAR = getResponsiveIconSize(110);
 
+const AVATAR = getResponsiveIconSize(95); // 🔹 110 → 95 (살짝만 축소)
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 
 const getEmotionImage = emotion => {
@@ -45,34 +37,25 @@ const getEmotionImage = emotion => {
 export default function HeaderSection({user, onUserPress}) {
   const navigation = useNavigation();
 
-  // ✅ 24시간 내 감정만 표시
   let finalEmotion = user?.emotion;
   if (!user?.emotionUpdatedAt) {
     finalEmotion = null;
   } else {
     const updatedTime = new Date(user.emotionUpdatedAt).getTime();
-    if (!Number.isNaN(updatedTime)) {
-      const now = Date.now();
-      const diff = now - updatedTime;
-      if (diff > 24 * 60 * 60 * 1000) {
-        finalEmotion = null;
-      }
-    } else {
+    const now = Date.now();
+    if (isNaN(updatedTime) || now - updatedTime > 24 * 60 * 60 * 1000) {
       finalEmotion = null;
     }
   }
-
   const emotionImage = finalEmotion ? getEmotionImage(finalEmotion) : null;
 
   return (
     <View style={styles.headerContainer}>
       <View style={styles.imageWrapper}>
-        {/* 감정 이미지 (배경) */}
         {!!emotionImage && (
           <Image source={emotionImage} style={styles.emotionImage} />
         )}
 
-        {/* 프로필 이미지 */}
         <TouchableOpacity onPress={() => navigation.navigate('감정상태화면')}>
           <Image
             source={
@@ -95,13 +78,11 @@ export default function HeaderSection({user, onUserPress}) {
         </TouchableOpacity>
       </View>
 
-      {/* 배경 박스 */}
       <TouchableOpacity
         onPress={() => onUserPress(user)}
         style={styles.headerBox}
       />
 
-      {/* 이름 / 특징 */}
       <Text style={styles.userNameHeader}>{user.name}</Text>
       <Text style={styles.trait}>
         {user?.trait || '이 사람을 한마디로 표현한다면?'}
@@ -114,47 +95,45 @@ const styles = StyleSheet.create({
   headerContainer: {
     position: 'relative',
     alignItems: 'center',
-    marginTop:
-      Platform.OS === 'android'
-        ? -getResponsiveHeight(-25)
-        : getResponsiveHeight(0),
-    marginBottom:
-      Platform.OS === 'android'
-        ? getResponsiveHeight(20)
-        : getResponsiveHeight(25),
+    marginTop: getResponsiveHeight(15), // 🔹 원본보다 작고, 방금 버전보다 큼
+    marginBottom: getResponsiveHeight(18),
     zIndex: 10,
     marginHorizontal: getResponsiveWidth(25),
   },
+
   headerBox: {
     position: 'absolute',
     bottom: 0,
     backgroundColor: 'white',
-    elevation: 5,
+    elevation: 2, // 🔹 그림자 약하게
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 0},
-    shadowOpacity: 0.25,
-    shadowRadius: 2,
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
     borderRadius: getResponsiveIconSize(10),
     width: '100%',
-    height: getResponsiveHeight(160),
+    height: getResponsiveHeight(135), // 🔹 160 → 135 (중간값)
     zIndex: -5,
   },
+
   imageWrapper: {
     position: 'relative',
     justifyContent: 'flex-end',
     alignItems: 'center',
-    marginTop: getResponsiveHeight(40),
-    width: AVATAR * 1.25,
-    height: AVATAR * 1.25,
+    marginTop: getResponsiveHeight(30), // 🔹 너무 위로 치우치지 않게
+    width: AVATAR * 1.22,
+    height: AVATAR * 1.22,
   },
+
   emotionImage: {
     position: 'absolute',
-    width: AVATAR * 1.55,
+    width: AVATAR * 1.55, // 🔹 미묘하게 축소
     height: AVATAR * 1.55,
     resizeMode: 'contain',
     bottom: 0,
     zIndex: 0,
   },
+
   profileImage: {
     borderRadius: 999,
     zIndex: 1,
@@ -164,21 +143,23 @@ const styles = StyleSheet.create({
     height: AVATAR,
   },
   profileImageWithoutEmotion: {
-    width: AVATAR * 1.35,
-    height: AVATAR * 1.35,
+    width: AVATAR * 1.3, // 🔹 1.35 → 1.30
+    height: AVATAR * 1.3,
   },
+
   userNameHeader: {
     fontFamily: 'Pretendard-Medium',
     fontWeight: '600',
-    fontSize: getResponsiveFontSize(20),
-    marginTop: getResponsiveHeight(15),
+    fontSize: getResponsiveFontSize(18), // 🔹 20 → 18
+    marginTop: getResponsiveHeight(12),
     color: 'black',
   },
   trait: {
     fontFamily: 'Pretendard-Light',
-    fontSize: getResponsiveFontSize(16),
-    marginTop: getResponsiveHeight(10),
-    marginBottom: getResponsiveHeight(25),
+    fontSize: getResponsiveFontSize(14.5), // 🔹 16 → 14.5
+    marginTop: getResponsiveHeight(6),
+    marginBottom: getResponsiveHeight(18),
     color: 'gray',
+    textAlign: 'center',
   },
 });

@@ -16,6 +16,7 @@ import {
 } from '../../../utils/responsive';
 import {formatRelativeKorean} from '../utils/dateUtils';
 import {getEmotionImage} from '../utils/emotionUtils';
+
 const AVATAR = getResponsiveIconSize(62);
 const DOT = Math.max(10, Math.round(AVATAR * 0.28));
 
@@ -29,22 +30,16 @@ export default function MemberGridSection({
 }) {
   const {width: screenWidth} = useWindowDimensions();
 
-  const addButtonMember = {isAddButton: true};
-  const membersWithAdd = [...members, addButtonMember];
-
   const marginH = getResponsiveWidth(25);
   const paddingH = getResponsiveWidth(16);
   const gapX = getResponsiveWidth(0);
   const gapY = getResponsiveHeight(15);
-  const innerContentWidth = screenWidth - marginH * 2 - paddingH * 2 + 15;
+
+  const innerContentWidth = screenWidth - marginH * 2 - paddingH * 2;
   const itemWidth = (innerContentWidth - gapX * (chunkSize - 1)) / chunkSize;
 
   const renderUser = (member, index) => {
-    if (member.isAddButton) {
-      return null;
-    }
-
-    const memberId = String(member.userId ?? member.id ?? member._id);
+    const memberId = String(member.userId ?? member.id ?? member._id ?? index);
     const isOnline = onlineUserIds?.includes?.(member.userId);
     const lastRaw = lastActiveMap?.[memberId];
 
@@ -54,7 +49,7 @@ export default function MemberGridSection({
       ? `${formatRelativeKorean(lastRaw)} 접속`
       : null;
 
-    // emotion 처리
+    // emotion 처리 (24시간 이내만 표시)
     let finalEmotion = member.emotion;
     if (!member.emotionUpdatedAt) {
       finalEmotion = null;
@@ -75,14 +70,14 @@ export default function MemberGridSection({
 
     return (
       <TouchableOpacity
-        key={memberId ?? index}
+        key={memberId}
         style={[
           styles.user,
           {
             width: itemWidth,
             marginRight: gapX,
             marginBottom: gapY,
-            marginTop: getResponsiveHeight(16),
+            marginTop: getResponsiveHeight(12),
           },
         ]}
         onPress={() => onUserPress?.(member)}
@@ -104,6 +99,7 @@ export default function MemberGridSection({
                 : styles.userImageWithoutEmotion,
             ]}
           />
+
           {isOnline ? (
             <View style={styles.onlineDot} />
           ) : (
@@ -136,27 +132,58 @@ export default function MemberGridSection({
         styles.bodyContainer,
         {paddingHorizontal: paddingH, marginHorizontal: marginH},
       ]}>
-      <View style={[styles.wrapRow, {width: innerContentWidth}]}>
-        {membersWithAdd.map(renderUser)}
+      {/* 🔹 섹션 헤더 */}
+      <View style={styles.sectionHeader}>
+        <View>
+          <Text style={styles.sectionTitle}>우리 가족</Text>
+          <Text style={styles.sectionSubtitle}>실시간 접속 상태</Text>
+        </View>
+        <TouchableOpacity onPress={onAddPress} hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
+          <Text style={styles.sectionAction}>+ 가족 추가</Text>
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity onPress={onAddPress} style={styles.addButton}>
-        <Text style={styles.addButtonText}>가족 추가하기</Text>
-      </TouchableOpacity>
+
+      {/* 멤버 그리드 */}
+      <View style={[styles.wrapRow, {width: innerContentWidth}]}>
+        {members.map(renderUser)}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   bodyContainer: {
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: getResponsiveIconSize(10),
-    paddingTop: getResponsiveHeight(12.5),
-    paddingBottom: getResponsiveHeight(65),
-    elevation: 5,
+    paddingTop: getResponsiveHeight(16),
+    paddingBottom: getResponsiveHeight(24),
+    elevation: 2, // 🔹 그림자 약하게
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 0},
-    shadowOpacity: 0.25,
-    shadowRadius: 2,
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.12,
+    shadowRadius: 3,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: getResponsiveHeight(10),
+  },
+  sectionTitle: {
+    fontSize: getResponsiveFontSize(16),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#222222',
+  },
+  sectionSubtitle: {
+    marginTop: getResponsiveHeight(2),
+    fontSize: getResponsiveFontSize(11.5),
+    fontFamily: 'Pretendard-Regular',
+    color: '#888888',
+  },
+  sectionAction: {
+    fontSize: getResponsiveFontSize(12.5),
+    fontFamily: 'Pretendard-Medium',
+    color: '#FFA726', // 🔹 조금 톤 다운된 포인트 컬러
   },
   wrapRow: {
     flexDirection: 'row',
@@ -206,8 +233,8 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontSize: getResponsiveFontSize(14),
-    fontFamily: 'Pretendard-medium',
-    color: 'black',
+    fontFamily: 'Pretendard-Medium',
+    color: '#111111',
   },
   statusText: {
     marginTop: getResponsiveHeight(2),
@@ -237,23 +264,5 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'white',
     backgroundColor: '#D9D9D9',
-  },
-  addButton: {
-    position: 'absolute',
-    left: getResponsiveWidth(15),
-    right: getResponsiveWidth(15),
-    bottom: getResponsiveHeight(15),
-    height: getResponsiveHeight(50),
-    backgroundColor: '#FFC84D',
-    borderRadius: getResponsiveIconSize(10),
-    justifyContent: 'center',
-  },
-  addButtonText: {
-    alignSelf: 'center',
-    color: 'white',
-    fontFamily: 'Pretendard-Regular',
-    fontWeight: '700',
-    fontSize: getResponsiveFontSize(15),
-    lineHeight: 20,
   },
 });
