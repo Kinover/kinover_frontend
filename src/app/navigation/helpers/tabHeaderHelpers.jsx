@@ -131,8 +131,8 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
             params: {screen: '알림화면'},
           }),
         bellIcon,
-        22, // 29 → 22
-        22,
+        23, // 29 → 22
+        23,
       )}
       <View
         style={{width: getResponsiveWidth(10), justifyContent: 'flex-end'}}
@@ -144,8 +144,8 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
             params: {screen: '설정화면'},
           }),
         settingIcon,
-        22,
-        22,
+        23,
+        23,
       )}
     </View>
   );

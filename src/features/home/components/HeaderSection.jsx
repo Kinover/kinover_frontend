@@ -170,15 +170,15 @@ const styles = StyleSheet.create({
   userNameHeader: {
     fontFamily: 'Pretendard-Medium',
     fontWeight: '600',
-    fontSize: getResponsiveFontSize(22),
+    fontSize: getResponsiveFontSize(20),
     marginTop: getResponsiveHeight(15),
     color: 'black',
   },
   trait: {
     fontFamily: 'Pretendard-Light',
     fontSize: getResponsiveFontSize(16),
-    marginVertical: getResponsiveHeight(15),
-    marginBottom: getResponsiveHeight(20),
+    marginTop: getResponsiveHeight(10),
+    marginBottom: getResponsiveHeight(25),
     color: 'gray',
   },
 });
