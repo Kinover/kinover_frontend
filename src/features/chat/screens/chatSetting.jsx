@@ -32,7 +32,6 @@ import {
 } from '../../../utils/responsive';
 import {updateChatRoomNameInList} from '../store/chatRoomSlice';
 
-
 export default function ChatSettings({
   isOpen,
   onClose,
@@ -50,7 +49,7 @@ export default function ChatSettings({
   const [isAlarmOn, setIsAlarmOn] = useState(true);
   const [shouldNavigate, setShouldNavigate] = useState(false);
   const [internalVisible, setInternalVisible] = useState(false);
-  const translateX = useSharedValue(getResponsiveWidth(375));
+  const translateX = useSharedValue(getResponsiveWidth(320));
 
   const chatRoomUsers = useSelector(state => state.chatRoom.chatRoomUsers);
   const familyId = useSelector(state => state.family.familyId);
@@ -65,17 +64,17 @@ export default function ChatSettings({
 
   useEffect(() => {
     if (isOpen) {
-      setInternalVisible(true); // 모달 먼저 열고
+      setInternalVisible(true);
       setTimeout(() => {
-        translateX.value = withTiming(0, {duration: 300});
+        translateX.value = withTiming(0, {duration: 260});
       }, 10);
     } else {
-      translateX.value = withTiming(getResponsiveWidth(375), {duration: 300});
+      translateX.value = withTiming(getResponsiveWidth(320), {duration: 260});
       setTimeout(() => {
-        setInternalVisible(false); // 애니메이션 끝나고 모달 닫기
-      }, 300);
+        setInternalVisible(false);
+      }, 260);
     }
-  }, [isOpen]);
+  }, [isOpen, translateX]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{translateX: translateX.value}],
@@ -114,7 +113,6 @@ export default function ChatSettings({
     )
       .unwrap()
       .then(() => {
-        // ✅ 이름 변경 후 Redux 상태도 업데이트!
         dispatch(
           updateChatRoomNameInList({
             chatRoomId,
@@ -139,22 +137,20 @@ export default function ChatSettings({
     onLeaveChat(dispatch, navigation, chatRoomId);
   };
 
-  // ❶ 닫기 요청 → 상태 설정
   const handleGoToKinoSelect = () => {
     setShouldNavigate(true);
-    onClose(); // isOpen을 false로 바꿈
+    onClose();
   };
 
-  // ❷ isOpen이 false로 바뀌고 모달 애니메이션 끝난 후 실행
   useEffect(() => {
     if (!isOpen && shouldNavigate) {
       const timeout = setTimeout(() => {
         navigation.navigate('키노선택화면', {chatRoomId});
-        setShouldNavigate(false); // 초기화
-      }, 300); // 애니메이션 duration과 동일하게
+        setShouldNavigate(false);
+      }, 260);
       return () => clearTimeout(timeout);
     }
-  }, [isOpen, shouldNavigate]);
+  }, [isOpen, shouldNavigate, navigation, chatRoomId]);
 
   return (
     <Modal
@@ -163,7 +159,7 @@ export default function ChatSettings({
       animationType="none"
       onRequestClose={onClose}
       statusBarTranslucent={true}>
-      {/* 내부 모달 */}
+      {/* 내부 모달들 */}
       <View>
         <LeaveChatRoomModal
           visible={isLeaveModalVisible}
@@ -192,14 +188,20 @@ export default function ChatSettings({
         style={[StyleSheet.absoluteFill, styles.blurOverlay]}
         blurType="light"
         blurAmount={2}
-        reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.4)"
+        reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.35)"
       />
       <TouchableOpacity style={styles.backdrop} onPress={onClose} />
 
       {/* 설정 패널 */}
+
       <Animated.View style={[styles.container, animatedStyle]}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>채팅방 설정</Text>
+          <View style={styles.headerTextBox}>
+            <Text style={styles.headerTitle}>채팅방 설정</Text>
+            <Text style={styles.headerSubtitle}>
+              이름, 멤버, 알림을 한 번에 관리해요.
+            </Text>
+          </View>
           <TouchableOpacity onPress={handleToggleAlarm}>
             <Image
               style={styles.alarmIcon}
@@ -213,28 +215,38 @@ export default function ChatSettings({
         </View>
 
         <View style={styles.content}>
+          {/* 상단 설정들 */}
           {!isKino && (
             <TouchableOpacity
               style={styles.option}
               onPress={() => setIsRenameModalVisible(true)}>
+              <Text style={styles.optionTitle}>채팅방 이름</Text>
               <Text style={styles.optionText}>이름 변경</Text>
             </TouchableOpacity>
           )}
 
           {!isKino && (
-            <TouchableOpacity
-              onPress={() => setShowMembers(!showMembers)}
-              style={styles.option}>
+            <View style={styles.option}>
               <View style={styles.optionRow}>
-                <Text style={styles.optionText}>멤버 목록</Text>
-                <Image
-                  source={require('../../../assets/images/down-yellow.png')}
-                  style={[
-                    styles.arrowIcon,
-                    {transform: [{rotate: showMembers ? '180deg' : '0deg'}]},
-                  ]}
-                />
+                <View>
+                  <Text style={styles.optionTitle}>멤버 목록</Text>
+                  <Text style={styles.optionDescription}>
+                    함께 채팅하는 가족을 확인해요.
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  onPress={() => setShowMembers(!showMembers)}
+                  style={styles.expandButton}>
+                  <Image
+                    source={require('../../../assets/images/down-yellow.png')}
+                    style={[
+                      styles.arrowIcon,
+                      {transform: [{rotate: showMembers ? '180deg' : '0deg'}]},
+                    ]}
+                  />
+                </TouchableOpacity>
               </View>
+
               {showMembers && (
                 <ScrollView style={styles.memberList}>
                   {chatRoomUsers?.map(user => (
@@ -257,36 +269,25 @@ export default function ChatSettings({
                   </TouchableOpacity>
                 </ScrollView>
               )}
-            </TouchableOpacity>
+            </View>
           )}
 
           {isKino && (
             <TouchableOpacity
               style={styles.option}
               onPress={() => setIsChangeKinoModalVisible(true)}>
+              <Text style={styles.optionTitle}>키노</Text>
               <Text style={styles.optionText}>키노 교체하기</Text>
             </TouchableOpacity>
           )}
 
-          {/* <TouchableOpacity style={styles.option} onPress={onShowMedia}>
-            <Text style={styles.optionText}>사진 & 영상</Text>
-          </TouchableOpacity> */}
+          {/* 하단 나가기 버튼 */}
+          <TouchableOpacity
+            style={styles.leaveOption}
+            onPress={() => setIsLeaveModalVisible(true)}>
+            <Text style={styles.leaveText}>채팅방 나가기</Text>
+          </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          style={styles.leaveOption}
-          onPress={() => setIsLeaveModalVisible(true)}>
-          <Text style={[styles.optionText, styles.leaveText]}>
-            채팅방 나가기
-          </Text>
-          {/* <FastImage
-            source={require('../../../../assets/icons/exit.png')}
-            style={{
-              width: getResponsiveIconSize(22),
-              height: getResponsiveIconSize(22),
-              resizeMode:'contain',
-            }}></FastImage> */}
-        </TouchableOpacity>
       </Animated.View>
     </Modal>
   );
@@ -299,24 +300,23 @@ const styles = StyleSheet.create({
     left: 0,
     width: '100%',
     height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.35)',
   },
   blurOverlay: {
     flex: 1,
     position: 'absolute',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   container: {
     position: 'absolute',
     top: 0,
     right: 0,
-    width: getResponsiveWidth(280),
+    width: getResponsiveWidth(310), // 🔹 살짝 더 넓게
     height: '100%',
-    backgroundColor: '#fff',
+    backgroundColor: '#FFFFFF',
     borderLeftWidth: 1,
-    borderColor: '#ddd',
-    paddingHorizontal: getResponsiveWidth(20),
-    paddingBottom: getResponsiveHeight(100),
+    borderColor: '#E5E7EB',
+    paddingHorizontal: getResponsiveWidth(22),
+    paddingBottom: getResponsiveHeight(30),
     zIndex: 9999,
     elevation: 10,
   },
@@ -325,113 +325,131 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop:
       Platform.OS === 'android'
-        ? getResponsiveHeight(40)
-        : getResponsiveHeight(90),
-    marginBottom: getResponsiveHeight(60),
+        ? getResponsiveHeight(36)
+        : getResponsiveHeight(70),
+    marginBottom: getResponsiveHeight(28),
     alignItems: 'center',
   },
-  // headerTitle: {
-  //   fontSize: getResponsiveFontSize(22),
-  //   fontFamily: 'Pretendard-Regular',
-  //   color: '#FFC84D',
-  //   // color: 'black',
-
-  //   fontWeight: 'bold',
-  // },
-  headerTitle: {
-    fontSize: getResponsiveFontSize(22),
-    fontFamily: 'Pretendard-Regular',
-    color: 'black',
-    fontWeight: 'semibold',
+  headerTextBox: {
+    flexShrink: 1,
+    paddingRight: getResponsiveWidth(12),
   },
-
+  headerTitle: {
+    fontSize: getResponsiveFontSize(19),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#111827',
+  },
+  headerSubtitle: {
+    marginTop: getResponsiveHeight(4),
+    fontSize: getResponsiveFontSize(12),
+    fontFamily: 'Pretendard-Regular',
+    color: '#6B7280',
+  },
   alarmIcon: {
     width: getResponsiveIconSize(20),
     height: getResponsiveIconSize(20),
     resizeMode: 'contain',
   },
+
   content: {
-    gap: getResponsiveHeight(35),
+    flex: 1,
+    paddingTop: getResponsiveHeight(4),
   },
+
+  // 옵션 섹션 전체
   option: {
+    paddingVertical: getResponsiveHeight(14),
     borderBottomWidth: 1,
-    borderColor: '#ddd',
-    paddingVertical: getResponsiveHeight(7),
-  },
-  optionText: {
-    color: 'black',
-    fontSize: getResponsiveFontSize(17),
-    fontFamily: 'Pretendard-Light',
+    borderColor: '#F3F4F6',
   },
   optionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
+  optionTitle: {
+    fontSize: getResponsiveFontSize(13),
+    fontFamily: 'Pretendard-Medium',
+    color: '#6B7280',
+    marginBottom: getResponsiveHeight(3),
+  },
+  optionText: {
+    color: '#111827',
+    fontSize: getResponsiveFontSize(15.5),
+    fontFamily: 'Pretendard-SemiBold',
+  },
+  optionDescription: {
+    fontSize: getResponsiveFontSize(11.5),
+    fontFamily: 'Pretendard-Regular',
+    color: '#9CA3AF',
+  },
+  expandButton: {
+    paddingHorizontal: getResponsiveWidth(4),
+    paddingVertical: getResponsiveHeight(4),
+  },
   arrowIcon: {
     resizeMode: 'contain',
-    width: getResponsiveWidth(17),
-    height: getResponsiveHeight(17),
-    marginRight: getResponsiveWidth(5),
+    width: getResponsiveWidth(18),
+    height: getResponsiveHeight(18),
   },
+
   memberList: {
     width: '100%',
-    minHeight: getResponsiveHeight(120),
-    borderRadius: getResponsiveIconSize(8),
-    backgroundColor: 'rgba(255, 228, 167, 0.30)',
+    minHeight: getResponsiveHeight(110),
+    borderRadius: getResponsiveIconSize(10),
+    // backgroundColor: 'rgba(255, 228, 167, 0.22)',
+    backgroundColor: '#f9f9f9',
     marginTop: getResponsiveHeight(10),
-    padding: getResponsiveHeight(10),
+    paddingVertical: getResponsiveHeight(8),
+    paddingHorizontal: getResponsiveWidth(10),
   },
   memberItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: getResponsiveHeight(5),
-    padding: getResponsiveHeight(5),
-    marginBottom: getResponsiveHeight(5),
+    paddingVertical: getResponsiveHeight(4),
+    marginBottom: getResponsiveHeight(2),
   },
   memberImage: {
-    width: getResponsiveIconSize(34),
-    height: getResponsiveIconSize(34),
-    borderRadius: getResponsiveIconSize(17),
-    marginRight: getResponsiveWidth(12),
-    backgroundColor: '#fff',
+    width: getResponsiveIconSize(32),
+    height: getResponsiveIconSize(32),
+    borderRadius: getResponsiveIconSize(16),
+    marginRight: getResponsiveWidth(10),
+    backgroundColor: '#FFFFFF',
   },
   memberName: {
-    fontSize: getResponsiveFontSize(14.5),
-    fontFamily: 'Pretendard-Light',
-    color: 'black',
+    fontSize: getResponsiveFontSize(13.5),
+    fontFamily: 'Pretendard-Regular',
+    color: '#111827',
   },
   addMemberButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: getResponsiveHeight(5),
+    paddingVertical: getResponsiveHeight(6),
+    marginTop: getResponsiveHeight(8),
   },
   addIcon: {
-    width: getResponsiveIconSize(34),
-    height: getResponsiveIconSize(34),
+    width: getResponsiveIconSize(30),
+    height: getResponsiveIconSize(30),
     resizeMode: 'contain',
-    marginRight: getResponsiveWidth(12),
+    marginRight: getResponsiveWidth(10),
   },
   addText: {
-    fontSize: getResponsiveFontSize(14),
-    color: '#FFB000',
+    fontSize: getResponsiveFontSize(13),
+    color: '#F59E0B',
     fontFamily: 'Pretendard-Medium',
   },
+
+  // 하단 나가기
   leaveOption: {
-    position: 'absolute',
-    bottom: getResponsiveHeight(30),
-    left: getResponsiveWidth(20),
-    right: getResponsiveWidth(20),
-    paddingVertical: getResponsiveHeight(12),
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderColor: '#eee',
-    // justifyContent:'flex-end',
-    alignItems: 'flex-end',
+    position:'absolute',
+    bottom:'5%',
+    marginTop: getResponsiveHeight(26),
+    paddingVertical: getResponsiveHeight(10),
+    alignItems: 'flex-start',
   },
   leaveText: {
-    fontFamily: 'Pretendard-Regular',
-    color: 'red',
-    fontSize: getResponsiveFontSize(14),
+    fontFamily: 'Pretendard-Medium',
+    color: '#EF4444',
+    fontSize: getResponsiveFontSize(13.5),
   },
 });
