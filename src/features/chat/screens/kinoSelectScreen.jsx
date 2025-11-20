@@ -23,6 +23,8 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
+import BottomActionButton from 'components/BottomActionButton';
+// import { setConstantValue } from 'typescript';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -181,22 +183,11 @@ export default function KinoSelectScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* 페이지 인디케이터
-      <View style={styles.dots}>
-        {KINOS.map((_, i) => (
-          <View
-            key={i}
-            style={[styles.dot, i === currentIndex ? styles.dotActive : null]}
-          />
-        ))}
-      </View> */}
-
-      {/* 하단 버튼 */}
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => setConfirmVisible(true)}>
-        <Text style={styles.buttonText}>이 키노로 선택하기</Text>
-      </TouchableOpacity>
+      <BottomActionButton
+        label="이 키노로 선택하기"
+        onPress={() => {
+          setConfirmVisible(true);
+        }}></BottomActionButton>
 
       <KinoConfirmModal
         visible={confirmVisible}

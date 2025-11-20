@@ -5,7 +5,6 @@ import {
   TouchableWithoutFeedback,
   StyleSheet,
   FlatList,
-  Image,
   Animated,
 } from 'react-native';
 import {
@@ -17,16 +16,50 @@ import useHideTabBar from '../../../hooks/useHideTabBar';
 import {useDispatch, useSelector} from 'react-redux';
 import {modifyUserThunk} from '../store/userThunk';
 import {useNavigation} from '@react-navigation/native';
+import BottomActionButton from 'components/BottomActionButton';
+import FastImage from '@d11/react-native-fast-image';
 
 const EMOTIONS = [
-  {id: 'ANNOYED', label: '짜증나요', url: require('../../../assets/icons/state/annoyed.png')},
-  {id: 'WORRIED', label: '걱정돼요', url: require('../../../assets/icons/state/anxious.png')},
-  {id: 'DEPRESSED', label: '우울해요', url: require('../../../assets/icons/state/depressed.png')},
-  {id: 'SORRY', label: '미안해요', url: require('../../../assets/icons/state/sorry.png')},
-  {id: 'TIRED', label: '힘들어요', url: require('../../../assets/icons/state/exhausted.png')},
-  {id: 'EXCITED', label: '신나요', url: require('../../../assets/icons/state/excited.png')},
-  {id: 'NEUTRAL', label: '평범해요', url: require('../../../assets/icons/state/neutral.png')},
-  {id: 'HAPPY', label: '행복해요', url: require('../../../assets/icons/state/happy.png')},
+  {
+    id: 'ANNOYED',
+    label: '짜증나요',
+    url: require('../../../assets/icons/state/annoyed.png'),
+  },
+  {
+    id: 'WORRIED',
+    label: '걱정돼요',
+    url: require('../../../assets/icons/state/anxious.png'),
+  },
+  {
+    id: 'DEPRESSED',
+    label: '우울해요',
+    url: require('../../../assets/icons/state/depressed.png'),
+  },
+  {
+    id: 'SORRY',
+    label: '미안해요',
+    url: require('../../../assets/icons/state/sorry.png'),
+  },
+  {
+    id: 'TIRED',
+    label: '힘들어요',
+    url: require('../../../assets/icons/state/exhausted.png'),
+  },
+  {
+    id: 'EXCITED',
+    label: '신나요',
+    url: require('../../../assets/icons/state/excited.png'),
+  },
+  {
+    id: 'NEUTRAL',
+    label: '평범해요',
+    url: require('../../../assets/icons/state/neutral.png'),
+  },
+  {
+    id: 'HAPPY',
+    label: '행복해요',
+    url: require('../../../assets/icons/state/happy.png'),
+  },
 ];
 
 const EmotionItem = ({item, isSelected, onPress}) => {
@@ -81,8 +114,16 @@ const EmotionItem = ({item, isSelected, onPress}) => {
             borderWidth: 1.5,
           },
         ]}>
-        <Image source={item.url} style={styles.emotionImage} resizeMode="contain" />
-        <Text style={[styles.emotionText, isSelected && styles.emotionTextSelected]}>
+        <FastImage
+          source={item.url}
+          style={styles.emotionImage}
+          resizeMode="contain"
+        />
+        <Text
+          style={[
+            styles.emotionText,
+            isSelected && styles.emotionTextSelected,
+          ]}>
           {item.label}
         </Text>
       </Animated.View>
@@ -94,7 +135,9 @@ export default function StateScreen() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const user = useSelector(state => state.user);
-  const [selectedEmotion, setSelectedEmotion] = React.useState(user.emotion || 'NEUTRAL');
+  const [selectedEmotion, setSelectedEmotion] = React.useState(
+    user.emotion || 'NEUTRAL',
+  );
 
   useHideTabBar();
 
@@ -119,7 +162,13 @@ export default function StateScreen() {
 
   const renderEmotion = ({item}) => {
     const isSelected = selectedEmotion === item.id;
-    return <EmotionItem item={item} isSelected={isSelected} onPress={setSelectedEmotion} />;
+    return (
+      <EmotionItem
+        item={item}
+        isSelected={isSelected}
+        onPress={setSelectedEmotion}
+      />
+    );
   };
 
   return (
@@ -134,11 +183,9 @@ export default function StateScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
-      <TouchableWithoutFeedback onPress={handleConfirm}>
-        <View style={[styles.confirmButton, !selectedEmotion && {backgroundColor: '#ccc'}]}>
-          <Text style={styles.confirmButtonText}>선택 완료</Text>
-        </View>
-      </TouchableWithoutFeedback>
+      <BottomActionButton
+        label="선택 완료"
+        onPress={() => handleConfirm()}></BottomActionButton>
     </View>
   );
 }

@@ -1,5 +1,13 @@
 import React from 'react';
-import {Text, StyleSheet, Platform, View,ToastAndroid, Alert, Pressable} from 'react-native';
+import {
+  Text,
+  StyleSheet,
+  Platform,
+  View,
+  ToastAndroid,
+  Alert,
+  Pressable,
+} from 'react-native';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
@@ -59,11 +67,11 @@ const styles = StyleSheet.create({
     display: 'flex',
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     backgroundColor: '#F5F5F5',
     borderRadius: getResponsiveWidth(10),
     paddingVertical: getResponsiveHeight(14),
-    // paddingHorizontal: getResponsiveWidth(20),
-    alignItems: 'flex-start',
+    paddingHorizontal: getResponsiveWidth(10),
     marginVertical: getResponsiveHeight(5),
   },
   modalText: {
@@ -89,16 +97,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: getResponsiveHeight(8),
   },
-  // codeContainer: {
-  //   backgroundColor: '#F5F5F5',
-  //   borderRadius: getResponsiveWidth(10),
-  //   paddingVertical: getResponsiveHeight(14),
-  //   paddingHorizontal: getResponsiveWidth(20), // 양쪽 여백 확보
-  //   alignItems: 'center',
-  //   justifyContent: 'space-between',
-  //   flexDirection: 'row',
-  //   marginVertical: getResponsiveHeight(5),
-  // },
   codeText: {
     flex: 1, // 아이콘과 공간 나눔
     fontSize: getResponsiveFontSize(11),
