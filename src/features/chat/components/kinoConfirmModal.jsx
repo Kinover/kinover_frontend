@@ -13,11 +13,7 @@ export default function KinoConfirmModal({visible, onConfirm, onClose}) {
       }}
       confirmText="선택"
       closeText="취소"
-      buttonBottomStyle={{
-        flexDirection: 'row',
-        gap: 10,
-        justifyContent: 'space-between',
-      }}
-      title={'이 키노를 선택할까요?'}/>
+      title={'이 키노를 선택할까요?'}
+    />
   );
 }

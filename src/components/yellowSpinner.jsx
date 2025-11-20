@@ -9,7 +9,7 @@ export default function YellowSpinner() {
     Animated.loop(
       Animated.sequence([
         Animated.timing(scaleAnim, {
-          toValue: 1.25,
+          toValue: 1.35,
           duration: 600,
           easing: Easing.out(Easing.ease),
           useNativeDriver: true,
