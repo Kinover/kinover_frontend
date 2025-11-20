@@ -33,14 +33,12 @@ export default function CreatePostPage({navigation, route}) {
   const [isUploading] = useState(false);
   const [focused, setFocused] = useState(false);
 
-  const { selectedImages: initImages} = route.params ?? {};
-  const [selectedImages,] = useState(initImages ?? []);
+  const {selectedImages: initImages} = route.params ?? {};
+  const [selectedImages] = useState(initImages ?? []);
 
-  // 풀스크린 뷰어 상태
   const [modalVisible, setModalVisible] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
 
-  // ✅ 업로드 완료 모달
   const [successModalVisible, setSuccessModalVisible] = useState(false);
 
   useHideTabBar({stayHidden: true});
@@ -49,7 +47,7 @@ export default function CreatePostPage({navigation, route}) {
     const now = Date.now();
     const fileNames = selectedImages.map((uri, i) => {
       let ext = (uri.split('.').pop() || 'jpg').toLowerCase();
-      if (ext === 'mov') ext = 'mp4'; // mov → mp4
+      if (ext === 'mov') ext = 'mp4';
       return `media_${now}_${i}_${Math.floor(Math.random() * 1000)}.${ext}`;
     });
 
@@ -59,6 +57,7 @@ export default function CreatePostPage({navigation, route}) {
       await uploadFileToS3(presignedUrls[i], selectedImages[i], fileNames[i]);
     }
   };
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
@@ -90,7 +89,6 @@ export default function CreatePostPage({navigation, route}) {
           </View>
         )}
 
-        {/* 글 작성 입력 */}
         <TextInput
           style={[
             styles.input,
@@ -106,7 +104,6 @@ export default function CreatePostPage({navigation, route}) {
           onBlur={() => setFocused(false)}
         />
 
-        {/* 선택한 사진 미리보기 */}
         {selectedImages.length > 0 && (
           <FlatList
             data={selectedImages}
@@ -132,7 +129,6 @@ export default function CreatePostPage({navigation, route}) {
           />
         )}
 
-        {/* 풀스크린 뷰어 */}
         <Modal visible={modalVisible} transparent={true} animationType="fade">
           <View style={styles.modalOverlay}>
             <FlatList
@@ -159,7 +155,6 @@ export default function CreatePostPage({navigation, route}) {
               )}
             />
 
-            {/* 👉 사진 장수 표시 */}
             <View style={styles.imageCountBadge}>
               <Text style={styles.imageCountText}>
                 {currentIndex + 1} / {selectedImages.length}
@@ -173,8 +168,8 @@ export default function CreatePostPage({navigation, route}) {
               <Image
                 source={require('../../../assets/images/clearBt1.png')}
                 style={{
-                  width: getResponsiveWidth(22.5),
-                  height: getResponsiveHeight(22.5),
+                  width: getResponsiveWidth(20),
+                  height: getResponsiveHeight(20),
                   resizeMode: 'contain',
                 }}
               />
@@ -182,7 +177,6 @@ export default function CreatePostPage({navigation, route}) {
           </View>
         </Modal>
 
-        {/* 업로드 완료 모달 */}
         <ToastModal
           message="게시글을 업로드했어요"
           visible={successModalVisible}
@@ -210,7 +204,7 @@ const styles = StyleSheet.create({
     borderColor: '#DDDDDD',
     borderRadius: 12,
     padding: getResponsiveWidth(12),
-    fontSize: getResponsiveFontSize(15),
+    fontSize: getResponsiveFontSize(14), // 🔽 15 → 14
     fontFamily: 'Pretendard-Regular',
     backgroundColor: '#FAFAFA',
     marginBottom: getResponsiveHeight(20),
@@ -219,14 +213,14 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   imageWrapper: {
-    marginRight: getResponsiveWidth(12),
+    marginRight: getResponsiveWidth(10), // 🔽 12 → 10
     borderRadius: 12,
     overflow: 'hidden',
     backgroundColor: '#fff',
   },
   previewImage: {
-    width: getResponsiveWidth(110),
-    height: getResponsiveHeight(110),
+    width: getResponsiveWidth(104), // 🔽 살짝 축소
+    height: getResponsiveHeight(104),
     borderRadius: 12,
   },
   loadingOverlay: {
@@ -245,16 +239,16 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize:
       Platform.OS === 'ios'
-        ? getResponsiveFontSize(20)
-        : getResponsiveFontSize(18),
-    fontFamily: 'Pretendard-Regular',
-    fontWeight: 'semibold',
+        ? getResponsiveFontSize(18) // 🔽 20 → 18
+        : getResponsiveFontSize(17), // 🔽 18 → 17
+    fontFamily: 'Pretendard-SemiBold',
+    fontWeight: Platform.OS === 'android' ? '600' : '500',
     color: '#101010',
-    lineHeight: getResponsiveHeight(30),
+    lineHeight: getResponsiveHeight(26),
   },
   headerCheckIcon: {
-    width: getResponsiveWidth(28),
-    height: getResponsiveHeight(28),
+    width: getResponsiveWidth(24),   // 🔽 28 → 24
+    height: getResponsiveHeight(24), // 🔽 28 → 24
     marginRight: getResponsiveWidth(12),
     resizeMode: 'contain',
   },
@@ -280,8 +274,8 @@ const styles = StyleSheet.create({
     top:
       Platform.OS === 'ios' ? getResponsiveHeight(50) : getResponsiveHeight(25),
     right: getResponsiveWidth(15),
-    width: getResponsiveIconSize(25),
-    height: getResponsiveIconSize(25),
+    width: getResponsiveIconSize(24),
+    height: getResponsiveIconSize(24),
   },
   imageCountBadge: {
     position: 'absolute',
@@ -290,12 +284,12 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     backgroundColor: 'rgba(0,0,0,0.5)',
     borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
   },
   imageCountText: {
     color: '#fff',
-    fontSize: getResponsiveFontSize(15),
+    fontSize: getResponsiveFontSize(13), // 🔽 15 → 13
     fontWeight: '600',
   },
   successOverlay: {
@@ -313,7 +307,7 @@ const styles = StyleSheet.create({
     borderColor: '#F8B500',
   },
   successText: {
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(14), // 🔽 16 → 14
     fontFamily: 'Pretendard-SemiBold',
     color: '#101010',
   },

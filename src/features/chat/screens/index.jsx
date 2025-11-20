@@ -58,13 +58,11 @@ export default function CommunicationScreen({navigation}) {
       ) : (
         <FlatList
           data={chatRoomList}
-          key={`chatlist-${listRevision}`} // ✅ (옵션) 프레임 즉시 리마운트
-          // keyExtractor={(item) => String(item.chatRoomId)}
+          key={`chatlist-${listRevision}`}
           renderItem={renderItem}
-          extraData={listRevision} // ⭐️ 변경이 있을 때마다 강제 리렌더
+          extraData={listRevision}
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
-          // extraData={chatRoomList}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
@@ -81,7 +79,7 @@ export default function CommunicationScreen({navigation}) {
         style={styles.fab}>
         <FastImage
           source={require('../../../assets/icons/chat-floating-bt.png')}
-          style={{width: '100%', height: '100%', objectFit: 'contain'}}
+          style={{width: '100%', height: '100%', resizeMode: 'contain'}}
         />
       </TouchableOpacity>
     </View>
@@ -92,32 +90,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9F9F9',
-    paddingHorizontal: getResponsiveWidth(18),
+    paddingHorizontal: getResponsiveWidth(14), // 🔽 살짝 줄임
   },
   listContent: {
-    paddingBottom: getResponsiveHeight(100),
-    gap: getResponsiveHeight(8),
+    paddingTop: getResponsiveHeight(4),
+    paddingBottom: getResponsiveHeight(80), // 🔽 여백 살짝 줄임
+    gap: getResponsiveHeight(6), // 🔽 카드 사이 간격 줄임
   },
   noChatMessage: {
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(14), // 🔽 16 → 14
     color: '#777',
     textAlign: 'center',
-    marginTop: getResponsiveHeight(100),
-    lineHeight: getResponsiveFontSize(24),
+    marginTop: getResponsiveHeight(80), // 🔽 살짝 위로
+    lineHeight: getResponsiveFontSize(20), // 🔽 24 → 20
     paddingHorizontal: getResponsiveWidth(10),
-  },
-  loader: {alignSelf: 'center', marginTop: getResponsiveHeight(100)},
-  fab: {
-    position: 'absolute',
-    bottom: getResponsiveHeight(15),
-    right: getResponsiveWidth(15),
-    width: getResponsiveIconSize(75),
-    height: getResponsiveIconSize(75),
-    zIndex: 0,
+    fontFamily: 'Pretendard-Regular',
   },
   loaderWrapper: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  fab: {
+    position: 'absolute',
+    bottom: getResponsiveHeight(20),
+    right: getResponsiveWidth(18),
+    width: getResponsiveIconSize(60), // 🔽 75 → 60
+    height: getResponsiveIconSize(60),
+  },
 });
+

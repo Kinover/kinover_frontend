@@ -7,17 +7,17 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
-  Platform
+  Platform,
 } from 'react-native';
-import { useNavigation} from '@react-navigation/native';
+import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
-import  {getResponsiveFontSize,
+import {
+  getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../../utils/responsive';
 import CategoryModal from '../components/CategoryModal';
-import {  fetchCategoryThunk,
-} from '../store/categoryThunk';
+import {fetchCategoryThunk} from '../store/categoryThunk';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 export default function CategorySelectPage({route}) {
@@ -29,8 +29,6 @@ export default function CategorySelectPage({route}) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [newCategory, setNewCategory] = useState('');
-
-
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -56,23 +54,17 @@ export default function CategorySelectPage({route}) {
           />
         </TouchableOpacity>
       ),
-      // ✅ headerLeft 커스텀: 소통 스택 루트로 이동
       headerLeft: () => (
         <TouchableOpacity
           onPress={() => {
-            // if (route.params?.selectedImages?.length > 0) {
-            //   // 업로드 플로우 → 소통 스택 루트로 이동
-            // navigation.navigate('', {screen: '소통화면'});
-            // } else {
             navigation.goBack();
-            // }
           }}
           style={{marginLeft: getResponsiveWidth(20)}}>
           <Image
             source={require('../../../assets/icons/caretDown.png')}
             style={{
-              width: getResponsiveWidth(30),
-              height: getResponsiveHeight(30),
+              width: getResponsiveWidth(26),
+              height: getResponsiveHeight(26),
               resizeMode: 'contain',
             }}
           />
@@ -95,7 +87,7 @@ export default function CategorySelectPage({route}) {
   const handleAddCategory = () => {
     if (newCategory.trim()) {
       const tempCategory = {
-        categoryId: null, // ← UUID로 대체!
+        categoryId: null,
         title: newCategory.trim(),
         isTemporary: true,
       };
@@ -219,21 +211,21 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize:
       Platform.OS === 'ios'
-        ? getResponsiveFontSize(20)
-        : getResponsiveFontSize(18),
+        ? getResponsiveFontSize(18) // 🔽 20 → 18
+        : getResponsiveFontSize(17), // 🔽 18 → 17
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontFamily: 'Pretendard-Regular',
-    fontWeight: 'semibold',
+    fontFamily: 'Pretendard-SemiBold',
+    fontWeight: Platform.OS === 'android' ? '600' : '500',
     color: '#101010',
-    lineHeight: getResponsiveHeight(30),
+    lineHeight: getResponsiveHeight(26),
   },
   headerRight: {
     marginRight: getResponsiveWidth(10),
   },
   checkImage: {
-    width: getResponsiveWidth(30),
-    height: getResponsiveHeight(30),
+    width: getResponsiveWidth(24),   // 🔽 30 → 24
+    height: getResponsiveHeight(24), // 🔽 30 → 24
     marginRight: getResponsiveWidth(15),
     resizeMode: 'contain',
   },
@@ -241,23 +233,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    alignContent: 'center',
-    paddingVertical: getResponsiveWidth(22.5),
-    paddingHorizontal: getResponsiveWidth(25),
+    paddingVertical: getResponsiveWidth(18), // 🔽 22.5 → 18
+    paddingHorizontal: getResponsiveWidth(22), // 살짝 줄임
   },
   selectedItem: {
     backgroundColor: '#FFF3D2',
   },
   itemText: {
-    fontSize: getResponsiveFontSize(15),
+    fontSize: getResponsiveFontSize(14.5), // 🔽 15 → 14.5
     fontFamily: 'Pretendard-Regular',
     color: 'black',
-    textAlign: 'center',
     textAlignVertical: 'center',
   },
   radioIcon: {
-    width: getResponsiveWidth(15),
-    height: getResponsiveHeight(15),
+    width: getResponsiveWidth(14),   // 🔽 15 → 14
+    height: getResponsiveHeight(14),
     resizeMode: 'contain',
   },
   separator: {
@@ -266,12 +256,12 @@ const styles = StyleSheet.create({
     marginHorizontal: getResponsiveWidth(5),
   },
   addButton: {
-    paddingVertical: getResponsiveWidth(22.5),
-    paddingHorizontal: getResponsiveWidth(25),
+    paddingVertical: getResponsiveWidth(18), // 🔽 22.5 → 18
+    paddingHorizontal: getResponsiveWidth(22),
   },
   addText: {
     color: '#F8B500',
-    fontSize: getResponsiveFontSize(15),
+    fontSize: getResponsiveFontSize(14.5), // 🔽 15 → 14.5
     fontFamily: 'Pretendard-Medium',
   },
   modalContent: {
@@ -281,12 +271,12 @@ const styles = StyleSheet.create({
     color: 'black',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(20)
-        : getResponsiveFontSize(22),
+        ? getResponsiveFontSize(17) // 🔽 20 → 17
+        : getResponsiveFontSize(18), // 🔽 22 → 18
     fontFamily: 'Pretendard-SemiBold',
     textAlign: 'center',
-    marginBottom: getResponsiveHeight(15),
-    marginTop: getResponsiveHeight(15),
+    marginBottom: getResponsiveHeight(12),
+    marginTop: getResponsiveHeight(12),
   },
   inputBox: {
     borderWidth: 1,
@@ -294,10 +284,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: getResponsiveWidth(10),
     paddingVertical:
-      Platform.OS === 'ios' ? getResponsiveHeight(12) : getResponsiveHeight(2),
+      Platform.OS === 'ios'
+        ? getResponsiveHeight(10)
+        : getResponsiveHeight(4),
   },
   input: {
     fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(14.5), // 🔽 16 → 14.5
   },
 });

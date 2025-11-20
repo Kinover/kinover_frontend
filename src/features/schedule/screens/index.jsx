@@ -125,16 +125,15 @@ export default function ScheduleScreen() {
       <TouchableOpacity
         style={{
           position: 'absolute',
-          bottom: getResponsiveHeight(15),
-          right: getResponsiveWidth(15),
-          width: getResponsiveIconSize(75),
-          height: getResponsiveIconSize(75),
-          zIndex: 0,
+          bottom: getResponsiveHeight(20),
+          right: getResponsiveWidth(18),
+          width: getResponsiveIconSize(60), // 🔽 75 → 60
+          height: getResponsiveIconSize(60),
         }}
         onPress={() => openSheet(null)}>
         <Image
           source={require('../../../assets/icons/schedule-bt.png')}
-          style={{width: '100%', height: '100%', objectFit: 'contain'}}
+          style={{width: '100%', height: '100%', resizeMode: 'contain'}}
         />
       </TouchableOpacity>
     </View>

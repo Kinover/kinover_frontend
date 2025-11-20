@@ -329,13 +329,19 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(60),
     alignItems: 'center',
   },
+  // headerTitle: {
+  //   fontSize: getResponsiveFontSize(22),
+  //   fontFamily: 'Pretendard-Regular',
+  //   color: '#FFC84D',
+  //   // color: 'black',
+
+  //   fontWeight: 'bold',
+  // },
   headerTitle: {
     fontSize: getResponsiveFontSize(22),
     fontFamily: 'Pretendard-Regular',
-    color: '#FFC84D',
-    // color: 'black',
-
-    fontWeight: 'bold',
+    color: 'black',
+    fontWeight: 'semibold',
   },
   alarmIcon: {
     width: getResponsiveIconSize(20),

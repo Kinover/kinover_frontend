@@ -26,7 +26,7 @@ export default function NotificationSettingScreen() {
 
   useHideTabBar({stayHidden: true});
 
-  // ✅ 전체 알림 토글 시
+  // ✅ 전체 알림 토글
   const handleToggleAllNotification = async () => {
     const newValue = !allNotification;
     setAllNotification(newValue);
@@ -40,7 +40,6 @@ export default function NotificationSettingScreen() {
     }
 
     try {
-      // 서버에 전체 알림 API가 없다면 각각 호출
       await dispatch(toggleAllChatRoomNotificationThunk({userId, isOn: newValue}));
       await dispatch(togglePostNotificationThunk({userId, isOn: newValue}));
       await dispatch(toggleCommentNotificationThunk({userId, isOn: newValue}));
@@ -53,7 +52,7 @@ export default function NotificationSettingScreen() {
     const newValue = !chatNotification;
     setChatNotification(newValue);
 
-    if (!userId) {return;}
+    if (!userId) return;
     try {
       await dispatch(toggleAllChatRoomNotificationThunk({userId, isOn: newValue}));
     } catch (e) {
@@ -65,7 +64,7 @@ export default function NotificationSettingScreen() {
     const newValue = !postNotification;
     setPostNotification(newValue);
 
-    if (!userId) {return;}
+    if (!userId) return;
     try {
       await dispatch(togglePostNotificationThunk({userId, isOn: newValue}));
     } catch (e) {
@@ -77,7 +76,7 @@ export default function NotificationSettingScreen() {
     const newValue = !commentNotification;
     setCommentNotification(newValue);
 
-    if (!userId) {return;}
+    if (!userId) return;
     try {
       await dispatch(toggleCommentNotificationThunk({userId, isOn: newValue}));
     } catch (e) {
@@ -85,7 +84,7 @@ export default function NotificationSettingScreen() {
     }
   };
 
-  // ✅ 하위 알림 상태에 따라 전체 알림 값 자동 업데이트
+  // ✅ 하위 알림 상태 → 전체 알림 동기화
   useEffect(() => {
     if (chatNotification && postNotification && commentNotification) {
       setAllNotification(true);
@@ -144,29 +143,31 @@ export default function NotificationSettingScreen() {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
-    paddingHorizontal: getResponsiveWidth(20),
-    paddingTop: getResponsiveHeight(20),
+    paddingHorizontal: getResponsiveWidth(18),      // 🔽 20 → 18
+    paddingTop: getResponsiveHeight(16),           // 🔽 20 → 16
     flex: 1,
   },
   header: {
-    fontSize: getResponsiveFontSize(24),
-    fontWeight: 'bold',
-    marginBottom: getResponsiveHeight(25),
+    fontSize: getResponsiveFontSize(20),           // 🔽 24 → 20
+    fontWeight: '700',
+    fontFamily: 'Pretendard-Bold',
+    marginBottom: getResponsiveHeight(20),         // 🔽 25 → 20
     color: '#000',
   },
   section: {
     borderBottomWidth: 0.5,
     borderColor: '#E5E5E5',
-    paddingVertical: getResponsiveHeight(10),
+    paddingVertical: getResponsiveHeight(6),       // 🔽 10 → 6
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: getResponsiveHeight(8),
+    paddingVertical: getResponsiveHeight(8),       // 그대로 두고 살짝만 여유
   },
   label: {
-    fontSize: getResponsiveFontSize(18),
+    fontSize: getResponsiveFontSize(15),           // 🔽 18 → 15
     color: '#222',
+    fontFamily: 'Pretendard-Medium',
   },
 });

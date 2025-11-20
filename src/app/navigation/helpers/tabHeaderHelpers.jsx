@@ -1,6 +1,5 @@
 import React from 'react';
 import {Platform, Text, TouchableOpacity, View} from 'react-native';
-
 import {
   getResponsiveHeight,
   getResponsiveIconSize,
@@ -10,21 +9,21 @@ import {
 import {useSelector} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
 
-// ✅ 공통 아이콘 버튼 생성기
+// ✅ 공통 아이콘 버튼 생성기 (size는 "기본 px" 개념으로만 넘기면 됨)
 const createIconButton = (
   navigationFunc,
   imageSource,
-  width,
-  height,
+  sizeWidth,
+  sizeHeight,
   margin = {},
   additionalStyle = {},
 ) => (
-  <TouchableOpacity onPress={navigationFunc}>
+  <TouchableOpacity onPress={navigationFunc} activeOpacity={0.8}>
     <FastImage
       source={imageSource}
       style={{
-        width: getResponsiveWidth(width),
-        height: getResponsiveHeight(height),
+        width: getResponsiveIconSize(sizeWidth),
+        height: getResponsiveIconSize(sizeHeight),
         ...margin,
         ...additionalStyle,
       }}
@@ -35,7 +34,6 @@ const createIconButton = (
 
 // ✅ 탭바 아이콘 및 라벨 렌더러
 
-// ✅ 공통 TabBar 아이콘
 export const renderTabBarIcon = (focused, focusedUri, defaultUri, tabName) => {
   const hasUnread = useSelector(state => state.notification.hasUnread);
 
@@ -46,13 +44,13 @@ export const renderTabBarIcon = (focused, focusedUri, defaultUri, tabName) => {
         style={
           Platform.OS === 'ios'
             ? {
-                width: getResponsiveIconSize(25),
-                height: getResponsiveIconSize(25),
+                width: getResponsiveIconSize(22), // 25 → 22
+                height: getResponsiveIconSize(22),
                 resizeMode: 'contain',
               }
             : {
-                width: getResponsiveIconSize(27.5),
-                height: getResponsiveIconSize(27.5),
+                width: getResponsiveIconSize(24), // 27.5 → 24
+                height: getResponsiveIconSize(24),
                 resizeMode: 'contain',
               }
         }
@@ -64,9 +62,9 @@ export const renderTabBarIcon = (focused, focusedUri, defaultUri, tabName) => {
             position: 'absolute',
             top: -2,
             right: -2,
-            width: 8,
-            height: 8,
-            borderRadius: 4,
+            width: 7,
+            height: 7,
+            borderRadius: 3.5,
             backgroundColor: 'red',
           }}
         />
@@ -78,16 +76,16 @@ export const renderTabBarIcon = (focused, focusedUri, defaultUri, tabName) => {
 export const renderTabBarLabel = (label, focused) => (
   <Text
     style={
-      Platform.OS == 'ios'
+      Platform.OS === 'ios'
         ? {
             color: focused ? '#FFC84D' : 'gray',
-            fontSize: getResponsiveFontSize(12),
-            marginTop: getResponsiveHeight(8),
+            fontSize: getResponsiveFontSize(11), // 12 → 11
+            marginTop: getResponsiveHeight(6),
           }
         : {
             color: focused ? '#FFC84D' : 'gray',
-            fontSize: getResponsiveFontSize(13),
-            marginTop: getResponsiveHeight(8),
+            fontSize: getResponsiveFontSize(12), // 13 → 12
+            marginTop: getResponsiveHeight(6),
           }
     }>
     {label}
@@ -96,15 +94,15 @@ export const renderTabBarLabel = (label, focused) => (
 
 // ✅ 헤더 컴포넌트 모음
 export const RenderHeaderTitleLogo = () => (
-  <View style={{paddingBottom: getResponsiveHeight(20)}}>
+  <View style={{paddingBottom: getResponsiveHeight(14)}}>
     <FastImage
       source={require('@/assets/icons/kino-logo.png')}
       style={{
-        top: getResponsiveHeight(6),
-        width: getResponsiveWidth(47),
-        height: getResponsiveHeight(47),
+        top: getResponsiveHeight(4),
+        width: getResponsiveWidth(40), // 47 → 40
+        height: getResponsiveHeight(40),
         resizeMode: 'contain',
-        marginLeft: getResponsiveWidth(18),
+        marginLeft: getResponsiveWidth(16),
       }}
     />
   </View>
@@ -123,32 +121,31 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
   return (
     <View
       style={{
-        // display:'flex',
         flexDirection: 'row',
-        marginRight: getResponsiveWidth(25),
+        marginRight: getResponsiveWidth(20), // 25 → 20
       }}>
       {createIconButton(
         () =>
           navigation.navigate('Tabs', {
             screen: currentScreen,
-            params: {screen: '알림화면'}, // 동적으로 화면 전환
+            params: {screen: '알림화면'},
           }),
         bellIcon,
-        getResponsiveIconSize(29),
-        getResponsiveIconSize(29),
+        22, // 29 → 22
+        22,
       )}
       <View
-        style={{width: getResponsiveWidth(12.5), justifyContent: 'flex-end'}}
+        style={{width: getResponsiveWidth(10), justifyContent: 'flex-end'}}
       />
       {createIconButton(
         () =>
           navigation.navigate('Tabs', {
             screen: currentScreen,
-            params: {screen: '설정화면'}, // 동적으로 화면 전환
+            params: {screen: '설정화면'},
           }),
         settingIcon,
-        getResponsiveIconSize(29),
-        getResponsiveIconSize(29),
+        22,
+        22,
       )}
     </View>
   );
@@ -162,9 +159,9 @@ export const RenderHeaderLeft1 = ({navigation}) =>
         params: {screen: '알림화면'},
       }),
     require('@/assets/images/navigator_alarm-button.png'),
-    getResponsiveIconSize(24),
-    getResponsiveIconSize(26),
-    {marginLeft: getResponsiveWidth(20)},
+    20, // 24 → 20
+    22, // 26 → 22
+    {marginLeft: getResponsiveWidth(18)},
   );
 
 export const RenderHeaderRightSetting = ({navigation}) =>
@@ -175,27 +172,27 @@ export const RenderHeaderRightSetting = ({navigation}) =>
         params: {screen: '설정화면'},
       }),
     require('@/assets/images/setting_bt.png'),
-    getResponsiveIconSize(24),
-    getResponsiveIconSize(26),
-    {marginRight: getResponsiveWidth(20)},
+    20,
+    22,
+    {marginRight: getResponsiveWidth(18)},
   );
 
 export const RenderHeaderRightChatSetting = ({setIsSettingsOpen}) =>
   createIconButton(
     () => setIsSettingsOpen(true),
     require('@/assets/images/dots2.png'),
-    21,
-    25,
-    {marginRight: getResponsiveWidth(30)},
+    18, // 21 → 18
+    20, // 25 → 20
+    {marginRight: getResponsiveWidth(24)},
   );
 
 export const RenderHeaderDeletePost = () =>
   createIconButton(
     () => {},
     require('@/assets/images/trash.png'),
-    24, // 조금 크게
-    24,
-    {marginRight: getResponsiveWidth(20)},
+    20, // 24 → 20
+    20,
+    {marginRight: getResponsiveWidth(18)},
     {zIndex: 999},
   );
 
@@ -203,9 +200,9 @@ export const RenderGoBackButton = ({navigation}) =>
   createIconButton(
     () => navigation.goBack(),
     require('@/assets/icons/caretDown.png'),
-    30,
-    30,
-    {marginLeft: getResponsiveWidth(20)},
+    24, // 30 → 24
+    24,
+    {marginLeft: getResponsiveWidth(18)},
     {zIndex: 999},
   );
 
@@ -214,8 +211,8 @@ export const RenderGoBackButtonGallery = ({navigation}) =>
     () => navigation.goBack(),
     require('@/assets/images/navigator_goback-button.png'),
     9,
-    20,
-    {marginLeft: getResponsiveWidth(25)},
+    18, // 20 → 18 (세로만 살짝 줄임)
+    {marginLeft: getResponsiveWidth(22)},
     {zIndex: 999},
   );
 
@@ -231,19 +228,19 @@ export const RenderHeaderLogo = ({navigation}) => (
     <FastImage
       source={require('@/assets/images/kinover.png')}
       style={{
-        width: getResponsiveWidth(70),
-        height: getResponsiveHeight(70),
-        marginLeft: getResponsiveWidth(10),
+        width: getResponsiveWidth(60), // 70 → 60
+        height: getResponsiveHeight(60),
+        marginLeft: getResponsiveWidth(8),
         resizeMode: 'contain',
       }}
     />
     <Text
       style={{
         position: 'absolute',
-        bottom: getResponsiveHeight(8),
-        width: getResponsiveWidth(120),
-        height: getResponsiveHeight(30),
-        fontSize: getResponsiveFontSize(24),
+        bottom: getResponsiveHeight(6),
+        width: getResponsiveWidth(110),
+        height: getResponsiveHeight(24),
+        fontSize: getResponsiveFontSize(20), // 24 → 20
         fontFamily: 'Pretendard-SemiBold',
       }}>
       Kinover

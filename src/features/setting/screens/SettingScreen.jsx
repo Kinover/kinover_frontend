@@ -6,12 +6,13 @@ import {
   StyleSheet,
   ScrollView,
   Image,
-  Linking, // ✅ 추가
+  Linking,
 } from 'react-native';
 
 import {useNavigation} from '@react-navigation/native';
 import LogoutModal from '../../home/components/LogoutModal';
 import DeleteAccountModal from '../../home/components/DeleteAccountModal';
+
 import {
   getResponsiveHeight,
   getResponsiveIconSize,
@@ -30,21 +31,7 @@ export default function SettingScreen() {
 
   useHideTabBar();
 
-  const goToNotificationSettings = () => {
-    navigation.navigate('알림설정화면');
-  };
-
-  const handleDeleteAccount = () => {
-    console.log('⚠️ 계정탈퇴 실행');
-    setShowDeleteModal(false);
-  };
-
-  // ✅ 외부 링크 열기 함수
-  const openLink = (url) => {
-    Linking.openURL(url).catch(err =>
-      console.error('링크 열기 실패: ', err),
-    );
-  };
+  const openLink = url => Linking.openURL(url).catch(err => console.error(err));
 
   return (
     <ScrollView style={styles.container}>
@@ -52,7 +39,9 @@ export default function SettingScreen() {
 
       {/* 알림 */}
       <View style={styles.section}>
-        <TouchableOpacity style={styles.row} onPress={goToNotificationSettings}>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => navigation.navigate('알림설정화면')}>
           <Text style={styles.label}>알림</Text>
           <Image
             style={styles.arrow}
@@ -83,10 +72,11 @@ export default function SettingScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>약관 및 정책</Text>
 
-        {/* 서비스 이용약관 */}
         <TouchableOpacity
           style={styles.row}
-          onPress={() => openLink('https://www.notion.so/2129f61bad50805589f6edfcac083179')}>
+          onPress={() =>
+            openLink('https://www.notion.so/2129f61bad50805589f6edfcac083179')
+          }>
           <Text style={styles.label}>서비스 이용약관</Text>
           <Image
             style={styles.arrow}
@@ -94,10 +84,11 @@ export default function SettingScreen() {
           />
         </TouchableOpacity>
 
-        {/* 개인정보 처리방침 */}
         <TouchableOpacity
           style={styles.row}
-          onPress={() => openLink('https://www.notion.so/2129f61bad5080f6bd29e269f5f319b1')}>
+          onPress={() =>
+            openLink('https://www.notion.so/2129f61bad5080f6bd29e269f5f319b1')
+          }>
           <Text style={styles.label}>개인정보처리방침</Text>
           <Image
             style={styles.arrow}
@@ -109,6 +100,7 @@ export default function SettingScreen() {
       {/* 로그인 정보 */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>로그인 정보</Text>
+
         <TouchableOpacity
           style={styles.row}
           onPress={() => setShowLogoutModal(true)}>
@@ -118,6 +110,7 @@ export default function SettingScreen() {
             source={require('../../../assets/images/rightArrow-gray.png')}
           />
         </TouchableOpacity>
+
         <TouchableOpacity
           style={styles.row}
           onPress={() => setShowDeleteModal(true)}>
@@ -129,7 +122,7 @@ export default function SettingScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* 모달들 */}
+      {/* 모달 */}
       <LogoutModal
         visible={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
@@ -138,7 +131,7 @@ export default function SettingScreen() {
       <DeleteAccountModal
         visible={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
-        onConfirm={handleDeleteAccount}
+        onConfirm={() => setShowDeleteModal(false)}
       />
     </ScrollView>
   );
@@ -147,44 +140,48 @@ export default function SettingScreen() {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
-    paddingHorizontal: getResponsiveWidth(20),
-    paddingTop: getResponsiveHeight(20),
+    paddingHorizontal: getResponsiveWidth(18), // 🔽 20 → 18
+    paddingTop: getResponsiveHeight(16),       // 🔽 20 → 16
     flex: 1,
   },
   header: {
-    fontSize: getResponsiveFontSize(24),
-    fontWeight: 'bold',
-    marginBottom: getResponsiveHeight(30),
+    fontSize: getResponsiveFontSize(20),       // 🔽 24 → 20
+    fontWeight: '700',
+    marginBottom: getResponsiveHeight(20),     // 🔽 30 → 20
     color: '#000',
+    fontFamily: 'Pretendard-Bold',
   },
   sectionTitle: {
-    fontSize: getResponsiveFontSize(14),
+    fontSize: getResponsiveFontSize(12.5),     // 🔽 14 → 12.5
     color: '#888',
-    marginTop: getResponsiveHeight(10),
-    marginBottom: getResponsiveHeight(10),
+    marginTop: getResponsiveHeight(6),
+    marginBottom: getResponsiveHeight(6),
+    fontFamily: 'Pretendard-Medium',
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: getResponsiveHeight(12),
+    paddingVertical: getResponsiveHeight(10), // 🔽 12 → 10
   },
   label: {
-    fontSize: getResponsiveFontSize(18),
+    fontSize: getResponsiveFontSize(15),      // 🔽 18 → 15
     color: '#222',
+    fontFamily: 'Pretendard-Medium',
   },
   value: {
-    fontSize: getResponsiveFontSize(17),
+    fontSize: getResponsiveFontSize(14),      // 🔽 17 → 14
     color: '#555',
+    fontFamily: 'Pretendard-Regular',
   },
   arrow: {
-    width: getResponsiveIconSize(12.5),
-    height: getResponsiveIconSize(12.5),
+    width: getResponsiveIconSize(11),         // 🔽 12.5 → 11
+    height: getResponsiveIconSize(11),
     resizeMode: 'contain',
   },
   section: {
     borderBottomWidth: 0.5,
     borderColor: '#E5E5E5',
-    paddingVertical: getResponsiveHeight(8),
+    paddingVertical: getResponsiveHeight(6), // 🔽 8 → 6
   },
 });

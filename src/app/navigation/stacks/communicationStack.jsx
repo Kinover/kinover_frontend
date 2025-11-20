@@ -3,12 +3,16 @@ import {createStackNavigator} from '@react-navigation/stack';
 import CommunicationScreen from '../../../features/chat/screens';
 import KinoChatRoom from '../../../features/chat/screens/kinoChatRoomScreen';
 import ChatSettings from '../../../features/chat/screens/chatSetting';
-import  {getResponsiveFontSize,
+import {
+  getResponsiveFontSize,
   getResponsiveWidth,
   getResponsiveHeight,
 } from '../../../utils/responsive';
 import {Text, Platform} from 'react-native';
-import {RenderGoBackButton,RenderHeaderHome} from '../helpers/tabHeaderHelpers';
+import {
+  RenderGoBackButton,
+  RenderHeaderHome,
+} from '../helpers/tabHeaderHelpers';
 import AddChatMemeberScreen from '../../../features/chat/screens/addChatMemberScreen';
 import CreateChatRoom from '../../../features/chat/screens/createChatRoomScreen';
 import ChatRoom from '../../../features/chat/screens/chatRoomScreen';
@@ -23,21 +27,17 @@ export default function CommunicationStack() {
   return (
     <Stack.Navigator
       initialRouteName="소통"
-      screenOptions={({_}) => ({
-        gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
-
-        // ✅ 객체 구조분해 필수!
-
+      screenOptions={_ => ({
+        gestureEnabled: true,
         headerStyle: {
           borderBottomWidth: 0,
           shadowOpacity: 0,
           elevation: 0,
           height:
-            Platform.OS == 'ios'
+            Platform.OS === 'ios'
               ? getResponsiveHeight(107.5)
               : getResponsiveHeight(80),
         },
-
         headerTitleAlign: 'center',
         headerShown: true,
         headerBackTitleVisible: false,
@@ -46,7 +46,7 @@ export default function CommunicationStack() {
         name="소통"
         component={CommunicationScreen}
         options={({navigation}) => ({
-          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+          gestureEnabled: true,
           headerBackTitleVisible: false,
           headerBackTitle: '',
           headerLeft: () => null,
@@ -54,12 +54,11 @@ export default function CommunicationStack() {
             <Text
               style={{
                 fontFamily: 'Pretendard-Bold',
-                fontWeight: 'bold',
-                fontSize: getResponsiveFontSize(24),
-                // color: '#4D4D4D',
+                fontWeight: Platform.OS === 'android' ? '700' : undefined,
+                fontSize: getResponsiveFontSize(20), // ✅ 24 → 16 (다른 앱이랑 비슷한 크기)
                 color: 'black',
                 textAlign: 'center',
-                lineHeight: getResponsiveHeight(30),
+                lineHeight: getResponsiveHeight(22), // 살짝만
                 textAlignVertical: 'center',
               }}>
               채팅
@@ -79,20 +78,20 @@ export default function CommunicationStack() {
         name="알림설정화면"
         component={NotificationSettingScreen}
         options={({navigation}) => ({
-          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+          gestureEnabled: true,
           headerBackTitle: '',
           headerRight: () => null,
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}
       />
+
       <Stack.Screen
         name="키노상담소화면"
         component={KinoChatRoom}
         options={({navigation}) => ({
           headerBackTitle: '',
-
-          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+          gestureEnabled: true,
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}
       />
@@ -101,27 +100,27 @@ export default function CommunicationStack() {
         name="키노선택화면"
         component={KinoSelectScreen}
         options={({navigation}) => ({
-          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
-
+          gestureEnabled: true,
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: () => '',
-          headerBackTitleVisible: false, // ← 요거 꼭 추가!
+          headerBackTitleVisible: false,
         })}
       />
+
       <Stack.Screen
         name="채팅방화면"
         component={ChatRoom}
         options={({navigation}) => ({
-          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+          gestureEnabled: true,
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}
       />
+
       <Stack.Screen
         name="채팅설정화면"
         component={ChatSettings}
         options={({navigation}) => ({
-          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
-
+          gestureEnabled: true,
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}
       />
@@ -130,8 +129,7 @@ export default function CommunicationStack() {
         name="채팅방멤버추가화면"
         component={AddChatMemeberScreen}
         options={({navigation}) => ({
-          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
-
+          gestureEnabled: true,
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}
       />
@@ -140,8 +138,7 @@ export default function CommunicationStack() {
         name="채팅방생성화면"
         component={CreateChatRoom}
         options={({navigation}) => ({
-          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
-
+          gestureEnabled: true,
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
         })}
       />
@@ -150,9 +147,8 @@ export default function CommunicationStack() {
         name="알림화면"
         component={NotificationScreen}
         options={({navigation}) => ({
-          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+          gestureEnabled: true,
           headerRight: () => null,
-
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}
@@ -162,9 +158,8 @@ export default function CommunicationStack() {
         name="설정화면"
         component={SettingScreen}
         options={({navigation}) => ({
-          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+          gestureEnabled: true,
           headerRight: () => null,
-
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}
