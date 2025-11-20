@@ -14,7 +14,6 @@ import {
 export default function CategoryDropdownButton({
   selectedTitle,
   onPress,
-  style,
 }) {
   return (
     <TouchableOpacity style={[styles.categoryButton]} onPress={onPress}>
@@ -41,10 +40,10 @@ const styles = StyleSheet.create({
   text: {
     fontFamily: 'Pretendard-Bold',
     fontWeight: 'bold',
-    fontSize: getResponsiveFontSize(24),
+    fontSize: getResponsiveFontSize(20),
     // color: '#4D4D4D',
     color: 'black',
-    lineHeight: getResponsiveHeight(30),
+    lineHeight: getResponsiveHeight(22),
     textAlignVertical:'center',
     textAlign: 'center',
   },

@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   Image,
   StyleSheet,
-  Platform
+  Platform,
 } from 'react-native';
 import {
   getResponsiveFontSize,
@@ -14,7 +14,7 @@ import {
   getResponsiveWidth,
 } from '../../../utils/responsive';
 import YMDPickerModal from './YMDPickerModal';
-import { useCalendarLayout } from '../hooks/useCalendarLayout';
+import {useCalendarLayout} from '../hooks/useCalendarLayout';
 
 import {useCalendarMode} from '../hooks/useCalendarMode';
 import {useLocalDateKey} from '../hooks/useLocalDateKey';
@@ -22,7 +22,6 @@ import {useMonthDates} from '../hooks/useMonthDates';
 import {useWeekDates} from '../hooks/useWeekDates';
 import {useScheduleCountStyle} from '../hooks/useScheduleCountStyle';
 import {useYMDPicker} from '../hooks/useYMDPicker';
-
 
 export default function CalendarToggle({
   selectedDate,
@@ -247,7 +246,7 @@ const styles = StyleSheet.create({
     alignContent: 'center',
     alignSelf: 'center',
     justifyContent: 'space-between',
-    marginBottom: getResponsiveHeight(16),
+    marginBottom: getResponsiveHeight(14),
     paddingHorizontal: getResponsiveWidth(10),
   },
   monthText: {
@@ -255,11 +254,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(20)
-        : getResponsiveFontSize(21),
+        ? getResponsiveFontSize(17) // 🔽 20 → 17
+        : getResponsiveFontSize(18), // 🔽 21 → 18
     color: '#1E1E1E',
     alignSelf: 'center',
-    lineHeight: Platform.OS === 'android' ? 22 : 'auto',
+    lineHeight: getResponsiveHeight(22),
     textAlignVertical: 'bottom',
   },
   modeToggle: {
@@ -280,7 +279,7 @@ const styles = StyleSheet.create({
   toggleActive: {backgroundColor: 'lightgray'},
   toggleText: {
     fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(13),
+    fontSize: getResponsiveFontSize(12.5), // 🔽 13 → 12.5
     color: 'white',
     textAlign: 'center',
     textAlignVertical: 'center',
@@ -298,18 +297,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   navIcon: {
-    width: 15,
-    height: 15,
+    width: 14,
+    height: 14,
     resizeMode: 'contain',
   },
   weekRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: getResponsiveHeight(10),
+    marginBottom: getResponsiveHeight(8),
   },
   dayText: {
     textAlign: 'center',
-    fontSize: getResponsiveFontSize(15.5),
+    fontSize: getResponsiveFontSize(13.5), // 🔽 15.5 → 13.5
     fontFamily: 'Pretendard-SemiBold',
     fontWeight: '700',
     color: '#444',
@@ -334,7 +333,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   dateText: {
-    fontSize: getResponsiveFontSize(15.5),
+    fontSize: getResponsiveFontSize(13.5), // 🔽 15.5 → 13.5
     fontFamily: 'Pretendard-Regular',
     color: '#111',
   },

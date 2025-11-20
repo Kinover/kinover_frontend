@@ -1,13 +1,16 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import ScheduleScreen from '../../../features/schedule/screens';
-import {  Text,  Platform,} from 'react-native';
+import {Text, Platform} from 'react-native';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
   getResponsiveFontSize,
 } from '../../../utils/responsive';
-import {RenderHeaderHome,RenderGoBackButton} from '../helpers/tabHeaderHelpers';
+import {
+  RenderHeaderHome,
+  RenderGoBackButton,
+} from '../helpers/tabHeaderHelpers';
 import SettingScreen from '../../../features/setting/screens/SettingScreen';
 import NotificationScreen from '../../../features/NotificationScreen';
 import NotificationSettingScreen from '../../../features/setting/screens/NotificationSettingScreen';
@@ -19,16 +22,14 @@ export default function ScheduleStack() {
     <Stack.Navigator
       initialRouteName="일정"
       screenOptions={({navigation}) => ({
-        gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
-
-        // ✅ 객체 구조분해 필수!
+        gestureEnabled: true,
         headerShown: true,
         headerStyle: {
           borderBottomWidth: 0,
           shadowOpacity: 0,
           elevation: 0,
           height:
-            Platform.OS == 'ios'
+            Platform.OS === 'ios'
               ? getResponsiveHeight(107.5)
               : getResponsiveHeight(80),
         },
@@ -38,13 +39,11 @@ export default function ScheduleStack() {
           <Text
             style={{
               fontFamily: 'Pretendard-Bold',
-              fontWeight: 'bold',
-              fontSize: getResponsiveFontSize(24),
-              // color: '#4D4D4D',
+              fontWeight: Platform.OS === 'android' ? '700' : undefined,
+              fontSize: getResponsiveFontSize(20), // ✅ 24 → 16 (일반적인 헤더 타이틀 사이즈)
               color: 'black',
-              lineHeight: getResponsiveHeight(30),
-              textAlignVertical:'center',
-
+              lineHeight: getResponsiveHeight(22), // ✅ 너무 크지 않게 살짝만
+              textAlignVertical: 'center',
             }}>
             일정
           </Text>
@@ -57,13 +56,13 @@ export default function ScheduleStack() {
         ),
       })}>
       <Stack.Screen name="일정" component={ScheduleScreen} />
+
       <Stack.Screen
         name="알림화면"
         component={NotificationScreen}
         options={({navigation}) => ({
-          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+          gestureEnabled: true,
           headerRight: () => null,
-
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}
@@ -73,20 +72,19 @@ export default function ScheduleStack() {
         name="설정화면"
         component={SettingScreen}
         options={({navigation}) => ({
-          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+          gestureEnabled: true,
           headerRight: () => null,
-
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}
       />
+
       <Stack.Screen
         name="알림설정화면"
         component={NotificationSettingScreen}
         options={({navigation}) => ({
-          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+          gestureEnabled: true,
           headerRight: () => null,
-
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}

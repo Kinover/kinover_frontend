@@ -252,7 +252,7 @@ export default function PostPage({route}) {
           </Text>
           <Text
             style={{
-              fontSize: getResponsiveFontSize(15),
+              fontSize: getResponsiveFontSize(14),
               color: 'gray',
               alignSelf: 'center',
               marginBottom: getResponsiveHeight(7),
@@ -295,13 +295,13 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize:
       Platform.OS === 'ios'
-        ? getResponsiveFontSize(20)
-        : getResponsiveFontSize(18),
+        ? getResponsiveFontSize(18)   // 🔽 기존 20 → 18
+        : getResponsiveFontSize(17),  // 🔽 기존 18 → 17
     textAlign: 'center',
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: 'Pretendard-Medium',
     fontWeight: '600',
     color: '#101010',
-    lineHeight: getResponsiveHeight(30),
+    lineHeight: getResponsiveHeight(26), // 🔽 살짝 줄임
   },
   descriptionWrapper: {
     width: '100%',
@@ -326,32 +326,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 5,
   },
   deleteOptionButton: {
-    paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(20),
+    paddingVertical: getResponsiveHeight(9),
+    paddingHorizontal: getResponsiveWidth(18),
   },
   deleteOptionText: {
     color: 'black',
-    fontSize: getResponsiveFontSize(14),
+    fontSize: getResponsiveFontSize(13), // 🔽 14 → 13
     fontFamily: 'Pretendard-Light',
   },
   divider: {
-    height: 0.5,
-    backgroundColor: 'gray',
+    height: 1,
+    bottom:'50%',
+    backgroundColor: 'lightgray',
   },
   modalTitle: {
     color: 'black',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(20)
-        : getResponsiveFontSize(22),
+        ? getResponsiveFontSize(17)    // 🔽 20 → 17
+        : getResponsiveFontSize(18),   // 🔽 22 → 18
     fontWeight: '700',
     fontFamily: 'Pretendard-SemiBold',
     textAlign: 'center',
-    marginVertical: getResponsiveHeight(10),
+    marginVertical: getResponsiveHeight(8),
   },
   headerIcon: {
-    width: getResponsiveWidth(25),
-    height: getResponsiveHeight(25),
+    width: getResponsiveWidth(22),      // 🔽 25 → 22
+    height: getResponsiveHeight(22),    // 🔽 25 → 22
     resizeMode: 'contain',
   },
 });

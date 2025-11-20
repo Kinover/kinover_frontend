@@ -17,8 +17,8 @@ import {
   getResponsiveIconSize,
 } from '../../../utils/responsive';
 
-import { useScheduleListByDate } from '../hooks/useScheduleListByDate';
-import { useFormattedScheduleDate } from '../hooks/useFormattedScheduleDate';
+import {useScheduleListByDate} from '../hooks/useScheduleListByDate';
+import {useFormattedScheduleDate} from '../hooks/useFormattedScheduleDate';
 
 function Schedule({selectedDate, onOpenSheet, refreshTrigger}) {
   const {scheduleList} = useScheduleListByDate(selectedDate, refreshTrigger);
@@ -70,6 +70,7 @@ function Schedule({selectedDate, onOpenSheet, refreshTrigger}) {
                 alignSelf: 'center',
                 textAlign: 'center',
                 textAlignVertical: 'center',
+                fontSize: getResponsiveFontSize(13),
               }}>
               {'일정이 비어 있어요.\n새로운 일정을 추가해볼까요?'}
             </Text>
@@ -90,10 +91,10 @@ const styles = StyleSheet.create({
   },
   dateText: {
     color: 'black',
-    fontSize: getResponsiveFontSize(17),
+    fontSize: getResponsiveFontSize(15), // 🔽 17 → 15
     fontFamily: 'Pretendard-SemiBold',
     marginTop: getResponsiveHeight(15),
-    marginBottom: getResponsiveHeight(20),
+    marginBottom: getResponsiveHeight(16),
     alignSelf: 'flex-start',
     fontWeight: Platform.OS === 'ios' ? undefined : 'bold',
   },
@@ -111,27 +112,27 @@ const styles = StyleSheet.create({
     color: 'black',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(14)
-        : getResponsiveFontSize(15.5),
+        ? getResponsiveFontSize(13.5) // 🔽 살짝 줄임
+        : getResponsiveFontSize(14.5),
     fontWeight: Platform.OS === 'android' ? '500' : undefined,
-    marginBottom: Platform.OS === 'android' ? 0 : 3,
+    marginBottom: Platform.OS === 'android' ? 0 : 2,
     paddingTop:
       Platform.OS === 'android'
         ? getResponsiveHeight(11)
-        : getResponsiveHeight(13),
+        : getResponsiveHeight(12),
     paddingHorizontal:
       Platform.OS === 'ios' ? getResponsiveWidth(15) : getResponsiveWidth(20),
   },
   cardMemo: {
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(13)
-        : getResponsiveFontSize(13.5),
+        ? getResponsiveFontSize(12.5) // 🔽 13 → 12.5 정도로
+        : getResponsiveFontSize(13),
     fontWeight: Platform.OS === 'android' ? '500' : undefined,
     color: '#6E6E6E',
     paddingHorizontal:
       Platform.OS === 'ios' ? getResponsiveWidth(15) : getResponsiveWidth(20),
-    paddingTop: getResponsiveHeight(2.5),
+    paddingTop: getResponsiveHeight(2),
   },
   memoIcon: {
     position: 'absolute',

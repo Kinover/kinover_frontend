@@ -15,7 +15,7 @@ import {
   BottomSheetModal,
   BottomSheetBackdrop,
   BottomSheetTextInput,
-  BottomSheetView
+  BottomSheetView,
 } from '@gorhom/bottom-sheet';
 import {
   getResponsiveFontSize,
@@ -24,8 +24,8 @@ import {
   getResponsiveWidth,
 } from '../../../utils/responsive';
 
-import { useScheduleBottomSheetModal } from '../hooks/useScheduleBottomSheetModal';
-import { useIsAllSelected } from '../hooks/useIsAllSelected';
+import {useScheduleBottomSheetModal} from '../hooks/useScheduleBottomSheetModal';
+import {useIsAllSelected} from '../hooks/useIsAllSelected';
 
 const ScheduleEditorBottomSheetModal = forwardRef(
   (
@@ -150,7 +150,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                   )}
                   <Text
                     style={{
-                      fontSize: getResponsiveFontSize(14),
+                      fontSize: getResponsiveFontSize(13),
                       fontFamily: 'Pretendard-Bold',
                       color: isSelectedAll ? 'gray' : '#C3C3C3',
                       zIndex: 10,
@@ -261,19 +261,22 @@ const ScheduleEditorBottomSheetModal = forwardRef(
   },
 );
 
-ScheduleEditorBottomSheetModal.displayName = 'ScheduleEditorBottomSheetModal';
-
+ScheduleEditorBottomSheetModal.displayName =
+  'ScheduleEditorBottomSheetModal';
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: getResponsiveWidth(25),
-    paddingBottom: getResponsiveHeight(30),
+    paddingHorizontal: getResponsiveWidth(22),
+    paddingBottom: getResponsiveHeight(26),
   },
   sheetTitle: {
-    fontSize: getResponsiveFontSize(22),
+    fontSize:
+      Platform.OS === 'android'
+        ? getResponsiveFontSize(18) // 🔽 22 → 18
+        : getResponsiveFontSize(19),
     fontFamily: 'Pretendard-Bold',
-    fontWeight: 'bold',
-    marginBottom: getResponsiveHeight(10),
+    fontWeight: '700',
+    marginBottom: getResponsiveHeight(8),
     color: '#222',
   },
   titleRow: {
@@ -282,12 +285,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   subTitle: {
-    fontSize: getResponsiveFontSize(16.5),
-    fontFamily: 'Pretendard-Light',
-    color: 'gray',
-    fontWeight: Platform.OS === 'android' ? '600' : '500',
-    marginBottom: getResponsiveHeight(12),
-    marginTop: getResponsiveHeight(5),
+    fontSize: getResponsiveFontSize(13.5), // 🔽 16.5 → 13.5
+    fontFamily: 'Pretendard-Regular',
+    color: '#808080',
+    fontWeight: Platform.OS === 'android' ? '500' : undefined,
+    marginBottom: getResponsiveHeight(10),
+    marginTop: getResponsiveHeight(4),
   },
   avatarBtn: {
     alignItems: 'center',
@@ -310,12 +313,12 @@ const styles = StyleSheet.create({
   avatarLabel: {
     fontSize:
       Platform.OS === 'ios'
-        ? getResponsiveFontSize(14)
-        : getResponsiveFontSize(12.5),
+        ? getResponsiveFontSize(12.5) // 🔽 약간 축소
+        : getResponsiveFontSize(12),
     fontFamily: 'Pretendard-Medium',
     color: '#333',
     textAlign: 'center',
-    marginTop: getResponsiveHeight(6),
+    marginTop: getResponsiveHeight(5),
   },
   checkIcon: {
     position: 'absolute',
@@ -333,22 +336,24 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#E5E5E5',
-    padding: 14,
+    padding: 12,
     height: getResponsiveHeight(100),
     marginBottom: 10,
-    fontSize: getResponsiveFontSize(15),
+    fontSize: getResponsiveFontSize(14), // 🔽 15 → 14
+    fontFamily: 'Pretendard-Regular',
+    color: '#222',
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    gap: 12,
+    gap: 10,
     marginTop: getResponsiveHeight(10),
   },
   button: {
     flex: 1,
     borderRadius: 10,
     alignItems: 'center',
-    paddingVertical: getResponsiveHeight(17),
+    paddingVertical: getResponsiveHeight(14),
   },
   deleteButton: {
     backgroundColor: '#F4F6FA',
@@ -358,7 +363,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(14.5), // 🔽 16 → 14.5
     color: 'white',
   },
 });

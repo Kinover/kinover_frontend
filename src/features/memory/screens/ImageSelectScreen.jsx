@@ -16,19 +16,14 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
-  getResponsiveIconSize,
 } from '../../../utils/responsive';
 import useHideTabBar from '../../../hooks/useHideTabBar';
 
-// ✅ 유틸 import
 import {
   convertPhUriToFileUri,
   convertContentUriToFileUri,
 } from '../../../utils/photoUriConverter';
-import {
-  toggleSelectImage,
-  getSelectOrder,
-} from '../../../utils/selection';
+import {toggleSelectImage, getSelectOrder} from '../../../utils/selection';
 import {loadGalleryPhotos} from '../../../utils/gallery';
 import formatDuration from '../../../utils/formatDuration';
 
@@ -44,9 +39,8 @@ const PAGE_SIZE = 60;
 
 export default function ImageSelectPage() {
   const [photos, setPhotos] = useState([]);
-  const [selected, setSelected] = useState([]); // ✅ 객체 배열로 관리
+  const [selected, setSelected] = useState([]);
 
-  // 페이징/로딩 상태
   const [endCursor, setEndCursor] = useState(null);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -54,27 +48,26 @@ export default function ImageSelectPage() {
 
   const navigation = useNavigation();
 
-  // ===== 사진 불러오기 =====
   const loadPhotos = async (after = null) => {
     const {
       photos: newPhotos,
-      endCursor,
-      hasNextPage,
+      endCursor: newCursor,
+      hasNextPage: newHasNext,
     } = await loadGalleryPhotos(after, PAGE_SIZE);
+
     if (after) {
       setPhotos(prev => [...prev, ...newPhotos]);
     } else {
       setPhotos(newPhotos);
     }
-    setEndCursor(endCursor);
-    setHasNextPage(hasNextPage);
+    setEndCursor(newCursor);
+    setHasNextPage(newHasNext);
   };
 
   useEffect(() => {
-    loadPhotos(); // 초기 로드
+    loadPhotos();
   }, []);
 
-  // 바닥 도달 시 다음 페이지 로드
   const handleEndReached = async () => {
     if (isLoadingMore || !hasNextPage || !endCursor) return;
     setIsLoadingMore(true);
@@ -82,19 +75,16 @@ export default function ImageSelectPage() {
     setIsLoadingMore(false);
   };
 
-  // 당겨서 새로고침
   const onRefresh = async () => {
     setIsRefreshing(true);
     await loadPhotos(null);
     setIsRefreshing(false);
   };
 
-  // ===== 선택 토글 =====
   const toggleSelect = item => {
-    setSelected(prev => toggleSelectImage(prev, item)); // ✅ photo 객체 넘김
+    setSelected(prev => toggleSelectImage(prev, item));
   };
 
-  // ===== 다음 버튼 =====
   const handleNext = async () => {
     if (selected.length === 0) {
       Alert.alert('이미지 선택', '최소 1장 이상 선택해 주세요.');
@@ -108,16 +98,15 @@ export default function ImageSelectPage() {
 
       if (Platform.OS === 'ios' && uri.startsWith('ph://')) {
         const converted = await convertPhUriToFileUri(uri, i, file.isVideo);
-        if (converted) {convertedUris.push(converted);}
+        if (converted) convertedUris.push(converted);
       } else if (Platform.OS === 'android' && uri.startsWith('content://')) {
         const converted = await convertContentUriToFileUri(uri, i, file.isVideo);
-        if (converted) {convertedUris.push(converted);}
+        if (converted) convertedUris.push(converted);
       } else {
         convertedUris.push(uri);
       }
     }
 
-    // ✅ 선택된 순서 그대로 전달
     navigation.navigate('카테고리선택화면', {
       selectedImages: convertedUris,
       from: '이미지선택화면',
@@ -126,7 +115,6 @@ export default function ImageSelectPage() {
 
   useHideTabBar();
 
-  // ===== 헤더 UI =====
   useLayoutEffect(() => {
     const disabled = selected.length === 0;
 
@@ -151,19 +139,15 @@ export default function ImageSelectPage() {
     });
   }, [selected, navigation, handleNext]);
 
-  // ====== 렌더 ======
   const renderItem = ({item}) => {
-    const isSelected = selected.some(f => f.uri === item.uri); // ✅ 객체 비교
+    const isSelected = selected.some(f => f.uri === item.uri);
     const order = getSelectOrder(selected, item.uri);
 
     return (
-      <TouchableOpacity
-        onPress={() => toggleSelect(item)}
-        activeOpacity={0.8}>
+      <TouchableOpacity onPress={() => toggleSelect(item)} activeOpacity={0.8}>
         <View style={[styles.imageWrapper, isSelected && styles.selectedImage]}>
           <Image source={{uri: item.uri}} style={styles.image} />
 
-          {/* 🎥 영상일 경우 시간 배지 */}
           {item.isVideo && (
             <View style={styles.videoBadge}>
               <Text style={styles.videoBadgeText}>
@@ -172,10 +156,9 @@ export default function ImageSelectPage() {
             </View>
           )}
 
-          {/* ✅ 선택 순서 뱃지 */}
           {isSelected && (
             <>
-              <View style={styles.tileSelectedOverlay}></View>
+              <View style={styles.tileSelectedOverlay} />
               <View style={styles.orderBadge}>
                 <Text style={styles.orderBadgeText}>{order}</Text>
               </View>
@@ -199,11 +182,10 @@ export default function ImageSelectPage() {
         refreshing={isRefreshing}
         onRefresh={onRefresh}
         ListFooterComponent={
-          isLoadingMore ? <Text style={styles.footer}></Text> : null
+          isLoadingMore ? <Text style={styles.footer} /> : null
         }
       />
 
-      {/* (선택) iOS 제한 권한 안내 */}
       {Platform.OS === 'ios' && photos.length < 10 && (
         <TouchableOpacity
           style={styles.permissionHint}
@@ -229,18 +211,18 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize:
       Platform.OS === 'ios'
-        ? getResponsiveFontSize(20)
-        : getResponsiveFontSize(18),
+        ? getResponsiveFontSize(18) // 🔽 20 → 18
+        : getResponsiveFontSize(17), // 🔽 18 → 17
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontFamily: 'Pretendard-Regular',
-    fontWeight: '600',
+    fontFamily: 'Pretendard-Medium',
+    fontWeight: Platform.OS === 'android' ? '600' : '500',
     color: '#101010',
-    lineHeight: getResponsiveHeight(30),
+    lineHeight: getResponsiveHeight(26),
   },
   checkIcon: {
-    width: getResponsiveWidth(30),
-    height: getResponsiveHeight(30),
+    width: getResponsiveWidth(24),   // 🔽 30 → 24
+    height: getResponsiveHeight(24), // 🔽 30 → 24
     marginRight: getResponsiveWidth(15),
     resizeMode: 'contain',
   },
@@ -270,26 +252,26 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: getResponsiveWidth(4),
     right: getResponsiveWidth(4),
-    width: getResponsiveWidth(22),
-    height: getResponsiveWidth(22),
-    borderRadius: getResponsiveWidth(11),
+    width: getResponsiveWidth(20),   // 🔽 22 → 20
+    height: getResponsiveWidth(20),
+    borderRadius: getResponsiveWidth(10),
     borderColor: '#FFC84D',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1.5,
+    borderWidth: 1.2,
     backgroundColor: '#fff',
     zIndex: 2,
   },
   orderBadgeText: {
     color: '#FFC84D',
-    fontSize: getResponsiveIconSize(16),
+    fontSize: getResponsiveFontSize(11), // 🔽 아이콘 사이즈 대신 폰트 사이즈로
     fontWeight: '700',
     includeFontPadding: false,
     textAlignVertical: 'center',
   },
   footer: {
     textAlign: 'center',
-    paddingVertical: getResponsiveHeight(12),
+    paddingVertical: getResponsiveHeight(10),
     color: '#666',
   },
   permissionHint: {
@@ -298,28 +280,29 @@ const styles = StyleSheet.create({
     left: getResponsiveWidth(10),
     right: getResponsiveWidth(10),
     backgroundColor: '#00000088',
-    paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(8),
+    paddingHorizontal: getResponsiveWidth(10),
     borderRadius: 8,
   },
   permissionHintText: {
     color: 'white',
     textAlign: 'center',
-    fontSize: getResponsiveFontSize(12),
+    fontSize: getResponsiveFontSize(11), // 🔽 12 → 11
+    lineHeight: getResponsiveHeight(16),
   },
   videoBadge: {
     position: 'absolute',
     bottom: getResponsiveWidth(4),
     right: getResponsiveWidth(4),
     backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 6,
+    paddingHorizontal: 5,
     paddingVertical: 2,
     borderRadius: 4,
     zIndex: 2,
   },
   videoBadgeText: {
     color: '#fff',
-    fontSize: getResponsiveIconSize(12),
+    fontSize: getResponsiveFontSize(10.5), // 🔽 조금 줄임
     fontWeight: '600',
   },
 });

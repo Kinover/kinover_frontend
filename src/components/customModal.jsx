@@ -142,6 +142,7 @@ export default function CustomModal({
 }
 const styles = StyleSheet.create({
   overlay: {flex: 1, justifyContent: 'center', alignItems: 'center'},
+
   modalBox: {
     position: 'relative',
     width:
@@ -152,82 +153,100 @@ const styles = StyleSheet.create({
     padding: 15,
     backgroundColor: 'white',
     borderRadius: Platform.OS === 'android' ? 25 : 20,
-    paddingTop: getResponsiveHeight(20),
+    paddingTop: getResponsiveHeight(18), // ↓ 살짝 줄임
     zIndex: 50,
     elevation: 10,
   },
+
   topButtonRow: {
     position: 'absolute',
-    top: getResponsiveHeight(5),
+    top: getResponsiveHeight(6),
     right: getResponsiveWidth(15),
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     zIndex: 5,
   },
+
   modalTitle: {
     color: 'black',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(19)
-        : getResponsiveFontSize(22),
+        ? getResponsiveFontSize(16) // ← 19 → 16
+        : getResponsiveFontSize(18), // ← 22 → 18
     textAlign: 'center',
     fontFamily: 'Pretendard-SemiBold',
     fontWeight: Platform.OS === 'ios' ? undefined : '700',
-    marginBottom: getResponsiveHeight(12.5),
-    marginTop: getResponsiveHeight(11),
+    marginBottom: getResponsiveHeight(10), // ↓ 조정
+    marginTop: getResponsiveHeight(10),
   },
+
   modalSubText: {
     textAlign: 'center',
     color: '#999999',
     fontFamily: 'Pretendard-Regular',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(14)
-        : getResponsiveFontSize(16),
-    lineHeight: getResponsiveHeight(20),
-    marginBottom: getResponsiveHeight(10),
+        ? getResponsiveFontSize(12.5) // ← 14 → 12.5
+        : getResponsiveFontSize(14), // ← 16 → 14
+    lineHeight: getResponsiveHeight(18), // ↓ 조정
+    marginBottom: getResponsiveHeight(8),
   },
-  contentWrapper: {marginBottom: 10},
+
+  contentWrapper: {
+    marginBottom: 8, // ↓ 여백 축소
+  },
+
   buttonBottom: {
     display: 'flex',
-    flexDirection: 'column',
+    flexDirection: 'row',
     justifyContent: 'center',
     alignContent: 'center',
-    gap: 10,
+    gap: 8,
   },
+
   closeButton: {
-    flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
-    padding: 10,
     backgroundColor: '#F4F6FA',
     borderRadius: 8,
-    width: '100%',
-    paddingVertical: getResponsiveHeight(14),
+    flex:1,
+    paddingVertical: getResponsiveHeight(12), // ↓ 14 → 12
   },
+
   confirmButton: {
-    flex: 1,
     flexDirection: 'row',
     justifyContent: 'center',
-    padding: 10,
     backgroundColor: '#FFC84D',
     borderRadius: 8,
-    width: '100%',
-    paddingVertical: getResponsiveHeight(14),
+    flex:1,
+    paddingVertical: getResponsiveHeight(12), // ↓
   },
+
   closeText: {
     color: '#A1A5AF',
     fontWeight: '500',
     fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(14), // ← 16 → 14
   },
+
   confirmText: {
     color: 'white',
     fontWeight: '500',
     fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(14), // ← 16 → 14
   },
+
   trashButton: {padding: 4},
-  trashIcon: {width: getResponsiveWidth(16), height: getResponsiveHeight(16)},
+  trashIcon: {
+    width: getResponsiveWidth(14),
+    height: getResponsiveHeight(14),
+  },
+
+  titleImage: {
+    width: getResponsiveWidth(40), // ↓ 부드럽게 줄임
+    height: getResponsiveHeight(40),
+    alignSelf: 'center',
+    marginBottom: getResponsiveHeight(6),
+  },
 });

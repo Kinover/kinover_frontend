@@ -1,5 +1,5 @@
 import React from 'react';
-import { Text, StyleSheet, Platform } from 'react-native';
+import {StyleSheet, Platform } from 'react-native';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
@@ -14,8 +14,8 @@ export default function LogoutModal({ visible, onClose, onConfirm }) {
       onConfirm={onConfirm} // ❗ 로그아웃 → 처리 실행
       confirmText="로그아웃"
       closeText="취소"
-      buttonBottomStyle={styles.modalButtonRow}>
-      <Text style={styles.modalTitle}>로그아웃 할까요?</Text>
+      buttonBottomStyle={styles.modalButtonRow}
+      title="로그아웃 할까요?">
     </CustomModal>
   );
 }

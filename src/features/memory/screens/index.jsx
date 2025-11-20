@@ -12,7 +12,7 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-import { useMemoryScreen } from '../hooks/useMemoryScreen';
+import {useMemoryScreen} from '../hooks/useMemoryScreen';
 
 export default function MemoryScreen() {
   const {
@@ -49,11 +49,10 @@ export default function MemoryScreen() {
       <TouchableOpacity
         style={{
           position: 'absolute',
-          bottom: getResponsiveHeight(15),
-          right: getResponsiveWidth(15),
-          width: getResponsiveIconSize(75),
-          height: getResponsiveIconSize(75),
-          zIndex: 0,
+          bottom: getResponsiveHeight(20),
+          right: getResponsiveWidth(18),
+          width: getResponsiveIconSize(60), // 🔽 75 → 60
+          height: getResponsiveIconSize(60),
         }}
         onPress={navigateToImageSelect}>
         <Image

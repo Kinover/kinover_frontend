@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
-  Image
+  Image,
 } from 'react-native';
 
 import axios from 'axios';
@@ -38,36 +38,7 @@ export default function AddChatMemberScreen({navigation, route}) {
     if (family.familyId) {
       dispatch(fetchFamilyUserListThunk(family.familyId));
     }
-  }, []);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerTitle: () => <Text style={styles.headerTitle}>새 멤버 초대</Text>,
-
-      headerRight: () => (
-        <TouchableOpacity
-          onPress={handleNext}
-          style={{marginRight: getResponsiveWidth(10)}}>
-          <FastImage
-            source={require('../../../assets/icons/check.png')}
-            style={styles.headerCheckIcon}
-          />
-        </TouchableOpacity>
-      ),
-    });
-  }, [selected]);
-
-  const selectableUsers = familyUserList.filter(
-    user => !chatRoomUsers.find(u => u.userId === user.userId),
-  );
-
-  const toggleUser = userId => {
-    setSelected(prev =>
-      prev.includes(userId)
-        ? prev.filter(id => id !== userId)
-        : [...prev, userId],
-    );
-  };
+  }, [dispatch, family.familyId]);
 
   const handleNext = async () => {
     if (selected.length === 0) return;
@@ -90,6 +61,34 @@ export default function AddChatMemberScreen({navigation, route}) {
     } catch (err) {
       console.error('유저 초대 실패:', err);
     }
+  };
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerTitle: () => <Text style={styles.headerTitle}>새 멤버 초대</Text>,
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={handleNext}
+          style={{marginRight: getResponsiveWidth(10)}}>
+          <FastImage
+            source={require('../../../assets/icons/check.png')}
+            style={styles.headerCheckIcon}
+          />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation, selected, handleNext]);
+
+  const selectableUsers = familyUserList.filter(
+    user => !chatRoomUsers.find(u => u.userId === user.userId),
+  );
+
+  const toggleUser = userId => {
+    setSelected(prev =>
+      prev.includes(userId)
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId],
+    );
   };
 
   return (
@@ -137,26 +136,26 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5E5',
   },
   headerTitle: {
-    fontSize: getResponsiveFontSize(18),
+    fontSize: getResponsiveFontSize(17), // 🔽 18 → 17
     textAlign: 'center',
     fontFamily: 'Pretendard-Medium',
   },
   headerRight: {
     marginRight: getResponsiveWidth(15),
   },
-
   headerCheckIcon: {
-    width: getResponsiveWidth(30),
-    height: getResponsiveHeight(30),
+    width: getResponsiveWidth(24),   // 🔽 30 → 24
+    height: getResponsiveHeight(24), // 🔽 30 → 24
     marginRight: getResponsiveWidth(15),
     resizeMode: 'contain',
   },
+
   userItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: getResponsiveHeight(15),
-    paddingHorizontal: getResponsiveWidth(22),
+    paddingVertical: getResponsiveHeight(13), // 🔽 15 → 13
+    paddingHorizontal: getResponsiveWidth(20), // 살짝 줄임
   },
   userItemSelected: {
     backgroundColor: '#FFF2CC',
@@ -164,22 +163,23 @@ const styles = StyleSheet.create({
   userInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: getResponsiveWidth(5),
+    gap: getResponsiveWidth(6),
   },
   userImage: {
-    width: getResponsiveIconSize(45),
-    height: getResponsiveIconSize(45),
-    borderRadius: getResponsiveIconSize(22.5),
-    marginRight: getResponsiveWidth(10),
+    width: getResponsiveIconSize(40),  // 🔽 45 → 40
+    height: getResponsiveIconSize(40),
+    borderRadius: getResponsiveIconSize(20),
+    marginRight: getResponsiveWidth(8),
     backgroundColor: '#eee',
   },
   userName: {
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(15), // 🔽 16 → 15
     fontFamily: 'Pretendard-Regular',
+    color: '#222',
   },
   selectIcon: {
-    width: getResponsiveIconSize(14),
-    height: getResponsiveIconSize(14),
+    width: getResponsiveIconSize(13), // 🔽 14 → 13
+    height: getResponsiveIconSize(13),
     resizeMode: 'contain',
   },
 });
