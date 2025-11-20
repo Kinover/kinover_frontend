@@ -79,20 +79,16 @@ export default function NotificationScreen() {
 
     const d = new Date(iso);
 
-    // 시/분 뽑기
-    let hours = d.getHours(); // 0 ~ 23
-    const minutes = d.getMinutes(); // 0 ~ 59
+    let hours = d.getHours();
+    const minutes = d.getMinutes();
 
-    // 오전/오후 판별
     const ampm = hours < 12 ? '오전' : '오후';
 
-    // 12시간제로 변환
     hours = hours % 12;
     if (hours === 0) {
       hours = 12;
     }
 
-    // 분은 항상 2자리로 표시
     const minuteStr = minutes.toString().padStart(2, '0');
 
     return `${ampm} ${hours}시 ${minuteStr}분`;
@@ -100,11 +96,11 @@ export default function NotificationScreen() {
 
   // 타입 → 라벨/색/문구
   const TYPE_META = {
-    CHAT: {label: '채팅', color: 'black'},
-    SCHEDULE: {label: '일정', color: 'black'},
-    POST: {label: '게시글', color: 'black'},
-    COMMENT: {label: '댓글', color: 'black'},
-    DEFAULT: {label: '알림', color: 'black'},
+    CHAT: {label: '채팅', color: '#111827'},
+    SCHEDULE: {label: '일정', color: '#111827'},
+    POST: {label: '게시글', color: '#111827'},
+    COMMENT: {label: '댓글', color: '#111827'},
+    DEFAULT: {label: '알림', color: '#111827'},
   };
   const getTypeMeta = t => TYPE_META[t] || TYPE_META.DEFAULT;
 
@@ -168,7 +164,10 @@ export default function NotificationScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.inner}
+      showsVerticalScrollIndicator={false}>
       {sectioned.map((row, idx) => {
         if (row.type === 'section') {
           return (
@@ -195,13 +194,11 @@ export default function NotificationScreen() {
             ? new Date(n.createdAt).getTime() > lastChecked.getTime()
             : false;
 
-        // ✅ 왼쪽 이미지 선택 규칙
-        // CHAT/SCHEDULE → authorImage
-        // POST/COMMENT → firstImageUrl
-        const leftImageUrl =
-          n.notificationType === 'POST' || n.notificationType === 'COMMENT'
-            ? firstImage
-            : authorImage;
+        const isPostType =
+          n.notificationType === 'POST' || n.notificationType === 'COMMENT';
+
+        // 왼쪽 이미지 선택 규칙
+        const leftImageUrl = isPostType ? firstImage : authorImage;
 
         return (
           <TouchableOpacity
@@ -217,16 +214,26 @@ export default function NotificationScreen() {
                     ? {uri: leftImageUrl}
                     : require('../../../assets/images/default.png')
                 }
-                style={styles.profileImage}
+                style={[
+                  styles.profileImage,
+                  isPostType && styles.profileImagePost,
+                ]}
               />
             </View>
 
             {/* 가운데: 텍스트 영역 */}
             <View style={styles.center}>
               <View style={styles.rowTop}>
-                <Text style={[styles.typeBadgeText, {color: typeMeta.color}]}>
-                  {title}
-                </Text>
+                <View style={styles.typeBadge}>
+                  <Text
+                    style={[
+                      styles.typeBadgeText,
+                      {color: typeMeta.color},
+                    ]}>
+                    {title}
+                  </Text>
+                </View>
+                {isNew && <View style={styles.newDot} />}
                 <Text style={styles.when}>{when}</Text>
               </View>
 
@@ -240,13 +247,12 @@ export default function NotificationScreen() {
                 </Text>
               )}
             </View>
-            {/* 👉 오른쪽 썸네일은 요청대로 제거 */}
           </TouchableOpacity>
         );
       })}
 
       {notifications.length === 0 && (
-        <View style={{paddingVertical: getResponsiveHeight(60)}}>
+        <View style={styles.emptyWrap}>
           <Text style={styles.empty}>알림이 없어요.</Text>
         </View>
       )}
@@ -255,26 +261,27 @@ export default function NotificationScreen() {
 }
 
 /* ======= styles ======= */
-const AVATAR = getResponsiveWidth(46);
+const AVATAR = getResponsiveWidth(44);
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#F3F4F6', // 전체 배경 살짝 톤 다운
   },
+  inner: {
+    paddingHorizontal: getResponsiveWidth(18),
+    paddingTop: getResponsiveHeight(8),
+    paddingBottom: getResponsiveHeight(20),
+  },
+
   sectionTitle: {
-    marginTop: getResponsiveHeight(14),
-    marginBottom: getResponsiveHeight(4),
-    fontSize: getResponsiveFontSize(12.5),
-    color: '#8D8D8D',
+    marginTop: getResponsiveHeight(18),
+    marginBottom: getResponsiveHeight(6),
+    fontSize: getResponsiveFontSize(11.5),
+    color: '#9CA3AF',
     fontFamily: 'Pretendard-Medium',
-    paddingHorizontal: getResponsiveHeight(20),
   },
-  loading: {
-    fontSize: getResponsiveFontSize(16),
-    textAlign: 'center',
-    color: '#555',
-  },
+
   error: {
     fontSize: getResponsiveFontSize(16),
     color: 'red',
@@ -284,24 +291,37 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: getResponsiveHeight(15),
-    paddingHorizontal: getResponsiveHeight(24.5),
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#EFEFEF',
+    paddingVertical: getResponsiveHeight(12),
+    paddingHorizontal: getResponsiveWidth(12),
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    marginBottom: getResponsiveHeight(8),
+    // 카드 느낌 살짝
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 1,
     gap: getResponsiveWidth(12),
   },
   cardNew: {
+    borderWidth: 1,
+    borderColor: '#FFE3A3',
     backgroundColor: '#FFF9EC',
   },
 
   avatarWrap: {
-    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   profileImage: {
     width: AVATAR,
     height: AVATAR,
-    borderRadius: getResponsiveWidth(5), // ← 게시글 썸네일 느낌 살리려면 원형 대신 라운드 사각
-    backgroundColor: '#EAEAEA',
+    borderRadius: AVATAR / 2, // 기본은 동그랗게 (사람)
+    backgroundColor: '#E5E7EB',
+  },
+  profileImagePost: {
+    borderRadius: getResponsiveWidth(6), // 게시글/댓글은 썸네일 느낌
   },
 
   center: {
@@ -311,48 +331,57 @@ const styles = StyleSheet.create({
   rowTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: getResponsiveWidth(8),
     marginBottom: getResponsiveHeight(4),
   },
 
+  typeBadge: {
+    paddingHorizontal: getResponsiveWidth(8),
+    paddingVertical: getResponsiveHeight(3),
+    borderRadius: 999,
+    backgroundColor: '#F3F4FF',
+    marginRight: getResponsiveWidth(6),
+  },
   typeBadgeText: {
     fontSize: getResponsiveFontSize(11.5),
     fontFamily: 'Pretendard-SemiBold',
-    fontWeight: '700',
   },
 
   newDot: {
-    fontSize: getResponsiveFontSize(10.5),
-    color: '#FF8A00',
-    fontFamily: 'Pretendard-SemiBold',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    width: getResponsiveWidth(7),
+    height: getResponsiveWidth(7),
     borderRadius: 999,
-    backgroundColor: '#FFF3E0',
+    backgroundColor: '#F97316',
+    marginRight: getResponsiveWidth(6),
   },
+
   when: {
     marginLeft: 'auto',
-    fontSize: getResponsiveFontSize(12),
-    color: '#9A9A9A',
+    fontSize: getResponsiveFontSize(11.5),
+    color: '#9CA3AF',
     fontFamily: 'Pretendard-Regular',
   },
 
   summary: {
     fontSize: getResponsiveFontSize(13.5),
-    color: '#1A1A1A',
+    color: '#111827',
     fontFamily: 'Pretendard-Medium',
   },
   content: {
     marginTop: getResponsiveHeight(2),
-    fontSize: getResponsiveFontSize(13),
-    color: '#444',
+    fontSize: getResponsiveFontSize(12.5),
+    color: '#4B5563',
     fontFamily: 'Pretendard-Regular',
     lineHeight: getResponsiveHeight(18),
   },
 
+  emptyWrap: {
+    paddingVertical: getResponsiveHeight(60),
+    alignItems: 'center',
+  },
   empty: {
     textAlign: 'center',
-    color: '#999',
+    color: '#9CA3AF',
     fontSize: getResponsiveFontSize(14),
+    fontFamily: 'Pretendard-Regular',
   },
 });

@@ -1,4 +1,5 @@
 // src/screens/xxx/CategoryBottomSheetModal.js (경로는 있는 그대로 써줘)
+// src/screens/xxx/CategoryBottomSheetModal.js
 
 import React, {
   useRef,
@@ -16,11 +17,7 @@ import {
   SafeAreaView,
   Platform,
 } from 'react-native';
-import {
-  BottomSheetModal,
-  BottomSheetBackdrop,
-  BottomSheetScrollView,
-} from '@gorhom/bottom-sheet';
+import {BottomSheetScrollView} from '@gorhom/bottom-sheet';
 import LinearGradient from 'react-native-linear-gradient';
 import {
   getResponsiveHeight,
@@ -28,7 +25,8 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-
+import {BottomSheetButtons} from 'components/BottomSheetButtons';
+import {KinoBottomSheet} from 'components/KinoBottomSheetModal';
 const CategoryBottomSheetModal = forwardRef(
   ({categoryList = [], selectedCategory, onSelectCategory}, ref) => {
     const modalRef = useRef(null);
@@ -55,32 +53,20 @@ const CategoryBottomSheetModal = forwardRef(
     const data = [{title: '전체'}, ...categoryList];
 
     return (
-      <BottomSheetModal
-        ref={modalRef}
-        index={0}
-        snapPoints={['60%']}
-        enableContentPanningGesture={false}
-        handleIndicatorStyle={{width: 0, height: 0}}
-        backdropComponent={props => (
-          <BottomSheetBackdrop
-            {...props}
-            disappearsOnIndex={-1}
-            appearsOnIndex={0}
-            pressBehavior="close"
-          />
-        )}
-        backgroundStyle={{
-          backgroundColor: 'white',
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
-        }}>
+      <KinoBottomSheet
+        modalRef={modalRef}
+        snapPoints={['55%']}
+        enableContentPanningGesture={false}>
         <SafeAreaView style={styles.sheetContainer}>
           {/* 헤더 */}
           <View style={styles.header}>
             <Text style={styles.title}>카테고리 선택</Text>
+            <Text style={styles.sheetSubtitle}>
+              보고 싶은 게시글의 카테고리를 선택해 주세요.
+            </Text>
           </View>
 
-          {/* 스크롤 + 하단 그라데이션 */}
+          {/* 리스트 영역 */}
           <View style={styles.listWrapper}>
             <BottomSheetScrollView
               style={styles.scrollArea}
@@ -97,7 +83,7 @@ const CategoryBottomSheetModal = forwardRef(
                       styles.categoryItem,
                       isSelected && styles.selectedItem,
                     ]}
-                    activeOpacity={0.8}
+                    activeOpacity={0.85}
                     onPress={() => handleSelect(cat)}>
                     <Text
                       style={[
@@ -117,7 +103,6 @@ const CategoryBottomSheetModal = forwardRef(
               })}
             </BottomSheetScrollView>
 
-            {/* 리스트 하단 흰색 그라데이션 */}
             <LinearGradient
               colors={['rgba(255,255,255,0)', 'rgba(255,255,255,1)']}
               style={styles.fadeOverlay}
@@ -127,15 +112,14 @@ const CategoryBottomSheetModal = forwardRef(
 
           {/* 하단 버튼 */}
           <View style={styles.footer}>
-            <TouchableOpacity
-              style={styles.applyButton}
-              activeOpacity={0.9}
-              onPress={handleApply}>
-              <Text style={styles.applyButtonText}>적용하기</Text>
-            </TouchableOpacity>
+            <BottomSheetButtons
+              onSave={handleApply}
+              saveLabel="적용하기"
+              showCancel={false}
+            />
           </View>
         </SafeAreaView>
-      </BottomSheetModal>
+      </KinoBottomSheet>
     );
   },
 );
@@ -144,23 +128,31 @@ CategoryBottomSheetModal.displayName = 'CategoryBottomSheetModal';
 
 export default CategoryBottomSheetModal;
 
+// styles는 너가 쓰던 그대로 유지하면 됨
+
 const styles = StyleSheet.create({
   sheetContainer: {
     flex: 1,
-    paddingTop: getResponsiveHeight(12),
+    paddingTop: getResponsiveHeight(10),
+    paddingHorizontal: getResponsiveWidth(22),
   },
   header: {
-    alignItems: 'center',
-    marginBottom: getResponsiveHeight(12),
+    alignItems: 'flex-start',
+    marginBottom: getResponsiveHeight(10),
   },
   title: {
     fontSize:
       Platform.OS === 'android'
         ? getResponsiveFontSize(18)
-        : getResponsiveFontSize(20),
-    fontFamily: 'Pretendard-Bold',
-    fontWeight: '700',
-    color: '#222',
+        : getResponsiveFontSize(19),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#111827',
+  },
+  sheetSubtitle: {
+    marginTop: getResponsiveHeight(4),
+    fontSize: getResponsiveFontSize(12),
+    fontFamily: 'Pretendard-Regular',
+    color: '#6B7280',
   },
   listWrapper: {
     flex: 1,
@@ -170,36 +162,33 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: getResponsiveWidth(15),
-    paddingBottom: getResponsiveHeight(30), // 리스트 끝 여유
+    paddingBottom: getResponsiveHeight(20),
   },
   fadeOverlay: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    height: getResponsiveHeight(70), // 120 → 70 정도로 줄여보기
+    height: getResponsiveHeight(60),
   },
   categoryItem: {
-    paddingVertical: getResponsiveHeight(17), // 살짝 줄여서 덜 둔탁하게
-    paddingHorizontal: getResponsiveWidth(15),
-    borderRadius: 12,
+    paddingVertical: getResponsiveHeight(14),
+    paddingHorizontal: getResponsiveWidth(14),
+    borderRadius: 11,
     marginBottom: getResponsiveHeight(8),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    // ✅ 기본 배경은 투명 + 옅은 테두리
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderColor: '#F3F4F6',
   },
   selectedItem: {
-    // ✅ 선택된 애만 카드처럼
     backgroundColor: '#FFF6DD',
     borderColor: '#FFC749',
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.06,
     shadowRadius: 6,
     elevation: 2,
   },
@@ -209,12 +198,11 @@ const styles = StyleSheet.create({
         ? getResponsiveFontSize(14)
         : getResponsiveFontSize(15),
     fontFamily: 'Pretendard-Medium',
-    color: '#444', // 조금 더 진한 톤으로
+    color: '#374151',
   },
   selectedText: {
-    fontFamily: 'Pretendard-Bold',
-    fontWeight: '700',
-    color: '#FF9A00', // 완전 노랑(#FFC84D)보다 살짝 주황 섞인 느낌
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#FF9A00',
   },
   checkIcon: {
     width: getResponsiveIconSize(18),
@@ -222,22 +210,7 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   footer: {
-    paddingHorizontal: getResponsiveWidth(15),
-    paddingBottom: getResponsiveHeight(Platform.OS === 'ios' ? 30 : 10),
-    paddingTop: getResponsiveHeight(6),
-  },
-  applyButton: {
-    width: '100%',
-    paddingVertical: getResponsiveHeight(16),
-    borderRadius: 10,
-    backgroundColor: '#FFC749',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  applyButtonText: {
-    color: 'white',
-    fontFamily: 'Pretendard-Bold',
-    fontWeight: '700',
-    fontSize: getResponsiveFontSize(17),
+    paddingHorizontal: getResponsiveWidth(0),
+    paddingBottom: getResponsiveHeight(Platform.OS === 'ios' ? 30 : 12),
   },
 });
