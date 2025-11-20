@@ -23,8 +23,7 @@ import {
   minuteKey,
   toEpochMs,
 } from '../utils/timeRegistry';
-import { getSpacingStyle } from '../utils/getSpacingStyle';
-
+import {getSpacingStyle} from '../utils/getSpacingStyle';
 
 export default function ReceiveChat({
   userProfileImage,
@@ -34,8 +33,8 @@ export default function ReceiveChat({
   style,
   messageType = 'text',
   mediaUrls = [],
-  isGrouped = false,     // 같은 사람 + 같은 분
-  isSameSender = false,  // 같은 사람
+  isGrouped = false, // 같은 사람 + 같은 분
+  isSameSender = false, // 같은 사람
 }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -44,7 +43,7 @@ export default function ReceiveChat({
   const [showTime, setShowTime] = useState(false);
   const idRef = useRef(Math.random().toString(36).slice(2));
 
-  const senderKey = String(userName ?? '').trim(); 
+  const senderKey = String(userName ?? '').trim();
   const key = `${senderKey}|${minuteKey(chatTime)}`;
   const timeMs = toEpochMs(chatTime);
 
@@ -78,12 +77,7 @@ export default function ReceiveChat({
   );
 
   return (
-    <View
-      style={[
-        styles.receivedContainer,
-        spacingStyle,
-        style,
-      ]}>
+    <View style={[styles.receivedContainer, spacingStyle, style]}>
       {/* 그룹이면 아바타 숨기고 동일 폭 스페이서 */}
       {isGrouped ? (
         <View style={styles.avatarSpacer} />
@@ -162,8 +156,8 @@ const styles = StyleSheet.create({
   userName: {
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(14)
-        : getResponsiveFontSize(15),
+        ? getResponsiveFontSize(12) // 🔽 14 → 12
+        : getResponsiveFontSize(13), // 🔽 15 → 13
     color: '#444',
     marginBottom: getResponsiveHeight(7),
   },
@@ -190,19 +184,18 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Light',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(14)
-        : getResponsiveFontSize(15),
+        ? getResponsiveFontSize(12) // 🔽 14 → 13
+        : getResponsiveFontSize(13), // 🔽 15 → 14
     color: 'black',
     flexWrap: 'wrap',
-    lineHeight: getResponsiveFontSize(18),
+    lineHeight: getResponsiveFontSize(17), // 🔽 18 → 17
   },
 
   receivedTime: {
-    fontSize: getResponsiveFontSize(10),
+    fontSize: getResponsiveFontSize(9), // 🔽 10 → 9
     color: '#666',
     marginLeft: getResponsiveWidth(5),
-    lineHeight: getResponsiveFontSize(12),
-    marginBottom: getResponsiveHeight(2),
+    lineHeight: getResponsiveFontSize(11), // 🔽 12 → 11
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
 

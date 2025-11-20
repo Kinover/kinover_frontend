@@ -7,7 +7,6 @@ import {
   Image,
   ScrollView,
   ActivityIndicator,
-  Platform,
 } from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
 import {createChatRoomThunk} from '../store/chatRoomThunk';
@@ -42,22 +41,7 @@ export default function CreateChatRoom({navigation}) {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitle: () => (
-        <Text
-          style={{
-            fontSize:
-              Platform.OS === 'ios'
-                ? getResponsiveFontSize(20)
-                : getResponsiveFontSize(18),
-            textAlign: 'center',
-            fontFamily: 'Pretendard-Regular',
-            fontWeight: '600',
-            color: '#101010',
-            lineHeight: getResponsiveHeight(30),
-          }}>
-          채팅방 만들기
-        </Text>
-      ),
+      headerTitle: () => <Text style={styles.headerTitle}>채팅방 만들기</Text>,
       headerRight: () => (
         <TouchableOpacity
           onPress={handleCreateChatRoom}
@@ -171,6 +155,11 @@ const styles = StyleSheet.create({
     borderTopWidth: 2,
     borderColor: 'lightgray',
   },
+  headerTitle: {
+    fontSize: getResponsiveFontSize(17), // 🔽 18 → 17
+    textAlign: 'center',
+    fontFamily: 'Pretendard-Medium',
+  },
   userItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -207,8 +196,8 @@ const styles = StyleSheet.create({
     marginRight: getResponsiveWidth(5),
   },
   headerCheckIcon: {
-    width: getResponsiveWidth(30),
-    height: getResponsiveHeight(30),
+    width: getResponsiveWidth(24), // 🔽 30 → 24
+    height: getResponsiveHeight(24), // 🔽 30 → 24
     marginRight: getResponsiveWidth(15),
     resizeMode: 'contain',
   },

@@ -1,5 +1,5 @@
 // ChatInput.js
-import React, {useState, useRef, useEffect} from 'react';
+import React, {useState, useRef, useEffect, useCallback} from 'react';
 import {
   View,
   TextInput,
@@ -23,15 +23,13 @@ import {
 } from '../../../utils/responsive';
 
 import {convertPhUriToFileUri} from '../../../utils/photoUriConverter';
-import {
-  getSelectOrder,
-  toggleSelectImage,
-} from '../../../utils/selection';
+import {getSelectOrder, toggleSelectImage} from '../../../utils/selection';
 import {
   getFileNameWithExtension,
   loadGalleryPhotos,
 } from '../../../utils/gallery';
 import formatDuration from '../../../utils/formatDuration';
+import LinearGradient from 'react-native-linear-gradient';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const NUM_COLUMNS = 3;
@@ -58,17 +56,21 @@ export default function ChatInput({
   const [selectedImages, setSelectedImages] = useState([]);
   const inputRef = useRef(null);
 
-  const loadPhotos = async (after = null) => {
-    if (!enableMediaPicker) return;
-    const {
-      photos: newPhotos,
-      endCursor,
-      hasNextPage,
-    } = await loadGalleryPhotos(after, PAGE_SIZE);
-    setPhotos(prev => (after ? [...prev, ...newPhotos] : newPhotos));
-    setEndCursor(endCursor);
-    setHasNextPage(hasNextPage);
-  };
+  const loadPhotos = useCallback(
+    async (after = null) => {
+      if (!enableMediaPicker) return;
+      const {
+        photos: newPhotos,
+        endCursor,
+        hasNextPage,
+      } = await loadGalleryPhotos(after, PAGE_SIZE);
+
+      setPhotos(prev => (after ? [...prev, ...newPhotos] : newPhotos));
+      setEndCursor(endCursor);
+      setHasNextPage(hasNextPage);
+    },
+    [enableMediaPicker], // 필요하면 여기 deps 추가
+  );
 
   useEffect(() => {
     if (enableMediaPicker && showGallery) {
@@ -78,7 +80,6 @@ export default function ChatInput({
       loadPhotos(null);
     }
   }, [showGallery, enableMediaPicker, loadPhotos]);
-
   const handleEndReached = async () => {
     if (!showGallery) return;
     if (isLoadingMore || !hasNextPage || !endCursor) return;
@@ -127,7 +128,11 @@ export default function ChatInput({
         for (let i = 0; i < selectedImages.length; i++) {
           let fileUri = selectedImages[i].uri;
           if (Platform.OS === 'ios' && fileUri.startsWith('ph://')) {
-            fileUri = await convertPhUriToFileUri(fileUri, i, selectedImages[i].isVideo);
+            fileUri = await convertPhUriToFileUri(
+              fileUri,
+              i,
+              selectedImages[i].isVideo,
+            );
             if (!fileUri) continue;
           }
           await uploadFileToS3(presignedUrls[i], fileUri, fileNames[i]);
@@ -209,6 +214,7 @@ export default function ChatInput({
             style={styles.input}
             value={message}
             onChangeText={setMessage}
+            placeholderTextColor="#999" // ← 요거!
             placeholder="메시지를 입력하세요"
             returnKeyType="send"
             onSubmitEditing={handleSend}
@@ -244,29 +250,37 @@ export default function ChatInput({
             {height: showGallery ? getResponsiveHeight(300) : 0},
           ]}>
           {showGallery && (
-            <FlatList
-              data={photos}
-              keyExtractor={(item, index) => item.uri + index}
-              renderItem={renderPhoto}
-              numColumns={NUM_COLUMNS}
-              contentContainerStyle={styles.galleryContent}
-              columnWrapperStyle={styles.columnWrapper}
-              onEndReached={handleEndReached}
-              onEndReachedThreshold={0.2}
-              refreshing={isRefreshing}
-              onRefresh={onRefresh}
-              ListFooterComponent={
-                isLoadingMore ? <Text style={styles.footer}></Text> : null
-              }
-            />
+            <>
+              <FlatList
+                data={photos}
+                keyExtractor={(item, index) => item.uri + index}
+                renderItem={renderPhoto}
+                numColumns={NUM_COLUMNS}
+                contentContainerStyle={styles.galleryContent}
+                columnWrapperStyle={styles.columnWrapper}
+                onEndReached={handleEndReached}
+                onEndReachedThreshold={0.2}
+                refreshing={isRefreshing}
+                onRefresh={onRefresh}
+                ListFooterComponent={
+                  isLoadingMore ? <Text style={styles.footer}></Text> : null
+                }
+              />
+              {/* ✅ 아래 하얗게 흐려지는 오버레이 */}
+              {photos.length > 0 && (
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.6)']}
+                  style={styles.bottomFade}
+                />
+              )}
+            </>
           )}
         </Animated.View>
       )}
     </SafeAreaView>
   );
 }
-
-
 
 const styles = StyleSheet.create({
   innerContainer: {
@@ -319,6 +333,7 @@ const styles = StyleSheet.create({
     maxHeight: getResponsiveHeight(300),
     backgroundColor: '#fff',
     marginTop: getResponsiveHeight(7),
+    alignItems: 'center',
   },
   galleryContent: {
     paddingTop: GAP,
@@ -388,5 +403,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: getResponsiveIconSize(12),
     fontWeight: '600',
+  },
+
+  bottomFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: -1,
+    height: getResponsiveHeight(30), // 필요하면 높이 조절 가능
   },
 });

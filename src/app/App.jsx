@@ -41,7 +41,7 @@ export default function App() {
               ) : (
                 <View style={styles.splashContainer}>
                   <Image
-                    source={require('../assets/images/kinover.png')}
+                    source={require('../assets/images/kinover!!.png')}
                     style={styles.logo}
                   />
                   <LottieView
@@ -72,11 +72,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   logo: {
-    position:'absolute',
+    position: 'absolute',
     width: 180,
     height: 180,
-    bottom:'43.5%',
-    right:'34.5%',
+    bottom: '41.5%',
+    right: '31.5%',
     resizeMode: 'contain',
   },
   splashAnimation: {
@@ -84,4 +84,3 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 });
-

@@ -106,14 +106,12 @@ const CategoryBottomSheetModal = forwardRef(
                       ]}>
                       {cat.title}
                     </Text>
-                    <Image
-                      source={
-                        isSelected
-                          ? require('../../../assets/icons/check-yellow.png')
-                          : require('../../../assets/icons/check-gray.png')
-                      }
-                      style={styles.checkIcon}
-                    />
+                    {isSelected && (
+                      <Image
+                        source={require('../../../assets/icons/check-yellow.png')}
+                        style={styles.checkIcon}
+                      />
+                    )}
                   </TouchableOpacity>
                 );
               })}
@@ -180,33 +178,43 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    height: getResponsiveHeight(120), // 그라데이션 범위 (원하면 50~60으로 키워도 됨)
+    height: getResponsiveHeight(70), // 120 → 70 정도로 줄여보기
   },
   categoryItem: {
-    paddingVertical: getResponsiveHeight(18),
+    paddingVertical: getResponsiveHeight(17), // 살짝 줄여서 덜 둔탁하게
     paddingHorizontal: getResponsiveWidth(15),
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    marginBottom: getResponsiveHeight(10),
+    borderRadius: 12,
+    marginBottom: getResponsiveHeight(8),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    // ✅ 기본 배경은 투명 + 옅은 테두리
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   selectedItem: {
-    backgroundColor: '#FFFAEF',
+    // ✅ 선택된 애만 카드처럼
+    backgroundColor: '#FFF6DD',
+    borderColor: '#FFC749',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
   categoryText: {
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(17)
-        : getResponsiveFontSize(18),
+        ? getResponsiveFontSize(14)
+        : getResponsiveFontSize(15),
     fontFamily: 'Pretendard-Medium',
-    color: '#666',
+    color: '#444', // 조금 더 진한 톤으로
   },
   selectedText: {
     fontFamily: 'Pretendard-Bold',
     fontWeight: '700',
-    color: '#FFC84D',
+    color: '#FF9A00', // 완전 노랑(#FFC84D)보다 살짝 주황 섞인 느낌
   },
   checkIcon: {
     width: getResponsiveIconSize(18),

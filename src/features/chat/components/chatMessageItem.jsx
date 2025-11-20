@@ -21,7 +21,6 @@ export default function ChatMessageItem({
   isGrouped, // 👈 그대로 ReceiveChat에 넘겨줌
 }) {
   const navigation = useNavigation();
-  
 
   // 내가 보낸 메시지?
   const isMe = message.senderId === currentUserId;
@@ -136,8 +135,8 @@ const styles = StyleSheet.create({
   },
   dateSeparator: {
     alignSelf: 'center',
-    paddingHorizontal: getResponsiveWidth(15),
-    paddingVertical: getResponsiveHeight(7),
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(4),
     marginVertical: getResponsiveHeight(24),
     backgroundColor: 'rgba(0, 0, 0, 0.25)',
     borderRadius: getResponsiveIconSize(20),
@@ -145,10 +144,9 @@ const styles = StyleSheet.create({
   dateSeparatorText: {
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontSize: getResponsiveFontSize(13),
+    fontSize: getResponsiveFontSize(10), // 🔽 13 → 11
     fontWeight: 'semibold',
     color: 'white',
-    alignContent: 'center',
-    lineHeight: getResponsiveHeight(18),
+    lineHeight: getResponsiveHeight(16), // 🔽 18 → 16
   },
 });
