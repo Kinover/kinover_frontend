@@ -69,32 +69,20 @@ export default function CalendarToggle({
     <View style={[styles.container, {paddingHorizontal: OUTER_HPAD}]}>
       {/* 헤더 */}
       <View style={[styles.header, {width: gridWidth, alignSelf: 'center'}]}>
-        <View
-          style={{
-            flex: 1,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: getResponsiveWidth(10),
-          }}>
+        <View style={styles.headerLeft}>
           <Text style={styles.monthText}>{headerLabel}</Text>
           <TouchableOpacity
             style={styles.iconBtn}
             onPress={openYMD}
             hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
             <Image
-              style={{flex: 1, width: '100%', height: '100%'}}
+              style={styles.calendarIcon}
               source={require('../../../assets/icons/calendar.png')}
             />
           </TouchableOpacity>
         </View>
 
-        <View
-          style={{
-            flex: 1,
-            flexDirection: 'row',
-            justifyContent: 'flex-end',
-            gap: getResponsiveWidth(10),
-          }}>
+        <View style={styles.headerRight}>
           <View style={styles.navButtons}>
             <TouchableOpacity
               onPress={handlePrev}
@@ -173,9 +161,6 @@ export default function CalendarToggle({
                   ]}>
                   {item.date.getDate()}
                 </Text>
-                {/* 필요하면 다시 사용
-                {renderCountBadge(count)}
-                */}
               </TouchableOpacity>
             );
           })}
@@ -211,7 +196,6 @@ export default function CalendarToggle({
                   ]}>
                   {item.date.getDate()}
                 </Text>
-                {/* {renderCountBadge(count)} */}
               </TouchableOpacity>
             );
           })}
@@ -237,33 +221,42 @@ export default function CalendarToggle({
 const styles = StyleSheet.create({
   container: {
     paddingTop: 12,
-    paddingHorizontal: 3,
     marginBottom: getResponsiveHeight(20),
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignContent: 'center',
-    alignSelf: 'center',
     justifyContent: 'space-between',
     marginBottom: getResponsiveHeight(14),
     paddingHorizontal: getResponsiveWidth(10),
+  },
+  headerLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(10),
+  },
+  headerRight: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: getResponsiveWidth(10),
+    alignItems: 'center',
   },
   monthText: {
     fontFamily: 'Pretendard-SemiBold',
     fontWeight: '700',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(17) // 🔽 20 → 17
-        : getResponsiveFontSize(18), // 🔽 21 → 18
+        ? getResponsiveFontSize(17)
+        : getResponsiveFontSize(18),
     color: '#1E1E1E',
-    alignSelf: 'center',
     lineHeight: getResponsiveHeight(22),
     textAlignVertical: 'bottom',
   },
   modeToggle: {
     flexDirection: 'row',
-    backgroundColor: '#F3F3F3',
+    backgroundColor: 'lightgray',
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
@@ -273,22 +266,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(10),
     alignItems: 'center',
     justifyContent: 'center',
-    alignContent: 'center',
     borderRadius: 40,
   },
-  toggleActive: {backgroundColor: 'lightgray'},
+  toggleActive: {
+    backgroundColor: 'lightgray',
+  },
   toggleText: {
     fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(12.5), // 🔽 13 → 12.5
+    fontSize: getResponsiveFontSize(12.5),
     color: 'white',
     textAlign: 'center',
-    textAlignVertical: 'center',
     lineHeight: 16,
   },
   toggleTextActive: {
     color: 'white',
-    textAlignVertical: 'center',
-    textAlign: 'center',
     fontFamily: 'Pretendard-SemiBold',
   },
   navButtons: {
@@ -308,7 +299,7 @@ const styles = StyleSheet.create({
   },
   dayText: {
     textAlign: 'center',
-    fontSize: getResponsiveFontSize(13.5), // 🔽 15.5 → 13.5
+    fontSize: getResponsiveFontSize(13.5),
     fontFamily: 'Pretendard-SemiBold',
     fontWeight: '700',
     color: '#444',
@@ -333,7 +324,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   dateText: {
-    fontSize: getResponsiveFontSize(13.5), // 🔽 15.5 → 13.5
+    fontSize: getResponsiveFontSize(13.5),
     fontFamily: 'Pretendard-Regular',
     color: '#111',
   },
@@ -347,12 +338,15 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-SemiBold',
   },
   iconBtn: {
-    position: 'relative',
     width: getResponsiveWidth(20),
     height: getResponsiveWidth(20),
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
-    alignSelf: 'center',
+  },
+  calendarIcon: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
 });

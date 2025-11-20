@@ -1,5 +1,5 @@
 import React, {useRef, useEffect, useState} from 'react';
-import {View, StyleSheet,  ScrollView} from 'react-native';
+import {View, StyleSheet, ScrollView} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -10,12 +10,15 @@ import {fetchFamilyThunk} from '../store/familyThunk';
 import {fetchFamilyUserListThunk} from '../store/familyUserThunk';
 import {modifyUserThunk} from '../store/userThunk';
 
-import {getResponsiveWidth, getResponsiveHeight} from '../../../utils/responsive';
+import {
+  getResponsiveWidth,
+  getResponsiveHeight,
+} from '../../../utils/responsive';
 
-// 컴포넌트 분리
 import HeaderSection from '../components/HeaderSection';
 import MemberGridSection from '../components/MemberGridSection';
 import YellowSpinner from '../../../components/YellowSpinner';
+
 import {
   requestNotificationPermission,
   getFcmTokenAndSend,
@@ -32,24 +35,18 @@ export default function HomeScreen() {
   const family = useSelector(state => state.family);
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
   const onlineUserIds = useSelector(state => state.status.onlineUserIds);
-  console.log('홈화면 온라인유저아이디 배열', onlineUserIds);
   const lastActiveMap = useSelector(state => state.family.lastActiveMap);
-  console.log('홈화면 최종접속 배열', lastActiveMap);
 
   const [isVisible, setIsVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
   const familyLoaded = !!family?.familyId;
   const membersLoaded = familyUserList.length > 0;
-
   const isLoading = !familyLoaded || !membersLoaded;
 
   const familyMembers = familyUserList.filter(m => m.userId !== user.userId);
 
-  /**
-   * 🔔 알림 리스너: 앱 시작 시 1회 등록, 언마운트 시 해제
-   * (handleNotificationListeners가 unsubscribe 함수를 반환해야 함)
-   */
+  // 🔔 알림 리스너 등록/해제
   useEffect(() => {
     const unsubscribe = handleNotificationListeners();
     return () => {
@@ -57,10 +54,7 @@ export default function HomeScreen() {
     };
   }, []);
 
-  /**
-   * 🔑 권한 요청 → FCM 토큰 발급/전송
-   * userId가 있을 때만 실행
-   */
+  // 🔑 권한 요청 → FCM 토큰 발급/전송
   useEffect(() => {
     if (!user?.userId) return;
 
@@ -69,7 +63,7 @@ export default function HomeScreen() {
       const granted = await requestNotificationPermission();
       if (!mounted) return;
       if (granted) {
-        await getFcmTokenAndSend(user.userId); // 서버가 userId 받으면 함께 전송
+        await getFcmTokenAndSend(user.userId);
       }
     })();
 
@@ -118,15 +112,12 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      {/* 노랑 배경 + 하단 곡선 */}
+      <View style={styles.backgroundCurve} />
+
       <ScrollView
         showsVerticalScrollIndicator={false}
-        style={{
-          width: '100%',
-          height: '100%',
-          paddingBottom: getResponsiveHeight(20),
-        }}>
-        <View style={styles.backgroundCurve} />
-
+        contentContainerStyle={styles.scrollContent}>
         <HeaderSection user={user} onUserPress={handleUserPress} />
 
         <MemberGridSection
@@ -137,6 +128,7 @@ export default function HomeScreen() {
           onAddPress={() => setIsVisible(true)}
         />
       </ScrollView>
+
       <FamilyCodeModal
         visible={isVisible}
         onClose={() => setIsVisible(false)}
@@ -159,27 +151,27 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    height: '100%',
-    width: '100%',
     backgroundColor: '#FFC84D',
+    // backgroundColor: '#FFF8E1', // 🔹 쨍한 노랑 → 아주 연한 노랑
+  },
+  scrollContent: {
+    paddingBottom: getResponsiveHeight(40),
   },
   backgroundCurve: {
     position: 'absolute',
-    bottom: -getResponsiveHeight(130),
-    width: '250%',
-    left: '-75%',
+    bottom: -getResponsiveHeight(130), // 🔹 너무 아래까지 내려오지 않게 살짝 올림
+    width: '220%', // 🔹 250 → 220 : 좀 더 자연스럽게
+    left: '-60%',
     height: '100%',
-    backgroundColor: '#F9F9F9',
+    backgroundColor: '#FFFFFF', // 🔹 곡선은 완전 흰색
     borderTopLeftRadius: getResponsiveWidth(600),
     borderTopRightRadius: getResponsiveWidth(600),
     zIndex: -1,
   },
-
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#FFC84D', // 기존 배경색
+    backgroundColor: '#FFC84D',
     justifyContent: 'center',
     alignItems: 'center',
   },
 });
-
