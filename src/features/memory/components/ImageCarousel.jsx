@@ -1,4 +1,4 @@
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   Dimensions,
   Image,
@@ -30,12 +30,14 @@ export default function ImageCarousel({
   setCommentIndex,
   commentCount,
   isCommentMode = false,
-  // ✅ 부모에서 내려주는 풀스크린 상태
   isImageFullScreen,
   setIsImageFullScreen,
 }) {
   const mainCarouselRef = useRef(null);
   const fullCarouselRef = useRef(null);
+
+  // ✅ 풀스크린 시작 인덱스를 이 컴포넌트 안에서 따로 관리
+  const [fullStartIndex, setFullStartIndex] = useState(0);
 
   // ===== 댓글 모드 애니메이션 =====
   const progressRef = useRef(new Animated.Value(isCommentMode ? 1 : 0));
@@ -70,48 +72,39 @@ export default function ImageCarousel({
     outputRange: ['10%', '15%'],
   });
 
-  // 외부 index 변경 시 동기화
-  useEffect(() => {
-    if (
-      mainCarouselRef.current &&
-      Number.isInteger(currentImageIndex) &&
-      currentImageIndex >= 0 &&
-      currentImageIndex < localImages?.length
-    ) {
-      setTimeout(() => {
-        mainCarouselRef.current.scrollTo?.({
-          index: currentImageIndex,
-          animated: false,
-        });
-      }, 50);
-    }
-  }, [currentImageIndex, localImages?.length]);
-
-  // 풀스크린 열릴 때 현재 index로 스크롤
-  useEffect(() => {
-    if (
-      isImageFullScreen &&
-      fullCarouselRef.current &&
-      Number.isInteger(currentImageIndex)
-    ) {
-      setTimeout(() => {
-        fullCarouselRef.current.scrollTo?.({
-          index: currentImageIndex,
-          animated: false,
-        });
-      }, 0);
-    }
-  }, [isImageFullScreen, currentImageIndex]);
-
   const handleCommentToggle = () => setCommentIndex(prev => !prev);
 
-  const renderMainItem = ({item}) => (
+  // ✅ 풀스크린 닫힐 때, 메인 캐러셀도 마지막 인덱스로 싱크 (선택)
+  const prevIsFullRef = useRef(isImageFullScreen);
+  useEffect(() => {
+    if (
+      prevIsFullRef.current === true &&
+      isImageFullScreen === false &&
+      mainCarouselRef.current &&
+      Number.isInteger(currentImageIndex)
+    ) {
+      mainCarouselRef.current.scrollTo?.({
+        index: currentImageIndex,
+        animated: false,
+      });
+    }
+    prevIsFullRef.current = isImageFullScreen;
+  }, [isImageFullScreen, currentImageIndex]);
+
+  // ===== 렌더러들 =====
+  const renderMainItem = ({item, index}) => (
     <View style={[styles.imageWrapper, {width: ITEM_WIDTH}]}>
       <TouchableOpacity
         style={styles.image}
         activeOpacity={1}
-        onPress={() => setIsImageFullScreen?.(true)} // ✅ 부모 상태로 열기
-      >
+        onPress={() => {
+          // ✅ 1. 부모 인덱스도 업데이트
+          setCurrentImageIndex(index);
+          // ✅ 2. 풀스크린 시작 인덱스를 로컬 state에 저장
+          setFullStartIndex(index);
+          // ✅ 3. 그 다음 풀스크린 열기
+          setIsImageFullScreen?.(true);
+        }}>
         <Image source={{uri: item}} style={styles.image} />
       </TouchableOpacity>
 
@@ -150,7 +143,7 @@ export default function ImageCarousel({
       <TouchableOpacity
         style={StyleSheet.absoluteFill}
         activeOpacity={1}
-        onPress={() => setIsImageFullScreen?.(false)} // ✅ 부모 상태로 닫기
+        onPress={() => setIsImageFullScreen?.(false)}
       />
     </View>
   );
@@ -166,13 +159,13 @@ export default function ImageCarousel({
           alignItems: 'center',
         }}>
         <Carousel
-          key={`main-carousel-${localImages?.length || 0}`} // ✅ index 제거
+          key={`main-carousel-${localImages?.length || 0}`}
           ref={mainCarouselRef}
           width={SCREEN_WIDTH}
           height={undefined}
           data={localImages}
-          defaultIndex={currentImageIndex ?? 0}
-          onSnapToItem={setCurrentImageIndex}
+          defaultIndex={currentImageIndex ?? 0} // 처음 진입 기준
+          onSnapToItem={index => setCurrentImageIndex(index)}
           loop={false}
           mode="parallax"
           scrollAnimationDuration={400}
@@ -189,11 +182,11 @@ export default function ImageCarousel({
         <View style={styles.fullscreenOverlay}>
           <Carousel
             ref={fullCarouselRef}
-            key={`full-${localImages?.length ?? 0}`}
+            key={`full-${localImages?.length ?? 0}`} // length 기준으로만 리마운트
             width={SCREEN_WIDTH}
             height={SCREEN_HEIGHT}
             data={localImages}
-            defaultIndex={currentImageIndex ?? 0}
+            defaultIndex={fullStartIndex} // ✅ 항상 내가 누른 index로 시작
             onSnapToItem={setCurrentImageIndex}
             scrollAnimationDuration={300}
             loop={false}
@@ -230,7 +223,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     alignSelf: 'center',
   },
-  image: {flex: 1, resizeMode: 'cover'},
+  image: {
+    flex: 1,
+    resizeMode: 'cover',
+  },
   overlay: {
     position: 'absolute',
     bottom: 0,
@@ -248,7 +244,10 @@ const styles = StyleSheet.create({
     gap: getResponsiveWidth(5),
     alignItems: 'center',
   },
-  icon: {width: getResponsiveIconSize(27), height: getResponsiveIconSize(27)},
+  icon: {
+    width: getResponsiveIconSize(27),
+    height: getResponsiveIconSize(27),
+  },
   commentText: {
     color: 'white',
     fontFamily: 'Pretendard-SemiBold',
@@ -272,6 +271,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  fullImageWrapper: {width: SCREEN_WIDTH, height: SCREEN_HEIGHT},
-  fullImage: {width: '100%', height: '100%', resizeMode: 'contain'},
+  fullImageWrapper: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
+  },
+  fullImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
+  },
 });

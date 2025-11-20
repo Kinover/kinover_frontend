@@ -10,6 +10,7 @@ import {
   Platform,
   Keyboard,
   TouchableWithoutFeedback,
+  Alert, // ✅ 추가
 } from 'react-native';
 import {
   BottomSheetModal,
@@ -50,7 +51,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       inputKey,
       handleSave,
       handleDelete,
-      canSave,
+      // canSave, // ✅ 더 이상 사용 안 함
     } = useScheduleBottomSheetModal({
       editingSchedule,
       title,
@@ -71,10 +72,20 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       dismiss: () => modalRef.current?.dismiss(),
     }));
 
+    // ✅ 저장 버튼 클릭 시: 항상 활성화지만, 내용 없으면 Alert만 띄우고 저장 막기
+    const handlePressSave = () => {
+      const text = scheduleRef.current || '';
+      if (!text.trim()) {
+        Alert.alert('안내', '일정 내용을 입력해주세요.');
+        return;
+      }
+      handleSave();
+    };
+
     return (
       <BottomSheetModal
         ref={modalRef}
-        index={1}
+        index={0}
         snapPoints={snapPoints}
         animateOnMount={true}
         enableContentPanningGesture={false}
@@ -102,11 +113,9 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                 {editingSchedule ? '일정 수정' : '일정 추가'}
               </Text>
             </View>
-
             <Text style={styles.subTitle}>
               일정을 등록할 가족을 선택해주세요
             </Text>
-
             {/* ✅ 가족 선택 리스트 + 오른쪽 그라데이션 페이드 */}
             <View
               style={styles.userScrollWrapper}
@@ -224,22 +233,21 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
               {/* ✅ 오른쪽 끝 흰색 그라데이션 페이드 */}
               {canScroll && (
-  <LinearGradient
-    pointerEvents="none"
-    colors={[
-      'rgba(255,255,255,0)',    // 완전 투명
-      'rgba(255,255,255,0.08)', // 살짝
-      'rgba(255,255,255,0.3)',  // 중간
-      'rgba(255,255,255,0.7)',  // 거의 흰색
-      'rgba(255,255,255,1)',    // 완전 흰색
-    ]}
-    locations={[0, 0.25, 0.55, 0.8, 1]}
-    start={{x: 0, y: 0.5}}
-    end={{x: 1, y: 0.5}}
-    style={styles.rightFade}
-  />
-)}
-
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={[
+                    'rgba(255,255,255,0)', // 완전 투명
+                    'rgba(255,255,255,0.08)', // 살짝
+                    'rgba(255,255,255,0.3)', // 중간
+                    'rgba(255,255,255,0.7)', // 거의 흰색
+                    'rgba(255,255,255,1)', // 완전 흰색
+                  ]}
+                  locations={[0, 0.25, 0.55, 0.8, 1]}
+                  start={{x: 0, y: 0.5}}
+                  end={{x: 1, y: 0.5}}
+                  style={styles.rightFade}
+                />
+              )}
             </View>
 
             {/* 입력 필드 */}
@@ -274,12 +282,9 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                 </TouchableOpacity>
               )}
               <TouchableOpacity
-                style={[
-                  styles.button,
-                  styles.saveButton,
-                  !canSave && {opacity: 0.5},
-                ]}
-                onPress={canSave ? handleSave : undefined}>
+                style={[styles.button, styles.saveButton]} // ✅ 항상 활성화
+                onPress={handlePressSave}>
+                {/* ✅ 내부에서 검사 */}
                 <Text style={styles.buttonText}>저장</Text>
               </TouchableOpacity>
             </View>
@@ -290,8 +295,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
   },
 );
 
-ScheduleEditorBottomSheetModal.displayName =
-  'ScheduleEditorBottomSheetModal';
+ScheduleEditorBottomSheetModal.displayName = 'ScheduleEditorBottomSheetModal';
 
 const styles = StyleSheet.create({
   container: {

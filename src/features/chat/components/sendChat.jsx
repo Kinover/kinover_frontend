@@ -132,14 +132,15 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Light',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(14)
-        : getResponsiveFontSize(15),
+        ? getResponsiveFontSize(12) // 🔽 14 → 13
+        : getResponsiveFontSize(13), // 🔽 15 → 14
     color: 'black',
     flexWrap: 'wrap',
-    lineHeight: getResponsiveFontSize(18),
+    lineHeight: getResponsiveFontSize(17), // 🔽 18 → 17
   },
+
   sendTime: {
-    fontSize: getResponsiveFontSize(10),
+    fontSize: getResponsiveFontSize(9), // 🔽 10 → 9
     color: '#666',
     marginRight: getResponsiveWidth(5),
     marginBottom: getResponsiveHeight(2),

@@ -1,5 +1,5 @@
 import {useEffect, useRef} from 'react';
-import { getToken } from '../utils/storage';
+import {getToken} from '../utils/storage';
 
 const useWebSocketStatus = () => {
   const socketRef = useRef(null);
@@ -14,7 +14,7 @@ const useWebSocketStatus = () => {
         return;
       }
 
-      const url = `ws://kinover.shop:9090/status?token=${token}`;
+      const url = `ws://43.200.47.242:9090/status?token=${token}`;
       console.log('[WS /status] 연결 시도 URL:', url);
 
       const socket = new WebSocket(url);

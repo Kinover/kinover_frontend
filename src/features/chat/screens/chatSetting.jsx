@@ -15,15 +15,15 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
-import {toggleChatRoomNotificationThunk} from '../store/chatRoomThunk';
+import {
+  fetchChatRoomUsersThunk,
+  renameChatRoomThunk,
+  toggleChatRoomNotificationThunk,
+} from '../store/chatRoomThunk';
 import {useSelector, useDispatch} from 'react-redux';
 import LeaveChatRoomModal from '../components/leaveChatRoomModal';
 import RenameChatRoomModal from '../components/renameChatRoomModal';
 import ChangeKinoModal from '../components/changeKinoModal';
-import {
-  fetchChatRoomUsersThunk,
-  renameChatRoomThunk,
-} from '../store/chatRoomThunk';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
@@ -31,6 +31,7 @@ import {
   getResponsiveIconSize,
 } from '../../../utils/responsive';
 import {updateChatRoomNameInList} from '../store/chatRoomSlice';
+
 
 export default function ChatSettings({
   isOpen,
@@ -343,6 +344,7 @@ const styles = StyleSheet.create({
     color: 'black',
     fontWeight: 'semibold',
   },
+
   alarmIcon: {
     width: getResponsiveIconSize(20),
     height: getResponsiveIconSize(20),
@@ -425,7 +427,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: '#eee',
     // justifyContent:'flex-end',
-    alignItems:'flex-end',
+    alignItems: 'flex-end',
   },
   leaveText: {
     fontFamily: 'Pretendard-Regular',

@@ -40,7 +40,9 @@ export default function MemberGridSection({
   const itemWidth = (innerContentWidth - gapX * (chunkSize - 1)) / chunkSize;
 
   const renderUser = (member, index) => {
-    if (member.isAddButton) {return null;}
+    if (member.isAddButton) {
+      return null;
+    }
 
     const memberId = String(member.userId ?? member.id ?? member._id);
     const isOnline = onlineUserIds?.includes?.(member.userId);
@@ -203,13 +205,13 @@ const styles = StyleSheet.create({
     gap: getResponsiveHeight(2),
   },
   userName: {
-    fontSize: getResponsiveFontSize(15),
+    fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-medium',
     color: 'black',
   },
   statusText: {
     marginTop: getResponsiveHeight(2),
-    fontSize: getResponsiveFontSize(12),
+    fontSize: getResponsiveFontSize(11),
     fontFamily: 'Pretendard-Regular',
   },
   statusOnline: {color: '#2CC22E'},

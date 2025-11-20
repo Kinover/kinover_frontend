@@ -1,5 +1,5 @@
 import React, {useEffect} from 'react';
-import {Modal, View, Text, StyleSheet, Platform} from 'react-native';
+import {Modal, View, Text, StyleSheet} from 'react-native';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -13,7 +13,7 @@ export default function ToastModal({
   message,
   duration = 1000,
 }) {
-  // ✅ 일정 시간 뒤 자동 닫기
+  // 일정 시간 뒤 자동 닫기
   useEffect(() => {
     if (visible) {
       const timer = setTimeout(() => {
@@ -40,30 +40,36 @@ export default function ToastModal({
 }
 
 const styles = StyleSheet.create({
+  // 화면을 어둡게 하지 않고, 아래쪽에 토스트 배치
   overlay: {
     flex: 1,
-    justifyContent: 'center', // 👉 중앙에 표시
+    justifyContent: 'flex-end', // 🔥 아래에 배치
     alignItems: 'center',
-    paddingBottom: getResponsiveHeight(80),
-    backgroundColor: 'rgba(0,0,0,0.25)', // ✅ 오버레이 반투명
+    paddingBottom: getResponsiveHeight(80), // 화면 아래에서 띄우기
+    backgroundColor: 'transparent', // 토스트는 보통 배경 없음
   },
+
+  // 요즘 앱들 평균적인 토스트 형태
   toastBox: {
-    backgroundColor: 'white',
-    borderRadius: getResponsiveIconSize(24),
-    paddingHorizontal: getResponsiveWidth(32),
-    paddingVertical: getResponsiveHeight(16),
-    maxWidth: '80%',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)', // 🔥 대부분 앱 스타일
+    borderRadius: getResponsiveIconSize(20),
+    paddingHorizontal: getResponsiveWidth(22),
+    paddingVertical: getResponsiveHeight(12),
+    maxWidth: '90%',
+    alignSelf: 'center',
+
+    // 살짝 그림자 (부드러운 느낌)
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: {width: 0, height: 3},
+    elevation: 6,
   },
+
   toastText: {
-    color: 'black',
-    fontSize:
-      Platform.OS === 'android'
-        ? getResponsiveFontSize(17)
-        : getResponsiveFontSize(20),
+    color: '#fff',
+    fontSize: getResponsiveFontSize(14),
     textAlign: 'center',
-    fontFamily: 'Pretendard-Regular',
-    fontWeight: Platform.OS === 'ios' ? undefined : '700',
-    marginBottom: getResponsiveHeight(12.5),
-    marginTop: getResponsiveHeight(11),
+    fontFamily: 'Pretendard-Medium',
   },
 });

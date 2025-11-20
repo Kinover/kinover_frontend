@@ -20,8 +20,10 @@ import {
   getResponsiveWidth,
 } from '../../../utils/responsive';
 // eslint-disable-next-line import/named
-import { Swipeable} from 'react-native-gesture-handler';
+import {Swipeable} from 'react-native-gesture-handler';
 import FastImage from '@d11/react-native-fast-image';
+import LinearGradient from 'react-native-linear-gradient'; // ✅ 추가
+
 const ACTION_W = getResponsiveWidth(70);
 
 export default function CommentSection({
@@ -35,8 +37,14 @@ export default function CommentSection({
   const translateY = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const [isReady, setIsReady] = useState(false);
-  // 댓글 화면 or 댓글 로직 있는 곳
 
+  // ✅ 스크롤 위치에 따라 그라데이션 표시 여부
+  const [showTopFade, setShowTopFade] = useState(false);
+  const [showBottomFade, setShowBottomFade] = useState(false);
+  const [scrollViewHeight, setScrollViewHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+
+  // 댓글 화면 페이드 인
   useEffect(() => {
     const timeout = setTimeout(() => {
       setIsReady(true);
@@ -75,6 +83,34 @@ export default function CommentSection({
     };
   }, []);
 
+  // ✅ 콘텐츠가 화면보다 길면 처음엔 아래쪽 그라데이션만 켜두기
+  useEffect(() => {
+    if (contentHeight > scrollViewHeight) {
+      setShowBottomFade(true);
+    } else {
+      setShowTopFade(false);
+      setShowBottomFade(false);
+    }
+  }, [contentHeight, scrollViewHeight]);
+
+  const handleScroll = e => {
+    const {
+      contentOffset: {y},
+      layoutMeasurement,
+      contentSize,
+    } = e.nativeEvent;
+
+    const visibleHeight = layoutMeasurement.height;
+    const totalHeight = contentSize.height;
+    const threshold = 10; // 얼마나 스크롤해야 ‘위에 뭐 있다’고 볼지 기준
+
+    // 위에 더 내용 있으면 상단 그라데이션
+    setShowTopFade(y > threshold);
+
+    // 아래에 더 내용 있으면 하단 그라데이션
+    setShowBottomFade(y + visibleHeight < totalHeight - threshold);
+  };
+
   const renderRightActions = (commentId, progress) => {
     const translateX = progress.interpolate({
       inputRange: [0, 1],
@@ -91,7 +127,7 @@ export default function CommentSection({
       outputRange: [0.85, 1],
       extrapolate: 'clamp',
     });
-  
+
     return (
       <View style={styles.rightActionContainer}>
         <Animated.View style={{flex: 1, transform: [{translateX}], opacity}}>
@@ -111,7 +147,6 @@ export default function CommentSection({
       </View>
     );
   };
-  
 
   return (
     <KeyboardAvoidingView
@@ -124,70 +159,94 @@ export default function CommentSection({
           transform: [{translateY}],
           opacity: fadeAnim,
         }}
-        pointerEvents="box-none" // ✅ 터치 뚫어주기
-      >
+        pointerEvents="box-none">
         {isReady && (
           <SafeAreaView style={styles.commentContainer}>
-            {/* 댓글 리스트 */}
-            <ScrollView
-              style={{flex: 1}}
-              contentContainerStyle={{
-                paddingBottom: getResponsiveHeight(70), // 입력창 공간
-                flexGrow: 1,
-              }}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-              nestedScrollEnabled>
-              {commentList.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>
-                    {'아직 댓글이 없어요.\n첫 댓글을 남겨보세요!'}
-                  </Text>
-                </View>
-              ) : (
-                commentList.map(comment => {
-                  const isMyComment =
-                    user?.userId &&
-                    (comment.authorId === user.userId ||
-                      comment.userId === user.userId);
-                  return (
-                    <Swipeable
-                      key={comment.commentId}
-                      renderRightActions={progress =>
-                        isMyComment
-                          ? renderRightActions(comment.commentId, progress)
-                          : null
-                      }
-                      enabled={!!isMyComment}
-                      overshootRight={false}
-                      friction={2}
-                      rightThreshold={ACTION_W / 2}>
-                      <View style={styles.commentBox}>
-                        <View style={styles.headerRow}>
-                          <View style={styles.authorRow}>
-                            <FastImage
-                              style={styles.commentWriterImage}
-                              source={{uri: comment.authorImage}}
-                            />
-                            <View style={styles.textColumn}>
-                              <Text style={styles.commentWriter}>
-                                {comment.authorName}
-                              </Text>
-                              <Text style={styles.commentContent}>
-                                {comment.content}
-                              </Text>
+            {/* ✅ 스크롤 + 그라데이션을 덮어씌울 래퍼 */}
+            <View style={styles.scrollWrapper}>
+              {/* 댓글 리스트 */}
+              <ScrollView
+                style={{flex: 1}}
+                contentContainerStyle={{
+                  paddingBottom: getResponsiveHeight(70), // 입력창 공간
+                  flexGrow: 1,
+                }}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+                nestedScrollEnabled
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
+                onLayout={e => setScrollViewHeight(e.nativeEvent.layout.height)}
+                onContentSizeChange={(w, h) => setContentHeight(h)}>
+                {commentList.length === 0 ? (
+                  <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>
+                      {'아직 댓글이 없어요.\n첫 댓글을 남겨보세요!'}
+                    </Text>
+                  </View>
+                ) : (
+                  commentList.map(comment => {
+                    const isMyComment =
+                      user?.userId &&
+                      (comment.authorId === user.userId ||
+                        comment.userId === user.userId);
+                    return (
+                      <Swipeable
+                        key={comment.commentId}
+                        renderRightActions={progress =>
+                          isMyComment
+                            ? renderRightActions(comment.commentId, progress)
+                            : null
+                        }
+                        enabled={!!isMyComment}
+                        overshootRight={false}
+                        friction={2}
+                        rightThreshold={ACTION_W / 2}>
+                        <View style={styles.commentBox}>
+                          <View style={styles.headerRow}>
+                            <View style={styles.authorRow}>
+                              <FastImage
+                                style={styles.commentWriterImage}
+                                source={{uri: comment.authorImage}}
+                              />
+                              <View style={styles.textColumn}>
+                                <Text style={styles.commentWriter}>
+                                  {comment.authorName}
+                                </Text>
+                                <Text style={styles.commentContent}>
+                                  {comment.content}
+                                </Text>
+                              </View>
                             </View>
+                            <Text style={styles.timeText}>
+                              {formatPreviewTime(comment.createdAt)}
+                            </Text>
                           </View>
-                          <Text style={styles.timeText}>
-                            {formatPreviewTime(comment.createdAt)}
-                          </Text>
                         </View>
-                      </View>
-                    </Swipeable>
-                  );
-                })
+                      </Swipeable>
+                    );
+                  })
+                )}
+              </ScrollView>
+
+              {/* ✅ 상단 그라데이션 */}
+              {showTopFade && (
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={['#F9F9F9', 'rgba(249,249,249,0)']}
+                  style={styles.topFade}
+                />
               )}
-            </ScrollView>
+
+              {/* ✅ 하단 그라데이션 */}
+              {showBottomFade && (
+                <LinearGradient
+                  pointerEvents="none"
+                  colors={['rgba(249,249,249,0)', '#F9F9F9']}
+                  style={styles.bottomFade}
+                />
+              )}
+            </View>
 
             {/* 입력창 */}
             <View style={styles.commentInputContainer}>
@@ -210,13 +269,20 @@ export default function CommentSection({
           </SafeAreaView>
         )}
       </Animated.View>
-   
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  commentContainer: {flex: 1, backgroundColor: '#F9F9F9'},
+  commentContainer: {
+    flex: 1,
+    backgroundColor: '#F9F9F9',
+  },
+  // ✅ 스크롤 + 그라데이션용 래퍼
+  scrollWrapper: {
+    flex: 1,
+    position: 'relative',
+  },
   commentBox: {
     paddingHorizontal: getResponsiveWidth(20),
     marginVertical: getResponsiveHeight(13),
@@ -238,7 +304,7 @@ const styles = StyleSheet.create({
   commentWriter: {
     fontFamily: 'Pretendard-Regular',
     fontWeight: '600',
-    fontSize: getResponsiveFontSize(15),
+    fontSize: getResponsiveFontSize(14),
     color: '#000',
     marginBottom: getResponsiveHeight(2),
     lineHeight: getResponsiveHeight(20),
@@ -246,8 +312,8 @@ const styles = StyleSheet.create({
   commentContent: {
     flexShrink: 1,
     flexWrap: 'wrap',
-    fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(13.5),
+    fontFamily: 'Pretendard-Light',
+    fontSize: getResponsiveFontSize(13),
     color: '#000',
     lineHeight: 20,
   },
@@ -305,6 +371,22 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(14),
+  },
+
+  // ✅ 상단/하단 그라데이션 스타일
+  topFade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: getResponsiveHeight(30),
+  },
+  bottomFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0, // 입력창 위에서 흐려지게
+    height: getResponsiveHeight(30),
   },
 });
 
