@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     marginTop:
       Platform.OS === 'android'
         ? getResponsiveHeight(36)
-        : getResponsiveHeight(70),
+        : getResponsiveHeight(80),
     marginBottom: getResponsiveHeight(28),
     alignItems: 'center',
   },
@@ -441,8 +441,8 @@ const styles = StyleSheet.create({
 
   // 하단 나가기
   leaveOption: {
-    position:'absolute',
-    bottom:'5%',
+    position: 'absolute',
+    bottom: '5%',
     marginTop: getResponsiveHeight(26),
     paddingVertical: getResponsiveHeight(10),
     alignItems: 'flex-start',

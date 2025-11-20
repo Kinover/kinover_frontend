@@ -24,7 +24,6 @@ import {
   getResponsiveIconSize,
 } from '../../../utils/responsive';
 import BottomActionButton from 'components/BottomActionButton';
-// import { setConstantValue } from 'typescript';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
