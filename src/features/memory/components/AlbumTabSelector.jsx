@@ -71,7 +71,6 @@ export default function AnimatedAlbumTabSelector({selected, onSelect}) {
                   styles.tabText,
                   selected === tab.key && styles.selectedText,
                 ]}>
-                {' '}
                 {tab.title}
               </Text>
             </TouchableOpacity>
@@ -104,7 +103,7 @@ const styles = StyleSheet.create({
     marginRight: getResponsiveWidth(25),
   },
   tabText: {
-    fontSize: getResponsiveFontSize(18),
+    fontSize: getResponsiveFontSize(16),
     fontFamily: 'Pretendard-SemiBold',
     fontWeight: 'semibold',
     color: '#4A4A4A',
