@@ -13,7 +13,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../../utils/responsive';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 
 export default function DescriptionSection({memory, onContentLayout}) {
   const insets = useSafeAreaInsets(); // ✅ 하단 inset 가져오기
@@ -37,8 +37,10 @@ export default function DescriptionSection({memory, onContentLayout}) {
       {/* ✅ SafeAreaView + paddingBottom */}
       <SafeAreaView
         edges={['bottom']}
-        style={[styles.description, {paddingBottom: insets.bottom + getResponsiveHeight(10)}]}
-      >
+        style={[
+          styles.description,
+          {paddingBottom: insets.bottom + getResponsiveHeight(10)},
+        ]}>
         <ScrollView
           style={styles.contentContainer}
           contentContainerStyle={{paddingBottom: getResponsiveHeight(40)}}
@@ -57,7 +59,7 @@ export default function DescriptionSection({memory, onContentLayout}) {
 const styles = StyleSheet.create({
   description: {
     width: '100%',
-    height:'100%',
+    height: '100%',
     alignItems: 'center',
     zIndex: 5,
   },
@@ -78,8 +80,10 @@ const styles = StyleSheet.create({
     gap: getResponsiveWidth(10),
   },
   writerImage: {
-    width: Platform.OS === 'ios' ? getResponsiveWidth(39) : getResponsiveWidth(36.5),
-    height: Platform.OS === 'ios' ? getResponsiveWidth(39) : getResponsiveWidth(36.5),
+    width:
+      Platform.OS === 'ios' ? getResponsiveWidth(39) : getResponsiveWidth(36.5),
+    height:
+      Platform.OS === 'ios' ? getResponsiveWidth(39) : getResponsiveWidth(36.5),
     borderRadius: getResponsiveWidth(20),
     backgroundColor: 'white',
     borderColor: 'gray',
@@ -87,25 +91,34 @@ const styles = StyleSheet.create({
   },
   writerName: {
     color: 'black',
-    fontSize: Platform.OS === 'ios'
-      ? getResponsiveFontSize(21)
-      : getResponsiveFontSize(18),
+    fontSize:
+      Platform.OS === 'ios'
+        ? getResponsiveFontSize(18) // 🔽 21 → 18
+        : getResponsiveFontSize(16), // 🔽 18 → 16
     fontFamily: 'Pretendard-Regular',
     textAlignVertical: 'center',
-    lineHeight:getResponsiveHeight(40),
+    lineHeight:
+      Platform.OS === 'ios' ? getResponsiveHeight(26) : getResponsiveHeight(22),
   },
-  contentContainer: {
-    width: '100%',
-    height:'100%',
-    paddingHorizontal: getResponsiveWidth(30),
-  },
+
   content: {
     color: 'black',
     fontFamily: 'Pretendard-Light',
-    fontSize: Platform.OS === 'ios'
-      ? getResponsiveFontSize(17)
-      : getResponsiveFontSize(15),
+    fontSize:
+      Platform.OS === 'ios'
+        ? getResponsiveFontSize(15) // 🔽 17 → 15
+        : getResponsiveFontSize(14), // 🔽 15 → 14
+    lineHeight:
+      Platform.OS === 'ios'
+        ? getResponsiveHeight(24) // 자연스럽게 읽히는 라인 높이
+        : getResponsiveHeight(22),
     paddingVertical: getResponsiveHeight(3),
     textAlignVertical: 'center',
+  },
+
+  contentContainer: {
+    width: '100%',
+    height: '100%',
+    paddingHorizontal: getResponsiveWidth(30),
   },
 });

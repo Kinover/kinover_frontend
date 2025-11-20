@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, {forwardRef, useImperativeHandle} from 'react';
+import React, {forwardRef, useImperativeHandle, useState} from 'react';
 import {
   Text,
   View,
@@ -17,6 +17,7 @@ import {
   BottomSheetTextInput,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
+import LinearGradient from 'react-native-linear-gradient'; // ✅ 그라데이션 추가
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -61,6 +62,10 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
     const isSelectedAll = useIsAllSelected(selectedUserId);
 
+    // ✅ 스크롤 가능 여부 → 끝부분 그라데이션 표시용
+    const [scrollContainerWidth, setScrollContainerWidth] = useState(0);
+    const [canScroll, setCanScroll] = useState(false);
+
     useImperativeHandle(ref, () => ({
       present: () => modalRef.current?.present(),
       dismiss: () => modalRef.current?.dismiss(),
@@ -102,116 +107,140 @@ const ScheduleEditorBottomSheetModal = forwardRef(
               일정을 등록할 가족을 선택해주세요
             </Text>
 
-            {/* 가족 선택 리스트 */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              keyboardShouldPersistTaps="always"
-              contentContainerStyle={{paddingVertical: 5}}
-              style={{
-                backgroundColor: 'white',
-                borderRadius: 10,
-                marginBottom: 20,
-              }}>
-              {/* ALL 버튼 */}
-              <View
-                style={{
-                  width: 70,
-                  height: 95,
-                  marginLeft: 6,
-                  marginRight: 12,
-                  alignItems: 'center',
-                  justifyContent: 'center',
+            {/* ✅ 가족 선택 리스트 + 오른쪽 그라데이션 페이드 */}
+            <View
+              style={styles.userScrollWrapper}
+              onLayout={e =>
+                setScrollContainerWidth(e.nativeEvent.layout.width)
+              }>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="always"
+                contentContainerStyle={{paddingVertical: 5}}
+                style={styles.userScroll}
+                onContentSizeChange={(contentWidth, _h) => {
+                  setCanScroll(contentWidth > scrollContainerWidth + 8);
                 }}>
-                <TouchableOpacity
-                  style={[
-                    styles.avatarBtn,
-                    {
-                      borderColor: isSelectedAll ? '#FFC84D' : '#E0E0E0',
-                      backgroundColor: isSelectedAll ? '#FFF5D1' : 'white',
-                      borderWidth: isSelectedAll ? 2 : 1,
-                    },
-                  ]}
-                  onPress={() => setSelectedUserId('')}>
-                  {isSelectedAll && (
-                    <View
-                      style={{
-                        ...StyleSheet.absoluteFillObject,
-                        borderRadius: 999,
-                        backgroundColor: 'rgba(0,0,0,0.1)',
-                      }}
-                    />
-                  )}
-                  {isSelectedAll && (
-                    <Image
-                      source={require('../../../assets/icons/check-yellow.png')}
-                      style={styles.checkIcon}
-                    />
-                  )}
-                  <Text
-                    style={{
-                      fontSize: getResponsiveFontSize(13),
-                      fontFamily: 'Pretendard-Bold',
-                      color: isSelectedAll ? 'gray' : '#C3C3C3',
-                      zIndex: 10,
-                      alignSelf: 'center',
-                    }}>
-                    ALL
-                  </Text>
-                </TouchableOpacity>
-                <Text style={styles.avatarLabel}>전체</Text>
-              </View>
-
-              {/* 가족 리스트 */}
-              {familyUserList.map(user => {
-                const isSel = selectedUserId === user.userId;
-                return (
-                  <View
-                    key={user.userId}
-                    style={{
-                      width: 70,
-                      height: 95,
-                      marginRight: 12,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}>
-                    <TouchableOpacity
-                      style={[styles.avatarBtn]}
-                      onPress={() => setSelectedUserId(user.userId)}>
-                      {isSel && (
-                        <View
-                          style={{
-                            ...StyleSheet.absoluteFillObject,
-                            borderRadius: 999,
-                            backgroundColor: 'rgba(0,0,0,0.3)',
-                            zIndex: 10,
-                            borderWidth: 2,
-                            borderColor: '#FFC84D',
-                          }}
-                        />
-                      )}
-                      {isSel && (
-                        <Image
-                          source={require('../../../assets/icons/check-yellow.png')}
-                          style={styles.checkIcon}
-                        />
-                      )}
-                      <Image
-                        source={{uri: user.image}}
-                        style={[
-                          styles.avatarImage,
-                          {
-                            borderColor: isSel ? '#FFC84D' : '#E0E0E0',
-                            borderWidth: isSel ? 2 : 0,
-                          },
-                        ]}
+                {/* ALL 버튼 */}
+                <View
+                  style={{
+                    width: 70,
+                    height: 95,
+                    marginLeft: 6,
+                    marginRight: 12,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                  <TouchableOpacity
+                    style={[
+                      styles.avatarBtn,
+                      {
+                        borderColor: isSelectedAll ? '#FFC84D' : '#E0E0E0',
+                        backgroundColor: isSelectedAll ? '#FFF5D1' : 'white',
+                        borderWidth: isSelectedAll ? 2 : 1,
+                      },
+                    ]}
+                    onPress={() => setSelectedUserId('')}>
+                    {isSelectedAll && (
+                      <View
+                        style={{
+                          ...StyleSheet.absoluteFillObject,
+                          borderRadius: 999,
+                          backgroundColor: 'rgba(0,0,0,0.1)',
+                        }}
                       />
-                    </TouchableOpacity>
-                    <Text style={styles.avatarLabel}>{user.name}</Text>
-                  </View>
-                );
-              })}
-            </ScrollView>
+                    )}
+                    {isSelectedAll && (
+                      <Image
+                        source={require('../../../assets/icons/check-yellow.png')}
+                        style={styles.checkIcon}
+                      />
+                    )}
+                    <Text
+                      style={{
+                        fontSize: getResponsiveFontSize(13),
+                        fontFamily: 'Pretendard-Bold',
+                        color: isSelectedAll ? 'gray' : '#C3C3C3',
+                        zIndex: 10,
+                        alignSelf: 'center',
+                      }}>
+                      ALL
+                    </Text>
+                  </TouchableOpacity>
+                  <Text style={styles.avatarLabel}>전체</Text>
+                </View>
+
+                {/* 가족 리스트 */}
+                {familyUserList.map(user => {
+                  const isSel = selectedUserId === user.userId;
+                  return (
+                    <View
+                      key={user.userId}
+                      style={{
+                        width: 70,
+                        height: 95,
+                        marginRight: 12,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}>
+                      <TouchableOpacity
+                        style={[styles.avatarBtn]}
+                        onPress={() => setSelectedUserId(user.userId)}>
+                        {isSel && (
+                          <View
+                            style={{
+                              ...StyleSheet.absoluteFillObject,
+                              borderRadius: 999,
+                              backgroundColor: 'rgba(0,0,0,0.3)',
+                              zIndex: 10,
+                              borderWidth: 2,
+                              borderColor: '#FFC84D',
+                            }}
+                          />
+                        )}
+                        {isSel && (
+                          <Image
+                            source={require('../../../assets/icons/check-yellow.png')}
+                            style={styles.checkIcon}
+                          />
+                        )}
+                        <Image
+                          source={{uri: user.image}}
+                          style={[
+                            styles.avatarImage,
+                            {
+                              borderColor: isSel ? '#FFC84D' : '#E0E0E0',
+                              borderWidth: isSel ? 2 : 0,
+                            },
+                          ]}
+                        />
+                      </TouchableOpacity>
+                      <Text style={styles.avatarLabel}>{user.name}</Text>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+
+              {/* ✅ 오른쪽 끝 흰색 그라데이션 페이드 */}
+              {canScroll && (
+  <LinearGradient
+    pointerEvents="none"
+    colors={[
+      'rgba(255,255,255,0)',    // 완전 투명
+      'rgba(255,255,255,0.08)', // 살짝
+      'rgba(255,255,255,0.3)',  // 중간
+      'rgba(255,255,255,0.7)',  // 거의 흰색
+      'rgba(255,255,255,1)',    // 완전 흰색
+    ]}
+    locations={[0, 0.25, 0.55, 0.8, 1]}
+    start={{x: 0, y: 0.5}}
+    end={{x: 1, y: 0.5}}
+    style={styles.rightFade}
+  />
+)}
+
+            </View>
 
             {/* 입력 필드 */}
             <Text style={styles.subTitle}>일정 내용을 입력해주세요</Text>
@@ -272,7 +301,7 @@ const styles = StyleSheet.create({
   sheetTitle: {
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(18) // 🔽 22 → 18
+        ? getResponsiveFontSize(18)
         : getResponsiveFontSize(19),
     fontFamily: 'Pretendard-Bold',
     fontWeight: '700',
@@ -285,13 +314,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   subTitle: {
-    fontSize: getResponsiveFontSize(13.5), // 🔽 16.5 → 13.5
+    fontSize: getResponsiveFontSize(13.5),
     fontFamily: 'Pretendard-Regular',
     color: '#808080',
     fontWeight: Platform.OS === 'android' ? '500' : undefined,
     marginBottom: getResponsiveHeight(10),
     marginTop: getResponsiveHeight(4),
   },
+
+  // ✅ 유저 스크롤 래퍼 + 그라데이션 영역
+  userScrollWrapper: {
+    position: 'relative',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  userScroll: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+  },
+  rightFade: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    right: 0,
+    width: getResponsiveWidth(40),
+  },
+
   avatarBtn: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -313,7 +362,7 @@ const styles = StyleSheet.create({
   avatarLabel: {
     fontSize:
       Platform.OS === 'ios'
-        ? getResponsiveFontSize(12.5) // 🔽 약간 축소
+        ? getResponsiveFontSize(12.5)
         : getResponsiveFontSize(12),
     fontFamily: 'Pretendard-Medium',
     color: '#333',
@@ -339,7 +388,7 @@ const styles = StyleSheet.create({
     padding: 12,
     height: getResponsiveHeight(100),
     marginBottom: 10,
-    fontSize: getResponsiveFontSize(14), // 🔽 15 → 14
+    fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-Regular',
     color: '#222',
   },
@@ -363,7 +412,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(14.5), // 🔽 16 → 14.5
+    fontSize: getResponsiveFontSize(14.5),
     color: 'white',
   },
 });
