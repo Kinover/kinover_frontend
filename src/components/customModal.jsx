@@ -15,6 +15,7 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../utils/responsive';
+
 export default function CustomModal({
   visible,
   onClose,
@@ -34,18 +35,19 @@ export default function CustomModal({
   showCloseButton = false,
   title,
   subText,
-  titleImage, // ✅ 새로 추가
-  titleImageStyle, // ✅ 커스텀 스타일도 지원
+  titleImage,
+  titleImageStyle,
 }) {
   if (!visible) return null;
+
   return (
     <Modal
       animationType="fade"
-      transparent={true}
+      transparent
       visible={visible}
       onRequestClose={onClose}
       presentationStyle="overFullScreen"
-      statusBarTranslucent={true}>
+      statusBarTranslucent>
       <BlurView
         style={[
           StyleSheet.absoluteFill,
@@ -54,17 +56,18 @@ export default function CustomModal({
             position: 'absolute',
             backgroundColor:
               Platform.OS === 'android'
-                ? 'rgba(0, 0, 0, 0.1)'
-                : 'rgba(0, 0, 0, 0.2)',
+                ? 'rgba(0, 0, 0, 0.12)'
+                : 'rgba(0, 0, 0, 0.22)',
           },
         ]}
         blurType="light"
         blurAmount={2}
         reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.4)"
       />
+
       <View style={styles.overlay}>
         <View style={[styles.modalBox, modalBoxStyle]}>
-          {/* 상단 버튼 */}
+          {/* 상단 버튼들 */}
           <View
             style={[
               styles.topButtonRow,
@@ -85,23 +88,21 @@ export default function CustomModal({
                 />
               </TouchableOpacity>
             )}
+
             {showCloseButton && (
               <TouchableOpacity
                 style={styles.closeXButton}
                 onPress={onClose}
                 hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
                 <Image
-                  style={{
-                    width: getResponsiveIconSize(10),
-                    height: getResponsiveIconSize(10),
-                  }}
+                  style={styles.closeXIcon}
                   source={require('@/assets/images/close-yellow.png')}
                 />
               </TouchableOpacity>
             )}
           </View>
 
-          {/* ✅ 타이틀 이미지 */}
+          {/* 타이틀 이미지 */}
           {titleImage && (
             <Image
               source={titleImage}
@@ -109,12 +110,15 @@ export default function CustomModal({
               resizeMode="contain"
             />
           )}
-          {/* ✅ 기본 title / subText */}
+
+          {/* 제목 / 서브텍스트 */}
           {title && <Text style={styles.modalTitle}>{title}</Text>}
           {subText && <Text style={styles.modalSubText}>{subText}</Text>}
-          {/* children 영역 */}
+
+          {/* 컨텐츠 영역 */}
           <View style={[styles.contentWrapper, contentStyle]}>{children}</View>
-          {/* 버튼 */}
+
+          {/* 버튼 영역 */}
           <View style={[styles.buttonBottom, buttonBottomStyle]}>
             {closeText && (
               <TouchableOpacity
@@ -140,113 +144,129 @@ export default function CustomModal({
     </Modal>
   );
 }
+
 const styles = StyleSheet.create({
-  overlay: {flex: 1, justifyContent: 'center', alignItems: 'center'},
+  overlay: {
+    flex: 1,
+    paddingHorizontal: getResponsiveWidth(26),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 
   modalBox: {
     position: 'relative',
-    width:
-      Platform.OS === 'android'
-        ? getResponsiveWidth(300)
-        : getResponsiveWidth(280),
-    height: 'auto',
-    padding: 15,
-    backgroundColor: 'white',
-    borderRadius: Platform.OS === 'android' ? 25 : 20,
-    paddingTop: getResponsiveHeight(18), // ↓ 살짝 줄임
+    width: '100%',
+    paddingHorizontal: getResponsiveWidth(20),
+    paddingTop: getResponsiveHeight(22),
+    paddingBottom: getResponsiveHeight(18),
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
     zIndex: 50,
     elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
   },
 
   topButtonRow: {
     position: 'absolute',
-    top: getResponsiveHeight(6),
-    right: getResponsiveWidth(15),
+    top: getResponsiveHeight(10),
+    right: getResponsiveWidth(14),
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
     zIndex: 5,
   },
 
+  // 제목
   modalTitle: {
-    color: 'black',
+    color: '#111827',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(16) // ← 19 → 16
-        : getResponsiveFontSize(18), // ← 22 → 18
+        ? getResponsiveFontSize(16.5)
+        : getResponsiveFontSize(17.5),
     textAlign: 'center',
     fontFamily: 'Pretendard-SemiBold',
-    fontWeight: Platform.OS === 'ios' ? undefined : '700',
-    marginBottom: getResponsiveHeight(10), // ↓ 조정
-    marginTop: getResponsiveHeight(10),
+    marginTop: getResponsiveHeight(8),
+    marginBottom: getResponsiveHeight(6),
   },
 
   modalSubText: {
     textAlign: 'center',
-    color: '#999999',
+    color: '#6B7280',
     fontFamily: 'Pretendard-Regular',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(12.5) // ← 14 → 12.5
-        : getResponsiveFontSize(14), // ← 16 → 14
-    lineHeight: getResponsiveHeight(18), // ↓ 조정
-    marginBottom: getResponsiveHeight(8),
+        ? getResponsiveFontSize(12.5)
+        : getResponsiveFontSize(13),
+    lineHeight: getResponsiveHeight(19),
+    marginBottom: getResponsiveHeight(10),
   },
 
   contentWrapper: {
-    marginBottom: 8, // ↓ 여백 축소
+    marginBottom: getResponsiveHeight(14),
   },
 
   buttonBottom: {
-    display: 'flex',
     flexDirection: 'row',
     justifyContent: 'center',
-    alignContent: 'center',
-    gap: 8,
+    alignItems: 'center',
+    gap: getResponsiveWidth(8),
   },
 
   closeButton: {
-    flexDirection: 'row',
+    flex: 1,
     justifyContent: 'center',
-    backgroundColor: '#F4F6FA',
-    borderRadius: 8,
-    flex:1,
-    paddingVertical: getResponsiveHeight(12), // ↓ 14 → 12
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 9,
+    paddingVertical: getResponsiveHeight(11),
   },
 
   confirmButton: {
-    flexDirection: 'row',
+    flex: 1,
     justifyContent: 'center',
-    backgroundColor: '#FFC84D',
-    borderRadius: 8,
-    flex:1,
-    paddingVertical: getResponsiveHeight(12), // ↓
+    alignItems: 'center',
+    backgroundColor: '#111827',
+    borderRadius: 9,
+    paddingVertical: getResponsiveHeight(11),
   },
 
   closeText: {
-    color: '#A1A5AF',
-    fontWeight: '500',
-    fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(14), // ← 16 → 14
+    color: '#4B5563',
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(13.5),
   },
 
   confirmText: {
-    color: 'white',
-    fontWeight: '500',
-    fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(14), // ← 16 → 14
+    color: '#FFFFFF',
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(13.5),
   },
 
-  trashButton: {padding: 4},
+  trashButton: {
+    padding: 4,
+  },
   trashIcon: {
-    width: getResponsiveWidth(14),
-    height: getResponsiveHeight(14),
+    width: getResponsiveWidth(16),
+    height: getResponsiveHeight(16),
+  },
+
+  closeXButton: {
+    padding: 6,
+  },
+  closeXIcon: {
+    width: getResponsiveIconSize(12),
+    height: getResponsiveIconSize(12),
+    resizeMode: 'contain',
   },
 
   titleImage: {
-    width: getResponsiveWidth(40), // ↓ 부드럽게 줄임
-    height: getResponsiveHeight(40),
+    width: getResponsiveWidth(42),
+    height: getResponsiveHeight(42),
     alignSelf: 'center',
+    marginTop: getResponsiveHeight(6),
     marginBottom: getResponsiveHeight(6),
   },
 });

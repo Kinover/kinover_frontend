@@ -10,7 +10,7 @@ export const useScheduleBottomSheetModal = ({
   onRefresh,
 }) => {
   const modalRef = useRef(null);
-  const snapPoints = useMemo(() => ['55%', '80%'], []);
+  const snapPoints = useMemo(() => ['53%', '80%'], []);
 
   const scheduleRef = useRef(title ?? '');
   const [inputKey, setInputKey] = useState(0);

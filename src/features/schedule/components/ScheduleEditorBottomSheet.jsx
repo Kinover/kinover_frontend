@@ -240,8 +240,6 @@ export default ScheduleEditorBottomSheetModal;
 
 // styles는 그대로 사용
 
-ScheduleEditorBottomSheetModal.displayName = 'ScheduleEditorBottomSheetModal';
-
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: getResponsiveWidth(22),
