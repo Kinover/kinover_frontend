@@ -21,7 +21,7 @@ import {
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const ITEM_WIDTH =
-  Platform.OS === 'android' ? SCREEN_WIDTH * 0.98 : SCREEN_WIDTH * 0.95;
+  Platform.OS === 'android' ? SCREEN_WIDTH * 0.98 : SCREEN_WIDTH * 0.97;
 
 export default function ImageCarousel({
   localImages,
