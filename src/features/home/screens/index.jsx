@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     width: '220%', // 🔹 250 → 220 : 좀 더 자연스럽게
     left: '-60%',
     height: '100%',
-    backgroundColor: '#FFFFFF', // 🔹 곡선은 완전 흰색
+    backgroundColor: '#F9F9F9', // 🔹 곡선은 완전 흰색
     borderTopLeftRadius: getResponsiveWidth(600),
     borderTopRightRadius: getResponsiveWidth(600),
     zIndex: -1,

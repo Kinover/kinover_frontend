@@ -1,11 +1,8 @@
 // src/components/BottomActionButton.jsx
 import React from 'react';
-import {TouchableOpacity, Text, View, StyleSheet} from 'react-native';
-import {
-  getResponsiveFontSize,
-  getResponsiveHeight,
-  getResponsiveIconSize,
-} from 'utils/responsive';
+import {TouchableOpacity, Text, View, StyleSheet, Platform} from 'react-native';
+import {BUTTON_STYLES} from 'styles/style';
+import {getResponsiveHeight, getResponsiveIconSize} from 'utils/responsive';
 
 export default function BottomActionButton({label, onPress}) {
   return (
@@ -20,26 +17,24 @@ export default function BottomActionButton({label, onPress}) {
 const styles = StyleSheet.create({
   buttonContainer: {
     position: 'absolute',
-    bottom: getResponsiveHeight(60),
+    bottom:
+      Platform.OS === 'ios' ? getResponsiveHeight(40) : getResponsiveHeight(20),
     gap: getResponsiveHeight(10),
     alignSelf: 'center',
     width: '100%',
   },
   button: {
-    // backgroundColor: '#FFC84D',
-    backgroundColor: '#111827',
-
+    backgroundColor: BUTTON_STYLES.saveBg,
     height: getResponsiveHeight(50),
     width: '100%',
     borderRadius: getResponsiveIconSize(10),
     justifyContent: 'center',
   },
   buttonText: {
-    fontSize: getResponsiveFontSize(15),
+    fontSize: BUTTON_STYLES.fontSize,
     lineHeight: getResponsiveHeight(30),
     textAlign: 'center',
-    fontFamily: 'Pretendard-Regular',
-    // color: 'black',
+    fontFamily: BUTTON_STYLES.fontFamily,
     color: 'white',
   },
 });

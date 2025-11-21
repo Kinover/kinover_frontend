@@ -1,5 +1,6 @@
 import React from 'react';
 import {TouchableOpacity, View, Text, StyleSheet, Platform} from 'react-native';
+import { BUTTON_STYLES } from 'styles/style';
 import  {getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
@@ -139,17 +140,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: BUTTON_STYLES.cancelBg,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
   saveButton: {
-    backgroundColor: '#111827',
+    backgroundColor: BUTTON_STYLES.saveBg,
   },
   buttonText: {
     textAlign: 'center',
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(14),
+    fontFamily: BUTTON_STYLES.fontFamily,
+    fontSize: BUTTON_STYLES.fontSize,
     color: '#FFFFFF',
   },
   cancelButtonText: {
