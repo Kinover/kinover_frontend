@@ -24,6 +24,7 @@ import {
   toEpochMs,
 } from '../utils/timeRegistry';
 import {getSpacingStyle} from '../utils/getSpacingStyle';
+import {CHATROOM_STYLE} from 'styles/style';
 
 export default function ReceiveChat({
   userProfileImage,
@@ -182,17 +183,14 @@ const styles = StyleSheet.create({
 
   receivedText: {
     fontFamily: 'Pretendard-Light',
-    fontSize:
-      Platform.OS === 'android'
-        ? getResponsiveFontSize(12) // 🔽 14 → 13
-        : getResponsiveFontSize(13), // 🔽 15 → 14
+    fontSize: CHATROOM_STYLE.messageFontSize,
     color: 'black',
     flexWrap: 'wrap',
     lineHeight: getResponsiveFontSize(17), // 🔽 18 → 17
   },
 
   receivedTime: {
-    fontSize: getResponsiveFontSize(9), // 🔽 10 → 9
+    fontSize: CHATROOM_STYLE.messageTimeFontSize,
     color: '#666',
     marginLeft: getResponsiveWidth(5),
     lineHeight: getResponsiveFontSize(11), // 🔽 12 → 11

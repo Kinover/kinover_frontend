@@ -24,6 +24,7 @@ import {
   toEpochMs,
 } from '../utils/timeRegistry';
 import {getSpacingStyle} from '../utils/getSpacingStyle';
+import {CHATROOM_STYLE} from 'styles/style';
 
 export default function SendChat({
   chatTime,
@@ -130,17 +131,14 @@ const styles = StyleSheet.create({
   },
   sendText: {
     fontFamily: 'Pretendard-Light',
-    fontSize:
-      Platform.OS === 'android'
-        ? getResponsiveFontSize(12) // 🔽 14 → 13
-        : getResponsiveFontSize(13), // 🔽 15 → 14
+    fontSize: CHATROOM_STYLE.messageFontSize,
     color: 'black',
     flexWrap: 'wrap',
     lineHeight: getResponsiveFontSize(17), // 🔽 18 → 17
   },
 
   sendTime: {
-    fontSize: getResponsiveFontSize(9), // 🔽 10 → 9
+    fontSize: CHATROOM_STYLE.messageTimeFontSize,
     color: '#666',
     marginRight: getResponsiveWidth(5),
     marginBottom: getResponsiveHeight(2),
