@@ -54,7 +54,20 @@ export default function ChatSettings({
   const chatRoomUsers = useSelector(state => state.chatRoom.chatRoomUsers);
   const familyId = useSelector(state => state.family.familyId);
   const userId = useSelector(state => state.user.userId);
+
+  // 🔸 프로젝트 상태 구조에 맞게 여기 필드명만 확인해서 수정해줘
+  const familyMembers = useSelector(
+    state => state.userFamily.familyUserList || [], // 예: state.family.members 면 거기로 바꾸기
+  );
+
   const dispatch = useDispatch();
+
+  // ✅ “가족 전원이 이 채팅방에 참여 중인지” 여부
+  const isAllFamilyInChat =
+    Array.isArray(familyMembers) &&
+    familyMembers.length > 0 &&
+    Array.isArray(chatRoomUsers) &&
+    chatRoomUsers.length >= familyMembers.length;
 
   useEffect(() => {
     if (isOpen && chatRoomId) {
@@ -193,7 +206,6 @@ export default function ChatSettings({
       <TouchableOpacity style={styles.backdrop} onPress={onClose} />
 
       {/* 설정 패널 */}
-
       <Animated.View style={[styles.container, animatedStyle]}>
         <View style={styles.header}>
           <View style={styles.headerTextBox}>
@@ -258,15 +270,19 @@ export default function ChatSettings({
                       <Text style={styles.memberName}>{user.name}</Text>
                     </View>
                   ))}
-                  <TouchableOpacity
-                    onPress={handleShowMembers}
-                    style={styles.addMemberButton}>
-                    <Image
-                      source={require('../../../assets/images/addMember-bt.png')}
-                      style={styles.addIcon}
-                    />
-                    <Text style={styles.addText}>새 멤버 초대</Text>
-                  </TouchableOpacity>
+
+                  {/* ✅ 모든 가족이 이미 참여 중인 경우에는 "새 멤버 초대" 버튼 숨김 */}
+                  {!isAllFamilyInChat && (
+                    <TouchableOpacity
+                      onPress={handleShowMembers}
+                      style={styles.addMemberButton}>
+                      <Image
+                        source={require('../../../assets/images/addMember-bt.png')}
+                        style={styles.addIcon}
+                      />
+                      <Text style={styles.addText}>새 멤버 초대</Text>
+                    </TouchableOpacity>
+                  )}
                 </ScrollView>
               )}
             </View>
@@ -310,7 +326,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     right: 0,
-    width: getResponsiveWidth(310), // 🔹 살짝 더 넓게
+    width: getResponsiveWidth(310),
     height: '100%',
     backgroundColor: '#FFFFFF',
     borderLeftWidth: 1,
@@ -356,7 +372,6 @@ const styles = StyleSheet.create({
     paddingTop: getResponsiveHeight(4),
   },
 
-  // 옵션 섹션 전체
   option: {
     paddingVertical: getResponsiveHeight(14),
     borderBottomWidth: 1,
@@ -397,7 +412,6 @@ const styles = StyleSheet.create({
     width: '100%',
     minHeight: getResponsiveHeight(110),
     borderRadius: getResponsiveIconSize(10),
-    // backgroundColor: 'rgba(255, 228, 167, 0.22)',
     backgroundColor: '#f9f9f9',
     marginTop: getResponsiveHeight(10),
     paddingVertical: getResponsiveHeight(8),
@@ -438,7 +452,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Medium',
   },
 
-  // 하단 나가기
   leaveOption: {
     position: 'absolute',
     bottom: '5%',
