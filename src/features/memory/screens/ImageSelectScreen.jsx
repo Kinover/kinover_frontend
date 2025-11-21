@@ -26,6 +26,7 @@ import {
 import {toggleSelectImage, getSelectOrder} from '../../../utils/selection';
 import {loadGalleryPhotos} from '../../../utils/gallery';
 import formatDuration from '../../../utils/formatDuration';
+import {HEADER_STYLES} from 'styles/style';
 
 // ====== 이미지 그리드 설정 ======
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -100,7 +101,11 @@ export default function ImageSelectPage() {
         const converted = await convertPhUriToFileUri(uri, i, file.isVideo);
         if (converted) convertedUris.push(converted);
       } else if (Platform.OS === 'android' && uri.startsWith('content://')) {
-        const converted = await convertContentUriToFileUri(uri, i, file.isVideo);
+        const converted = await convertContentUriToFileUri(
+          uri,
+          i,
+          file.isVideo,
+        );
         if (converted) convertedUris.push(converted);
       } else {
         convertedUris.push(uri);
@@ -209,21 +214,17 @@ const styles = StyleSheet.create({
     paddingTop: getResponsiveHeight(2),
   },
   headerTitle: {
-    fontSize:
-      Platform.OS === 'ios'
-        ? getResponsiveFontSize(18) // 🔽 20 → 18
-        : getResponsiveFontSize(17), // 🔽 18 → 17
+    fontSize: HEADER_STYLES.defaultTitleFontSize,
+    fontFamily: HEADER_STYLES.defaultTitleFontFamily,
+    color: HEADER_STYLES.defaultTitleFontColor,
+    lineHeight: getResponsiveHeight(26),
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontFamily: 'Pretendard-Medium',
-    fontWeight: Platform.OS === 'android' ? '600' : '500',
-    color: '#101010',
-    lineHeight: getResponsiveHeight(26),
   },
   checkIcon: {
-    width: getResponsiveWidth(24),   // 🔽 30 → 24
-    height: getResponsiveHeight(24), // 🔽 30 → 24
-    marginRight: getResponsiveWidth(15),
+    width: HEADER_STYLES.headerRightIconWidth, // 🔽 28 → 24
+    height: HEADER_STYLES.headerRightIconHeight, // 🔽 28 → 24
+    marginRight: HEADER_STYLES.headerRightIconRightPadding,
     resizeMode: 'contain',
   },
   galleryContainer: {},
@@ -252,7 +253,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: getResponsiveWidth(4),
     right: getResponsiveWidth(4),
-    width: getResponsiveWidth(20),   // 🔽 22 → 20
+    width: getResponsiveWidth(20), // 🔽 22 → 20
     height: getResponsiveWidth(20),
     borderRadius: getResponsiveWidth(10),
     borderColor: '#FFC84D',

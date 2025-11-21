@@ -1,5 +1,12 @@
 import React from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, Image} from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  Platform,
+} from 'react-native';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -149,7 +156,7 @@ const styles = StyleSheet.create({
 
   userNameHeader: {
     fontFamily: 'Pretendard-Medium',
-    fontWeight: '600',
+    fontWeight: Platform.OS === 'ios' ? null : '600',
     fontSize: getResponsiveFontSize(18), // 🔹 20 → 18
     marginTop: getResponsiveHeight(12),
     color: 'black',

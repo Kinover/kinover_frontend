@@ -425,11 +425,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: getResponsiveHeight(6),
-    marginTop: getResponsiveHeight(8),
   },
   addIcon: {
-    width: getResponsiveIconSize(30),
-    height: getResponsiveIconSize(30),
+    width: getResponsiveIconSize(32),
+    height: getResponsiveIconSize(32),
     resizeMode: 'contain',
     marginRight: getResponsiveWidth(10),
   },

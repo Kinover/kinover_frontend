@@ -5,7 +5,6 @@ import {Text, Platform} from 'react-native';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
-  getResponsiveFontSize,
 } from '../../../utils/responsive';
 import {
   RenderHeaderHome,
@@ -14,6 +13,7 @@ import {
 import SettingScreen from '../../../features/setting/screens/SettingScreen';
 import NotificationScreen from '../../../features/NotificationScreen';
 import NotificationSettingScreen from '../../../features/setting/screens/NotificationSettingScreen';
+import {HEADER_STYLES} from 'styles/style';
 
 const Stack = createStackNavigator();
 
@@ -38,11 +38,11 @@ export default function ScheduleStack() {
         headerTitle: () => (
           <Text
             style={{
-              fontFamily: 'Pretendard-Bold',
-              fontWeight: Platform.OS === 'android' ? '700' : undefined,
-              fontSize: getResponsiveFontSize(20), // ✅ 24 → 16 (일반적인 헤더 타이틀 사이즈)
+              fontFamily: HEADER_STYLES.mainTitleFontFamily,
+              fontWeight: HEADER_STYLES.mainTitleFontWeight,
+              fontSize: HEADER_STYLES.mainTitleFontSize, // ✅ 24 → 16 (다른 앱이랑 비슷한 크기)
               color: 'black',
-              lineHeight: getResponsiveHeight(22), // ✅ 너무 크지 않게 살짝만
+              lineHeight: HEADER_STYLES.mainTitleLineHeight, // ✅ 너무 크지 않게 살짝만
               textAlignVertical: 'center',
             }}>
             일정

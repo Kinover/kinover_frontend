@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFF',
     paddingHorizontal: getResponsiveWidth(20),
-    paddingTop: getResponsiveHeight(30),
+    paddingTop: getResponsiveHeight(25),
     paddingBottom: getResponsiveHeight(40),
     alignItems: 'center',
   },
@@ -241,19 +241,15 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(10),
   },
   kinoText: {
-    fontSize:
-      Platform.OS === 'ios'
-        ? getResponsiveFontSize(20)
-        : getResponsiveFontSize(18.5),
-    fontFamily: 'Pretendard-Light',
-    fontWeight: Platform.OS === 'android' ? '100' : '200',
+    fontSize: getResponsiveFontSize(17.5),
+    fontFamily:
+      Platform.OS === 'android' ? 'Pretendard-Regular' : 'Pretendard-Light',
     lineHeight: getResponsiveHeight(24),
     color: 'black',
   },
   kinoHighlight: {
     color: '#FFC84D',
     fontFamily: 'Pretendard-SemiBold',
-    fontWeight: Platform.OS === 'android' ? '800' : '600',
   },
 
   carouselRow: {
@@ -291,7 +287,7 @@ const styles = StyleSheet.create({
   },
   personalityLabel: {
     marginTop: getResponsiveHeight(12),
-    fontSize: getResponsiveFontSize(14),
+    fontSize: getResponsiveFontSize(10),
     color: '#111',
     fontFamily: 'Pretendard-Medium',
   },
@@ -301,8 +297,8 @@ const styles = StyleSheet.create({
     zIndex: 100,
   },
   arrowIcon: {
-    width: getResponsiveIconSize(28),
-    height: getResponsiveIconSize(28),
+    width: getResponsiveIconSize(20),
+    height: getResponsiveIconSize(20),
     resizeMode: 'contain',
   },
 
