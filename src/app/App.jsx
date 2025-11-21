@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     width: 180,
     height: 180,
     bottom: '41.5%',
-    right: '31.5%',
+    right: '30%',
     resizeMode: 'contain',
   },
   splashAnimation: {

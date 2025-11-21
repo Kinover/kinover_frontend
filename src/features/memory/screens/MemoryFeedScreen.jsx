@@ -332,7 +332,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
-    borderRadius: getResponsiveWidth(4),
     backgroundColor: '#E5E7EB',
   },
 
