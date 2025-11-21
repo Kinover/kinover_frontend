@@ -33,9 +33,9 @@ export const HEADER_STYLES = {
 
   headerLeftIconWidth: getResponsiveIconSize(24),
   headerLeftIconHeight: getResponsiveIconSize(24),
-  headerLeftIconLeftPadding: getResponsiveWidth(15),
+  headerLeftIconLeftPadding: getResponsiveWidth(16),
 
-  headerRightIconWidth: getResponsiveIconSize(22),
-  headerRightIconHeight: getResponsiveIconSize(22),
-  headerRightIconRightPadding: getResponsiveWidth(15),
+  headerRightIconWidth: getResponsiveIconSize(23),
+  headerRightIconHeight: getResponsiveIconSize(23),
+  headerRightIconRightPadding: getResponsiveWidth(16),
 };
