@@ -29,7 +29,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import ImageCarousel from '../components/ImageCarousel';
 import ToastModal from '../../../components/ToastModal';
 import CustomModal from '../../../components/CustomModal';
-import { HEADER_STYLES } from 'styles/style';
+import {HEADER_STYLES} from 'styles/style';
 
 export default function PostPage({route}) {
   const dispatch = useDispatch();
@@ -144,7 +144,6 @@ export default function PostPage({route}) {
       ),
       headerRight: () => (
         <TouchableOpacity
-          style={{marginRight: getResponsiveWidth(24)}}
           onPress={() => vm.setShowDeleteOptions(prev => !prev)}>
           <Image
             source={require('../../../assets/images/trash.png')}
@@ -294,15 +293,11 @@ export default function PostPage({route}) {
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#F9F9F9'},
   headerTitle: {
-    fontSize:
-      Platform.OS === 'ios'
-        ? getResponsiveFontSize(18) // 🔽 기존 20 → 18
-        : getResponsiveFontSize(17), // 🔽 기존 18 → 17
-    textAlign: 'center',
-    fontFamily: 'Pretendard-Medium',
-    fontWeight: '600',
-    color: '#101010',
+    fontSize: HEADER_STYLES.defaultTitleFontSize,
+    fontFamily: HEADER_STYLES.defaultTitleFontFamily,
+    color: HEADER_STYLES.defaultTitleFontColor,
     lineHeight: getResponsiveHeight(26), // 🔽 살짝 줄임
+    textAlign: 'center',
   },
   descriptionWrapper: {
     width: '100%',
@@ -352,8 +347,9 @@ const styles = StyleSheet.create({
     marginVertical: getResponsiveHeight(8),
   },
   headerIcon: {
-    width: HEADER_STYLES.headerRightIconWidth,   // 🔽 28 → 24
+    width: HEADER_STYLES.headerRightIconWidth, // 🔽 28 → 24
     height: HEADER_STYLES.headerRightIconHeight, // 🔽 28 → 24
     resizeMode: 'contain',
+    marginRight: HEADER_STYLES.headerRightIconRightPadding,
   },
 });
