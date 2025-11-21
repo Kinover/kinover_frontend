@@ -30,7 +30,8 @@ const familySlice = createSlice({
   initialState: initialFamilyState,
   reducers: {
     setFamily(state, action) {
-      const {familyId, name, notice, relationship} = action.payload || {};
+      const {familyId, name, notice, relationship} =
+        action.payload || {};
       state.familyId = familyId ?? state.familyId;
       state.name = name ?? state.name;
       state.notice = notice ?? state.notice;
