@@ -15,6 +15,7 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../utils/responsive';
+import {BUTTON_STYLES} from 'styles/style';
 
 export default function CustomModal({
   visible,
@@ -219,30 +220,33 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: BUTTON_STYLES.cancelBg,
     borderRadius: 9,
     paddingVertical: getResponsiveHeight(11),
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
 
   confirmButton: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#111827',
+    // backgroundColor: '#111827',
+    backgroundColor: BUTTON_STYLES.saveBg,
     borderRadius: 9,
     paddingVertical: getResponsiveHeight(11),
   },
 
   closeText: {
     color: '#4B5563',
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(13.5),
+    fontFamily: BUTTON_STYLES.fontFamily,
+    fontSize: BUTTON_STYLES.fontSize,
   },
 
   confirmText: {
     color: '#FFFFFF',
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(13.5),
+    fontFamily: BUTTON_STYLES.fontFamily,
+    fontSize: BUTTON_STYLES.fontSize,
   },
 
   trashButton: {

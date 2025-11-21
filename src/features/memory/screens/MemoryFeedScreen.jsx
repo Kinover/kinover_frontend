@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   },
 
   dateText: {
-    fontSize: getResponsiveFontSize(11.5),
+    fontSize: getResponsiveFontSize(12),
     fontFamily: 'Pretendard-Regular',
     color: '#9CA3AF',
   },

@@ -17,6 +17,7 @@ import {
 } from '../../../utils/responsive';
 
 import {useYMDPickerState} from '../hooks/useYMDPickerState';
+import {BUTTON_STYLES} from 'styles/style';
 
 export default function YMDPickerModal({
   visible,
@@ -210,7 +211,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   pickerInput: {
-    color:'gray',
+    color: 'gray',
     fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-Medium',
     textAlign: 'left',
@@ -235,28 +236,35 @@ const styles = StyleSheet.create({
   actions: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 8,
-    marginTop: getResponsiveHeight(20),
+    alignItems: 'center',
+    gap: getResponsiveWidth(8),
+    marginTop: getResponsiveHeight(16),
   },
   btn: {
     flex: 1,
+    justifyContent: 'center',
     textAlignVertical: 'center',
-    paddingVertical: 14,
+    alignItems: 'center',
+    paddingVertical: getResponsiveHeight(11),
     paddingHorizontal: 14,
-    borderRadius: 8,
+    borderRadius: 9,
   },
-  cancel: {backgroundColor: '#F1F1F1'},
-  confirm: {backgroundColor: '#FFC84D'},
+  cancel: {
+    backgroundColor: BUTTON_STYLES.cancelBg,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  confirm: {backgroundColor: BUTTON_STYLES.saveBg},
   cancelText: {
     textAlign: 'center',
     color: '#A1A5AF',
-    fontSize: getResponsiveFontSize(15),
-    fontFamily: 'Pretendard-bold',
+    fontSize: BUTTON_STYLES.fontSize,
+    fontFamily: 'Pretendard-Medium',
   },
   confirmText: {
     color: 'white',
     textAlign: 'center',
-    fontSize: getResponsiveFontSize(15),
-    fontFamily: 'Pretendard-bold',
+    fontSize: BUTTON_STYLES.fontSize,
+    fontFamily: 'Pretendard-Medium',
   },
 });
