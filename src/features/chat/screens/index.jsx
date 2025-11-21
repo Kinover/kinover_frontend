@@ -18,6 +18,7 @@ import {
 } from '../../../utils/responsive';
 import FastImage from '@d11/react-native-fast-image';
 import YellowSpinner from '../../../components/YellowSpinner';
+import SwipeNavigator from 'components/SwipeNavigator';
 
 export default function CommunicationScreen({navigation}) {
   const dispatch = useDispatch();
@@ -50,39 +51,44 @@ export default function CommunicationScreen({navigation}) {
   );
 
   return (
-    <View style={styles.container}>
-      {loading && chatRoomList.length === 0 ? (
-        <View style={styles.loaderWrapper}>
-          <YellowSpinner />
-        </View>
-      ) : (
-        <FlatList
-          data={chatRoomList}
-          key={`chatlist-${listRevision}`}
-          renderItem={renderItem}
-          extraData={listRevision}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          ListEmptyComponent={
-            <Text style={styles.noChatMessage}>
-              {'아직 채팅방이 없어요.\n가족과의 첫 대화를 시작해볼까요?'}
-            </Text>
-          }
-        />
-      )}
+    <SwipeNavigator
+      rightTo="일정" // 오른쪽→왼쪽 스와이프
+      leftTo="홈" // 필요하면 다른 화면 넣기
+    >
+      <View style={styles.container}>
+        {loading && chatRoomList.length === 0 ? (
+          <View style={styles.loaderWrapper}>
+            <YellowSpinner />
+          </View>
+        ) : (
+          <FlatList
+            data={chatRoomList}
+            key={`chatlist-${listRevision}`}
+            renderItem={renderItem}
+            extraData={listRevision}
+            contentContainerStyle={styles.listContent}
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            ListEmptyComponent={
+              <Text style={styles.noChatMessage}>
+                {'아직 채팅방이 없어요.\n가족과의 첫 대화를 시작해볼까요?'}
+              </Text>
+            }
+          />
+        )}
 
-      <TouchableOpacity
-        onPress={() => navigation.navigate('채팅방생성화면')}
-        style={styles.fab}>
-        <FastImage
-          source={require('../../../assets/icons/chat-floating-bt.png')}
-          style={{width: '100%', height: '100%', resizeMode: 'contain'}}
-        />
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('채팅방생성화면')}
+          style={styles.fab}>
+          <FastImage
+            source={require('../../../assets/icons/chat-floating-bt.png')}
+            style={{width: '100%', height: '100%', resizeMode: 'contain'}}
+          />
+        </TouchableOpacity>
+      </View>
+    </SwipeNavigator>
   );
 }
 
@@ -119,4 +125,3 @@ const styles = StyleSheet.create({
     height: getResponsiveIconSize(60),
   },
 });
-

@@ -24,6 +24,7 @@ import {useScheduleDate} from '../hooks/useScheduleDate';
 import {useScheduleCounts} from '../hooks/useScheduleCounts';
 import {useScheduleEditor} from '../hooks/useScheduleEditor';
 import {useScheduleCrud} from '../hooks/useScheduleCRUD';
+import SwipeNavigator from 'components/SwipeNavigator';
 
 export default function ScheduleScreen() {
   const {familyId} = useSelector(state => state.family);
@@ -78,46 +79,51 @@ export default function ScheduleScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* 메인 콘텐츠 */}
-      <ScrollView
-        style={styles.mainContainer}
-        showsVerticalScrollIndicator={false}>
-        <CalendarToggle
-          selectedDate={selectedDate}
-          setSelectedDate={setSelectedDate}
-          scheduleCountPerDay={scheduleCountPerDay}
+    <SwipeNavigator
+      rightTo="추억" // 오른쪽→왼쪽 스와이프
+      leftTo="소통" // 필요하면 다른 화면 넣기
+    >
+      <View style={styles.container}>
+        {/* 메인 콘텐츠 */}
+        <ScrollView
+          style={styles.mainContainer}
+          showsVerticalScrollIndicator={false}>
+          <CalendarToggle
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+            scheduleCountPerDay={scheduleCountPerDay}
+          />
+
+          <Schedule
+            selectedDate={selectedDate}
+            onOpenSheet={openSheet}
+            refreshTrigger={refreshTrigger}
+          />
+        </ScrollView>
+
+        {/* 바텀시트 */}
+        <ScheduleEditorBottomSheetModal
+          ref={bottomSheetRef}
+          editingSchedule={editingSchedule}
+          familyUserList={familyUserList}
+          selectedUserId={selectedUserId}
+          setSelectedUserId={setSelectedUserId}
+          title={title}
+          setTitle={setTitle}
+          onSubmit={onSubmit}
+          onDelete={handleDeleteSchedule}
+          onCancelEdit={handleCancelEdit}
         />
 
-        <Schedule
-          selectedDate={selectedDate}
-          onOpenSheet={openSheet}
-          refreshTrigger={refreshTrigger}
-        />
-      </ScrollView>
-
-      {/* 바텀시트 */}
-      <ScheduleEditorBottomSheetModal
-        ref={bottomSheetRef}
-        editingSchedule={editingSchedule}
-        familyUserList={familyUserList}
-        selectedUserId={selectedUserId}
-        setSelectedUserId={setSelectedUserId}
-        title={title}
-        setTitle={setTitle}
-        onSubmit={onSubmit}
-        onDelete={handleDeleteSchedule}
-        onCancelEdit={handleCancelEdit}
-      />
-
-      {/* 플로팅 추가 버튼 */}
-      <TouchableOpacity style={styles.fab} onPress={() => openSheet(null)}>
-        <Image
-          source={require('../../../assets/icons/schedule-bt.png')}
-          style={styles.fabIcon}
-        />
-      </TouchableOpacity>
-    </View>
+        {/* 플로팅 추가 버튼 */}
+        <TouchableOpacity style={styles.fab} onPress={() => openSheet(null)}>
+          <Image
+            source={require('../../../assets/icons/schedule-bt.png')}
+            style={styles.fabIcon}
+          />
+        </TouchableOpacity>
+      </View>
+    </SwipeNavigator>
   );
 }
 
