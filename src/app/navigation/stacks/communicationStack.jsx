@@ -4,7 +4,6 @@ import CommunicationScreen from '../../../features/chat/screens';
 import KinoChatRoom from '../../../features/chat/screens/kinoChatRoomScreen';
 import ChatSettings from '../../../features/chat/screens/chatSetting';
 import {
-  getResponsiveFontSize,
   getResponsiveWidth,
   getResponsiveHeight,
 } from '../../../utils/responsive';
@@ -20,6 +19,7 @@ import KinoSelectScreen from '../../../features/chat/screens/kinoSelectScreen';
 import SettingScreen from '../../../features/setting/screens/SettingScreen';
 import NotificationScreen from '../../../features/NotificationScreen';
 import NotificationSettingScreen from '../../../features/setting/screens/NotificationSettingScreen';
+import {HEADER_STYLES} from 'styles/style';
 
 const Stack = createStackNavigator();
 
@@ -53,12 +53,12 @@ export default function CommunicationStack() {
           headerTitle: () => (
             <Text
               style={{
-                fontFamily: 'Pretendard-Bold',
-                fontWeight: Platform.OS === 'android' ? '700' : undefined,
-                fontSize: getResponsiveFontSize(20), // ✅ 24 → 16 (다른 앱이랑 비슷한 크기)
-                color: 'black',
+                fontFamily: HEADER_STYLES.mainTitleFontFamily,
+                fontWeight: HEADER_STYLES.mainTitleFontWeight,
+                fontSize: HEADER_STYLES.mainTitleFontSize, // ✅ 24 → 16 (다른 앱이랑 비슷한 크기)
+                color: HEADER_STYLES.mainTitleFontColor,
                 textAlign: 'center',
-                lineHeight: getResponsiveHeight(22), // 살짝만
+                lineHeight: HEADER_STYLES.mainTitleLineHeight, // 살짝만
                 textAlignVertical: 'center',
               }}>
               채팅

@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: 'black',
-    fontSize: getResponsiveFontSize(22),
+    fontSize: getResponsiveFontSize(20),
     fontFamily: 'Pretendard-Regular',
     marginBottom: getResponsiveHeight(25),
     textAlign: 'center',

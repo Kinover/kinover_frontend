@@ -8,6 +8,7 @@ import {
 } from '../../../utils/responsive';
 import {useSelector} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
+import {HEADER_STYLES} from 'styles/style';
 
 // ✅ 공통 아이콘 버튼 생성기 (size는 "기본 px" 개념으로만 넘기면 됨)
 const createIconButton = (
@@ -159,9 +160,9 @@ export const RenderHeaderLeft1 = ({navigation}) =>
         params: {screen: '알림화면'},
       }),
     require('@/assets/images/navigator_alarm-button.png'),
-    20, // 24 → 20
-    22, // 26 → 22
-    {marginLeft: getResponsiveWidth(18)},
+    HEADER_STYLES.headerLeftIconWidth,
+    HEADER_STYLES.headerLeftIconHeight,
+    {marginLeft: HEADER_STYLES.headerLeftIconLeftPadding},
   );
 
 export const RenderHeaderRightSetting = ({navigation}) =>
@@ -172,27 +173,27 @@ export const RenderHeaderRightSetting = ({navigation}) =>
         params: {screen: '설정화면'},
       }),
     require('@/assets/images/setting_bt.png'),
-    20,
-    22,
-    {marginRight: getResponsiveWidth(18)},
+    HEADER_STYLES.headerRightIconWidth,
+    HEADER_STYLES.headerRightIconHeight,
+    {marginRight: HEADER_STYLES.headerRightIconRightPadding},
   );
 
 export const RenderHeaderRightChatSetting = ({setIsSettingsOpen}) =>
   createIconButton(
     () => setIsSettingsOpen(true),
     require('@/assets/images/dots2.png'),
-    18, // 21 → 18
-    20, // 25 → 20
-    {marginRight: getResponsiveWidth(24)},
+    HEADER_STYLES.headerRightIconWidth,
+    HEADER_STYLES.headerRightIconHeight,
+    {marginRight: HEADER_STYLES.headerRightIconRightPadding},
   );
 
 export const RenderHeaderDeletePost = () =>
   createIconButton(
     () => {},
     require('@/assets/images/trash.png'),
-    20, // 24 → 20
-    20,
-    {marginRight: getResponsiveWidth(18)},
+    HEADER_STYLES.headerRightIconWidth,
+    HEADER_STYLES.headerRightIconHeight,
+    {marginRight: HEADER_STYLES.headerRightIconRightPadding},
     {zIndex: 999},
   );
 
@@ -200,9 +201,9 @@ export const RenderGoBackButton = ({navigation}) =>
   createIconButton(
     () => navigation.goBack(),
     require('@/assets/icons/caretDown.png'),
-    24, // 30 → 24
-    24,
-    {marginLeft: getResponsiveWidth(18)},
+    HEADER_STYLES.headerLeftIconWidth,
+    HEADER_STYLES.headerLeftIconHeight,
+    {marginLeft: HEADER_STYLES.headerLeftIconLeftPadding},
     {zIndex: 999},
   );
 
@@ -210,9 +211,9 @@ export const RenderGoBackButtonGallery = ({navigation}) =>
   createIconButton(
     () => navigation.goBack(),
     require('@/assets/images/navigator_goback-button.png'),
-    9,
-    18, // 20 → 18 (세로만 살짝 줄임)
-    {marginLeft: getResponsiveWidth(22)},
+    HEADER_STYLES.headerLeftIconWidth,
+    HEADER_STYLES.headerLeftIconHeight,
+    {marginLeft: HEADER_STYLES.headerLeftIconLeftPadding},
     {zIndex: 999},
   );
 

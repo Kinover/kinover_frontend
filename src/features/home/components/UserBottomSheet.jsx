@@ -258,7 +258,8 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   profileTouchArea: {
-    width: '100%',
+    width: '45%',
+    alignSelf: 'center',
     alignItems: 'center',
     marginBottom: getResponsiveHeight(18),
     marginTop: getResponsiveHeight(6),

@@ -29,6 +29,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import ImageCarousel from '../components/ImageCarousel';
 import ToastModal from '../../../components/ToastModal';
 import CustomModal from '../../../components/CustomModal';
+import { HEADER_STYLES } from 'styles/style';
 
 export default function PostPage({route}) {
   const dispatch = useDispatch();
@@ -295,8 +296,8 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize:
       Platform.OS === 'ios'
-        ? getResponsiveFontSize(18)   // 🔽 기존 20 → 18
-        : getResponsiveFontSize(17),  // 🔽 기존 18 → 17
+        ? getResponsiveFontSize(18) // 🔽 기존 20 → 18
+        : getResponsiveFontSize(17), // 🔽 기존 18 → 17
     textAlign: 'center',
     fontFamily: 'Pretendard-Medium',
     fontWeight: '600',
@@ -336,23 +337,23 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    bottom:'50%',
+    bottom: '50%',
     backgroundColor: 'lightgray',
   },
   modalTitle: {
     color: 'black',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(17)    // 🔽 20 → 17
-        : getResponsiveFontSize(18),   // 🔽 22 → 18
+        ? getResponsiveFontSize(17) // 🔽 20 → 17
+        : getResponsiveFontSize(18), // 🔽 22 → 18
     fontWeight: '700',
     fontFamily: 'Pretendard-SemiBold',
     textAlign: 'center',
     marginVertical: getResponsiveHeight(8),
   },
   headerIcon: {
-    width: getResponsiveWidth(22),      // 🔽 25 → 22
-    height: getResponsiveHeight(22),    // 🔽 25 → 22
+    width: HEADER_STYLES.headerRightIconWidth,   // 🔽 28 → 24
+    height: HEADER_STYLES.headerRightIconHeight, // 🔽 28 → 24
     resizeMode: 'contain',
   },
 });

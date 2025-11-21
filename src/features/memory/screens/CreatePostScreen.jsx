@@ -25,6 +25,7 @@ import {
 import {getPresignedUrls, uploadFileToS3} from '../../../api/imageUrlApi';
 import useHideTabBar from '../../../hooks/useHideTabBar';
 import ToastModal from '../../../components/ToastModal';
+import { HEADER_STYLES } from 'styles/style';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -237,19 +238,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerText: {
-    fontSize:
-      Platform.OS === 'ios'
-        ? getResponsiveFontSize(18) // 🔽 20 → 18
-        : getResponsiveFontSize(17), // 🔽 18 → 17
-    fontFamily: 'Pretendard-SemiBold',
-    fontWeight: Platform.OS === 'android' ? '600' : '500',
-    color: '#101010',
+    fontSize:HEADER_STYLES.defaultTitleFontSize,
+    fontFamily:HEADER_STYLES.defaultTitleFontFamily,
+    color: HEADER_STYLES.defaultTitleFontColor,
     lineHeight: getResponsiveHeight(26),
   },
   headerCheckIcon: {
-    width: getResponsiveWidth(24),   // 🔽 28 → 24
-    height: getResponsiveHeight(24), // 🔽 28 → 24
-    marginRight: getResponsiveWidth(12),
+    width: HEADER_STYLES.headerRightIconWidth,   // 🔽 28 → 24
+    height: HEADER_STYLES.headerRightIconHeight, // 🔽 28 → 24
+    marginRight: HEADER_STYLES.headerRightIconRightPadding,
     resizeMode: 'contain',
   },
   modalOverlay: {

@@ -22,6 +22,7 @@ import {
 import {fetchFamilyUserListThunk} from '../../home/store/familyUserThunk';
 import useHideTabBar from '../../../hooks/useHideTabBar';
 import FastImage from '@d11/react-native-fast-image';
+import {HEADER_STYLES} from 'styles/style';
 
 export default function AddChatMemberScreen({navigation, route}) {
   const {chatRoomId} = route.params;
@@ -136,15 +137,16 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5E5',
   },
   headerTitle: {
-    fontSize: getResponsiveFontSize(17), // 🔽 18 → 17
+    fontSize: HEADER_STYLES.defaultTitleFontSize, // 🔽 18 → 17
     textAlign: 'center',
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: HEADER_STYLES.defaultTitleFontFamily,
+    color:HEADER_STYLES.defaultTitleFontColor,
   },
   headerRight: {
     marginRight: getResponsiveWidth(15),
   },
   headerCheckIcon: {
-    width: getResponsiveWidth(24),   // 🔽 30 → 24
+    width: getResponsiveWidth(24), // 🔽 30 → 24
     height: getResponsiveHeight(24), // 🔽 30 → 24
     marginRight: getResponsiveWidth(15),
     resizeMode: 'contain',
@@ -166,7 +168,7 @@ const styles = StyleSheet.create({
     gap: getResponsiveWidth(6),
   },
   userImage: {
-    width: getResponsiveIconSize(40),  // 🔽 45 → 40
+    width: getResponsiveIconSize(40), // 🔽 45 → 40
     height: getResponsiveIconSize(40),
     borderRadius: getResponsiveIconSize(20),
     marginRight: getResponsiveWidth(8),

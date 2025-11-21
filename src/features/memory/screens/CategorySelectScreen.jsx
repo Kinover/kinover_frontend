@@ -19,6 +19,7 @@ import {
 import CategoryModal from '../components/CategoryModal';
 import {fetchCategoryThunk} from '../store/categoryThunk';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {HEADER_STYLES} from 'styles/style';
 
 export default function CategorySelectPage({route}) {
   const navigation = useNavigation();
@@ -209,24 +210,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerTitle: {
-    fontSize:
-      Platform.OS === 'ios'
-        ? getResponsiveFontSize(18) // 🔽 20 → 18
-        : getResponsiveFontSize(17), // 🔽 18 → 17
+    fontSize: HEADER_STYLES.defaultTitleFontSize,
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontFamily: 'Pretendard-SemiBold',
-    fontWeight: Platform.OS === 'android' ? '600' : '500',
-    color: '#101010',
+    fontFamily: HEADER_STYLES.defaultTitleFontFamily,
+    color: HEADER_STYLES.defaultTitleFontColor,
     lineHeight: getResponsiveHeight(26),
   },
   headerRight: {
     marginRight: getResponsiveWidth(10),
   },
   checkImage: {
-    width: getResponsiveWidth(24),   // 🔽 30 → 24
-    height: getResponsiveHeight(24), // 🔽 30 → 24
-    marginRight: getResponsiveWidth(15),
+    width: HEADER_STYLES.headerRightIconWidth,   // 🔽 28 → 24
+    height: HEADER_STYLES.headerRightIconHeight, // 🔽 28 → 24
+    marginRight: HEADER_STYLES.headerRightIconRightPadding,
     resizeMode: 'contain',
   },
   itemContainer: {
@@ -246,7 +243,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center',
   },
   radioIcon: {
-    width: getResponsiveWidth(14),   // 🔽 15 → 14
+    width: getResponsiveWidth(14), // 🔽 15 → 14
     height: getResponsiveHeight(14),
     resizeMode: 'contain',
   },
@@ -284,9 +281,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: getResponsiveWidth(10),
     paddingVertical:
-      Platform.OS === 'ios'
-        ? getResponsiveHeight(10)
-        : getResponsiveHeight(4),
+      Platform.OS === 'ios' ? getResponsiveHeight(10) : getResponsiveHeight(4),
   },
   input: {
     fontFamily: 'Pretendard-Regular',

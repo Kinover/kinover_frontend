@@ -1,4 +1,10 @@
-import {getResponsiveFontSize} from 'utils/responsive';
+import {Platform} from 'react-native';
+import {
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveIconSize,
+  getResponsiveWidth,
+} from 'utils/responsive';
 
 // src/styles/colors.ts
 export const BACKGROUND_COLORS = {
@@ -12,4 +18,24 @@ export const BUTTON_STYLES = {
   cancelBg: ' #FFFFFF',
   fontSize: getResponsiveFontSize(14),
   fontFamily: 'Pretendard-Medium',
+};
+
+export const HEADER_STYLES = {
+  mainTitleFontSize: getResponsiveFontSize(20),
+  mainTitleFontColor: 'black',
+  mainTitleFontFamily: 'Pretendard-Bold',
+  mainTitleFontWeight: Platform.OS === 'android' ? '700' : undefined,
+  mainTitleLineHeight: getResponsiveHeight(22), // 살짝만
+
+  defaultTitleFontSize: getResponsiveFontSize(19),
+  defaultTitleFontColor: '#333',
+  defaultTitleFontFamily: 'Pretendard-Regular',
+
+  headerLeftIconWidth: getResponsiveIconSize(24),
+  headerLeftIconHeight: getResponsiveIconSize(24),
+  headerLeftIconLeftPadding: getResponsiveWidth(15),
+
+  headerRightIconWidth: getResponsiveIconSize(22),
+  headerRightIconHeight: getResponsiveIconSize(22),
+  headerRightIconRightPadding: getResponsiveWidth(15),
 };
