@@ -1,25 +1,16 @@
 import React, {useState, useEffect} from 'react';
-import {
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  View,
-} from 'react-native';
+import {StyleSheet, KeyboardAvoidingView, Platform, View} from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
-import {getToken} from '../../../utils/storage';
 import MessageFlatList from '../components/messageFlatList';
 import ChatInput from '../components/chatInput';
 import ChatSettings from './chatSetting';
-import {addMessage, setMessageList} from '../store/messageSlice';
+import { setMessageList} from '../store/messageSlice';
 import useChatRoomScreen from '../hooks/useChatRoomScreen';
 import useHeaderSetting from '../../../hooks/useHeaderSetting';
 import {onLeaveChat} from '../hooks/onLeaveChat';
 import {fetchMessageThunk} from '../store/messageThunk';
 import useHideTabBar from '../../../hooks/useHideTabBar';
-import {
-  setActiveChatRoom,
-  applyMessagePreview,
-} from '../store/chatRoomSlice';
+import {setActiveChatRoom} from '../store/chatRoomSlice';
 
 export default function ChatRoomScreenTemplate({
   chatRoom,
@@ -62,65 +53,28 @@ export default function ChatRoomScreenTemplate({
       dispatch(fetchMessageThunk(chatRoom.chatRoomId));
       setNoMoreMessages(false);
     }
-  }, [chatRoom?.chatRoomId]);
+  }, [chatRoom?.chatRoomId, dispatch, setNoMoreMessages]);
 
   useEffect(() => {
-    // ✅ 현재 들어온 방을 redux에 기록
     dispatch(setActiveChatRoom(chatRoom.chatRoomId));
-
     return () => {
-      // ✅ 화면 나갈 때 activeChatRoom 해제
       dispatch(setActiveChatRoom(null));
     };
   }, [chatRoom.chatRoomId, dispatch]);
 
-  useEffect(() => {
-    const connectWebSocket = async () => {
-      const token = await getToken();
-      if (!chatRoom || !userId || !token) return;
-
-      if (socketRef.current) socketRef.current.close();
-
-      const ws = new WebSocket(`ws://kinover.shop:9090/chat?token=${token}`);
-      socketRef.current = ws;
-
-      ws.onopen = () => console.log('✅ WebSocket 연결 성공');
-      ws.onmessage = e => {
-        try {
-          const msg = JSON.parse(e.data);
-          dispatch(addMessage(msg));
-
-          dispatch(
-            applyMessagePreview({
-              chatRoomId: msg.chatRoomId ?? chatRoom.chatRoomId,
-              message: msg,
-              isSelf: msg.senderId === userId, // 내가 보낸 echo라면 true
-            }),
-          );
-          if (!isUserScrolling) scrollToBottom();
-        } catch (err) {
-          console.error('❌ 수신 메시지 파싱 실패:', err);
-        }
-      };
-      ws.onerror = err => console.error('⚠️ WebSocket 오류:', err);
-      ws.onclose = () => console.log('🔌 WebSocket 종료');
-    };
-
-    connectWebSocket();
-    return () => socketRef.current?.close();
-  }, [chatRoom?.chatRoomId, userId]);
+  // 🔥 여기 있었던 connectWebSocket useEffect는 아예 제거!
 
   useEffect(() => {
     if (!isUserScrolling && messageList.length > 0) {
       scrollToBottom();
     }
-  }, [messageList, isUserScrolling]);
+  }, [messageList, isUserScrolling, scrollToBottom]);
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 102.5 : 0} // 필요 시 조절
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 102.5 : 0}
     >
       <View style={{flex: 1}}>
         <MessageFlatList
@@ -140,7 +94,7 @@ export default function ChatRoomScreenTemplate({
           userId={userId}
           socketRef={socketRef}
           setMessageList={setMessageList}
-          enableMediaPicker={!isKino} // ✅ 키노채팅이면 false
+          enableMediaPicker={!isKino}
         />
         <ChatSettings
           isOpen={isSettingsOpen}
@@ -154,6 +108,7 @@ export default function ChatRoomScreenTemplate({
     </KeyboardAvoidingView>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {

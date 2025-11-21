@@ -1,11 +1,13 @@
-import { useEffect, useRef, useCallback } from 'react';
-import { getToken } from '../../../utils/storage'; // AsyncStorage 등에서 꺼내는 함수
+import {useEffect, useRef, useCallback} from 'react';
+import {getToken} from '../../../utils/storage'; // AsyncStorage 등에서 꺼내는 함수
 
-export default function useChatWebSocket({ onMessage, onOpen, onClose }) {
+export default function useChatWebSocket({onMessage, onOpen, onClose}) {
   const socketRef = useRef(null);
 
   const connect = useCallback(async () => {
-    const token = await getToken();
+    const result = await getToken();
+    const token = encodeURIComponent(result);
+
     if (!token) {
       console.warn('WebSocket: No token found');
       return;
@@ -19,7 +21,7 @@ export default function useChatWebSocket({ onMessage, onOpen, onClose }) {
       onOpen?.();
     };
 
-    ws.onmessage = (event) => {
+    ws.onmessage = event => {
       try {
         const data = JSON.parse(event.data);
         onMessage?.(data);
@@ -28,17 +30,17 @@ export default function useChatWebSocket({ onMessage, onOpen, onClose }) {
       }
     };
 
-    ws.onerror = (error) => {
+    ws.onerror = error => {
       console.error('[WebSocket] Error:', error.message);
     };
 
-    ws.onclose = (event) => {
+    ws.onclose = event => {
       console.log('[WebSocket] Closed:', event.code, event.reason);
       onClose?.();
     };
   }, [onMessage, onOpen, onClose]);
 
-  const sendMessage = useCallback((data) => {
+  const sendMessage = useCallback(data => {
     const ws = socketRef.current;
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(data));
@@ -57,5 +59,5 @@ export default function useChatWebSocket({ onMessage, onOpen, onClose }) {
     return () => disconnect();
   }, [connect, disconnect]);
 
-  return { sendMessage };
+  return {sendMessage};
 }

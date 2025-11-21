@@ -39,3 +39,17 @@ export const HEADER_STYLES = {
   headerRightIconHeight: getResponsiveIconSize(23),
   headerRightIconRightPadding: getResponsiveWidth(16),
 };
+
+export const CHATROOM_STYLE = {
+  messageFontSize:
+    Platform.OS === 'android'
+      ? getResponsiveFontSize(12) // 🔽 14 → 13
+      : getResponsiveFontSize(13), // 🔽 15 → 14
+
+  messageTimeFontSize: getResponsiveFontSize(10), // 🔽 10 → 9
+
+  KinoMessageFontSize:
+    Platform.OS === 'android'
+      ? getResponsiveFontSize(12)
+      : getResponsiveFontSize(13),
+};

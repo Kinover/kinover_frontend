@@ -24,6 +24,7 @@ import {
   toEpochMs,
 } from '../utils/timeRegistry';
 import {getSpacingStyle} from '../utils/getSpacingStyle';
+import {CHATROOM_STYLE} from 'styles/style';
 
 export default function SendKinoChat({
   chatTime,
@@ -128,10 +129,7 @@ const styles = StyleSheet.create({
   },
   sendText: {
     fontFamily: 'Pretendard-Light',
-    fontSize:
-      Platform.OS === 'android'
-        ? getResponsiveFontSize(14)
-        : getResponsiveFontSize(15),
+    fontSize: CHATROOM_STYLE.KinoMessageFontSize,
     color: 'black',
     flexWrap: 'wrap',
     lineHeight: getResponsiveFontSize(18),

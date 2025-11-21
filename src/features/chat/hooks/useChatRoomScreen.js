@@ -1,30 +1,15 @@
-// ✅ scrollToBottom 조건 수정: 유저가 가장 아래에 있을 때만 실행
-
 import {useEffect, useRef, useState} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
-import {fetchMoreMessagesThunk, fetchMessageThunk} from '../store/messageThunk';
-import {getToken} from '../../../utils/storage';
+import {fetchMessageThunk, fetchMoreMessagesThunk} from '../store/messageThunk';
 import {addMessage} from '../store/messageSlice';
+import {getToken} from 'utils/storage';
 
-
-
-export default function useChatRoomScreen(chatRoom, user, isKino) {
+// ✅ userId 숫자를 받도록 변경
+export default function useChatRoomScreen(chatRoom, userId, isKino) {
   const messageList = useSelector(state => state.message?.messageList || []);
 
-const flatListRef = useRef(null);
-
-const isAtBottomRef = useRef(true); // ✅ 가장 아래에 있는지 여부
-
-const scrollToBottom = () => {
-  if (isAtBottomRef.current && flatListRef.current && messageList.length > 0) {
-    flatListRef.current.scrollToIndex({
-      index: 0,
-      animated: true,
-      viewPosition: 0,
-    });
-  }
-};
-
+  const flatListRef = useRef(null);
+  const isAtBottomRef = useRef(true);
   const dispatch = useDispatch();
   const socketRef = useRef(null);
 
@@ -32,9 +17,23 @@ const scrollToBottom = () => {
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
+  const scrollToBottom = () => {
+    if (
+      isAtBottomRef.current &&
+      flatListRef.current &&
+      messageList.length > 0
+    ) {
+      flatListRef.current.scrollToIndex({
+        index: 0,
+        animated: true,
+        viewPosition: 0,
+      });
+    }
+  };
+
   const handleScroll = event => {
     const y = event.nativeEvent.contentOffset.y;
-    isAtBottomRef.current = y <= 50; // ✅ 스크롤 위치 감지
+    isAtBottomRef.current = y <= 50;
     setIsUserScrolling(!isAtBottomRef.current);
   };
 
@@ -59,12 +58,21 @@ const scrollToBottom = () => {
       dispatch(fetchMessageThunk(chatRoom.chatRoomId));
       setNoMoreMessages(false);
     }
-  }, [chatRoom.chatRoomId, dispatch]);
+  }, [chatRoom?.chatRoomId, dispatch]);
 
   useEffect(() => {
     const setupWebSocket = async () => {
       const token = await getToken();
-      if (!chatRoom || !user?.userId || !token) {
+
+      console.log('[WS /chat] params', {
+        chatRoomId: chatRoom?.chatRoomId,
+        userId,
+        hasToken: !!token,
+      });
+
+      // ✅ 숫자 userId 기준으로 조건 체크
+      if (!chatRoom?.chatRoomId || !userId || !token) {
+        console.log('[WS /chat] 필수 값 없음, 연결 안 함');
         return;
       }
 
@@ -75,15 +83,13 @@ const scrollToBottom = () => {
       const ws = new WebSocket(`ws://kinover.shop:9090/chat?token=${token}`);
       socketRef.current = ws;
 
-      ws.onopen = () => console.log('✅ WebSocket 연결 성공');
+      ws.onopen = () => console.log('✅ WebSocket /chat 연결 성공');
       ws.onmessage = e => {
         try {
           const msg = JSON.parse(e.data);
           dispatch(addMessage(msg));
           if (isAtBottomRef.current) {
-            setTimeout(() => {
-              scrollToBottom();
-            }, 100);
+            setTimeout(scrollToBottom, 100);
           }
         } catch (err) {
           console.error('❌ 메시지 파싱 실패:', err);
@@ -94,14 +100,17 @@ const scrollToBottom = () => {
     };
 
     setupWebSocket();
-    return () => socketRef.current?.close();
-  }, [chatRoom, chatRoom.chatRoomId, dispatch, scrollToBottom, user?.userId]);
+    return () => {
+      socketRef.current?.close();
+      socketRef.current = null;
+    };
+  }, [chatRoom?.chatRoomId, userId]); // ✅ userId 의존성으로 사용
 
   useEffect(() => {
     if (isAtBottomRef.current && messageList.length > 0) {
       scrollToBottom();
     }
-  }, [messageList.length, scrollToBottom]);
+  }, [messageList.length]); // scrollToBottom 은 함수라 dep 에 안 넣는 게 안전
 
   return {
     flatListRef,

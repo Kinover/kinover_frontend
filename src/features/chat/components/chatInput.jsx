@@ -97,6 +97,11 @@ export default function ChatInput({
 
   const handleSend = async () => {
     const socket = socketRef?.current;
+    console.log('💬 socket 상태:', {
+      hasSocket: !!socket,
+      readyState: socket?.readyState,
+    });
+  
     if (!socket || socket.readyState !== 1) {
       alert('연결이 불안정해요. 다시 시도해주세요.');
       return;

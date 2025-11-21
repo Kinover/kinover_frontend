@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: getResponsiveWidth(12.5),
+    gap: getResponsiveWidth(13),
     paddingVertical: getResponsiveHeight(10),
     width: '100%',
     height: getResponsiveHeight(80),
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   name: {
     flex: 1,
     fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(15),
     color: '#101010',
     lineHeight: getResponsiveHeight(22),
     textAlignVertical: 'center',
