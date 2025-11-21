@@ -26,6 +26,7 @@ import {
 } from '../../notification/utils/requestNotificationPermission';
 import useWebSocketStatus from '../../../hooks/useWebSocketStatus';
 import useFamilyStatusSocket from '../../../hooks/useFamilyStatusSocket';
+import SwipeNavigator from 'components/SwipeNavigator';
 
 export default function HomeScreen() {
   const dispatch = useDispatch();
@@ -111,40 +112,45 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* 노랑 배경 + 하단 곡선 */}
-      <View style={styles.backgroundCurve} />
+    <SwipeNavigator
+      rightTo="소통" // 오른쪽→왼쪽 스와이프
+      leftTo={null} // 필요하면 다른 화면 넣기
+    >
+      <View style={styles.container}>
+        {/* 노랑 배경 + 하단 곡선 */}
+        <View style={styles.backgroundCurve} />
 
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}>
-        <HeaderSection user={user} onUserPress={handleUserPress} />
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}>
+          <HeaderSection user={user} onUserPress={handleUserPress} />
 
-        <MemberGridSection
-          members={familyMembers}
-          onlineUserIds={onlineUserIds}
-          lastActiveMap={lastActiveMap}
-          onUserPress={handleUserPress}
-          onAddPress={() => setIsVisible(true)}
+          <MemberGridSection
+            members={familyMembers}
+            onlineUserIds={onlineUserIds}
+            lastActiveMap={lastActiveMap}
+            onUserPress={handleUserPress}
+            onAddPress={() => setIsVisible(true)}
+          />
+        </ScrollView>
+
+        <FamilyCodeModal
+          visible={isVisible}
+          onClose={() => setIsVisible(false)}
+          familyCode={family.familyId}
         />
-      </ScrollView>
 
-      <FamilyCodeModal
-        visible={isVisible}
-        onClose={() => setIsVisible(false)}
-        familyCode={family.familyId}
-      />
-
-      <UserBottomSheetModal
-        ref={userSheetRef}
-        selectedUser={selectedUser}
-        onSave={handleSave}
-        onCancel={() => {
-          setSelectedUser(null);
-          userSheetRef.current?.dismiss();
-        }}
-      />
-    </View>
+        <UserBottomSheetModal
+          ref={userSheetRef}
+          selectedUser={selectedUser}
+          onSave={handleSave}
+          onCancel={() => {
+            setSelectedUser(null);
+            userSheetRef.current?.dismiss();
+          }}
+        />
+      </View>
+    </SwipeNavigator>
   );
 }
 
