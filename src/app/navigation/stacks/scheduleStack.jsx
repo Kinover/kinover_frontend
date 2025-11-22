@@ -11,7 +11,7 @@ import {
   RenderGoBackButton,
 } from '../helpers/tabHeaderHelpers';
 import SettingScreen from '../../../features/setting/screens/SettingScreen';
-import NotificationScreen from '../../../features/NotificationScreen';
+import NotificationScreen from '../../../features/notification/screens/NotificationScreen';
 import NotificationSettingScreen from '../../../features/setting/screens/NotificationSettingScreen';
 import {HEADER_STYLES} from 'styles/style';
 

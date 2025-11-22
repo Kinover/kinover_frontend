@@ -220,8 +220,8 @@ export default function ChatSettings({
 
         {/* ✅ 토스트 모달 */}
         <ToastModal
-          visible={toastVisible}           // isVisible / open 등으로 쓰면 여기도 맞춰 변경
-          message={toastMessage}           // text / label 등으로 쓰면 변경
+          visible={toastVisible} // isVisible / open 등으로 쓰면 여기도 맞춰 변경
+          message={toastMessage} // text / label 등으로 쓰면 변경
           onClose={() => setToastVisible(false)} // 닫기 콜백
         />
       </View>
@@ -262,7 +262,9 @@ export default function ChatSettings({
               style={styles.option}
               onPress={() => setIsRenameModalVisible(true)}>
               <Text style={styles.optionTitle}>채팅방 이름</Text>
-              <Text style={styles.optionText}>이름 변경</Text>
+              <Text style={styles.optionDescription}>
+                채팅방 이름을 변경해요.
+              </Text>
             </TouchableOpacity>
           )}
 
@@ -410,7 +412,7 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-Medium',
-    color: '#6B7280',
+    color: '#4B5563',
     marginBottom: getResponsiveHeight(3),
   },
   optionText: {
@@ -429,8 +431,8 @@ const styles = StyleSheet.create({
   },
   arrowIcon: {
     resizeMode: 'contain',
-    width: getResponsiveWidth(18),
-    height: getResponsiveHeight(18),
+    width: getResponsiveWidth(15),
+    height: getResponsiveHeight(15),
   },
   memberList: {
     width: '100%',

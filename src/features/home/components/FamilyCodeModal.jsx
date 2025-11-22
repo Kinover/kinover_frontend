@@ -1,10 +1,5 @@
 import React, {useState, useCallback} from 'react';
-import {
-  Text,
-  StyleSheet,
-  View,
-  Pressable,
-} from 'react-native';
+import {Text, StyleSheet, View, Pressable} from 'react-native';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
@@ -43,7 +38,6 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
         buttonBottomStyle={styles.modalButtonRow}
         title={'가족 초대 코드'}
         subText={'복사 아이콘을 눌러,\n함께할 가족에게 코드를 알려주세요'}>
-        
         <View style={styles.codeContainer}>
           <Text style={styles.codeText}>{familyCode}</Text>
 
@@ -63,6 +57,7 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
         onClose={hideToast}
         message="복사되었습니다!"
         duration={1300}
+        useNativeModal={false}
       />
     </>
   );
