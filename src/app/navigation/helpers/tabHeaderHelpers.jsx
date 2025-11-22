@@ -123,7 +123,7 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
     <View
       style={{
         flexDirection: 'row',
-        marginRight: getResponsiveWidth(20), // 25 → 20
+        marginRight: getResponsiveWidth(16), // 25 → 20
       }}>
       {createIconButton(
         () =>
@@ -132,8 +132,8 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
             params: {screen: '알림화면'},
           }),
         bellIcon,
-        23, // 29 → 22
-        23,
+        24, // 29 → 22
+        24,
       )}
       <View
         style={{width: getResponsiveWidth(10), justifyContent: 'flex-end'}}
@@ -145,8 +145,8 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
             params: {screen: '설정화면'},
           }),
         settingIcon,
-        23,
-        23,
+        24,
+        24,
       )}
     </View>
   );
@@ -182,7 +182,7 @@ export const RenderHeaderRightChatSetting = ({setIsSettingsOpen}) =>
   createIconButton(
     () => setIsSettingsOpen(true),
     require('@/assets/images/dots2.png'),
-    HEADER_STYLES.headerRightIconWidth,
+    HEADER_STYLES.headerRightIconWidth - 2,
     HEADER_STYLES.headerRightIconHeight,
     {marginRight: HEADER_STYLES.headerRightIconRightPadding},
   );

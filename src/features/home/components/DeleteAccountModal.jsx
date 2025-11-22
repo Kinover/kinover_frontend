@@ -1,11 +1,7 @@
 /* eslint-disable no-alert */
 /* eslint-disable react-native/no-inline-styles */
 import React, {useState} from 'react';
-import {
-  StyleSheet,
-  TextInput,
-  Platform,
-} from 'react-native';
+import {StyleSheet, TextInput, Platform} from 'react-native';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
@@ -14,7 +10,18 @@ import {
 } from '../../../utils/responsive';
 import CustomModal from '../../../components/CustomModal';
 
-export default function DeleteAccountModal({visible, onClose, onConfirm}) {
+import {useDeleteUser} from 'features/auth/hooks/useDeleteModal';
+import {useNavigateToWhere} from 'hooks/useNatigateToWhere';
+export default function DeleteAccountModal({visible, onClose}) {
+  const navigateToWhere = useNavigateToWhere();
+
+  const {deleteAccount} = useDeleteUser(() => {
+    navigateToWhere({
+      root: 'Auth', // 🔥 온보딩 화면이 속한 RootStack 이름
+      screen: '온보딩화면', // 🔥 실제 온보딩 스크린 이름
+    });
+  });
+
   const [showConfirmInputModal, setShowConfirmInputModal] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
 
@@ -24,9 +31,10 @@ export default function DeleteAccountModal({visible, onClose, onConfirm}) {
 
   const handleFinalConfirm = () => {
     if (confirmationText === '탈퇴합니다') {
-      onConfirm();
+      deleteAccount(); // 🔥 계정 탈퇴 실행
       setConfirmationText('');
       setShowConfirmInputModal(false);
+      onClose();
     } else {
       alert('정확히 "탈퇴합니다"를 입력해주세요.');
     }
@@ -52,15 +60,16 @@ export default function DeleteAccountModal({visible, onClose, onConfirm}) {
         closeTextStyle={[styles.modalText, {color: '#fff'}]}
         buttonBottomStyle={styles.modalButtonRow}
         title={'계정을 삭제할까요?'}
-        titleImage={require('../../../assets/icons/warning-light.png')} // 👈 추가
+        titleImage={require('../../../assets/icons/warning-light.png')}
         titleImageStyle={{
-          width: getResponsiveIconSize(50), // 문자열 ❌ → 숫자 ⭕
+          width: getResponsiveIconSize(50),
           height: getResponsiveIconSize(50),
           alignSelf: 'center',
           borderRadius: 999,
           marginVertical: getResponsiveHeight(5),
         }}
-        subText={'가족과의 모든 연결과 기록이 함께 사라집니다.'}/>
+        subText={'가족과의 모든 연결과 기록이 함께 사라집니다.'}
+      />
 
       <CustomModal
         visible={visible && showConfirmInputModal}

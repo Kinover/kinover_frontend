@@ -5,9 +5,8 @@ import {getResponsiveWidth} from 'utils/responsive';
 
 export const useCalendarLayout = () => {
   const {width: screenWidth} = useWindowDimensions();
-
-  const OUTER_HPAD = getResponsiveWidth(20);
-  const GAP = getResponsiveWidth(6);
+  const OUTER_HPAD = getResponsiveWidth(12);
+  const GAP = getResponsiveWidth(0);
 
   const {cellSize, gridWidth} = useMemo(() => {
     const availableWidth = screenWidth - OUTER_HPAD * 2;
