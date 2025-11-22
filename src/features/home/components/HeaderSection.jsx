@@ -15,7 +15,7 @@ import {
 } from '../../../utils/responsive';
 import {useNavigation} from '@react-navigation/native';
 
-const AVATAR = getResponsiveIconSize(95); // 🔹 110 → 95 (살짝만 축소)
+const AVATAR = getResponsiveIconSize(95);
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 
 const getEmotionImage = emotion => {
@@ -44,7 +44,7 @@ const getEmotionImage = emotion => {
 export default function HeaderSection({user, onUserPress}) {
   const navigation = useNavigation();
 
-  // 🔹 마지막으로 유효했던 프로필 이미지 URL 저장
+  // 마지막으로 유효했던 프로필 이미지 URL 저장
   const [lastImageUrl, setLastImageUrl] = useState(null);
 
   useEffect(() => {
@@ -55,21 +55,19 @@ export default function HeaderSection({user, onUserPress}) {
     setLastImageUrl(resolved);
   }, [user?.image]);
 
-  // 감정 상태 유효 시간 체크
-  let finalEmotion = user?.emotion;
-  if (!user?.emotionUpdatedAt) {
-    finalEmotion = null;
-  } else {
-    const updatedTime = new Date(user.emotionUpdatedAt).getTime();
-    const now = Date.now();
-    if (isNaN(updatedTime) || now - updatedTime > 24 * 60 * 60 * 1000) {
-      finalEmotion = null;
-    }
-  }
-  const emotionImage = finalEmotion ? getEmotionImage(finalEmotion) : null;
+  // 감정 이미지: 대소문자 섞여 와도 처리
+  const rawEmotion = user?.emotion;
+  const emotionKey = rawEmotion ? String(rawEmotion).toUpperCase() : null;
+  const emotionImage = emotionKey ? getEmotionImage(emotionKey) : null;
 
-  // 🔹 실제로 사용할 프로필 이미지 소스
-  const profileSource = lastImageUrl
+  // 실제로 사용할 프로필 이미지 소스
+  const profileSource = user?.image
+    ? {
+        uri: user.image.startsWith('http')
+          ? user.image
+          : CLOUD_FRONT + user.image,
+      }
+    : lastImageUrl
     ? {uri: lastImageUrl}
     : require('../../../assets/images/default.png');
 
