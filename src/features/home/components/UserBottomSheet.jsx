@@ -28,17 +28,21 @@ import {
   getResponsiveHeight,
 } from '../../../utils/responsive';
 import FastImage from '@d11/react-native-fast-image';
-import {convertPhUriToFileUri} from '../../../utils/photoUriConverter';
-import {uploadImageWithPresignedUrl} from 'utils/uploadImageWithPresignedUrl';
+import {
+  convertPhUriToFileUri,
+  convertContentUriToFileUri,
+} from '../../../utils/photoUriConverter';
 import {BottomSheetButtons} from 'components/BottomSheetButtons';
 import {KinoBottomSheet} from 'components/KinoBottomSheetModal';
 import ToastModal from '../../../components/ToastModal';
+import {getPresignedUrls, uploadFileToS3} from 'api/imageUrlApi';
 
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 const windowHeight = Dimensions.get('window').height;
 
 function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
   const snapPoints = useMemo(() => ['58.5%', '82%'], []);
+
   const nameRef = useRef('');
   const traitRef = useRef('');
   const imageUrlRef = useRef('');
@@ -51,7 +55,7 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
 
   const modalRef = useRef(null);
 
-  // ✅ 토스트 상태
+  // 🔹 토스트
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
@@ -69,16 +73,14 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
     dismiss: () => modalRef.current?.dismiss(),
   }));
 
-  const handleBackdropPress = () => {
-    Keyboard.dismiss();
-    modalRef.current?.snapToIndex(0);
-  };
-
   // 선택된 유저 바뀔 때 초기값 세팅
   useEffect(() => {
-    const n = selectedUser?.name ?? '';
-    const t = selectedUser?.trait ?? '';
-    const img = selectedUser?.image ?? '';
+    // 🔹 selectedUser 없으면 초기화하지 않고 그냥 무시
+    if (!selectedUser) return;
+
+    const n = selectedUser.name ?? '';
+    const t = selectedUser.trait ?? '';
+    const img = selectedUser.image ?? '';
 
     initialDataRef.current = {name: n, trait: t, image: img};
 
@@ -91,6 +93,7 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
     setTraitKey(k => k + 1);
   }, [selectedUser]);
 
+  // 안드에서 키보드 올라오면 큰 스냅포인트로
   useEffect(() => {
     if (Platform.OS === 'android') {
       const sub = Keyboard.addListener('keyboardDidShow', () => {
@@ -106,34 +109,91 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
 
     const selectedAsset = result.assets[0];
     let fileUri = selectedAsset.uri;
-    const fileName = selectedAsset.fileName || `img_${Date.now()}.jpg`;
+    let fileName = selectedAsset.fileName || `img_${Date.now()}.jpg`;
 
+    // 확장자 없으면 기본 jpg 붙이기
+    if (!/\.[a-zA-Z0-9]+$/.test(fileName)) {
+      fileName = `${fileName}.jpg`;
+    }
+
+    console.log('📷 선택한 asset:', {
+      uri: selectedAsset.uri,
+      fileUri,
+      fileName,
+    });
+
+    // 일단 로컬 경로로 프리뷰 먼저
     setPreviewImage(fileUri);
 
     try {
+      // iOS: ph:// → file://
       if (Platform.OS === 'ios' && fileUri.startsWith('ph://')) {
-        fileUri = await convertPhUriToFileUri(fileUri, 0);
-        if (!fileUri) return;
+        fileUri = await convertPhUriToFileUri(fileUri, 0, false);
+        console.log('📷 변환된 iOS fileUri:', fileUri);
+        if (!fileUri) throw new Error('iOS ph:// 변환 실패');
       }
 
-      await uploadImageWithPresignedUrl(fileUri, fileName);
+      // Android: content:// → file://
+      if (Platform.OS === 'android' && fileUri.startsWith('content://')) {
+        fileUri = await convertContentUriToFileUri(fileUri, 0, false);
+        console.log('📷 변환된 Android fileUri:', fileUri);
+        if (!fileUri) throw new Error('Android content:// 변환 실패');
+      }
 
-      imageUrlRef.current = `${CLOUD_FRONT}${fileName}`;
-      setPreviewImage(imageUrlRef.current);
+      // 1) presigned URL 하나 받아오기 (채팅과 동일 방식)
+      const [presignedUrl] = await getPresignedUrls([fileName]);
+      console.log('🔗 presignedUrl:', presignedUrl);
+
+      // 2) S3로 실제 업로드
+      await uploadFileToS3(presignedUrl, fileUri, fileName);
+      console.log('✅ 프로필 이미지 업로드 성공');
+
+      // 3) 최종 CDN URL 세팅
+      const fullUrl = `${CLOUD_FRONT}${fileName}`;
+      imageUrlRef.current = fullUrl;
+      setPreviewImage(fullUrl);
     } catch (err) {
-      console.error('이미지 업로드 실패:', err);
+      console.error('❌ 프로필 이미지 업로드 실패:', err);
       showToast('이미지 업로드 중 문제가 발생했어요.');
     }
   };
 
   const handleSave = () => {
-    const img = imageUrlRef.current || '';
-    const finalImageUrl = img.startsWith(CLOUD_FRONT)
-      ? img.replace(CLOUD_FRONT, '')
-      : img;
+    // 1) 기존 값
+    const {
+      name: initialName,
+      trait: initialTrait,
+      image: initialImage,
+    } = initialDataRef.current;
 
-    onSave(nameRef.current, traitRef.current, finalImageUrl);
-    modalRef.current?.dismiss();
+    // 2) 이름: 입력이 비어 있으면 기존 값 유지
+    const trimmedName = (nameRef.current || '').trim();
+    const finalName = trimmedName.length > 0 ? trimmedName : initialName ?? '';
+
+    // 3) 특징: 입력이 비어 있으면 기존 값 유지
+    const trimmedTrait = (traitRef.current || '').trim();
+    const finalTrait =
+      trimmedTrait.length > 0 ? trimmedTrait : initialTrait ?? '';
+
+    // 4) 이미지: 새 업로드가 있으면 그거, 없으면 기존 값 유지
+    const rawImg =
+      (imageUrlRef.current && imageUrlRef.current.trim().length > 0
+        ? imageUrlRef.current
+        : initialImage) || '';
+
+    // 백엔드가 "파일명만" 받는 구조면 CLOUD_FRONT 잘라서 넘기고,
+    // 풀 URL을 받으면 아래 한 줄만 쓰면 됨.
+    const finalImageUrl = rawImg.startsWith(CLOUD_FRONT)
+      ? rawImg.replace(CLOUD_FRONT, '')
+      : rawImg;
+
+    console.log('✅ UserBottomSheetModal save payload:', {
+      finalName,
+      finalTrait,
+      finalImageUrl,
+    });
+
+    onSave(finalName, finalTrait, finalImageUrl);
   };
 
   const handleCancel = () => {
@@ -238,14 +298,14 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
                 />
               </View>
 
-              {/* 하단 버튼 공통 */}
+              {/* 하단 버튼 */}
               <BottomSheetButtons onCancel={handleCancel} onSave={handleSave} />
             </View>
           </TouchableWithoutFeedback>
         </BottomSheetScrollView>
       </KinoBottomSheet>
 
-      {/* ✅ 토스트 모달 */}
+      {/* 토스트 */}
       <ToastModal
         visible={toastVisible}
         onClose={hideToast}
@@ -362,34 +422,5 @@ const styles = StyleSheet.create({
   textArea: {
     height: getResponsiveHeight(96),
     textAlignVertical: 'top',
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: getResponsiveWidth(10),
-    marginTop: getResponsiveHeight(18),
-  },
-  button: {
-    flex: 1,
-    paddingVertical: getResponsiveHeight(11),
-    borderRadius: 9,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  saveButton: {
-    backgroundColor: '#111827',
-  },
-  buttonText: {
-    textAlign: 'center',
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(14),
-    color: '#FFFFFF',
-  },
-  cancelButtonText: {
-    color: '#4B5563',
   },
 });
