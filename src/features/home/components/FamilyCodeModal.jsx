@@ -1,4 +1,4 @@
-import React, {useState, useCallback} from 'react';
+import React, {useState, useCallback, useEffect} from 'react';
 import {Text, StyleSheet, View, Pressable} from 'react-native';
 import {
   getResponsiveHeight,
@@ -9,35 +9,38 @@ import {
 import CustomModal from '../../../components/CustomModal';
 import Clipboard from '@react-native-clipboard/clipboard';
 import FastImage from '@d11/react-native-fast-image';
-import ToastModal from '../../../components/ToastModal';
 
 export default function FamilyCodeModal({visible, onClose, familyCode}) {
-  const [toastVisible, setToastVisible] = useState(false);
+  const [copied, setCopied] = useState(false);
 
-  const showToast = useCallback(() => {
-    setToastVisible(true);
-  }, []);
-
-  const hideToast = useCallback(() => {
-    setToastVisible(false);
-  }, []);
-
-  const handleCopy = () => {
+  const handleCopy = useCallback(() => {
+    if (!familyCode) return;
     Clipboard.setString(familyCode);
-    showToast(); // 🎉 토스트 표시
-  };
+    setCopied(true);
+  }, [familyCode]);
+
+  // 모달이 닫힐 때마다 문구 초기화
+  useEffect(() => {
+    if (!visible) {
+      setCopied(false);
+    }
+  }, [visible]);
+
+  const subText = copied
+    ? '초대 코드가 복사되었어요.'
+    : '복사 아이콘을 눌러,\n함께할 가족에게 코드를 알려주세요';
 
   return (
-    <>
-      <CustomModal
-        showCloseButton={false}
-        visible={visible}
-        onClose={onClose}
-        onConfirm={onClose}
-        confirmText="확인"
-        buttonBottomStyle={styles.modalButtonRow}
-        title={'가족 초대 코드'}
-        subText={'복사 아이콘을 눌러,\n함께할 가족에게 코드를 알려주세요'}>
+    <CustomModal
+      showCloseButton={false}
+      visible={visible}
+      onClose={onClose}
+      onConfirm={onClose}
+      confirmText="확인"
+      buttonBottomStyle={styles.modalButtonRow}
+      title="가족 초대 코드"
+      subText={subText}>
+      <View style={styles.innerWrapper}>
         <View style={styles.codeContainer}>
           <Text style={styles.codeText}>{familyCode}</Text>
 
@@ -49,21 +52,16 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
             />
           </Pressable>
         </View>
-      </CustomModal>
-
-      {/* ✅ 토스트 모달 */}
-      <ToastModal
-        visible={toastVisible}
-        onClose={hideToast}
-        message="복사되었습니다!"
-        duration={1300}
-        useNativeModal={false}
-      />
-    </>
+      </View>
+    </CustomModal>
   );
 }
 
 const styles = StyleSheet.create({
+  innerWrapper: {
+    width: '100%',
+    alignItems: 'center',
+  },
   codeContainer: {
     position: 'relative',
     flexDirection: 'row',
@@ -74,6 +72,7 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(14),
     paddingHorizontal: getResponsiveWidth(10),
     marginVertical: getResponsiveHeight(5),
+    width: '100%',
   },
   modalButtonRow: {
     flexDirection: 'row',

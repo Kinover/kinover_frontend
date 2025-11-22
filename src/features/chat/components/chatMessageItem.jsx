@@ -135,8 +135,8 @@ const styles = StyleSheet.create({
   },
   dateSeparator: {
     alignSelf: 'center',
-    paddingHorizontal: getResponsiveWidth(12),
-    paddingVertical: getResponsiveHeight(4),
+    paddingHorizontal: getResponsiveWidth(13),
+    paddingVertical: getResponsiveHeight(5),
     marginVertical: getResponsiveHeight(24),
     backgroundColor: 'rgba(0, 0, 0, 0.25)',
     borderRadius: getResponsiveIconSize(20),
@@ -144,8 +144,8 @@ const styles = StyleSheet.create({
   dateSeparatorText: {
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontSize: getResponsiveFontSize(10), // 🔽 13 → 11
-    fontWeight: 'semibold',
+    fontSize: getResponsiveFontSize(12), // 🔽 13 → 11
+    fontWeight: '600',
     color: 'white',
     lineHeight: getResponsiveHeight(16), // 🔽 18 → 16
   },
