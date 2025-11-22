@@ -1,13 +1,13 @@
 import React from 'react';
 import CustomModal from '../../../components/CustomModal';
-import { StyleSheet} from 'react-native';
+import {StyleSheet} from 'react-native';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../../utils/responsive';
 
-export default function CategoryModal({visible, onClose, onConfirm}) {
+export default function CategoryModal({visible, content, onClose, onConfirm}) {
   return (
     <CustomModal
       visible={visible}
@@ -16,8 +16,9 @@ export default function CategoryModal({visible, onClose, onConfirm}) {
       closeText="취소"
       confirmText="추가"
       modalBoxStyle={styles.modalBox}
-      buttonBottomStyle={styles.buttonRow}
-    />
+      buttonBottomStyle={styles.buttonRow}>
+      {content}
+    </CustomModal>
   );
 }
 

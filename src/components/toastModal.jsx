@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end', // 🔥 아래에 배치
     alignItems: 'center',
-    paddingBottom: getResponsiveHeight(80), // 화면 아래에서 띄우기
+    paddingBottom: getResponsiveHeight(120), // 화면 아래에서 띄우기
     backgroundColor: 'transparent', // 토스트는 보통 배경 없음
   },
 

@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useLayoutEffect} from 'react';
+import React, {useEffect, useState, useLayoutEffect, useCallback} from 'react';
 import {
   View,
   FlatList,
@@ -6,7 +6,6 @@ import {
   StyleSheet,
   Text,
   Platform,
-  Alert,
   Image,
   Dimensions,
   Linking,
@@ -27,6 +26,7 @@ import {toggleSelectImage, getSelectOrder} from '../../../utils/selection';
 import {loadGalleryPhotos} from '../../../utils/gallery';
 import formatDuration from '../../../utils/formatDuration';
 import {HEADER_STYLES} from 'styles/style';
+import ToastModal from '../../../components/ToastModal';
 
 // ====== 이미지 그리드 설정 ======
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -48,6 +48,19 @@ export default function ImageSelectPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const navigation = useNavigation();
+
+  // ✅ 토스트 상태
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const showToast = useCallback((msg) => {
+    setToastMessage(msg);
+    setToastVisible(true);
+  }, []);
+
+  const hideToast = useCallback(() => {
+    setToastVisible(false);
+  }, []);
 
   const loadPhotos = async (after = null) => {
     const {
@@ -86,9 +99,9 @@ export default function ImageSelectPage() {
     setSelected(prev => toggleSelectImage(prev, item));
   };
 
-  const handleNext = async () => {
+  const handleNext = useCallback(async () => {
     if (selected.length === 0) {
-      Alert.alert('이미지 선택', '최소 1장 이상 선택해 주세요.');
+      showToast('최소 1장 이상 선택해 주세요.');
       return;
     }
 
@@ -116,7 +129,7 @@ export default function ImageSelectPage() {
       selectedImages: convertedUris,
       from: '이미지선택화면',
     });
-  };
+  }, [selected, navigation, showToast]);
 
   useHideTabBar();
 
@@ -201,6 +214,13 @@ export default function ImageSelectPage() {
           </Text>
         </TouchableOpacity>
       )}
+
+      {/* ✅ 토스트 모달 */}
+      <ToastModal
+        visible={toastVisible}
+        onClose={hideToast}
+        message={toastMessage}
+      />
     </View>
   );
 }
@@ -222,8 +242,8 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center',
   },
   checkIcon: {
-    width: HEADER_STYLES.headerRightIconWidth, // 🔽 28 → 24
-    height: HEADER_STYLES.headerRightIconHeight, // 🔽 28 → 24
+    width: HEADER_STYLES.headerRightIconWidth,
+    height: HEADER_STYLES.headerRightIconHeight,
     marginRight: HEADER_STYLES.headerRightIconRightPadding,
     resizeMode: 'contain',
   },
@@ -253,7 +273,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: getResponsiveWidth(4),
     right: getResponsiveWidth(4),
-    width: getResponsiveWidth(20), // 🔽 22 → 20
+    width: getResponsiveWidth(20),
     height: getResponsiveWidth(20),
     borderRadius: getResponsiveWidth(10),
     borderColor: '#FFC84D',
@@ -265,7 +285,7 @@ const styles = StyleSheet.create({
   },
   orderBadgeText: {
     color: '#FFC84D',
-    fontSize: getResponsiveFontSize(11), // 🔽 아이콘 사이즈 대신 폰트 사이즈로
+    fontSize: getResponsiveFontSize(11),
     fontWeight: '700',
     includeFontPadding: false,
     textAlignVertical: 'center',
@@ -288,7 +308,7 @@ const styles = StyleSheet.create({
   permissionHintText: {
     color: 'white',
     textAlign: 'center',
-    fontSize: getResponsiveFontSize(11), // 🔽 12 → 11
+    fontSize: getResponsiveFontSize(11),
     lineHeight: getResponsiveHeight(16),
   },
   videoBadge: {
@@ -303,7 +323,7 @@ const styles = StyleSheet.create({
   },
   videoBadgeText: {
     color: '#fff',
-    fontSize: getResponsiveFontSize(10.5), // 🔽 조금 줄임
+    fontSize: getResponsiveFontSize(10.5),
     fontWeight: '600',
   },
 });
