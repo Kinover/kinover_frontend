@@ -30,6 +30,7 @@ import {
 } from '../../../utils/gallery';
 import formatDuration from '../../../utils/formatDuration';
 import LinearGradient from 'react-native-linear-gradient';
+import ToastModal from '../../../components/ToastModal';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const NUM_COLUMNS = 3;
@@ -56,20 +57,33 @@ export default function ChatInput({
   const [selectedImages, setSelectedImages] = useState([]);
   const inputRef = useRef(null);
 
+  // ✅ 토스트 상태
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const showToast = useCallback(msg => {
+    setToastMessage(msg);
+    setToastVisible(true);
+  }, []);
+
+  const hideToast = useCallback(() => {
+    setToastVisible(false);
+  }, []);
+
   const loadPhotos = useCallback(
     async (after = null) => {
       if (!enableMediaPicker) return;
       const {
         photos: newPhotos,
-        endCursor,
-        hasNextPage,
+        endCursor: nextCursor,
+        hasNextPage: nextHasNextPage,
       } = await loadGalleryPhotos(after, PAGE_SIZE);
 
       setPhotos(prev => (after ? [...prev, ...newPhotos] : newPhotos));
-      setEndCursor(endCursor);
-      setHasNextPage(hasNextPage);
+      setEndCursor(nextCursor);
+      setHasNextPage(nextHasNextPage);
     },
-    [enableMediaPicker], // 필요하면 여기 deps 추가
+    [enableMediaPicker],
   );
 
   useEffect(() => {
@@ -80,6 +94,7 @@ export default function ChatInput({
       loadPhotos(null);
     }
   }, [showGallery, enableMediaPicker, loadPhotos]);
+
   const handleEndReached = async () => {
     if (!showGallery) return;
     if (isLoadingMore || !hasNextPage || !endCursor) return;
@@ -101,12 +116,13 @@ export default function ChatInput({
       hasSocket: !!socket,
       readyState: socket?.readyState,
     });
-  
+
     if (!socket || socket.readyState !== 1) {
-      alert('연결이 불안정해요. 다시 시도해주세요.');
+      showToast('연결이 불안정해요. 다시 시도해주세요.');
       return;
     }
 
+    // 텍스트 전송
     if (message.trim()) {
       const newMessage = {
         content: message,
@@ -121,6 +137,7 @@ export default function ChatInput({
 
     if (!enableMediaPicker) return;
 
+    // 이미지/영상 전송
     if (selectedImages.length > 0) {
       try {
         const fileNames = selectedImages.map((file, index) =>
@@ -156,6 +173,7 @@ export default function ChatInput({
         setSelectedImages([]);
       } catch (error) {
         console.error('이미지 전송 실패:', error);
+        showToast('이미지 전송 중 오류가 발생했어요.');
       }
     }
   };
@@ -219,7 +237,7 @@ export default function ChatInput({
             style={styles.input}
             value={message}
             onChangeText={setMessage}
-            placeholderTextColor="#999" // ← 요거!
+            placeholderTextColor="#999"
             placeholder="메시지를 입력하세요"
             returnKeyType="send"
             onSubmitEditing={handleSend}
@@ -271,7 +289,6 @@ export default function ChatInput({
                   isLoadingMore ? <Text style={styles.footer}></Text> : null
                 }
               />
-              {/* ✅ 아래 하얗게 흐려지는 오버레이 */}
               {photos.length > 0 && (
                 <LinearGradient
                   pointerEvents="none"
@@ -283,6 +300,13 @@ export default function ChatInput({
           )}
         </Animated.View>
       )}
+
+      {/* ✅ 토스트 모달 */}
+      <ToastModal
+        visible={toastVisible}
+        onClose={hideToast}
+        message={toastMessage}
+      />
     </SafeAreaView>
   );
 }
@@ -333,7 +357,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     opacity: 0.5,
   },
-  clearIcon: {width: getResponsiveWidth(18), height: getResponsiveWidth(18)},
+  clearIcon: {
+    width: getResponsiveWidth(18),
+    height: getResponsiveWidth(18),
+  },
   galleryContainer: {
     maxHeight: getResponsiveHeight(300),
     backgroundColor: '#fff',
@@ -409,12 +436,11 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveIconSize(12),
     fontWeight: '600',
   },
-
   bottomFade: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: -1,
-    height: getResponsiveHeight(30), // 필요하면 높이 조절 가능
+    height: getResponsiveHeight(30),
   },
 });

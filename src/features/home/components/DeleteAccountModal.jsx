@@ -1,4 +1,3 @@
-/* eslint-disable no-alert */
 /* eslint-disable react-native/no-inline-styles */
 import React, {useState} from 'react';
 import {StyleSheet, TextInput, Platform} from 'react-native';
@@ -9,18 +8,22 @@ import {
   getResponsiveIconSize,
 } from '../../../utils/responsive';
 import CustomModal from '../../../components/CustomModal';
+import ToastModal from '../../../components/ToastModal';
 
-import {useDeleteUser} from 'features/auth/hooks/useDeleteModal';
+import {useDeleteUser} from '../../auth/hooks/useDeleteUser';
 import {useNavigateToWhere} from 'hooks/useNatigateToWhere';
+
 export default function DeleteAccountModal({visible, onClose}) {
   const navigateToWhere = useNavigateToWhere();
 
-  const {deleteAccount} = useDeleteUser(() => {
-    navigateToWhere({
-      root: 'Auth', // 🔥 온보딩 화면이 속한 RootStack 이름
-      screen: '온보딩화면', // 🔥 실제 온보딩 스크린 이름
+  const {deleteAccount, toastVisible, toastMessage, hideToast, showToast} =
+    useDeleteUser(() => {
+      // 🔥 탈퇴 성공 후 온보딩으로 이동
+      navigateToWhere({
+        root: 'Auth', // 온보딩 스택 네비게이터 이름
+        screen: '온보딩화면', // 온보딩 스크린 이름
+      });
     });
-  });
 
   const [showConfirmInputModal, setShowConfirmInputModal] = useState(false);
   const [confirmationText, setConfirmationText] = useState('');
@@ -31,12 +34,12 @@ export default function DeleteAccountModal({visible, onClose}) {
 
   const handleFinalConfirm = () => {
     if (confirmationText === '탈퇴합니다') {
-      deleteAccount(); // 🔥 계정 탈퇴 실행
+      deleteAccount();
       setConfirmationText('');
       setShowConfirmInputModal(false);
       onClose();
     } else {
-      alert('정확히 "탈퇴합니다"를 입력해주세요.');
+      showToast('정확히 "탈퇴합니다"를 입력해주세요.');
     }
   };
 
@@ -91,6 +94,12 @@ export default function DeleteAccountModal({visible, onClose}) {
           style={styles.input}
         />
       </CustomModal>
+
+      <ToastModal
+        visible={toastVisible}
+        onClose={hideToast}
+        message={toastMessage}
+      />
     </>
   );
 }
@@ -132,11 +141,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF4D4D',
   },
   inputConfirmButton: {
-    // flex: 1,
     backgroundColor: '#FF4D4D',
   },
   closeButton: {
-    // flex: 1,
     backgroundColor: '#E0E0E0',
   },
   input: {

@@ -11,7 +11,7 @@ export default function FloatingButton({type, navigation}) {
     if (type === 'communication') {
       navigation.navigate('채팅방생성화면'); // ✅ 채팅방 생성 화면으로 이동
     } else {
-      alert('플로팅 버튼 클릭!');
+      null;
     }
   };
 

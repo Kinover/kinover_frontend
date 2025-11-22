@@ -60,7 +60,7 @@ const CategoryBottomSheetModal = forwardRef(
         <SafeAreaView style={styles.sheetContainer}>
           {/* 헤더 */}
           <View style={styles.header}>
-            <Text style={styles.title}>카테고리 선택</Text>
+            <Text style={styles.sheetTitle}>카테고리 선택</Text>
             <Text style={styles.sheetSubtitle}>
               보고 싶은 게시글의 카테고리를 선택해 주세요.
             </Text>
@@ -139,16 +139,20 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'flex-start',
     marginBottom: getResponsiveHeight(10),
+    marginTop: getResponsiveHeight(15),
   },
-  title: {
-    fontSize:
-      Platform.OS === 'android'
-        ? getResponsiveFontSize(18)
-        : getResponsiveFontSize(19),
+  sheetTitle: {
+    fontSize: getResponsiveFontSize(16.5),
     fontFamily: 'Pretendard-SemiBold',
     color: '#111827',
   },
   sheetSubtitle: {
+    marginTop: getResponsiveHeight(3),
+    fontSize: getResponsiveFontSize(12),
+    fontFamily: 'Pretendard-Regular',
+    color: '#6B7280',
+  },
+  Subtitle: {
     marginTop: getResponsiveHeight(4),
     fontSize: getResponsiveFontSize(12),
     fontFamily: 'Pretendard-Regular',

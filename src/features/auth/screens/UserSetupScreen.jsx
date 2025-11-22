@@ -7,26 +7,20 @@ import BottomActionButton from 'components/BottomActionButton';
 
 export default function UserSetupScreen() {
   const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
   const [birth, setBirth] = useState('');
   const [error, setError] = useState('');
 
   const navigateToWhere = useNavigateToWhere();
 
   const handleSubmit = () => {
-    if (!name || !phone || !birth) {
+    if (!name || !birth) {
       setError('필수 항목을 모두 입력해 주세요.');
-      return;
-    }
-
-    if (!/^[0-9]{9,13}$/.test(phone.replace(/-/g, ''))) {
-      setError('휴대전화번호를 숫자만 정확히 입력해 주세요.');
       return;
     }
 
     setError('');
 
-    const userInfo = {name, phone, birth};
+    const userInfo = {name, birth};
     console.log('유저 정보:', userInfo);
 
     navigateToWhere({
@@ -43,7 +37,9 @@ export default function UserSetupScreen() {
 
       {/* 이름 */}
       <View style={styles.field}>
-        <Text style={styles.label}>이름 *</Text>
+        <Text style={styles.label}>
+          이름 <Text style={styles.star}>*</Text>
+        </Text>
         <TextInput
           style={styles.input}
           placeholder="이름을 입력하세요"
@@ -52,21 +48,11 @@ export default function UserSetupScreen() {
         />
       </View>
 
-      {/* 휴대전화번호 */}
-      <View style={styles.field}>
-        <Text style={styles.label}>휴대전화번호 *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="01012345678"
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="number-pad"
-        />
-      </View>
-
       {/* 생년월일 */}
       <View style={styles.field}>
-        <Text style={styles.label}>생년월일 *</Text>
+        <Text style={styles.label}>
+          생년월일 <Text style={styles.star}>*</Text>
+        </Text>
         <TextInput
           style={styles.input}
           placeholder="YYYY-MM-DD"
@@ -107,6 +93,11 @@ const styles = StyleSheet.create({
     color: 'black',
     fontSize: 15,
     marginBottom: 6,
+    fontWeight: '600',
+  },
+  star: {
+    color: '#DC2626', // 빨간색
+    fontSize: 14,
     fontWeight: '600',
   },
   input: {

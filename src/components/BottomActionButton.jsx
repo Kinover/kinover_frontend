@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
   buttonContainer: {
     position: 'absolute',
     bottom:
-      Platform.OS === 'ios' ? getResponsiveHeight(40) : getResponsiveHeight(20),
+      Platform.OS === 'ios' ? getResponsiveHeight(40) : getResponsiveHeight(25),
     gap: getResponsiveHeight(10),
     alignSelf: 'center',
     width: '100%',

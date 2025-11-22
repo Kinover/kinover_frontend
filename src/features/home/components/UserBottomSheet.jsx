@@ -1,5 +1,4 @@
 /* eslint-disable react-native/no-inline-styles */
-/* eslint-disable react-native/no-inline-styles */
 import React, {
   useState,
   useEffect,
@@ -16,7 +15,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Alert,
   TouchableWithoutFeedback,
 } from 'react-native';
 import {
@@ -34,11 +32,13 @@ import {convertPhUriToFileUri} from '../../../utils/photoUriConverter';
 import {uploadImageWithPresignedUrl} from 'utils/uploadImageWithPresignedUrl';
 import {BottomSheetButtons} from 'components/BottomSheetButtons';
 import {KinoBottomSheet} from 'components/KinoBottomSheetModal';
+import ToastModal from '../../../components/ToastModal';
+
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 const windowHeight = Dimensions.get('window').height;
 
 function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
-  const snapPoints = useMemo(() => ['60%', '82%'], []);
+  const snapPoints = useMemo(() => ['58.5%', '82%'], []);
   const nameRef = useRef('');
   const traitRef = useRef('');
   const imageUrlRef = useRef('');
@@ -50,6 +50,19 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
   const initialDataRef = useRef({name: '', trait: '', image: ''});
 
   const modalRef = useRef(null);
+
+  // ✅ 토스트 상태
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const showToast = msg => {
+    setToastMessage(msg);
+    setToastVisible(true);
+  };
+
+  const hideToast = () => {
+    setToastVisible(false);
+  };
 
   useImperativeHandle(ref, () => ({
     present: () => modalRef.current?.present(),
@@ -108,7 +121,8 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
       imageUrlRef.current = `${CLOUD_FRONT}${fileName}`;
       setPreviewImage(imageUrlRef.current);
     } catch (err) {
-      Alert.alert('업로드 실패', '이미지 업로드 중 문제가 발생했어요.');
+      console.error('이미지 업로드 실패:', err);
+      showToast('이미지 업로드 중 문제가 발생했어요.');
     }
   };
 
@@ -134,101 +148,110 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
   };
 
   return (
-    <KinoBottomSheet
-      modalRef={modalRef}
-      snapPoints={snapPoints}
-      keyboardBehavior="interactive">
-      <BottomSheetScrollView
-        contentContainerStyle={[
-          styles.container,
-          {
-            minHeight: windowHeight * (Platform.OS === 'ios' ? 0.78 : 0.72),
-          },
-        ]}
-        keyboardShouldPersistTaps="handled">
-        <TouchableWithoutFeedback
-          onPress={() => {
-            Keyboard.dismiss();
-            modalRef.current?.snapToIndex(0);
-          }}>
-          <View style={{flex: 1}}>
-            {/* 상단 타이틀 */}
-            <View style={styles.headerRow}>
-              <View>
-                <Text style={styles.sheetTitle}>프로필 편집</Text>
-                <Text style={styles.sheetSubtitle}>
-                  가족에게 보이는 이름과 한마디를 설정해요.
-                </Text>
-              </View>
-            </View>
-
-            {/* 프로필 이미지 */}
-            <TouchableOpacity
-              style={styles.profileTouchArea}
-              onPress={handleImagePick}>
-              <View style={styles.profileimageContainer}>
-                <FastImage
-                  source={
-                    previewImage
-                      ? {uri: previewImage}
-                      : require('../../../assets/images/default.png')
-                  }
-                  style={styles.profileImage}
-                />
-                <View style={styles.profileRing} />
-                <View style={styles.profileBadge}>
-                  <FastImage
-                    style={styles.profileBadgeIcon}
-                    source={require('../../../assets/images/pencil.png')}
-                  />
+    <>
+      <KinoBottomSheet
+        modalRef={modalRef}
+        snapPoints={snapPoints}
+        keyboardBehavior="interactive">
+        <BottomSheetScrollView
+          contentContainerStyle={[
+            styles.container,
+            {
+              minHeight: windowHeight * (Platform.OS === 'ios' ? 0.78 : 0.72),
+            },
+          ]}
+          keyboardShouldPersistTaps="handled">
+          <TouchableWithoutFeedback
+            onPress={() => {
+              Keyboard.dismiss();
+              modalRef.current?.snapToIndex(0);
+            }}>
+            <View style={{flex: 1}}>
+              {/* 상단 타이틀 */}
+              <View style={styles.headerRow}>
+                <View>
+                  <Text style={styles.sheetTitle}>프로필 편집</Text>
+                  <Text style={styles.sheetSubtitle}>
+                    가족에게 보이는 이름과 한마디를 설정해요.
+                  </Text>
                 </View>
               </View>
-              <Text style={styles.profileEditText}>사진 변경</Text>
-            </TouchableOpacity>
 
-            {/* 별명 입력 */}
-            <View style={styles.fieldBlock}>
-              <Text style={styles.label}>별명</Text>
-              <BottomSheetTextInput
-                key={`name-${nameKey}`}
-                style={styles.input}
-                defaultValue={nameRef.current}
-                onFocus={() =>
-                  setTimeout(() => modalRef.current?.snapToIndex(1), 50)
-                }
-                onChangeText={text => {
-                  nameRef.current = text;
-                }}
-                placeholder="가족들이 부르는 이름을 적어주세요."
-                placeholderTextColor="#9CA3AF"
-              />
+              {/* 프로필 이미지 */}
+              <TouchableOpacity
+                style={styles.profileTouchArea}
+                onPress={handleImagePick}>
+                <View style={styles.profileimageContainer}>
+                  <FastImage
+                    source={
+                      previewImage
+                        ? {uri: previewImage}
+                        : require('../../../assets/images/default.png')
+                    }
+                    style={styles.profileImage}
+                  />
+                  <View style={styles.profileRing} />
+                  <View style={styles.profileBadge}>
+                    <FastImage
+                      style={styles.profileBadgeIcon}
+                      source={require('../../../assets/images/pencil.png')}
+                    />
+                  </View>
+                </View>
+                <Text style={styles.profileEditText}>사진 변경</Text>
+              </TouchableOpacity>
+
+              {/* 별명 입력 */}
+              <View style={styles.fieldBlock}>
+                <Text style={styles.label}>별명</Text>
+                <BottomSheetTextInput
+                  key={`name-${nameKey}`}
+                  style={styles.input}
+                  defaultValue={nameRef.current}
+                  onFocus={() =>
+                    setTimeout(() => modalRef.current?.snapToIndex(1), 50)
+                  }
+                  onChangeText={text => {
+                    nameRef.current = text;
+                  }}
+                  placeholder="가족들이 부르는 이름을 적어주세요."
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+
+              {/* 특징 입력 */}
+              <View style={styles.fieldBlock}>
+                <Text style={styles.label}>한 줄 소개</Text>
+                <BottomSheetTextInput
+                  key={`trait-${traitKey}`}
+                  style={[styles.input, styles.textArea]}
+                  defaultValue={traitRef.current}
+                  multiline
+                  onFocus={() =>
+                    setTimeout(() => modalRef.current?.snapToIndex(1), 50)
+                  }
+                  onChangeText={text => {
+                    traitRef.current = text;
+                  }}
+                  placeholder="성격, 분위기, 기억에 남는 포인트를 가볍게 적어보세요."
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+
+              {/* 하단 버튼 공통 */}
+              <BottomSheetButtons onCancel={handleCancel} onSave={handleSave} />
             </View>
+          </TouchableWithoutFeedback>
+        </BottomSheetScrollView>
+      </KinoBottomSheet>
 
-            {/* 특징 입력 */}
-            <View style={styles.fieldBlock}>
-              <Text style={styles.label}>한 줄 소개</Text>
-              <BottomSheetTextInput
-                key={`trait-${traitKey}`}
-                style={[styles.input, styles.textArea]}
-                defaultValue={traitRef.current}
-                multiline
-                onFocus={() =>
-                  setTimeout(() => modalRef.current?.snapToIndex(1), 50)
-                }
-                onChangeText={text => {
-                  traitRef.current = text;
-                }}
-                placeholder="성격, 분위기, 기억에 남는 포인트를 가볍게 적어보세요."
-                placeholderTextColor="#9CA3AF"
-              />
-            </View>
-
-            {/* 하단 버튼 공통 */}
-            <BottomSheetButtons onCancel={handleCancel} onSave={handleSave} />
-          </View>
-        </TouchableWithoutFeedback>
-      </BottomSheetScrollView>
-    </KinoBottomSheet>
+      {/* ✅ 토스트 모달 */}
+      <ToastModal
+        visible={toastVisible}
+        onClose={hideToast}
+        message={toastMessage}
+      />
+    </>
   );
 }
 

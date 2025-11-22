@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
     marginRight: getResponsiveWidth(10),
   },
   checkImage: {
-    width: HEADER_STYLES.headerRightIconWidth,   // 🔽 28 → 24
+    width: HEADER_STYLES.headerRightIconWidth, // 🔽 28 → 24
     height: HEADER_STYLES.headerRightIconHeight, // 🔽 28 → 24
     marginRight: HEADER_STYLES.headerRightIconRightPadding,
     resizeMode: 'contain',
