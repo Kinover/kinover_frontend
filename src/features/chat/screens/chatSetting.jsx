@@ -32,6 +32,9 @@ import {
 } from '../../../utils/responsive';
 import {updateChatRoomNameInList} from '../store/chatRoomSlice';
 
+// ✅ 네가 만든 토스트 모달 경로에 맞게 수정
+import ToastModal from '../../../components/ToastModal';
+
 export default function ChatSettings({
   isOpen,
   onClose,
@@ -51,18 +54,20 @@ export default function ChatSettings({
   const [internalVisible, setInternalVisible] = useState(false);
   const translateX = useSharedValue(getResponsiveWidth(320));
 
+  // ✅ 토스트 관련 상태
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
   const chatRoomUsers = useSelector(state => state.chatRoom.chatRoomUsers);
   const familyId = useSelector(state => state.family.familyId);
   const userId = useSelector(state => state.user.userId);
 
-  // 🔸 프로젝트 상태 구조에 맞게 여기 필드명만 확인해서 수정해줘
   const familyMembers = useSelector(
-    state => state.userFamily.familyUserList || [], // 예: state.family.members 면 거기로 바꾸기
+    state => state.userFamily.familyUserList || [],
   );
 
   const dispatch = useDispatch();
 
-  // ✅ “가족 전원이 이 채팅방에 참여 중인지” 여부
   const isAllFamilyInChat =
     Array.isArray(familyMembers) &&
     familyMembers.length > 0 &&
@@ -93,6 +98,15 @@ export default function ChatSettings({
     transform: [{translateX: translateX.value}],
   }));
 
+  // ✅ 토스트 자동 닫기
+  useEffect(() => {
+    if (!toastVisible) return;
+    const timer = setTimeout(() => {
+      setToastVisible(false);
+    }, 1800); // 1.8초 뒤 자동 닫힘
+    return () => clearTimeout(timer);
+  }, [toastVisible]);
+
   const handleToggleAlarm = () => {
     const newIsOn = !isAlarmOn;
     setIsAlarmOn(newIsOn);
@@ -107,9 +121,18 @@ export default function ChatSettings({
       .unwrap()
       .then(() => {
         console.log('🔔 알림 설정 변경 성공');
+
+        // ✅ 토글 성공 시 토스트 띄우기
+        setToastMessage(
+          newIsOn ? '알림이 활성화되었어요' : '알림을 비활성화하였습니다',
+        );
+        setToastVisible(true);
       })
       .catch(err => {
         console.warn('❌ 알림 설정 변경 실패:', err);
+        // 에러도 토스트로 띄우고 싶으면 유지, 아니면 이 부분은 지워도 됨
+        setToastMessage('알림 설정 변경에 실패했어요.\n다시 시도해 주세요.');
+        setToastVisible(true);
       });
   };
 
@@ -194,6 +217,13 @@ export default function ChatSettings({
           onClose={() => setIsChangeKinoModalVisible(false)}
           onConfirm={handleGoToKinoSelect}
         />
+
+        {/* ✅ 토스트 모달 */}
+        <ToastModal
+          visible={toastVisible}           // isVisible / open 등으로 쓰면 여기도 맞춰 변경
+          message={toastMessage}           // text / label 등으로 쓰면 변경
+          onClose={() => setToastVisible(false)} // 닫기 콜백
+        />
       </View>
 
       {/* 블러 + 백드롭 */}
@@ -227,7 +257,6 @@ export default function ChatSettings({
         </View>
 
         <View style={styles.content}>
-          {/* 상단 설정들 */}
           {!isKino && (
             <TouchableOpacity
               style={styles.option}
@@ -271,7 +300,6 @@ export default function ChatSettings({
                     </View>
                   ))}
 
-                  {/* ✅ 모든 가족이 이미 참여 중인 경우에는 "새 멤버 초대" 버튼 숨김 */}
                   {!isAllFamilyInChat && (
                     <TouchableOpacity
                       onPress={handleShowMembers}
@@ -297,7 +325,6 @@ export default function ChatSettings({
             </TouchableOpacity>
           )}
 
-          {/* 하단 나가기 버튼 */}
           <TouchableOpacity
             style={styles.leaveOption}
             onPress={() => setIsLeaveModalVisible(true)}>
@@ -366,12 +393,10 @@ const styles = StyleSheet.create({
     height: getResponsiveIconSize(20),
     resizeMode: 'contain',
   },
-
   content: {
     flex: 1,
     paddingTop: getResponsiveHeight(4),
   },
-
   option: {
     paddingVertical: getResponsiveHeight(14),
     borderBottomWidth: 1,
@@ -407,7 +432,6 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(18),
     height: getResponsiveHeight(18),
   },
-
   memberList: {
     width: '100%',
     minHeight: getResponsiveHeight(110),
@@ -451,7 +475,6 @@ const styles = StyleSheet.create({
     color: '#F59E0B',
     fontFamily: 'Pretendard-Medium',
   },
-
   leaveOption: {
     position: 'absolute',
     bottom: '5%',
