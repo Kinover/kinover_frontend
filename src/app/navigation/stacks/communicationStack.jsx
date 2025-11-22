@@ -17,7 +17,7 @@ import CreateChatRoom from '../../../features/chat/screens/createChatRoomScreen'
 import ChatRoom from '../../../features/chat/screens/chatRoomScreen';
 import KinoSelectScreen from '../../../features/chat/screens/kinoSelectScreen';
 import SettingScreen from '../../../features/setting/screens/SettingScreen';
-import NotificationScreen from '../../../features/NotificationScreen';
+import NotificationScreen from '../../../features/notification/screens/NotificationScreen';
 import NotificationSettingScreen from '../../../features/setting/screens/NotificationSettingScreen';
 import {HEADER_STYLES} from 'styles/style';
 

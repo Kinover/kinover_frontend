@@ -1,3 +1,4 @@
+// components/ToastModal.js
 import React, {useEffect} from 'react';
 import {Modal, View, Text, StyleSheet} from 'react-native';
 import {
@@ -12,6 +13,7 @@ export default function ToastModal({
   onClose,
   message,
   duration = 1000,
+  useNativeModal = true,   // ✅ 추가: 기본은 기존처럼 Modal 사용
 }) {
   // 일정 시간 뒤 자동 닫기
   useEffect(() => {
@@ -23,42 +25,60 @@ export default function ToastModal({
     }
   }, [visible, duration, onClose]);
 
-  return (
-    <Modal
-      animationType="fade"
-      transparent
-      visible={visible}
-      onRequestClose={onClose}
-      statusBarTranslucent={true}>
-      <View style={styles.overlay}>
-        <View style={styles.toastBox}>
-          <Text style={styles.toastText}>{message}</Text>
-        </View>
+  if (!visible) return null;
+
+  const content = (
+    <View style={styles.overlay}>
+      <View style={styles.toastBox}>
+        <Text style={styles.toastText}>{message}</Text>
       </View>
-    </Modal>
+    </View>
   );
+
+  // ✅ 일반 화면에서는 기존처럼 Modal 사용
+  if (useNativeModal) {
+    return (
+      <Modal
+        animationType="fade"
+        transparent
+        visible={visible}
+        onRequestClose={onClose}
+        statusBarTranslucent={true}>
+        {content}
+      </Modal>
+    );
+  }
+
+  // ✅ 다른 Modal 안에서 쓸 때: 그냥 오버레이 뷰만 리턴
+  return content;
 }
 
 const styles = StyleSheet.create({
-  // 화면을 어둡게 하지 않고, 아래쪽에 토스트 배치
   overlay: {
-    flex: 1,
-    justifyContent: 'flex-end', // 🔥 아래에 배치
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingBottom: getResponsiveHeight(120), // 화면 아래에서 띄우기
-    backgroundColor: 'transparent', // 토스트는 보통 배경 없음
+    paddingBottom: getResponsiveHeight(120),
+    backgroundColor: 'transparent',
+    pointerEvents: 'box-none',
+
+    // 맨 위로 올리기
+    zIndex: 99999,
+    elevation: 99999,
   },
 
-  // 요즘 앱들 평균적인 토스트 형태
   toastBox: {
-    backgroundColor: 'rgba(0, 0, 0, 0.85)', // 🔥 대부분 앱 스타일
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
     borderRadius: getResponsiveIconSize(20),
     paddingHorizontal: getResponsiveWidth(22),
     paddingVertical: getResponsiveHeight(12),
     maxWidth: '90%',
     alignSelf: 'center',
 
-    // 살짝 그림자 (부드러운 느낌)
     shadowColor: '#000',
     shadowOpacity: 0.25,
     shadowRadius: 12,

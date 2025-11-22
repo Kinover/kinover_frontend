@@ -1,4 +1,3 @@
-// ChatInput.js
 import React, {useState, useRef, useEffect, useCallback} from 'react';
 import {
   View,
@@ -213,6 +212,8 @@ export default function ChatInput({
     );
   };
 
+  const hasSelection = selectedImages.length > 0;
+
   return (
     <SafeAreaView>
       <View style={styles.innerContainer}>
@@ -255,11 +256,18 @@ export default function ChatInput({
           )}
         </View>
 
+        {/* ✅ 전송 버튼: 선택한 이미지가 있으면 개수 표시 */}
         <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
-          <FastImage
-            source={{uri: 'https://i.postimg.cc/fLWscdRY/Group-477-1.png'}}
-            style={styles.icon}
-          />
+          {hasSelection ? (
+            <View style={styles.sendCountBubble}>
+              <Text style={styles.sendCountText}>{selectedImages.length}</Text>
+            </View>
+          ) : (
+            <FastImage
+              source={{uri: 'https://i.postimg.cc/fLWscdRY/Group-477-1.png'}}
+              style={styles.icon}
+            />
+          )}
         </TouchableOpacity>
       </View>
 
@@ -345,11 +353,33 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center',
   },
   inputPlusButton: {marginRight: getResponsiveWidth(6)},
-  sendButton: {padding: getResponsiveWidth(4)},
+  sendButton: {
+    padding: getResponsiveWidth(4),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   icon: {
     width: getResponsiveIconSize(24),
     height: getResponsiveIconSize(24),
     resizeMode: 'contain',
+  },
+  // ✅ 선택된 이미지 개수 뱃지 스타일
+  sendCountBubble: {
+    minWidth: getResponsiveWidth(24),
+    height: getResponsiveWidth(24),
+    borderRadius: getResponsiveWidth(13),
+    backgroundColor: '#FFC84D',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: getResponsiveWidth(6),
+  },
+  sendCountText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: getResponsiveIconSize(15),
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    fontFamily: 'Pretendard-Medium',
   },
   clearButton: {
     paddingHorizontal: getResponsiveWidth(4),

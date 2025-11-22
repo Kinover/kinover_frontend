@@ -8,7 +8,7 @@ import CategoryPage from '../../../features/memory/screens/CategoryPage';
 import CategorySelectPage from '../../../features/memory/screens/CategorySelectScreen';
 import SettingScreen from '../../../features/setting/screens/SettingScreen';
 import CreatePostPage from '../../../features/memory/screens/CreatePostScreen';
-import NotificationScreen from '../../../features/NotificationScreen';
+import NotificationScreen from '../../../features/notification/screens/NotificationScreen';
 import NotificationSettingScreen from '../../../features/setting/screens/NotificationSettingScreen';
 import ImageSelectPage from '../../../features/memory/screens/ImageSelectScreen';
 import {

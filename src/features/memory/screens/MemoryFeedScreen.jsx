@@ -1,12 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, {useCallback, useMemo} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  FlatList,
-} from 'react-native';
+import {View, Text, TouchableOpacity, StyleSheet, FlatList} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
@@ -62,9 +56,7 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
   const filteredMemoryList = useMemo(() => {
     if (selectedCategoryTitle === '전체') return memoryList;
     return memoryList.filter(memory => {
-      const cat = categoryList.find(
-        c => c.categoryId === memory.categoryId,
-      );
+      const cat = categoryList.find(c => c.categoryId === memory.categoryId);
       return cat?.title === selectedCategoryTitle;
     });
   }, [memoryList, categoryList, selectedCategoryTitle]);
@@ -98,15 +90,11 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
 
           <View style={styles.badgeRow}>
             <View style={styles.commentBadge}>
-              <Text style={styles.badgeText}>
-                댓글 {memory.commentCount}
-              </Text>
+              <Text style={styles.badgeText}>댓글 {memory.commentCount}</Text>
             </View>
             {imageCount > 0 && (
               <View style={styles.imageCountBadge}>
-                <Text style={styles.badgeText}>
-                  사진 {imageCount}장
-                </Text>
+                <Text style={styles.badgeText}>사진 {imageCount}장</Text>
               </View>
             )}
           </View>
@@ -116,18 +104,26 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
         <FastImage
           style={styles.memoryImage}
           source={
-            memory.imageUrls?.[0]
-              ? {uri: memory.imageUrls[0]}
-              : fallbackImage
+            memory.imageUrls?.[0] ? {uri: memory.imageUrls[0]} : fallbackImage
           }
         />
 
         {/* 카테고리 뱃지 */}
-        <View style={styles.categoryBadge}>
+        {/* <View style={styles.categoryBadge}>
           <Text style={styles.categoryText}>
             {getCategoryLabel(memory.categoryId)}
           </Text>
-        </View>
+        </View> */}
+
+        <Text
+          style={{
+            fontSize: getResponsiveFontSize(17),
+            marginBottom: getResponsiveHeight(4),
+            marginTop: getResponsiveHeight(3),
+            fontFamily: 'Pretendard-Medium',
+          }}>
+          {getCategoryLabel(memory.categoryId)}
+        </Text>
 
         {/* 내용 미리보기 */}
         {!!memory.content && (
@@ -223,9 +219,7 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
         ListEmptyComponent={
           !isAllPhotos ? (
             <View style={styles.emptyWrapper}>
-              <Text style={styles.emptyText}>
-                아직 등록된 추억이 없어요.
-              </Text>
+              <Text style={styles.emptyText}>아직 등록된 추억이 없어요.</Text>
             </View>
           ) : null
         }
@@ -325,6 +319,7 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(13),
     color: '#111827',
     lineHeight: getResponsiveHeight(19),
+    marginBottom: getResponsiveHeight(3),
   },
 
   // ====== 전체 사진 그리드 ======
