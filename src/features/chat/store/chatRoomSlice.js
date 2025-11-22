@@ -1,15 +1,15 @@
 // chatRoomSlice.js
-import { createSlice } from '@reduxjs/toolkit';
+import {createSlice} from '@reduxjs/toolkit';
 
 /* =========================
  * Utilities / Helpers
  * ========================= */
 
 /** 안전한 문자열 ID 변환 */
-const toId = (v) => (v == null ? null : String(v));
+const toId = v => (v == null ? null : String(v));
 
 /** 안전한 ISO 시각 문자열 반환 (잘못된 값이면 now) */
-const toIso = (d) => {
+const toIso = d => {
   try {
     const t = d ? new Date(d) : new Date();
     if (Number.isNaN(t.getTime())) return new Date().toISOString();
@@ -20,11 +20,11 @@ const toIso = (d) => {
 };
 
 /** 최근 메시지 시각 기준 정렬 (내림차순) */
-const sortByLatest = (list) =>
+const sortByLatest = list =>
   [...list].sort(
     (a, b) =>
       new Date(b.latestMessageTime || 0).getTime() -
-      new Date(a.latestMessageTime || 0).getTime()
+      new Date(a.latestMessageTime || 0).getTime(),
   );
 
 /** 미리보기 텍스트 매핑 */
@@ -33,7 +33,7 @@ const MESSAGE_TYPE_LABELS = {
   video: '[동영상]',
   file: '[파일]',
 };
-const previewText = (msg) => {
+const previewText = msg => {
   if (!msg) return '';
   const type = msg.messageType?.toLowerCase?.();
   if (MESSAGE_TYPE_LABELS[type]) return MESSAGE_TYPE_LABELS[type];
@@ -42,10 +42,10 @@ const previewText = (msg) => {
 
 /** 리스트에서 채팅방 인덱스 찾기 */
 const findRoomIndex = (state, rid) =>
-  state.chatRoomList.findIndex((r) => toId(r.chatRoomId) === rid);
+  state.chatRoomList.findIndex(r => toId(r.chatRoomId) === rid);
 
 /** 공통: “리스트 항목 업데이트 + 정렬 + 리비전 증가” */
-const finalizeList = (state) => {
+const finalizeList = state => {
   state.chatRoomList = sortByLatest(state.chatRoomList);
   state.listRevision += 1;
 };
@@ -77,25 +77,30 @@ const chatRoomSlice = createSlice({
     },
 
     /** 서버에서 내려온 채팅방 리스트 설정 */
+    /** 서버에서 내려온 채팅방 리스트 설정 */
     setChatRoomList(state, action) {
       const src = Array.isArray(action.payload) ? action.payload : [];
 
       state.chatRoomList = sortByLatest(
-        src.map((r) => {
+        src.map(r => {
           const rid = toId(r.chatRoomId);
-          // latestMessageTime이 없으면 updatedAt이나 null
-          const latest =
-            r.latestMessageTime ?? r.updatedAt ?? null;
+
+          // ✅ latestMessageTime → updatedAt → createdAt → now 순으로 fallback
+          const latestRaw =
+            r.latestMessageTime ??
+            r.updatedAt ??
+            r.createdAt ??
+            new Date().toISOString();
 
           return {
             ...r,
             chatRoomId: rid,
             roomName: r.roomName ?? `채팅방 ${rid ?? ''}`,
             latestMessageContent: r.latestMessageContent ?? '',
-            latestMessageTime: latest ? toIso(latest) : null,
+            latestMessageTime: toIso(latestRaw),
             unreadCount: Number.isFinite(r.unreadCount) ? r.unreadCount : 0,
           };
-        })
+        }),
       );
 
       state.listRevision += 1;
@@ -127,7 +132,7 @@ const chatRoomSlice = createSlice({
      * - 방이 있으면 최신 내용/시각/안읽음 갱신
      */
     applyMessagePreview(state, action) {
-      const { chatRoomId, message, isSelf } = action.payload || {};
+      const {chatRoomId, message, isSelf} = action.payload || {};
       const rid = toId(chatRoomId);
       const lastText = previewText(message);
       const lastTime = toIso(message?.createdAt);
@@ -196,7 +201,7 @@ const chatRoomSlice = createSlice({
 
     /** 리스트에서 해당 방의 이름만 변경 */
     updateChatRoomNameInList(state, action) {
-      const { chatRoomId, newRoomName } = action.payload || {};
+      const {chatRoomId, newRoomName} = action.payload || {};
       const rid = toId(chatRoomId);
       const idx = findRoomIndex(state, rid);
 
