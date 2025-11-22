@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
       Platform.OS === 'android'
         ? getResponsiveHeight(5)
         : getResponsiveHeight(5),
-    paddingHorizontal: getResponsiveWidth(27.5),
+    paddingHorizontal: getResponsiveWidth(24),
   },
   tab: {
     marginRight: getResponsiveWidth(25),

@@ -131,7 +131,6 @@ export default function SettingScreen() {
       <DeleteAccountModal
         visible={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
-        onConfirm={() => setShowDeleteModal(false)}
       />
     </ScrollView>
   );

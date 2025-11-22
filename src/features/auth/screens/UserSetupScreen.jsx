@@ -1,10 +1,5 @@
 import React, {useState} from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-} from 'react-native';
+import {View, Text, TextInput, StyleSheet} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {useNavigateToWhere} from 'hooks/useNatigateToWhere';
@@ -109,7 +104,7 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   label: {
-    color:'black',
+    color: 'black',
     fontSize: 15,
     marginBottom: 6,
     fontWeight: '600',

@@ -49,7 +49,7 @@ export default function ScheduleStack() {
           </Text>
         ),
         headerTitleContainerStyle: {
-          paddingLeft: getResponsiveWidth(12),
+          paddingLeft: getResponsiveWidth(6),
         },
         headerRight: () => (
           <RenderHeaderHome navigation={navigation} currentScreen="일정" />

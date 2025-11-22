@@ -35,7 +35,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     height: 'auto',
     gap: getResponsiveWidth(10),
-    marginLeft: getResponsiveWidth(28),
+    marginLeft: getResponsiveWidth(21),
   },
   text: {
     fontFamily: 'Pretendard-Bold',

@@ -66,7 +66,7 @@ export default function CommunicationStack() {
           ),
           headerTitleAlign: 'bottom',
           headerTitleContainerStyle: {
-            paddingLeft: getResponsiveWidth(12),
+            paddingLeft: getResponsiveWidth(6),
           },
           headerRight: () => (
             <RenderHeaderHome navigation={navigation} currentScreen="소통" />

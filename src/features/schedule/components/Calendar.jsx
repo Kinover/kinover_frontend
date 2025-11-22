@@ -125,6 +125,7 @@ export default function CalendarToggle({
       </View>
 
       {/* 월간 */}
+      {/* 월간 */}
       {mode === 'month' ? (
         <View
           style={[
@@ -138,6 +139,8 @@ export default function CalendarToggle({
           ]}>
           {monthDates.map((item, idx) => {
             const count = scheduleCountPerDay[item.key] || 0;
+            const CIRCLE_SIZE = cellSize * 0.78; // 🔸 동그라미 실제 크기 (0.6~0.8 사이로 조절 가능)
+
             return (
               <TouchableOpacity
                 key={idx}
@@ -146,26 +149,37 @@ export default function CalendarToggle({
                   {
                     width: cellSize,
                     height: cellSize,
-                    borderRadius: cellSize / 2,
                   },
-                  getCountColorStyle(count),
-                  item.isSelected && styles.selectedBox,
-                  !item.isCurrentMonth && {opacity: 0.35},
                 ]}
                 onPress={() => setSelectedDate(item.date)}
                 hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
-                <Text
+                <View
                   style={[
-                    styles.dateText,
-                    item.isSelected && styles.selectedText,
+                    styles.innerCircle,
+                    {
+                      width: CIRCLE_SIZE,
+                      height: CIRCLE_SIZE,
+                      borderRadius: CIRCLE_SIZE / 2,
+                    },
+                    getCountColorStyle(count),
+                    item.isSelected && styles.selectedBox,
+                    !item.isCurrentMonth && {opacity: 0.35},
                   ]}>
-                  {item.date.getDate()}
-                </Text>
+                  <Text
+                    style={[
+                      styles.dateText,
+                      item.isSelected && styles.selectedText,
+                    ]}>
+                    {item.date.getDate()}
+                  </Text>
+                </View>
               </TouchableOpacity>
             );
           })}
         </View>
       ) : (
+        // 주간
+
         // 주간
         <View
           style={[
@@ -174,6 +188,8 @@ export default function CalendarToggle({
           ]}>
           {weekDates.map((item, idx) => {
             const count = scheduleCountPerDay[item.key] || 0;
+            const CIRCLE_SIZE = cellSize * 0.78;
+
             return (
               <TouchableOpacity
                 key={idx}
@@ -182,20 +198,29 @@ export default function CalendarToggle({
                   {
                     width: cellSize,
                     height: cellSize,
-                    borderRadius: cellSize / 2,
                   },
-                  getCountColorStyle(count),
-                  item.isSelected && styles.selectedBox,
                 ]}
                 onPress={() => setSelectedDate(item.date)}
                 hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
-                <Text
+                <View
                   style={[
-                    styles.dateText,
-                    item.isSelected && styles.selectedText,
+                    styles.innerCircle,
+                    {
+                      width: CIRCLE_SIZE,
+                      height: CIRCLE_SIZE,
+                      borderRadius: CIRCLE_SIZE / 2,
+                    },
+                    getCountColorStyle(count),
+                    item.isSelected && styles.selectedBox,
                   ]}>
-                  {item.date.getDate()}
-                </Text>
+                  <Text
+                    style={[
+                      styles.dateText,
+                      item.isSelected && styles.selectedText,
+                    ]}>
+                    {item.date.getDate()}
+                  </Text>
+                </View>
               </TouchableOpacity>
             );
           })}
@@ -305,14 +330,21 @@ const styles = StyleSheet.create({
     color: '#444',
   },
   dayCell: {
-    alignContent: 'center',
-    justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 999,
+    justifyContent: 'center',
+  },
+
+  innerCircle: {
+    alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#F9F9F9',
-    textAlign: 'center',
-    textAlignVertical: 'center',
+  },
+
+  selectedBox: {
+    backgroundColor: '#FFF3D2',
+    borderColor: '#FFB000',
+    borderWidth: 1,
   },
   dateGrid: {
     flexDirection: 'row',
@@ -328,11 +360,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Regular',
     color: '#111',
   },
-  selectedBox: {
-    backgroundColor: '#FFF3D2',
-    borderColor: '#FFB000',
-    borderWidth: 1,
-  },
+
   selectedText: {
     color: '#333',
     fontFamily: 'Pretendard-SemiBold',
