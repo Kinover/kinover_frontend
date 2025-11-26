@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -40,35 +40,22 @@ const getEmotionImage = emotion => {
       return null;
   }
 };
-
+// ✅ HeaderSection.tsx 추천 버전
 export default function HeaderSection({user, onUserPress}) {
   const navigation = useNavigation();
 
-  // 마지막으로 유효했던 프로필 이미지 URL 저장
-  const [lastImageUrl, setLastImageUrl] = useState(null);
-
-  useEffect(() => {
-    if (!user?.image) return;
-
-    const raw = user.image;
-    const resolved = raw.startsWith('http') ? raw : CLOUD_FRONT + raw;
-    setLastImageUrl(resolved);
-  }, [user?.image]);
-
-  // 감정 이미지: 대소문자 섞여 와도 처리
+  // 감정 이미지
   const rawEmotion = user?.emotion;
   const emotionKey = rawEmotion ? String(rawEmotion).toUpperCase() : null;
   const emotionImage = emotionKey ? getEmotionImage(emotionKey) : null;
 
-  // 실제로 사용할 프로필 이미지 소스
+  // 프로필 이미지 소스만 심플하게
   const profileSource = user?.image
     ? {
         uri: user.image.startsWith('http')
           ? user.image
           : CLOUD_FRONT + user.image,
       }
-    : lastImageUrl
-    ? {uri: lastImageUrl}
     : require('../../../assets/images/default.png');
 
   return (
@@ -98,7 +85,10 @@ export default function HeaderSection({user, onUserPress}) {
       />
 
       <Text style={styles.userNameHeader}>{user?.name}</Text>
-      <Text style={styles.trait}>
+      <Text
+        style={styles.trait}
+        numberOfLines={1}
+        ellipsizeMode="tail">
         {user?.trait || '이 사람을 한마디로 표현한다면?'}
       </Text>
     </View>

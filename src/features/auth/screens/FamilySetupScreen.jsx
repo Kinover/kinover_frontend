@@ -1,7 +1,13 @@
 // src/features/auth/screens/FamilySetupScreen.js
 
 import React, {useState, useCallback} from 'react';
-import {View, Text, TextInput, StyleSheet} from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
+} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
@@ -89,6 +95,7 @@ export default function FamilySetupScreen() {
         <TextInput
           style={styles.input}
           placeholder="가족 코드를 입력하세요"
+          placeholderTextColor="#9E9E9E" // ← 여기!
           value={familyCode}
           onChangeText={setFamilyCode}
           autoCapitalize="none"
@@ -99,12 +106,28 @@ export default function FamilySetupScreen() {
 
       <BottomActionButton label="참여하기" onPress={handleSubmit} />
 
-      <Text style={styles.secondaryText}>
-        아직 가족 코드가 없다면{' '}
-        <Text style={styles.secondaryLink} onPress={handleCreateFamily}>
-          새 가족 모임을 만들어볼게요
-        </Text>
-      </Text>
+      <View style={styles.dividerRow}>
+        <View style={styles.divider} />
+        <Text style={styles.dividerText}>또는</Text>
+        <View style={styles.divider} />
+      </View>
+
+      {/* 새 가족 모임 카드형 선택 UI */}
+      <TouchableOpacity
+        style={styles.createCard}
+        activeOpacity={0.85}
+        onPress={handleCreateFamily}>
+        <View style={styles.createCardIconBox}>
+          <Text style={styles.createCardIcon}>🏡</Text>
+        </View>
+        <View style={styles.createCardTextBox}>
+          <Text style={styles.createCardTitle}>새 가족 모임 만들기</Text>
+          <Text style={styles.createCardDesc}>
+            내가 방장이 되어 가족을 초대할게요
+          </Text>
+        </View>
+        <Text style={styles.createCardArrow}>›</Text>
+      </TouchableOpacity>
 
       <ToastModal
         visible={toastVisible}
@@ -170,5 +193,82 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#111827',
     textDecorationLine: 'underline',
+  },
+  createBox: {
+    marginTop: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  createTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  createDesc: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 26,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  dividerText: {
+    marginHorizontal: 8,
+    fontSize: 11,
+    color: '#9CA3AF',
+  },
+
+  createCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  createCardIconBox: {
+    width: 40,
+    height: 40,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    // backgroundColor: '#FFEFD5',
+    backgroundColor: 'white',
+    marginRight: 12,
+  },
+  createCardIcon: {
+    fontSize: 22,
+  },
+  createCardTextBox: {
+    flex: 1,
+  },
+  createCardTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  createCardDesc: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  createCardArrow: {
+    fontSize: 18,
+    color: '#9CA3AF',
+    marginLeft: 8,
   },
 });

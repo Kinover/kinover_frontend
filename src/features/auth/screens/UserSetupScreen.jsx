@@ -80,6 +80,7 @@ export default function UserSetupScreen() {
         <TextInput
           style={styles.input}
           placeholder="이름을 입력하세요"
+          placeholderTextColor="#9E9E9E"   // ← 여기!
           value={name}
           onChangeText={setName}
         />
@@ -92,6 +93,7 @@ export default function UserSetupScreen() {
         <TextInput
           style={styles.input}
           placeholder="YYYY-MM-DD"
+          placeholderTextColor="#9E9E9E"   // ← 여기!
           value={birth}
           onChangeText={setBirth}
         />

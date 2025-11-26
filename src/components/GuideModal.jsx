@@ -67,13 +67,13 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(4),
   },
   title: {
-    fontSize: getResponsiveFontSize(18),
+    fontSize: getResponsiveFontSize(17),
     fontFamily: 'Pretendard-SemiBold',
     color: '#111827',
     marginBottom: getResponsiveHeight(6),
   },
   description: {
-    fontSize: getResponsiveFontSize(14),
+    fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-Regular',
     color: '#4B5563',
     lineHeight: getResponsiveHeight(20),

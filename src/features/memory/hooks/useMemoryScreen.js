@@ -10,7 +10,7 @@ export const useMemoryScreen = () => {
 
   const categoryList = useSelector(state => state.category.categoryList);
 
-  const [selectedTab, setSelectedTab] = useState('album');
+  const [selectedTab, setSelectedTab] = useState('post');
   const [selectedCategory, setSelectedCategory] = useState(null);
 
   const selectedCategoryTitle = useMemo(
