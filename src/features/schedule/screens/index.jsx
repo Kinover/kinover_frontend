@@ -26,6 +26,35 @@ import {useScheduleEditor} from '../hooks/useScheduleEditor';
 import {useScheduleCrud} from '../hooks/useScheduleCRUD';
 import SwipeNavigator from 'components/SwipeNavigator';
 
+// 🔹 공통 인앱 가이드 훅 & 모달
+import useGuide from 'hooks/useGuide';
+import GuideModal from 'components/GuideModal';
+
+// 🔹 일정 화면 가이드 스텝
+const SCHEDULE_GUIDE_STEPS = [
+  {
+    title: '날짜별 일정 한눈에 보기',
+    description:
+      '위쪽 달력 아이콘을 눌러 날짜를 선택하면, 그날에 등록된 가족 일정이 아래에 정리되어 보여요.',
+  },
+  {
+    title: '바쁜 날 쉽게 알아보기',
+    description:
+      '날짜에 칠해진 동그라미 색이 진해질수록 일정이 많다는 뜻이에요. 바쁜 날을 바로 확인할 수 있어요.',
+  },
+  {
+    title: '가족별 일정 확인하기',
+    description:
+      '일정 카드에서 어떤 가족의 일정인지 확인하며, 하루 동안의 흐름을 함께 살펴볼 수 있어요.',
+  },
+  {
+    title: '일정 추가·수정·삭제',
+    description:
+      '오른쪽 아래 동그란 버튼을 눌러 일정을 추가하고, 기존 일정을 눌러 내용을 수정하거나 삭제할 수 있어요.',
+  },
+];
+
+
 export default function ScheduleScreen() {
   const {familyId} = useSelector(state => state.family);
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
@@ -70,6 +99,18 @@ export default function ScheduleScreen() {
     closeSheet,
   });
 
+  // 🔹 인앱 가이드 훅은 무조건 여기서 항상 호출 (조건 X)
+  const guideEnabled = !!familyId; // 필요하면 여기서 on/off만 제어
+  const {
+    isGuideVisible,
+    guideStep,
+    currentGuide,
+    totalSteps,
+    nextStep,
+    skipGuide,
+  } = useGuide('SCHEDULE_GUIDE_SHOWN_V1', SCHEDULE_GUIDE_STEPS, guideEnabled);
+
+  // 🔹 이제야 로딩 분기 처리 (훅 호출 이후)
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -79,10 +120,7 @@ export default function ScheduleScreen() {
   }
 
   return (
-    <SwipeNavigator
-      rightTo="추억" // 오른쪽→왼쪽 스와이프
-      leftTo="소통" // 필요하면 다른 화면 넣기
-    >
+    <SwipeNavigator rightTo="추억" leftTo="소통">
       <View style={styles.container}>
         {/* 메인 콘텐츠 */}
         <ScrollView
@@ -122,6 +160,19 @@ export default function ScheduleScreen() {
             style={styles.fabIcon}
           />
         </TouchableOpacity>
+
+        {/* 인앱 가이드 모달 */}
+        {currentGuide && (
+          <GuideModal
+            visible={isGuideVisible}
+            step={guideStep}
+            totalSteps={totalSteps}
+            title={currentGuide.title}
+            description={currentGuide.description}
+            onNext={nextStep}
+            onSkip={skipGuide}
+          />
+        )}
       </View>
     </SwipeNavigator>
   );

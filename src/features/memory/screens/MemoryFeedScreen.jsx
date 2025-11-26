@@ -121,6 +121,7 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
             marginBottom: getResponsiveHeight(4),
             marginTop: getResponsiveHeight(3),
             fontFamily: 'Pretendard-Medium',
+            color: 'black',
           }}>
           {getCategoryLabel(memory.categoryId)}
         </Text>
@@ -165,7 +166,7 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
     );
   };
 
-  const isAllPhotos = selectedTab === 'allPhotos';
+  const isAllPhotos = selectedTab === 'album';
   const data = isAllPhotos ? allPhotos : filteredMemoryList;
 
   // ====== 로딩 스켈레톤 ======
@@ -194,7 +195,7 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
   return (
     <View style={styles.container}>
       <FlatList
-        key={isAllPhotos ? 'allPhotos' : 'album'}
+        key={isAllPhotos ? 'post' : 'album'}
         data={data}
         showsVerticalScrollIndicator={false}
         keyExtractor={(item, index) =>

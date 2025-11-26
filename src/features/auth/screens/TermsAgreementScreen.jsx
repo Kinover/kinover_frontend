@@ -210,6 +210,10 @@ const MARKETING_TEXT = `마케팅 정보 수신 동의 (선택)
 동의하지 않더라도 서비스 기본 기능 이용에는 제한이 없습니다.
 `;
 
+// 약관 버전
+const TERMS_VERSION = '2025-07-15';
+const PRIVACY_VERSION = '2025-07-15';
+
 export default function TermsAgreementScreen() {
   const navigateToWhere = useNavigateToWhere();
 
@@ -218,12 +222,10 @@ export default function TermsAgreementScreen() {
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [agreeMarketing, setAgreeMarketing] = useState(false);
 
-  // 바텀시트
   const bottomSheetRef = useRef(null);
-  const [detailType, setDetailType] = useState(null); // 'terms' | 'privacy' | 'marketing'
+  const [detailType, setDetailType] = useState(null);
   const snapPoints = useMemo(() => ['70%'], []);
 
-  // 토스트
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
@@ -258,9 +260,20 @@ export default function TermsAgreementScreen() {
       return;
     }
 
+    const now = new Date().toISOString();
+
     navigateToWhere({
       root: 'Auth',
       screen: '유저정보세팅화면',
+      params: {
+        termsAgreed: agreeTerms,
+        privacyAgreed: agreePrivacy,
+        marketingAgreed: agreeMarketing,
+        termsVersion: TERMS_VERSION,
+        privacyVersion: PRIVACY_VERSION,
+        agreedAt: now,
+        marketingAgreedAt: agreeMarketing ? now : null,
+      },
     });
   };
 
@@ -336,7 +349,7 @@ export default function TermsAgreementScreen() {
 
         <View style={styles.divider} />
 
-        {/* 서비스 이용약관 */}
+        {/* 필수 약관 */}
         <View style={styles.row}>
           <TouchableOpacity
             activeOpacity={0.8}
@@ -349,11 +362,10 @@ export default function TermsAgreementScreen() {
                 <Text style={styles.requiredTag}>(필수)</Text>
               </View>
               <Text style={styles.descText}>
-                서비스 이용과 관련된 기본 규정을 담고 있어요.
+                서비스 이용에 필요한 기본 규정이에요.
               </Text>
             </View>
           </TouchableOpacity>
-
           <TouchableOpacity onPress={() => handleOpenDetail('terms')}>
             <Text style={styles.detailText}>보기</Text>
           </TouchableOpacity>
@@ -372,17 +384,16 @@ export default function TermsAgreementScreen() {
                 <Text style={styles.requiredTag}>(필수)</Text>
               </View>
               <Text style={styles.descText}>
-                수집되는 정보와 보관 · 이용 방식을 안내해요.
+                개인정보 처리 방식과 보관 기간을 안내해요.
               </Text>
             </View>
           </TouchableOpacity>
-
           <TouchableOpacity onPress={() => handleOpenDetail('privacy')}>
             <Text style={styles.detailText}>보기</Text>
           </TouchableOpacity>
         </View>
 
-        {/* 마케팅 정보 수신 */}
+        {/* 선택 동의 */}
         <View style={styles.row}>
           <TouchableOpacity
             activeOpacity={0.8}
@@ -395,11 +406,10 @@ export default function TermsAgreementScreen() {
                 <Text style={styles.optionalTag}>(선택)</Text>
               </View>
               <Text style={styles.descText}>
-                이벤트, 소식 등을 알림으로 받아볼 수 있어요.
+                이벤트·새 기능 소식을 받을 수 있어요.
               </Text>
             </View>
           </TouchableOpacity>
-
           <TouchableOpacity onPress={() => handleOpenDetail('marketing')}>
             <Text style={styles.detailText}>보기</Text>
           </TouchableOpacity>
@@ -412,15 +422,15 @@ export default function TermsAgreementScreen() {
         disabled={!isRequiredChecked}
       />
 
-      {/* 토스트 모달 */}
+      {/* 토스트 */}
       <ToastModal
         visible={toastVisible}
         message={toastMessage}
         onClose={() => setToastVisible(false)}
-        duration={1200} // 필요하면 조절
+        duration={1200}
       />
 
-      {/* 바텀시트 */}
+      {/* 상세 모달 */}
       <BottomSheetModal
         ref={bottomSheetRef}
         index={0}
@@ -434,11 +444,7 @@ export default function TermsAgreementScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 24,
-    backgroundColor: '#FFFFFF',
-  },
+  container: {flex: 1, padding: 24, backgroundColor: '#FFFFFF'},
   title: {
     color: 'black',
     fontSize: 26,
@@ -446,23 +452,15 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 6,
   },
-  sub: {
-    color: '#6B7280',
-    marginBottom: 24,
-    fontSize: 13,
-  },
-  scroll: {
-    flex: 1,
-  },
+  sub: {color: '#6B7280', marginBottom: 24, fontSize: 13},
+  scroll: {flex: 1},
   row: {
     paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  allRow: {
-    justifyContent: 'space-between',
-  },
+  allRow: {justifyContent: 'space-between'},
   rowLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -479,59 +477,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 10,
   },
-  checkboxChecked: {
-    backgroundColor: '#FFC84D',
-    borderColor: '#FFC84D',
-  },
-  checkIcon: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  allText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: 'black',
-  },
-  allRightText: {
-    fontSize: 11,
-    color: '#9CA3AF',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#E5E7EB',
-    marginVertical: 10,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  itemText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: 'black',
-  },
-  requiredTag: {
-    marginLeft: 6,
-    fontSize: 11,
-    color: '#DC2626',
-  },
-  optionalTag: {
-    marginLeft: 6,
-    fontSize: 11,
-    color: '#6B7280',
-  },
-  descText: {
-    marginTop: 2,
-    fontSize: 11,
-    color: '#6B7280',
-  },
-  detailText: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    textDecorationLine: 'underline',
-  },
-  // 바텀시트
+  checkboxChecked: {backgroundColor: '#FFC84D', borderColor: '#FFC84D'},
+  checkIcon: {color: '#FFFFFF', fontSize: 12, fontWeight: '700'},
+  allText: {fontSize: 15, fontWeight: '700', color: 'black'},
+  allRightText: {fontSize: 11, color: '#9CA3AF'},
+  divider: {height: 1, backgroundColor: '#E5E7EB', marginVertical: 10},
+  labelRow: {flexDirection: 'row', alignItems: 'center'},
+  itemText: {fontSize: 14, fontWeight: '600', color: 'black'},
+  requiredTag: {marginLeft: 6, fontSize: 11, color: '#DC2626'},
+  optionalTag: {marginLeft: 6, fontSize: 11, color: '#6B7280'},
+  descText: {marginTop: 2, fontSize: 11, color: '#6B7280'},
+  detailText: {fontSize: 12, color: '#9CA3AF', textDecorationLine: 'underline'},
   sheetContainer: {
     flex: 1,
     paddingHorizontal: 20,
@@ -544,12 +500,6 @@ const styles = StyleSheet.create({
     color: 'black',
     marginBottom: 8,
   },
-  sheetScroll: {
-    marginTop: 4,
-  },
-  sheetBody: {
-    fontSize: 13,
-    lineHeight: 18,
-    color: '#111827',
-  },
+  sheetScroll: {marginTop: 4},
+  sheetBody: {fontSize: 13, lineHeight: 18, color: '#111827'},
 });

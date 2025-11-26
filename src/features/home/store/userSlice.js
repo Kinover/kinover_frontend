@@ -15,6 +15,7 @@ const initialUserState = {
   error: null,
   emotionUpdatedAt: null,
   trait: null,
+  familyId: null,
 };
 
 const userSlice = createSlice({
@@ -32,6 +33,7 @@ const userSlice = createSlice({
         emotion,
         trait,
         emotionUpdatedAt,
+        familyId,
       } = action.payload || {};
       state.userId = userId ?? state.userId;
       state.birth = birth ?? state.birth;
@@ -42,6 +44,7 @@ const userSlice = createSlice({
       state.emotion = emotion ?? state.emotion;
       state.trait = trait ?? state.trait;
       state.emotionUpdatedAt = emotionUpdatedAt ?? state.emotionUpdatedAt;
+      state.familyId=familyId??state.familyId;
     },
     setUserImage(state, action) {
       state.image = action.payload || state.image;
@@ -72,9 +75,9 @@ export const {
   setUserImage,
   setUserLoading,
   setUserError,
-  login,
-  logout,
-  updateUser, // ✅ 이거 추가!
+  setUserlogin,
+  setUserlogout,
+  updateUser,
 } = userSlice.actions;
 
 export default userSlice.reducer;

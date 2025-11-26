@@ -19,10 +19,11 @@ import {
   getResponsiveWidth,
 } from '../../../utils/responsive';
 
-import {useAutoLogin} from 'features/auth/hooks/useAutoLogin';
+// import {useAutoLogin} from 'features/auth/hooks/useAutoLogin';
 import {useKakaoLogin} from 'features/auth/hooks/useKakaoLogin';
 import {useOnboardingPager} from '../hooks/useOnboardingPager';
-import {useNavigateToHome} from '../hooks/useNavigateToHome';
+import {useAutoLogin} from 'features/auth/hooks/useAutoLogin';
+// import {useNavigateToHome} from '../hooks/useNavigateToHome';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -104,8 +105,8 @@ const slides = [
   {
     key: '1',
     image: require('../../../assets/onboarding/slide1.png'),
-    textSize: 26,
-    textSize_ios: 27,
+    textSize: 25,
+    textSize_ios: 26,
     text: (
       <>
         우리 가족, {'\n'}오늘은
@@ -128,8 +129,8 @@ const slides = [
   {
     key: '3',
     image: require('../../../assets/onboarding/slide3.png'),
-    textSize: 26,
-    textSize_ios: 27,
+    textSize: 25,
+    textSize_ios: 26,
     text: (
       <>
         가족 일정, {'\n'}
@@ -155,10 +156,9 @@ const slides = [
 ];
 
 export default function OnboardingScreen() {
-  const navigateToHome = useNavigateToHome();
-  useAutoLogin(navigateToHome);
+  useAutoLogin();
 
-  const {login} = useKakaoLogin(navigateToHome);
+  const {login} = useKakaoLogin();
   const {currentPage, handleScroll} = useOnboardingPager(SCREEN_WIDTH);
 
   return (

@@ -1,16 +1,22 @@
+// src/features/auth/screens/FamilySetupScreen.js
+
 import React, {useState, useCallback} from 'react';
 import {View, Text, TextInput, StyleSheet} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
-import {useDispatch} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 
 import ToastModal from '../../../components/ToastModal';
 import BottomActionButton from 'components/BottomActionButton';
-import {fetchFamilyThunk} from '../../home/store/familyThunk';
+
+import {fetchFamilyThunk, addUserToFamily} from '../../home/store/familyThunk';
+import {setHasFamily} from 'utils/storage';
 
 export default function FamilySetupScreen() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
+
+  const userId = useSelector(state => state.user.userId);
 
   const [familyCode, setFamilyCode] = useState('');
   const [fieldError, setFieldError] = useState('');
@@ -32,19 +38,35 @@ export default function FamilySetupScreen() {
       return;
     }
 
+    if (!userId) {
+      const msg = '로그인 정보가 확인되지 않아요.';
+      showToast(msg);
+      return;
+    }
+
     setFieldError('');
 
     try {
-      // ✅ 여기서만 실제 API 호출
-      await dispatch(fetchFamilyThunk(trimmed)).unwrap();
+      // 1) 가족 코드로 가족이 있는지 확인
+      await dispatch(fetchFamilyThunk(trimmed)); // ✅ unwrap 사용 X
 
-      // 성공 시 가족 설정 완료 화면으로 이동
+      // 2) 가족이 있다면 나를 가족에 추가
+      await dispatch(addUserToFamily(trimmed, userId)); // ✅ unwrap 사용 X
+
+      console.log('🎉 가족 참여 성공');
+      await setHasFamily(true);
+
+      // 3) 완료 화면 이동
       navigation.navigate('설정완료화면');
     } catch (err) {
+      console.log('❌ 가족 참여 실패:', err?.response || err);
+
       const msg =
-        typeof err === 'string'
-          ? err
-          : '가족 코드를 찾을 수 없어요. 다시 확인해 주세요.';
+        err?.response?.status === 404
+          ? '가족 코드를 찾을 수 없어요. 다시 확인해 주세요.'
+          : err?.response?.data?.message ||
+            '가족 참여 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.';
+
       setFieldError(msg);
       showToast(msg);
     }
@@ -56,12 +78,10 @@ export default function FamilySetupScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      {/* 상단 타이틀 */}
       <Text style={styles.title}>{`가족과 연결되려면
 가족 코드가 필요해요`}</Text>
       <Text style={styles.sub}>이미 초대받았다면 코드를 입력해주세요.</Text>
 
-      {/* 가족 코드 입력 필드 */}
       <View style={styles.field}>
         <Text style={styles.label}>
           가족 코드 <Text style={styles.star}>*</Text>
@@ -75,13 +95,10 @@ export default function FamilySetupScreen() {
         />
       </View>
 
-      {/* 에러 메시지 (인풋 아래) */}
       {fieldError ? <Text style={styles.error}>{fieldError}</Text> : null}
 
-      {/* 참여하기 버튼 */}
       <BottomActionButton label="참여하기" onPress={handleSubmit} />
 
-      {/* 하단 서브 텍스트 (링크 느낌) */}
       <Text style={styles.secondaryText}>
         아직 가족 코드가 없다면{' '}
         <Text style={styles.secondaryLink} onPress={handleCreateFamily}>
@@ -89,7 +106,6 @@ export default function FamilySetupScreen() {
         </Text>
       </Text>
 
-      {/* 토스트 모달 */}
       <ToastModal
         visible={toastVisible}
         message={toastMessage}

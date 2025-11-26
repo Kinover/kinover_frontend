@@ -147,6 +147,6 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(12), // 🔽 13 → 11
     fontWeight: '600',
     color: 'white',
-    lineHeight: getResponsiveHeight(16), // 🔽 18 → 16
+    lineHeight: getResponsiveHeight(18), // 🔽 18 → 16
   },
 });

@@ -14,8 +14,8 @@ import {
 } from '../../../utils/responsive';
 
 const TABS = [
+  {key: 'post', title: '게시글'},
   {key: 'album', title: '앨범'},
-  {key: 'allPhotos', title: '사진 전체보기'},
 ];
 
 const BASE_UNDERLINE_WIDTH = 40; // 밑줄 기준 너비

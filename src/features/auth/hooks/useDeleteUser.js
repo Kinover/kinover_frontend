@@ -2,7 +2,10 @@
 
 import {useCallback, useState} from 'react';
 import {useDispatch} from 'react-redux';
-import {deleteUserThunk} from 'features/home/store/userThunk'; // 🔧 실제 경로에 맞게 수정
+import {deleteUserThunk} from 'features/home/store/userThunk';
+import {deleteLoginInfo} from 'utils/storage';
+import { setLogout } from '../store/authSlice';
+import {setUserlogout} from 'features/home/store/userSlice';
 
 export function useDeleteUser(onSuccess) {
   const dispatch = useDispatch();
@@ -15,7 +18,7 @@ export function useDeleteUser(onSuccess) {
     setToastVisible(false);
   }, []);
 
-  const showToast = useCallback((message) => {
+  const showToast = useCallback(message => {
     setToastMessage(message);
     setToastVisible(true);
   }, []);
@@ -25,6 +28,13 @@ export function useDeleteUser(onSuccess) {
       setLoading(true);
 
       const result = await dispatch(deleteUserThunk()).unwrap();
+
+      // ✅ 로컬 저장소 정리 (Keychain + hasFamily)
+      await deleteLoginInfo();
+
+      // ✅ Redux 상태도 초기화
+      dispatch(setLogout());      // loginSlice
+      dispatch(setUserlogout());  // userSlice
 
       showToast('회원 탈퇴가 정상적으로 처리되었어요.');
       onSuccess && onSuccess(result);

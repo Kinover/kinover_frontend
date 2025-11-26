@@ -16,6 +16,7 @@ import {
 } from '../../../utils/responsive';
 import {formatRelativeKorean} from '../utils/dateUtils';
 import {getEmotionImage} from '../utils/emotionUtils';
+import FastImage from '@d11/react-native-fast-image';
 
 const AVATAR = getResponsiveIconSize(62);
 const DOT = Math.max(10, Math.round(AVATAR * 0.28));
@@ -138,8 +139,21 @@ export default function MemberGridSection({
           <Text style={styles.sectionTitle}>우리 가족</Text>
           <Text style={styles.sectionSubtitle}>실시간 접속 상태</Text>
         </View>
-        <TouchableOpacity onPress={onAddPress} hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
-          <Text style={styles.sectionAction}>+ 가족 추가</Text>
+        <TouchableOpacity
+          onPress={onAddPress}
+          hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}
+          style={{
+            width: getResponsiveIconSize(25),
+            height: getResponsiveIconSize(25),
+          }}>
+          {/* <Text style={styles.sectionAction}>+ 가족 추가</Text> */}
+          <FastImage
+            source={require('../../../assets/icons/add-contact.png')}
+            style={{
+              width: '100%',
+              height: '100%',
+            }}
+          />
         </TouchableOpacity>
       </View>
 
@@ -166,7 +180,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-end',
+    alignItems: 'center',
     marginBottom: getResponsiveHeight(10),
   },
   sectionTitle: {

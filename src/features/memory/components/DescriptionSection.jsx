@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     height: getResponsiveHeight(60),
-    paddingHorizontal: getResponsiveWidth(30),
+    paddingHorizontal: getResponsiveWidth(20),
     zIndex: 10,
     backgroundColor: 'rgba(255,255,255,0)',
   },
@@ -119,6 +119,6 @@ const styles = StyleSheet.create({
   contentContainer: {
     width: '100%',
     height: '100%',
-    paddingHorizontal: getResponsiveWidth(30),
+    paddingHorizontal: getResponsiveWidth(25),
   },
 });

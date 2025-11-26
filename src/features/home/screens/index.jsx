@@ -6,7 +6,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import FamilyCodeModal from '../components/FamilyCodeModal';
 import UserBottomSheetModal from '../components/UserBottomSheet';
 
-import {fetchFamilyThunk} from '../store/familyThunk';
+import {fetchFamilyThunk,fetchFamilyStatusThunk} from '../store/familyThunk';
 import {fetchFamilyUserListThunk} from '../store/familyUserThunk';
 import {modifyUserThunk} from '../store/userThunk';
 
@@ -27,6 +27,35 @@ import {
 import useWebSocketStatus from '../../../hooks/useWebSocketStatus';
 import useFamilyStatusSocket from '../../../hooks/useFamilyStatusSocket';
 import SwipeNavigator from 'components/SwipeNavigator';
+
+// 공통 가이드 훅 + 모달
+import useGuide from 'hooks/useGuide';
+import GuideModal from 'components/GuideModal';
+
+const GUIDE_STORAGE_KEY = 'HOME_GUIDE_SHOWN_V1';
+
+const GUIDE_STEPS = [
+  {
+    title: '프로필 카드',
+    description:
+      '상단의 프로필 카드를 눌러 자신의 이름, 한 줄 소개, 프로필 사진을 편집할 수 있어요.',
+  },
+  {
+    title: '감정 상태 선택',
+    description:
+      '프로필 사진을 눌러 오늘의 감정을 선택하고 가족과 기분을 공유해보세요.',
+  },
+  {
+    title: '접속 상태 확인',
+    description:
+      '가족이 현재 접속 중인지, 마지막으로 활동한 시간까지 한눈에 확인할 수 있어요.',
+  },
+  {
+    title: '가족 정보 관리',
+    description:
+      '가족 카드를 눌러 구성원 정보를 수정하고, + 버튼으로 초대 코드를 공유할 수 있어요.',
+  },
+];
 
 export default function HomeScreen() {
   const dispatch = useDispatch();
@@ -82,8 +111,21 @@ export default function HomeScreen() {
     if (user.userId && family.familyId) {
       dispatch(fetchFamilyThunk(family.familyId));
       dispatch(fetchFamilyUserListThunk(family.familyId));
+      dispatch(fetchFamilyStatusThunk(family.familyId)); // 👈 이 줄 추가
     }
   }, [dispatch, user.userId, family.familyId]);
+
+  // 인앱 가이드 (공통 훅 사용)
+  const guideEnabled = familyLoaded && membersLoaded;
+
+  const {
+    isGuideVisible,
+    guideStep,
+    currentGuide,
+    totalSteps,
+    nextStep,
+    skipGuide,
+  } = useGuide(GUIDE_STORAGE_KEY, GUIDE_STEPS, guideEnabled);
 
   const handleUserPress = member => {
     setSelectedUser(member);
@@ -112,10 +154,7 @@ export default function HomeScreen() {
   }
 
   return (
-    <SwipeNavigator
-      rightTo="소통" // 오른쪽→왼쪽 스와이프
-      leftTo={null} // 필요하면 다른 화면 넣기
-    >
+    <SwipeNavigator rightTo="소통" leftTo={null}>
       <View style={styles.container}>
         {/* 노랑 배경 + 하단 곡선 */}
         <View style={styles.backgroundCurve} />
@@ -149,6 +188,19 @@ export default function HomeScreen() {
             userSheetRef.current?.dismiss();
           }}
         />
+
+        {/* 인앱 가이드 모달 (공통) */}
+        {currentGuide && (
+          <GuideModal
+            visible={isGuideVisible}
+            step={guideStep}
+            totalSteps={totalSteps}
+            title={currentGuide.title}
+            description={currentGuide.description}
+            onNext={nextStep}
+            onSkip={skipGuide}
+          />
+        )}
       </View>
     </SwipeNavigator>
   );
@@ -158,18 +210,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFC84D',
-    // backgroundColor: '#FFF8E1', // 🔹 쨍한 노랑 → 아주 연한 노랑
   },
   scrollContent: {
     paddingBottom: getResponsiveHeight(40),
   },
   backgroundCurve: {
     position: 'absolute',
-    bottom: -getResponsiveHeight(130), // 🔹 너무 아래까지 내려오지 않게 살짝 올림
-    width: '220%', // 🔹 250 → 220 : 좀 더 자연스럽게
+    bottom: -getResponsiveHeight(130),
+    width: '220%',
     left: '-60%',
     height: '100%',
-    backgroundColor: '#F9F9F9', // 🔹 곡선은 완전 흰색
+    backgroundColor: '#F9F9F9',
     borderTopLeftRadius: getResponsiveWidth(600),
     borderTopRightRadius: getResponsiveWidth(600),
     zIndex: -1,

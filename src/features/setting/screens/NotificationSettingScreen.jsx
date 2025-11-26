@@ -1,3 +1,4 @@
+// NotificationSettingScreen.js
 import React, {useState, useEffect} from 'react';
 import {View, Text, StyleSheet, ScrollView} from 'react-native';
 import {
@@ -13,6 +14,9 @@ import {toggleAllChatRoomNotificationThunk} from '../../chat/store/chatRoomThunk
 import {toggleCommentNotificationThunk} from '../../memory/store/commentThunk';
 import {togglePostNotificationThunk} from '../../memory/store/memoryThunk';
 
+// ✅ 토스트 모달 import
+import ToastModal from '../../../components/ToastModal';
+
 export default function NotificationSettingScreen() {
   const dispatch = useDispatch();
   const userId = useSelector(
@@ -23,6 +27,10 @@ export default function NotificationSettingScreen() {
   const [chatNotification, setChatNotification] = useState(true);
   const [postNotification, setPostNotification] = useState(true);
   const [commentNotification, setCommentNotification] = useState(true);
+
+  // ✅ 토스트 상태
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   useHideTabBar({stayHidden: true});
 
@@ -43,8 +51,15 @@ export default function NotificationSettingScreen() {
       await dispatch(toggleAllChatRoomNotificationThunk({userId, isOn: newValue}));
       await dispatch(togglePostNotificationThunk({userId, isOn: newValue}));
       await dispatch(toggleCommentNotificationThunk({userId, isOn: newValue}));
+
+      // ✅ 성공 시 토스트
+      setToastMessage(
+        newValue ? '전체 알림이 켜졌어요' : '전체 알림이 꺼졌어요',
+      );
+      setToastVisible(true);
     } catch (e) {
       console.log('❌ 전체 알림 토글 실패:', e);
+      // 필요하면 실패 토스트도 추가 가능
     }
   };
 
@@ -55,6 +70,11 @@ export default function NotificationSettingScreen() {
     if (!userId) return;
     try {
       await dispatch(toggleAllChatRoomNotificationThunk({userId, isOn: newValue}));
+
+      setToastMessage(
+        newValue ? '채팅방 알림이 켜졌어요' : '채팅방 알림이 꺼졌어요',
+      );
+      setToastVisible(true);
     } catch (e) {
       console.log('❌ 채팅방 알림 토글 실패:', e);
     }
@@ -67,6 +87,11 @@ export default function NotificationSettingScreen() {
     if (!userId) return;
     try {
       await dispatch(togglePostNotificationThunk({userId, isOn: newValue}));
+
+      setToastMessage(
+        newValue ? '게시물 알림이 켜졌어요' : '게시물 알림이 꺼졌어요',
+      );
+      setToastVisible(true);
     } catch (e) {
       console.log('❌ 게시물 알림 토글 실패:', e);
     }
@@ -79,6 +104,11 @@ export default function NotificationSettingScreen() {
     if (!userId) return;
     try {
       await dispatch(toggleCommentNotificationThunk({userId, isOn: newValue}));
+
+      setToastMessage(
+        newValue ? '댓글 알림이 켜졌어요' : '댓글 알림이 꺼졌어요',
+      );
+      setToastVisible(true);
     } catch (e) {
       console.log('❌ 댓글 알림 토글 실패:', e);
     }
@@ -94,79 +124,89 @@ export default function NotificationSettingScreen() {
   }, [chatNotification, postNotification, commentNotification]);
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.header}>알림</Text>
+    <>
+      <ScrollView style={styles.container}>
+        <Text style={styles.header}>알림</Text>
 
-      <View style={styles.section}>
-        <View style={styles.row}>
-          <Text style={styles.label}>전체 알림</Text>
-          <CustomSwitch
-            isEnabled={allNotification}
-            toggleSwitch={handleToggleAllNotification}
-          />
+        <View style={styles.section}>
+          <View style={styles.row}>
+            <Text style={styles.label}>전체 알림</Text>
+            <CustomSwitch
+              isEnabled={allNotification}
+              toggleSwitch={handleToggleAllNotification}
+            />
+          </View>
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <View style={styles.row}>
-          <Text style={styles.label}>채팅방 알림</Text>
-          <CustomSwitch
-            isEnabled={chatNotification}
-            toggleSwitch={handleToggleChatNotification}
-          />
+        <View style={styles.section}>
+          <View style={styles.row}>
+            <Text style={styles.label}>채팅방 알림</Text>
+            <CustomSwitch
+              isEnabled={chatNotification}
+              toggleSwitch={handleToggleChatNotification}
+            />
+          </View>
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <View style={styles.row}>
-          <Text style={styles.label}>게시물 알림</Text>
-          <CustomSwitch
-            isEnabled={postNotification}
-            toggleSwitch={handleTogglePostNotification}
-          />
+        <View style={styles.section}>
+          <View style={styles.row}>
+            <Text style={styles.label}>게시물 알림</Text>
+            <CustomSwitch
+              isEnabled={postNotification}
+              toggleSwitch={handleTogglePostNotification}
+            />
+          </View>
         </View>
-      </View>
 
-      <View style={styles.section}>
-        <View style={styles.row}>
-          <Text style={styles.label}>댓글 알림</Text>
-          <CustomSwitch
-            isEnabled={commentNotification}
-            toggleSwitch={handleToggleCommentNotification}
-          />
+        <View style={styles.section}>
+          <View style={styles.row}>
+            <Text style={styles.label}>댓글 알림</Text>
+            <CustomSwitch
+              isEnabled={commentNotification}
+              toggleSwitch={handleToggleCommentNotification}
+            />
+          </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+
+      {/* ✅ 토스트 모달 */}
+      <ToastModal
+        visible={toastVisible}
+        onClose={() => setToastVisible(false)}
+        message={toastMessage}
+        // 여긴 일반 화면이라 useNativeModal 안 넘겨도 됨 (기본 true)
+      />
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
-    paddingHorizontal: getResponsiveWidth(18),      // 🔽 20 → 18
-    paddingTop: getResponsiveHeight(16),           // 🔽 20 → 16
+    paddingHorizontal: getResponsiveWidth(18),
+    paddingTop: getResponsiveHeight(16),
     flex: 1,
   },
   header: {
-    fontSize: getResponsiveFontSize(20),           // 🔽 24 → 20
+    fontSize: getResponsiveFontSize(20),
     fontWeight: '700',
     fontFamily: 'Pretendard-Bold',
-    marginBottom: getResponsiveHeight(20),         // 🔽 25 → 20
+    marginBottom: getResponsiveHeight(20),
     color: '#000',
   },
   section: {
     borderBottomWidth: 0.5,
     borderColor: '#E5E5E5',
-    paddingVertical: getResponsiveHeight(6),       // 🔽 10 → 6
+    paddingVertical: getResponsiveHeight(6),
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: getResponsiveHeight(8),       // 그대로 두고 살짝만 여유
+    paddingVertical: getResponsiveHeight(8),
   },
   label: {
-    fontSize: getResponsiveFontSize(15),           // 🔽 18 → 15
+    fontSize: getResponsiveFontSize(15),
     color: '#222',
     fontFamily: 'Pretendard-Medium',
   },
