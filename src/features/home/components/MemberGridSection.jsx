@@ -16,7 +16,6 @@ import {
 } from '../../../utils/responsive';
 import {formatRelativeKorean} from '../utils/dateUtils';
 import {getEmotionImage} from '../utils/emotionUtils';
-import FastImage from '@d11/react-native-fast-image';
 
 const AVATAR = getResponsiveIconSize(62);
 const DOT = Math.max(10, Math.round(AVATAR * 0.28));
@@ -147,11 +146,12 @@ export default function MemberGridSection({
             height: getResponsiveIconSize(25),
           }}>
           {/* <Text style={styles.sectionAction}>+ 가족 추가</Text> */}
-          <FastImage
+          <Image
             source={require('../../../assets/icons/add-contact.png')}
             style={{
               width: '100%',
               height: '100%',
+              tintColor: '#616161', // ← 회색으로 바뀜
             }}
           />
         </TouchableOpacity>

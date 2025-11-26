@@ -50,11 +50,22 @@ const userSlice = createSlice({
       state.image = action.payload || state.image;
     },
     updateUser: (state, action) => {
-      return {
+      const next = {
         ...state,
-        ...action.payload, // 이름, 특징, 이미지 등 덮어쓰기
+        ...action.payload,
       };
+    
+      // ✅ image를 일부러 지우는 게 아니라면, null/빈 문자열이면 이전 값 유지
+      if (
+        Object.prototype.hasOwnProperty.call(action.payload, 'image') &&
+        (action.payload.image === null || action.payload.image === '')
+      ) {
+        next.image = state.image;
+      }
+    
+      return next;
     },
+    
     setUserLoading(state, action) {
       state.loading = action.payload;
     },

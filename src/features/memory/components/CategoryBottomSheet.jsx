@@ -209,8 +209,8 @@ const styles = StyleSheet.create({
     color: '#FF9A00',
   },
   checkIcon: {
-    width: getResponsiveIconSize(18),
-    height: getResponsiveIconSize(18),
+    width: getResponsiveIconSize(15),
+    height: getResponsiveIconSize(15),
     resizeMode: 'contain',
   },
   footer: {
