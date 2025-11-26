@@ -66,11 +66,10 @@ const EmotionItem = ({item, isSelected, onPress}) => {
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const bgAnim = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
 
-  // 선택 여부가 바뀔 때 부드럽게 색 전환
   React.useEffect(() => {
     Animated.timing(bgAnim, {
       toValue: isSelected ? 1 : 0,
-      duration: 100, // 색 전환 속도 (ms)
+      duration: 100,
       useNativeDriver: false,
     }).start();
   }, [isSelected]);
@@ -91,7 +90,7 @@ const EmotionItem = ({item, isSelected, onPress}) => {
 
   const backgroundColor = bgAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['white', '#FFF5D1'], // 기본 → 선택된 색
+    outputRange: ['white', '#FFF5D1'],
   });
 
   const borderColor = bgAnim.interpolate({
@@ -151,7 +150,6 @@ export default function StateScreen() {
         }),
       )
         .then(() => {
-          console.log('✅ 감정 저장 성공');
           navigation.goBack();
         })
         .catch(err => {
@@ -173,7 +171,14 @@ export default function StateScreen() {
 
   return (
     <View style={styles.container}>
+      {/* 제목 */}
       <Text style={styles.title}>지금 나의 감정을 골라주세요</Text>
+
+      {/* 부제목 */}
+      <Text style={styles.subtitle}>
+        {'선택한 감정은 24시간 동안 유지돼요.'}
+      </Text>
+
       <FlatList
         data={EMOTIONS}
         renderItem={renderEmotion}
@@ -183,9 +188,8 @@ export default function StateScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
-      <BottomActionButton
-        label="선택 완료"
-        onPress={() => handleConfirm()}></BottomActionButton>
+
+      <BottomActionButton label="선택 완료" onPress={handleConfirm} />
     </View>
   );
 }
@@ -193,17 +197,29 @@ export default function StateScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: getResponsiveHeight(50),
+    paddingTop: getResponsiveHeight(45),
     paddingHorizontal: getResponsiveWidth(20),
     backgroundColor: '#F9F9F9',
   },
+
+  /** 제목 스타일 (앱 전체 통일 버전) */
   title: {
-    color: 'black',
     fontSize: getResponsiveFontSize(20),
-    fontFamily: 'Pretendard-Regular',
-    marginBottom: getResponsiveHeight(25),
+    fontFamily: 'Pretendard-SemiBold',
+    color: 'black',
     textAlign: 'center',
+    marginBottom: getResponsiveHeight(6),
   },
+
+  /** 부제목 스타일 */
+  subtitle: {
+    fontSize: getResponsiveFontSize(13),
+    fontFamily: 'Pretendard-Light',
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: getResponsiveHeight(25),
+  },
+
   listContent: {
     alignItems: 'center',
     paddingBottom: getResponsiveHeight(40),
@@ -212,43 +228,35 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: getResponsiveHeight(16),
   },
+
   emotionBox: {
     width: '45%',
     height: getResponsiveHeight(115),
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+
     shadowOffset: {width: 0, height: 2},
     shadowColor: '#000',
     shadowRadius: 5,
     shadowOpacity: 0.08,
     marginHorizontal: 10,
   },
+
   emotionImage: {
     width: getResponsiveWidth(60),
     height: getResponsiveWidth(60),
     marginBottom: getResponsiveHeight(8),
   },
+
   emotionText: {
     fontSize: getResponsiveFontSize(13.5),
     fontFamily: 'Pretendard-Regular',
     color: '#333',
   },
+
   emotionTextSelected: {
     fontFamily: 'Pretendard-Bold',
     color: '#000',
-  },
-  confirmButton: {
-    marginTop: 'auto',
-    marginBottom: getResponsiveHeight(50),
-    backgroundColor: '#FFC84D',
-    paddingVertical: getResponsiveHeight(16),
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  confirmButtonText: {
-    fontSize: getResponsiveFontSize(17),
-    fontFamily: 'Pretendard-Bold',
-    color: 'white',
   },
 });

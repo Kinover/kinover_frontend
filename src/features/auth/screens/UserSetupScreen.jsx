@@ -1,41 +1,78 @@
 import React, {useState} from 'react';
 import {View, Text, TextInput, StyleSheet} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {useRoute} from '@react-navigation/native';
 
 import {useNavigateToWhere} from 'hooks/useNatigateToWhere';
 import BottomActionButton from 'components/BottomActionButton';
-
+import {updateUserProfile} from 'api/userProfileApi';
 export default function UserSetupScreen() {
   const [name, setName] = useState('');
   const [birth, setBirth] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const navigateToWhere = useNavigateToWhere();
+  const route = useRoute();
 
-  const handleSubmit = () => {
-    if (!name || !birth) {
-      setError('필수 항목을 모두 입력해 주세요.');
-      return;
-    }
+  // 약관 params
+  const {
+    termsAgreed,
+    privacyAgreed,
+    marketingAgreed,
+    termsVersion,
+    privacyVersion,
+    agreedAt,
+    marketingAgreedAt,
+  } = route.params || {};
+
+  const handleSubmit = async () => {
+    // 유효성 체크 (정식 오픈 시 켜기)
+    // if (!name || !birth) {
+    //   setError('필수 항목을 모두 입력해 주세요.');
+    //   return;
+    // }
 
     setError('');
+    setLoading(true);
 
-    const userInfo = {name, birth};
-    console.log('유저 정보:', userInfo);
+    try {
+      const payload = {
+        name,
+        birth: formatDate(birth), // ← YYYY-MM-DD로 변환
+        termsAgreed,
+        privacyAgreed,
+        marketingAgreed,
+        termsVersion,
+        privacyVersion,
+        agreedAt: formatDate(new Date()), // ← 지금 날짜를 YYYY-MM-DD
+        marketingAgreedAt: marketingAgreed ? formatDate(new Date()) : null,
+      };
 
-    navigateToWhere({
-      root: 'Auth',
-      screen: '가족설정화면',
-    });
+      console.log('📡 updateUserProfile payload:', payload);
+
+      await updateUserProfile(payload);
+
+      navigateToWhere({
+        root: 'Auth',
+        screen: '가족설정화면',
+      });
+    } catch (e) {
+      console.log('❌ 프로필 업데이트 실패:', e);
+      setError('정보 저장 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>{`가족 연결을 위해
-몇 가지 정보가 필요해요`}</Text>
+      <Text
+        style={
+          styles.title
+        }>{`가족 연결을 위해\n몇 가지 정보가 필요해요`}</Text>
       <Text style={styles.sub}>Kinover에서 사용할 정보를 입력해주세요.</Text>
 
-      {/* 이름 */}
       <View style={styles.field}>
         <Text style={styles.label}>
           이름 <Text style={styles.star}>*</Text>
@@ -48,7 +85,6 @@ export default function UserSetupScreen() {
         />
       </View>
 
-      {/* 생년월일 */}
       <View style={styles.field}>
         <Text style={styles.label}>
           생년월일 <Text style={styles.star}>*</Text>
@@ -63,7 +99,11 @@ export default function UserSetupScreen() {
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
-      <BottomActionButton label="완료하기" onPress={handleSubmit} />
+      <BottomActionButton
+        label={loading ? '저장 중...' : '완료하기'}
+        onPress={handleSubmit}
+        disabled={loading}
+      />
     </SafeAreaView>
   );
 }
@@ -96,7 +136,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   star: {
-    color: '#DC2626', // 빨간색
+    color: '#DC2626',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -114,3 +154,14 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
 });
+
+export const formatDate = date => {
+  if (!date) return '';
+  const d = new Date(date);
+
+  const year = d.getFullYear();
+  const month = `${d.getMonth() + 1}`.padStart(2, '0');
+  const day = `${d.getDate()}`.padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};

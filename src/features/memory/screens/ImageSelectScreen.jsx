@@ -53,7 +53,7 @@ export default function ImageSelectPage() {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  const showToast = useCallback((msg) => {
+  const showToast = useCallback(msg => {
     setToastMessage(msg);
     setToastVisible(true);
   }, []);
@@ -209,8 +209,9 @@ export default function ImageSelectPage() {
           style={styles.permissionHint}
           onPress={() => Linking.openURL('app-settings:')}>
           <Text style={styles.permissionHintText}>
-            사진이 적게 보이나요? 설정 &gt; 본 앱 &gt; 사진 &gt; “모든 사진”으로
-            허용해 주세요.
+            {
+              '사진이 일부만 보인다면,\n설정 -> 본 앱 -> 사진 -> “모든 사진”으로 허용해 주세요.'
+            }
           </Text>
         </TouchableOpacity>
       )}
@@ -297,7 +298,7 @@ const styles = StyleSheet.create({
   },
   permissionHint: {
     position: 'absolute',
-    bottom: getResponsiveHeight(10),
+    bottom: getResponsiveHeight(50),
     left: getResponsiveWidth(10),
     right: getResponsiveWidth(10),
     backgroundColor: '#00000088',
@@ -308,7 +309,7 @@ const styles = StyleSheet.create({
   permissionHintText: {
     color: 'white',
     textAlign: 'center',
-    fontSize: getResponsiveFontSize(11),
+    fontSize: getResponsiveFontSize(12),
     lineHeight: getResponsiveHeight(16),
   },
   videoBadge: {

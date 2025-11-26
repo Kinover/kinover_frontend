@@ -117,7 +117,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
               </View>
 
               {/* 가족 선택 섹션 */}
-              <Text style={styles.subTitle}>유저 선택</Text>
+              <Text style={styles.subTitle}>구성원 선택</Text>
               <View
                 style={styles.userScrollWrapper}
                 onLayout={e =>

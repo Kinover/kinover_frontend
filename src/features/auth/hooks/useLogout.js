@@ -12,7 +12,7 @@ export const useLogout = () => {
     try {
       await KakaoLogin.logout(); // ✅ 토큰 삭제
       await deleteFcmToken();
-      deleteLoginInfo();
+      await deleteLoginInfo();
 
       navigation.reset({
         index: 0,

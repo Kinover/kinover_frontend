@@ -1,13 +1,9 @@
 // loginThunk.js
 import axios from 'axios';
-import { saveLoginInfo } from '../../../utils/storage';
-import {
-  setLoginLoading,
-  setLoginError,
-  setLoginSuccess,
-} from './authSlice';
+import { saveToken, setHasFamily} from '../../../utils/storage';
+import {setLoginLoading, setLoginError, setLoginSuccess} from './authSlice';
 
-import { fetchUserThunk } from '../../home/store/userThunk';
+import {fetchUserThunk} from '../../home/store/userThunk';
 
 export const loginThunk = kakaoUserDto => {
   return async dispatch => {
@@ -16,9 +12,10 @@ export const loginThunk = kakaoUserDto => {
       const apiUrl = 'https://kinover.shop/api/login/kakao';
 
       // kakaoUserDto가 문자열인지 확인하고 객체로 변환
-      const requestBody = typeof kakaoUserDto === 'string'
-        ? { accessToken: kakaoUserDto }
-        : kakaoUserDto;
+      const requestBody =
+        typeof kakaoUserDto === 'string'
+          ? {accessToken: kakaoUserDto}
+          : kakaoUserDto;
 
       // 요청 전 데이터 확인용 로그
       console.log('전송할 데이터:', JSON.stringify(requestBody));
@@ -26,11 +23,15 @@ export const loginThunk = kakaoUserDto => {
       const response = await axios.post(apiUrl, requestBody, {
         headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          Accept: 'application/json',
         },
       });
 
-      await saveLoginInfo(response.data); // token + hasFamily 저장
+      await saveToken(response.data.token); // token + hasFamily 저장
+      console.log("jwt토큰",response.data.token);
+      await setHasFamily(response.data.hasFamily); // token + hasFamily 저장
+      console.log("패밀리아이디",response.data.hasFamily);
+
 
       dispatch(setLoginSuccess());
       await dispatch(fetchUserThunk()); // 유저 정보 가져오기

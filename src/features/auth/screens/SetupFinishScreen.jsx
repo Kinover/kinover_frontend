@@ -1,3 +1,5 @@
+// SetupFinishScreen.tsx - Version 2
+
 import React from 'react';
 import {View, StyleSheet, Text} from 'react-native';
 import {
@@ -14,21 +16,14 @@ export default function SetupFinishScreen() {
   const navigation = useNavigation();
 
   const handleButtonClick = () => {
-    navigation.navigate('Tabs'); // 홈 탭으로 이동
+    navigation.navigate('Tabs');
   };
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      {/* 상단 텍스트 영역 */}
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>{`가족 모임이 생성되었어요`}</Text>
-        <Text style={styles.headerSubTitle}>
-          가족을 초대해 함께 추억을 쌓아가보세요
-        </Text>
-      </View>
-
-      {/* 가운데 이미지 영역 */}
-      <View style={styles.imageWrapper}>
+      {/* 상단 일러스트 영역 */}
+      <View style={styles.illustrationArea}>
+        <View style={styles.circleBg} />
         <FastImage
           style={styles.mainImage}
           resizeMode="contain"
@@ -36,8 +31,16 @@ export default function SetupFinishScreen() {
         />
       </View>
 
-      {/* 하단 액션 버튼 */}
-      <BottomActionButton label="홈으로 가기" onPress={handleButtonClick} />
+      {/* 텍스트 + 버튼 */}
+      <View style={styles.bottomArea}>
+        <View style={styles.textBlock}>
+          <Text style={styles.headerTitle}>가족 모임이 준비되었어요</Text>
+          <Text style={styles.headerSubTitle}>
+            가족과 함께 특별한 순간을 만들어보세요
+          </Text>
+        </View>
+      </View>
+      <BottomActionButton label="시작하기" onPress={handleButtonClick} />
     </SafeAreaView>
   );
 }
@@ -45,23 +48,50 @@ export default function SetupFinishScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    // backgroundColor: '#FFF5E6',
+    backgroundColor: 'white',
     paddingHorizontal: getResponsiveWidth(24),
-    backgroundColor: '#FFFFFF',
   },
 
-  // 상단 텍스트
-  headerContainer: {
-    marginTop: getResponsiveHeight(40),
+  illustrationArea: {
+    flex: 1.2,
     alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: getResponsiveHeight(24),
+  },
+  circleBg: {
+    position: 'absolute',
+    width: getResponsiveWidth(300),
+    height: getResponsiveWidth(300),
+    borderRadius: getResponsiveWidth(300) / 2,
+    // backgroundColor: '#FFDFAF', 제일 연한 노랑
+    // backgroundColor: '#FFF8EB', 중간 노랑
+    backgroundColor: '#FFF3DE',
+    opacity: 1,
+    top: getResponsiveHeight(90),
+  },
+  mainImage: {
+    width: '60%',
+    aspectRatio: 1.1,
+    marginBottom: getResponsiveHeight(65),
+  },
+
+  bottomArea: {
+    flex: 0.9,
+    justifyContent: 'space-between',
+    paddingBottom: getResponsiveHeight(30),
+  },
+  textBlock: {
+    alignItems: 'center',
+    marginBottom: getResponsiveHeight(16),
   },
   headerTitle: {
-    fontSize: getResponsiveFontSize(26),
+    fontSize: getResponsiveFontSize(24),
     fontFamily: 'Pretendard-SemiBold',
     color: '#111827',
     textAlign: 'center',
-    lineHeight: getResponsiveHeight(32),
+    lineHeight: getResponsiveHeight(30),
     marginBottom: getResponsiveHeight(6),
-    marginTop: getResponsiveHeight(30),
   },
   headerSubTitle: {
     fontSize: getResponsiveFontSize(13),
@@ -69,17 +99,5 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: getResponsiveHeight(20),
-  },
-
-  // 중앙 이미지
-  imageWrapper: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  mainImage: {
-    flex:1,
-    width: '60%',
-    objectFit: 'contain',
   },
 });

@@ -110,3 +110,46 @@ export const fetchFamilyStatusThunk = familyId => {
     }
   };
 };
+
+// 가족 구성원 추가
+export const addUserToFamily = (familyId, userId) => {
+  return async dispatch => {
+    dispatch(setFamilyLoading(true));
+    try {
+      const token = await getToken();
+
+      console.log('➡️ addUserToFamily 요청:', {familyId, userId});
+
+      const response = await axios.post(
+        `https://kinover.shop/api/family/add/${familyId}/${userId}`,
+        null,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      console.log('✅ 유저 기존 가족에 추가 성공:', response.data);
+
+      // 가족 정보 다시 조회해서 상태 최신화
+      await dispatch(fetchFamilyThunk(familyId));
+
+      return response.data;
+    } catch (error) {
+      console.error(
+        '❌ 유저 기존 가족에 추가 실패:',
+        error.response?.status,
+        error.response?.data || error.message,
+      );
+      dispatch(
+        setFamilyError(
+          error.response?.data?.message || '가족 구성원 추가에 실패했어요.',
+        ),
+      );
+      throw error;
+    } finally {
+      dispatch(setFamilyLoading(false));
+    }
+  };
+};
