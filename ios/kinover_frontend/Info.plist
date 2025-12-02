@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>KAKAO_APP_KEY</key>
+	<string>481db040d2e018832f0c8232a8fb7042</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
@@ -27,7 +29,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>kakaobce05be0c0a25b65bbb43adf582ff2f8</string>
+				<string>kakao481db040d2e018832f0c8232a8fb7042</string>
 			</array>
 		</dict>
 	</array>
@@ -37,8 +39,6 @@
 	<true/>
 	<key>FirebaseMessagingAutoInitEnabled</key>
 	<true/>
-	<key>KAKAO_APP_KEY</key>
-	<string>bce05be0c0a25b65bbb43adf582ff2f8</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>kakaokompassauth</string>
@@ -56,14 +56,14 @@
 		<true/>
 		<key>NSExceptionDomains</key>
 		<dict>
-			<key>kinover.shop</key>
+			<key>43.200.47.242</key>
 			<dict>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>
 				<true/>
 				<key>NSIncludesSubdomains</key>
 				<true/>
 			</dict>
-			<key>43.200.47.242</key>
+			<key>kinover.shop</key>
 			<dict>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>
 				<true/>
@@ -75,7 +75,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>카메라를 사용하려면 접근 권한이 필요합니다.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string/>
+	<string></string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>사진을 저장하려면 접근 권한이 필요합니다.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
-// MemoryScreen.js
-import React from 'react';
+// src/screens/memory/MemoryScreen.js
+import React, {useMemo, useState} from 'react';
 import {View, StyleSheet, TouchableOpacity, Image} from 'react-native';
 
 import MemoryFeed from './MemoryFeedScreen';
@@ -11,15 +11,16 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveIconSize,
+  getResponsiveFontSize,
 } from '../../../utils/responsive';
 import {useMemoryScreen} from '../hooks/useMemoryScreen';
 import SwipeNavigator from 'components/SwipeNavigator';
 
-// 🔹 공통 인앱 가이드
+// 공통 인앱 가이드
 import useGuide from 'hooks/useGuide';
 import GuideModal from 'components/GuideModal';
+import PeriodFilterModal from '../components/PeriodFilterModal';
 
-// 🔹 추억 화면 가이드 스텝
 const MEMORY_GUIDE_STEPS = [
   {
     title: '게시글 / 앨범 보기',
@@ -50,7 +51,6 @@ export default function MemoryScreen() {
     navigateToImageSelect,
   } = useMemoryScreen();
 
-  // 🔹 인앱 가이드 — 추억 화면 기준
   const {
     isGuideVisible,
     guideStep,
@@ -58,7 +58,45 @@ export default function MemoryScreen() {
     totalSteps,
     nextStep,
     skipGuide,
-  } = useGuide('MEMORY_GUIDE_SHOWN_V1', MEMORY_GUIDE_STEPS, true); // 테스트 위해 true 유지
+  } = useGuide('MEMORY_GUIDE_SHOWN_V1', MEMORY_GUIDE_STEPS, true);
+
+  // 🔹 기간 필터 상태
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [startDate, setStartDate] = useState(''); // 'YYYY-MM-DD'
+  const [endDate, setEndDate] = useState('');
+  const [rangePreset, setRangePreset] = useState('ALL'); // 프리셋 이름 저장
+
+  // 'YYYY-MM-DD' → 'YYYY.MM.DD'로 보여주기
+  const periodLabel = useMemo(() => {
+    if (!startDate || !endDate) return null; // 설정 안 되어 있으면 null
+    const formatDot = s => s.replace(/-/g, '.'); // 2025-11-01 → 2025.11.01
+    return `${formatDot(startDate)} ~ ${formatDot(endDate)}`;
+  }, [startDate, endDate]);
+
+  const handleApplyPeriod = ({startDate: s, endDate: e}) => {
+    // 전체 기간 선택한 경우: 둘 다 '' 내려오도록 했으면, 필터 해제
+    setStartDate(s || '');
+    setEndDate(e || '');
+    setIsFilterVisible(false);
+  };
+  const getPresetLabel = preset => {
+    switch (preset) {
+      case 'LAST_1WEEK':
+        return '최근 1주일';
+      case 'LAST_2WEEK':
+        return '최근 2주일';
+      case 'LAST_4WEEK':
+        return '최근 4주일';
+      case 'THIS_WEEK':
+        return '이번 주';
+      case 'PREV_WEEK':
+        return '지난 주';
+      case 'THIS_MONTH':
+        return '이번 달';
+      default:
+        return '전체 기간';
+    }
+  };
 
   return (
     <SwipeNavigator rightTo={null} leftTo="일정">
@@ -66,11 +104,15 @@ export default function MemoryScreen() {
         <AnimatedAlbumTabSelector
           selected={selectedTab}
           onSelect={setSelectedTab}
+          onPressDateFilter={() => setIsFilterVisible(true)}
+          periodLabel={periodLabel} // ✅ 여기!
         />
 
         <MemoryFeed
           selectedTab={selectedTab}
           selectedCategoryTitle={selectedCategoryTitle}
+          startDate={startDate}
+          endDate={endDate}
         />
 
         <CategoryBottomSheetModal
@@ -96,7 +138,7 @@ export default function MemoryScreen() {
           />
         </TouchableOpacity>
 
-        {/* 🔹 인앱 가이드 모달 */}
+        {/* 인앱 가이드 모달 */}
         {currentGuide && (
           <GuideModal
             visible={isGuideVisible}
@@ -108,6 +150,15 @@ export default function MemoryScreen() {
             onSkip={skipGuide}
           />
         )}
+
+        {/* 🔹 구체적인 기간 설정 모달 */}
+        <PeriodFilterModal
+          visible={isFilterVisible}
+          onClose={() => setIsFilterVisible(false)}
+          onApply={handleApplyPeriod}
+          initialStartDate={startDate}
+          initialWeeks={1}
+        />
       </View>
     </SwipeNavigator>
   );
@@ -117,5 +168,80 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9F9F9',
+  },
+  rangeBar: {
+    paddingHorizontal: getResponsiveWidth(24),
+    paddingBottom: getResponsiveHeight(4),
+  },
+  rangeText: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#777',
+  },
+
+  // 모달
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBox: {
+    width: '85%',
+    backgroundColor: 'white',
+    borderRadius: 16,
+    paddingHorizontal: getResponsiveWidth(20),
+    paddingVertical: getResponsiveHeight(16),
+  },
+  modalTitle: {
+    fontSize: getResponsiveFontSize(16),
+    fontFamily: 'Pretendard-SemiBold',
+    marginBottom: getResponsiveHeight(10),
+  },
+  modalSubTitle: {
+    fontSize: getResponsiveFontSize(13),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#555',
+    marginBottom: getResponsiveHeight(6),
+  },
+  chipRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: getResponsiveWidth(8),
+  },
+  chip: {
+    paddingHorizontal: getResponsiveWidth(10),
+    paddingVertical: getResponsiveHeight(6),
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    marginBottom: getResponsiveHeight(6),
+  },
+  chipActive: {
+    backgroundColor: '#FFC84D',
+    borderColor: '#FFC84D',
+  },
+  chipText: {
+    fontSize: getResponsiveFontSize(12),
+    color: '#555',
+  },
+  chipTextActive: {
+    color: '#000',
+    fontFamily: 'Pretendard-SemiBold',
+  },
+  footerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: getResponsiveHeight(12),
+  },
+  textButton: {
+    paddingVertical: getResponsiveHeight(4),
+  },
+  textButtonText: {
+    fontSize: getResponsiveFontSize(13),
+    color: '#222',
+  },
+  textButtonTextGray: {
+    fontSize: getResponsiveFontSize(13),
+    color: '#888',
   },
 });

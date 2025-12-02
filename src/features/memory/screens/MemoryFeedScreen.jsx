@@ -15,11 +15,17 @@ import {
 import {WINDOW_WIDTH} from '@gorhom/bottom-sheet';
 import SkeletonPhotoGridItem from '../components/SkeletonPhotoGridItem';
 import SkeletonMemoryItem from '../components/SkeletonMemoryItem';
+import {filterPostsByDateRange} from 'utils/postDateFilter';
 
 const ITEM_MARGIN = getResponsiveWidth(2);
 const fallbackImage = require('../../../assets/images/default.png');
 
-export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
+export default function MemoryFeed({
+  selectedCategoryTitle,
+  selectedTab,
+  startDate,
+  endDate,
+}) {
   const dispatch = useDispatch();
   const navigation = useNavigation();
 
@@ -54,12 +60,23 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
 
   // 필터링
   const filteredMemoryList = useMemo(() => {
-    if (selectedCategoryTitle === '전체') return memoryList;
-    return memoryList.filter(memory => {
-      const cat = categoryList.find(c => c.categoryId === memory.categoryId);
-      return cat?.title === selectedCategoryTitle;
-    });
-  }, [memoryList, categoryList, selectedCategoryTitle]);
+    // 1) 카테고리 필터 먼저
+    let list =
+      selectedCategoryTitle === '전체'
+        ? memoryList
+        : memoryList.filter(memory => {
+            const cat = categoryList.find(
+              c => c.categoryId === memory.categoryId,
+            );
+            return cat?.title === selectedCategoryTitle;
+          });
+
+    // 2) 날짜 필터 (startDate, endDate는 props로 내려온 값)
+    //    -> startDate / endDate 둘 다 비어있으면 filterPostsByDateRange가 전체 리스트 그대로 리턴하도록 만들어둔 거 활용
+    list = filterPostsByDateRange(list, startDate, endDate);
+
+    return list;
+  }, [memoryList, categoryList, selectedCategoryTitle, startDate, endDate]);
 
   // 전체 사진(flat)
   const allPhotos = useMemo(
@@ -107,13 +124,6 @@ export default function MemoryFeed({selectedCategoryTitle, selectedTab}) {
             memory.imageUrls?.[0] ? {uri: memory.imageUrls[0]} : fallbackImage
           }
         />
-
-        {/* 카테고리 뱃지 */}
-        {/* <View style={styles.categoryBadge}>
-          <Text style={styles.categoryText}>
-            {getCategoryLabel(memory.categoryId)}
-          </Text>
-        </View> */}
 
         <Text
           style={{

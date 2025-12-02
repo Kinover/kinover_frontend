@@ -1,5 +1,6 @@
 // src/features/common/guide/useGuide.js
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useState, useEffect} from 'react';
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -11,11 +12,11 @@ export default function useGuide(storageKey, steps = [], enabled = true) {
     if (!enabled || !steps.length) return;
 
     // ★ 테스트용: 무조건 가이드 열기
-    setIsGuideVisible(true);
-    setGuideStep(0);
+    // setIsGuideVisible(true);
+    // setGuideStep(0);
 
     // 아래 원래코드 비활성화
-    /*
+    
     const checkGuide = async () => {
       try {
         const hasShown = await AsyncStorage.getItem(storageKey);
@@ -29,18 +30,18 @@ export default function useGuide(storageKey, steps = [], enabled = true) {
     };
 
     checkGuide();
-    */
+    
   }, [storageKey, enabled, steps.length]);
 
   const finishGuide = async () => {
     setIsGuideVisible(false);
 
     // 테스트 중에는 실제로 기록 저장하지 않음
-    /*
+    
     try {
       await AsyncStorage.setItem(storageKey, 'true');
-    } catch (e) {}
-    */
+    } catch (e) {null;}
+    
   };
 
   const nextStep = () => {

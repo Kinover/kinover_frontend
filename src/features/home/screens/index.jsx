@@ -1,3 +1,5 @@
+// src/features/home/screens/HomeScreen.jsx
+
 import React, {useRef, useEffect, useState} from 'react';
 import {View, StyleSheet, ScrollView} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
@@ -6,7 +8,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import FamilyCodeModal from '../components/FamilyCodeModal';
 import UserBottomSheetModal from '../components/UserBottomSheet';
 
-import {fetchFamilyThunk,fetchFamilyStatusThunk} from '../store/familyThunk';
+import {fetchFamilyThunk, fetchFamilyStatusThunk} from '../store/familyThunk';
 import {fetchFamilyUserListThunk} from '../store/familyUserThunk';
 import {modifyUserThunk} from '../store/userThunk';
 
@@ -111,7 +113,7 @@ export default function HomeScreen() {
     if (user.userId && family.familyId) {
       dispatch(fetchFamilyThunk(family.familyId));
       dispatch(fetchFamilyUserListThunk(family.familyId));
-      dispatch(fetchFamilyStatusThunk(family.familyId)); // 👈 이 줄 추가
+      dispatch(fetchFamilyStatusThunk(family.familyId));
     }
   }, [dispatch, user.userId, family.familyId]);
 
@@ -133,14 +135,24 @@ export default function HomeScreen() {
   };
 
   const handleSave = async (name, trait, imageUrl) => {
-    await dispatch(
-      modifyUserThunk({
-        userId: selectedUser.userId,
-        name,
-        trait,
-        image: imageUrl,
-      }),
-    );
+    if (!selectedUser) return;
+
+    const payload = {
+      userId: selectedUser.userId,
+      name,
+      trait,
+    };
+
+    const trimmedImage = (imageUrl || '').trim();
+
+    // 🔹 실제 값이 있을 때만 image 필드 전송 → 빈 문자열로 기존 이미지 안 지움
+    if (trimmedImage) {
+      payload.image = trimmedImage;
+    }
+
+    console.log('🧾 modifyUserThunk payload =', payload);
+
+    await dispatch(modifyUserThunk(payload));
     userSheetRef.current?.dismiss();
     setSelectedUser(null);
   };

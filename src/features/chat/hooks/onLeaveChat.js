@@ -1,5 +1,6 @@
 // hooks/onLeaveChat.js
 
+import {removeChatRoomFromList} from '../store/chatRoomSlice';
 import {leaveChatRoomThunk} from '../store/chatRoomThunk';
 
 /**
@@ -12,6 +13,8 @@ export const onLeaveChat = (dispatch, navigation, chatRoomId, showToast) => {
   dispatch(leaveChatRoomThunk(chatRoomId))
     .unwrap()
     .then(() => {
+      // ✅ 리스트에서 해당 채팅방 제거
+      dispatch(removeChatRoomFromList(chatRoomId));
       if (showToast) {
         showToast('채팅방을 나갔습니다.');
       }

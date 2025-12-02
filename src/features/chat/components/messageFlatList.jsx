@@ -1,7 +1,7 @@
 // components/common/MessageFlatList.jsx
 import React from 'react';
 import {FlatList, ActivityIndicator, View} from 'react-native';
-import ChatMessageItem from './chatMessageItem';
+import ChatMessageItem from './ChatMessageItem';
 import {getResponsiveHeight} from '../../../utils/responsive';
 
 export default function MessageFlatList({

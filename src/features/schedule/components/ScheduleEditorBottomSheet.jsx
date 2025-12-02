@@ -1,18 +1,15 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, {forwardRef, useImperativeHandle, useState} from 'react';
+import React, {forwardRef, useImperativeHandle, useMemo, useState} from 'react';
 import {
   Text,
   View,
-  TouchableOpacity,
-  Image,
-  ScrollView,
   StyleSheet,
   Platform,
-  Keyboard,
-  TouchableWithoutFeedback,
+  Image,
+  ScrollView,
+  TouchableOpacity,
 } from 'react-native';
-import {BottomSheetTextInput, BottomSheetView} from '@gorhom/bottom-sheet';
-import LinearGradient from 'react-native-linear-gradient';
+import {BottomSheetTextInput} from '@gorhom/bottom-sheet';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -22,9 +19,8 @@ import {
 
 import {useScheduleBottomSheetModal} from '../hooks/useScheduleBottomSheetModal';
 import {useIsAllSelected} from '../hooks/useIsAllSelected';
-import {BottomSheetButtons} from 'components/BottomSheetButtons';
-import {KinoBottomSheet} from 'components/KinoBottomSheetModal';
 import ToastModal from '../../../components/ToastModal';
+import BottomSheetLayout from 'components/BottomSheetLayout';
 
 const ScheduleEditorBottomSheetModal = forwardRef(
   (
@@ -43,7 +39,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
   ) => {
     const {
       modalRef,
-      snapPoints,
       scheduleRef,
       inputKey,
       handleSave,
@@ -61,6 +56,8 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
     const [scrollContainerWidth, setScrollContainerWidth] = useState(0);
     const [canScroll, setCanScroll] = useState(false);
+    const snapPoints = useMemo(() => ['54%', '80%'], []);
+
 
     // ✅ 토스트 상태
     const [toastVisible, setToastVisible] = useState(false);
@@ -91,163 +88,126 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
     return (
       <>
-        <KinoBottomSheet
+        <BottomSheetLayout
           modalRef={modalRef}
           snapPoints={snapPoints}
-          enableContentPanningGesture={false}
-          keyboardBehavior="extend">
-          <TouchableWithoutFeedback
-            onPress={() => {
-              Keyboard.dismiss();
-              modalRef.current?.snapToIndex(0);
-            }}>
-            <BottomSheetView style={styles.container}>
-              {/* 제목 영역 */}
-              <View style={styles.titleRow}>
-                <View>
-                  <Text style={styles.sheetTitle}>
-                    {editingSchedule ? '일정 수정' : '일정 추가'}
+          keyboardBehavior="extend"
+          title={editingSchedule ? '일정 수정' : '일정 추가'}
+          subtitle="가족과 일정을 공유해요"
+          innerContentStyle={{flex: 1}}
+          contentStyle={{flex: 1}}
+          useFixedFooter={false}
+          footerProps={
+            editingSchedule
+              ? {
+                  onCancel: handleDelete,
+                  onSave: handlePressSave,
+                  cancelLabel: '삭제하기',
+                  saveLabel: '저장하기',
+                  showCancel: true,
+                }
+              : {
+                  onSave: handlePressSave,
+                  saveLabel: '저장',
+                  showCancel: false,
+                }
+          }>
+          {/* 여기부터는 내용만: 구성원 선택 + 텍스트 입력 */}
+
+          <Text style={styles.subTitle}>구성원 선택</Text>
+          <View
+            style={styles.userScrollWrapper}
+            onLayout={e => setScrollContainerWidth(e.nativeEvent.layout.width)}>
+            {/* familyUserList ScrollView 그대로 */}
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyboardShouldPersistTaps="always"
+              contentContainerStyle={{
+                paddingVertical: getResponsiveHeight(6),
+              }}
+              style={styles.userScroll}
+              onContentSizeChange={(contentWidth, _h) => {
+                setCanScroll(contentWidth > scrollContainerWidth + 8);
+              }}>
+              {/* ALL 버튼 */}
+              <View style={styles.avatarColumn}>
+                <TouchableOpacity
+                  style={[
+                    styles.avatarBtn,
+                    isSelectedAll && styles.avatarBtnSelected,
+                  ]}
+                  onPress={() => setSelectedUserId('')}>
+                  <Text
+                    style={[
+                      styles.allText,
+                      isSelectedAll && styles.allTextSelected,
+                    ]}>
+                    ALL
                   </Text>
-                  <Text style={styles.sheetSubtitle}>
-                    {editingSchedule
-                      ? '가족과 일정을 공유해요'
-                      : '가족과 일정을 공유해요'}
-                  </Text>
-                </View>
+                  {isSelectedAll && (
+                    <Image
+                      source={require('../../../assets/icons/check-yellow.png')}
+                      style={styles.checkBadge}
+                    />
+                  )}
+                </TouchableOpacity>
+                <Text style={styles.avatarLabel}>전체</Text>
               </View>
 
-              {/* 가족 선택 섹션 */}
-              <Text style={styles.subTitle}>구성원 선택</Text>
-              <View
-                style={styles.userScrollWrapper}
-                onLayout={e =>
-                  setScrollContainerWidth(e.nativeEvent.layout.width)
-                }>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  keyboardShouldPersistTaps="always"
-                  contentContainerStyle={{
-                    paddingVertical: getResponsiveHeight(6),
-                  }}
-                  style={styles.userScroll}
-                  onContentSizeChange={(contentWidth, _h) => {
-                    setCanScroll(contentWidth > scrollContainerWidth + 8);
-                  }}>
-                  {/* ALL 버튼 */}
-                  <View style={styles.avatarColumn}>
+              {/* 가족 리스트 */}
+              {familyUserList.map(user => {
+                const isSel = selectedUserId === user.userId;
+                return (
+                  <View key={user.userId} style={styles.avatarColumn}>
                     <TouchableOpacity
                       style={[
                         styles.avatarBtn,
-                        isSelectedAll && styles.avatarBtnSelected,
+                        isSel && styles.avatarBtnSelected,
                       ]}
-                      onPress={() => setSelectedUserId('')}>
-                      <Text
+                      onPress={() => setSelectedUserId(user.userId)}>
+                      <Image
+                        source={{uri: user.image}}
                         style={[
-                          styles.allText,
-                          isSelectedAll && styles.allTextSelected,
-                        ]}>
-                        ALL
-                      </Text>
-                      {isSelectedAll && (
+                          styles.avatarImage,
+                          isSel && styles.avatarImageSelected,
+                        ]}
+                      />
+                      {isSel && (
                         <Image
                           source={require('../../../assets/icons/check-yellow.png')}
                           style={styles.checkBadge}
                         />
                       )}
                     </TouchableOpacity>
-                    <Text style={styles.avatarLabel}>전체</Text>
+                    <Text style={styles.avatarLabel} numberOfLines={1}>
+                      {user.name}
+                    </Text>
                   </View>
+                );
+              })}
+            </ScrollView>
+          </View>
 
-                  {/* 가족 리스트 */}
-                  {familyUserList.map(user => {
-                    const isSel = selectedUserId === user.userId;
-                    return (
-                      <View key={user.userId} style={styles.avatarColumn}>
-                        <TouchableOpacity
-                          style={[
-                            styles.avatarBtn,
-                            isSel && styles.avatarBtnSelected,
-                          ]}
-                          onPress={() => setSelectedUserId(user.userId)}>
-                          <Image
-                            source={{uri: user.image}}
-                            style={[
-                              styles.avatarImage,
-                              isSel && styles.avatarImageSelected,
-                            ]}
-                          />
-                          {isSel && (
-                            <Image
-                              source={require('../../../assets/icons/check-yellow.png')}
-                              style={styles.checkBadge}
-                            />
-                          )}
-                        </TouchableOpacity>
-                        <Text style={styles.avatarLabel} numberOfLines={1}>
-                          {user.name}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </ScrollView>
-
-                {/* 오른쪽 끝 페이드 */}
-                {canScroll && (
-                  <LinearGradient
-                    pointerEvents="none"
-                    colors={[
-                      'rgba(255,255,255,0)',
-                      'rgba(255,255,255,0.4)',
-                      'rgba(255,255,255,0.9)',
-                    ]}
-                    locations={[0, 0.4, 1]}
-                    start={{x: 0, y: 0.5}}
-                    end={{x: 1, y: 0.5}}
-                    style={styles.rightFade}
-                  />
-                )}
-              </View>
-
-              {/* 일정 내용 입력 */}
-              <Text style={styles.subTitle}>일정 내용</Text>
-              <BottomSheetTextInput
-                key={`input-${inputKey}`}
-                defaultValue={scheduleRef.current}
-                onChangeText={text => (scheduleRef.current = text)}
-                onFocus={() =>
-                  setTimeout(() => modalRef.current?.snapToIndex(1), 50)
-                }
-                placeholder="예) 병원 예약, 가족 모임"
-                placeholderTextColor="#B0B0B0"
-                style={styles.input}
-                autoCorrect={false}
-                autoCapitalize="none"
-                multiline
-                autoComplete="off"
-                spellCheck={false}
-                importantForAutofill="no"
-              />
-
-              {/* 하단 버튼 공통 컴포넌트 */}
-              {editingSchedule ? (
-                <BottomSheetButtons
-                  onCancel={handleDelete}
-                  onSave={handlePressSave}
-                  cancelLabel="삭제하기"
-                  saveLabel="저장하기"
-                  showCancel={true}
-                />
-              ) : (
-                <BottomSheetButtons
-                  onSave={handlePressSave}
-                  saveLabel="저장"
-                  showCancel={false}
-                />
-              )}
-            </BottomSheetView>
-          </TouchableWithoutFeedback>
-        </KinoBottomSheet>
+          <Text style={styles.subTitle}>일정 내용</Text>
+          <BottomSheetTextInput
+            key={`input-${inputKey}`}
+            defaultValue={scheduleRef.current}
+            onChangeText={text => (scheduleRef.current = text)}
+            onFocus={() =>
+              setTimeout(() => modalRef.current?.snapToIndex(1), 50)
+            }
+            placeholder="예) 병원 예약, 가족 모임"
+            placeholderTextColor="#B0B0B0"
+            style={[styles.input, {marginBottom: getResponsiveHeight(12.5)}]}
+            autoCorrect={false}
+            autoCapitalize="none"
+            multiline
+            autoComplete="off"
+            spellCheck={false}
+            importantForAutofill="no"
+          />
+        </BottomSheetLayout>
 
         {/* ✅ 토스트 모달 */}
         <ToastModal
@@ -286,7 +246,7 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(12),
     fontFamily: 'Pretendard-Regular',
     color: '#6B7280',
-    marginBottom:getResponsiveHeight(10),
+    marginBottom: getResponsiveHeight(10),
   },
   subTitle: {
     fontSize: getResponsiveFontSize(12.5),
@@ -378,7 +338,6 @@ const styles = StyleSheet.create({
         ? getResponsiveHeight(8)
         : getResponsiveHeight(10),
     height: getResponsiveHeight(100),
-    marginBottom: getResponsiveHeight(8),
     fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-Regular',
     color: '#111827',
