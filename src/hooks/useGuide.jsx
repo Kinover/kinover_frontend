@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useState, useEffect} from 'react';
 // import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export default function useGuide(storageKey, steps = [], enabled = true) {
+export default function useGuide(storageKey, steps = [], enabled = false) {
   const [isGuideVisible, setIsGuideVisible] = useState(false);
   const [guideStep, setGuideStep] = useState(0);
 
