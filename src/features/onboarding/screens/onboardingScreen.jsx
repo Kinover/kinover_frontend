@@ -19,11 +19,10 @@ import {
   getResponsiveWidth,
 } from '../../../utils/responsive';
 
-// import {useAutoLogin} from 'features/auth/hooks/useAutoLogin';
 import {useKakaoLogin} from 'features/auth/hooks/useKakaoLogin';
 import {useOnboardingPager} from '../hooks/useOnboardingPager';
 import {useAutoLogin} from 'features/auth/hooks/useAutoLogin';
-// import {useNavigateToHome} from '../hooks/useNavigateToHome';
+import FastImage from '@d11/react-native-fast-image';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -182,13 +181,15 @@ export default function OnboardingScreen() {
 
           return (
             <View style={styles.slide}>
-              <Image
+              {/* 배경 이미지 */}
+              <FastImage
                 source={require('../../../assets/onboarding/background.png')}
                 style={styles.backgroundImage}
-                resizeMode="contain"
+                resizeMode={FastImage.resizeMode.contain}
               />
 
-              <Image
+              {/* 슬라이드 메인 이미지 */}
+              <FastImage
                 source={item.image}
                 style={[
                   styles.slideImage,
@@ -198,19 +199,18 @@ export default function OnboardingScreen() {
                   },
                   item.key === '2' && {
                     width: '70%',
-                    resizeMode: 'cover',
                     top: getResponsiveHeight(70),
                   },
                   item.key === '3' && {width: '70%'},
                   item.key === '4' && {
                     width: '100%',
-                    resizeMode: 'cover',
                     zIndex: 999,
                   },
                 ]}
-                resizeMode="contain"
+                resizeMode={FastImage.resizeMode.contain}
               />
 
+              {/* 텍스트 */}
               <Text
                 style={[
                   styles.slideText,
@@ -227,6 +227,7 @@ export default function OnboardingScreen() {
         }}
       />
 
+      {/* 인디케이터 */}
       <View style={styles.indicatorContainer}>
         {slides.map((_, index) => (
           <View
@@ -239,6 +240,7 @@ export default function OnboardingScreen() {
         ))}
       </View>
 
+      {/* 카카오 로그인 버튼 */}
       <View style={styles.bottomContainer}>
         <TouchableOpacity onPress={login}>
           <Image

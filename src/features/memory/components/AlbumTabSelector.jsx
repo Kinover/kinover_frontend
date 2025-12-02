@@ -1,3 +1,4 @@
+// src/screens/memory/components/AlbumTabSelector.js
 import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
@@ -20,7 +21,12 @@ const TABS = [
 
 const BASE_UNDERLINE_WIDTH = 40; // 밑줄 기준 너비
 
-export default function AnimatedAlbumTabSelector({selected, onSelect}) {
+export default function AnimatedAlbumTabSelector({
+  selected,
+  onSelect,
+  onPressDateFilter, // 기간 버튼 콜백
+  periodLabel,       // ✅ '2025.11.01 ~ 2025.11.30' 같은 텍스트 (옵션)
+}) {
   const translateX = useRef(new Animated.Value(0)).current;
   const scaleX = useRef(new Animated.Value(1)).current;
   const [positions, setPositions] = useState({});
@@ -52,38 +58,65 @@ export default function AnimatedAlbumTabSelector({selected, onSelect}) {
         }),
       ]).start();
     }
-  }, [selected, positions]);
+  }, [selected, positions, translateX, scaleX]);
+
+  // ✅ periodLabel 있으면 그걸 보여주고, 없으면 '기간' 유지
+  const rightLabel = periodLabel || '기간';
+  const isActive = !!periodLabel; // 기간 설정된 상태
 
   return (
     <View style={styles.container}>
-      <View style={styles.tabRowContainer}>
-        <View style={styles.tabRow}>
-          {TABS.map(tab => (
-            <TouchableOpacity
-              key={tab.key}
-              onPress={() => onSelect(tab.key)}
-              style={styles.tab}
-              activeOpacity={0.7}
-              onLayout={e => handleLayout(tab.key, e)} // ✅ 여기에 onLayout!
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  selected === tab.key && styles.selectedText,
-                ]}>
-                {tab.title}
-              </Text>
-            </TouchableOpacity>
-          ))}
-          <Animated.View
-            style={[
-              styles.underline,
-              {
-                transform: [{translateX}, {scaleX}],
-              },
-            ]}
-          />
+      {/* 탭 + 기간 버튼 한 줄 */}
+      <View style={styles.headerRow}>
+        <View style={styles.tabRowContainer}>
+          <View style={styles.tabRow}>
+            {TABS.map(tab => (
+              <TouchableOpacity
+                key={tab.key}
+                onPress={() => onSelect(tab.key)}
+                style={styles.tab}
+                activeOpacity={0.7}
+                onLayout={e => handleLayout(tab.key, e)}>
+                <Text
+                  style={[
+                    styles.tabText,
+                    selected === tab.key && styles.selectedText,
+                  ]}>
+                  {tab.title}
+                </Text>
+              </TouchableOpacity>
+            ))}
+
+            <Animated.View
+              style={[
+                styles.underline,
+                {
+                  transform: [{translateX}, {scaleX}],
+                },
+              ]}
+            />
+          </View>
         </View>
+
+        {/* 기간 버튼 */}
+        {onPressDateFilter && (
+          <TouchableOpacity
+            style={[
+              styles.filterButton,
+            ]}
+            activeOpacity={0.7}
+            onPress={onPressDateFilter}>
+            <Text
+              style={[
+                styles.filterButtonText,
+                isActive && styles.filterButtonTextActive,
+              ]}
+              numberOfLines={1}
+              ellipsizeMode="tail">
+              {rightLabel}
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -97,41 +130,68 @@ const styles = StyleSheet.create({
       Platform.OS === 'android'
         ? getResponsiveHeight(5)
         : getResponsiveHeight(5),
-    paddingHorizontal: getResponsiveWidth(24),
+    paddingHorizontal: getResponsiveWidth(23),
   },
+
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  tabRowContainer: {
+    position: 'relative',
+    flexShrink: 1,
+  },
+  tabRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    position: 'relative',
+  },
+
   tab: {
     marginRight: getResponsiveWidth(25),
   },
   tabText: {
     fontSize: getResponsiveFontSize(16),
     fontFamily: 'Pretendard-SemiBold',
-    fontWeight: 'semibold',
+    fontWeight: '600',
     color: '#4A4A4A',
     textAlignVertical: 'bottom',
   },
   selectedText: {
     color: 'black',
     fontWeight: 'bold',
-    fontFamily: 'Pretendard-bold',
-    // color: '#FFC84D',
+    fontFamily: 'Pretendard-Bold',
   },
 
-  tabRowContainer: {
-    position: 'relative', // underline 위치 기준
-  },
-  tabRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    position: 'relative', // underline이 이 안에서 움직이도록
-  },
   underline: {
     height: 2,
     width: BASE_UNDERLINE_WIDTH + 5,
-    // backgroundColor: '#FFC84D',
-    // backgroundColor: '#4A4A4A',
     backgroundColor: 'black',
     position: 'absolute',
-    bottom: -11, // 탭 텍스트 바로 아래로 내리기 (필요에 따라 조절)
+    bottom: -11,
     left: 0,
+  },
+
+  filterButton: {
+    maxWidth: getResponsiveWidth(200), // 날짜 길어질 수 있으니 최대폭 제한
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(6),
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  filterButtonActive: {
+    borderColor: '#FFC84D',
+    backgroundColor: '#FFF8E5',
+  },
+  filterButtonText: {
+    fontSize: getResponsiveFontSize(13),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#4A4A4A',
+  },
+  filterButtonTextActive: {
+    color: '#111827',
   },
 });

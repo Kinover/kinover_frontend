@@ -1,3 +1,5 @@
+// src/features/home/components/UserBottomSheet.jsx
+
 /* eslint-disable react-native/no-inline-styles */
 import React, {
   useState,
@@ -17,10 +19,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
 } from 'react-native';
-import {
-  BottomSheetScrollView,
-  BottomSheetTextInput,
-} from '@gorhom/bottom-sheet';
+import {BottomSheetTextInput} from '@gorhom/bottom-sheet';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {
   getResponsiveFontSize,
@@ -32,20 +31,20 @@ import {
   convertPhUriToFileUri,
   convertContentUriToFileUri,
 } from '../../../utils/photoUriConverter';
-import {BottomSheetButtons} from 'components/BottomSheetButtons';
-import {KinoBottomSheet} from 'components/KinoBottomSheetModal';
 import ToastModal from '../../../components/ToastModal';
 import {getPresignedUrls, uploadFileToS3} from 'api/imageUrlApi';
+import BottomSheetLayout from 'components/BottomSheetLayout';
+import {normalizeImageForSave} from 'utils/normalizeImageforSave';
 
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 const windowHeight = Dimensions.get('window').height;
 
 function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
-  const snapPoints = useMemo(() => ['58.5%', '82%'], []);
+  const snapPoints = useMemo(() => ['60%', '82%'], []);
 
   const nameRef = useRef('');
   const traitRef = useRef('');
-  const imageUrlRef = useRef('');
+  const imageUrlRef = useRef(''); // DB에 저장할 raw 값 (key 또는 full URL)
 
   const [previewImage, setPreviewImage] = useState('');
   const [nameKey, setNameKey] = useState(0);
@@ -55,7 +54,6 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
 
   const modalRef = useRef(null);
 
-  // 🔹 토스트
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
@@ -75,7 +73,6 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
 
   // 선택된 유저 바뀔 때 초기값 세팅
   useEffect(() => {
-    // 🔹 selectedUser 없으면 초기화하지 않고 그냥 무시
     if (!selectedUser) return;
 
     const n = selectedUser.name ?? '';
@@ -87,7 +84,15 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
     nameRef.current = n;
     traitRef.current = t;
     imageUrlRef.current = img;
-    setPreviewImage(img);
+
+    const preview =
+      img && img.length > 0
+        ? img.startsWith('http')
+          ? img
+          : `${CLOUD_FRONT}${img}`
+        : '';
+
+    setPreviewImage(preview);
 
     setNameKey(k => k + 1);
     setTraitKey(k => k + 1);
@@ -108,50 +113,41 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
     if (!result.assets?.length) return;
 
     const selectedAsset = result.assets[0];
-    let fileUri = selectedAsset.uri;
+    let fileUri = selectedAsset.uri || '';
     let fileName = selectedAsset.fileName || `img_${Date.now()}.jpg`;
 
-    // 확장자 없으면 기본 jpg 붙이기
+    // 이미 http로 시작하면 그대로 사용 (카카오 등)
+    if (fileUri.startsWith('http')) {
+      imageUrlRef.current = fileUri;
+      setPreviewImage(fileUri);
+      return;
+    }
+
+    // 확장자 보정
     if (!/\.[a-zA-Z0-9]+$/.test(fileName)) {
       fileName = `${fileName}.jpg`;
     }
 
-    console.log('📷 선택한 asset:', {
-      uri: selectedAsset.uri,
-      fileUri,
-      fileName,
-    });
-
-    // 일단 로컬 경로로 프리뷰 먼저
     setPreviewImage(fileUri);
 
     try {
-      // iOS: ph:// → file://
       if (Platform.OS === 'ios' && fileUri.startsWith('ph://')) {
         fileUri = await convertPhUriToFileUri(fileUri, 0, false);
-        console.log('📷 변환된 iOS fileUri:', fileUri);
         if (!fileUri) throw new Error('iOS ph:// 변환 실패');
       }
 
-      // Android: content:// → file://
       if (Platform.OS === 'android' && fileUri.startsWith('content://')) {
         fileUri = await convertContentUriToFileUri(fileUri, 0, false);
-        console.log('📷 변환된 Android fileUri:', fileUri);
         if (!fileUri) throw new Error('Android content:// 변환 실패');
       }
 
-      // 1) presigned URL 하나 받아오기 (채팅과 동일 방식)
       const [presignedUrl] = await getPresignedUrls([fileName]);
-      console.log('🔗 presignedUrl:', presignedUrl);
-
-      // 2) S3로 실제 업로드
       await uploadFileToS3(presignedUrl, fileUri, fileName);
-      console.log('✅ 프로필 이미지 업로드 성공');
 
-      // 3) 최종 CDN URL 세팅
-      const fullUrl = `${CLOUD_FRONT}${fileName}`;
-      imageUrlRef.current = fullUrl;
-      setPreviewImage(fullUrl);
+      // DB에는 key만 저장
+      imageUrlRef.current = fileName;
+      // 미리보기는 전체 URL
+      setPreviewImage(`${CLOUD_FRONT}${fileName}`);
     } catch (err) {
       console.error('❌ 프로필 이미지 업로드 실패:', err);
       showToast('이미지 업로드 중 문제가 발생했어요.');
@@ -159,37 +155,29 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
   };
 
   const handleSave = () => {
-    // 1) 기존 값
     const {
       name: initialName,
       trait: initialTrait,
       image: initialImage,
     } = initialDataRef.current;
 
-    // 2) 이름: 입력이 비어 있으면 기존 값 유지
     const trimmedName = (nameRef.current || '').trim();
     const finalName = trimmedName.length > 0 ? trimmedName : initialName ?? '';
 
-    // 3) 특징: 입력이 비어 있으면 기존 값 유지
     const trimmedTrait = (traitRef.current || '').trim();
     const finalTrait =
       trimmedTrait.length > 0 ? trimmedTrait : initialTrait ?? '';
 
-    // 4) 이미지: 새 업로드가 있으면 그거, 없으면 기존 값 유지
+    // 새로 선택된 이미지가 있으면 그걸, 아니면 기존 이미지 유지
     const rawImg =
       (imageUrlRef.current && imageUrlRef.current.trim().length > 0
         ? imageUrlRef.current
         : initialImage) || '';
 
-    // 백엔드가 "파일명만" 받는 구조면 CLOUD_FRONT 잘라서 넘기고,
-    // 풀 URL을 받으면 아래 한 줄만 쓰면 됨.
-    const finalImageUrl = rawImg.startsWith(CLOUD_FRONT)
-      ? rawImg.replace(CLOUD_FRONT, '')
-      : rawImg;
+    const finalImageUrl = normalizeImageForSave(rawImg);
 
-    console.log('✅ UserBottomSheetModal save payload:', {
-      finalName,
-      finalTrait,
+    console.log('🔥 user save payload image =', {
+      rawImg,
       finalImageUrl,
     });
 
@@ -201,7 +189,15 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
     nameRef.current = name;
     traitRef.current = trait;
     imageUrlRef.current = image;
-    setPreviewImage(image);
+
+    const preview =
+      image && image.length > 0
+        ? image.startsWith('http')
+          ? image
+          : `${CLOUD_FRONT}${image}`
+        : '';
+
+    setPreviewImage(preview);
 
     setNameKey(k => k + 1);
     setTraitKey(k => k + 1);
@@ -209,103 +205,87 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
 
   return (
     <>
-      <KinoBottomSheet
+      <BottomSheetLayout
         modalRef={modalRef}
         snapPoints={snapPoints}
-        keyboardBehavior="interactive">
-        <BottomSheetScrollView
-          contentContainerStyle={[
-            styles.container,
-            {
-              minHeight: windowHeight * (Platform.OS === 'ios' ? 0.78 : 0.72),
-            },
-          ]}
-          keyboardShouldPersistTaps="handled">
-          <TouchableWithoutFeedback
-            onPress={() => {
-              Keyboard.dismiss();
-              modalRef.current?.snapToIndex(0);
-            }}>
-            <View style={{flex: 1}}>
-              {/* 상단 타이틀 */}
-              <View style={styles.headerRow}>
-                <View>
-                  <Text style={styles.sheetTitle}>프로필 편집</Text>
-                  <Text style={styles.sheetSubtitle}>
-                    가족에게 보이는 이름과 한마디를 설정해요.
-                  </Text>
-                </View>
-              </View>
-
-              {/* 프로필 이미지 */}
-              <TouchableOpacity
-                style={styles.profileTouchArea}
-                onPress={handleImagePick}>
-                <View style={styles.profileimageContainer}>
+        keyboardBehavior="interactive"
+        title="프로필 편집"
+        subtitle="가족에게 보이는 이름과 한마디를 설정해요."
+        footerProps={{
+          onCancel: handleCancel,
+          onSave: handleSave,
+          saveLabel: '적용하기',
+        }}
+        innerContentStyle={{flex: 1}}
+        useFixedFooter={false}
+        contentStyle={{flex: 1}}>
+        <TouchableWithoutFeedback
+          onPress={() => {
+            Keyboard.dismiss();
+            modalRef.current?.snapToIndex(0);
+          }}>
+          <View style={{flex: 1}}>
+            <TouchableOpacity
+              style={styles.profileTouchArea}
+              onPress={handleImagePick}>
+              <View style={styles.profileimageContainer}>
+                <FastImage
+                  source={
+                    previewImage
+                      ? {uri: previewImage}
+                      : require('../../../assets/images/default.png')
+                  }
+                  style={styles.profileImage}
+                />
+                <View style={styles.profileRing} />
+                <View style={styles.profileBadge}>
                   <FastImage
-                    source={
-                      previewImage
-                        ? {uri: previewImage}
-                        : require('../../../assets/images/default.png')
-                    }
-                    style={styles.profileImage}
+                    style={styles.profileBadgeIcon}
+                    source={require('../../../assets/images/pencil.png')}
                   />
-                  <View style={styles.profileRing} />
-                  <View style={styles.profileBadge}>
-                    <FastImage
-                      style={styles.profileBadgeIcon}
-                      source={require('../../../assets/images/pencil.png')}
-                    />
-                  </View>
                 </View>
-                <Text style={styles.profileEditText}>사진 변경</Text>
-              </TouchableOpacity>
-
-              {/* 별명 입력 */}
-              <View style={styles.fieldBlock}>
-                <Text style={styles.label}>별명</Text>
-                <BottomSheetTextInput
-                  key={`name-${nameKey}`}
-                  style={styles.input}
-                  defaultValue={nameRef.current}
-                  onFocus={() =>
-                    setTimeout(() => modalRef.current?.snapToIndex(1), 50)
-                  }
-                  onChangeText={text => {
-                    nameRef.current = text;
-                  }}
-                  placeholder="가족들이 부르는 이름을 적어주세요."
-                  placeholderTextColor="#9CA3AF"
-                />
               </View>
+              <Text style={styles.profileEditText}>사진 변경</Text>
+            </TouchableOpacity>
 
-              {/* 특징 입력 */}
-              <View style={styles.fieldBlock}>
-                <Text style={styles.label}>한 줄 소개</Text>
-                <BottomSheetTextInput
-                  key={`trait-${traitKey}`}
-                  style={[styles.input, styles.textArea]}
-                  defaultValue={traitRef.current}
-                  multiline
-                  onFocus={() =>
-                    setTimeout(() => modalRef.current?.snapToIndex(1), 50)
-                  }
-                  onChangeText={text => {
-                    traitRef.current = text;
-                  }}
-                  placeholder="성격, 분위기, 기억에 남는 포인트를 가볍게 적어보세요."
-                  placeholderTextColor="#9CA3AF"
-                />
-              </View>
-
-              {/* 하단 버튼 */}
-              <BottomSheetButtons onCancel={handleCancel} onSave={handleSave} />
+            <View style={styles.fieldBlock}>
+              <Text style={styles.label}>별명</Text>
+              <BottomSheetTextInput
+                key={`name-${nameKey}`}
+                style={styles.input}
+                defaultValue={nameRef.current}
+                onFocus={() =>
+                  setTimeout(() => modalRef.current?.snapToIndex(1), 50)
+                }
+                onChangeText={text => {
+                  nameRef.current = text;
+                }}
+                placeholder="가족들이 부르는 이름을 적어주세요."
+                placeholderTextColor="#9CA3AF"
+              />
             </View>
-          </TouchableWithoutFeedback>
-        </BottomSheetScrollView>
-      </KinoBottomSheet>
 
-      {/* 토스트 */}
+            <View style={styles.fieldBlock}>
+              <Text style={styles.label}>한 줄 소개</Text>
+              <BottomSheetTextInput
+                key={`trait-${traitKey}`}
+                style={[styles.input, styles.textArea]}
+                defaultValue={traitRef.current}
+                multiline
+                onFocus={() =>
+                  setTimeout(() => modalRef.current?.snapToIndex(1), 50)
+                }
+                onChangeText={text => {
+                  traitRef.current = text;
+                }}
+                placeholder="성격, 분위기, 기억에 남는 포인트를 가볍게 적어보세요."
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </BottomSheetLayout>
+
       <ToastModal
         visible={toastVisible}
         onClose={hideToast}
@@ -323,22 +303,8 @@ export default UserBottomSheetModal;
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: getResponsiveWidth(22),
-    paddingTop: getResponsiveHeight(14),
-    paddingBottom: getResponsiveHeight(26),
-  },
-  headerRow: {
-    marginBottom: getResponsiveHeight(12),
-  },
-  sheetTitle: {
-    fontSize: getResponsiveFontSize(16.5),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#111827',
-  },
-  sheetSubtitle: {
-    marginTop: getResponsiveHeight(4),
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-Regular',
-    color: '#6B7280',
+    paddingTop: getResponsiveHeight(4),
+    paddingBottom: getResponsiveHeight(16),
   },
   profileTouchArea: {
     width: '45%',

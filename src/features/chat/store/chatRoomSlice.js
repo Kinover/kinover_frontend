@@ -77,7 +77,6 @@ const chatRoomSlice = createSlice({
     },
 
     /** 서버에서 내려온 채팅방 리스트 설정 */
-    /** 서버에서 내려온 채팅방 리스트 설정 */
     setChatRoomList(state, action) {
       const src = Array.isArray(action.payload) ? action.payload : [];
 
@@ -213,6 +212,20 @@ const chatRoomSlice = createSlice({
         state.listRevision += 1;
       }
     },
+    removeChatRoomFromList(state, action) {
+      const rid = toId(action.payload);
+
+      state.chatRoomList = state.chatRoomList.filter(
+        room => toId(room.chatRoomId) !== rid,
+      );
+
+      // 만약 현재 활성 방이 이 방이면 activeChatRoomId도 초기화
+      if (state.activeChatRoomId === rid) {
+        state.activeChatRoomId = null;
+      }
+
+      state.listRevision += 1;
+    },
   },
 });
 
@@ -230,6 +243,7 @@ export const {
   applyMessagePreview,
   markRoomRead,
   updateChatRoomNameInList,
+  removeChatRoomFromList
 } = chatRoomSlice.actions;
 
 export default chatRoomSlice.reducer;

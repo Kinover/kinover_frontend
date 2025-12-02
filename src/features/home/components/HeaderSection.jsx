@@ -1,3 +1,5 @@
+// src/features/home/components/HeaderSection.jsx
+
 import React from 'react';
 import {
   View,
@@ -40,7 +42,7 @@ const getEmotionImage = emotion => {
       return null;
   }
 };
-// ✅ HeaderSection.tsx 추천 버전
+
 export default function HeaderSection({user, onUserPress}) {
   const navigation = useNavigation();
 
@@ -49,12 +51,12 @@ export default function HeaderSection({user, onUserPress}) {
   const emotionKey = rawEmotion ? String(rawEmotion).toUpperCase() : null;
   const emotionImage = emotionKey ? getEmotionImage(emotionKey) : null;
 
-  // 프로필 이미지 소스만 심플하게
+  // 프로필 이미지 소스
   const profileSource = user?.image
     ? {
-        uri: user.image.startsWith('http')
-          ? user.image
-          : CLOUD_FRONT + user.image,
+        uri: user.image.startsWith('https')
+          ? user.image // kakao, full url 등
+          : CLOUD_FRONT + user.image, // key면 CloudFront + key
       }
     : require('../../../assets/images/default.png');
 
@@ -85,10 +87,7 @@ export default function HeaderSection({user, onUserPress}) {
       />
 
       <Text style={styles.userNameHeader}>{user?.name}</Text>
-      <Text
-        style={styles.trait}
-        numberOfLines={1}
-        ellipsizeMode="tail">
+      <Text style={styles.trait} numberOfLines={1} ellipsizeMode="tail">
         {user?.trait || '이 사람을 한마디로 표현한다면?'}
       </Text>
     </View>
@@ -104,7 +103,6 @@ const styles = StyleSheet.create({
     zIndex: 10,
     marginHorizontal: getResponsiveWidth(25),
   },
-
   headerBox: {
     position: 'absolute',
     bottom: 0,
@@ -119,7 +117,6 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(135),
     zIndex: -5,
   },
-
   imageWrapper: {
     position: 'relative',
     justifyContent: 'flex-end',
@@ -128,7 +125,6 @@ const styles = StyleSheet.create({
     width: AVATAR * 1.22,
     height: AVATAR * 1.22,
   },
-
   emotionImage: {
     position: 'absolute',
     width: AVATAR * 1.55,
@@ -137,7 +133,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 0,
   },
-
   profileImage: {
     borderRadius: 999,
     zIndex: 1,
@@ -150,7 +145,6 @@ const styles = StyleSheet.create({
     width: AVATAR * 1.3,
     height: AVATAR * 1.3,
   },
-
   userNameHeader: {
     fontFamily: 'Pretendard-Medium',
     fontWeight: Platform.OS === 'ios' ? undefined : '600',

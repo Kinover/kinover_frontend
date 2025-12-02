@@ -1,4 +1,3 @@
-// src/screens/xxx/CategoryBottomSheetModal.js (경로는 있는 그대로 써줘)
 // src/screens/xxx/CategoryBottomSheetModal.js
 
 import React, {
@@ -17,7 +16,6 @@ import {
   SafeAreaView,
   Platform,
 } from 'react-native';
-import {BottomSheetScrollView} from '@gorhom/bottom-sheet';
 import LinearGradient from 'react-native-linear-gradient';
 import {
   getResponsiveHeight,
@@ -25,8 +23,8 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-import {BottomSheetButtons} from 'components/BottomSheetButtons';
-import {KinoBottomSheet} from 'components/KinoBottomSheetModal';
+import BottomSheetLayout from 'components/BottomSheetLayout';
+
 const CategoryBottomSheetModal = forwardRef(
   ({categoryList = [], selectedCategory, onSelectCategory}, ref) => {
     const modalRef = useRef(null);
@@ -45,33 +43,28 @@ const CategoryBottomSheetModal = forwardRef(
       onSelectCategory?.(tempSelected);
       modalRef.current?.dismiss();
     };
-
     const handleSelect = cat => {
-      setTempSelected(cat);
+      setTempSelected(cat); // 로컬 하이라이트용
+      onSelectCategory?.(cat); // 부모에 바로 반영
+      modalRef.current?.dismiss(); // 바텀시트 닫기
     };
 
     const data = [{title: '전체'}, ...categoryList];
 
     return (
-      <KinoBottomSheet
+      <BottomSheetLayout
         modalRef={modalRef}
-        snapPoints={['55%']}
-        enableContentPanningGesture={false}>
-        <SafeAreaView style={styles.sheetContainer}>
-          {/* 헤더 */}
-          <View style={styles.header}>
-            <Text style={styles.sheetTitle}>카테고리 선택</Text>
-            <Text style={styles.sheetSubtitle}>
-              보고 싶은 게시글의 카테고리를 선택해 주세요.
-            </Text>
-          </View>
-
-          {/* 리스트 영역 */}
+        snapPoints={['75%']}
+        enableContentPanningGesture={false}
+        title="카테고리 선택"
+        subtitle="보고 싶은 게시글의 카테고리를 선택해 주세요."
+        // footerProps 삭제
+        innerContentStyle={styles.innerContent}
+        useFixedFooter={false}>
+        <SafeAreaView style={{flex: 1}}>
           <View style={styles.listWrapper}>
-            <BottomSheetScrollView
-              style={styles.scrollArea}
-              contentContainerStyle={styles.scrollContent}
-              showsVerticalScrollIndicator={false}>
+            {/* ✅ 여기서는 그냥 View 안에 map만 — 스크롤은 바깥 BottomSheetLayout이 맡음 */}
+            <View style={styles.scrollArea}>
               {data.map((cat, index) => {
                 const isSelected = cat.title === tempSelected?.title;
                 const key = cat.id ? String(cat.id) : `${cat.title}-${index}`;
@@ -101,25 +94,17 @@ const CategoryBottomSheetModal = forwardRef(
                   </TouchableOpacity>
                 );
               })}
-            </BottomSheetScrollView>
+            </View>
 
+            {/* 페이드 효과는 그대로 유지 */}
             <LinearGradient
               colors={['rgba(255,255,255,0)', 'rgba(255,255,255,1)']}
               style={styles.fadeOverlay}
               pointerEvents="none"
             />
           </View>
-
-          {/* 하단 버튼 */}
-          <View style={styles.footer}>
-            <BottomSheetButtons
-              onSave={handleApply}
-              saveLabel="적용하기"
-              showCancel={false}
-            />
-          </View>
         </SafeAreaView>
-      </KinoBottomSheet>
+      </BottomSheetLayout>
     );
   },
 );
@@ -128,35 +113,11 @@ CategoryBottomSheetModal.displayName = 'CategoryBottomSheetModal';
 
 export default CategoryBottomSheetModal;
 
-// styles는 너가 쓰던 그대로 유지하면 됨
-
 const styles = StyleSheet.create({
-  sheetContainer: {
-    flex: 1,
-    paddingTop: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(22),
-  },
-  header: {
-    alignItems: 'flex-start',
-    marginBottom: getResponsiveHeight(10),
-    marginTop: getResponsiveHeight(15),
-  },
-  sheetTitle: {
-    fontSize: getResponsiveFontSize(16.5),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#111827',
-  },
-  sheetSubtitle: {
-    marginTop: getResponsiveHeight(3),
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-Regular',
-    color: '#6B7280',
-  },
-  Subtitle: {
-    marginTop: getResponsiveHeight(4),
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-Regular',
-    color: '#6B7280',
+  innerContent: {
+    // 필요하면 여기서만 살짝 조절 (레이아웃 기본 padding + α 느낌)
+    paddingTop: getResponsiveHeight(6),
+    paddingBottom: getResponsiveHeight(4),
   },
   listWrapper: {
     flex: 1,
@@ -164,8 +125,6 @@ const styles = StyleSheet.create({
   },
   scrollArea: {
     flex: 1,
-  },
-  scrollContent: {
     paddingBottom: getResponsiveHeight(20),
   },
   fadeOverlay: {
@@ -212,9 +171,5 @@ const styles = StyleSheet.create({
     width: getResponsiveIconSize(15),
     height: getResponsiveIconSize(15),
     resizeMode: 'contain',
-  },
-  footer: {
-    paddingHorizontal: getResponsiveWidth(0),
-    paddingBottom: getResponsiveHeight(Platform.OS === 'ios' ? 30 : 12),
   },
 });

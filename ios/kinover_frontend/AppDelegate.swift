@@ -1,6 +1,7 @@
 import UIKit
 import React
 import KakaoSDKAuth
+import KakaoSDKCommon
 import UserNotifications
 import FirebaseCore
 
@@ -14,8 +15,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
   ) -> Bool {
-
-    FirebaseApp.configure() // RNFB 초기화
+    
+    FirebaseApp.configure()
     UNUserNotificationCenter.current().delegate = self
     application.registerForRemoteNotifications()
 
@@ -31,7 +32,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     return true
   }
 
-  func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+  func application(_ app: UIApplication,
+                  open url: URL,
+                  options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
     if AuthApi.isKakaoTalkLoginUrl(url) {
       return AuthController.handleOpenUrl(url: url)
     }

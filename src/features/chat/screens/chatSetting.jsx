@@ -23,7 +23,7 @@ import {
 import {useSelector, useDispatch} from 'react-redux';
 import LeaveChatRoomModal from '../components/leaveChatRoomModal';
 import RenameChatRoomModal from '../components/renameChatRoomModal';
-import ChangeKinoModal from '../components/changeKinoModal';
+import ChangeKinoModal from '../components/ChangeKinoModal';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,

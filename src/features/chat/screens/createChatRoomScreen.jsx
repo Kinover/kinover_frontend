@@ -20,6 +20,7 @@ import {
 } from '../../../utils/responsive';
 import useHideTabBar from '../../../hooks/useHideTabBar';
 import ToastModal from '../../../components/ToastModal'; // ✅ 추가
+import { HEADER_STYLES } from 'styles/style';
 
 export default function CreateChatRoom({navigation}) {
   const dispatch = useDispatch();
@@ -156,9 +157,10 @@ const styles = StyleSheet.create({
     borderColor: 'lightgray',
   },
   headerTitle: {
-    fontSize: getResponsiveFontSize(17), // 🔽 18 → 17
+    fontSize: HEADER_STYLES.defaultTitleFontSize, // 🔽 18 → 17
     textAlign: 'center',
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: HEADER_STYLES.defaultTitleFontFamily,
+    color: HEADER_STYLES.defaultTitleFontColor,    
   },
   userItem: {
     flexDirection: 'row',

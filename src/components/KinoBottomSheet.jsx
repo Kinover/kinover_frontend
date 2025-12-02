@@ -3,15 +3,8 @@
 import React from 'react';
 import {Keyboard} from 'react-native';
 import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
-import {
-  getResponsiveWidth,
-} from 'utils/responsive';
+import {getResponsiveWidth} from 'utils/responsive';
 
-/**
- * 공통 BottomSheet 래퍼
- * - 공통 배경/라운드/인디케이터/백드롭 처리
- * - modalRef + snapPoints만 넘겨주고, 안쪽은 children으로 자유롭게 사용
- */
 export function KinoBottomSheet({
   modalRef,
   snapPoints,
@@ -20,6 +13,7 @@ export function KinoBottomSheet({
   animationConfigs = {damping: 18, stiffness: 220, mass: 1},
   keyboardBehavior = 'extend',
   androidKeyboardInputMode = 'adjustResize',
+  footerComponent, // ✅ 그대로 둠
 }) {
   const handleBackdropPress = () => {
     Keyboard.dismiss();
@@ -54,7 +48,9 @@ export function KinoBottomSheet({
           onPress={handleBackdropPress}
           pressBehavior="close"
         />
-      )}>
+      )}
+      footerComponent={footerComponent} // ✅ gorhom footer 사용
+    >
       {children}
     </BottomSheetModal>
   );

@@ -2,7 +2,7 @@ import React, {useState, useEffect} from 'react';
 import {StyleSheet, KeyboardAvoidingView, Platform, View} from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
 import MessageFlatList from '../components/messageFlatList';
-import ChatInput from '../components/chatInput';
+import ChatInput from '../components/ChatInput';
 import ChatSettings from './chatSetting';
 import {setMessageList} from '../store/messageSlice';
 import useChatRoomScreen from '../hooks/useChatRoomScreen';

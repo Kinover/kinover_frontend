@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchChatRoomListThunk} from '../store/chatRoomThunk';
-import ChatRoomItem from '../components/chatRoomItem';
+import ChatRoomItem from '../components/ChatRoomItem';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
