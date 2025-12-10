@@ -17,6 +17,7 @@ import {
 import useHideTabBar from '../../../hooks/useHideTabBar';
 import YellowSpinner from '../../../components/YellowSpinner';
 import {useNotificationList} from '../hooks/useNotificationList';
+import {EMPTY_STYLE} from 'styles/style';
 
 const AVATAR = getResponsiveWidth(46);
 
@@ -182,7 +183,8 @@ const styles = StyleSheet.create({
   },
   empty: {
     textAlign: 'center',
-    color: '#999',
-    fontSize: getResponsiveFontSize(14),
+    fontSize: EMPTY_STYLE.emptyFontSize,
+    fontFamily: EMPTY_STYLE.emptyFontFamily,
+    color: EMPTY_STYLE.emptyColor,
   },
 });

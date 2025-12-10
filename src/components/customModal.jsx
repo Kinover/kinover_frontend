@@ -49,99 +49,104 @@ export default function CustomModal({
       onRequestClose={onClose}
       presentationStyle="overFullScreen"
       statusBarTranslucent>
-      <BlurView
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            flex: 1,
-            position: 'absolute',
-            backgroundColor:
-              Platform.OS === 'android'
-                ? 'rgba(0, 0, 0, 0.12)'
-                : 'rgba(0, 0, 0, 0.22)',
-          },
-        ]}
-        blurType="light"
-        blurAmount={2}
-        reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.4)"
-      />
+      {/* ✅ 키보드 회피 영역 추가 */}
+        <BlurView
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              flex: 1,
+              position: 'absolute',
+              backgroundColor:
+                Platform.OS === 'android'
+                  ? 'rgba(0, 0, 0, 0.12)'
+                  : 'rgba(0, 0, 0, 0.22)',
+            },
+          ]}
+          blurType="light"
+          blurAmount={2}
+          reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.4)"
+        />
 
-      <View style={styles.overlay}>
-        <View style={[styles.modalBox, modalBoxStyle]}>
-          {/* 상단 버튼들 */}
-          <View
-            style={[
-              styles.topButtonRow,
-              (showTrashButton || showCloseButton) && {
-                justifyContent: showTrashButton ? 'space-between' : 'flex-end',
-                width: '100%',
-              },
-            ]}>
-            {showTrashButton && (
-              <TouchableOpacity
-                onPress={onTrashPress}
-                style={styles.trashButton}
-                hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-                <Image
-                  source={require('@/assets/images/trash.png')}
-                  style={styles.trashIcon}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
+        <View style={styles.overlay}>
+          <View style={[styles.modalBox, modalBoxStyle]}>
+            {/* 상단 버튼들 */}
+            <View
+              style={[
+                styles.topButtonRow,
+                (showTrashButton || showCloseButton) && {
+                  justifyContent: showTrashButton
+                    ? 'space-between'
+                    : 'flex-end',
+                  width: '100%',
+                },
+              ]}>
+              {showTrashButton && (
+                <TouchableOpacity
+                  onPress={onTrashPress}
+                  style={styles.trashButton}
+                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+                  <Image
+                    source={require('@/assets/images/trash.png')}
+                    style={styles.trashIcon}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
+              )}
+
+              {showCloseButton && (
+                <TouchableOpacity
+                  style={styles.closeXButton}
+                  onPress={onClose}
+                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+                  <Image
+                    style={styles.closeXIcon}
+                    source={require('@/assets/images/close-yellow.png')}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {/* 타이틀 이미지 */}
+            {titleImage && (
+              <Image
+                source={titleImage}
+                style={[styles.titleImage, titleImageStyle]}
+                resizeMode="contain"
+              />
             )}
 
-            {showCloseButton && (
-              <TouchableOpacity
-                style={styles.closeXButton}
-                onPress={onClose}
-                hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-                <Image
-                  style={styles.closeXIcon}
-                  source={require('@/assets/images/close-yellow.png')}
-                />
-              </TouchableOpacity>
-            )}
-          </View>
+            {/* 제목 / 서브텍스트 */}
+            {title && <Text style={styles.modalTitle}>{title}</Text>}
+            {subText && <Text style={styles.modalSubText}>{subText}</Text>}
 
-          {/* 타이틀 이미지 */}
-          {titleImage && (
-            <Image
-              source={titleImage}
-              style={[styles.titleImage, titleImageStyle]}
-              resizeMode="contain"
-            />
-          )}
+            {/* 컨텐츠 영역 */}
+            <View style={[styles.contentWrapper, contentStyle]}>
+              {children}
+            </View>
 
-          {/* 제목 / 서브텍스트 */}
-          {title && <Text style={styles.modalTitle}>{title}</Text>}
-          {subText && <Text style={styles.modalSubText}>{subText}</Text>}
-
-          {/* 컨텐츠 영역 */}
-          <View style={[styles.contentWrapper, contentStyle]}>{children}</View>
-
-          {/* 버튼 영역 */}
-          <View style={[styles.buttonBottom, buttonBottomStyle]}>
-            {closeText && (
-              <TouchableOpacity
-                onPress={onClose}
-                style={[styles.closeButton, closeButtonStyle]}>
-                <Text style={[styles.closeText, closeTextStyle]}>
-                  {closeText}
-                </Text>
-              </TouchableOpacity>
-            )}
-            {onConfirm && (
-              <TouchableOpacity
-                onPress={onConfirm}
-                style={[styles.confirmButton, confirmButtonStyle]}>
-                <Text style={[styles.confirmText, confirmTextStyle]}>
-                  {confirmText}
-                </Text>
-              </TouchableOpacity>
-            )}
+            {/* 버튼 영역 */}
+            <View style={[styles.buttonBottom, buttonBottomStyle]}>
+              {closeText && (
+                <TouchableOpacity
+                  onPress={onClose}
+                  style={[styles.closeButton, closeButtonStyle]}>
+                  <Text style={[styles.closeText, closeTextStyle]}>
+                    {closeText}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              {onConfirm && (
+                <TouchableOpacity
+                  onPress={onConfirm}
+                  style={[styles.confirmButton, confirmButtonStyle]}>
+                  <Text style={[styles.confirmText, confirmTextStyle]}>
+                    {confirmText}
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
         </View>
-      </View>
     </Modal>
   );
 }

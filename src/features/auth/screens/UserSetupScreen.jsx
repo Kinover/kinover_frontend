@@ -1,11 +1,12 @@
-import React, {useState} from 'react';
-import {View, Text, TextInput, StyleSheet} from 'react-native';
+import React, {useEffect, useState} from 'react';
+import {View, Text, TextInput, StyleSheet, Alert} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useRoute} from '@react-navigation/native';
 
 import {useNavigateToWhere} from 'hooks/useNatigateToWhere';
 import BottomActionButton from 'components/BottomActionButton';
 import {updateUserProfile} from 'api/userProfileApi';
+
 export default function UserSetupScreen() {
   const [name, setName] = useState('');
   const [birth, setBirth] = useState('');
@@ -26,12 +27,22 @@ export default function UserSetupScreen() {
     marketingAgreedAt,
   } = route.params || {};
 
+  // ✅ 버튼 활성/비활성 조건
+  const isFormValid = name.trim().length > 0 && birth.trim().length > 0;
+  const isButtonDisabled = loading || !isFormValid;
+
   const handleSubmit = async () => {
-    // 유효성 체크 (정식 오픈 시 켜기)
-    // if (!name || !birth) {
-    //   setError('필수 항목을 모두 입력해 주세요.');
-    //   return;
-    // }
+    // 약관 미동의 방어
+    if (!termsAgreed || !privacyAgreed) {
+      setError('필수 약관 동의 후 진행해 주세요.');
+      return;
+    }
+
+    // 유효성 체크 (추가 방어)
+    if (!isFormValid) {
+      setError('필수 항목을 모두 입력해 주세요.');
+      return;
+    }
 
     setError('');
     setLoading(true);
@@ -39,14 +50,16 @@ export default function UserSetupScreen() {
     try {
       const payload = {
         name,
-        birth: formatDate(birth), // ← YYYY-MM-DD로 변환
+        birth: formatDate(birth),
         termsAgreed,
         privacyAgreed,
         marketingAgreed,
         termsVersion,
         privacyVersion,
-        agreedAt: formatDate(new Date()), // ← 지금 날짜를 YYYY-MM-DD
-        marketingAgreedAt: marketingAgreed ? formatDate(new Date()) : null,
+        agreedAt: formatDate(agreedAt || new Date()),
+        marketingAgreedAt: marketingAgreed
+          ? formatDate(marketingAgreedAt || new Date())
+          : null,
       };
 
       console.log('📡 updateUserProfile payload:', payload);
@@ -65,12 +78,31 @@ export default function UserSetupScreen() {
     }
   };
 
+  // ✅ 진입 자체를 막기
+  useEffect(() => {
+    if (!termsAgreed || !privacyAgreed) {
+      Alert.alert(
+        '안내',
+        '필수 약관에 동의 후 진행해 주세요.',
+        [
+          {
+            text: '확인',
+            onPress: () => {
+              navigateToWhere({
+                root: 'Auth',
+                screen: '약관동의화면',
+              });
+            },
+          },
+        ],
+        {cancelable: false},
+      );
+    }
+  }, [termsAgreed, privacyAgreed, navigateToWhere]);
+
   return (
     <SafeAreaView style={styles.container}>
-      <Text
-        style={
-          styles.title
-        }>{`가족 연결을 위해\n몇 가지 정보가 필요해요`}</Text>
+      <Text style={styles.title}>{`가족 연결을 위해\n몇 가지 정보가 필요해요`}</Text>
       <Text style={styles.sub}>Kinover에서 사용할 정보를 입력해주세요.</Text>
 
       <View style={styles.field}>
@@ -80,7 +112,7 @@ export default function UserSetupScreen() {
         <TextInput
           style={styles.input}
           placeholder="이름을 입력하세요"
-          placeholderTextColor="#9E9E9E"   // ← 여기!
+          placeholderTextColor="#9E9E9E"
           value={name}
           onChangeText={setName}
         />
@@ -93,7 +125,7 @@ export default function UserSetupScreen() {
         <TextInput
           style={styles.input}
           placeholder="YYYY-MM-DD"
-          placeholderTextColor="#9E9E9E"   // ← 여기!
+          placeholderTextColor="#9E9E9E"
           value={birth}
           onChangeText={setBirth}
         />
@@ -104,7 +136,7 @@ export default function UserSetupScreen() {
       <BottomActionButton
         label={loading ? '저장 중...' : '완료하기'}
         onPress={handleSubmit}
-        disabled={loading}
+        disabled={isButtonDisabled}   // ← 여기!
       />
     </SafeAreaView>
   );

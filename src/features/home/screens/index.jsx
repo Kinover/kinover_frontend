@@ -28,7 +28,7 @@ import {
 } from '../../notification/utils/requestNotificationPermission';
 import useWebSocketStatus from '../../../hooks/useWebSocketStatus';
 import useFamilyStatusSocket from '../../../hooks/useFamilyStatusSocket';
-import SwipeNavigator from 'components/SwipeNavigator';
+// import SwipeNavigator from 'components/SwipeNavigator';
 
 // 공통 가이드 훅 + 모달
 import useGuide from 'hooks/useGuide';
@@ -66,8 +66,10 @@ export default function HomeScreen() {
   const user = useSelector(state => state.user);
   const family = useSelector(state => state.family);
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
-  const onlineUserIds = useSelector(state => state.status.onlineUserIds);
-  const lastActiveMap = useSelector(state => state.family.lastActiveMap);
+
+  const {familyId, onlineUserIds, lastActiveMap} = useSelector(
+    state => state.family,
+  );
 
   const [isVisible, setIsVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -166,43 +168,43 @@ export default function HomeScreen() {
   }
 
   return (
-    <SwipeNavigator rightTo="소통" leftTo={null}>
-      <View style={styles.container}>
-        {/* 노랑 배경 + 하단 곡선 */}
-        <View style={styles.backgroundCurve} />
+    // <SwipeNavigator rightTo="소통" leftTo={null}>
+    <View style={styles.container}>
+      {/* 노랑 배경 + 하단 곡선 */}
+      <View style={styles.backgroundCurve} />
 
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}>
-          <HeaderSection user={user} onUserPress={handleUserPress} />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}>
+        <HeaderSection user={user} onUserPress={handleUserPress} />
 
-          <MemberGridSection
-            members={familyMembers}
-            onlineUserIds={onlineUserIds}
-            lastActiveMap={lastActiveMap}
-            onUserPress={handleUserPress}
-            onAddPress={() => setIsVisible(true)}
-          />
-        </ScrollView>
-
-        <FamilyCodeModal
-          visible={isVisible}
-          onClose={() => setIsVisible(false)}
-          familyCode={family.familyId}
+        <MemberGridSection
+          members={familyMembers}
+          onlineUserIds={onlineUserIds}
+          lastActiveMap={lastActiveMap}
+          onUserPress={handleUserPress}
+          onAddPress={() => setIsVisible(true)}
         />
+      </ScrollView>
 
-        <UserBottomSheetModal
-          ref={userSheetRef}
-          selectedUser={selectedUser}
-          onSave={handleSave}
-          onCancel={() => {
-            setSelectedUser(null);
-            userSheetRef.current?.dismiss();
-          }}
-        />
+      <FamilyCodeModal
+        visible={isVisible}
+        onClose={() => setIsVisible(false)}
+        familyCode={family.familyId}
+      />
 
-        {/* 인앱 가이드 모달 (공통) */}
-        {currentGuide && (
+      <UserBottomSheetModal
+        ref={userSheetRef}
+        selectedUser={selectedUser}
+        onSave={handleSave}
+        onCancel={() => {
+          setSelectedUser(null);
+          userSheetRef.current?.dismiss();
+        }}
+      />
+
+      {/* 인앱 가이드 모달 (공통) */}
+      {/* {currentGuide && (
           <GuideModal
             visible={isGuideVisible}
             step={guideStep}
@@ -212,9 +214,9 @@ export default function HomeScreen() {
             onNext={nextStep}
             onSkip={skipGuide}
           />
-        )}
-      </View>
-    </SwipeNavigator>
+        )} */}
+    </View>
+    // </SwipeNavigator>
   );
 }
 
@@ -224,7 +226,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFC84D',
   },
   scrollContent: {
-    paddingBottom: getResponsiveHeight(40),
+    width: '100%',
+    height: getResponsiveHeight(200),
+    paddingBottom: getResponsiveHeight(30),
+    alignItems: 'center',
   },
   backgroundCurve: {
     position: 'absolute',

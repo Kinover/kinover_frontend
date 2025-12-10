@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: 999,
     backgroundColor: '#F3F4F6',
-    padding: getResponsiveHeight(2),
+    padding: getResponsiveHeight(3),
     marginBottom: getResponsiveHeight(10),
   },
   modeTab: {

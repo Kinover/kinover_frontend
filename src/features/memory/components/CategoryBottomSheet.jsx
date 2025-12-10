@@ -6,6 +6,7 @@ import React, {
   useEffect,
   forwardRef,
   useImperativeHandle,
+  useMemo,
 } from 'react';
 import {
   View,
@@ -15,8 +16,9 @@ import {
   Image,
   SafeAreaView,
   Platform,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -24,6 +26,17 @@ import {
   getResponsiveIconSize,
 } from '../../../utils/responsive';
 import BottomSheetLayout from 'components/BottomSheetLayout';
+import {Shadow} from 'react-native-shadow-2';
+
+const {height: SCREEN_HEIGHT} = Dimensions.get('window');
+
+// 아이템 1개당 대략적인 높이 (padding 포함)
+const ITEM_HEIGHT = getResponsiveHeight(52);
+// 바텀시트가 가질 수 있는 최소/최대 비율
+const MIN_SNAP_RATIO = 0.25; // 25%
+const MAX_SNAP_RATIO = 0.75; // 75%
+// 스크롤 없이 보여줄 최대 개수
+const MAX_VISIBLE_ITEMS = 6;
 
 const CategoryBottomSheetModal = forwardRef(
   ({categoryList = [], selectedCategory, onSelectCategory}, ref) => {
@@ -39,39 +52,60 @@ const CategoryBottomSheetModal = forwardRef(
       setTempSelected(selectedCategory);
     }, [selectedCategory]);
 
-    const handleApply = () => {
-      onSelectCategory?.(tempSelected);
-      modalRef.current?.dismiss();
-    };
     const handleSelect = cat => {
       setTempSelected(cat); // 로컬 하이라이트용
       onSelectCategory?.(cat); // 부모에 바로 반영
       modalRef.current?.dismiss(); // 바텀시트 닫기
     };
 
-    const data = [{title: '전체'}, ...categoryList];
+    const data = useMemo(
+      () => [{title: '전체'}, ...categoryList],
+      [categoryList],
+    );
+
+    // ✅ 카테고리 개수에 따라 바텀시트 높이 동적 계산
+    const snapPoints = useMemo(() => {
+      // 실제 화면에 보이는 개수(스크롤 없이)
+      const visibleCount = Math.min(data.length, MAX_VISIBLE_ITEMS);
+
+      // 내용 높이 대략 계산
+      const contentHeight =
+        visibleCount * ITEM_HEIGHT + getResponsiveHeight(150); // 헤더 + 여유분
+
+      // 화면 비율로 변환
+      const ratio = Math.min(
+        MAX_SNAP_RATIO,
+        Math.max(MIN_SNAP_RATIO, contentHeight / SCREEN_HEIGHT),
+      );
+
+      return [`${ratio * 100}%`]; // 예: "35%"
+    }, [data.length]);
+
+    // ✅ 스크롤 영역의 최대 높이 (이 이상이면 스크롤)
+    const maxListHeight = useMemo(() => MAX_VISIBLE_ITEMS * ITEM_HEIGHT, []);
 
     return (
       <BottomSheetLayout
         modalRef={modalRef}
-        snapPoints={['75%']}
+        snapPoints={snapPoints}
         enableContentPanningGesture={false}
         title="카테고리 선택"
         subtitle="보고 싶은 게시글의 카테고리를 선택해 주세요."
-        // footerProps 삭제
         innerContentStyle={styles.innerContent}
         useFixedFooter={false}>
         <SafeAreaView style={{flex: 1}}>
           <View style={styles.listWrapper}>
-            {/* ✅ 여기서는 그냥 View 안에 map만 — 스크롤은 바깥 BottomSheetLayout이 맡음 */}
-            <View style={styles.scrollArea}>
+            {/* ✅ 카테고리가 많으면 이 영역 내부에서 스크롤 */}
+            <ScrollView
+              style={[styles.scrollArea, {maxHeight: maxListHeight}]}
+              bounces={false}
+              showsVerticalScrollIndicator={false}>
               {data.map((cat, index) => {
                 const isSelected = cat.title === tempSelected?.title;
                 const key = cat.id ? String(cat.id) : `${cat.title}-${index}`;
 
-                return (
+                const itemComponent = (
                   <TouchableOpacity
-                    key={key}
                     style={[
                       styles.categoryItem,
                       isSelected && styles.selectedItem,
@@ -93,15 +127,39 @@ const CategoryBottomSheetModal = forwardRef(
                     )}
                   </TouchableOpacity>
                 );
-              })}
-            </View>
 
-            {/* 페이드 효과는 그대로 유지 */}
-            <LinearGradient
-              colors={['rgba(255,255,255,0)', 'rgba(255,255,255,1)']}
-              style={styles.fadeOverlay}
-              pointerEvents="none"
-            />
+                return (
+                  <View
+                    key={key}
+                    style={{marginBottom: getResponsiveHeight(8)}}>
+                    {itemComponent}
+                  </View>
+                );
+
+                // ✅ 선택된 아이템만 Shadow 적용
+                // return isSelected ? (
+                //   <Shadow
+                //     key={key}
+                //     distance={2} // 🔹 퍼지는 정도 (짧게)
+                //     offset={[0, 0]} // 🔹 위/아래 대칭으로
+                //     startColor="rgba(0,0,0,0.12)" // 🔹 진하기
+                //     endColor="rgba(0,0,0,0.0)"
+                //     radius={11}
+                //     style={{
+                //       borderRadius: 11,
+                //       marginBottom: getResponsiveHeight(8),
+                //     }}>
+                //     {itemComponent}
+                //   </Shadow>
+                // ) : (
+                //   <View
+                //     key={key}
+                //     style={{marginBottom: getResponsiveHeight(8)}}>
+                //     {itemComponent}
+                //   </View>
+                // );
+              })}
+            </ScrollView>
           </View>
         </SafeAreaView>
       </BottomSheetLayout>
@@ -115,7 +173,6 @@ export default CategoryBottomSheetModal;
 
 const styles = StyleSheet.create({
   innerContent: {
-    // 필요하면 여기서만 살짝 조절 (레이아웃 기본 padding + α 느낌)
     paddingTop: getResponsiveHeight(6),
     paddingBottom: getResponsiveHeight(4),
   },
@@ -124,36 +181,24 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   scrollArea: {
-    flex: 1,
-    paddingBottom: getResponsiveHeight(20),
-  },
-  fadeOverlay: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: getResponsiveHeight(60),
+    flexGrow: 0, // 내용 높이에 맞추되 maxHeight까지만
+    paddingBottom: getResponsiveHeight(10),
   },
   categoryItem: {
     paddingVertical: getResponsiveHeight(14),
     paddingHorizontal: getResponsiveWidth(14),
     borderRadius: 11,
-    marginBottom: getResponsiveHeight(8),
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: '#F3F4F6',
+    width: '100%',
   },
   selectedItem: {
     backgroundColor: '#FFF6DD',
     borderColor: '#FFC749',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.06,
-    shadowRadius: 6,
-    elevation: 2,
   },
   categoryText: {
     fontSize:

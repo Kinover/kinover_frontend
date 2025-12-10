@@ -13,8 +13,9 @@ export const BACKGROUND_COLORS = {
 };
 
 export const BUTTON_STYLES = {
-  saveBg: '#FFC84D',
+  // saveBg: '#FFC84D',
   // saveBg: '#111827',
+  saveBg: '#23314F',
   cancelBg: ' #FFFFFF',
   fontSize: getResponsiveFontSize(14),
   fontFamily: 'Pretendard-Medium',
@@ -47,3 +48,9 @@ export const CHATROOM_STYLE = {
 
   KinoMessageFontSize: getResponsiveFontSize(13),
 };
+
+export const EMPTY_STYLE={
+  emptyFontSize: getResponsiveFontSize(13),
+  emptyFontFamily: 'Pretendard-Regular',
+  emptyColor: '#9CA3AF',
+}

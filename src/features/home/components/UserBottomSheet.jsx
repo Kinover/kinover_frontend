@@ -11,13 +11,12 @@ import React, {
 } from 'react';
 import {
   Dimensions,
-  Keyboard,
   Platform,
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  TouchableWithoutFeedback,
+  KeyboardAvoidingView,
 } from 'react-native';
 import {BottomSheetTextInput} from '@gorhom/bottom-sheet';
 import {launchImageLibrary} from 'react-native-image-picker';
@@ -40,7 +39,7 @@ const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 const windowHeight = Dimensions.get('window').height;
 
 function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
-  const snapPoints = useMemo(() => ['60%', '82%'], []);
+  const snapPoints = useMemo(() => ['60%'], []);
 
   const nameRef = useRef('');
   const traitRef = useRef('');
@@ -57,6 +56,9 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
+  // ✅ 닫히는 중인지 여부 (닫히는 동안 selectedUser 변경에 반응 안 함)
+  const [isClosing, setIsClosing] = useState(false);
+
   const showToast = msg => {
     setToastMessage(msg);
     setToastVisible(true);
@@ -67,13 +69,21 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
   };
 
   useImperativeHandle(ref, () => ({
-    present: () => modalRef.current?.present(),
-    dismiss: () => modalRef.current?.dismiss(),
+    present: () => {
+      // 다시 열릴 때는 closing 상태 초기화
+      setIsClosing(false);
+      modalRef.current?.present();
+    },
+    dismiss: () => {
+      setIsClosing(true);
+      modalRef.current?.dismiss();
+    },
   }));
 
   // 선택된 유저 바뀔 때 초기값 세팅
   useEffect(() => {
     if (!selectedUser) return;
+    if (isClosing) return; // ✅ 닫히는 중이면 초기화 로직 스킵
 
     const n = selectedUser.name ?? '';
     const t = selectedUser.trait ?? '';
@@ -96,17 +106,7 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
 
     setNameKey(k => k + 1);
     setTraitKey(k => k + 1);
-  }, [selectedUser]);
-
-  // 안드에서 키보드 올라오면 큰 스냅포인트로
-  useEffect(() => {
-    if (Platform.OS === 'android') {
-      const sub = Keyboard.addListener('keyboardDidShow', () => {
-        modalRef.current?.snapToIndex(1);
-      });
-      return () => sub.remove();
-    }
-  }, []);
+  }, [selectedUser, isClosing]);
 
   const handleImagePick = async () => {
     const result = await launchImageLibrary({mediaType: 'photo'});
@@ -154,7 +154,8 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
     }
   };
 
-  const handleSave = () => {
+  // ✅ 저장 로직: 여기서는 서버/Redux 업데이트만 하고, 닫는 건 BottomSheetButtons에서 담당
+  const handleSave = async () => {
     const {
       name: initialName,
       trait: initialTrait,
@@ -181,7 +182,11 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
       finalImageUrl,
     });
 
-    onSave(finalName, finalTrait, finalImageUrl);
+    // ✅ 닫히는 중 플래그 세팅 → 이 뒤로 들어오는 selectedUser 변화엔 반응하지 않도록
+    setIsClosing(true);
+
+    // onSave에서 Redux/서버 업데이트 (Promise면 BottomSheetButtons가 await 해줌)
+    await onSave(finalName, finalTrait, finalImageUrl);
   };
 
   const handleCancel = () => {
@@ -213,17 +218,18 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
         subtitle="가족에게 보이는 이름과 한마디를 설정해요."
         footerProps={{
           onCancel: handleCancel,
-          onSave: handleSave,
+          onSave: handleSave,      // ✅ 여기서는 저장만, 닫기는 BottomSheetButtons가 dismiss()
           saveLabel: '적용하기',
+          // autoCloseOnSave: true  // 기본값 true라 안 써도 됨
         }}
         innerContentStyle={{flex: 1}}
         useFixedFooter={false}
         contentStyle={{flex: 1}}>
-        <TouchableWithoutFeedback
-          onPress={() => {
-            Keyboard.dismiss();
-            modalRef.current?.snapToIndex(0);
-          }}>
+        <KeyboardAvoidingView
+          enabled
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 0}
+          style={{flex: 1}}>
           <View style={{flex: 1}}>
             <TouchableOpacity
               style={styles.profileTouchArea}
@@ -236,7 +242,10 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
                       : require('../../../assets/images/default.png')
                   }
                   style={styles.profileImage}
+                  blurRadius={4}
                 />
+                <View style={styles.profileOverlay} />
+
                 <View style={styles.profileRing} />
                 <View style={styles.profileBadge}>
                   <FastImage
@@ -254,9 +263,6 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
                 key={`name-${nameKey}`}
                 style={styles.input}
                 defaultValue={nameRef.current}
-                onFocus={() =>
-                  setTimeout(() => modalRef.current?.snapToIndex(1), 50)
-                }
                 onChangeText={text => {
                   nameRef.current = text;
                 }}
@@ -272,9 +278,6 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
                 style={[styles.input, styles.textArea]}
                 defaultValue={traitRef.current}
                 multiline
-                onFocus={() =>
-                  setTimeout(() => modalRef.current?.snapToIndex(1), 50)
-                }
                 onChangeText={text => {
                   traitRef.current = text;
                 }}
@@ -283,7 +286,7 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
               />
             </View>
           </View>
-        </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
       </BottomSheetLayout>
 
       <ToastModal
@@ -388,5 +391,13 @@ const styles = StyleSheet.create({
   textArea: {
     height: getResponsiveHeight(96),
     textAlignVertical: 'top',
+  },
+  profileOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.18)',
   },
 });

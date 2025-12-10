@@ -6,14 +6,17 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-// import formatTime from '../../utils/formatTime';
 import GroupAvatar from './groupAvatar';
 import {useDispatch, useSelector} from 'react-redux';
 import {markRoomRead} from '../store/chatRoomSlice';
+import {getChatRoomTitle} from '../utils/chatRoomTitleHelper';
 
 function ChatRoomItem({chatRoom, userId, navigation}) {
   const dispatch = useDispatch();
   const userImage = useSelector(state => state.user.image);
+
+  // 🔹 가족 유저 리스트
+  const familyUserList = useSelector(state => state.userFamily.familyUserList);
 
   const {
     chatRoomId,
@@ -23,10 +26,19 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
     latestMessageTime,
     memberImages,
     unreadCount = 0,
+    userChatRooms, // 참여자 userId 목록
   } = chatRoom;
 
   const screen = kino ? '키노상담소화면' : '채팅방화면';
-  const title = kino ? '챗봇 키노' : roomName || '이름 없는 채팅방';
+
+  // 🔹 util 함수로 타이틀 생성 (familyUserList 사용)
+  const title = getChatRoomTitle(
+    roomName,
+    kino,
+    userChatRooms,
+    userId,
+    familyUserList,
+  );
 
   const description =
     latestMessageContent || '지금 첫 메시지를 보내 대화를 시작해보세요!';
@@ -48,7 +60,6 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
       />
 
       <View style={styles.textArea}>
-        {/* 상단 헤더: 이름 / 우측 정보(시간, 뱃지) */}
         <View style={styles.headerRow}>
           <Text
             style={[styles.name, unreadCount > 0 && styles.nameUnread]}
@@ -58,7 +69,6 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
           </Text>
         </View>
 
-        {/* 최근 메시지 프리뷰 */}
         <Text
           style={[
             styles.description,
@@ -91,6 +101,7 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
     </TouchableOpacity>
   );
 }
+
 export default ChatRoomItem;
 
 const styles = StyleSheet.create({
@@ -176,18 +187,16 @@ function formatPreviewTime(time) {
     date.getDate() === now.getDate();
 
   if (isToday) {
-    // ✅ 오늘이면 → "오전 9:27" / "오후 3:05"
     let hours = date.getHours();
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const ampm = hours < 12 ? '오전' : '오후';
 
-    if (hours === 0) hours = 12; // 자정
-    else if (hours > 12) hours -= 12; // 오후 시간 보정
+    if (hours === 0) hours = 12;
+    else if (hours > 12) hours -= 12;
 
     return `${ampm} ${hours}:${minutes}`;
   }
 
-  // ✅ 오늘이 아니면 → "8월 28일"
   const month = date.getMonth() + 1;
   const day = date.getDate();
   return `${month}월 ${day}일`;

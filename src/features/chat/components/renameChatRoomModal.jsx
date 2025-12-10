@@ -13,6 +13,7 @@ export default function RenameChatRoomModal({
   onConfirm,
   newRoomName,
   setNewRoomName,
+  currentRoomName, // ⭐ 현재 채팅방 이름 props 추가
 }) {
   return (
     <CustomModal
@@ -21,14 +22,14 @@ export default function RenameChatRoomModal({
       onConfirm={() => {
         onClose(); // 먼저 모달 닫기
         setTimeout(() => {
-          onConfirm(); // 그 다음 화면 이동
-        }, 100); // 100ms 정도만 주면 충분해
+          onConfirm(); // 그 다음 로직 실행
+        }, 100);
       }}
       confirmText="변경"
       closeText="취소"
       title="채팅방 이름 변경">
       <TextInput
-        placeholder="새 채팅방 이름을 입력해주세요"
+        placeholder={currentRoomName || '채팅방 이름'} // ⭐ 여기서 사용
         value={newRoomName}
         onChangeText={setNewRoomName}
         style={styles.textInput}

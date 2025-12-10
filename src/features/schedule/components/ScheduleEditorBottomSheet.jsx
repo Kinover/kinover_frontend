@@ -8,6 +8,7 @@ import {
   Image,
   ScrollView,
   TouchableOpacity,
+  KeyboardAvoidingView,
 } from 'react-native';
 import {BottomSheetTextInput} from '@gorhom/bottom-sheet';
 import {
@@ -37,53 +38,60 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     },
     ref,
   ) => {
-    const {
-      modalRef,
-      scheduleRef,
-      inputKey,
-      handleSave,
-      handleDelete,
-    } = useScheduleBottomSheetModal({
-      editingSchedule,
-      title,
-      setTitle,
-      onSubmit,
-      onDelete,
-      onRefresh,
-    });
+    const {modalRef, scheduleRef, inputKey, handleSave, handleDelete} =
+      useScheduleBottomSheetModal({
+        editingSchedule,
+        title,
+        setTitle,
+        onSubmit,
+        onDelete,
+        onRefresh,
+      });
 
     const isSelectedAll = useIsAllSelected(selectedUserId);
 
     const [scrollContainerWidth, setScrollContainerWidth] = useState(0);
     const [canScroll, setCanScroll] = useState(false);
-    const snapPoints = useMemo(() => ['54%', '80%'], []);
 
+    const snapPoints = useMemo(() => ['54%'], []);
 
-    // ✅ 토스트 상태
     const [toastVisible, setToastVisible] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
+
+    const [isClosing, setIsClosing] = useState(false); // 🔥 추가
 
     const showToast = msg => {
       setToastMessage(msg);
       setToastVisible(true);
     };
 
-    const hideToast = () => {
-      setToastVisible(false);
-    };
+    const hideToast = () => setToastVisible(false);
 
     useImperativeHandle(ref, () => ({
-      present: () => modalRef.current?.present(),
-      dismiss: () => modalRef.current?.dismiss(),
+      present: () => {
+        setIsClosing(false);
+        modalRef.current?.present();
+      },
+      dismiss: () => {
+        setIsClosing(true);
+        modalRef.current?.dismiss();
+      },
     }));
 
-    const handlePressSave = () => {
+    const handlePressSave = async () => {
       const text = scheduleRef.current || '';
       if (!text.trim()) {
         showToast('일정 내용을 입력해주세요.');
         return;
       }
-      handleSave();
+
+      setIsClosing(true); // 🔥 저장 직후 재오픈 방지
+      await handleSave();
+    };
+
+    const handlePressDelete = async () => {
+      setIsClosing(true); // 🔥 삭제도 동일
+      await handleDelete();
     };
 
     return (
@@ -91,7 +99,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         <BottomSheetLayout
           modalRef={modalRef}
           snapPoints={snapPoints}
-          keyboardBehavior="extend"
+          keyboardBehavior="interactive"
           title={editingSchedule ? '일정 수정' : '일정 추가'}
           subtitle="가족과 일정을 공유해요"
           innerContentStyle={{flex: 1}}
@@ -100,11 +108,10 @@ const ScheduleEditorBottomSheetModal = forwardRef(
           footerProps={
             editingSchedule
               ? {
-                  onCancel: handleDelete,
+                  onCancel: handlePressDelete,
                   onSave: handlePressSave,
                   cancelLabel: '삭제하기',
                   saveLabel: '저장하기',
-                  showCancel: true,
                 }
               : {
                   onSave: handlePressSave,
@@ -112,104 +119,109 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                   showCancel: false,
                 }
           }>
-          {/* 여기부터는 내용만: 구성원 선택 + 텍스트 입력 */}
-
-          <Text style={styles.subTitle}>구성원 선택</Text>
-          <View
-            style={styles.userScrollWrapper}
-            onLayout={e => setScrollContainerWidth(e.nativeEvent.layout.width)}>
-            {/* familyUserList ScrollView 그대로 */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              keyboardShouldPersistTaps="always"
-              contentContainerStyle={{
-                paddingVertical: getResponsiveHeight(6),
-              }}
-              style={styles.userScroll}
-              onContentSizeChange={(contentWidth, _h) => {
-                setCanScroll(contentWidth > scrollContainerWidth + 8);
-              }}>
-              {/* ALL 버튼 */}
-              <View style={styles.avatarColumn}>
-                <TouchableOpacity
-                  style={[
-                    styles.avatarBtn,
-                    isSelectedAll && styles.avatarBtnSelected,
-                  ]}
-                  onPress={() => setSelectedUserId('')}>
-                  <Text
+          <KeyboardAvoidingView
+            enabled
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 0}
+            style={{flex: 1}}>
+            {/* 구성원 선택 */}
+            <Text style={styles.subTitle}>구성원 선택</Text>
+            <View
+              style={styles.userScrollWrapper}
+              onLayout={e =>
+                setScrollContainerWidth(e.nativeEvent.layout.width)
+              }>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyboardShouldPersistTaps="always"
+                contentContainerStyle={{
+                  paddingVertical: getResponsiveHeight(6),
+                }}
+                style={styles.userScroll}
+                onContentSizeChange={(contentWidth, _h) => {
+                  setCanScroll(contentWidth > scrollContainerWidth + 8);
+                }}>
+                {/* ALL */}
+                <View style={styles.avatarColumn}>
+                  <TouchableOpacity
                     style={[
-                      styles.allText,
-                      isSelectedAll && styles.allTextSelected,
-                    ]}>
-                    ALL
-                  </Text>
-                  {isSelectedAll && (
-                    <Image
-                      source={require('../../../assets/icons/check-yellow.png')}
-                      style={styles.checkBadge}
-                    />
-                  )}
-                </TouchableOpacity>
-                <Text style={styles.avatarLabel}>전체</Text>
-              </View>
-
-              {/* 가족 리스트 */}
-              {familyUserList.map(user => {
-                const isSel = selectedUserId === user.userId;
-                return (
-                  <View key={user.userId} style={styles.avatarColumn}>
-                    <TouchableOpacity
+                      styles.avatarBtn,
+                      isSelectedAll && styles.avatarBtnSelected,
+                    ]}
+                    onPress={() => !isClosing && setSelectedUserId('')}>
+                    <Text
                       style={[
-                        styles.avatarBtn,
-                        isSel && styles.avatarBtnSelected,
-                      ]}
-                      onPress={() => setSelectedUserId(user.userId)}>
-                      <Image
-                        source={{uri: user.image}}
-                        style={[
-                          styles.avatarImage,
-                          isSel && styles.avatarImageSelected,
-                        ]}
-                      />
-                      {isSel && (
-                        <Image
-                          source={require('../../../assets/icons/check-yellow.png')}
-                          style={styles.checkBadge}
-                        />
-                      )}
-                    </TouchableOpacity>
-                    <Text style={styles.avatarLabel} numberOfLines={1}>
-                      {user.name}
+                        styles.allText,
+                        isSelectedAll && styles.allTextSelected,
+                      ]}>
+                      ALL
                     </Text>
-                  </View>
-                );
-              })}
-            </ScrollView>
-          </View>
+                    {isSelectedAll && (
+                      <Image
+                        source={require('../../../assets/icons/check-yellow.png')}
+                        style={styles.checkBadge}
+                      />
+                    )}
+                  </TouchableOpacity>
+                  <Text style={styles.avatarLabel}>전체</Text>
+                </View>
 
-          <Text style={styles.subTitle}>일정 내용</Text>
-          <BottomSheetTextInput
-            key={`input-${inputKey}`}
-            defaultValue={scheduleRef.current}
-            onChangeText={text => (scheduleRef.current = text)}
-            onFocus={() =>
-              setTimeout(() => modalRef.current?.snapToIndex(1), 50)
-            }
-            placeholder="예) 병원 예약, 가족 모임"
-            placeholderTextColor="#B0B0B0"
-            style={[styles.input, {marginBottom: getResponsiveHeight(12.5)}]}
-            autoCorrect={false}
-            autoCapitalize="none"
-            multiline
-            autoComplete="off"
-            spellCheck={false}
-            importantForAutofill="no"
-          />
+                {/* 가족 리스트 */}
+                {familyUserList.map(user => {
+                  const isSel = selectedUserId === user.userId;
+                  return (
+                    <View key={user.userId} style={styles.avatarColumn}>
+                      <TouchableOpacity
+                        style={[
+                          styles.avatarBtn,
+                          isSel && styles.avatarBtnSelected,
+                        ]}
+                        onPress={() =>
+                          !isClosing && setSelectedUserId(user.userId)
+                        }>
+                        <Image
+                          source={{uri: user.image}}
+                          style={[
+                            styles.avatarImage,
+                            isSel && styles.avatarImageSelected,
+                          ]}
+                          blurRadius={isSel ? 3 : 0}
+                        />
+                        {isSel && <View style={styles.avatarOverlay} />}
+                        {isSel && (
+                          <Image
+                            source={require('../../../assets/icons/check-yellow.png')}
+                            style={styles.checkBadge}
+                          />
+                        )}
+                      </TouchableOpacity>
+                      <Text style={styles.avatarLabel} numberOfLines={1}>
+                        {user.name}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {/* 일정 내용 입력 */}
+            <Text style={styles.subTitle}>일정 내용</Text>
+            <BottomSheetTextInput
+              key={`input-${inputKey}`}
+              defaultValue={scheduleRef.current}
+              onChangeText={text => {
+                if (!isClosing) scheduleRef.current = text;
+              }}
+              placeholder="예) 병원 예약, 가족 모임"
+              placeholderTextColor="#B0B0B0"
+              style={[styles.input, {marginBottom: getResponsiveHeight(12.5)}]}
+              multiline
+            />
+          </KeyboardAvoidingView>
         </BottomSheetLayout>
 
-        {/* ✅ 토스트 모달 */}
+        {/* Toast */}
         <ToastModal
           visible={toastVisible}
           onClose={hideToast}
@@ -221,9 +233,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 );
 
 ScheduleEditorBottomSheetModal.displayName = 'ScheduleEditorBottomSheetModal';
-
 export default ScheduleEditorBottomSheetModal;
-
 const styles = StyleSheet.create({
   container: {
     paddingHorizontal: getResponsiveWidth(22),
@@ -368,5 +378,13 @@ const styles = StyleSheet.create({
   },
   deleteButtonText: {
     color: '#6B7280',
+  },
+  avatarOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.22)', // ✅ 어두워지는 느낌
   },
 });

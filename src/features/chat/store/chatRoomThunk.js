@@ -7,6 +7,7 @@ import {
   setChatRoomUsers,
   setChatRoomLoading,
   setChatRoomError,
+  setChatRoomNotificationState, // ✅ 추가
 } from './chatRoomSlice';
 
 export const fetchChatRoomListThunk = (familyId, userId) => {
@@ -137,7 +138,7 @@ export const renameChatRoomThunk = createAsyncThunk(
 // 채팅방 생성 Thunk
 export const createChatRoomThunk = createAsyncThunk(
   'chatRoom/create',
-  async ({roomName, userIds}, {rejectWithValue}) => {
+  async ({roomName, userIds, familyId}, {rejectWithValue}) => {
     try {
       console.log(
         `🟡 채팅방 생성 요청: roomName="${roomName}", userIds=${userIds}`,
@@ -146,7 +147,7 @@ export const createChatRoomThunk = createAsyncThunk(
       const response = await axios.post(
         `https://kinover.shop/api/chatRoom/create/${encodeURIComponent(
           roomName,
-        )}/${userIds}`,
+        )}/${userIds}/${familyId}`,
         null,
         {
           headers: {
@@ -205,7 +206,7 @@ export const updateKinoPersonalityThunk = createAsyncThunk(
 
 export const toggleChatRoomNotificationThunk = createAsyncThunk(
   'chatRoom/toggleNotification',
-  async ({userId, chatRoomId, isOn}, {rejectWithValue}) => {
+  async ({userId, chatRoomId, isOn}, {rejectWithValue, dispatch}) => {
     try {
       const token = await getToken();
 
@@ -214,6 +215,7 @@ export const toggleChatRoomNotificationThunk = createAsyncThunk(
       const res = await fetch(url, {
         method: 'PATCH',
         headers: {
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
       });
@@ -223,6 +225,9 @@ export const toggleChatRoomNotificationThunk = createAsyncThunk(
       }
 
       console.log(`✅ 알림 ${isOn ? 'ON' : 'OFF'} 설정 완료 for ${chatRoomId}`);
+
+      dispatch(setChatRoomNotificationState({chatRoomId, isOn}));
+
       return {chatRoomId, isOn};
     } catch (err) {
       return rejectWithValue(err.message || '알 수 없는 에러');

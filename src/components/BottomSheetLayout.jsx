@@ -12,7 +12,7 @@ import {
   getResponsiveFontSize,
 } from 'utils/responsive';
 
-const FOOTER_HEIGHT = 64; // 대략 버튼 높이 + 여유
+const FOOTER_HEIGHT = 64;
 
 export default function BottomSheetLayout({
   modalRef,
@@ -21,15 +21,11 @@ export default function BottomSheetLayout({
   animationConfigs = {damping: 18, stiffness: 220, mass: 1},
   keyboardBehavior = 'extend',
   androidKeyboardInputMode = 'adjustResize',
-
   title,
   subtitle,
   children,
   footerProps,
-
-  // ✨ 고정 footer(use gorhom Footer) 쓸지 여부
   useFixedFooter = true,
-
   containerStyle,
   headerStyle,
   scrollContentStyle,
@@ -41,7 +37,19 @@ export default function BottomSheetLayout({
   const hasFixedFooter = useFixedFooter && !!footerProps;
   const hasInlineFooter = !useFixedFooter && !!footerProps;
 
-  // ✅ 고정 footer를 쓰는 경우에만 gorhom Footer 사용
+  // ✅ 여기서 modalRef를 버튼 쪽에 주입
+  const injectedFooterProps = footerProps
+    ? {
+        ...footerProps,
+        bottomSheetRef: modalRef,
+        // 필요하면 화면에서 autoCloseOnSave를 false로 override 가능
+        autoCloseOnSave:
+          footerProps.autoCloseOnSave !== undefined
+            ? footerProps.autoCloseOnSave
+            : true,
+      }
+    : undefined;
+
   const footerComponent =
     hasFixedFooter &&
     (footerPropsArg => (
@@ -49,14 +57,14 @@ export default function BottomSheetLayout({
         {...footerPropsArg}
         bottomInset={insets.bottom}>
         <View style={[styles.footer, footerStyle]}>
-          <BottomSheetButtons {...footerProps} />
+          <BottomSheetButtons {...injectedFooterProps} />
         </View>
       </BottomSheetFooter>
     ));
 
   const contentPaddingBottom = hasFixedFooter
     ? FOOTER_HEIGHT + getResponsiveHeight(12)
-    : getResponsiveHeight(12); // 고정 footer 안 쓰면 그냥 살짝만 padding
+    : getResponsiveHeight(12);
 
   return (
     <KinoBottomSheet
@@ -88,10 +96,10 @@ export default function BottomSheetLayout({
             {children}
           </View>
 
-          {/* ✅ 고정 아닌 경우: 스크롤 맨 아래에 버튼 배치 */}
+          {/* 인라인 footer 버전도 동일하게 ref 주입 */}
           {hasInlineFooter && (
             <View style={[styles.inlineFooter, footerStyle]}>
-              <BottomSheetButtons {...footerProps} />
+              <BottomSheetButtons {...injectedFooterProps} />
             </View>
           )}
         </View>
@@ -124,14 +132,12 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   innerContent: {},
-  // 🔒 고정 footer(기존용)
   footer: {
     paddingHorizontal: getResponsiveWidth(22),
     paddingTop: getResponsiveHeight(2),
     paddingBottom: getResponsiveHeight(4),
     backgroundColor: 'white',
   },
-  // 🆕 스크롤 내부 맨 아래 footer
   inlineFooter: {
     backgroundColor: 'white',
   },

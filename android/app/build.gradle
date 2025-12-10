@@ -99,13 +99,12 @@ android {
         applicationId "com.kinover_frontend"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 2
+        versionCode 6
         versionName "1.0"
          ndk {
         abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
 
         }
-            // ✅ .env에서 KAKAO_NATIVE_APP_KEY 읽어서 placeholder로 전달
      // ✅ .env에서 값 읽어서 manifest placeholder로 전달 (맵 리터럴!)
          manifestPlaceholders = [
             kakaoNativeAppKey: (project.env.get("KAKAO_NATIVE_APP_KEY") ?: "")

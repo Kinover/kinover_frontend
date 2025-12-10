@@ -1,9 +1,11 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, {useCallback, useMemo} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import {View, Text, TouchableOpacity, StyleSheet, FlatList} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
+import {PinchGestureHandler, State} from 'react-native-gesture-handler';
+
 import {fetchMemoryThunk} from '../store/memoryThunk';
 import {fetchCategoryThunk} from '../store/categoryThunk';
 import {
@@ -16,9 +18,13 @@ import {WINDOW_WIDTH} from '@gorhom/bottom-sheet';
 import SkeletonPhotoGridItem from '../components/SkeletonPhotoGridItem';
 import SkeletonMemoryItem from '../components/SkeletonMemoryItem';
 import {filterPostsByDateRange} from 'utils/postDateFilter';
+import {EMPTY_STYLE} from 'styles/style';
+import {Shadow} from 'react-native-shadow-2';
 
 const ITEM_MARGIN = getResponsiveWidth(2);
 const fallbackImage = require('../../../assets/images/default.png');
+const AVATAR_RADIUS = getResponsiveWidth(8);
+const CARD_RADIUS = getResponsiveIconSize(10);
 
 export default function MemoryFeed({
   selectedCategoryTitle,
@@ -30,10 +36,14 @@ export default function MemoryFeed({
   const navigation = useNavigation();
 
   const familyId = useSelector(state => state.family.familyId);
-  const {memoryList = []} = useSelector(state => state.memory);
+  const {memoryList = [], loading: memoryLoading} = useSelector(
+    state => state.memory,
+  );
   const categoryList = useSelector(state => state.category.categoryList || []);
 
-  // 화면 포커스 시 메모리 & 카테고리 재조회
+  // 🔹 앨범 그리드 컬럼 개수 (핀치로 2~4 사이 변경)
+  const [gridColumns, setGridColumns] = useState(4);
+
   useFocusEffect(
     useCallback(() => {
       if (!familyId) return;
@@ -42,9 +52,8 @@ export default function MemoryFeed({
     }, [dispatch, familyId]),
   );
 
-  const isLoading = !memoryList || memoryList.length === 0;
+  const isLoading = memoryLoading;
 
-  // ====== 공통 유틸 ======
   const getCategoryLabel = id => {
     const found = categoryList.find(cat => cat.categoryId === id);
     return found ? found.title : '카테고리 없음';
@@ -58,9 +67,7 @@ export default function MemoryFeed({
     return `${y}.${m}.${d}`;
   };
 
-  // 필터링
   const filteredMemoryList = useMemo(() => {
-    // 1) 카테고리 필터 먼저
     let list =
       selectedCategoryTitle === '전체'
         ? memoryList
@@ -71,14 +78,11 @@ export default function MemoryFeed({
             return cat?.title === selectedCategoryTitle;
           });
 
-    // 2) 날짜 필터 (startDate, endDate는 props로 내려온 값)
-    //    -> startDate / endDate 둘 다 비어있으면 filterPostsByDateRange가 전체 리스트 그대로 리턴하도록 만들어둔 거 활용
     list = filterPostsByDateRange(list, startDate, endDate);
 
     return list;
   }, [memoryList, categoryList, selectedCategoryTitle, startDate, endDate]);
 
-  // 전체 사진(flat)
   const allPhotos = useMemo(
     () =>
       filteredMemoryList.flatMap(memory =>
@@ -91,61 +95,103 @@ export default function MemoryFeed({
     [filteredMemoryList],
   );
 
-  // ====== 렌더러들 ======
+  const isAllPhotos = selectedTab === 'album';
+  const data = isAllPhotos ? allPhotos : filteredMemoryList;
+
+  // 🔹 그리드 한 칸의 너비 (컬럼 개수에 따라 자동 조정)
+  const tileWidth = useMemo(() => {
+    const columns = gridColumns;
+    const totalMargin = ITEM_MARGIN * (columns + 1); // 양옆 + 중간 간격
+    return (WINDOW_WIDTH - totalMargin) / columns;
+  }, [gridColumns]);
+
+  // 🔹 핀치 제스처로 gridColumns 2~4 사이에서 변경
+  const handlePinchStateChange = event => {
+    const {state, oldState, scale} = event.nativeEvent;
+
+    if (oldState === State.ACTIVE && state === State.END) {
+      setGridColumns(prev => {
+        // 손가락 벌리기 → 확대 → 컬럼 줄이기
+        if (scale > 1.05 && prev > 2) {
+          return prev - 1;
+        }
+        // 손가락 오므리기 → 축소 → 컬럼 늘리기
+        if (scale < 0.95 && prev < 4) {
+          return prev + 1;
+        }
+        return prev;
+      });
+    }
+  };
+
   const renderListItem = memory => {
     const imageCount = memory?.imageUrls?.length || 0;
 
     return (
-      <TouchableOpacity
-        activeOpacity={0.85}
+      <Shadow
         key={memory.postId}
-        onPress={() => navigation.navigate('게시글화면', {memory})}
-        style={styles.memoryItem}>
-        {/* 상단: 날짜 + 댓글/사진 배지 */}
-        <View style={styles.topRow}>
-          <Text style={styles.dateText}>{formatDate(memory.createdAt)}</Text>
+        distance={0.2}
+        offset={[0, 13.5]}
+        startColor="rgba(15, 23, 42, 0.12)"
+        endColor="rgba(15, 23, 42, 0.0)"
+        radius={CARD_RADIUS}
+        style={{
+          width: '100%',
+          position: 'relative',
+          justifyContent: 'center',
+          alignSelf: 'center',
+          alignItems: 'center',
+          borderRadius: CARD_RADIUS,
+          marginVertical: getResponsiveHeight(8),
+          paddingVertical: getResponsiveHeight(3),
+        }}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={() => navigation.navigate('게시글화면', {memory})}
+          style={styles.memoryItem}>
+          <View style={styles.topRow}>
+            <Text style={styles.dateText}>{formatDate(memory.createdAt)}</Text>
 
-          <View style={styles.badgeRow}>
-            <View style={styles.commentBadge}>
-              <Text style={styles.badgeText}>댓글 {memory.commentCount}</Text>
-            </View>
-            {imageCount > 0 && (
-              <View style={styles.imageCountBadge}>
-                <Text style={styles.badgeText}>사진 {imageCount}장</Text>
+            <View style={styles.badgeRow}>
+              <View style={styles.commentBadge}>
+                <Text style={styles.badgeText}>댓글 {memory.commentCount}</Text>
               </View>
-            )}
+              {imageCount > 0 && (
+                <View style={styles.imageCountBadge}>
+                  <Text style={styles.badgeText}>사진 {imageCount}장</Text>
+                </View>
+              )}
+            </View>
           </View>
-        </View>
 
-        {/* 메인 이미지 */}
-        <FastImage
-          style={styles.memoryImage}
-          source={
-            memory.imageUrls?.[0] ? {uri: memory.imageUrls[0]} : fallbackImage
-          }
-        />
+          <FastImage
+            style={styles.memoryImage}
+            source={
+              memory.imageUrls?.[0] ? {uri: memory.imageUrls[0]} : fallbackImage
+            }
+          />
 
-        <Text
-          style={{
-            fontSize: getResponsiveFontSize(17),
-            marginBottom: getResponsiveHeight(4),
-            marginTop: getResponsiveHeight(3),
-            fontFamily: 'Pretendard-Medium',
-            color: 'black',
-          }}>
-          {getCategoryLabel(memory.categoryId)}
-        </Text>
-
-        {/* 내용 미리보기 */}
-        {!!memory.content && (
           <Text
-            style={styles.contentText}
-            numberOfLines={2}
-            ellipsizeMode="tail">
-            {memory.content}
+            style={{
+              fontSize: getResponsiveFontSize(17),
+              marginBottom: getResponsiveHeight(4),
+              marginTop: getResponsiveHeight(3),
+              fontFamily: 'Pretendard-Medium',
+              color: 'black',
+            }}>
+            {getCategoryLabel(memory.categoryId)}
           </Text>
-        )}
-      </TouchableOpacity>
+
+          {!!memory.content && (
+            <Text
+              style={styles.contentText}
+              numberOfLines={2}
+              ellipsizeMode="tail">
+              {memory.content}
+            </Text>
+          )}
+        </TouchableOpacity>
+      </Shadow>
     );
   };
 
@@ -165,8 +211,9 @@ export default function MemoryFeed({
           })
         }
         style={{
-          width: (WINDOW_WIDTH - ITEM_MARGIN * 3) / 4,
+          width: tileWidth,
           aspectRatio: 1,
+          marginBottom: ITEM_MARGIN,
         }}>
         <FastImage
           source={item.uri ? {uri: item.uri} : fallbackImage}
@@ -176,92 +223,138 @@ export default function MemoryFeed({
     );
   };
 
-  const isAllPhotos = selectedTab === 'album';
-  const data = isAllPhotos ? allPhotos : filteredMemoryList;
-
   // ====== 로딩 스켈레톤 ======
   if (isLoading) {
-    return (
-      <View style={{flex: 1, paddingTop: 4, backgroundColor: '#F3F4F6'}}>
-        {selectedTab === 'allPhotos' ? (
+    // ✅ 앨범 탭일 때: 4열 그리드 스켈레톤
+    if (isAllPhotos) {
+      const skeletonData = Array.from({length: 12}, (_, i) => i.toString());
+
+      return (
+        <View style={styles.container}>
           <FlatList
-            data={Array(12).fill(0)}
+            data={skeletonData}
             numColumns={4}
-            columnWrapperStyle={{gap: ITEM_MARGIN}}
-            keyExtractor={(_, idx) => `skeleton-photo-${idx}`}
-            renderItem={() => <SkeletonPhotoGridItem />}
+            keyExtractor={item => item}
+            renderItem={() => (
+              <View
+                style={{
+                  width: (WINDOW_WIDTH - ITEM_MARGIN * 3) / 4,
+                  aspectRatio: 1,
+                  marginBottom: ITEM_MARGIN,
+                }}>
+                <SkeletonPhotoGridItem />
+              </View>
+            )}
+            columnWrapperStyle={{
+              justifyContent: 'flex-start',
+              gap: ITEM_MARGIN,
+              paddingHorizontal: ITEM_MARGIN,
+            }}
+            contentContainerStyle={{
+              paddingTop: ITEM_MARGIN,
+              paddingBottom: getResponsiveHeight(24),
+            }}
+            showsVerticalScrollIndicator={false}
           />
-        ) : (
-          <FlatList
-            data={Array(5).fill(0)}
-            keyExtractor={(_, idx) => `skeleton-memory-${idx}`}
-            renderItem={() => <SkeletonMemoryItem />}
-          />
-        )}
+        </View>
+      );
+    }
+
+    // ✅ 게시글 탭일 때: 기존 카드형 스켈레톤
+    return (
+      <View style={styles.container}>
+        <FlatList
+          data={Array.from({length: 5}, (_, i) => i.toString())}
+          keyExtractor={item => item}
+          renderItem={() => <SkeletonMemoryItem />}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingTop: ITEM_MARGIN,
+            paddingBottom: getResponsiveHeight(24),
+          }}
+        />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        key={isAllPhotos ? 'post' : 'album'}
-        data={data}
-        showsVerticalScrollIndicator={false}
-        keyExtractor={(item, index) =>
-          isAllPhotos
-            ? `${item.uri}_${index}`
-            : item.postId?.toString() || `no-id-${index}`
-        }
-        numColumns={isAllPhotos ? 4 : 1}
-        renderItem={
-          isAllPhotos ? renderImageItem : ({item}) => renderListItem(item)
-        }
-        columnWrapperStyle={
-          isAllPhotos
-            ? {justifyContent: 'flex-start', gap: ITEM_MARGIN}
-            : undefined
-        }
-        contentContainerStyle={{
-          paddingTop: ITEM_MARGIN,
-          paddingBottom: getResponsiveHeight(24),
-          gap: ITEM_MARGIN,
-        }}
-        ListEmptyComponent={
-          !isAllPhotos ? (
+    <View
+      style={[
+        styles.container,
+        !isAllPhotos && styles.postContainer,
+      ]}>
+      {isAllPhotos ? (
+        // 🔹 앨범 탭: 핀치 제스처로 그리드 조절
+        <PinchGestureHandler onHandlerStateChange={handlePinchStateChange}>
+          <View>
+            <FlatList
+              key={`album-${gridColumns}`}
+              data={data}
+              showsVerticalScrollIndicator={false}
+              keyExtractor={(item, index) => `${item.uri}_${index}`}
+              numColumns={gridColumns}
+              renderItem={renderImageItem}
+              columnWrapperStyle={{
+                justifyContent: 'flex-start',
+                gap: ITEM_MARGIN,
+                paddingHorizontal: ITEM_MARGIN,
+              }}
+              contentContainerStyle={{
+                paddingTop: ITEM_MARGIN,
+                paddingBottom: getResponsiveHeight(24),
+              }}
+              ListEmptyComponent={
+                <View style={styles.emptyWrapper}>
+                  <Text style={styles.emptyText}>
+                    아직 등록된 게시글이 없어요
+                  </Text>
+                </View>
+              }
+            />
+          </View>
+        </PinchGestureHandler>
+      ) : (
+        // 🔹 게시글 탭: 기존 카드형 리스트
+        <FlatList
+          key="post"
+          data={data}
+          showsVerticalScrollIndicator={false}
+          keyExtractor={(item, index) =>
+            item.postId?.toString() || `no-id-${index}`
+          }
+          numColumns={1}
+          renderItem={({item}) => renderListItem(item)}
+          contentContainerStyle={{
+            paddingTop: ITEM_MARGIN,
+            paddingBottom: getResponsiveHeight(24),
+          }}
+          ListEmptyComponent={
             <View style={styles.emptyWrapper}>
-              <Text style={styles.emptyText}>아직 등록된 추억이 없어요.</Text>
+              <Text style={styles.emptyText}>아직 등록된 게시글이 없어요</Text>
             </View>
-          ) : null
-        }
-      />
+          }
+        />
+      )}
     </View>
   );
 }
-
-const AVATAR_RADIUS = getResponsiveWidth(8);
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F4F6',
   },
+  postContainer: {
+    marginHorizontal: '2%',
+  },
 
-  // ====== 카드형 앨범 아이템 ======
   memoryItem: {
-    marginHorizontal: getResponsiveWidth(18),
-    marginVertical: getResponsiveHeight(8),
+    width: '98%',
     paddingHorizontal: getResponsiveWidth(16),
     paddingVertical: getResponsiveHeight(14),
     backgroundColor: '#FFFFFF',
-    borderRadius: getResponsiveIconSize(10),
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    shadowColor: '#000',
-    shadowRadius: 6,
-    shadowOpacity: 0.04,
-    shadowOffset: {width: 0, height: 3},
-    elevation: 2,
+    borderRadius: CARD_RADIUS,
+    overflow: 'hidden',
   },
 
   topRow: {
@@ -311,20 +404,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
   },
 
-  categoryBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: getResponsiveWidth(8),
-    paddingVertical: getResponsiveHeight(4),
-    borderRadius: 999,
-    backgroundColor: '#F3F4FF',
-    marginBottom: getResponsiveHeight(6),
-  },
-  categoryText: {
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#4B5563',
-  },
-
   contentText: {
     fontFamily: 'Pretendard-Regular',
     fontSize: getResponsiveFontSize(13),
@@ -333,7 +412,6 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(3),
   },
 
-  // ====== 전체 사진 그리드 ======
   galleryImage: {
     width: '100%',
     height: '100%',
@@ -341,14 +419,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
   },
 
-  // ====== 빈 상태 ======
   emptyWrapper: {
     paddingTop: getResponsiveHeight(60),
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: getResponsiveFontSize(13.5),
-    fontFamily: 'Pretendard-Regular',
-    color: '#9CA3AF',
+    fontSize: EMPTY_STYLE.emptyFontSize,
+    fontFamily: EMPTY_STYLE.emptyFontFamily,
+    color: EMPTY_STYLE.emptyColor,
   },
 });

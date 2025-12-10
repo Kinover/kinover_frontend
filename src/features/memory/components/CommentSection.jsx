@@ -1,4 +1,6 @@
-import React, {useEffect, useState, useRef} from 'react';
+// src/features/post/components/CommentSection.js
+
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -9,9 +11,6 @@ import {
   SafeAreaView,
   Platform,
   Animated,
-  Keyboard,
-  Easing,
-  KeyboardAvoidingView,
 } from 'react-native';
 
 import {
@@ -22,7 +21,8 @@ import {
 // eslint-disable-next-line import/named
 import {Swipeable} from 'react-native-gesture-handler';
 import FastImage from '@d11/react-native-fast-image';
-import LinearGradient from 'react-native-linear-gradient'; // ✅ 추가
+import LinearGradient from 'react-native-linear-gradient';
+import {EMPTY_STYLE} from 'styles/style';
 
 const ACTION_W = getResponsiveWidth(70);
 
@@ -34,56 +34,21 @@ export default function CommentSection({
   user,
   onDeleteComment,
 }) {
-  const translateY = useRef(new Animated.Value(0)).current;
-  const fadeAnim = useRef(new Animated.Value(1)).current;
   const [isReady, setIsReady] = useState(false);
 
-  // ✅ 스크롤 위치에 따라 그라데이션 표시 여부
+  // 스크롤 위치에 따라 그라데이션 표시 여부
   const [showTopFade, setShowTopFade] = useState(false);
   const [showBottomFade, setShowBottomFade] = useState(false);
   const [scrollViewHeight, setScrollViewHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
 
-  // 댓글 화면 페이드 인
   useEffect(() => {
     const timeout = setTimeout(() => {
       setIsReady(true);
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 150,
-        useNativeDriver: true,
-      }).start();
-    }, 200);
+    }, 150);
     return () => clearTimeout(timeout);
   }, []);
 
-  // ✅ 키보드 애니메이션 (부드럽게 올라옴)
-  useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardWillShow', e => {
-      Animated.timing(translateY, {
-        toValue: -e.endCoordinates.height,
-        duration: e.duration || 320,
-        easing: Easing.out(Easing.ease),
-        useNativeDriver: true,
-      }).start();
-    });
-
-    const hideSub = Keyboard.addListener('keyboardWillHide', e => {
-      Animated.timing(translateY, {
-        toValue: 0,
-        duration: e.duration || 280,
-        easing: Easing.in(Easing.ease),
-        useNativeDriver: true,
-      }).start();
-    });
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
-
-  // ✅ 콘텐츠가 화면보다 길면 처음엔 아래쪽 그라데이션만 켜두기
   useEffect(() => {
     if (contentHeight > scrollViewHeight) {
       setShowBottomFade(true);
@@ -102,12 +67,9 @@ export default function CommentSection({
 
     const visibleHeight = layoutMeasurement.height;
     const totalHeight = contentSize.height;
-    const threshold = 10; // 얼마나 스크롤해야 ‘위에 뭐 있다’고 볼지 기준
+    const threshold = 10;
 
-    // 위에 더 내용 있으면 상단 그라데이션
     setShowTopFade(y > threshold);
-
-    // 아래에 더 내용 있으면 하단 그라데이션
     setShowBottomFade(y + visibleHeight < totalHeight - threshold);
   };
 
@@ -149,127 +111,116 @@ export default function CommentSection({
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{flex: 1}}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <Animated.View
-        style={{
-          flex: 1,
-          backgroundColor: '#F9F9F9',
-          transform: [{translateY}],
-          opacity: fadeAnim,
-        }}
-        pointerEvents="box-none">
-        {isReady && (
-          <SafeAreaView style={styles.commentContainer}>
-            {/* ✅ 스크롤 + 그라데이션을 덮어씌울 래퍼 */}
-            <View style={styles.scrollWrapper}>
-              {/* 댓글 리스트 */}
-              <ScrollView
-                style={{flex: 1}}
-                contentContainerStyle={{
-                  paddingBottom: getResponsiveHeight(70), // 입력창 공간
-                  flexGrow: 1,
-                }}
-                showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
-                nestedScrollEnabled
-                onScroll={handleScroll}
-                scrollEventThrottle={16}
-                onLayout={e => setScrollViewHeight(e.nativeEvent.layout.height)}
-                onContentSizeChange={(w, h) => setContentHeight(h)}>
-                {commentList.length === 0 ? (
-                  <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>
-                      {'아직 댓글이 없어요.\n첫 댓글을 남겨보세요!'}
-                    </Text>
-                  </View>
-                ) : (
-                  commentList.map(comment => {
-                    const isMyComment =
-                      user?.userId &&
-                      (comment.authorId === user.userId ||
-                        comment.userId === user.userId);
-                    return (
-                      <Swipeable
-                        key={comment.commentId}
-                        renderRightActions={progress =>
-                          isMyComment
-                            ? renderRightActions(comment.commentId, progress)
-                            : null
-                        }
-                        enabled={!!isMyComment}
-                        overshootRight={false}
-                        friction={2}
-                        rightThreshold={ACTION_W / 2}>
-                        <View style={styles.commentBox}>
-                          <View style={styles.headerRow}>
-                            <View style={styles.authorRow}>
-                              <FastImage
-                                style={styles.commentWriterImage}
-                                source={{uri: comment.authorImage}}
-                              />
-                              <View style={styles.textColumn}>
-                                <Text style={styles.commentWriter}>
-                                  {comment.authorName}
-                                </Text>
-                                <Text style={styles.commentContent}>
-                                  {comment.content}
-                                </Text>
-                              </View>
+    <SafeAreaView style={styles.commentContainer}>
+      {isReady && (
+        <>
+          {/* 스크롤 + 그라데이션 래퍼 */}
+          <View style={styles.scrollWrapper}>
+            <ScrollView
+              style={{flex: 1}}
+              contentContainerStyle={{
+                paddingBottom: getResponsiveHeight(70), // 입력창 높이만큼 여유
+                flexGrow: 1,
+              }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              nestedScrollEnabled
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
+              onLayout={e => setScrollViewHeight(e.nativeEvent.layout.height)}
+              onContentSizeChange={(w, h) => setContentHeight(h)}>
+              {commentList.length === 0 ? (
+                <View style={styles.emptyContainer}>
+                  <Text style={styles.emptyText}>
+                    {'아직 댓글이 없어요.\n첫 댓글을 남겨보세요!'}
+                  </Text>
+                </View>
+              ) : (
+                commentList.map(comment => {
+                  const isMyComment =
+                    user?.userId &&
+                    (comment.authorId === user.userId ||
+                      comment.userId === user.userId);
+
+                  return (
+                    <Swipeable
+                      key={comment.commentId}
+                      renderRightActions={progress =>
+                        isMyComment
+                          ? renderRightActions(comment.commentId, progress)
+                          : null
+                      }
+                      enabled={!!isMyComment}
+                      overshootRight={false}
+                      friction={2}
+                      rightThreshold={ACTION_W / 2}>
+                      <View style={styles.commentBox}>
+                        <View style={styles.headerRow}>
+                          <View style={styles.authorRow}>
+                            <FastImage
+                              style={styles.commentWriterImage}
+                              source={{uri: comment.authorImage}}
+                            />
+                            <View style={styles.textColumn}>
+                              <Text style={styles.commentWriter}>
+                                {comment.authorName}
+                              </Text>
+                              <Text style={styles.commentContent}>
+                                {comment.content}
+                              </Text>
                             </View>
-                            <Text style={styles.timeText}>
-                              {formatPreviewTime(comment.createdAt)}
-                            </Text>
                           </View>
+                          <Text style={styles.timeText}>
+                            {formatPreviewTime(comment.createdAt)}
+                          </Text>
                         </View>
-                      </Swipeable>
-                    );
-                  })
-                )}
-              </ScrollView>
-
-              {/* ✅ 상단 그라데이션 */}
-              {showTopFade && (
-                <LinearGradient
-                  pointerEvents="none"
-                  colors={['#F9F9F9', 'rgba(249,249,249,0)']}
-                  style={styles.topFade}
-                />
+                      </View>
+                    </Swipeable>
+                  );
+                })
               )}
+            </ScrollView>
 
-              {/* ✅ 하단 그라데이션 */}
-              {showBottomFade && (
-                <LinearGradient
-                  pointerEvents="none"
-                  colors={['rgba(249,249,249,0)', '#F9F9F9']}
-                  style={styles.bottomFade}
-                />
-              )}
-            </View>
-
-            {/* 입력창 */}
-            <View style={styles.commentInputContainer}>
-              <TextInput
-                style={styles.commentInput}
-                placeholder="댓글 달고 추억 쌓기...."
-                placeholderTextColor="#D9D9D9"
-                value={commentText}
-                onChangeText={onChangeComment}
-                onSubmitEditing={onSubmitComment}
-                returnKeyType="send"
+            {/* 상단 그라데이션 */}
+            {showTopFade && (
+              <LinearGradient
+                pointerEvents="none"
+                colors={['#F9F9F9', 'rgba(249,249,249,0)']}
+                style={styles.topFade}
               />
-              <TouchableOpacity onPress={onSubmitComment}>
-                <FastImage
-                  style={styles.commentSendBt}
-                  source={require('../../../assets/icons/paperPlaneTilt.png')}
-                />
-              </TouchableOpacity>
-            </View>
-          </SafeAreaView>
-        )}
-      </Animated.View>
-    </KeyboardAvoidingView>
+            )}
+
+            {/* 하단 그라데이션 */}
+            {showBottomFade && (
+              <LinearGradient
+                pointerEvents="none"
+                colors={['rgba(249,249,249,0)', '#F9F9F9']}
+                style={styles.bottomFade}
+              />
+            )}
+          </View>
+
+          {/* 하단 입력창 (PostPage에서 commentWrapper 자체를 올림) */}
+          <View style={styles.commentInputContainer}>
+            <TextInput
+              style={styles.commentInput}
+              placeholder="댓글 달고 추억 쌓기...."
+              placeholderTextColor="#D9D9D9"
+              value={commentText}
+              onChangeText={onChangeComment}
+              onSubmitEditing={onSubmitComment}
+              returnKeyType="send"
+            />
+            <TouchableOpacity onPress={onSubmitComment}>
+              <FastImage
+                style={styles.commentSendBt}
+                source={require('../../../assets/icons/paperPlaneTilt.png')}
+              />
+            </TouchableOpacity>
+          </View>
+        </>
+      )}
+    </SafeAreaView>
   );
 }
 
@@ -278,7 +229,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9F9F9',
   },
-  // ✅ 스크롤 + 그라데이션용 래퍼
   scrollWrapper: {
     flex: 1,
     position: 'relative',
@@ -292,8 +242,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
-  authorRow: {flexDirection: 'row', alignItems: 'flex-start', flexShrink: 1},
-  textColumn: {flexDirection: 'column', flexShrink: 1},
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    flexShrink: 1,
+  },
+  textColumn: {
+    flexDirection: 'column',
+    flexShrink: 1,
+  },
   commentWriterImage: {
     width: getResponsiveWidth(34),
     height: getResponsiveWidth(34),
@@ -317,7 +274,11 @@ const styles = StyleSheet.create({
     color: '#000',
     lineHeight: 20,
   },
-  timeText: {fontSize: getResponsiveFontSize(11), color: '#999', marginTop: 2},
+  timeText: {
+    fontSize: getResponsiveFontSize(11),
+    color: '#999',
+    marginTop: 2,
+  },
   commentInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -350,9 +311,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9F9F9',
   },
   emptyText: {
-    fontSize: getResponsiveFontSize(14),
-    color: '#C0C0C0',
-    fontFamily: 'Pretendard-Regular',
+    fontSize: EMPTY_STYLE.emptyFontSize,
+    fontFamily: EMPTY_STYLE.emptyFontFamily,
+    color: EMPTY_STYLE.emptyColor,
     textAlign: 'center',
   },
   rightActionContainer: {
@@ -372,8 +333,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(14),
   },
-
-  // ✅ 상단/하단 그라데이션 스타일
   topFade: {
     position: 'absolute',
     top: 0,
@@ -385,7 +344,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: 0, // 입력창 위에서 흐려지게
+    bottom: 0,
     height: getResponsiveHeight(30),
   },
 });
@@ -398,6 +357,7 @@ function formatPreviewTime(time) {
     date.getFullYear() === now.getFullYear() &&
     date.getMonth() === now.getMonth() &&
     date.getDate() === now.getDate();
+
   if (isToday) {
     let hours = date.getHours();
     const minutes = String(date.getMinutes()).padStart(2, '0');
@@ -406,5 +366,6 @@ function formatPreviewTime(time) {
     else if (hours > 12) hours -= 12;
     return `${ampm} ${hours}:${minutes}`;
   }
+
   return `${date.getMonth() + 1}월 ${date.getDate()}일`;
 }

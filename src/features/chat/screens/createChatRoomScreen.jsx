@@ -20,7 +20,7 @@ import {
 } from '../../../utils/responsive';
 import useHideTabBar from '../../../hooks/useHideTabBar';
 import ToastModal from '../../../components/ToastModal'; // ✅ 추가
-import { HEADER_STYLES } from 'styles/style';
+import {HEADER_STYLES} from 'styles/style';
 
 export default function CreateChatRoom({navigation}) {
   const dispatch = useDispatch();
@@ -80,6 +80,7 @@ export default function CreateChatRoom({navigation}) {
         createChatRoomThunk({
           roomName: autoRoomName,
           userIds: idsStr,
+          familyId: family.familyId,
         }),
       ).unwrap();
 
@@ -160,7 +161,7 @@ const styles = StyleSheet.create({
     fontSize: HEADER_STYLES.defaultTitleFontSize, // 🔽 18 → 17
     textAlign: 'center',
     fontFamily: HEADER_STYLES.defaultTitleFontFamily,
-    color: HEADER_STYLES.defaultTitleFontColor,    
+    color: HEADER_STYLES.defaultTitleFontColor,
   },
   userItem: {
     flexDirection: 'row',

@@ -153,3 +153,54 @@ export const addUserToFamily = (familyId, userId) => {
     }
   };
 };
+// 가족 그룹 생성 (입력값 없이 호출 → 새 가족 생성 + ID 반환)
+export const createFamilyThunk = () => {
+  return async dispatch => {
+    dispatch(setFamilyLoading(true));
+    try {
+      const token = await getToken();
+
+      const response = await axios.post(
+        'https://kinover.shop/api/family/add',
+        null, // 바디 없음
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      console.log('✅ 새 가족 생성 성공:', response.data);
+
+      // 서버 스펙: "새로운 가족 그룹을 생성하고 ID를 반환"
+      // 보통 { familyId: 123 } 또는 숫자/문자열 하나가 올 거라서 이렇게 처리해 두자.
+      const newFamilyId =
+        response.data?.familyId !== undefined
+          ? response.data.familyId
+          : response.data;
+
+      // 필요하다면 여기서 바로 가족 정보 조회도 가능:
+      // await dispatch(fetchFamilyThunk(newFamilyId));
+
+      return newFamilyId;
+    } catch (error) {
+      console.error(
+        '❌ 새 가족 생성 실패:',
+        error.response?.status,
+        error.response?.data || error.message,
+      );
+
+      dispatch(
+        setFamilyError(
+          error.response?.data?.message ||
+            '새 가족 그룹 생성에 실패했어요.',
+        ),
+      );
+      throw error;
+    } finally {
+      dispatch(setFamilyLoading(false));
+    }
+  };
+};
+
