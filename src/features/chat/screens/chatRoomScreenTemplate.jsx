@@ -56,6 +56,7 @@ const KINO_CHAT_GUIDE_STEPS = [
 
 export default function ChatRoomScreenTemplate({
   chatRoom,
+  title=null,
   userId,
   isKino,
   navigation,
@@ -83,10 +84,15 @@ export default function ChatRoomScreenTemplate({
 
   useHideTabBar();
 
+  const headerTitle =
+  currentChatRoom.roomName === 'Initial'
+    ? title
+    : currentChatRoom.roomName;
+    
   useHeaderSetting(
     navigation,
     setIsSettingsOpen,
-    currentChatRoom.roomName,
+    headerTitle,
     isKino,
   );
 

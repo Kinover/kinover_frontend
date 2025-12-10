@@ -45,7 +45,7 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
 
   const onPress = () => {
     dispatch(markRoomRead(chatRoomId));
-    navigation.navigate(screen, {chatRoom, userId});
+    navigation.navigate(screen, {chatRoom,title, userId});
   };
 
   return (
