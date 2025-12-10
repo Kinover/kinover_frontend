@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getToken } from '../utils/storage';
+import {getToken} from '../utils/storage';
 
 export const createCategory = async (title, familyId) => {
   try {
@@ -20,9 +20,10 @@ export const createCategory = async (title, familyId) => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`, // ✅ 반드시 포함
         },
-      }
+      },
     );
 
+    console.log('카테고리 생성 완료', response.data);
     return response.data;
   } catch (error) {
     console.error('카테고리 생성 실패:', error.response?.data || error.message);

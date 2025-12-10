@@ -13,22 +13,19 @@ import {
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
-import {getResponsiveFontSize,
+import {
+  getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../../utils/responsive';
 import CategoryModal from '../components/CategoryModal';
-import {
-  createCategoryThunk,
-  fetchCategoryThunk,
-} from '../store/categoryThunk';
+import {createCategoryThunk, fetchCategoryThunk} from '../store/categoryThunk';
+import {EMPTY_STYLE} from 'styles/style';
 
 function CategoryHeaderTitle() {
   return (
     <View style={{width: '100%', alignItems: 'center'}}>
-      <Text style={{fontSize: getResponsiveFontSize(20)}}>
-        카테고리 선택
-      </Text>
+      <Text style={{fontSize: getResponsiveFontSize(20)}}>카테고리 선택</Text>
     </View>
   );
 }
@@ -45,7 +42,6 @@ function CategoryHeaderRight({onPress}) {
     </TouchableOpacity>
   );
 }
-
 
 export default function CategoryPage() {
   const navigation = useNavigation();
@@ -97,8 +93,8 @@ export default function CategoryPage() {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitle: <CategoryHeaderTitle/>,
-      headerRight: <CategoryHeaderRight/>,
+      headerTitle: <CategoryHeaderTitle />,
+      headerRight: <CategoryHeaderRight />,
     });
   }, [navigation, selectedCategory]);
 
@@ -169,6 +165,7 @@ export default function CategoryPage() {
               }}>
               <TextInput
                 placeholder="예: 2025 가족 여행"
+                placeholderTextColor={EMPTY_STYLE.emptyColor}
                 style={{
                   fontFamily: 'Pretendard-Regular',
                   fontSize: getResponsiveFontSize(14),

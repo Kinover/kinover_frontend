@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
   },
   codeText: {
     flex: 1,
-    fontSize: getResponsiveFontSize(11),
+    fontSize: getResponsiveFontSize(12),
     fontFamily: 'Pretendard-SemiBold',
     color: '#333',
     letterSpacing: 1,

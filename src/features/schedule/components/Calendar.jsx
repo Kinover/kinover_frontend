@@ -1,4 +1,4 @@
-// CalendarToggle.jsx
+// Calendar.jsx (CalendarToggle)
 import React from 'react';
 import {
   View,
@@ -26,7 +26,7 @@ import {useYMDPicker} from '../hooks/useYMDPicker';
 export default function CalendarToggle({
   selectedDate,
   setSelectedDate,
-  scheduleCountPerDay = {},
+  scheduleCountPerDay = {}, // 🔹 날짜별 일정 개수 map
   initialMode = 'month', // 'month' | 'week'
 }) {
   const {OUTER_HPAD, GAP, cellSize, gridWidth} = useCalendarLayout();
@@ -52,8 +52,7 @@ export default function CalendarToggle({
 
   const weekDates = useWeekDates(selectedDate, getLocalDateKey);
 
-  const {getCountColorStyle /*, renderCountBadge*/} =
-    useScheduleCountStyle(cellSize);
+  const {getCountColorStyle} = useScheduleCountStyle(cellSize);
 
   const {showYMD, openYMD, closeYMD} = useYMDPicker();
 
@@ -125,7 +124,6 @@ export default function CalendarToggle({
       </View>
 
       {/* 월간 */}
-      {/* 월간 */}
       {mode === 'month' ? (
         <View
           style={[
@@ -139,17 +137,14 @@ export default function CalendarToggle({
           ]}>
           {monthDates.map((item, idx) => {
             const count = scheduleCountPerDay[item.key] || 0;
-            const CIRCLE_SIZE = cellSize * 0.78; // 🔸 동그라미 실제 크기 (0.6~0.8 사이로 조절 가능)
+            const CIRCLE_SIZE = cellSize * 0.78;
 
             return (
               <TouchableOpacity
                 key={idx}
                 style={[
                   styles.dayCell,
-                  {
-                    width: cellSize,
-                    height: cellSize,
-                  },
+                  {width: cellSize, height: cellSize},
                 ]}
                 onPress={() => setSelectedDate(item.date)}
                 hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
@@ -179,8 +174,6 @@ export default function CalendarToggle({
         </View>
       ) : (
         // 주간
-
-        // 주간
         <View
           style={[
             styles.weekGrid,
@@ -195,10 +188,7 @@ export default function CalendarToggle({
                 key={idx}
                 style={[
                   styles.dayCell,
-                  {
-                    width: cellSize,
-                    height: cellSize,
-                  },
+                  {width: cellSize, height: cellSize},
                 ]}
                 onPress={() => setSelectedDate(item.date)}
                 hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
@@ -333,14 +323,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   innerCircle: {
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#F9F9F9',
   },
-
   selectedBox: {
     backgroundColor: '#FFF3D2',
     borderColor: '#FFB000',
@@ -360,7 +348,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Regular',
     color: '#111',
   },
-
   selectedText: {
     color: '#333',
     fontFamily: 'Pretendard-SemiBold',

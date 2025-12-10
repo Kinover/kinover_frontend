@@ -18,7 +18,8 @@ import {
 } from '../../../utils/responsive';
 import FastImage from '@d11/react-native-fast-image';
 import YellowSpinner from '../../../components/YellowSpinner';
-import SwipeNavigator from 'components/SwipeNavigator';
+// import SwipeNavigator from 'components/SwipeNavigator';
+import {EMPTY_STYLE} from 'styles/style';
 
 export default function CommunicationScreen({navigation}) {
   const dispatch = useDispatch();
@@ -26,10 +27,18 @@ export default function CommunicationScreen({navigation}) {
   const {familyId} = useSelector(s => s.family);
   const {chatRoomList, loading, listRevision} = useSelector(s => s.chatRoom);
   const [refreshing, setRefreshing] = useState(false);
-
+  
   const load = useCallback(() => {
-    if (familyId && userId != null) {
+    console.log('[CommunicationScreen] load 호출', { familyId, userId });
+  
+    if (familyId != null && userId != null) {
+      console.log('[CommunicationScreen] fetchChatRoomListThunk 디스패치');
       dispatch(fetchChatRoomListThunk(familyId, userId));
+    } else {
+      console.log(
+        '[CommunicationScreen] 조건 불만족으로 fetch 생략',
+        { familyId, userId },
+      );
     }
   }, [dispatch, familyId, userId]);
 
@@ -51,10 +60,10 @@ export default function CommunicationScreen({navigation}) {
   );
 
   return (
-    <SwipeNavigator
-      rightTo="일정" // 오른쪽→왼쪽 스와이프
-      leftTo="홈" // 필요하면 다른 화면 넣기
-    >
+    // <SwipeNavigator
+    //   rightTo="일정" // 오른쪽→왼쪽 스와이프
+    //   leftTo="홈" // 필요하면 다른 화면 넣기
+    // >
       <View style={styles.container}>
         {loading && chatRoomList.length === 0 ? (
           <View style={styles.loaderWrapper}>
@@ -88,7 +97,7 @@ export default function CommunicationScreen({navigation}) {
           />
         </TouchableOpacity>
       </View>
-    </SwipeNavigator>
+    // </SwipeNavigator>
   );
 }
 
@@ -104,13 +113,13 @@ const styles = StyleSheet.create({
     gap: getResponsiveHeight(6), // 🔽 카드 사이 간격 줄임
   },
   noChatMessage: {
-    fontSize: getResponsiveFontSize(14), // 🔽 16 → 14
-    color: '#777',
+    fontSize: EMPTY_STYLE.emptyFontSize,
+    fontFamily: EMPTY_STYLE.emptyFontFamily,
+    color: EMPTY_STYLE.emptyColor,
     textAlign: 'center',
     marginTop: getResponsiveHeight(80), // 🔽 살짝 위로
     lineHeight: getResponsiveFontSize(20), // 🔽 24 → 20
     paddingHorizontal: getResponsiveWidth(10),
-    fontFamily: 'Pretendard-Regular',
   },
   loaderWrapper: {
     flex: 1,

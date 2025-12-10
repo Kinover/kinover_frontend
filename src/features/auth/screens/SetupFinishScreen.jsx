@@ -1,7 +1,7 @@
 // SetupFinishScreen.tsx - Animated Version
 
 import React, {useEffect, useRef} from 'react';
-import {View, StyleSheet, Text, Animated, Easing} from 'react-native';
+import {View, StyleSheet, Text, Animated, Easing, Platform} from 'react-native';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -158,23 +158,29 @@ const styles = StyleSheet.create({
   },
   circleBg: {
     position: 'absolute',
-    width: getResponsiveWidth(300),
-    height: getResponsiveWidth(300),
+    width: getResponsiveWidth(250),
+    height: getResponsiveWidth(250),
     borderRadius: getResponsiveWidth(300) / 2,
     backgroundColor: '#FFF3DE',
     opacity: 1,
-    top: getResponsiveHeight(90),
+    top:
+      Platform.OS === 'android'
+        ? getResponsiveHeight(170)
+        : getResponsiveHeight(155),
   },
   mainImage: {
-    width: '60%',
+    width: '50%',
     aspectRatio: 1.1,
-    marginBottom: getResponsiveHeight(65),
+    marginBottom:
+      Platform.OS === 'android'
+        ? getResponsiveHeight(60)
+        : getResponsiveHeight(45),
   },
 
   bottomArea: {
     flex: 0.9,
     justifyContent: 'space-between',
-    paddingBottom: getResponsiveHeight(30),
+    paddingBottom: getResponsiveHeight(20),
   },
   textBlock: {
     alignItems: 'center',

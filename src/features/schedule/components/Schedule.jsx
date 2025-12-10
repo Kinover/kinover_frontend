@@ -1,7 +1,14 @@
 /* eslint-disable react-native/no-inline-styles */
 // Schedule.jsx
 import React from 'react';
-import {View, Text, TouchableOpacity, Image, StyleSheet, Platform} from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  Platform,
+} from 'react-native';
 
 import {
   getResponsiveFontSize,
@@ -12,6 +19,7 @@ import {
 
 import {useScheduleListByDate} from '../hooks/useScheduleListByDate';
 import {useFormattedScheduleDate} from '../hooks/useFormattedScheduleDate';
+import {EMPTY_STYLE} from 'styles/style';
 
 function Schedule({selectedDate, onOpenSheet, refreshTrigger}) {
   const {scheduleList} = useScheduleListByDate(selectedDate, refreshTrigger);
@@ -135,10 +143,11 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     marginTop: getResponsiveHeight(60),
-    color: '#C0C0C0',
+    fontSize: EMPTY_STYLE.emptyFontSize,
+    fontFamily: EMPTY_STYLE.emptyFontFamily,
+    color: EMPTY_STYLE.emptyColor,
     alignSelf: 'center',
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontSize: getResponsiveFontSize(13),
   },
 });

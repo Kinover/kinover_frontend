@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
   Image,
+  Keyboard,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -67,6 +68,9 @@ export default function PostPage({route}) {
   );
 
   const vm = usePostPageViewModel(safeMemory);
+
+  // 🔥 키보드 높이 상태
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
 
   useEffect(() => {
     if (!memory && postId) {
@@ -154,12 +158,34 @@ export default function PostPage({route}) {
     });
   }, [memory, categoryList, navigation, vm]);
 
+  // 🔥 키보드 이벤트로 댓글 시트 전체를 keyboardHeight만큼 올리기
+  useEffect(() => {
+    const showEvt =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvt, e => {
+      setKeyboardHeight(e.endCoordinates?.height || 0);
+    });
+
+    const hideSub = Keyboard.addListener(hideEvt, () => {
+      setKeyboardHeight(0);
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
   if (!memory) {
     return <SafeAreaView style={styles.container} />;
   }
 
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
+      {/* 상단 이미지 캐러셀 */}
       {vm.localImages?.length > 0 && (
         <View style={{flex: 1}}>
           <ImageCarousel
@@ -177,6 +203,7 @@ export default function PostPage({route}) {
         </View>
       )}
 
+      {/* 설명 섹션 (댓글 모드 / 풀스크린 아닐 때만) */}
       {!vm.commentIndex && !vm.isImageFullScreen && (
         <View style={styles.descriptionWrapper}>
           <DescriptionSection
@@ -186,11 +213,13 @@ export default function PostPage({route}) {
         </View>
       )}
 
+      {/* 댓글 섹션 — absolute + bottom: keyboardHeight */}
       {showCommentSection && !vm.isImageFullScreen && (
         <Animated.View
           style={[
             styles.commentWrapper,
             {
+              bottom: keyboardHeight, // 🔥 키보드 높이만큼 전체 시트 위로
               opacity: fadeAnim,
               transform: [
                 {
@@ -207,13 +236,13 @@ export default function PostPage({route}) {
             commentText={vm.commentText}
             onChangeComment={vm.setCommentText}
             onSubmitComment={vm.handleSendComment}
-            onCloseComment={() => vm.setCommentIndex(false)}
             user={vm.user}
             onDeleteComment={commentId => vm.openDeleteCommentModal(commentId)}
           />
         </Animated.View>
       )}
 
+      {/* 댓글 삭제 모달 */}
       {vm.commentDeleteModalVisible && (
         <CustomModal
           visible={vm.commentDeleteModalVisible}
@@ -229,6 +258,8 @@ export default function PostPage({route}) {
           }}
         />
       )}
+
+      {/* 게시물/사진 삭제 모달 */}
       {vm.deleteModalVisible && (
         <ImageDeleteModal
           visible={vm.deleteModalVisible}
@@ -262,6 +293,7 @@ export default function PostPage({route}) {
         </ImageDeleteModal>
       )}
 
+      {/* 삭제 옵션 드롭다운 */}
       <Animated.View style={[styles.deleteOptions, deleteOptionsStyle]}>
         {['게시물', '사진'].map(option => (
           <TouchableOpacity
@@ -280,6 +312,7 @@ export default function PostPage({route}) {
         <View style={styles.divider} />
       </Animated.View>
 
+      {/* 토스트 */}
       <ToastModal
         visible={vm.toastVisible}
         message={vm.toastMessage}
@@ -296,7 +329,7 @@ const styles = StyleSheet.create({
     fontSize: HEADER_STYLES.defaultTitleFontSize,
     fontFamily: HEADER_STYLES.defaultTitleFontFamily,
     color: HEADER_STYLES.defaultTitleFontColor,
-    lineHeight: getResponsiveHeight(26), // 🔽 살짝 줄임
+    lineHeight: getResponsiveHeight(26),
     textAlign: 'center',
   },
   descriptionWrapper: {
@@ -306,7 +339,7 @@ const styles = StyleSheet.create({
   },
   commentWrapper: {
     position: 'absolute',
-    bottom: 0,
+    bottom: 0, // 기본값, 위에서 bottom: keyboardHeight로 덮어씀
     width: '100%',
     height: Platform.OS === 'android' ? '56.5%' : '59%',
     backgroundColor: '#F9F9F9',
@@ -327,7 +360,7 @@ const styles = StyleSheet.create({
   },
   deleteOptionText: {
     color: 'black',
-    fontSize: getResponsiveFontSize(13), // 🔽 14 → 13
+    fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-Light',
   },
   divider: {
@@ -339,16 +372,16 @@ const styles = StyleSheet.create({
     color: 'black',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(17) // 🔽 20 → 17
-        : getResponsiveFontSize(18), // 🔽 22 → 18
+        ? getResponsiveFontSize(17)
+        : getResponsiveFontSize(18),
     fontWeight: '700',
     fontFamily: 'Pretendard-SemiBold',
     textAlign: 'center',
     marginVertical: getResponsiveHeight(8),
   },
   headerIcon: {
-    width: HEADER_STYLES.headerRightIconWidth, // 🔽 28 → 24
-    height: HEADER_STYLES.headerRightIconHeight, // 🔽 28 → 24
+    width: HEADER_STYLES.headerRightIconWidth,
+    height: HEADER_STYLES.headerRightIconHeight,
     resizeMode: 'contain',
     marginRight: HEADER_STYLES.headerRightIconRightPadding,
   },

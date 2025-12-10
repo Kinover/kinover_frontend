@@ -98,6 +98,13 @@ const chatRoomSlice = createSlice({
             latestMessageContent: r.latestMessageContent ?? '',
             latestMessageTime: toIso(latestRaw),
             unreadCount: Number.isFinite(r.unreadCount) ? r.unreadCount : 0,
+            notificationOn:
+              typeof r.notificationOn === 'boolean' ? r.notificationOn : true,
+
+            // ✅ 여기 추가: 백엔드에서 내려온 userChatRooms를 그대로 보존
+            userChatRooms: Array.isArray(r.userChatRooms)
+              ? r.userChatRooms
+              : [],
           };
         }),
       );
@@ -125,6 +132,21 @@ const chatRoomSlice = createSlice({
       state.activeChatRoomId = action.payload ? toId(action.payload) : null;
     },
 
+    // ✅ 알림 on/off 상태를 방별로 업데이트
+    setChatRoomNotificationState(state, action) {
+      const {chatRoomId, isOn} = action.payload || {};
+      const rid = toId(chatRoomId);
+      const idx = findRoomIndex(state, rid);
+
+      if (idx !== -1) {
+        state.chatRoomList[idx] = {
+          ...state.chatRoomList[idx],
+          notificationOn: isOn,
+        };
+        state.listRevision += 1;
+      }
+    },
+
     /**
      * 새 메시지 수신/발신 시 리스트에 미리보기 반영
      * - 방이 없으면 새로 추가
@@ -135,49 +157,51 @@ const chatRoomSlice = createSlice({
       const rid = toId(chatRoomId);
       const lastText = previewText(message);
       const lastTime = toIso(message?.createdAt);
-
+    
       const idx = findRoomIndex(state, rid);
-
+    
       if (idx === -1) {
         // 리스트에 없는 방이면 헤더 정보 최소로 넣어준다
         state.chatRoomList.unshift({
           chatRoomId: rid,
-          roomName: `채팅방 ${rid}`,
+          roomName: message?.chatRoom?.roomName ?? `채팅방 ${rid}`,
           latestMessageContent: lastText,
           latestMessageTime: lastTime,
           unreadCount: isSelf ? 0 : 1, // 내가 보낸 메시지는 안읽음 증가 X
+    
           memberImages: message?.chatRoom?.memberImages || [],
           kino: message?.chatRoom?.kino || false,
+          notificationOn: true,
+    
+          // ✅ 새 메시지로부터도 userChatRooms를 받아서 저장
+          userChatRooms: Array.isArray(message?.chatRoom?.userChatRooms)
+            ? message.chatRoom.userChatRooms
+            : [],
         });
       } else {
         const prev = state.chatRoomList[idx];
-
-        // 안읽음 규칙:
-        // - 내가 보낸 메시지(isSelf)면 그대로 유지
-        // - 내가 보낸 게 아니고, 현재 활성 방이 아니면 +1
-        // - 현재 활성 방이면 0으로 리셋
+    
         let unread = prev.unreadCount || 0;
-
+    
         if (!isSelf) {
           unread =
             state.activeChatRoomId && state.activeChatRoomId === rid
               ? 0
               : unread + 1;
-        } else {
-          // isSelf인 경우는 현재 활성 여부와 상관없이 unread 유지
-          // (요구사항에 따라 0으로 만들고 싶다면 여기서 처리)
         }
-
+    
         state.chatRoomList[idx] = {
           ...prev,
           latestMessageContent: lastText,
           latestMessageTime: lastTime,
           unreadCount: unread,
+          // ❗ 여기서는 prev.userChatRooms 그대로 유지 (이미 setChatRoomList에서 넣어줬음)
         };
       }
-
+    
       finalizeList(state);
     },
+    
 
     /**
      * 방을 읽음 처리 (리스트에서 해당 방의 unreadCount = 0)
@@ -243,7 +267,8 @@ export const {
   applyMessagePreview,
   markRoomRead,
   updateChatRoomNameInList,
-  removeChatRoomFromList
+  removeChatRoomFromList,
+  setChatRoomNotificationState, // ✅ 추가
 } = chatRoomSlice.actions;
 
 export default chatRoomSlice.reducer;

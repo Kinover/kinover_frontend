@@ -163,7 +163,7 @@ export default function ChatRoomScreenTemplate({
         />
 
         {/* 🔹 인앱 가이드 모달 (키노/일반 공통, 내용만 다름) */}
-        {currentGuide && (
+        {/* {currentGuide && (
           <GuideModal
             visible={isGuideVisible}
             step={guideStep}
@@ -173,7 +173,7 @@ export default function ChatRoomScreenTemplate({
             onNext={nextStep}
             onSkip={skipGuide}
           />
-        )}
+        )} */}
       </View>
     </KeyboardAvoidingView>
   );

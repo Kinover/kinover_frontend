@@ -1,4 +1,9 @@
-import React, {useState, useRef, useEffect, useCallback} from 'react';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+} from 'react';
 import {
   View,
   TextInput,
@@ -10,6 +15,7 @@ import {
   SafeAreaView,
   Text,
   Image,
+  PanResponder,
 } from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 // eslint-disable-next-line import/named
@@ -54,7 +60,13 @@ export default function ChatInput({
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
+
   const inputRef = useRef(null);
+
+  // ✅ 드래그 선택용
+  const [scrollOffset, setScrollOffset] = useState(0);
+  const [dragMode, setDragMode] = useState(null); // 'add' | 'remove' | null
+  const lastIndexRef = useRef(null);
 
   // ✅ 토스트 상태
   const [toastVisible, setToastVisible] = useState(false);
@@ -186,6 +198,95 @@ export default function ChatInput({
     setSelectedImages(prev => toggleSelectImage(prev, item));
   };
 
+  // ✅ 드래그 모드에 따라 선택/해제 업데이트
+  const updateSelectionByMode = useCallback(
+    (item, mode) => {
+      if (!item) return;
+      setSelectedImages(prev => {
+        const exists = prev.some(f => f.uri === item.uri);
+        if (mode === 'add') {
+          if (exists) return prev;
+          return [...prev, item];
+        }
+        if (mode === 'remove') {
+          if (!exists) return prev;
+          return prev.filter(f => f.uri !== item.uri);
+        }
+        return prev;
+      });
+    },
+    [],
+  );
+
+  // ✅ 드래그 위치(x, y)에서 어떤 셀인지 계산해서 선택/해제
+  const handleDragAtLocation = useCallback(
+    (x, y, isStart = false) => {
+      if (!photos || photos.length === 0) return;
+
+      // 갤러리 content 의 좌우 padding 보정
+      const localX = x - PADDING_H;
+      if (localX < 0) return;
+
+      const tileWidth = IMAGE_SIZE + GAP;
+      const tileHeight = IMAGE_SIZE + GAP;
+
+      const col = Math.floor(localX / tileWidth);
+      if (col < 0 || col >= NUM_COLUMNS) return;
+
+      const row = Math.floor((scrollOffset + y) / tileHeight);
+      if (row < 0) return;
+
+      const index = row * NUM_COLUMNS + col;
+      if (index < 0 || index >= photos.length) return;
+
+      // 같은 칸이면 또 처리 안 함
+      if (!isStart && lastIndexRef.current === index) return;
+
+      const item = photos[index];
+
+      if (isStart) {
+        const already = selectedImages.some(f => f.uri === item.uri);
+        const mode = already ? 'remove' : 'add';
+        setDragMode(mode);
+        updateSelectionByMode(item, mode);
+      } else {
+        if (!dragMode) return;
+        updateSelectionByMode(item, dragMode);
+      }
+
+      lastIndexRef.current = index;
+    },
+    [photos, scrollOffset, selectedImages, dragMode, updateSelectionByMode],
+  );
+
+  // ✅ 갤러리 영역에서 가로로 쓸면 드래그 선택
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        const {dx, dy} = gestureState;
+        // 가로 이동이 충분히 크고, 세로보다 우세할 때만 가로 드래그로 인식
+        return Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy);
+      },
+      onPanResponderGrant: evt => {
+        const {locationX, locationY} = evt.nativeEvent;
+        handleDragAtLocation(locationX, locationY, true);
+      },
+      onPanResponderMove: evt => {
+        const {locationX, locationY} = evt.nativeEvent;
+        handleDragAtLocation(locationX, locationY, false);
+      },
+      onPanResponderRelease: () => {
+        setDragMode(null);
+        lastIndexRef.current = null;
+      },
+      onPanResponderTerminate: () => {
+        setDragMode(null);
+        lastIndexRef.current = null;
+      },
+    }),
+  ).current;
+
   const renderPhoto = ({item}) => {
     const isSelected = selectedImages.some(f => f.uri === item.uri);
     const order = getSelectOrder(selectedImages, item.uri);
@@ -279,7 +380,9 @@ export default function ChatInput({
           style={[
             styles.galleryContainer,
             {height: showGallery ? getResponsiveHeight(300) : 0},
-          ]}>
+          ]}
+          // ✅ 갤러리 열려 있을 때만 드래그 선택 활성화
+          {...(showGallery ? panResponder.panHandlers : {})}>
           {showGallery && (
             <>
               <FlatList
@@ -293,8 +396,14 @@ export default function ChatInput({
                 onEndReachedThreshold={0.2}
                 refreshing={isRefreshing}
                 onRefresh={onRefresh}
+                onScroll={e =>
+                  setScrollOffset(e.nativeEvent.contentOffset?.y ?? 0)
+                }
+                scrollEventThrottle={16}
                 ListFooterComponent={
-                  isLoadingMore ? <Text style={styles.footer}></Text> : null
+                  isLoadingMore ? (
+                    <Text style={styles.footer}></Text>
+                  ) : null
                 }
               />
               {photos.length > 0 && (
@@ -400,6 +509,7 @@ const styles = StyleSheet.create({
   galleryContent: {
     paddingTop: GAP,
     paddingBottom: GAP,
+    paddingHorizontal: PADDING_H, // ← 좌우 패딩(드래그 계산에도 사용)
   },
   columnWrapper: {
     columnGap: GAP,

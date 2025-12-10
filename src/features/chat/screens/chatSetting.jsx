@@ -31,8 +31,6 @@ import {
   getResponsiveIconSize,
 } from '../../../utils/responsive';
 import {updateChatRoomNameInList} from '../store/chatRoomSlice';
-
-// ✅ 네가 만든 토스트 모달 경로에 맞게 수정
 import ToastModal from '../../../components/ToastModal';
 
 export default function ChatSettings({
@@ -61,10 +59,13 @@ export default function ChatSettings({
   const chatRoomUsers = useSelector(state => state.chatRoom.chatRoomUsers);
   const familyId = useSelector(state => state.family.familyId);
   const userId = useSelector(state => state.user.userId);
-
   const familyMembers = useSelector(
     state => state.userFamily.familyUserList || [],
   );
+
+  // ✅ 현재 채팅방 정보 & notificationOn 가져오기
+  const chatRoomList = useSelector(state => state.chatRoom.chatRoomList || []);
+  const currentRoom = chatRoomList.find(room => room.chatRoomId === chatRoomId);
 
   const dispatch = useDispatch();
 
@@ -80,6 +81,7 @@ export default function ChatSettings({
     }
   }, [isOpen, chatRoomId, dispatch]);
 
+  // ✅ 모달 열고/닫힐 때 슬라이드 애니메이션
   useEffect(() => {
     if (isOpen) {
       setInternalVisible(true);
@@ -94,6 +96,13 @@ export default function ChatSettings({
     }
   }, [isOpen, translateX]);
 
+  // ✅ currentRoom.notificationOn 값에 따라 알림 상태 동기화
+  useEffect(() => {
+    if (!currentRoom) return;
+    // 서버/스토어에서 notificationOn === true/false 인 값에 맞춰 세팅
+    setIsAlarmOn(!!currentRoom.notificationOn);
+  }, [currentRoom]);
+
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{translateX: translateX.value}],
   }));
@@ -103,7 +112,7 @@ export default function ChatSettings({
     if (!toastVisible) return;
     const timer = setTimeout(() => {
       setToastVisible(false);
-    }, 1800); // 1.8초 뒤 자동 닫힘
+    }, 1800);
     return () => clearTimeout(timer);
   }, [toastVisible]);
 
@@ -122,15 +131,13 @@ export default function ChatSettings({
       .then(() => {
         console.log('🔔 알림 설정 변경 성공');
 
-        // ✅ 토글 성공 시 토스트 띄우기
-        setToastMessage(
-          newIsOn ? '알림이 활성화되었어요' : '알림을 비활성화하였습니다',
-        );
+        setToastMessage(newIsOn ? '알림을 켰어요' : '알림을 껐어요');
         setToastVisible(true);
       })
       .catch(err => {
         console.warn('❌ 알림 설정 변경 실패:', err);
-        // 에러도 토스트로 띄우고 싶으면 유지, 아니면 이 부분은 지워도 됨
+        // 실패 시 원래 상태로 롤백해도 됨
+        setIsAlarmOn(!newIsOn);
         setToastMessage('알림 설정 변경에 실패했어요.\n다시 시도해 주세요.');
         setToastVisible(true);
       });
@@ -178,6 +185,7 @@ export default function ChatSettings({
     onClose();
   };
 
+  // 키노 선택 화면 이동
   useEffect(() => {
     if (!isOpen && shouldNavigate) {
       const timeout = setTimeout(() => {
@@ -220,9 +228,9 @@ export default function ChatSettings({
 
         {/* ✅ 토스트 모달 */}
         <ToastModal
-          visible={toastVisible} // isVisible / open 등으로 쓰면 여기도 맞춰 변경
-          message={toastMessage} // text / label 등으로 쓰면 변경
-          onClose={() => setToastVisible(false)} // 닫기 콜백
+          visible={toastVisible}
+          message={toastMessage}
+          onClose={() => setToastVisible(false)}
         />
       </View>
 
@@ -326,6 +334,14 @@ export default function ChatSettings({
               <Text style={styles.optionText}>키노 교체하기</Text>
             </TouchableOpacity>
           )}
+          {/* 
+          {!isKino && (
+            <TouchableOpacity
+              style={styles.leaveOption}
+              onPress={() => setIsLeaveModalVisible(true)}>
+              <Text style={styles.leaveText}>채팅방 나가기</Text>
+            </TouchableOpacity>
+          )} */}
 
           <TouchableOpacity
             style={styles.leaveOption}

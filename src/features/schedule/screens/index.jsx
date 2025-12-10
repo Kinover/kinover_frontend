@@ -24,7 +24,10 @@ import {useScheduleDate} from '../hooks/useScheduleDate';
 import {useScheduleCounts} from '../hooks/useScheduleCounts';
 import {useScheduleEditor} from '../hooks/useScheduleEditor';
 import {useScheduleCrud} from '../hooks/useScheduleCRUD';
-import SwipeNavigator from 'components/SwipeNavigator';
+// import SwipeNavigator from 'components/SwipeNavigator';
+
+// 날짜 → "YYYY-MM-DD" 키로 변환하는 훅 (달력에서 이미 쓰는 것)
+import {useLocalDateKey} from '../hooks/useLocalDateKey';
 
 // 🔹 공통 인앱 가이드 훅 & 모달
 import useGuide from 'hooks/useGuide';
@@ -54,7 +57,6 @@ const SCHEDULE_GUIDE_STEPS = [
   },
 ];
 
-
 export default function ScheduleScreen() {
   const {familyId} = useSelector(state => state.family);
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
@@ -63,6 +65,10 @@ export default function ScheduleScreen() {
   // 날짜 관련 상태
   const {selectedDate, setSelectedDate, formattedDate, year, month} =
     useScheduleDate();
+
+  // 날짜 → "YYYY-MM-DD" 로 변환하는 함수
+  const getLocalDateKey = useLocalDateKey();
+  const selectedDateKey = getLocalDateKey(selectedDate); // ✅ 달력 key와 동일 포맷
 
   // 일정 개수, 로딩, 리프레시
   const {
@@ -97,10 +103,11 @@ export default function ScheduleScreen() {
     bumpCount,
     setRefreshTrigger,
     closeSheet,
+    selectedDateKey, // ✅ 여기서 넘겨줌
   });
 
   // 🔹 인앱 가이드 훅은 무조건 여기서 항상 호출 (조건 X)
-  const guideEnabled = !!familyId; // 필요하면 여기서 on/off만 제어
+  const guideEnabled = !familyId;
   const {
     isGuideVisible,
     guideStep,
@@ -110,7 +117,7 @@ export default function ScheduleScreen() {
     skipGuide,
   } = useGuide('SCHEDULE_GUIDE_SHOWN_V1', SCHEDULE_GUIDE_STEPS, guideEnabled);
 
-  // 🔹 이제야 로딩 분기 처리 (훅 호출 이후)
+  // 🔹 로딩 분기
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -120,7 +127,7 @@ export default function ScheduleScreen() {
   }
 
   return (
-    <SwipeNavigator rightTo="추억" leftTo="소통">
+    // <SwipeNavigator rightTo="추억" leftTo="소통">
       <View style={styles.container}>
         {/* 메인 콘텐츠 */}
         <ScrollView
@@ -129,7 +136,7 @@ export default function ScheduleScreen() {
           <CalendarToggle
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}
-            scheduleCountPerDay={scheduleCountPerDay}
+            scheduleCountPerDay={scheduleCountPerDay} // 🔹 날짜별 개수 map
           />
 
           <Schedule
@@ -162,7 +169,7 @@ export default function ScheduleScreen() {
         </TouchableOpacity>
 
         {/* 인앱 가이드 모달 */}
-        {currentGuide && (
+        {/* {currentGuide && (
           <GuideModal
             visible={isGuideVisible}
             step={guideStep}
@@ -172,9 +179,9 @@ export default function ScheduleScreen() {
             onNext={nextStep}
             onSkip={skipGuide}
           />
-        )}
+        )} */}
       </View>
-    </SwipeNavigator>
+    // </SwipeNavigator>
   );
 }
 

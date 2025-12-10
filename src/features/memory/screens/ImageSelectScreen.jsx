@@ -1,4 +1,10 @@
-import React, {useEffect, useState, useLayoutEffect, useCallback} from 'react';
+import React, {
+  useEffect,
+  useState,
+  useLayoutEffect,
+  useCallback,
+  useRef,
+} from 'react';
 import {
   View,
   FlatList,
@@ -9,6 +15,7 @@ import {
   Image,
   Dimensions,
   Linking,
+  PanResponder,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {
@@ -22,7 +29,7 @@ import {
   convertPhUriToFileUri,
   convertContentUriToFileUri,
 } from '../../../utils/photoUriConverter';
-import {toggleSelectImage, getSelectOrder} from '../../../utils/selection';
+import { getSelectOrder} from '../../../utils/selection';
 import {loadGalleryPhotos} from '../../../utils/gallery';
 import formatDuration from '../../../utils/formatDuration';
 import {HEADER_STYLES} from 'styles/style';
@@ -38,6 +45,9 @@ const IMAGE_SIZE =
 // 페이지당 불러올 이미지 개수
 const PAGE_SIZE = 60;
 
+// ✅ 선택 가능한 최대 개수
+const MAX_SELECTION = 30;
+
 export default function ImageSelectPage() {
   const [photos, setPhotos] = useState([]);
   const [selected, setSelected] = useState([]);
@@ -46,6 +56,12 @@ export default function ImageSelectPage() {
   const [hasNextPage, setHasNextPage] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const [scrollOffset, setScrollOffset] = useState(0);
+
+  // 드래그 선택용 상태
+  const [dragMode, setDragMode] = useState(null); // 'add' | 'remove' | null
+  const lastIndexRef = useRef(null);
 
   const navigation = useNavigation();
 
@@ -95,8 +111,25 @@ export default function ImageSelectPage() {
     setIsRefreshing(false);
   };
 
+  // ✅ 탭으로 선택/해제할 때 30장 제한 적용
   const toggleSelect = item => {
-    setSelected(prev => toggleSelectImage(prev, item));
+    setSelected(prev => {
+      const exists = prev.some(f => f.uri === item.uri);
+
+      // 이미 선택된 거면 → 해제
+      if (exists) {
+        return prev.filter(f => f.uri !== item.uri);
+      }
+
+      // 새로 선택하려는데 이미 30장 꽉 찼으면 → 막기 + 토스트
+      if (prev.length >= MAX_SELECTION) {
+        showToast(`사진은 최대 ${MAX_SELECTION}장까지 선택할 수 있어요.`);
+        return prev;
+      }
+
+      // 정상적으로 추가
+      return [...prev, item];
+    });
   };
 
   const handleNext = useCallback(async () => {
@@ -138,7 +171,9 @@ export default function ImageSelectPage() {
 
     navigation.setOptions({
       headerTitle: () => (
-        <Text style={styles.headerTitle}>사진 업로드 ({selected.length})</Text>
+        <Text style={styles.headerTitle}>
+          사진 업로드 ({selected.length})
+        </Text>
       ),
       headerRight: () => (
         <TouchableOpacity
@@ -156,6 +191,99 @@ export default function ImageSelectPage() {
       ),
     });
   }, [selected, navigation, handleNext]);
+
+  // 🔹 드래그 모드에 따라 선택/해제 업데이트 (여기에도 30장 제한)
+  const updateSelectionByMode = useCallback(
+    (item, mode) => {
+      if (!item) return;
+
+      setSelected(prev => {
+        const exists = prev.some(f => f.uri === item.uri);
+
+        if (mode === 'add') {
+          if (exists) return prev;
+          // 드래그로 추가할 때도 30장 넘지 않도록 막기
+          if (prev.length >= MAX_SELECTION) {
+            return prev; // 드래그는 토스트 없이 조용히 무시
+          }
+          return [...prev, item];
+        }
+
+        if (mode === 'remove') {
+          if (!exists) return prev;
+          return prev.filter(f => f.uri !== item.uri);
+        }
+
+        return prev;
+      });
+    },
+    [],
+  );
+
+  // 🔹 드래그 지점(x,y)에서 어떤 인덱스인지 계산
+  const handleDragAtLocation = useCallback(
+    (x, y, isStart = false) => {
+      if (!photos || photos.length === 0) return;
+
+      const tileFullSize = IMAGE_SIZE + getResponsiveWidth(2); // 이미지+여유
+      const col = Math.floor(x / tileFullSize);
+      if (col < 0 || col >= NUM_COLUMNS) return;
+
+      const row = Math.floor((scrollOffset + y) / tileFullSize);
+      if (row < 0) return;
+
+      const index = row * NUM_COLUMNS + col;
+      if (index < 0 || index >= photos.length) return;
+
+      if (lastIndexRef.current === index && !isStart) {
+        return; // 같은 셀이면 다시 처리 안 함
+      }
+
+      const item = photos[index];
+
+      if (isStart) {
+        // 시작 시점에 현재 셀의 상태를 보고 드래그 모드 결정
+        const alreadySelected = selected.some(f => f.uri === item.uri);
+        const mode = alreadySelected ? 'remove' : 'add';
+        setDragMode(mode);
+        updateSelectionByMode(item, mode);
+      } else {
+        if (!dragMode) return;
+        updateSelectionByMode(item, dragMode);
+      }
+
+      lastIndexRef.current = index;
+    },
+    [photos, scrollOffset, selected, dragMode, updateSelectionByMode],
+  );
+
+  // 🔹 PanResponder: 가로로 손가락 끌면 드래그 선택 (세로 스크롤은 FlatList가 담당)
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => false,
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        const {dx, dy} = gestureState;
+        // 가로 이동이 크고, 세로보다 우세할 때만 드래그 선택 시작
+        return Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy);
+      },
+      onPanResponderGrant: evt => {
+        const {locationX, locationY} = evt.nativeEvent;
+        handleDragAtLocation(locationX, locationY, true);
+      },
+      onPanResponderMove: evt => {
+        const {locationX, locationY} = evt.nativeEvent;
+        handleDragAtLocation(locationX, locationY, false);
+      },
+      onPanResponderRelease: () => {
+        setDragMode(null);
+        lastIndexRef.current = null;
+      },
+      onPanResponderTerminate: () => {
+        setDragMode(null);
+        lastIndexRef.current = null;
+      },
+    }),
+  ).current;
 
   const renderItem = ({item}) => {
     const isSelected = selected.some(f => f.uri === item.uri);
@@ -188,7 +316,7 @@ export default function ImageSelectPage() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} {...panResponder.panHandlers}>
       <FlatList
         data={photos}
         keyExtractor={(item, index) => item.uri + index}
@@ -199,6 +327,10 @@ export default function ImageSelectPage() {
         onEndReachedThreshold={0.2}
         refreshing={isRefreshing}
         onRefresh={onRefresh}
+        onScroll={e =>
+          setScrollOffset(e.nativeEvent.contentOffset?.y ?? 0)
+        }
+        scrollEventThrottle={16}
         ListFooterComponent={
           isLoadingMore ? <Text style={styles.footer} /> : null
         }

@@ -15,8 +15,12 @@ import {useDispatch, useSelector} from 'react-redux';
 import ToastModal from '../../../components/ToastModal';
 import BottomActionButton from 'components/BottomActionButton';
 
-import {fetchFamilyThunk, addUserToFamily} from '../../home/store/familyThunk';
+import {
+  fetchFamilyThunk,
+  addUserToFamily,
+} from '../../home/store/familyThunk';
 import {setHasFamily} from 'utils/storage';
+import {useCreateFamily} from '../hooks/useCreateFamily';
 
 export default function FamilySetupScreen() {
   const navigation = useNavigation();
@@ -29,11 +33,19 @@ export default function FamilySetupScreen() {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
+  // 새 가족 생성 훅 (내부에서 createFamilyThunk 쓰고 있을 것)
+  const {
+    createFamily,
+    loading: createFamilyLoading,
+    error: createFamilyError,
+  } = useCreateFamily();
+
   const showToast = useCallback(msg => {
     setToastMessage(msg);
     setToastVisible(true);
   }, []);
 
+  // ✅ 가족 코드로 기존 가족 참여하기
   const handleSubmit = async () => {
     const trimmed = familyCode.trim();
 
@@ -53,24 +65,33 @@ export default function FamilySetupScreen() {
     setFieldError('');
 
     try {
-      // 1) 가족 코드로 가족이 있는지 확인
-      await dispatch(fetchFamilyThunk(trimmed)); // ✅ unwrap 사용 X
+      // 1) 가족 코드로 가족 정보 조회 (여기서는 존재 여부 확인용)
+      //    fetchFamilyThunk 안에서 에러 처리(setFamilyError)만 하고 throw는 안 하니까
+      //    여기서는 그냥 await만 해두면 됨.
+      await dispatch(fetchFamilyThunk(trimmed));
 
-      // 2) 가족이 있다면 나를 가족에 추가
-      await dispatch(addUserToFamily(trimmed, userId)); // ✅ unwrap 사용 X
+      // 2) 해당 가족에 나를 추가
+      //    백엔드가 /add/{familyId}/{userId} 에서 {familyId}를 "가족코드"로 쓰는 구조라면
+      //    그대로 trimmed를 familyId 자리에 넣어주면 됨.
+      await dispatch(addUserToFamily(trimmed, userId));
 
       console.log('🎉 가족 참여 성공');
       await setHasFamily(true);
+
+      // 필요하면 여기서 다시 가족 정보 한번 더 가져와도 됨
+      // await dispatch(fetchFamilyThunk(trimmed));
 
       // 3) 완료 화면 이동
       navigation.navigate('설정완료화면');
     } catch (err) {
       console.log('❌ 가족 참여 실패:', err?.response || err);
 
+      const status = err?.response?.status;
       const msg =
-        err?.response?.status === 404
+        status === 404
           ? '가족 코드를 찾을 수 없어요. 다시 확인해 주세요.'
           : err?.response?.data?.message ||
+            err?.message ||
             '가족 참여 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.';
 
       setFieldError(msg);
@@ -78,8 +99,48 @@ export default function FamilySetupScreen() {
     }
   };
 
-  const handleCreateFamily = () => {
-    navigation.navigate('설정완료화면');
+  // ✅ 새 가족 생성 + 내가 그 가족에 들어가기
+  const handleCreateFamily = async () => {
+    if (!userId) {
+      const msg = '로그인 정보가 확인되지 않아요.';
+      showToast(msg);
+      return;
+    }
+
+    try {
+      // 1) 새 가족 생성 (createFamily 내부에서 createFamilyThunk 호출해서 newFamilyId 리턴)
+      const newFamilyId = await createFamily();
+
+      if (!newFamilyId) {
+        const msg =
+          createFamilyError ||
+          '가족 생성에 실패했어요. 잠시 후 다시 시도해 주세요.';
+        showToast(msg);
+        return;
+      }
+
+      console.log('🎉 새 가족 생성 성공, ID(or Code):', newFamilyId);
+
+      // 2) 내가 그 가족에 추가
+      await dispatch(addUserToFamily(newFamilyId, userId));
+
+      // 3) "가족 있음" 플래그 저장
+      await setHasFamily(true);
+
+      // 4) 가족 정보 스토어에 최신화
+      await dispatch(fetchFamilyThunk(newFamilyId));
+
+      // 5) 완료 화면 이동 (+ 필요하면 familyId 넘기기)
+      navigation.navigate('설정완료화면', {familyId: newFamilyId});
+    } catch (err) {
+      console.log('❌ 새 가족 생성/참여 실패:', err?.response || err);
+
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        '가족을 만드는 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.';
+      showToast(msg);
+    }
   };
 
   return (
@@ -95,7 +156,7 @@ export default function FamilySetupScreen() {
         <TextInput
           style={styles.input}
           placeholder="가족 코드를 입력하세요"
-          placeholderTextColor="#9E9E9E" // ← 여기!
+          placeholderTextColor="#9E9E9E"
           value={familyCode}
           onChangeText={setFamilyCode}
           autoCapitalize="none"
@@ -116,12 +177,13 @@ export default function FamilySetupScreen() {
       <TouchableOpacity
         style={styles.createCard}
         activeOpacity={0.85}
-        onPress={handleCreateFamily}>
+        onPress={handleCreateFamily}
+        disabled={createFamilyLoading}>
         <View style={styles.createCardIconBox}>
           <Text style={styles.createCardIcon}>🏡</Text>
         </View>
         <View style={styles.createCardTextBox}>
-          <Text style={styles.createCardTitle}>새 가족 모임 만들기</Text>
+          <Text style={styles.createCardTitle}>{'새 가족 모임 만들기'}</Text>
           <Text style={styles.createCardDesc}>
             내가 방장이 되어 가족을 초대할게요
           </Text>
@@ -183,36 +245,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     fontSize: 12,
   },
-  secondaryText: {
-    marginTop: 14,
-    fontSize: 13,
-    textAlign: 'center',
-    color: '#6B7280',
-  },
-  secondaryLink: {
-    fontWeight: '700',
-    color: '#111827',
-    textDecorationLine: 'underline',
-  },
-  createBox: {
-    marginTop: 24,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  createTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  createDesc: {
-    fontSize: 12,
-    color: '#6B7280',
-  },
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -246,7 +278,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    // backgroundColor: '#FFEFD5',
     backgroundColor: 'white',
     marginRight: 12,
   },

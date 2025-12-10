@@ -1,9 +1,12 @@
-import {createAsyncThunk} from '@reduxjs/toolkit';
+// src/features/memory/store/categoryThunk.js
 
+import {createAsyncThunk} from '@reduxjs/toolkit';
 import axios from 'axios';
 import {getToken} from '../../../utils/storage';
 
-// ✅ 카테고리 불러오기 API 함수
+const BASE_URL = 'https://kinover.shop/api';
+
+/* ------------------ 1) 카테고리 목록 조회 API ------------------ */
 const getCategoryApi = async familyId => {
   try {
     const token = await getToken();
@@ -13,90 +16,96 @@ const getCategoryApi = async familyId => {
       throw new Error('로그인이 필요합니다.');
     }
 
-    const url = `https://kinover.shop/api/categories/${familyId}`;
-    console.log('🌐 [GET] 요청 URL:', url);
+    const url = `${BASE_URL}/categories/${familyId}`;
+    console.log('🌐 [GET] URL:', url);
 
-    const response = await axios.get(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+    const res = await axios.get(url, {
+      headers: {Authorization: `Bearer ${token}`},
     });
 
-    console.log('✅ [GET] 카테고리 응답:', response.data);
-    return response.data;
-  } catch (error) {
+    console.log('✅ [GET] 카테고리 응답:', res.data);
+    return res.data;
+  } catch (e) {
     console.error(
       '❌ [GET] 카테고리 불러오기 실패:',
-      error.response?.data || error.message,
+      e.response?.data || e.message,
     );
-    throw error;
+    throw e;
   }
 };
 
-// ✅ 카테고리 생성 API 함수
-const createCategory = async (title, familyId) => {
+/* ------------------ 2) 카테고리 생성 API ------------------ */
+const createCategoryApi = async (title, familyId) => {
   try {
     const token = await getToken();
     console.log('🔐 [POST] 토큰:', token);
-    console.log('타이틀', title, '가족아이디', familyId);
+    console.log('📝 [POST] 카테고리 생성 요청 데이터:', {
+      title,
+      familyId,
+    });
 
     if (!token) {
       throw new Error('로그인이 필요합니다.');
     }
 
-    const url = 'https://kinover.shop/api/categories';
-    const body = {
-      title,
-      familyId,
-    };
+    const url = `${BASE_URL}/categories`;
+    const body = { title, familyId: familyId};
 
-    console.log('🌐 [POST] 요청 URL:', url);
-    console.log('📦 [POST] 요청 바디:', body);
+    console.log('🌐 [POST] URL:', url);
+    console.log('📦 [POST] BODY:', body);
 
-    const response = await axios.post(url, body, {
+    const res = await axios.post(url, body, {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
     });
 
-    console.log('✅ [POST] 카테고리 생성 성공:', response.data);
-    return response.data;
-  } catch (error) {
+    console.log('✅ [POST] 카테고리 생성 성공:', res.data);
+    // 예: { categoryId: '...', title: '...', familyId: '...' }
+    return res.data;
+  } catch (e) {
     console.error(
       '❌ [POST] 카테고리 생성 실패:',
-      error.response?.data || error.message,
+      e.response?.data || e.message,
     );
-    throw error;
+    throw e;
   }
 };
 
-// ✅ 카테고리 리스트 불러오기 Thunk
+/* ------------------ 3) 카테고리 목록 조회 Thunk ------------------ */
 export const fetchCategoryThunk = createAsyncThunk(
   'category/fetch',
   async (familyId, {rejectWithValue}) => {
     try {
+      console.log('📥 [fetchCategoryThunk] familyId:', familyId);
       const data = await getCategoryApi(familyId);
       return data;
-    } catch (error) {
-      return rejectWithValue(error.response?.data || error.message);
+    } catch (e) {
+      return rejectWithValue(e.response?.data || e.message);
     }
   },
 );
 
-// ✅ 카테고리 생성 Thunk
-// 예시
+/* ------------------ 4) 카테고리 생성 Thunk ------------------ */
 export const createCategoryThunk = createAsyncThunk(
   'category/create',
-  async ({ title, familyId }, { rejectWithValue }) => {
+  async ({title, familyId}, {rejectWithValue}) => {
     try {
-      const res = await axios.post('/api/categories', { title, familyId });
-      return res.data; // {categoryId, title, ...}
+      console.log('📥 [createCategoryThunk] 요청:', {
+        title,
+        familyId,
+      });
+      const newCategory = await createCategoryApi(title, familyId);
+      console.log('📥 [createCategoryThunk] 응답 newCategory:', newCategory);
+      return newCategory; // { categoryId, title, ... } 형태
     } catch (e) {
-      const status = e?.response?.status || 500;
-      const message = e?.response?.data?.message || e.message;
-      return rejectWithValue({ status, message });
+      const payload = {
+        status: e.response?.status || 500,
+        message: e.response?.data?.message || e.message,
+      };
+      console.log('❌ [createCategoryThunk] 에러:', payload);
+      return rejectWithValue(payload);
     }
-  }
+  },
 );
-

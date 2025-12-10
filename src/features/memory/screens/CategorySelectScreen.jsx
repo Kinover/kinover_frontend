@@ -1,3 +1,5 @@
+// src/features/memory/screens/CategorySelectScreen.jsx
+
 import React, {useState, useLayoutEffect, useEffect} from 'react';
 import {
   View,
@@ -19,7 +21,8 @@ import {
 import CategoryModal from '../components/CategoryModal';
 import {fetchCategoryThunk} from '../store/categoryThunk';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {HEADER_STYLES} from 'styles/style';
+import {EMPTY_STYLE, HEADER_STYLES} from 'styles/style';
+import uuid from 'react-native-uuid';
 
 export default function CategorySelectPage({route}) {
   const navigation = useNavigation();
@@ -31,21 +34,49 @@ export default function CategorySelectPage({route}) {
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [newCategory, setNewCategory] = useState('');
 
+  // 디버깅용
+  useEffect(() => {
+    console.log('📂 CategorySelectPage 진입');
+    console.log('📂 route.params:', route?.params);
+  }, [route]);
+
+  useEffect(() => {
+    console.log('👨‍👩‍👧‍👦 familyId 변경:', familyId);
+  }, [familyId]);
+
+  useEffect(() => {
+    console.log('📋 categoryList 변경감지:', categoryList);
+  }, [categoryList]);
+
+  useEffect(() => {
+    console.log('✅ 현재 선택된 카테고리(selectedCategory):', selectedCategory);
+    console.log('✅ 현재 선택 인덱스(selectedIndex):', selectedIndex);
+  }, [selectedCategory, selectedIndex]);
+
+  // 헤더 설정
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitle: () => (
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>카테고리 지정</Text>
-        </View>
-      ),
+      headerTitle: () => <Text style={styles.headerTitle}>카테고리 지정</Text>,
       headerRight: () => (
         <TouchableOpacity
           onPress={() => {
+            console.log('✅ 헤더 확인 버튼 클릭');
+            console.log(
+              '➡️ 게시글작성화면으로 이동, selectedCategory:',
+              selectedCategory,
+            );
+            console.log(
+              '➡️ 전달할 selectedImages:',
+              route.params?.selectedImages,
+            );
+
             if (selectedCategory) {
               navigation.navigate('게시글작성화면', {
                 selectedCategory,
                 selectedImages: route.params?.selectedImages,
               });
+            } else {
+              console.log('❌ selectedCategory 없음, 이동 안 함');
             }
           }}
           style={styles.headerRight}>
@@ -55,84 +86,82 @@ export default function CategorySelectPage({route}) {
           />
         </TouchableOpacity>
       ),
-      headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => {
-            navigation.goBack();
-          }}
-          style={{marginLeft: getResponsiveWidth(20)}}>
-          <Image
-            source={require('../../../assets/icons/caretDown.png')}
-            style={{
-              width: getResponsiveWidth(26),
-              height: getResponsiveHeight(26),
-              resizeMode: 'contain',
-            }}
-          />
-        </TouchableOpacity>
-      ),
+      // headerLeft: () => (
+      //   <TouchableOpacity
+      //     onPress={() => {
+      //       console.log('⬅️ 카테고리 선택 화면 뒤로가기');
+      //       navigation.goBack();
+      //     }}
+      //     style={{marginLeft: getResponsiveWidth(20)}}>
+      //     <Image
+      //       source={require('../../../assets/icons/caretDown.png')}
+      //       style={{
+      //         width: getResponsiveWidth(26),
+      //         height: getResponsiveHeight(26),
+      //         resizeMode: 'contain',
+      //       }}
+      //     />
+      //   </TouchableOpacity>
+      // ),
     });
   }, [navigation, selectedCategory, route.params?.selectedImages]);
 
+  // 카테고리 목록 조회
   useEffect(() => {
-    if (familyId) dispatch(fetchCategoryThunk(familyId));
+    if (familyId) {
+      console.log('📥 카테고리 목록 조회 요청, familyId:', familyId);
+      dispatch(fetchCategoryThunk(familyId));
+    } else {
+      console.log('❌ familyId 없음, 카테고리 조회 스킵');
+    }
   }, [dispatch, familyId]);
 
+  // 첫 진입 시 기본 선택
   useEffect(() => {
     if (categoryList.length > 0) {
+      console.log('✨ categoryList 첫 로딩/변경, 기본 첫 번째 카테고리 선택');
+      console.log('✨ categoryList[0]:', categoryList[0]);
       setSelectedCategory(categoryList[0]);
       setSelectedIndex(0);
+    } else {
+      console.log('ℹ️ categoryList 비어 있음');
     }
   }, [categoryList]);
 
   const handleAddCategory = () => {
+    console.log('➕ 새 카테고리 추가 버튼 클릭, 입력값:', newCategory);
+
     if (newCategory.trim()) {
+      const generatedId = String(uuid.v4());
+
       const tempCategory = {
-        categoryId: null,
+        categoryId: generatedId, // ✅ 여기서 미리 UUID 부여
         title: newCategory.trim(),
         isTemporary: true,
       };
       const updated = [...categoryList, tempCategory];
+
+      console.log('🆕 생성된 임시 카테고리(tempCategory):', tempCategory);
+      console.log('🆕 업데이트된 카테고리 목록(updated):', updated);
+
       setNewCategory('');
       setAddModalVisible(false);
       setSelectedCategory(tempCategory);
       setSelectedIndex(updated.length - 1);
+
       dispatch({type: 'category/setTempCategoryList', payload: updated});
+      console.log('📤 dispatch(category/setTempCategoryList) 완료');
+    } else {
+      console.log('❌ newCategory 공백, 생성 안 함');
     }
   };
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerTitle: () => (
-        <View style={styles.headerCenter}>
-          <Text style={styles.headerTitle}>카테고리 지정</Text>
-        </View>
-      ),
-      headerRight: () => (
-        <TouchableOpacity
-          onPress={() => {
-            if (selectedCategory) {
-              navigation.navigate('게시글작성화면', {
-                selectedCategory,
-                selectedImages: route.params?.selectedImages,
-              });
-            }
-          }}
-          style={styles.headerRight}>
-          <Image
-            source={require('../../../assets/icons/check.png')}
-            style={styles.checkImage}
-          />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation, route.params?.selectedImages, selectedCategory]);
 
   const renderItem = ({item, index}) => {
     const isSelected = selectedIndex === index;
     return (
       <TouchableOpacity
         onPress={() => {
+          console.log('✅ 카테고리 셀 클릭:', {item, index});
           setSelectedIndex(index);
           setSelectedCategory(item);
         }}
@@ -165,16 +194,21 @@ export default function CategorySelectPage({route}) {
           <>
             <TouchableOpacity
               style={styles.addButton}
-              onPress={() => setAddModalVisible(true)}>
+              onPress={() => {
+                console.log('📥 카테고리 추가 모달 오픈');
+                setAddModalVisible(true);
+              }}>
               <Text style={styles.addText}>카테고리 추가</Text>
             </TouchableOpacity>
             <View style={styles.separator} />
           </>
         }
       />
+
       <CategoryModal
         visible={addModalVisible}
         onClose={() => {
+          console.log('🧹 카테고리 추가 모달 닫기');
           setNewCategory('');
           setAddModalVisible(false);
         }}
@@ -185,9 +219,12 @@ export default function CategorySelectPage({route}) {
             <View style={styles.inputBox}>
               <TextInput
                 placeholder="예: 2025 가족 여행"
+                placeholderTextColor={EMPTY_STYLE.emptyColor}
                 style={styles.input}
                 value={newCategory}
-                onChangeText={setNewCategory}
+                onChangeText={text => {
+                  setNewCategory(text);
+                }}
               />
             </View>
           </View>
@@ -211,18 +248,18 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: HEADER_STYLES.defaultTitleFontSize,
-    textAlign: 'center',
-    textAlignVertical: 'center',
     fontFamily: HEADER_STYLES.defaultTitleFontFamily,
     color: HEADER_STYLES.defaultTitleFontColor,
     lineHeight: getResponsiveHeight(26),
+    textAlign: 'center',
+    textAlignVertical: 'center',
   },
   headerRight: {
     marginRight: getResponsiveWidth(10),
   },
   checkImage: {
-    width: HEADER_STYLES.headerRightIconWidth, // 🔽 28 → 24
-    height: HEADER_STYLES.headerRightIconHeight, // 🔽 28 → 24
+    width: HEADER_STYLES.headerRightIconWidth,
+    height: HEADER_STYLES.headerRightIconHeight,
     marginRight: HEADER_STYLES.headerRightIconRightPadding,
     resizeMode: 'contain',
   },
@@ -230,20 +267,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: getResponsiveWidth(18), // 🔽 22.5 → 18
-    paddingHorizontal: getResponsiveWidth(22), // 살짝 줄임
+    paddingVertical: getResponsiveWidth(18),
+    paddingHorizontal: getResponsiveWidth(22),
   },
   selectedItem: {
     backgroundColor: '#FFF3D2',
   },
   itemText: {
-    fontSize: getResponsiveFontSize(14.5), // 🔽 15 → 14.5
+    fontSize: getResponsiveFontSize(14.5),
     fontFamily: 'Pretendard-Regular',
     color: 'black',
     textAlignVertical: 'center',
   },
   radioIcon: {
-    width: getResponsiveWidth(14), // 🔽 15 → 14
+    width: getResponsiveWidth(14),
     height: getResponsiveHeight(14),
     resizeMode: 'contain',
   },
@@ -253,12 +290,12 @@ const styles = StyleSheet.create({
     marginHorizontal: getResponsiveWidth(5),
   },
   addButton: {
-    paddingVertical: getResponsiveWidth(18), // 🔽 22.5 → 18
+    paddingVertical: getResponsiveWidth(18),
     paddingHorizontal: getResponsiveWidth(22),
   },
   addText: {
     color: '#F8B500',
-    fontSize: getResponsiveFontSize(14.5), // 🔽 15 → 14.5
+    fontSize: getResponsiveFontSize(14.5),
     fontFamily: 'Pretendard-Medium',
   },
   modalContent: {
@@ -268,8 +305,8 @@ const styles = StyleSheet.create({
     color: 'black',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(17) // 🔽 20 → 17
-        : getResponsiveFontSize(18), // 🔽 22 → 18
+        ? getResponsiveFontSize(17)
+        : getResponsiveFontSize(18),
     fontFamily: 'Pretendard-SemiBold',
     textAlign: 'center',
     marginBottom: getResponsiveHeight(12),
@@ -285,6 +322,6 @@ const styles = StyleSheet.create({
   },
   input: {
     fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(14.5), // 🔽 16 → 14.5
+    fontSize: getResponsiveFontSize(14.5),
   },
 });

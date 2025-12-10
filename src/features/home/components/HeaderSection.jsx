@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Image,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import {
   getResponsiveFontSize,
@@ -16,10 +17,11 @@ import {
   getResponsiveWidth,
 } from '../../../utils/responsive';
 import {useNavigation} from '@react-navigation/native';
+import {Shadow} from 'react-native-shadow-2';
 
-const AVATAR = getResponsiveIconSize(95);
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 
+// 감정 이미지 매핑
 const getEmotionImage = emotion => {
   switch (emotion) {
     case 'ANNOYED':
@@ -43,25 +45,31 @@ const getEmotionImage = emotion => {
   }
 };
 
+const AVATAR = getResponsiveIconSize(95);
+const CARD_RADIUS = getResponsiveIconSize(10);
+
 export default function HeaderSection({user, onUserPress}) {
   const navigation = useNavigation();
+  // ✅ 화면 기준 실제 픽셀 너비(예: 90%)
+  const {width: SCREEN_WIDTH} = useWindowDimensions();
 
-  // 감정 이미지
+  const CARD_WIDTH = SCREEN_WIDTH * 0.875;
+
   const rawEmotion = user?.emotion;
   const emotionKey = rawEmotion ? String(rawEmotion).toUpperCase() : null;
   const emotionImage = emotionKey ? getEmotionImage(emotionKey) : null;
 
-  // 프로필 이미지 소스
   const profileSource = user?.image
     ? {
         uri: user.image.startsWith('https')
-          ? user.image // kakao, full url 등
-          : CLOUD_FRONT + user.image, // key면 CloudFront + key
+          ? user.image
+          : CLOUD_FRONT + user.image,
       }
     : require('../../../assets/images/default.png');
 
   return (
     <View style={styles.headerContainer}>
+      {/* 프로필 이미지 + 감정 */}
       <View style={styles.imageWrapper}>
         {!!emotionImage && (
           <Image source={emotionImage} style={styles.emotionImage} />
@@ -81,15 +89,29 @@ export default function HeaderSection({user, onUserPress}) {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity
-        onPress={() => onUserPress(user)}
-        style={styles.headerBox}
-      />
+      {/* 🔥 카드: 너비 숫자로 고정 */}
+      <View style={styles.cardWrapper}>
+        <Shadow
+          distance={7}
+          offset={[0, 0]}
+          startColor="rgba(0,0,0,0.12)"
+          endColor="rgba(0,0,0,0.0)"
+          radius={CARD_RADIUS}
+          style={[styles.shadowBox, {width: CARD_WIDTH}]}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={() => onUserPress?.(user)}
+            style={styles.headerCard}>
+            <Text style={styles.userNameHeader} numberOfLines={1}>
+              {user?.name}
+            </Text>
 
-      <Text style={styles.userNameHeader}>{user?.name}</Text>
-      <Text style={styles.trait} numberOfLines={1} ellipsizeMode="tail">
-        {user?.trait || '이 사람을 한마디로 표현한다면?'}
-      </Text>
+            <Text style={styles.trait} numberOfLines={1} ellipsizeMode="tail">
+              {user?.trait || '이 사람을 한마디로 표현한다면?'}
+            </Text>
+          </TouchableOpacity>
+        </Shadow>
+      </View>
     </View>
   );
 }
@@ -98,33 +120,20 @@ const styles = StyleSheet.create({
   headerContainer: {
     position: 'relative',
     alignItems: 'center',
-    marginTop: getResponsiveHeight(15),
-    marginBottom: getResponsiveHeight(18),
-    zIndex: 10,
-    marginHorizontal: getResponsiveWidth(25),
-  },
-  headerBox: {
-    position: 'absolute',
-    bottom: 0,
-    backgroundColor: 'white',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-    borderRadius: getResponsiveIconSize(10),
     width: '100%',
-    height: getResponsiveHeight(135),
-    zIndex: -5,
+    marginTop: getResponsiveHeight(40),
+    marginBottom: getResponsiveHeight(18),
   },
+
   imageWrapper: {
-    position: 'relative',
     justifyContent: 'flex-end',
     alignItems: 'center',
-    marginTop: getResponsiveHeight(30),
     width: AVATAR * 1.22,
     height: AVATAR * 1.22,
+    zIndex: 1,
+    marginBottom: -AVATAR * 0.35,
   },
+
   emotionImage: {
     position: 'absolute',
     width: AVATAR * 1.55,
@@ -133,6 +142,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 0,
   },
+
   profileImage: {
     borderRadius: 999,
     zIndex: 1,
@@ -145,18 +155,37 @@ const styles = StyleSheet.create({
     width: AVATAR * 1.3,
     height: AVATAR * 1.3,
   },
+
+  // ✅ 카드 전체 래퍼: 화면 기준으로 고정 너비
+  cardWrapper: {
+    alignSelf: 'center',
+  },
+
+  // ✅ Shadow 안의 실제 박스
+  shadowBox: {
+    borderRadius: CARD_RADIUS,
+    backgroundColor: 'white',
+  },
+
+  headerCard: {
+    width: '100%',
+    alignItems: 'center',
+    paddingTop: getResponsiveHeight(45),
+    paddingBottom: getResponsiveHeight(23),
+    paddingHorizontal: getResponsiveWidth(10),
+  },
+
   userNameHeader: {
     fontFamily: 'Pretendard-Medium',
     fontWeight: Platform.OS === 'ios' ? undefined : '600',
     fontSize: getResponsiveFontSize(18),
-    marginTop: getResponsiveHeight(12),
     color: 'black',
   },
+
   trait: {
     fontFamily: 'Pretendard-Light',
     fontSize: getResponsiveFontSize(14.5),
     marginTop: getResponsiveHeight(6),
-    marginBottom: getResponsiveHeight(18),
     color: 'gray',
     textAlign: 'center',
   },

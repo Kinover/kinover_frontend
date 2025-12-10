@@ -1,4 +1,6 @@
-import React, {useState, useLayoutEffect} from 'react';
+// src/features/memory/screens/CreatePostScreen.jsx
+
+import React, {useState, useLayoutEffect, useCallback} from 'react';
 import {
   StyleSheet,
   View,
@@ -14,24 +16,28 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-// eslint-disable-next-line import/named
-import Animated, {ZoomIn, ZoomOut} from 'react-native-reanimated';
+
 import {
   getResponsiveWidth,
   getResponsiveHeight,
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
+
 import {getPresignedUrls, uploadFileToS3} from '../../../api/imageUrlApi';
 import useHideTabBar from '../../../hooks/useHideTabBar';
 import ToastModal from '../../../components/ToastModal';
-import { HEADER_STYLES } from 'styles/style';
+import {HEADER_STYLES} from 'styles/style';
+
+import {uploadPostApi} from 'api/uploadPostApi';
+import {useDispatch, useSelector} from 'react-redux';
+import {createCategoryThunk} from '../store/categoryThunk';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
 export default function CreatePostPage({navigation, route}) {
   const [text, setText] = useState('');
-  const [isUploading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [focused, setFocused] = useState(false);
 
   const {selectedImages: initImages} = route.params ?? {};
@@ -41,43 +47,196 @@ export default function CreatePostPage({navigation, route}) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const [successModalVisible, setSuccessModalVisible] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const {userId} = useSelector(s => s.user);
+  const {familyId} = useSelector(s => s.family);
+  const dispatch = useDispatch();
 
   useHideTabBar({stayHidden: true});
 
-  const handleUpload = async () => {
-    const now = Date.now();
-    const fileNames = selectedImages.map((uri, i) => {
-      let ext = (uri.split('.').pop() || 'jpg').toLowerCase();
-      if (ext === 'mov') ext = 'mp4';
-      return `media_${now}_${i}_${Math.floor(Math.random() * 1000)}.${ext}`;
-    });
+  const showToast = useCallback(msg => {
+    setToastMessage(msg);
+    setToastVisible(true);
+  }, []);
 
-    const presignedUrls = await getPresignedUrls(fileNames);
-
-    for (let i = 0; i < selectedImages.length; i++) {
-      await uploadFileToS3(presignedUrls[i], selectedImages[i], fileNames[i]);
+  const handleUpload = useCallback(async () => {
+    if (isUploading) {
+      console.log('⚠️ 이미 업로드 중입니다. 중복 요청 방지');
+      return;
     }
-  };
+
+    console.log('➡️ 업로드 시작');
+    console.log('🧾 route.params:', route?.params);
+    console.log('🧾 선택된 이미지 개수:', selectedImages.length);
+    console.log('🧾 userId:', userId, 'familyId:', familyId);
+
+    const {selectedCategory} = route.params ?? {};
+    console.log('🧾 선택된 카테고리:', selectedCategory);
+
+    // 기본 체크
+    if (!selectedCategory) {
+      console.log('❌ selectedCategory 없음');
+      showToast('카테고리를 먼저 선택해 주세요.');
+      return;
+    }
+    if (!familyId || !userId) {
+      console.log('❌ familyId 또는 userId 없음', {familyId, userId});
+      showToast('로그인 또는 가족 정보를 확인해 주세요.');
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+
+      // 🔹 최종적으로 글에 쓸 categoryId
+      let finalCategoryId = selectedCategory.categoryId;
+      console.log('🔹 초기 finalCategoryId:', finalCategoryId);
+
+      // 1) 새 카테고리라면 백엔드에 먼저 생성 요청
+      if (selectedCategory.isTemporary) {
+        console.log('🟡 임시 카테고리이므로 createCategoryThunk 실행');
+
+        const action = await dispatch(
+          createCategoryThunk({
+            title: selectedCategory.title,
+            familyId,
+          }),
+        );
+
+        console.log('📩 createCategoryThunk 결과:', action);
+
+        if (action.meta.requestStatus !== 'fulfilled') {
+          console.log('❌ createCategoryThunk 실패:', action.payload);
+          showToast('카테고리 생성 중 문제가 발생했어요.');
+          setIsUploading(false);
+          return;
+        }
+
+        const newCat = action.payload;
+        console.log('🧩 새 카테고리 응답 newCat:', newCat);
+
+        // 🔥 백엔드가 실제 저장한 id를 우선 사용
+        finalCategoryId =
+          newCat?.categoryId ??
+          newCat?.id ??
+          newCat?.data?.categoryId ??
+          newCat?.data?.id ??
+          selectedCategory.categoryId;
+
+        console.log(
+          '✅ 최종 finalCategoryId (카테고리 생성 후):',
+          finalCategoryId,
+        );
+      }
+
+      // 2) 이미지 업로드(S3)
+      let imageUrls = [];
+      let postTypes = [];
+
+      if (selectedImages.length > 0) {
+        const now = Date.now();
+
+        const fileNames = selectedImages.map((uri, i) => {
+          let ext = uri.split('.').pop()?.toLowerCase() || 'jpg';
+          if (ext === 'mov') ext = 'mp4';
+          return `media_${now}_${i}_${Math.floor(Math.random() * 1000)}.${ext}`;
+        });
+
+        console.log('🖼 생성된 파일 이름 목록:', fileNames);
+
+        const presignedUrls = await getPresignedUrls(fileNames);
+        console.log('🔗 presignedUrls 개수:', presignedUrls.length);
+
+        for (let i = 0; i < selectedImages.length; i++) {
+          console.log(
+            `⬆️ [${i + 1}/${selectedImages.length}] S3 업로드 시작`,
+            '\n   fileName:',
+            fileNames[i],
+            '\n   uri:',
+            selectedImages[i],
+          );
+          await uploadFileToS3(
+            presignedUrls[i],
+            selectedImages[i],
+            fileNames[i],
+          );
+          console.log(`✅ [${i + 1}/${selectedImages.length}] S3 업로드 완료`);
+        }
+
+        imageUrls = [...fileNames];
+        postTypes = selectedImages.map(() => 'image');
+
+        console.log('🧾 업로드 후 imageUrls:', imageUrls);
+        console.log('🧾 업로드 후 postTypes:', postTypes);
+      } else {
+        console.log('ℹ️ 이미지 없이 텍스트만 업로드합니다.');
+      }
+
+      // 3) 게시글 업로드 (🔥 finalCategoryId 사용)
+      const newPost = {
+        authorId: userId,
+        content: text || '',
+        familyId,
+        categoryId: finalCategoryId,
+        imageUrls,
+        postTypes,
+      };
+
+      console.log('📮 업로드할 게시글 데이터(newPost):', newPost);
+
+      const res = await uploadPostApi(newPost);
+      console.log('✅ 게시글 업로드 성공 응답:', res);
+
+      setSuccessModalVisible(true);
+    } catch (error) {
+      const status = error?.response?.status;
+      const data = error?.response?.data;
+
+      console.log('❌ 업로드 중 에러 status:', status);
+      console.log('❌ 업로드 중 에러 data:', data);
+      console.error('🔥 업로드 중 오류 발생:', data || error);
+
+      showToast('업로드 중 문제가 발생했어요.');
+    } finally {
+      console.log('⬅️ 업로드 로직 종료, isUploading false로 변경');
+      setIsUploading(false);
+    }
+  }, [
+    route?.params,
+    selectedImages,
+    text,
+    familyId,
+    userId,
+    isUploading,
+    showToast,
+    dispatch,
+  ]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
         <View style={styles.headerContainer}>
-          <Text style={styles.headerText}>내용 작성</Text>
+          <Text style={styles.headerText}>글쓰기</Text>
         </View>
       ),
       headerRight: () => (
         <TouchableOpacity
           onPress={handleUpload}
-          style={{marginRight: getResponsiveWidth(10)}}>
+          style={{marginRight: getResponsiveWidth(10)}}
+          disabled={isUploading}>
           <Image
             source={require('../../../assets/icons/check.png')}
-            style={styles.headerCheckIcon}
+            style={[styles.headerCheckIcon, isUploading && {opacity: 0.5}]}
           />
         </TouchableOpacity>
       ),
     });
-  }, [navigation, handleUpload]);
+  }, [navigation, handleUpload, isUploading]);
+
+  // 🔹 Grid에 보여줄 이미지 (최대 3x2 = 6개)
+  const gridImages = selectedImages.slice(0, 6);
 
   return (
     <KeyboardAvoidingView
@@ -90,6 +249,24 @@ export default function CreatePostPage({navigation, route}) {
           </View>
         )}
 
+        {/* 🔹 사진 그리드 (최대 3 x 2) - 위쪽 */}
+        {gridImages.length > 0 && (
+          <View style={styles.gridContainer}>
+            {gridImages.map((item, index) => (
+              <Pressable
+                key={item + index}
+                onPress={() => {
+                  setCurrentIndex(index);
+                  setModalVisible(true);
+                }}
+                style={styles.gridImageWrapper}>
+                <Image source={{uri: item}} style={styles.gridImage} />
+              </Pressable>
+            ))}
+          </View>
+        )}
+
+        {/* 🔹 텍스트 입력창 - 아래쪽 */}
         <TextInput
           style={[
             styles.input,
@@ -105,32 +282,8 @@ export default function CreatePostPage({navigation, route}) {
           onBlur={() => setFocused(false)}
         />
 
-        {selectedImages.length > 0 && (
-          <FlatList
-            data={selectedImages}
-            keyExtractor={(item, idx) => item + idx}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.imageList}
-            contentContainerStyle={{paddingHorizontal: getResponsiveWidth(5)}}
-            renderItem={({item, index}) => (
-              <Animated.View
-                entering={ZoomIn.springify().damping(12)}
-                exiting={ZoomOut}
-                style={styles.imageWrapper}>
-                <Pressable
-                  onPress={() => {
-                    setCurrentIndex(index);
-                    setModalVisible(true);
-                  }}>
-                  <Image source={{uri: item}} style={styles.previewImage} />
-                </Pressable>
-              </Animated.View>
-            )}
-          />
-        )}
-
-        <Modal visible={modalVisible} transparent={true} animationType="fade">
+        {/* 🔹 전체 이미지 모달 (모든 selectedImages 대상으로 풀스크린 뷰) */}
+        <Modal visible={modalVisible} transparent animationType="fade">
           <View style={styles.modalOverlay}>
             <FlatList
               data={selectedImages}
@@ -144,10 +297,10 @@ export default function CreatePostPage({navigation, route}) {
               })}
               showsHorizontalScrollIndicator={false}
               onMomentumScrollEnd={e => {
-                const index = Math.round(
+                const idx = Math.round(
                   e.nativeEvent.contentOffset.x / SCREEN_WIDTH,
                 );
-                setCurrentIndex(index);
+                setCurrentIndex(idx);
               }}
               renderItem={({item}) => (
                 <View style={styles.fullImageWrapper}>
@@ -164,8 +317,7 @@ export default function CreatePostPage({navigation, route}) {
 
             <Pressable
               style={styles.modalCloseArea}
-              onPress={() => setModalVisible(false)}
-              hitSlop={{top: 15, bottom: 15, left: 15, right: 15}}>
+              onPress={() => setModalVisible(false)}>
               <Image
                 source={require('../../../assets/images/clearBt1.png')}
                 style={{
@@ -178,6 +330,7 @@ export default function CreatePostPage({navigation, route}) {
           </View>
         </Modal>
 
+        {/* 업로드 성공 토스트 */}
         <ToastModal
           message="게시글을 업로드했어요"
           visible={successModalVisible}
@@ -185,6 +338,13 @@ export default function CreatePostPage({navigation, route}) {
             setSuccessModalVisible(false);
             navigation.navigate('추억');
           }}
+        />
+
+        {/* 오류 토스트 */}
+        <ToastModal
+          message={toastMessage}
+          visible={toastVisible}
+          onClose={() => setToastVisible(false)}
         />
       </View>
     </KeyboardAvoidingView>
@@ -199,31 +359,41 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5E5',
     padding: getResponsiveWidth(15),
   },
+
+  // 🔹 사진 그리드 스타일
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-start',
+    marginBottom: getResponsiveHeight(16),
+  },
+  gridImageWrapper: {
+    width: (SCREEN_WIDTH - getResponsiveWidth(60)) / 3, // 한 줄 3개
+    height: getResponsiveHeight(100),
+    marginRight: getResponsiveWidth(10),
+    marginBottom: getResponsiveHeight(10),
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: '#F3F4F6',
+  },
+  gridImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+
   input: {
     minHeight: getResponsiveHeight(200),
     borderWidth: 1,
     borderColor: '#DDDDDD',
     borderRadius: 12,
     padding: getResponsiveWidth(12),
-    fontSize: getResponsiveFontSize(14), // 🔽 15 → 14
+    fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-Regular',
     backgroundColor: '#FAFAFA',
     marginBottom: getResponsiveHeight(20),
   },
-  imageList: {
-    flexGrow: 0,
-  },
-  imageWrapper: {
-    marginRight: getResponsiveWidth(10), // 🔽 12 → 10
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: '#fff',
-  },
-  previewImage: {
-    width: getResponsiveWidth(104), // 🔽 살짝 축소
-    height: getResponsiveHeight(104),
-    borderRadius: 12,
-  },
+
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(255, 255, 255, 0.6)',
@@ -231,6 +401,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     zIndex: 10,
   },
+
   headerContainer: {
     width: '100%',
     height: '100%',
@@ -238,17 +409,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerText: {
-    fontSize:HEADER_STYLES.defaultTitleFontSize,
-    fontFamily:HEADER_STYLES.defaultTitleFontFamily,
+    fontSize: HEADER_STYLES.defaultTitleFontSize,
+    fontFamily: HEADER_STYLES.defaultTitleFontFamily,
     color: HEADER_STYLES.defaultTitleFontColor,
     lineHeight: getResponsiveHeight(26),
   },
   headerCheckIcon: {
-    width: HEADER_STYLES.headerRightIconWidth,   // 🔽 28 → 24
-    height: HEADER_STYLES.headerRightIconHeight, // 🔽 28 → 24
+    width: HEADER_STYLES.headerRightIconWidth,
+    height: HEADER_STYLES.headerRightIconHeight,
     marginRight: HEADER_STYLES.headerRightIconRightPadding,
     resizeMode: 'contain',
   },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.9)',
@@ -286,31 +458,7 @@ const styles = StyleSheet.create({
   },
   imageCountText: {
     color: '#fff',
-    fontSize: getResponsiveFontSize(13), // 🔽 15 → 13
+    fontSize: getResponsiveFontSize(13),
     fontWeight: '600',
-  },
-  successOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  successBox: {
-    backgroundColor: 'white',
-    paddingVertical: 20,
-    paddingHorizontal: 30,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: '#F8B500',
-  },
-  successText: {
-    fontSize: getResponsiveFontSize(14), // 🔽 16 → 14
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#101010',
-  },
-  modalButtonRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: getResponsiveHeight(10),
   },
 });

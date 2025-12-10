@@ -1,3 +1,4 @@
+// ReceiveKinoChat.jsx
 import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
@@ -25,6 +26,11 @@ import {
 } from '../utils/timeRegistry';
 import {getSpacingStyle} from '../utils/getSpacingStyle';
 import {CHATROOM_STYLE} from 'styles/style';
+
+// 🔸 키노 프로필 이미지 (경로는 프로젝트에 맞게 조정해줘)
+import kinoProfile from '../../../assets/images/kino-yellow.png';
+
+const AVATAR_W = getResponsiveWidth(35);
 
 export default function ReceiveKinoChat({
   message,
@@ -74,6 +80,13 @@ export default function ReceiveKinoChat({
 
   return (
     <View style={[styles.receivedContainer, spacingStyle]}>
+      {/* 🔸 일반 채팅처럼: 그룹이면 아바타 숨기고, 아니면 키노 프사 노출 */}
+      <FastImage
+        source={kinoProfile}
+        style={styles.kinoProfileImage}
+        resizeMode={FastImage.resizeMode.contain}
+      />
+
       <View style={styles.textContainer}>
         <View style={styles.messageContainer}>
           {messageType === 'image' ? (
@@ -94,6 +107,7 @@ export default function ReceiveKinoChat({
               <Text style={styles.receivedText}>{message}</Text>
             </View>
           )}
+
           {showTime && (
             <Text style={styles.receivedTime}>{formatTime(chatTime)}</Text>
           )}
@@ -116,6 +130,21 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
+
+  // 🔸 키노 프로필 이미지
+  kinoProfileImage: {
+    width: AVATAR_W,
+    height: getResponsiveHeight(35), // 세로 박스 높이
+    marginRight: getResponsiveWidth(7),
+    bottom: getResponsiveHeight(0),
+  },
+
+  // 🔸 그룹 메시지일 때 자리 맞추기용
+  avatarSpacer: {
+    width: AVATAR_W,
+    marginRight: getResponsiveWidth(8),
+  },
+
   textContainer: {flex: 1, flexDirection: 'column'},
   messageContainer: {flexDirection: 'row', alignItems: 'flex-end'},
 

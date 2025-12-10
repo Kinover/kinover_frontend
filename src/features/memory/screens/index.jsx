@@ -14,7 +14,7 @@ import {
   getResponsiveFontSize,
 } from '../../../utils/responsive';
 import {useMemoryScreen} from '../hooks/useMemoryScreen';
-import SwipeNavigator from 'components/SwipeNavigator';
+// import SwipeNavigator from 'components/SwipeNavigator';
 
 // 공통 인앱 가이드
 import useGuide from 'hooks/useGuide';
@@ -99,68 +99,68 @@ export default function MemoryScreen() {
   };
 
   return (
-    <SwipeNavigator rightTo={null} leftTo="일정">
-      <View style={styles.container}>
-        <AnimatedAlbumTabSelector
-          selected={selectedTab}
-          onSelect={setSelectedTab}
-          onPressDateFilter={() => setIsFilterVisible(true)}
-          periodLabel={periodLabel} // ✅ 여기!
+    // <SwipeNavigator rightTo={null} leftTo="일정">
+    <View style={styles.container}>
+      <AnimatedAlbumTabSelector
+        selected={selectedTab}
+        onSelect={setSelectedTab}
+        onPressDateFilter={() => setIsFilterVisible(true)}
+        periodLabel={periodLabel} // ✅ 여기!
+      />
+
+      <MemoryFeed
+        selectedTab={selectedTab}
+        selectedCategoryTitle={selectedCategoryTitle}
+        startDate={startDate}
+        endDate={endDate}
+      />
+
+      <CategoryBottomSheetModal
+        ref={categorySheetRef}
+        categoryList={categoryList}
+        selectedCategory={selectedCategory}
+        onSelectCategory={handleSelectCategory}
+        onCancel={() => {}}
+      />
+
+      <TouchableOpacity
+        style={{
+          position: 'absolute',
+          bottom: getResponsiveHeight(20),
+          right: getResponsiveWidth(18),
+          width: getResponsiveIconSize(60),
+          height: getResponsiveIconSize(60),
+        }}
+        onPress={navigateToImageSelect}>
+        <Image
+          source={require('../../../assets/icons/posting-floating-bt.png')}
+          style={{width: '100%', height: '100%', objectFit: 'contain'}}
         />
+      </TouchableOpacity>
 
-        <MemoryFeed
-          selectedTab={selectedTab}
-          selectedCategoryTitle={selectedCategoryTitle}
-          startDate={startDate}
-          endDate={endDate}
-        />
+      {/* 인앱 가이드 모달 */}
+      {/* {currentGuide && (
+            <GuideModal
+              visible={isGuideVisible}
+              step={guideStep}
+              totalSteps={totalSteps}
+              title={currentGuide.title}
+              description={currentGuide.description}
+              onNext={nextStep}
+              onSkip={skipGuide}
+            />
+          )} */}
 
-        <CategoryBottomSheetModal
-          ref={categorySheetRef}
-          categoryList={categoryList}
-          selectedCategory={selectedCategory}
-          onSelectCategory={handleSelectCategory}
-          onCancel={() => {}}
-        />
-
-        <TouchableOpacity
-          style={{
-            position: 'absolute',
-            bottom: getResponsiveHeight(20),
-            right: getResponsiveWidth(18),
-            width: getResponsiveIconSize(60),
-            height: getResponsiveIconSize(60),
-          }}
-          onPress={navigateToImageSelect}>
-          <Image
-            source={require('../../../assets/icons/posting-floating-bt.png')}
-            style={{width: '100%', height: '100%', objectFit: 'contain'}}
-          />
-        </TouchableOpacity>
-
-        {/* 인앱 가이드 모달 */}
-        {currentGuide && (
-          <GuideModal
-            visible={isGuideVisible}
-            step={guideStep}
-            totalSteps={totalSteps}
-            title={currentGuide.title}
-            description={currentGuide.description}
-            onNext={nextStep}
-            onSkip={skipGuide}
-          />
-        )}
-
-        {/* 🔹 구체적인 기간 설정 모달 */}
-        <PeriodFilterModal
-          visible={isFilterVisible}
-          onClose={() => setIsFilterVisible(false)}
-          onApply={handleApplyPeriod}
-          initialStartDate={startDate}
-          initialWeeks={1}
-        />
-      </View>
-    </SwipeNavigator>
+      {/* 🔹 구체적인 기간 설정 모달 */}
+      <PeriodFilterModal
+        visible={isFilterVisible}
+        onClose={() => setIsFilterVisible(false)}
+        onApply={handleApplyPeriod}
+        initialStartDate={startDate}
+        initialWeeks={1}
+      />
+    </View>
+    // </SwipeNavigator>
   );
 }
 
@@ -168,6 +168,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9F9F9',
+    width: '100%',
   },
   rangeBar: {
     paddingHorizontal: getResponsiveWidth(24),
