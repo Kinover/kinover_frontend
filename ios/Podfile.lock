@@ -1419,6 +1419,8 @@ PODS:
     - react-native-config/App (= 1.6.0)
   - react-native-config/App (1.6.0):
     - React-Core
+  - react-native-drop-shadow (1.0.3):
+    - React
   - react-native-get-random-values (1.11.0):
     - React-Core
   - react-native-image-picker (8.2.1):
@@ -2046,6 +2048,7 @@ DEPENDENCIES:
   - "react-native-blur (from `../node_modules/@react-native-community/blur`)"
   - "react-native-cameraroll (from `../node_modules/@react-native-camera-roll/camera-roll`)"
   - react-native-config (from `../node_modules/react-native-config`)
+  - react-native-drop-shadow (from `../node_modules/react-native-drop-shadow`)
   - react-native-get-random-values (from `../node_modules/react-native-get-random-values`)
   - react-native-image-picker (from `../node_modules/react-native-image-picker`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
@@ -2212,6 +2215,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@react-native-camera-roll/camera-roll"
   react-native-config:
     :path: "../node_modules/react-native-config"
+  react-native-drop-shadow:
+    :path: "../node_modules/react-native-drop-shadow"
   react-native-get-random-values:
     :path: "../node_modules/react-native-get-random-values"
   react-native-image-picker:
@@ -2375,6 +2380,7 @@ SPEC CHECKSUMS:
   react-native-blur: 5b2d13981ad6ce3d15339e135377336cb9be2d68
   react-native-cameraroll: f56fc8d0664907d4e8f8062f1645d93f5bbca1a3
   react-native-config: 9b5857573d57aaf6003fa3f66f7c177c927b5044
+  react-native-drop-shadow: a30a971eed0b9ef1a3656492b82f12ebe93de120
   react-native-get-random-values: 21325b2244dfa6b58878f51f9aa42821e7ba3d06
   react-native-image-picker: 186ad584e64736397c7d1f988d9d07bb0d85b942
   react-native-safe-area-context: e48706fb09fde89f82e12bfb49b140cfdcb761f7

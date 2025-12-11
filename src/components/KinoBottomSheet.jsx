@@ -13,13 +13,8 @@ export function KinoBottomSheet({
   animationConfigs = {damping: 18, stiffness: 220, mass: 1},
   keyboardBehavior = 'extend',
   androidKeyboardInputMode = 'adjustResize',
-  footerComponent, // ✅ 그대로 둠
+  footerComponent,
 }) {
-  const handleBackdropPress = () => {
-    Keyboard.dismiss();
-    modalRef?.current?.snapToIndex?.(0);
-  };
-
   return (
     <BottomSheetModal
       ref={modalRef}
@@ -43,13 +38,15 @@ export function KinoBottomSheet({
       backdropComponent={props => (
         <BottomSheetBackdrop
           {...props}
-          disappearsOnIndex={-1}
           appearsOnIndex={0}
-          onPress={handleBackdropPress}
-          pressBehavior="close"
+          disappearsOnIndex={-1}
+          pressBehavior="close"         // ✅ 배경 탭 → 시트 닫힘
+          onPress={() => {
+            Keyboard.dismiss();        // ✅ 추가로 키보드만 내리기
+          }}
         />
       )}
-      footerComponent={footerComponent} // ✅ gorhom footer 사용
+      footerComponent={footerComponent}
     >
       {children}
     </BottomSheetModal>

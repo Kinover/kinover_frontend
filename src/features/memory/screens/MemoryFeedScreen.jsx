@@ -1,10 +1,20 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, {useCallback, useMemo, useState} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, FlatList} from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  FlatList,
+  LayoutAnimation,
+  UIManager,
+  Platform,
+} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
-import {PinchGestureHandler, State} from 'react-native-gesture-handler';
+import {Gesture, GestureDetector} from 'react-native-gesture-handler';
+import DropShadow from 'react-native-drop-shadow';
 
 import {fetchMemoryThunk} from '../store/memoryThunk';
 import {fetchCategoryThunk} from '../store/categoryThunk';
@@ -19,12 +29,20 @@ import SkeletonPhotoGridItem from '../components/SkeletonPhotoGridItem';
 import SkeletonMemoryItem from '../components/SkeletonMemoryItem';
 import {filterPostsByDateRange} from 'utils/postDateFilter';
 import {EMPTY_STYLE} from 'styles/style';
-import {Shadow} from 'react-native-shadow-2';
+// import {Shadow} from 'react-native-shadow-2';
 
 const ITEM_MARGIN = getResponsiveWidth(2);
 const fallbackImage = require('../../../assets/images/default.png');
 const AVATAR_RADIUS = getResponsiveWidth(8);
 const CARD_RADIUS = getResponsiveIconSize(10);
+
+// 🔹 Android에서 LayoutAnimation 활성화
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function MemoryFeed({
   selectedCategoryTitle,
@@ -44,6 +62,7 @@ export default function MemoryFeed({
   // 🔹 앨범 그리드 컬럼 개수 (핀치로 2~4 사이 변경)
   const [gridColumns, setGridColumns] = useState(4);
 
+  // 🚀 데이터 로딩
   useFocusEffect(
     useCallback(() => {
       if (!familyId) return;
@@ -67,6 +86,7 @@ export default function MemoryFeed({
     return `${y}.${m}.${d}`;
   };
 
+  // 🔹 날짜/카테고리 필터 적용된 게시글 리스트
   const filteredMemoryList = useMemo(() => {
     let list =
       selectedCategoryTitle === '전체'
@@ -79,10 +99,10 @@ export default function MemoryFeed({
           });
 
     list = filterPostsByDateRange(list, startDate, endDate);
-
     return list;
   }, [memoryList, categoryList, selectedCategoryTitle, startDate, endDate]);
 
+  // 🔹 앨범 탭에서 사용할 전체 사진 리스트
   const allPhotos = useMemo(
     () =>
       filteredMemoryList.flatMap(memory =>
@@ -105,96 +125,112 @@ export default function MemoryFeed({
     return (WINDOW_WIDTH - totalMargin) / columns;
   }, [gridColumns]);
 
-  // 🔹 핀치 제스처로 gridColumns 2~4 사이에서 변경
-  const handlePinchStateChange = event => {
-    const {state, oldState, scale} = event.nativeEvent;
+  // 🔹 Pinch Gesture: 2~4 컬럼 변경 + LayoutAnimation
+  const pinch = Gesture.Pinch()
+    .runOnJS(true) // ✅ 콜백을 JS 스레드에서 실행
+    .onEnd(event => {
+      const scale = event.scale;
 
-    if (oldState === State.ACTIVE && state === State.END) {
       setGridColumns(prev => {
+        let next = prev;
+
         // 손가락 벌리기 → 확대 → 컬럼 줄이기
-        if (scale > 1.05 && prev > 2) {
-          return prev - 1;
+        if (scale > 1.07 && prev > 2) {
+          next = prev - 1;
         }
         // 손가락 오므리기 → 축소 → 컬럼 늘리기
-        if (scale < 0.95 && prev < 4) {
-          return prev + 1;
+        else if (scale < 0.93 && prev < 4) {
+          next = prev + 1;
         }
-        return prev;
-      });
-    }
-  };
 
+        // 실제로 컬럼이 바뀔 때만 애니메이션
+        if (next !== prev) {
+          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        }
+
+        return next;
+      });
+    });
+
+  // ====== 게시글 카드 렌더러 ======
   const renderListItem = memory => {
     const imageCount = memory?.imageUrls?.length || 0;
 
     return (
-      <Shadow
+      <DropShadow
         key={memory.postId}
-        distance={0.2}
-        offset={[0, 13.5]}
-        startColor="rgba(15, 23, 42, 0.12)"
-        endColor="rgba(15, 23, 42, 0.0)"
-        radius={CARD_RADIUS}
         style={{
-          width: '100%',
-          position: 'relative',
-          justifyContent: 'center',
-          alignSelf: 'center',
-          alignItems: 'center',
-          borderRadius: CARD_RADIUS,
-          marginVertical: getResponsiveHeight(8),
-          paddingVertical: getResponsiveHeight(3),
+          shadowColor: '#000',
+          shadowOffset: {width: 0, height: 0},
+          shadowOpacity: 0.12,
+          shadowRadius: 10,
         }}>
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => navigation.navigate('게시글화면', {memory})}
-          style={styles.memoryItem}>
-          <View style={styles.topRow}>
-            <Text style={styles.dateText}>{formatDate(memory.createdAt)}</Text>
+        <View
+          style={{
+            backgroundColor: '#fff',
+            borderRadius: CARD_RADIUS,
+            marginVertical: getResponsiveHeight(8),
+            paddingVertical: getResponsiveHeight(3),
+            width: '100%',
+          }}>
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={() => navigation.navigate('게시글화면', {memory})}
+            style={styles.memoryItem}>
+            <View style={styles.topRow}>
+              <Text style={styles.dateText}>
+                {formatDate(memory.createdAt)}
+              </Text>
 
-            <View style={styles.badgeRow}>
-              <View style={styles.commentBadge}>
-                <Text style={styles.badgeText}>댓글 {memory.commentCount}</Text>
-              </View>
-              {imageCount > 0 && (
-                <View style={styles.imageCountBadge}>
-                  <Text style={styles.badgeText}>사진 {imageCount}장</Text>
+              <View style={styles.badgeRow}>
+                <View style={styles.commentBadge}>
+                  <Text style={styles.badgeText}>
+                    댓글 {memory.commentCount}
+                  </Text>
                 </View>
-              )}
+                {imageCount > 0 && (
+                  <View style={styles.imageCountBadge}>
+                    <Text style={styles.badgeText}>사진 {imageCount}장</Text>
+                  </View>
+                )}
+              </View>
             </View>
-          </View>
 
-          <FastImage
-            style={styles.memoryImage}
-            source={
-              memory.imageUrls?.[0] ? {uri: memory.imageUrls[0]} : fallbackImage
-            }
-          />
+            <FastImage
+              style={styles.memoryImage}
+              source={
+                memory.imageUrls?.[0]
+                  ? {uri: memory.imageUrls[0]}
+                  : fallbackImage
+              }
+            />
 
-          <Text
-            style={{
-              fontSize: getResponsiveFontSize(17),
-              marginBottom: getResponsiveHeight(4),
-              marginTop: getResponsiveHeight(3),
-              fontFamily: 'Pretendard-Medium',
-              color: 'black',
-            }}>
-            {getCategoryLabel(memory.categoryId)}
-          </Text>
-
-          {!!memory.content && (
             <Text
-              style={styles.contentText}
-              numberOfLines={2}
-              ellipsizeMode="tail">
-              {memory.content}
+              style={{
+                fontSize: getResponsiveFontSize(17),
+                marginBottom: getResponsiveHeight(4),
+                marginTop: getResponsiveHeight(3),
+                fontFamily: 'Pretendard-Medium',
+                color: 'black',
+              }}>
+              {getCategoryLabel(memory.categoryId)}
             </Text>
-          )}
-        </TouchableOpacity>
-      </Shadow>
+
+            {!!memory.content && (
+              <Text
+                style={styles.contentText}
+                numberOfLines={2}
+                ellipsizeMode="tail">
+                {memory.content}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </DropShadow>
     );
   };
 
+  // ====== 앨범 그리드 렌더러 ======
   const renderImageItem = ({item, index}) => {
     const imageIndexInPost = item.memory?.imageUrls?.findIndex(
       uri => uri === item.uri,
@@ -225,7 +261,6 @@ export default function MemoryFeed({
 
   // ====== 로딩 스켈레톤 ======
   if (isLoading) {
-    // ✅ 앨범 탭일 때: 4열 그리드 스켈레톤
     if (isAllPhotos) {
       const skeletonData = Array.from({length: 12}, (_, i) => i.toString());
 
@@ -260,7 +295,6 @@ export default function MemoryFeed({
       );
     }
 
-    // ✅ 게시글 탭일 때: 기존 카드형 스켈레톤
     return (
       <View style={styles.container}>
         <FlatList
@@ -277,44 +311,39 @@ export default function MemoryFeed({
     );
   }
 
+  // ====== 실제 렌더 ======
   return (
-    <View
-      style={[
-        styles.container,
-        !isAllPhotos && styles.postContainer,
-      ]}>
+    <View style={[styles.container, !isAllPhotos && styles.postContainer]}>
       {isAllPhotos ? (
-        // 🔹 앨범 탭: 핀치 제스처로 그리드 조절
-        <PinchGestureHandler onHandlerStateChange={handlePinchStateChange}>
-          <View>
-            <FlatList
-              key={`album-${gridColumns}`}
-              data={data}
-              showsVerticalScrollIndicator={false}
-              keyExtractor={(item, index) => `${item.uri}_${index}`}
-              numColumns={gridColumns}
-              renderItem={renderImageItem}
-              columnWrapperStyle={{
-                justifyContent: 'flex-start',
-                gap: ITEM_MARGIN,
-                paddingHorizontal: ITEM_MARGIN,
-              }}
-              contentContainerStyle={{
-                paddingTop: ITEM_MARGIN,
-                paddingBottom: getResponsiveHeight(24),
-              }}
-              ListEmptyComponent={
-                <View style={styles.emptyWrapper}>
-                  <Text style={styles.emptyText}>
-                    아직 등록된 게시글이 없어요
-                  </Text>
-                </View>
-              }
-            />
-          </View>
-        </PinchGestureHandler>
+        // 🔹 앨범 탭: 핀치 제스처로 그리드 조절(+애니메이션)
+        <GestureDetector gesture={pinch}>
+          <FlatList
+            key={`album-${gridColumns}`}
+            data={data}
+            showsVerticalScrollIndicator={false}
+            keyExtractor={(item, index) => `${item.uri}_${index}`}
+            numColumns={gridColumns}
+            renderItem={renderImageItem}
+            columnWrapperStyle={{
+              justifyContent: 'flex-start',
+              gap: ITEM_MARGIN,
+              paddingHorizontal: ITEM_MARGIN,
+            }}
+            contentContainerStyle={{
+              paddingTop: ITEM_MARGIN,
+              paddingBottom: getResponsiveHeight(24),
+            }}
+            ListEmptyComponent={
+              <View style={styles.emptyWrapper}>
+                <Text style={styles.emptyText}>
+                  아직 등록된 게시글이 없어요
+                </Text>
+              </View>
+            }
+          />
+        </GestureDetector>
       ) : (
-        // 🔹 게시글 탭: 기존 카드형 리스트
+        // 🔹 게시글 탭: 카드형 리스트
         <FlatList
           key="post"
           data={data}
@@ -340,16 +369,11 @@ export default function MemoryFeed({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
-  },
-  postContainer: {
-    marginHorizontal: '2%',
-  },
+  container: {flex: 1, backgroundColor: '#F3F4F6'},
+  postContainer: {paddingHorizontal: '3%'},
 
   memoryItem: {
-    width: '98%',
+    width: '100%',
     paddingHorizontal: getResponsiveWidth(16),
     paddingVertical: getResponsiveHeight(14),
     backgroundColor: '#FFFFFF',
@@ -362,20 +386,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: getResponsiveHeight(8),
   },
-
   dateText: {
     fontSize: getResponsiveFontSize(12),
     fontFamily: 'Pretendard-Regular',
     color: '#9CA3AF',
   },
-
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginLeft: 'auto',
     gap: getResponsiveWidth(6),
   },
-
   commentBadge: {
     paddingHorizontal: getResponsiveWidth(8),
     paddingVertical: getResponsiveHeight(3),

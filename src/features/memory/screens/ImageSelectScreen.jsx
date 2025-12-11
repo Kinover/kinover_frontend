@@ -16,6 +16,8 @@ import {
   Dimensions,
   Linking,
   PanResponder,
+  LayoutAnimation,
+  UIManager,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {
@@ -29,24 +31,30 @@ import {
   convertPhUriToFileUri,
   convertContentUriToFileUri,
 } from '../../../utils/photoUriConverter';
-import { getSelectOrder} from '../../../utils/selection';
+import {getSelectOrder} from '../../../utils/selection';
 import {loadGalleryPhotos} from '../../../utils/gallery';
 import formatDuration from '../../../utils/formatDuration';
 import {HEADER_STYLES} from 'styles/style';
 import ToastModal from '../../../components/ToastModal';
+import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 
 // ====== 이미지 그리드 설정 ======
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const IMAGE_MARGIN = getResponsiveWidth(2);
-const NUM_COLUMNS = 3;
-const IMAGE_SIZE =
-  (SCREEN_WIDTH - IMAGE_MARGIN * (NUM_COLUMNS * 2)) / NUM_COLUMNS;
 
 // 페이지당 불러올 이미지 개수
 const PAGE_SIZE = 60;
 
 // ✅ 선택 가능한 최대 개수
 const MAX_SELECTION = 30;
+
+// 🔹 Android에서 LayoutAnimation 활성화
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 export default function ImageSelectPage() {
   const [photos, setPhotos] = useState([]);
@@ -58,6 +66,9 @@ export default function ImageSelectPage() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [scrollOffset, setScrollOffset] = useState(0);
+
+  // 🔹 그리드 컬럼 수 (핀치로 2~4 사이 변경)
+  const [gridColumns, setGridColumns] = useState(3);
 
   // 드래그 선택용 상태
   const [dragMode, setDragMode] = useState(null); // 'add' | 'remove' | null
@@ -110,6 +121,12 @@ export default function ImageSelectPage() {
     await loadPhotos(null);
     setIsRefreshing(false);
   };
+
+  // 🔹 그리드 한 칸의 실제 크기 (컬럼 수에 따라 자동 변경)
+  const IMAGE_SIZE = React.useMemo(() => {
+    const totalMargin = IMAGE_MARGIN * (gridColumns * 2);
+    return (SCREEN_WIDTH - totalMargin) / gridColumns;
+  }, [gridColumns]);
 
   // ✅ 탭으로 선택/해제할 때 30장 제한 적용
   const toggleSelect = item => {
@@ -193,46 +210,45 @@ export default function ImageSelectPage() {
   }, [selected, navigation, handleNext]);
 
   // 🔹 드래그 모드에 따라 선택/해제 업데이트 (여기에도 30장 제한)
-  const updateSelectionByMode = useCallback(
-    (item, mode) => {
-      if (!item) return;
+  const updateSelectionByMode = useCallback((item, mode) => {
+    if (!item) return;
 
-      setSelected(prev => {
-        const exists = prev.some(f => f.uri === item.uri);
+    setSelected(prev => {
+      const exists = prev.some(f => f.uri === item.uri);
 
-        if (mode === 'add') {
-          if (exists) return prev;
-          // 드래그로 추가할 때도 30장 넘지 않도록 막기
-          if (prev.length >= MAX_SELECTION) {
-            return prev; // 드래그는 토스트 없이 조용히 무시
-          }
-          return [...prev, item];
+      if (mode === 'add') {
+        if (exists) return prev;
+        if (prev.length >= MAX_SELECTION) {
+          // 드래그에서는 조용히 무시
+          return prev;
         }
+        return [...prev, item];
+      }
 
-        if (mode === 'remove') {
-          if (!exists) return prev;
-          return prev.filter(f => f.uri !== item.uri);
-        }
+      if (mode === 'remove') {
+        if (!exists) return prev;
+        return prev.filter(f => f.uri !== item.uri);
+      }
 
-        return prev;
-      });
-    },
-    [],
-  );
+      return prev;
+    });
+  }, []);
 
   // 🔹 드래그 지점(x,y)에서 어떤 인덱스인지 계산
   const handleDragAtLocation = useCallback(
     (x, y, isStart = false) => {
       if (!photos || photos.length === 0) return;
 
-      const tileFullSize = IMAGE_SIZE + getResponsiveWidth(2); // 이미지+여유
+      // 한 타일의 전체 세로/가로 폭 (이미지 + margin*2 가량)
+      const tileFullSize = IMAGE_SIZE + IMAGE_MARGIN * 2;
+
       const col = Math.floor(x / tileFullSize);
-      if (col < 0 || col >= NUM_COLUMNS) return;
+      if (col < 0 || col >= gridColumns) return;
 
       const row = Math.floor((scrollOffset + y) / tileFullSize);
       if (row < 0) return;
 
-      const index = row * NUM_COLUMNS + col;
+      const index = row * gridColumns + col;
       if (index < 0 || index >= photos.length) return;
 
       if (lastIndexRef.current === index && !isStart) {
@@ -254,7 +270,7 @@ export default function ImageSelectPage() {
 
       lastIndexRef.current = index;
     },
-    [photos, scrollOffset, selected, dragMode, updateSelectionByMode],
+    [photos, scrollOffset, gridColumns, selected, dragMode, IMAGE_SIZE],
   );
 
   // 🔹 PanResponder: 가로로 손가락 끌면 드래그 선택 (세로 스크롤은 FlatList가 담당)
@@ -285,13 +301,38 @@ export default function ImageSelectPage() {
     }),
   ).current;
 
+  // 🔹 Pinch 제스처: 2~4 컬럼 변경 + LayoutAnimation
+  const pinch = Gesture.Pinch().onEnd(event => {
+    const scale = event.scale;
+
+    setGridColumns(prev => {
+      let next = prev;
+
+      // 손가락 벌리기 → 확대 → 컬럼 줄이기
+      if (scale > 1.07 && prev > 2) {
+        next = prev - 1;
+      }
+      // 손가락 오므리기 → 축소 → 컬럼 늘리기
+      else if (scale < 0.93 && prev < 4) {
+        next = prev + 1;
+      }
+
+      if (next !== prev) {
+        LayoutAnimation.configureNext(
+          LayoutAnimation.Presets.easeInEaseOut,
+        );
+      }
+      return next;
+    });
+  });
+
   const renderItem = ({item}) => {
     const isSelected = selected.some(f => f.uri === item.uri);
     const order = getSelectOrder(selected, item.uri);
 
     return (
       <TouchableOpacity onPress={() => toggleSelect(item)} activeOpacity={0.8}>
-        <View style={[styles.imageWrapper, isSelected && styles.selectedImage]}>
+        <View style={[styles.imageWrapper, {width: IMAGE_SIZE, height: IMAGE_SIZE}, isSelected && styles.selectedImage]}>
           <Image source={{uri: item.uri}} style={styles.image} />
 
           {item.isVideo && (
@@ -317,24 +358,27 @@ export default function ImageSelectPage() {
 
   return (
     <View style={styles.container} {...panResponder.panHandlers}>
-      <FlatList
-        data={photos}
-        keyExtractor={(item, index) => item.uri + index}
-        renderItem={renderItem}
-        numColumns={NUM_COLUMNS}
-        contentContainerStyle={styles.galleryContainer}
-        onEndReached={handleEndReached}
-        onEndReachedThreshold={0.2}
-        refreshing={isRefreshing}
-        onRefresh={onRefresh}
-        onScroll={e =>
-          setScrollOffset(e.nativeEvent.contentOffset?.y ?? 0)
-        }
-        scrollEventThrottle={16}
-        ListFooterComponent={
-          isLoadingMore ? <Text style={styles.footer} /> : null
-        }
-      />
+      <GestureDetector gesture={pinch}>
+        <FlatList
+          data={photos}
+          key={`select-${gridColumns}`} // 🔹 컬럼 바뀔 때 리렌더
+          keyExtractor={(item, index) => item.uri + index}
+          renderItem={renderItem}
+          numColumns={gridColumns}
+          contentContainerStyle={styles.galleryContainer}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.2}
+          refreshing={isRefreshing}
+          onRefresh={onRefresh}
+          onScroll={e =>
+            setScrollOffset(e.nativeEvent.contentOffset?.y ?? 0)
+          }
+          scrollEventThrottle={16}
+          ListFooterComponent={
+            isLoadingMore ? <Text style={styles.footer} /> : null
+          }
+        />
+      </GestureDetector>
 
       {Platform.OS === 'ios' && photos.length < 10 && (
         <TouchableOpacity
@@ -383,9 +427,7 @@ const styles = StyleSheet.create({
   galleryContainer: {},
   imageWrapper: {
     position: 'relative',
-    width: IMAGE_SIZE,
-    height: IMAGE_SIZE,
-    margin: getResponsiveWidth(1),
+    margin: IMAGE_MARGIN,
     backgroundColor: 'rgba(128, 128, 128, 0.6)',
   },
   tileSelectedOverlay: {

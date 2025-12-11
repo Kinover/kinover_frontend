@@ -1,5 +1,5 @@
-import React, {useState, useEffect} from 'react';
-import {StyleSheet, KeyboardAvoidingView, Platform, View} from 'react-native';
+import React, {useState, useEffect, useRef} from 'react';
+import {StyleSheet, KeyboardAvoidingView, Platform, View, TouchableWithoutFeedback} from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
 import MessageFlatList from '../components/messageFlatList';
 import ChatInput from '../components/ChatInput';
@@ -30,8 +30,7 @@ const CHAT_GUIDE_STEPS = [
   },
   {
     title: '대화 멤버 관리',
-    description:
-      '필요할 때 설정창에서 가족을 채팅방에 추가할 수 있어요.',
+    description: '필요할 때 설정창에서 가족을 채팅방에 추가할 수 있어요.',
   },
 ];
 
@@ -56,12 +55,14 @@ const KINO_CHAT_GUIDE_STEPS = [
 
 export default function ChatRoomScreenTemplate({
   chatRoom,
-  title=null,
+  title = null,
   userId,
   isKino,
   navigation,
 }) {
   const dispatch = useDispatch();
+  const chatInputRef = useRef(null);
+
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const {
@@ -85,16 +86,14 @@ export default function ChatRoomScreenTemplate({
   useHideTabBar();
 
   const headerTitle =
-  currentChatRoom.roomName === 'Initial'
-    ? title
-    : currentChatRoom.roomName;
-    
-  useHeaderSetting(
-    navigation,
-    setIsSettingsOpen,
-    headerTitle,
-    isKino,
-  );
+    currentChatRoom.roomName === 'Initial' ? title : currentChatRoom.roomName;
+
+  useHeaderSetting(navigation, setIsSettingsOpen, headerTitle, isKino);
+
+  const handleScreenPress = () => {
+    // 화면 아무데나 누르면 갤러리 닫기
+    chatInputRef.current?.closeGallery?.();
+  };
 
   useEffect(() => {
     if (chatRoom?.chatRoomId) {
@@ -139,37 +138,37 @@ export default function ChatRoomScreenTemplate({
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 102.5 : 0}>
-      <View style={{flex: 1}}>
-        <MessageFlatList
-          flatListRef={flatListRef}
-          messageList={messageList}
-          chatRoom={chatRoom}
-          userId={userId}
-          isKino={isKino}
-          noMoreMessages={noMoreMessages}
-          isFetchingMore={isFetchingMore}
-          loadOlderMessages={loadOlderMessages}
-          handleScroll={handleScroll}
-          scrollToBottom={scrollToBottom}
-        />
-        <ChatInput
-          chatRoom={chatRoom}
-          userId={userId}
-          socketRef={socketRef}
-          setMessageList={setMessageList}
-          enableMediaPicker={!isKino}
-        />
-        <ChatSettings
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          chatRoomId={chatRoom.chatRoomId}
-          navigation={navigation}
-          onLeaveChat={onLeaveChat}
-          isKino={isKino}
-        />
+        <View style={{flex: 1}}  onTouchStart={handleScreenPress}>
+          <MessageFlatList
+            flatListRef={flatListRef}
+            messageList={messageList}
+            chatRoom={chatRoom}
+            userId={userId}
+            isKino={isKino}
+            noMoreMessages={noMoreMessages}
+            isFetchingMore={isFetchingMore}
+            loadOlderMessages={loadOlderMessages}
+            handleScroll={handleScroll}
+            scrollToBottom={scrollToBottom}
+          />
+          <ChatInput
+            chatRoom={chatRoom}
+            userId={userId}
+            socketRef={socketRef}
+            setMessageList={setMessageList}
+            enableMediaPicker={!isKino}
+          />
+          <ChatSettings
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            chatRoomId={chatRoom.chatRoomId}
+            navigation={navigation}
+            onLeaveChat={onLeaveChat}
+            isKino={isKino}
+          />
 
-        {/* 🔹 인앱 가이드 모달 (키노/일반 공통, 내용만 다름) */}
-        {/* {currentGuide && (
+          {/* 🔹 인앱 가이드 모달 (키노/일반 공통, 내용만 다름) */}
+          {/* {currentGuide && (
           <GuideModal
             visible={isGuideVisible}
             step={guideStep}
@@ -180,7 +179,7 @@ export default function ChatRoomScreenTemplate({
             onSkip={skipGuide}
           />
         )} */}
-      </View>
+        </View>
     </KeyboardAvoidingView>
   );
 }

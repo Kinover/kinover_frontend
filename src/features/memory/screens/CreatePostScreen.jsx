@@ -1,6 +1,12 @@
 // src/features/memory/screens/CreatePostScreen.jsx
 
-import React, {useState, useLayoutEffect, useCallback} from 'react';
+import React, {
+  useState,
+  useLayoutEffect,
+  useCallback,
+  useRef,
+  useEffect,
+} from 'react';
 import {
   StyleSheet,
   View,
@@ -15,6 +21,8 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  Animated,
+  PanResponder,
 } from 'react-native';
 
 import {
@@ -56,11 +64,13 @@ export default function CreatePostPage({navigation, route}) {
 
   useHideTabBar({stayHidden: true});
 
+  // Toast
   const showToast = useCallback(msg => {
     setToastMessage(msg);
     setToastVisible(true);
   }, []);
 
+  // 업로드 핸들러
   const handleUpload = useCallback(async () => {
     if (isUploading) {
       console.log('⚠️ 이미 업로드 중입니다. 중복 요청 방지');
@@ -90,11 +100,11 @@ export default function CreatePostPage({navigation, route}) {
     try {
       setIsUploading(true);
 
-      // 🔹 최종적으로 글에 쓸 categoryId
+      // 최종 카테고리 id
       let finalCategoryId = selectedCategory.categoryId;
       console.log('🔹 초기 finalCategoryId:', finalCategoryId);
 
-      // 1) 새 카테고리라면 백엔드에 먼저 생성 요청
+      // 새 카테고리면 먼저 생성
       if (selectedCategory.isTemporary) {
         console.log('🟡 임시 카테고리이므로 createCategoryThunk 실행');
 
@@ -117,7 +127,6 @@ export default function CreatePostPage({navigation, route}) {
         const newCat = action.payload;
         console.log('🧩 새 카테고리 응답 newCat:', newCat);
 
-        // 🔥 백엔드가 실제 저장한 id를 우선 사용
         finalCategoryId =
           newCat?.categoryId ??
           newCat?.id ??
@@ -131,7 +140,7 @@ export default function CreatePostPage({navigation, route}) {
         );
       }
 
-      // 2) 이미지 업로드(S3)
+      // 이미지 업로드(S3)
       let imageUrls = [];
       let postTypes = [];
 
@@ -174,7 +183,7 @@ export default function CreatePostPage({navigation, route}) {
         console.log('ℹ️ 이미지 없이 텍스트만 업로드합니다.');
       }
 
-      // 3) 게시글 업로드 (🔥 finalCategoryId 사용)
+      // 게시글 업로드
       const newPost = {
         authorId: userId,
         content: text || '',
@@ -214,6 +223,7 @@ export default function CreatePostPage({navigation, route}) {
     dispatch,
   ]);
 
+  // 헤더 설정
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
@@ -235,9 +245,62 @@ export default function CreatePostPage({navigation, route}) {
     });
   }, [navigation, handleUpload, isUploading]);
 
-  // 🔹 Grid에 보여줄 이미지 (최대 3장)
+  // Grid에 보여줄 이미지 (최대 3장)
   const hasExtra = selectedImages.length > 3;
   const gridImages = hasExtra ? selectedImages.slice(0, 3) : selectedImages;
+
+  // 풀 이미지 스와이프 닫기 애니메이션
+  const translateY = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (modalVisible) {
+      translateY.setValue(0);
+    }
+  }, [modalVisible, translateY]);
+
+  const scale = translateY.interpolate({
+    inputRange: [-200, 0],
+    outputRange: [0.85, 1],
+    extrapolate: 'clamp',
+  });
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        const {dx, dy} = gestureState;
+        return Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 5;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        const {dy} = gestureState;
+        if (dy < 0) {
+          translateY.setValue(dy);
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const {dy, vy} = gestureState;
+        const distance = Math.abs(dy);
+
+        const SHOULD_CLOSE = distance > 120 || vy < -1.2;
+
+        if (SHOULD_CLOSE) {
+          Animated.timing(translateY, {
+            toValue: -300,
+            duration: 200,
+            useNativeDriver: true,
+          }).start(() => {
+            translateY.setValue(0);
+            setModalVisible(false);
+          });
+        } else {
+          Animated.spring(translateY, {
+            toValue: 0,
+            useNativeDriver: true,
+            bounciness: 8,
+          }).start();
+        }
+      },
+    }),
+  ).current;
 
   return (
     <KeyboardAvoidingView
@@ -250,21 +313,19 @@ export default function CreatePostPage({navigation, route}) {
           </View>
         )}
 
-        {/* 🔹 사진 그리드 (최대 3장) - 위쪽 */}
+        {/* 사진 그리드 */}
         {gridImages.length > 0 && (
           <View style={styles.gridContainer}>
             {gridImages.map((item, index) => (
               <Pressable
                 key={item + index}
                 onPress={() => {
-                  // 이 인덱스 기준으로 전체 selectedImages 풀스크린 시작
                   setCurrentIndex(index);
                   setModalVisible(true);
                 }}
                 style={styles.gridImageWrapper}>
                 <Image source={{uri: item}} style={styles.gridImage} />
 
-                {/* 🔹 4장 이상일 때 마지막 칸에 +N 오버레이 */}
                 {hasExtra && index === gridImages.length - 1 && (
                   <View style={styles.moreOverlay}>
                     <Text style={styles.moreOverlayText}>
@@ -277,13 +338,14 @@ export default function CreatePostPage({navigation, route}) {
           </View>
         )}
 
-        {/* 🔹 텍스트 입력창 - 아래쪽 */}
+        {/* 🔹 내용 입력 – 높이 고정 + 내부 스크롤 */}
         <TextInput
           style={[
             styles.input,
             focused && {borderColor: '#9C9C9C', backgroundColor: '#fff'},
           ]}
           multiline
+          scrollEnabled={true}         // ← 내용 많아지면 TextInput 안에서 스크롤
           value={text}
           onChangeText={setText}
           placeholder="글로 남긴 추억은 더 생생해요"
@@ -293,7 +355,7 @@ export default function CreatePostPage({navigation, route}) {
           onBlur={() => setFocused(false)}
         />
 
-        {/* 🔹 전체 이미지 모달 (모든 selectedImages 대상으로 풀스크린 뷰) */}
+        {/* 전체 이미지 모달 */}
         <Modal visible={modalVisible} transparent animationType="fade">
           <View style={styles.modalOverlay}>
             <FlatList
@@ -315,7 +377,16 @@ export default function CreatePostPage({navigation, route}) {
               }}
               renderItem={({item}) => (
                 <View style={styles.fullImageWrapper}>
-                  <Image source={{uri: item}} style={styles.fullImage} />
+                  <Animated.View
+                    {...panResponder.panHandlers}
+                    style={[
+                      styles.fullImageInner,
+                      {
+                        transform: [{translateY}, {scale}],
+                      },
+                    ]}>
+                    <Image source={{uri: item}} style={styles.fullImage} />
+                  </Animated.View>
                 </View>
               )}
             />
@@ -362,7 +433,7 @@ export default function CreatePostPage({navigation, route}) {
   );
 }
 
-const H_MARGIN = getResponsiveWidth(8); // 칸 사이 간격
+const H_MARGIN = getResponsiveWidth(8);
 const SIDE_PADDING = getResponsiveWidth(15);
 
 const styles = StyleSheet.create({
@@ -374,7 +445,6 @@ const styles = StyleSheet.create({
     padding: SIDE_PADDING,
   },
 
-  // 🔹 사진 그리드 스타일 (최대 3장, 한 줄)
   gridContainer: {
     flexDirection: 'row',
     justifyContent: 'flex-start',
@@ -394,7 +464,6 @@ const styles = StyleSheet.create({
     resizeMode: 'cover',
   },
 
-  // 🔹 4장 초과일 때 마지막 칸 오버레이
   moreOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0, 0, 0, 0.45)',
@@ -407,8 +476,9 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-SemiBold',
   },
 
+  // 🔹 여기: 높이 고정
   input: {
-    minHeight: getResponsiveHeight(200),
+    height: getResponsiveHeight(200),   // ← 고정 높이
     borderWidth: 1,
     borderColor: '#DDDDDD',
     borderRadius: 12,
@@ -448,7 +518,7 @@ const styles = StyleSheet.create({
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.9)',
+    backgroundColor: 'rgba(0,0,0,1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -457,8 +527,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  fullImageInner: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   fullImage: {
-    width: '90%',
+    width: '100%',
     height: '80%',
     resizeMode: 'contain',
     borderRadius: 10,

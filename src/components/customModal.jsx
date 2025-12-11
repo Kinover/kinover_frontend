@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Platform,
   Image,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import {BlurView} from '@react-native-community/blur';
 import {
@@ -49,104 +50,98 @@ export default function CustomModal({
       onRequestClose={onClose}
       presentationStyle="overFullScreen"
       statusBarTranslucent>
-      {/* ✅ 키보드 회피 영역 추가 */}
-        <BlurView
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              flex: 1,
-              position: 'absolute',
-              backgroundColor:
-                Platform.OS === 'android'
-                  ? 'rgba(0, 0, 0, 0.12)'
-                  : 'rgba(0, 0, 0, 0.22)',
-            },
-          ]}
-          blurType="light"
-          blurAmount={2}
-          reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.4)"
-        />
-
+      {/* 🔹 배경 아무데나 탭하면 닫힘 */}
+      <TouchableWithoutFeedback onPress={onClose}>
         <View style={styles.overlay}>
-          <View style={[styles.modalBox, modalBoxStyle]}>
-            {/* 상단 버튼들 */}
-            <View
-              style={[
-                styles.topButtonRow,
-                (showTrashButton || showCloseButton) && {
-                  justifyContent: showTrashButton
-                    ? 'space-between'
-                    : 'flex-end',
-                  width: '100%',
-                },
-              ]}>
-              {showTrashButton && (
-                <TouchableOpacity
-                  onPress={onTrashPress}
-                  style={styles.trashButton}
-                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-                  <Image
-                    source={require('@/assets/images/trash.png')}
-                    style={styles.trashIcon}
-                    resizeMode="contain"
-                  />
-                </TouchableOpacity>
+          {/* 블러 배경 (터치 이벤트 안 먹게) */}
+          <BlurView
+            style={StyleSheet.absoluteFill}
+            blurType="light"
+            blurAmount={2}
+            reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.4)"
+          />
+
+          {/* 🔹 모달 박스는 탭해도 닫히지 않도록 한 번 더 감싸기 */}
+          <TouchableWithoutFeedback onPress={() => {}}>
+            <View style={[styles.modalBox, modalBoxStyle]}>
+              {/* 상단 버튼들 */}
+              <View
+                style={[
+                  styles.topButtonRow,
+                  (showTrashButton || showCloseButton) && {
+                    justifyContent: showTrashButton ? 'space-between' : 'flex-end',
+                    width: '100%',
+                  },
+                ]}>
+                {showTrashButton && (
+                  <TouchableOpacity
+                    onPress={onTrashPress}
+                    style={styles.trashButton}
+                    hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+                    <Image
+                      source={require('@/assets/images/trash.png')}
+                      style={styles.trashIcon}
+                      resizeMode="contain"
+                    />
+                  </TouchableOpacity>
+                )}
+
+                {showCloseButton && (
+                  <TouchableOpacity
+                    style={styles.closeXButton}
+                    onPress={onClose}
+                    hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+                    <Image
+                      style={styles.closeXIcon}
+                      source={require('@/assets/images/close-yellow.png')}
+                    />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              {/* 타이틀 이미지 */}
+              {titleImage && (
+                <Image
+                  source={titleImage}
+                  style={[styles.titleImage, titleImageStyle]}
+                  resizeMode="contain"
+                />
               )}
 
-              {showCloseButton && (
-                <TouchableOpacity
-                  style={styles.closeXButton}
-                  onPress={onClose}
-                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-                  <Image
-                    style={styles.closeXIcon}
-                    source={require('@/assets/images/close-yellow.png')}
-                  />
-                </TouchableOpacity>
-              )}
+              {/* 제목 / 서브텍스트 */}
+              {title && <Text style={styles.modalTitle}>{title}</Text>}
+              {subText && <Text style={styles.modalSubText}>{subText}</Text>}
+
+              {/* 컨텐츠 영역 */}
+              <View style={[styles.contentWrapper, contentStyle]}>
+                {children}
+              </View>
+
+              {/* 버튼 영역 */}
+              <View style={[styles.buttonBottom, buttonBottomStyle]}>
+                {closeText && (
+                  <TouchableOpacity
+                    onPress={onClose}
+                    style={[styles.closeButton, closeButtonStyle]}>
+                    <Text style={[styles.closeText, closeTextStyle]}>
+                      {closeText}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+                {onConfirm && (
+                  <TouchableOpacity
+                    onPress={onConfirm}
+                    style={[styles.confirmButton, confirmButtonStyle]}>
+                    <Text style={[styles.confirmText, confirmTextStyle]}>
+                      {confirmText}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
-
-            {/* 타이틀 이미지 */}
-            {titleImage && (
-              <Image
-                source={titleImage}
-                style={[styles.titleImage, titleImageStyle]}
-                resizeMode="contain"
-              />
-            )}
-
-            {/* 제목 / 서브텍스트 */}
-            {title && <Text style={styles.modalTitle}>{title}</Text>}
-            {subText && <Text style={styles.modalSubText}>{subText}</Text>}
-
-            {/* 컨텐츠 영역 */}
-            <View style={[styles.contentWrapper, contentStyle]}>
-              {children}
-            </View>
-
-            {/* 버튼 영역 */}
-            <View style={[styles.buttonBottom, buttonBottomStyle]}>
-              {closeText && (
-                <TouchableOpacity
-                  onPress={onClose}
-                  style={[styles.closeButton, closeButtonStyle]}>
-                  <Text style={[styles.closeText, closeTextStyle]}>
-                    {closeText}
-                  </Text>
-                </TouchableOpacity>
-              )}
-              {onConfirm && (
-                <TouchableOpacity
-                  onPress={onConfirm}
-                  style={[styles.confirmButton, confirmButtonStyle]}>
-                  <Text style={[styles.confirmText, confirmTextStyle]}>
-                    {confirmText}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
+          </TouchableWithoutFeedback>
         </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }
@@ -157,6 +152,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(26),
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor:
+      Platform.OS === 'android'
+        ? 'rgba(0, 0, 0, 0.12)'
+        : 'rgba(0, 0, 0, 0.22)',
   },
 
   modalBox: {
@@ -185,7 +184,6 @@ const styles = StyleSheet.create({
     zIndex: 5,
   },
 
-  // 제목
   modalTitle: {
     color: '#111827',
     fontSize:
@@ -236,7 +234,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    // backgroundColor: '#111827',
     backgroundColor: BUTTON_STYLES.saveBg,
     borderRadius: 9,
     paddingVertical: getResponsiveHeight(11),

@@ -1,5 +1,5 @@
 // src/screens/memory/components/AlbumTabSelector.js
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useRef, useState, useMemo} from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Platform,
   Animated,
+  Image,
 } from 'react-native';
 import {
   getResponsiveFontSize,
@@ -19,13 +20,33 @@ const TABS = [
   {key: 'album', title: '앨범'},
 ];
 
-const BASE_UNDERLINE_WIDTH = 40; // 밑줄 기준 너비
+const BASE_UNDERLINE_WIDTH = 40;
+
+// "2025.01.31 ~ 2025.02.01" → "25.01.31 ~ 25.02.01"
+const formatPeriodLabel = raw => {
+  if (!raw) return '';
+
+  const formatDate = d => {
+    const parts = (d || '').split('.');
+    if (parts.length !== 3) return d;
+    const [year, month, day] = parts;
+    const yy = (year || '').slice(-2);
+    return `${yy}.${month}.${day}`;
+  };
+
+  const segments = raw.split('~').map(s => s.trim());
+
+  if (segments.length === 2) {
+    return `${formatDate(segments[0])} ~ ${formatDate(segments[1])}`;
+  }
+  return formatDate(segments[0]);
+};
 
 export default function AnimatedAlbumTabSelector({
   selected,
   onSelect,
-  onPressDateFilter, // 기간 버튼 콜백
-  periodLabel,       // ✅ '2025.11.01 ~ 2025.11.30' 같은 텍스트 (옵션)
+  onPressDateFilter,
+  periodLabel,
 }) {
   const translateX = useRef(new Animated.Value(0)).current;
   const scaleX = useRef(new Animated.Value(1)).current;
@@ -60,14 +81,16 @@ export default function AnimatedAlbumTabSelector({
     }
   }, [selected, positions, translateX, scaleX]);
 
-  // ✅ periodLabel 있으면 그걸 보여주고, 없으면 '기간' 유지
-  const rightLabel = periodLabel || '기간';
-  const isActive = !!periodLabel; // 기간 설정된 상태
+  const displayLabel = useMemo(
+    () => (periodLabel ? formatPeriodLabel(periodLabel) : '기간 선택'),
+    [periodLabel],
+  );
+  const isActive = !!periodLabel;
 
   return (
     <View style={styles.container}>
-      {/* 탭 + 기간 버튼 한 줄 */}
       <View style={styles.headerRow}>
+        {/* 탭 */}
         <View style={styles.tabRowContainer}>
           <View style={styles.tabRow}>
             {TABS.map(tab => (
@@ -103,9 +126,18 @@ export default function AnimatedAlbumTabSelector({
           <TouchableOpacity
             style={[
               styles.filterButton,
+              isActive && styles.filterButtonActive,
             ]}
             activeOpacity={0.7}
             onPress={onPressDateFilter}>
+            <Image
+              resizeMode="contain"
+              style={[
+                styles.calendarIcon,
+                isActive && styles.calendarIconActive,
+              ]}
+              source={require('../../../assets/icons/calendar.png')}
+            />
             <Text
               style={[
                 styles.filterButtonText,
@@ -113,7 +145,7 @@ export default function AnimatedAlbumTabSelector({
               ]}
               numberOfLines={1}
               ellipsizeMode="tail">
-              {rightLabel}
+              {displayLabel}
             </Text>
           </TouchableOpacity>
         )}
@@ -153,14 +185,14 @@ const styles = StyleSheet.create({
     marginRight: getResponsiveWidth(25),
   },
   tabText: {
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(18),
     fontFamily: 'Pretendard-SemiBold',
     fontWeight: '600',
     color: '#4A4A4A',
     textAlignVertical: 'bottom',
   },
   selectedText: {
-    color: 'black',
+    color: '#111827',
     fontWeight: 'bold',
     fontFamily: 'Pretendard-Bold',
   },
@@ -168,30 +200,46 @@ const styles = StyleSheet.create({
   underline: {
     height: 2,
     width: BASE_UNDERLINE_WIDTH + 5,
-    backgroundColor: 'black',
+    backgroundColor: '#111827',
     position: 'absolute',
     bottom: -11,
     left: 0,
   },
 
+  // 기간 버튼
   filterButton: {
-    maxWidth: getResponsiveWidth(200), // 날짜 길어질 수 있으니 최대폭 제한
+    maxWidth: getResponsiveWidth(220),
     paddingHorizontal: getResponsiveWidth(12),
     paddingVertical: getResponsiveHeight(6),
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#E5E7EB',
+    backgroundColor: '#F9FAFB',
+    gap: getResponsiveWidth(6),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterButtonActive: {
-    borderColor: '#FFC84D',
-    backgroundColor: '#FFF8E5',
+    borderColor: '#111827',
+    backgroundColor: '#111827',
   },
   filterButtonText: {
     fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#4A4A4A',
+    fontFamily: 'Pretendard-Medium',
+    color: '#9CA3AF',
   },
   filterButtonTextActive: {
-    color: '#111827',
+    fontSize: getResponsiveFontSize(13),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#FFFFFF',
+  },
+  calendarIcon: {
+    width: getResponsiveWidth(16),
+    height: getResponsiveWidth(16),
+    tintColor: '#9CA3AF',
+  },
+  calendarIconActive: {
+    tintColor: '#FFFFFF',
   },
 });

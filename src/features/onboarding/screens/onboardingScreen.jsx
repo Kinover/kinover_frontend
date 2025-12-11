@@ -155,7 +155,7 @@ const slides = [
 ];
 
 export default function OnboardingScreen() {
-  useAutoLogin();
+  // useAutoLogin();
 
   const {login} = useKakaoLogin();
   const {currentPage, handleScroll} = useOnboardingPager(SCREEN_WIDTH);

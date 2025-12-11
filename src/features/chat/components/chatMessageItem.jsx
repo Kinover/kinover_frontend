@@ -1,3 +1,4 @@
+// components/common/ChatMessageItem.jsx
 import React, {useEffect} from 'react';
 import {View, StyleSheet, Text} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
@@ -18,30 +19,19 @@ export default function ChatMessageItem({
   currentUserId,
   isKino = false,
   shouldShowDate = false,
-  isGrouped, // 👈 그대로 ReceiveChat에 넘겨줌
+  isGrouped,
 }) {
   const navigation = useNavigation();
-
-  // 내가 보낸 메시지?
   const isMe = message.senderId === currentUserId;
+  const localType = message.localType; // 클라 전용 타입 (kinoTyping, kinoIntro 등)
 
-  // 분 단위 동일 시각 비교
-  // const isSameMinute = (a, b) => {
-  //   if (!a || !b) return false;
-  //   const A = new Date(a);
-  //   const B = new Date(b);
-  //   return (
-  //     A.getFullYear() === B.getFullYear() &&
-  //     A.getMonth() === B.getMonth() &&
-  //     A.getDate() === B.getDate() &&
-  //     A.getHours() === B.getHours() &&
-  //     A.getMinutes() === B.getMinutes()
-  //   );
-  // };
+  useEffect(() => {
+    navigation.getParent()?.setOptions({tabBarStyle: {display: 'none'}});
+  }, [navigation]);
 
   const formatDate = dateString => {
     const date = new Date(dateString);
-
+    if (isNaN(date.getTime())) return '';
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
     const day = date.getDate();
@@ -60,39 +50,41 @@ export default function ChatMessageItem({
     return `${year}년 ${month}월 ${day}일 ${weekday}`;
   };
 
-  useEffect(() => {
-    navigation.getParent()?.setOptions({tabBarStyle: {display: 'none'}});
-  }, [navigation]);
-
   let ChatComponent;
-  if (isMe) {
-    // 내가 보낸 메시지는 아바타/이름이 원래 없으니 간격만 타이트 처리
+
+  // ✅ 1) 키노 타이핑 버블 (. . .)
+  if (isKino && !isMe && localType === 'kinoTyping') {
+    ChatComponent = (
+      <ReceiveKinoChat
+        isGrouped={false}
+        isSameSender={false}
+        isTyping={true}
+      />
+    );
+  }
+  // ✅ 2) 나(현재 유저)가 보낸 메시지
+  else if (isMe) {
     ChatComponent = isKino ? (
       <SendKinoChat
         message={message.content}
         chatTime={message.createdAt}
-        messageType={message.messageType}
-        isGrouped={isGrouped} // 넘겨두면 컴포넌트에서 쓸 수 있음(옵셔널)
+        isGrouped={isGrouped}
       />
     ) : (
       <SendChat
         message={message.content}
         chatTime={message.createdAt}
         mediaUrls={message.imageUrls}
-        messageType={message.messageType}
         isGrouped={isGrouped}
       />
     );
-  } else {
-    // 받은 메시지는 isGrouped일 때:
-    // - ReceiveChat/ReceiveKinoChat 내부에서 프로필/유저명 숨기고 아바타 스페이서로 정렬 유지
+  }
+  // ✅ 3) 상대방 메시지 (키노 / 일반)
+  else {
     ChatComponent = isKino ? (
       <ReceiveKinoChat
-        userName={message.senderName}
-        userProfileImage={message.senderImage}
         message={message.content}
         chatTime={message.createdAt}
-        messageType={message.messageType}
         isGrouped={isGrouped}
       />
     ) : (
@@ -101,16 +93,18 @@ export default function ChatMessageItem({
         userProfileImage={message.senderImage}
         message={message.content}
         chatTime={message.createdAt}
-        messageType={message.messageType}
         mediaUrls={message.imageUrls}
         isGrouped={isGrouped}
       />
     );
   }
 
+  // ✅ 타이핑 메시지에는 날짜 구분선 안 보이게
+  const hideDateSeparator = localType === 'kinoTyping';
+
   return (
     <View style={[styles.wrapper, isMe ? styles.alignRight : styles.alignLeft]}>
-      {shouldShowDate && (
+      {shouldShowDate && !hideDateSeparator && message.createdAt && (
         <View style={styles.dateSeparator}>
           <Text style={styles.dateSeparatorText}>
             {formatDate(message.createdAt)}
@@ -144,9 +138,9 @@ const styles = StyleSheet.create({
   dateSeparatorText: {
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontSize: getResponsiveFontSize(12), // 🔽 13 → 11
+    fontSize: getResponsiveFontSize(12),
     fontWeight: '600',
     color: 'white',
-    lineHeight: getResponsiveHeight(17), // 🔽 18 → 16
+    lineHeight: getResponsiveHeight(17),
   },
 });
