@@ -3,6 +3,8 @@ import React, {
   useRef,
   useEffect,
   useCallback,
+  forwardRef,
+  useImperativeHandle,
 } from 'react';
 import {
   View,
@@ -16,10 +18,15 @@ import {
   Text,
   Image,
   PanResponder,
+  LayoutAnimation,
+  UIManager,
+  Keyboard,               // ✅ Keyboard 추가
 } from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 // eslint-disable-next-line import/named
 import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
+import {Gesture, GestureDetector} from 'react-native-gesture-handler';
+
 import {getPresignedUrls, uploadFileToS3} from '../../../api/imageUrlApi';
 import {
   getResponsiveWidth,
@@ -38,20 +45,25 @@ import LinearGradient from 'react-native-linear-gradient';
 import ToastModal from '../../../components/ToastModal';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const NUM_COLUMNS = 3;
+// 기본 값은 3컬럼, 나중에 state로 바뀜
+const BASE_NUM_COLUMNS = 3;
+
 const GAP = getResponsiveWidth(2);
 const PADDING_H = getResponsiveWidth(2);
-const IMAGE_SIZE =
-  (SCREEN_WIDTH - PADDING_H * 2 - GAP * (NUM_COLUMNS - 1)) / NUM_COLUMNS;
-
 const PAGE_SIZE = 60;
 
-export default function ChatInput({
-  chatRoom,
-  userId,
-  socketRef,
-  enableMediaPicker = true,
-}) {
+// 🔹 Android에서 LayoutAnimation 활성화
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+const ChatInput = forwardRef(function ChatInput(
+  {chatRoom, userId, socketRef, enableMediaPicker = true},
+  ref,
+) {
   const [message, setMessage] = useState('');
   const [showGallery, setShowGallery] = useState(false);
   const [photos, setPhotos] = useState([]);
@@ -61,19 +73,39 @@ export default function ChatInput({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
 
-  // ✅ 전송 중 여부
   const [isSending, setIsSending] = useState(false);
-
   const inputRef = useRef(null);
+
+  // 🔹 그리드 컬럼 (핀치로 2~4 사이 변경)
+  const [gridColumns, setGridColumns] = useState(BASE_NUM_COLUMNS);
+
+  // 🔹 동적으로 타일 사이즈 계산
+  const imageSize = React.useMemo(() => {
+    const totalGap = GAP * (gridColumns - 1);
+    const totalPad = PADDING_H * 2;
+    return (SCREEN_WIDTH - totalPad - totalGap) / gridColumns;
+  }, [gridColumns]);
 
   // ✅ 드래그 선택용
   const [scrollOffset, setScrollOffset] = useState(0);
   const [dragMode, setDragMode] = useState(null); // 'add' | 'remove' | null
   const lastIndexRef = useRef(null);
 
-  // ✅ 토스트 상태
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  // 갤러리 열고 닫기 외부에서 제어할 수 있게 열어두기
+  useImperativeHandle(ref, () => ({
+    closeGallery: () => {
+      setShowGallery(false);
+    },
+    openGallery: () => {
+      setShowGallery(true);
+    },
+    toggleGallery: () => {
+      setShowGallery(prev => !prev);
+    },
+  }));
 
   const showToast = useCallback(msg => {
     setToastMessage(msg);
@@ -125,12 +157,10 @@ export default function ChatInput({
   };
 
   const handleSend = async () => {
-    // ✅ 이미 전송 중이면 무시
     if (isSending) return;
 
     const trimmed = message.trim();
 
-    // ✅ 보낼 게 아무것도 없으면 리턴
     if (!trimmed && selectedImages.length === 0) {
       return;
     }
@@ -204,13 +234,14 @@ export default function ChatInput({
         }
       }
     } finally {
-      // ✅ 성공/실패 관계 없이 전송 플래그 해제
       setIsSending(false);
     }
   };
 
+  // ✅ 플러스 버튼 눌렀을 때 키보드 먼저 내리기
   const toggleGallery = () => {
     if (!enableMediaPicker) return;
+    Keyboard.dismiss();              // 🔹 여기 추가
     setShowGallery(prev => !prev);
   };
 
@@ -219,47 +250,42 @@ export default function ChatInput({
   };
 
   // ✅ 드래그 모드에 따라 선택/해제 업데이트
-  const updateSelectionByMode = useCallback(
-    (item, mode) => {
-      if (!item) return;
-      setSelectedImages(prev => {
-        const exists = prev.some(f => f.uri === item.uri);
-        if (mode === 'add') {
-          if (exists) return prev;
-          return [...prev, item];
-        }
-        if (mode === 'remove') {
-          if (!exists) return prev;
-          return prev.filter(f => f.uri !== item.uri);
-        }
-        return prev;
-      });
-    },
-    [],
-  );
+  const updateSelectionByMode = useCallback((item, mode) => {
+    if (!item) return;
+    setSelectedImages(prev => {
+      const exists = prev.some(f => f.uri === item.uri);
+      if (mode === 'add') {
+        if (exists) return prev;
+        return [...prev, item];
+      }
+      if (mode === 'remove') {
+        if (!exists) return prev;
+        return prev.filter(f => f.uri !== item.uri);
+      }
+      return prev;
+    });
+  }, []);
 
   // ✅ 드래그 위치(x, y)에서 어떤 셀인지 계산해서 선택/해제
   const handleDragAtLocation = useCallback(
     (x, y, isStart = false) => {
       if (!photos || photos.length === 0) return;
 
-      // 갤러리 content 의 좌우 padding 보정
       const localX = x - PADDING_H;
       if (localX < 0) return;
 
-      const tileWidth = IMAGE_SIZE + GAP;
-      const tileHeight = IMAGE_SIZE + GAP;
+      const tileWidth = imageSize + GAP;
+      const tileHeight = imageSize + GAP;
 
       const col = Math.floor(localX / tileWidth);
-      if (col < 0 || col >= NUM_COLUMNS) return;
+      if (col < 0 || col >= gridColumns) return;
 
       const row = Math.floor((scrollOffset + y) / tileHeight);
       if (row < 0) return;
 
-      const index = row * NUM_COLUMNS + col;
+      const index = row * gridColumns + col;
       if (index < 0 || index >= photos.length) return;
 
-      // 같은 칸이면 또 처리 안 함
       if (!isStart && lastIndexRef.current === index) return;
 
       const item = photos[index];
@@ -276,16 +302,23 @@ export default function ChatInput({
 
       lastIndexRef.current = index;
     },
-    [photos, scrollOffset, selectedImages, dragMode, updateSelectionByMode],
+    [
+      photos,
+      scrollOffset,
+      selectedImages,
+      dragMode,
+      updateSelectionByMode,
+      imageSize,
+      gridColumns,
+    ],
   );
 
-  // ✅ 갤러리 영역에서 가로로 쓸면 드래그 선택
+  // ✅ 가로 드래그 선택용 PanResponder
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
         const {dx, dy} = gestureState;
-        // 가로 이동이 충분히 크고, 세로보다 우세할 때만 가로 드래그로 인식
         return Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy);
       },
       onPanResponderGrant: evt => {
@@ -307,13 +340,42 @@ export default function ChatInput({
     }),
   ).current;
 
+  // 🔹 Pinch 제스처: 2~4 컬럼 변경 (Gesture API)
+  // 🔹 Pinch 제스처: 2~4 컬럼 변경 (Gesture API)
+const pinchGesture = Gesture.Pinch()
+.runOnJS(true)   // ✅ 콜백을 JS 스레드에서 실행하게 강제
+.onEnd(e => {
+  const {scale} = e;
+
+  setGridColumns(prev => {
+    let next = prev;
+
+    // 손가락 벌리기 → 확대 → 컬럼 줄이기
+    if (scale > 1.07 && prev > 2) {
+      next = prev - 1;
+    }
+    // 손가락 오므리기 → 축소 → 컬럼 늘리기
+    else if (scale < 0.93 && prev < 4) {
+      next = prev + 1;
+    }
+
+    if (next !== prev) {
+      LayoutAnimation.configureNext(
+        LayoutAnimation.Presets.easeInEaseOut,
+      );
+    }
+    return next;
+  });
+});
+
+
   const renderPhoto = ({item}) => {
     const isSelected = selectedImages.some(f => f.uri === item.uri);
     const order = getSelectOrder(selectedImages, item.uri);
 
     return (
       <TouchableOpacity onPress={() => handleToggleImage(item)}>
-        <View style={styles.tile}>
+        <View style={[styles.tile, {width: imageSize, height: imageSize}]}>
           <Image source={{uri: item.uri}} style={styles.tileImage} />
           {item.isVideo && (
             <View style={styles.videoBadge}>
@@ -347,14 +409,10 @@ export default function ChatInput({
             <TouchableOpacity
               style={styles.inputPlusButton}
               onPress={toggleGallery}
-              disabled={isSending} // ✅ 전송 중이면 갤러리 토글 막기(선택 꼬임 방지용)
-            >
+              disabled={isSending}>
               <FastImage
                 source={{uri: 'https://i.postimg.cc/yxdVHRq7/Group-478.png'}}
-                style={[
-                  styles.icon,
-                  isSending && {opacity: 0.4},
-                ]}
+                style={[styles.icon, isSending && {opacity: 0.4}]}
               />
             </TouchableOpacity>
           )}
@@ -367,7 +425,13 @@ export default function ChatInput({
             placeholderTextColor="#999"
             placeholder="메시지를 입력하세요"
             returnKeyType="send"
-            editable={!isSending} // ✅ 전송 중이면 입력 잠깐 막기(선택사항)
+            onFocus={() => {
+              // 🔹 입력창 눌렀을 때 갤러리 열려 있으면 먼저 닫기
+              if (showGallery) {
+                setShowGallery(false);
+              }
+            }}
+            editable={!isSending}
             onSubmitEditing={() => {
               if (!isSending) handleSend();
             }}
@@ -385,27 +449,18 @@ export default function ChatInput({
           )}
         </View>
 
-        {/* ✅ 전송 버튼: 선택한 이미지가 있으면 개수 표시 */}
         <TouchableOpacity
           onPress={handleSend}
           style={styles.sendButton}
-          disabled={isSending}
-        >
+          disabled={isSending}>
           {hasSelection ? (
-            <View
-              style={[
-                styles.sendCountBubble,
-                isSending && {opacity: 0.5},
-              ]}>
+            <View style={[styles.sendCountBubble, isSending && {opacity: 0.5}]}>
               <Text style={styles.sendCountText}>{selectedImages.length}</Text>
             </View>
           ) : (
             <FastImage
               source={{uri: 'https://i.postimg.cc/fLWscdRY/Group-477-1.png'}}
-              style={[
-                styles.icon,
-                isSending && {opacity: 0.5},
-              ]}
+              style={[styles.icon, isSending && {opacity: 0.5}]}
             />
           )}
         </TouchableOpacity>
@@ -420,44 +475,44 @@ export default function ChatInput({
             styles.galleryContainer,
             {height: showGallery ? getResponsiveHeight(300) : 0},
           ]}
-          // ✅ 갤러리 열려 있을 때만 드래그 선택 활성화
           {...(showGallery ? panResponder.panHandlers : {})}>
           {showGallery && (
-            <>
-              <FlatList
-                data={photos}
-                keyExtractor={(item, index) => item.uri + index}
-                renderItem={renderPhoto}
-                numColumns={NUM_COLUMNS}
-                contentContainerStyle={styles.galleryContent}
-                columnWrapperStyle={styles.columnWrapper}
-                onEndReached={handleEndReached}
-                onEndReachedThreshold={0.2}
-                refreshing={isRefreshing}
-                onRefresh={onRefresh}
-                onScroll={e =>
-                  setScrollOffset(e.nativeEvent.contentOffset?.y ?? 0)
-                }
-                scrollEventThrottle={16}
-                ListFooterComponent={
-                  isLoadingMore ? (
-                    <Text style={styles.footer}></Text>
-                  ) : null
-                }
-              />
-              {photos.length > 0 && (
-                <LinearGradient
-                  pointerEvents="none"
-                  colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.6)']}
-                  style={styles.bottomFade}
+            <GestureDetector gesture={pinchGesture}>
+              <View style={{flex: 1}}>
+                <FlatList
+                  data={photos}
+                  key={`chat-gallery-${gridColumns}`} // 컬럼 바뀔 때 리렌더
+                  keyExtractor={(item, index) => item.uri + index}
+                  renderItem={renderPhoto}
+                  numColumns={gridColumns}
+                  contentContainerStyle={styles.galleryContent}
+                  columnWrapperStyle={styles.columnWrapper}
+                  onEndReached={handleEndReached}
+                  onEndReachedThreshold={0.2}
+                  refreshing={isRefreshing}
+                  onRefresh={onRefresh}
+                  onScroll={e =>
+                    setScrollOffset(e.nativeEvent.contentOffset?.y ?? 0)
+                  }
+                  scrollEventThrottle={16}
+                  ListFooterComponent={
+                    isLoadingMore ? <Text style={styles.footer}></Text> : null
+                  }
                 />
-              )}
-            </>
+
+                {photos.length > 0 && (
+                  <LinearGradient
+                    pointerEvents="none"
+                    colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.6)']}
+                    style={styles.bottomFade}
+                  />
+                )}
+              </View>
+            </GestureDetector>
           )}
         </Animated.View>
       )}
 
-      {/* ✅ 토스트 모달 */}
       <ToastModal
         visible={toastVisible}
         onClose={hideToast}
@@ -465,8 +520,10 @@ export default function ChatInput({
       />
     </SafeAreaView>
   );
-}
+});
+export default ChatInput;
 
+// 이하 styles 그대로 유지
 const styles = StyleSheet.create({
   innerContainer: {
     flexDirection: 'row',
@@ -511,7 +568,6 @@ const styles = StyleSheet.create({
     height: getResponsiveIconSize(24),
     resizeMode: 'contain',
   },
-  // ✅ 선택된 이미지 개수 뱃지 스타일
   sendCountBubble: {
     minWidth: getResponsiveWidth(24),
     height: getResponsiveWidth(24),
@@ -548,14 +604,12 @@ const styles = StyleSheet.create({
   galleryContent: {
     paddingTop: GAP,
     paddingBottom: GAP,
-    paddingHorizontal: PADDING_H, // ← 좌우 패딩(드래그 계산에도 사용)
+    paddingHorizontal: PADDING_H,
   },
   columnWrapper: {
     columnGap: GAP,
   },
   tile: {
-    width: IMAGE_SIZE,
-    height: IMAGE_SIZE,
     marginBottom: GAP,
     borderRadius: getResponsiveWidth(1),
     overflow: 'hidden',
@@ -623,3 +677,4 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(30),
   },
 });
+

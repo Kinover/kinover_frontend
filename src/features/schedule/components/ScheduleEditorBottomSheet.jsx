@@ -8,7 +8,6 @@ import {
   Image,
   ScrollView,
   TouchableOpacity,
-  KeyboardAvoidingView,
 } from 'react-native';
 import {BottomSheetTextInput} from '@gorhom/bottom-sheet';
 import {
@@ -119,11 +118,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                   showCancel: false,
                 }
           }>
-          <KeyboardAvoidingView
-            enabled
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 0}
-            style={{flex: 1}}>
+          <View style={{flex: 1}}>
             {/* 구성원 선택 */}
             <Text style={styles.subTitle}>구성원 선택</Text>
             <View
@@ -218,7 +213,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
               style={[styles.input, {marginBottom: getResponsiveHeight(12.5)}]}
               multiline
             />
-          </KeyboardAvoidingView>
+          </View>
         </BottomSheetLayout>
 
         {/* Toast */}

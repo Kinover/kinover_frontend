@@ -26,7 +26,7 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
       flatListRef.current.scrollToIndex({
         index: 0,
         animated: true,
-        viewPosition: 0,
+        viewPosition: 30,
       });
     }
   };
@@ -84,12 +84,27 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
       socketRef.current = ws;
 
       ws.onopen = () => console.log('✅ WebSocket /chat 연결 성공');
+      // ws.onmessage = e => {
+      //   try {
+      //     const msg = JSON.parse(e.data);
+      //     dispatch(addMessage(msg));
+      //     if (isAtBottomRef.current) {
+      //       setTimeout(scrollToBottom, 100);
+      //     }
+      //   } catch (err) {
+      //     console.error('❌ 메시지 파싱 실패:', err);
+      //   }
+      // };
       ws.onmessage = e => {
         try {
           const msg = JSON.parse(e.data);
           dispatch(addMessage(msg));
-          if (isAtBottomRef.current) {
-            setTimeout(scrollToBottom, 100);
+      
+          const isMyMessage = msg.senderId === userId;
+      
+          // 최신 위치에 있고 + 내가 보낸 메시지일 때만 부드럽게 붙어주기
+          if (isAtBottomRef.current && isMyMessage) {
+            setTimeout(scrollToBottom, 80);
           }
         } catch (err) {
           console.error('❌ 메시지 파싱 실패:', err);

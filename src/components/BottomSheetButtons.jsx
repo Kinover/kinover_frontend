@@ -13,27 +13,27 @@ export function BottomSheetButtons({
   cancelLabel = '되돌리기',
   saveLabel = '저장하기',
   showCancel = true,
-  bottomSheetRef,          // ✅ 추가: 바텀시트 ref
-  autoCloseOnSave = true,  // ✅ 추가: 저장 후 자동 닫기 옵션
+  bottomSheetRef, // ✅ 추가: 바텀시트 ref
+  autoCloseOnSave = true, // ✅ 추가: 저장 후 자동 닫기 옵션
 }) {
   const [saving, setSaving] = React.useState(false); // ✅ 연타 방지용
 
   const handleSavePress = async () => {
     if (saving) return;
-  
+
     try {
       setSaving(true);
       if (onSave) {
         await onSave();
       }
-  
+
       // ✅ 저장 성공 후 바텀시트 닫기
       if (autoCloseOnSave && bottomSheetRef?.current) {
         // bottom-sheet 타입에 따라 메서드 다를 수 있어서 둘 다 처리
         if (typeof bottomSheetRef.current.dismiss === 'function') {
-          bottomSheetRef.current.dismiss();   // BottomSheetModal 계열
+          bottomSheetRef.current.dismiss(); // BottomSheetModal 계열
         } else if (typeof bottomSheetRef.current.close === 'function') {
-          bottomSheetRef.current.close();     // BottomSheet 계열
+          bottomSheetRef.current.close(); // BottomSheet 계열
         }
       }
     } catch (e) {
@@ -42,7 +42,6 @@ export function BottomSheetButtons({
       setSaving(false);
     }
   };
-  
 
   return (
     <View style={styles.buttonRow}>
@@ -180,7 +179,7 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    paddingVertical: getResponsiveHeight(11),
+    paddingVertical: getResponsiveHeight(12),
     borderRadius: 9,
     alignItems: 'center',
   },
