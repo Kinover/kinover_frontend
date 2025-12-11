@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: getResponsiveWidth(13),
     paddingVertical: getResponsiveHeight(5),
-    marginVertical: getResponsiveHeight(24),
+    marginVertical: getResponsiveHeight(25),
     backgroundColor: 'rgba(0, 0, 0, 0.25)',
     borderRadius: getResponsiveIconSize(20),
   },
@@ -147,6 +147,6 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(12), // 🔽 13 → 11
     fontWeight: '600',
     color: 'white',
-    lineHeight: getResponsiveHeight(18), // 🔽 18 → 16
+    lineHeight: getResponsiveHeight(17), // 🔽 18 → 16
   },
 });

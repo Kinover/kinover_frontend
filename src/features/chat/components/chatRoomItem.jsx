@@ -29,6 +29,18 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
     userChatRooms, // 참여자 userId 목록
   } = chatRoom;
 
+  // 🔹 ❗ 아바타용 이미지: userId 기준으로 나를 제외하고 구성
+  // const otherMemberIds = (userChatRooms || [])
+  //   .map(uc => uc.userId) // ← userId만 뽑고
+  //   .filter(id => id !== userId); // ← 나 자신 제외
+
+  // const otherMembers = (familyUserList || []).filter(user =>
+  //   otherMemberIds.includes(user.userId),
+  // );
+
+  // const avatarImages = otherMembers
+  //   .map(member => member.image) // 실제 필드명 확인
+  //   .filter(Boolean);
   const screen = kino ? '키노상담소화면' : '채팅방화면';
 
   // 🔹 util 함수로 타이틀 생성 (familyUserList 사용)
@@ -45,19 +57,19 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
 
   const onPress = () => {
     dispatch(markRoomRead(chatRoomId));
-    navigation.navigate(screen, {chatRoom,title, userId});
+    navigation.navigate(screen, {chatRoom, title, userId});
   };
+  console.log('userId:', userId);
+  console.log('userChatRooms:', userChatRooms);
+  console.log('familyUserList:', familyUserList);
+  console.log('avatarImages:', memberImages);
 
   return (
     <TouchableOpacity
       style={styles.container}
       onPress={onPress}
       activeOpacity={0.75}>
-      <GroupAvatar
-        images={memberImages}
-        size={getResponsiveIconSize(55)}
-        userImage={userImage}
-      />
+      <GroupAvatar images={memberImages} size={getResponsiveIconSize(55)} />
 
       <View style={styles.textArea}>
         <View style={styles.headerRow}>
@@ -124,7 +136,7 @@ const styles = StyleSheet.create({
   name: {
     flex: 1,
     fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(15),
+    fontSize: getResponsiveFontSize(15.5),
     color: '#101010',
     lineHeight: getResponsiveHeight(22),
     textAlignVertical: 'center',
@@ -141,7 +153,7 @@ const styles = StyleSheet.create({
   },
   time: {
     top: 0,
-    fontSize: getResponsiveFontSize(11),
+    fontSize: getResponsiveFontSize(11.5),
     color: '#8B8B8B',
     lineHeight: getResponsiveHeight(20),
     textAlignVertical: 'top',

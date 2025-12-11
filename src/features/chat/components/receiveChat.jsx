@@ -155,10 +155,11 @@ const styles = StyleSheet.create({
   textContainer: {flex: 1, flexDirection: 'column'},
 
   userName: {
+    fontFamily: 'Pretendard-Medium',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(12) // 🔽 14 → 12
-        : getResponsiveFontSize(13), // 🔽 15 → 13
+        ? getResponsiveFontSize(14) // 🔽 14 → 12
+        : getResponsiveFontSize(15), // 🔽 15 → 13
     color: '#444',
     marginBottom: getResponsiveHeight(7),
   },
@@ -182,7 +183,7 @@ const styles = StyleSheet.create({
   },
 
   receivedText: {
-    fontFamily: 'Pretendard-Light',
+    fontFamily: 'Pretendard-Regular',
     fontSize: CHATROOM_STYLE.messageFontSize,
     color: 'black',
     flexWrap: 'wrap',

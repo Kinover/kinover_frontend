@@ -61,6 +61,9 @@ export default function ChatInput({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [selectedImages, setSelectedImages] = useState([]);
 
+  // ✅ 전송 중 여부
+  const [isSending, setIsSending] = useState(false);
+
   const inputRef = useRef(null);
 
   // ✅ 드래그 선택용
@@ -122,6 +125,16 @@ export default function ChatInput({
   };
 
   const handleSend = async () => {
+    // ✅ 이미 전송 중이면 무시
+    if (isSending) return;
+
+    const trimmed = message.trim();
+
+    // ✅ 보낼 게 아무것도 없으면 리턴
+    if (!trimmed && selectedImages.length === 0) {
+      return;
+    }
+
     const socket = socketRef?.current;
     console.log('💬 socket 상태:', {
       hasSocket: !!socket,
@@ -133,59 +146,66 @@ export default function ChatInput({
       return;
     }
 
-    // 텍스트 전송
-    if (message.trim()) {
-      const newMessage = {
-        content: message,
-        chatRoomId: chatRoom.chatRoomId,
-        senderId: userId,
-        messageType: 'text',
-      };
-      socket.send(JSON.stringify(newMessage));
-      console.log('📤 텍스트 전송:', newMessage);
-      setMessage('');
-    }
+    try {
+      setIsSending(true);
 
-    if (!enableMediaPicker) return;
-
-    // 이미지/영상 전송
-    if (selectedImages.length > 0) {
-      try {
-        const fileNames = selectedImages.map((file, index) =>
-          getFileNameWithExtension(file, index),
-        );
-        console.log('📂 요청 fileNames:', fileNames);
-
-        const presignedUrls = await getPresignedUrls(fileNames);
-
-        for (let i = 0; i < selectedImages.length; i++) {
-          let fileUri = selectedImages[i].uri;
-          if (Platform.OS === 'ios' && fileUri.startsWith('ph://')) {
-            fileUri = await convertPhUriToFileUri(
-              fileUri,
-              i,
-              selectedImages[i].isVideo,
-            );
-            if (!fileUri) continue;
-          }
-          await uploadFileToS3(presignedUrls[i], fileUri, fileNames[i]);
-        }
-
-        socket.send(
-          JSON.stringify({
-            messageType: 'IMAGE',
-            chatRoomId: chatRoom.chatRoomId,
-            senderId: userId,
-            imageUrls: fileNames,
-          }),
-        );
-        console.log('🖼️ 여러 이미지/영상 전송됨:', fileNames);
-        setShowGallery(false);
-        setSelectedImages([]);
-      } catch (error) {
-        console.error('이미지 전송 실패:', error);
-        showToast('이미지 전송 중 오류가 발생했어요.');
+      // 🔹 텍스트 전송
+      if (trimmed) {
+        const newMessage = {
+          content: trimmed,
+          chatRoomId: chatRoom.chatRoomId,
+          senderId: userId,
+          messageType: 'text',
+        };
+        socket.send(JSON.stringify(newMessage));
+        console.log('📤 텍스트 전송:', newMessage);
+        setMessage('');
       }
+
+      if (!enableMediaPicker) return;
+
+      // 🔹 이미지/영상 전송
+      if (selectedImages.length > 0) {
+        try {
+          const fileNames = selectedImages.map((file, index) =>
+            getFileNameWithExtension(file, index),
+          );
+          console.log('📂 요청 fileNames:', fileNames);
+
+          const presignedUrls = await getPresignedUrls(fileNames);
+
+          for (let i = 0; i < selectedImages.length; i++) {
+            let fileUri = selectedImages[i].uri;
+            if (Platform.OS === 'ios' && fileUri.startsWith('ph://')) {
+              fileUri = await convertPhUriToFileUri(
+                fileUri,
+                i,
+                selectedImages[i].isVideo,
+              );
+              if (!fileUri) continue;
+            }
+            await uploadFileToS3(presignedUrls[i], fileUri, fileNames[i]);
+          }
+
+          socket.send(
+            JSON.stringify({
+              messageType: 'IMAGE',
+              chatRoomId: chatRoom.chatRoomId,
+              senderId: userId,
+              imageUrls: fileNames,
+            }),
+          );
+          console.log('🖼️ 여러 이미지/영상 전송됨:', fileNames);
+          setShowGallery(false);
+          setSelectedImages([]);
+        } catch (error) {
+          console.error('이미지 전송 실패:', error);
+          showToast('이미지 전송 중 오류가 발생했어요.');
+        }
+      }
+    } finally {
+      // ✅ 성공/실패 관계 없이 전송 플래그 해제
+      setIsSending(false);
     }
   };
 
@@ -326,10 +346,15 @@ export default function ChatInput({
           {enableMediaPicker && (
             <TouchableOpacity
               style={styles.inputPlusButton}
-              onPress={toggleGallery}>
+              onPress={toggleGallery}
+              disabled={isSending} // ✅ 전송 중이면 갤러리 토글 막기(선택 꼬임 방지용)
+            >
               <FastImage
                 source={{uri: 'https://i.postimg.cc/yxdVHRq7/Group-478.png'}}
-                style={styles.icon}
+                style={[
+                  styles.icon,
+                  isSending && {opacity: 0.4},
+                ]}
               />
             </TouchableOpacity>
           )}
@@ -342,10 +367,13 @@ export default function ChatInput({
             placeholderTextColor="#999"
             placeholder="메시지를 입력하세요"
             returnKeyType="send"
-            onSubmitEditing={handleSend}
+            editable={!isSending} // ✅ 전송 중이면 입력 잠깐 막기(선택사항)
+            onSubmitEditing={() => {
+              if (!isSending) handleSend();
+            }}
           />
 
-          {message.length > 0 && (
+          {message.length > 0 && !isSending && (
             <TouchableOpacity
               style={styles.clearButton}
               onPress={() => setMessage('')}>
@@ -358,15 +386,26 @@ export default function ChatInput({
         </View>
 
         {/* ✅ 전송 버튼: 선택한 이미지가 있으면 개수 표시 */}
-        <TouchableOpacity onPress={handleSend} style={styles.sendButton}>
+        <TouchableOpacity
+          onPress={handleSend}
+          style={styles.sendButton}
+          disabled={isSending}
+        >
           {hasSelection ? (
-            <View style={styles.sendCountBubble}>
+            <View
+              style={[
+                styles.sendCountBubble,
+                isSending && {opacity: 0.5},
+              ]}>
               <Text style={styles.sendCountText}>{selectedImages.length}</Text>
             </View>
           ) : (
             <FastImage
               source={{uri: 'https://i.postimg.cc/fLWscdRY/Group-477-1.png'}}
-              style={styles.icon}
+              style={[
+                styles.icon,
+                isSending && {opacity: 0.5},
+              ]}
             />
           )}
         </TouchableOpacity>

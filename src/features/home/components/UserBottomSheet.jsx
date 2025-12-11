@@ -17,6 +17,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   KeyboardAvoidingView,
+  ActivityIndicator,
 } from 'react-native';
 import {BottomSheetTextInput} from '@gorhom/bottom-sheet';
 import {launchImageLibrary} from 'react-native-image-picker';
@@ -58,6 +59,9 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
 
   // ✅ 닫히는 중인지 여부 (닫히는 동안 selectedUser 변경에 반응 안 함)
   const [isClosing, setIsClosing] = useState(false);
+
+  // ✅ 저장 중 로딩 상태
+  const [isSaving, setIsSaving] = useState(false);
 
   const showToast = msg => {
     setToastMessage(msg);
@@ -154,8 +158,13 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
     }
   };
 
-  // ✅ 저장 로직: 여기서는 서버/Redux 업데이트만 하고, 닫는 건 BottomSheetButtons에서 담당
-  const handleSave = async () => {
+  // ✅ 저장 로직: 서버/Redux 업데이트 동안 로딩 띄우기
+ // ✅ 저장 로직: 서버/Redux 업데이트 동안 로딩 띄우기
+const handleSave = async () => {
+  if (isSaving) return; // 중복 저장 방지
+  setIsSaving(true);
+
+  try {
     const {
       name: initialName,
       trait: initialTrait,
@@ -163,7 +172,8 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
     } = initialDataRef.current;
 
     const trimmedName = (nameRef.current || '').trim();
-    const finalName = trimmedName.length > 0 ? trimmedName : initialName ?? '';
+    const finalName =
+      trimmedName.length > 0 ? trimmedName : initialName ?? '';
 
     const trimmedTrait = (traitRef.current || '').trim();
     const finalTrait =
@@ -185,9 +195,19 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
     // ✅ 닫히는 중 플래그 세팅 → 이 뒤로 들어오는 selectedUser 변화엔 반응하지 않도록
     setIsClosing(true);
 
-    // onSave에서 Redux/서버 업데이트 (Promise면 BottomSheetButtons가 await 해줌)
+    // 1) 서버 / Redux 저장
     await onSave(finalName, finalTrait, finalImageUrl);
-  };
+
+    // 2) 저장까지 끝나면 바텀시트 닫기
+    modalRef.current?.dismiss();
+  } catch (err) {
+    console.error('❌ 프로필 저장 실패:', err);
+    showToast('프로필 저장 중 문제가 발생했어요.');
+    // 에러나면 바텀시트는 그대로 열어두는 게 UX상 더 자연스러워서 여기서는 dismiss 안 함
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   const handleCancel = () => {
     const {name, trait, image} = initialDataRef.current;
@@ -218,9 +238,8 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
         subtitle="가족에게 보이는 이름과 한마디를 설정해요."
         footerProps={{
           onCancel: handleCancel,
-          onSave: handleSave,      // ✅ 여기서는 저장만, 닫기는 BottomSheetButtons가 dismiss()
+          onSave: handleSave, // ✅ 저장만, 닫기는 BottomSheetButtons에서
           saveLabel: '적용하기',
-          // autoCloseOnSave: true  // 기본값 true라 안 써도 됨
         }}
         innerContentStyle={{flex: 1}}
         useFixedFooter={false}
@@ -286,6 +305,16 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
               />
             </View>
           </View>
+
+          {/* ✅ 저장 중일 때 로딩 인디케이터 (배경 투명) */}
+          {isSaving && (
+            <View style={styles.loadingOverlay}>
+              <View style={styles.loadingBox}>
+                <ActivityIndicator size="small" color="#4B5563" />
+                <Text style={styles.loadingText}>저장 중...</Text>
+              </View>
+            </View>
+          )}
         </KeyboardAvoidingView>
       </BottomSheetLayout>
 
@@ -399,5 +428,29 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.18)',
+  },
+  // ✅ 배경 없이 아래쪽에만 작게 뜨는 로딩
+  loadingOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: getResponsiveHeight(20),
+    alignItems: 'center',
+    justifyContent: 'center',
+    pointerEvents: 'none',
+  },
+  loadingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    backgroundColor: '#F3F4F6',
+  },
+  loadingText: {
+    marginLeft: 6,
+    fontSize: getResponsiveFontSize(12),
+    fontFamily: 'Pretendard-Medium',
+    color: '#4B5563',
   },
 });
