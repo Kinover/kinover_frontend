@@ -88,6 +88,8 @@ export default function ReceiveKinoChat({
       />
 
       <View style={styles.textContainer}>
+      {!isGrouped && <Text style={styles.userName}>키노</Text>}
+
         <View style={styles.messageContainer}>
           {messageType === 'image' ? (
             imageUrls.length === 1 ? (
@@ -130,6 +132,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
+  userName: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize:
+      Platform.OS === 'android'
+        ? getResponsiveFontSize(14) // 🔽 14 → 12
+        : getResponsiveFontSize(15), // 🔽 15 → 13
+    color: '#444',
+    marginBottom: getResponsiveHeight(7),
+  },
 
   // 🔸 키노 프로필 이미지
   kinoProfileImage: {
@@ -157,7 +168,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   receivedText: {
-    fontFamily: 'Pretendard-Light',
+    fontFamily: 'Pretendard-Regular',
     fontSize: CHATROOM_STYLE.KinoMessageFontSize,
     color: 'black',
     flexWrap: 'wrap',

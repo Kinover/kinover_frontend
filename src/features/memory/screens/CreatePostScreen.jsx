@@ -235,8 +235,9 @@ export default function CreatePostPage({navigation, route}) {
     });
   }, [navigation, handleUpload, isUploading]);
 
-  // 🔹 Grid에 보여줄 이미지 (최대 3x2 = 6개)
-  const gridImages = selectedImages.slice(0, 6);
+  // 🔹 Grid에 보여줄 이미지 (최대 3장)
+  const hasExtra = selectedImages.length > 3;
+  const gridImages = hasExtra ? selectedImages.slice(0, 3) : selectedImages;
 
   return (
     <KeyboardAvoidingView
@@ -249,18 +250,28 @@ export default function CreatePostPage({navigation, route}) {
           </View>
         )}
 
-        {/* 🔹 사진 그리드 (최대 3 x 2) - 위쪽 */}
+        {/* 🔹 사진 그리드 (최대 3장) - 위쪽 */}
         {gridImages.length > 0 && (
           <View style={styles.gridContainer}>
             {gridImages.map((item, index) => (
               <Pressable
                 key={item + index}
                 onPress={() => {
+                  // 이 인덱스 기준으로 전체 selectedImages 풀스크린 시작
                   setCurrentIndex(index);
                   setModalVisible(true);
                 }}
                 style={styles.gridImageWrapper}>
                 <Image source={{uri: item}} style={styles.gridImage} />
+
+                {/* 🔹 4장 이상일 때 마지막 칸에 +N 오버레이 */}
+                {hasExtra && index === gridImages.length - 1 && (
+                  <View style={styles.moreOverlay}>
+                    <Text style={styles.moreOverlayText}>
+                      +{selectedImages.length - 3}
+                    </Text>
+                  </View>
+                )}
               </Pressable>
             ))}
           </View>
@@ -351,27 +362,28 @@ export default function CreatePostPage({navigation, route}) {
   );
 }
 
+const H_MARGIN = getResponsiveWidth(8); // 칸 사이 간격
+const SIDE_PADDING = getResponsiveWidth(15);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
     borderTopWidth: 2,
     borderColor: '#E5E5E5',
-    padding: getResponsiveWidth(15),
+    padding: SIDE_PADDING,
   },
 
-  // 🔹 사진 그리드 스타일
+  // 🔹 사진 그리드 스타일 (최대 3장, 한 줄)
   gridContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'flex-start',
     marginBottom: getResponsiveHeight(16),
   },
   gridImageWrapper: {
-    width: (SCREEN_WIDTH - getResponsiveWidth(60)) / 3, // 한 줄 3개
-    height: getResponsiveHeight(100),
-    marginRight: getResponsiveWidth(10),
-    marginBottom: getResponsiveHeight(10),
+    width: (SCREEN_WIDTH - SIDE_PADDING * 2 - H_MARGIN * 2) / 3,
+    aspectRatio: 1,
+    marginRight: H_MARGIN,
     borderRadius: 12,
     overflow: 'hidden',
     backgroundColor: '#F3F4F6',
@@ -380,6 +392,19 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
+  },
+
+  // 🔹 4장 초과일 때 마지막 칸 오버레이
+  moreOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  moreOverlayText: {
+    color: '#fff',
+    fontSize: getResponsiveFontSize(18),
+    fontFamily: 'Pretendard-SemiBold',
   },
 
   input: {

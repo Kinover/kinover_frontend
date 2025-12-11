@@ -15,7 +15,8 @@ export const BACKGROUND_COLORS = {
 export const BUTTON_STYLES = {
   // saveBg: '#FFC84D',
   // saveBg: '#111827',
-  saveBg: '#23314F',
+  // saveBg: '#23314F',
+  saveBg:'#1F2B45',
   cancelBg: ' #FFFFFF',
   fontSize: getResponsiveFontSize(14),
   fontFamily: 'Pretendard-Medium',
@@ -44,7 +45,7 @@ export const HEADER_STYLES = {
 export const CHATROOM_STYLE = {
   messageFontSize: getResponsiveFontSize(13), // 🔽 15 → 14
 
-  messageTimeFontSize: getResponsiveFontSize(10), // 🔽 10 → 9
+  messageTimeFontSize: getResponsiveFontSize(10.5), // 🔽 10 → 9
 
   KinoMessageFontSize: getResponsiveFontSize(13),
 };

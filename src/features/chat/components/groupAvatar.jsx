@@ -4,13 +4,10 @@ import {View,  StyleSheet} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 
 
-export default function GroupAvatar({images = [], size = 60,userImage}) {
-    const filteredImages = userImage
-    ? images.filter(uri => uri !== userImage)
-    : images;
-  
-    const count = Math.min(filteredImages.length, 4);
-    const imageStyle = (multiplier = 1) => ({
+export default function GroupAvatar({images = [], size = 60}) {
+  const count = Math.min(images.length, 4);
+
+  const imageStyle = (multiplier = 1) => ({
     width: size / multiplier,
     height: size / multiplier,
     borderRadius: size / multiplier / 2,
@@ -20,18 +17,18 @@ export default function GroupAvatar({images = [], size = 60,userImage}) {
     <View style={[styles.container, {width: size, height: size}]}>
       {count === 1 && (
         <FastImage
-          source={{uri: filteredImages[0]}}
+          source={{uri: images[0]}}
           style={[styles.absolute, imageStyle(1)]}
         />
       )}
       {count === 2 && (
         <>
           <FastImage
-            source={{uri: filteredImages[0]}}
+            source={{uri: images[0]}}
             style={[styles.absolute, imageStyle(1.6), {top: 0, left: 0}]}
           />
           <FastImage
-            source={{uri: filteredImages[1]}}
+            source={{uri: images[1]}}
             style={[styles.absolute, imageStyle(1.6), {bottom: 0, right: 0}]}
           />
         </>
@@ -39,7 +36,7 @@ export default function GroupAvatar({images = [], size = 60,userImage}) {
       {count === 3 && (
         <>
           <FastImage
-            source={{uri: filteredImages[0]}}
+            source={{uri: images[0]}}
             style={[
               styles.absolute,
               imageStyle(1.8),
@@ -47,11 +44,11 @@ export default function GroupAvatar({images = [], size = 60,userImage}) {
             ]}
           />
           <FastImage
-            source={{uri: filteredImages[1]}}
+            source={{uri: images[1]}}
             style={[styles.absolute, imageStyle(1.8), {bottom: 0, left: 0}]}
           />
           <FastImage
-            source={{uri: filteredImages[2]}}
+            source={{uri: images[2]}}
             style={[styles.absolute, imageStyle(1.8), {bottom: 0, right: 0}]}
           />
         </>
@@ -59,19 +56,19 @@ export default function GroupAvatar({images = [], size = 60,userImage}) {
       {count === 4 && (
         <>
           <FastImage
-            source={{uri: filteredImages[0]}}
+            source={{uri: images[0]}}
             style={[styles.absolute, imageStyle(2), {top: 0, left: 0}]}
           />
           <FastImage
-            source={{uri: filteredImages[1]}}
+            source={{uri: images[1]}}
             style={[styles.absolute, imageStyle(2), {top: 0, right: 0}]}
           />
           <FastImage
-            source={{uri: filteredImages[2]}}
+            source={{uri: images[2]}}
             style={[styles.absolute, imageStyle(2), {bottom: 0, left: 0}]}
           />
           <FastImage
-            source={{uri: filteredImages[3]}}
+            source={{uri: images[3]}}
             style={[styles.absolute, imageStyle(2), {bottom: 0, right: 0}]}
           />
         </>

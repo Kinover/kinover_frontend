@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(4.5),
   },
   sendText: {
-    fontFamily: 'Pretendard-Light',
+    fontFamily: 'Pretendard-Regular',
     fontSize: CHATROOM_STYLE.KinoMessageFontSize,
     color: 'black',
     flexWrap: 'wrap',

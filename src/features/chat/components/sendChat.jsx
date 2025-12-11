@@ -29,7 +29,7 @@ import {CHATROOM_STYLE} from 'styles/style';
 export default function SendChat({
   chatTime,
   message,
-  mediaUrls = [],
+  mediaUrls,
   messageType = 'text',
   style,
   isGrouped = false,
@@ -37,6 +37,13 @@ export default function SendChat({
 }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+
+  // ✅ mediaUrls를 항상 배열로 강제
+  const safeMediaUrls = Array.isArray(mediaUrls)
+    ? mediaUrls
+    : mediaUrls
+    ? [mediaUrls]
+    : [];
 
   // === 시간 그룹 레지스트리 ===
   const [showTime, setShowTime] = useState(false);
@@ -57,19 +64,44 @@ export default function SendChat({
     setModalVisible(true);
   };
 
+  // ✅ 9장 초과 여부 & 그리드에 실제로 보여줄 리스트
+  const hasExtra = safeMediaUrls.length > 9;
+  const displayMedia = hasExtra
+    ? safeMediaUrls.slice(0, 9)
+    : safeMediaUrls;
+
   const renderImages = () => (
     <View style={[styles.sendBubble, styles.imagePadding]}>
       <FlatList
-        data={mediaUrls}
+        data={displayMedia}
         keyExtractor={(item, index) => item + index}
         numColumns={3}
-        renderItem={({item, index}) => (
-          <TouchableOpacity onPress={() => handleImagePress(item, index)}>
-            <FastImage source={{uri: item}} style={styles.imageItem} />
-          </TouchableOpacity>
-        )}
         scrollEnabled={false}
         contentContainerStyle={styles.imageGrid}
+        renderItem={({item, index}) => {
+          const isLastCell =
+            hasExtra && index === displayMedia.length - 1;
+          const extraCount =
+            safeMediaUrls.length - displayMedia.length;
+
+          return (
+            <TouchableOpacity
+              onPress={() => handleImagePress(item, index)}
+              activeOpacity={0.9}>
+              <View>
+                <FastImage source={{uri: item}} style={styles.imageItem} />
+                {/* 🔹 9장 초과일 때 마지막 셀에 +N 오버레이 */}
+                {isLastCell && (
+                  <View style={styles.moreOverlay}>
+                    <Text style={styles.moreOverlayText}>
+                      +{extraCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            </TouchableOpacity>
+          );
+        }}
       />
     </View>
   );
@@ -79,10 +111,12 @@ export default function SendChat({
       {showTime && <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>}
 
       {messageType === 'image' ? (
-        mediaUrls.length === 1 ? (
-          <TouchableOpacity onPress={() => handleImagePress(mediaUrls[0])}>
+        safeMediaUrls.length === 1 ? (
+          <TouchableOpacity
+            onPress={() => handleImagePress(safeMediaUrls[0], 0)}
+            activeOpacity={0.9}>
             <FastImage
-              source={{uri: mediaUrls[0]}}
+              source={{uri: safeMediaUrls[0]}}
               style={styles.singleImage}
               resizeMode="cover"
             />
@@ -98,7 +132,7 @@ export default function SendChat({
 
       <MediaModal
         visible={modalVisible}
-        mediaUrls={mediaUrls}
+        mediaUrls={safeMediaUrls}      // ✅ 항상 배열
         mediaType={messageType}
         initialIndex={selectedIndex}
         onClose={() => setModalVisible(false)}
@@ -130,13 +164,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(4.5),
   },
   sendText: {
-    fontFamily: 'Pretendard-Light',
+    fontFamily: 'Pretendard-Regular',
     fontSize: CHATROOM_STYLE.messageFontSize,
     color: 'black',
     flexWrap: 'wrap',
-    lineHeight: getResponsiveFontSize(17), // 🔽 18 → 17
+    lineHeight: getResponsiveFontSize(17),
   },
-
   sendTime: {
     fontSize: CHATROOM_STYLE.messageTimeFontSize,
     color: '#666',
@@ -144,7 +177,10 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(2),
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
-  imageGrid: {gap: getResponsiveWidth(4)},
+
+  imageGrid: {
+    gap: getResponsiveWidth(4),
+  },
   imageItem: {
     width: getResponsiveWidth(70),
     height: getResponsiveWidth(70),
@@ -157,18 +193,18 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignSelf: 'flex-end',
   },
-  videoBadge: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+
+  // 🔹 +N 오버레이
+  moreOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 4,
   },
-  videoBadgeText: {
+  moreOverlayText: {
     color: '#fff',
-    fontSize: getResponsiveFontSize(12),
-    fontWeight: '600',
+    fontSize: getResponsiveFontSize(16),
+    fontFamily: 'Pretendard-SemiBold',
   },
 });
