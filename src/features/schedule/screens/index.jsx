@@ -28,6 +28,7 @@ import {useScheduleCrud} from '../hooks/useScheduleCRUD';
 
 // 날짜 → "YYYY-MM-DD" 키로 변환하는 훅 (달력에서 이미 쓰는 것)
 import {useLocalDateKey} from '../hooks/useLocalDateKey';
+import useHolidayMap from '../hooks/useHolidayMap';
 
 // 🔹 공통 인앱 가이드 훅 & 모달
 import useGuide from 'hooks/useGuide';
@@ -62,9 +63,12 @@ export default function ScheduleScreen() {
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
   const currentUserId = useSelector(state => state.user.userId);
 
+  // const year = selectedDate.getFullYear();
+
   // 날짜 관련 상태
   const {selectedDate, setSelectedDate, formattedDate, year, month} =
     useScheduleDate();
+  const holidayMap = useHolidayMap(year);
 
   // 날짜 → "YYYY-MM-DD" 로 변환하는 함수
   const getLocalDateKey = useLocalDateKey();
@@ -128,48 +132,49 @@ export default function ScheduleScreen() {
 
   return (
     // <SwipeNavigator rightTo="추억" leftTo="소통">
-      <View style={styles.container}>
-        {/* 메인 콘텐츠 */}
-        <ScrollView
-          style={styles.mainContainer}
-          showsVerticalScrollIndicator={false}>
-          <CalendarToggle
-            selectedDate={selectedDate}
-            setSelectedDate={setSelectedDate}
-            scheduleCountPerDay={scheduleCountPerDay} // 🔹 날짜별 개수 map
-          />
-
-          <Schedule
-            selectedDate={selectedDate}
-            onOpenSheet={openSheet}
-            refreshTrigger={refreshTrigger}
-          />
-        </ScrollView>
-
-        {/* 바텀시트 */}
-        <ScheduleEditorBottomSheetModal
-          ref={bottomSheetRef}
-          editingSchedule={editingSchedule}
-          familyUserList={familyUserList}
-          selectedUserId={selectedUserId}
-          setSelectedUserId={setSelectedUserId}
-          title={title}
-          setTitle={setTitle}
-          onSubmit={onSubmit}
-          onDelete={handleDeleteSchedule}
-          onCancelEdit={handleCancelEdit}
+    <View style={styles.container}>
+      {/* 메인 콘텐츠 */}
+      <ScrollView
+        style={styles.mainContainer}
+        showsVerticalScrollIndicator={false}>
+        <CalendarToggle
+          selectedDate={selectedDate}
+          setSelectedDate={setSelectedDate}
+          scheduleCountPerDay={scheduleCountPerDay} // 🔹 날짜별 개수 map
+          holidayMap={holidayMap}
         />
 
-        {/* 플로팅 추가 버튼 */}
-        <TouchableOpacity style={styles.fab} onPress={() => openSheet(null)}>
-          <Image
-            source={require('../../../assets/icons/schedule-bt.png')}
-            style={styles.fabIcon}
-          />
-        </TouchableOpacity>
+        <Schedule
+          selectedDate={selectedDate}
+          onOpenSheet={openSheet}
+          refreshTrigger={refreshTrigger}
+        />
+      </ScrollView>
 
-        {/* 인앱 가이드 모달 */}
-        {/* {currentGuide && (
+      {/* 바텀시트 */}
+      <ScheduleEditorBottomSheetModal
+        ref={bottomSheetRef}
+        editingSchedule={editingSchedule}
+        familyUserList={familyUserList}
+        selectedUserId={selectedUserId}
+        setSelectedUserId={setSelectedUserId}
+        title={title}
+        setTitle={setTitle}
+        onSubmit={onSubmit}
+        onDelete={handleDeleteSchedule}
+        onCancelEdit={handleCancelEdit}
+      />
+
+      {/* 플로팅 추가 버튼 */}
+      <TouchableOpacity style={styles.fab} onPress={() => openSheet(null)}>
+        <Image
+          source={require('../../../assets/icons/schedule-bt.png')}
+          style={styles.fabIcon}
+        />
+      </TouchableOpacity>
+
+      {/* 인앱 가이드 모달 */}
+      {/* {currentGuide && (
           <GuideModal
             visible={isGuideVisible}
             step={guideStep}
@@ -180,7 +185,7 @@ export default function ScheduleScreen() {
             onSkip={skipGuide}
           />
         )} */}
-      </View>
+    </View>
     // </SwipeNavigator>
   );
 }
@@ -193,7 +198,7 @@ const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
     paddingHorizontal: getResponsiveWidth(20),
-    paddingTop: getResponsiveHeight(10),
+    paddingTop: getResponsiveHeight(5),
   },
   fab: {
     position: 'absolute',
