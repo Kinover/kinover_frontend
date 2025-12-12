@@ -67,12 +67,12 @@ export default React.memo(Schedule);
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: getResponsiveWidth(10),
+    paddingHorizontal: getResponsiveWidth(0),
     paddingBottom: getResponsiveHeight(30),
   },
   dateText: {
     color: 'black',
-    fontSize: getResponsiveFontSize(15),
+    fontSize: getResponsiveFontSize(16),
     fontFamily: 'Pretendard-SemiBold',
     marginTop: getResponsiveHeight(15),
     marginBottom: getResponsiveHeight(16),
@@ -86,6 +86,7 @@ const styles = StyleSheet.create({
   },
   scheduleCards: {
     flex: 1,
+    width: '100%',
     gap: getResponsiveHeight(10),
   },
   card: {

@@ -2,7 +2,8 @@
 
 import React from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Modal} from 'react-native';
-import getResponsiveFontSize, {
+import {
+  getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';

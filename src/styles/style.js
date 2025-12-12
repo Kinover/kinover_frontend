@@ -16,18 +16,18 @@ export const BUTTON_STYLES = {
   // saveBg: '#FFC84D',
   // saveBg: '#111827',
   // saveBg: '#23314F',
-  saveBg:'#1F2B45',
+  saveBg: '#1F2B45',
   cancelBg: ' #FFFFFF',
   fontSize: getResponsiveFontSize(14),
   fontFamily: 'Pretendard-Medium',
 };
 
 export const HEADER_STYLES = {
-  mainTitleFontSize: getResponsiveFontSize(20),
+  mainTitleFontSize: getResponsiveFontSize(23),
   mainTitleFontColor: 'black',
   mainTitleFontFamily: 'Pretendard-Bold',
   mainTitleFontWeight: Platform.OS === 'android' ? '700' : undefined,
-  mainTitleLineHeight: getResponsiveHeight(22), // 살짝만
+  mainTitleLineHeight: getResponsiveFontSize(27), // 살짝만
 
   defaultTitleFontSize: getResponsiveFontSize(19),
   defaultTitleFontColor: '#333',
@@ -50,8 +50,8 @@ export const CHATROOM_STYLE = {
   KinoMessageFontSize: getResponsiveFontSize(13),
 };
 
-export const EMPTY_STYLE={
+export const EMPTY_STYLE = {
   emptyFontSize: getResponsiveFontSize(13),
   emptyFontFamily: 'Pretendard-Regular',
   emptyColor: '#9CA3AF',
-}
+};
