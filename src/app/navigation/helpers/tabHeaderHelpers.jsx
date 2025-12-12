@@ -123,7 +123,7 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
     <View
       style={{
         flexDirection: 'row',
-        marginRight: getResponsiveWidth(16), // 25 → 20
+        marginRight: getResponsiveWidth(20), // 25 → 20
       }}>
       {createIconButton(
         () =>
@@ -132,11 +132,11 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
             params: {screen: '알림화면'},
           }),
         bellIcon,
-        24, // 29 → 22
-        24,
+        getResponsiveIconSize(25), // 29 → 22
+        getResponsiveIconSize(25), // 29 → 22
       )}
       <View
-        style={{width: getResponsiveWidth(10), justifyContent: 'flex-end'}}
+        style={{width: getResponsiveWidth(12), justifyContent: 'flex-end'}}
       />
       {createIconButton(
         () =>
@@ -145,8 +145,8 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
             params: {screen: '설정화면'},
           }),
         settingIcon,
-        24,
-        24,
+        getResponsiveIconSize(25), // 29 → 22
+        getResponsiveIconSize(25), // 29 → 22
       )}
     </View>
   );

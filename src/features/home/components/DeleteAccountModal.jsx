@@ -118,16 +118,14 @@ const styles = StyleSheet.create({
     marginTop: getResponsiveHeight(12),
     lineHeight: getResponsiveHeight(24),
   },
+
   modalSubText: {
     textAlign: 'center',
-    color: '#6E6E6E',
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize:
-      Platform.OS === 'android'
-        ? getResponsiveFontSize(15)
-        : getResponsiveFontSize(16),
-    lineHeight: getResponsiveHeight(20),
-    marginBottom: getResponsiveHeight(5),
+    color: '#6B7280',
+    fontFamily: 'Pretendard-Regular',
+    fontSize: getResponsiveFontSize(12.5),
+    lineHeight: getResponsiveHeight(17),
+    marginBottom: getResponsiveHeight(10),
   },
   modalText: {
     fontFamily: 'Pretendard-Regular',
@@ -139,12 +137,16 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     backgroundColor: '#FF4D4D',
+    borderWidth: 1,
+    borderColor: '#FF4D4D',
   },
   inputConfirmButton: {
     backgroundColor: '#FF4D4D',
   },
   closeButton: {
     backgroundColor: '#E0E0E0',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
   },
   input: {
     borderWidth: 1,

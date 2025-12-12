@@ -16,7 +16,7 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../utils/responsive';
-import {BUTTON_STYLES} from 'styles/style';
+import {BACKGROUND_COLORS, BUTTON_STYLES} from 'styles/style';
 
 export default function CustomModal({
   visible,
@@ -69,7 +69,9 @@ export default function CustomModal({
                 style={[
                   styles.topButtonRow,
                   (showTrashButton || showCloseButton) && {
-                    justifyContent: showTrashButton ? 'space-between' : 'flex-end',
+                    justifyContent: showTrashButton
+                      ? 'space-between'
+                      : 'flex-end',
                     width: '100%',
                   },
                 ]}>
@@ -152,10 +154,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(26),
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor:
-      Platform.OS === 'android'
-        ? 'rgba(0, 0, 0, 0.12)'
-        : 'rgba(0, 0, 0, 0.22)',
+    backgroundColor: BACKGROUND_COLORS.overlayBg,
   },
 
   modalBox: {
@@ -200,16 +199,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#6B7280',
     fontFamily: 'Pretendard-Regular',
-    fontSize:
-      Platform.OS === 'android'
-        ? getResponsiveFontSize(12.5)
-        : getResponsiveFontSize(13),
-    lineHeight: getResponsiveHeight(19),
+    fontSize: getResponsiveFontSize(12.5),
+    lineHeight: getResponsiveHeight(17),
     marginBottom: getResponsiveHeight(10),
   },
 
   contentWrapper: {
-    marginBottom: getResponsiveHeight(14),
+    marginBottom: getResponsiveHeight(5),
   },
 
   buttonBottom: {
@@ -236,6 +232,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: BUTTON_STYLES.saveBg,
     borderRadius: 9,
+    borderWidth: 1,
+    borderColor: BUTTON_STYLES.saveBg,
     paddingVertical: getResponsiveHeight(11),
   },
 

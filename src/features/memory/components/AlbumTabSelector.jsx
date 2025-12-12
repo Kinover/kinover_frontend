@@ -14,6 +14,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../../utils/responsive';
+import {BUTTON_STYLES} from 'styles/style';
 
 const TABS = [
   {key: 'post', title: '게시글'},
@@ -160,6 +161,7 @@ const styles = StyleSheet.create({
         ? getResponsiveHeight(5)
         : getResponsiveHeight(5),
     paddingHorizontal: getResponsiveWidth(21),
+    paddingRight: getResponsiveWidth(18),
   },
 
   headerRow: {
@@ -216,36 +218,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
     gap: getResponsiveWidth(6),
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    // alignItems: 'center',
+    // justifyContent: 'center',
   },
-  
+
   // ✅ 활성화: 배경 밝게 + 글씨/아이콘 어둡게
   filterButtonActive: {
-    borderColor: '#111827',
+    borderColor: BUTTON_STYLES.backgroundColor,
     backgroundColor: '#FFFFFF',
   },
-  
+
   filterButtonText: {
-    fontSize: getResponsiveFontSize(13),
+    fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-Medium',
     color: '#9CA3AF',
   },
-  
+
   filterButtonTextActive: {
-    fontSize: getResponsiveFontSize(13),
+    fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-SemiBold',
     color: '#111827',
   },
-  
+
   calendarIcon: {
     width: getResponsiveWidth(16),
     height: getResponsiveWidth(16),
     tintColor: '#9CA3AF',
   },
-  
+
   calendarIconActive: {
     tintColor: '#111827',
   },
-  
 });

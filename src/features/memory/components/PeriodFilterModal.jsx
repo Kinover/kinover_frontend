@@ -7,6 +7,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../../utils/responsive';
+import {BUTTON_STYLES} from 'styles/style';
 
 function formatYMD(date) {
   const y = date.getFullYear();
@@ -198,7 +199,7 @@ export default function PeriodFilterModal({
           </View>
         )}
 
-        {mode === 'ALL' && (
+        {/* {mode === 'ALL' && (
           <View
             style={{
               position: 'relative',
@@ -211,7 +212,7 @@ export default function PeriodFilterModal({
               기간 제한 없이, 모든 추억을 시간순으로 볼 수 있어요.
             </Text>
           </View>
-        )}
+        )} */}
       </View>
     </CustomModal>
   );
@@ -259,7 +260,7 @@ const styles = StyleSheet.create({
   },
   modeTab: {
     flex: 1,
-    paddingVertical: getResponsiveHeight(6),
+    paddingVertical: getResponsiveHeight(8),
     borderRadius: 999,
     alignItems: 'center',
   },
@@ -296,8 +297,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
   },
   chipActive: {
-    backgroundColor: '#FFC84D',
-    borderColor: '#FFC84D',
+    // backgroundColor: '#FFC84D',
+    backgroundColor: BUTTON_STYLES.saveBg,
+    borderColor: BUTTON_STYLES.saveBg,
+
+    // borderColor: '#FFC84D',
   },
   chipText: {
     fontSize: getResponsiveFontSize(12),

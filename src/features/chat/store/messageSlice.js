@@ -6,11 +6,23 @@ const messageSlice = createSlice({
     messageList: [],
     isLoading: false,
     error: null,
+    isFetched: false, // ✅ 추가
+
   },
   reducers: {
     // ✅ 전체 초기 메시지 설정
     addMessage: (state, action) => {
-      state.messageList.unshift(action.payload);
+      const msg = action.payload;
+
+      // messageId가 있을 때는 이걸로 중복 방지
+      if (msg?.messageId) {
+        const exists = state.messageList.some(
+          m => m.messageId === msg.messageId,
+        );
+        if (exists) return;
+      }
+
+      state.messageList.unshift(msg);
     },
 
     setMessageList: (state, action) => {
@@ -47,6 +59,9 @@ const messageSlice = createSlice({
     setMessageError: (state, action) => {
       state.error = action.payload;
     },
+    setMessageFetched: (state, action) => {
+      state.isFetched = action.payload; // true/false
+    },
   },
 });
 
@@ -57,6 +72,7 @@ export const {
   setMessageLoading,
   setMessageError,
   addMessage,
+  setMessageFetched
 } = messageSlice.actions;
 
 export default messageSlice.reducer;

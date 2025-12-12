@@ -9,6 +9,7 @@ import {
 import CustomModal from '../../../components/CustomModal';
 import Clipboard from '@react-native-clipboard/clipboard';
 import FastImage from '@d11/react-native-fast-image';
+import {BUTTON_STYLES} from 'styles/style';
 
 export default function FamilyCodeModal({visible, onClose, familyCode}) {
   const [copied, setCopied] = useState(false);
@@ -19,16 +20,13 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
     setCopied(true);
   }, [familyCode]);
 
-  // 모달이 닫힐 때마다 문구 초기화
   useEffect(() => {
-    if (!visible) {
-      setCopied(false);
-    }
+    if (!visible) setCopied(false);
   }, [visible]);
 
   const subText = copied
-    ? '초대 코드가 복사되었어요.'
-    : '복사 아이콘을 눌러,\n함께할 가족에게 코드를 알려주세요';
+    ? '초대 코드가 복사되었어요!'
+    : '초대 코드를 눌러 복사한 뒤,\n가족에게 보내주세요';
 
   return (
     <CustomModal
@@ -41,17 +39,39 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
       title="가족 초대 코드"
       subText={subText}>
       <View style={styles.innerWrapper}>
-        <View style={styles.codeContainer}>
-          <Text style={styles.codeText}>{familyCode}</Text>
+        {/* ✅ 카드 전체(=코드 영역)를 누르면 복사 */}
+        <Pressable
+          onPress={handleCopy}
+          disabled={!familyCode}
+          hitSlop={10}
+          style={({pressed}) => [
+            styles.codeCard,
+            copied && styles.codeCardCopied,
+            pressed && familyCode && styles.codeCardPressed,
+            !familyCode && {opacity: 0.6},
+          ]}>
+          <View style={styles.codeTextWrap}>
+            <Text style={styles.codeLabel}>INVITE CODE</Text>
+            <Text
+              style={styles.codeText}
+              numberOfLines={1}
+              ellipsizeMode="middle">
+              {familyCode || '-'}
+            </Text>
+          </View>
 
-          <Pressable onPress={handleCopy}>
-            <FastImage
+          {/* ✅ 오른쪽은 "복사" 힌트용 (아이콘/텍스트만 표시, 눌러도 카드 onPress로 복사됨) */}
+          <View style={[styles.copyBtn, copied && styles.copyBtnCopied]}>
+            {/* <FastImage
               source={require('../../../assets/icons/copy.png')}
-              style={styles.copyIcon}
+              style={[styles.copyIcon, copied && styles.copyIconCopied]}
               resizeMode="contain"
-            />
-          </Pressable>
-        </View>
+            /> */}
+            <Text style={[styles.copyText, copied && styles.copyTextCopied]}>
+              {copied ? '복사됨' : '복사'}
+            </Text>
+          </View>
+        </Pressable>
       </View>
     </CustomModal>
   );
@@ -62,32 +82,91 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
   },
-  codeContainer: {
-    position: 'relative',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: getResponsiveWidth(10),
-    paddingVertical: getResponsiveHeight(14),
-    paddingHorizontal: getResponsiveWidth(10),
-    marginVertical: getResponsiveHeight(5),
+
+  codeCard: {
     width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+
+    backgroundColor: '#F9FAFB',
+    borderRadius: getResponsiveWidth(14),
+    paddingVertical: getResponsiveHeight(14),
+    paddingHorizontal: getResponsiveWidth(14),
+
+    borderWidth: 1,
+    borderColor: '#EEF2F7',
   },
+
+  codeCardPressed: {
+    transform: [{scale: 0.99}],
+    opacity: 0.92,
+  },
+
+  codeCardCopied: {
+    backgroundColor: '#FFF8E1',
+    borderColor: '#FFD36A',
+  },
+
+  codeTextWrap: {
+    flex: 1,
+    paddingRight: getResponsiveWidth(10),
+  },
+
+  codeLabel: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(10.5),
+    color: '#9CA3AF',
+    letterSpacing: 1.4,
+    marginBottom: getResponsiveHeight(4),
+  },
+
+  codeText: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(15),
+    color: '#111827',
+    letterSpacing: 1.2,
+  },
+
+  // ✅ 이제 오른쪽은 "버튼"처럼 보이기만 하고 실제 클릭 처리는 카드 전체가 함
+  copyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: getResponsiveWidth(6),
+    paddingVertical: getResponsiveHeight(8),
+    paddingHorizontal: getResponsiveWidth(12),
+    borderRadius: 999,
+    backgroundColor: BUTTON_STYLES.saveBg,
+  },
+
+  copyBtnCopied: {
+    backgroundColor: '#FFB000',
+  },
+
+  copyIcon: {
+    width: getResponsiveIconSize(16),
+    height: getResponsiveIconSize(16),
+    tintColor: '#FFFFFF',
+  },
+
+  copyIconCopied: {
+    tintColor: '#111827',
+  },
+
+  copyText: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(12),
+    color: '#FFFFFF',
+  },
+
+  copyTextCopied: {
+    color: '#111827',
+  },
+
   modalButtonRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: getResponsiveHeight(10),
-  },
-  codeText: {
-    flex: 1,
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#333',
-    letterSpacing: 1,
-  },
-  copyIcon: {
-    width: getResponsiveIconSize(18),
-    height: getResponsiveIconSize(18),
   },
 });

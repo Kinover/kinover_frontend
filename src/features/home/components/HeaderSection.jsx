@@ -94,8 +94,8 @@ export default function HeaderSection({user, onUserPress}) {
         <Shadow
           distance={7}
           offset={[0, 0]}
-          startColor="rgba(0,0,0,0.12)"
-          endColor="rgba(0,0,0,0.0)"
+          startColor="rgba(0,0,0,0.1)"
+          endColor="rgba(15, 23, 42, 0.01)" // 바깥쪽으로 갈수록 옅어지게
           radius={CARD_RADIUS}
           style={[styles.shadowBox, {width: CARD_WIDTH}]}>
           <TouchableOpacity
