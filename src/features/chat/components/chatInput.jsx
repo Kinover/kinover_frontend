@@ -5,6 +5,7 @@ import React, {
   useCallback,
   forwardRef,
   useImperativeHandle,
+  useMemo,
 } from 'react';
 import {
   View,
@@ -20,12 +21,12 @@ import {
   PanResponder,
   LayoutAnimation,
   UIManager,
-  Keyboard, // ✅ Keyboard 추가
+  Keyboard,
 } from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
-// eslint-disable-next-line import/named
 import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
+import LinearGradient from 'react-native-linear-gradient';
 
 import {getPresignedUrls, uploadFileToS3} from '../../../api/imageUrlApi';
 import {
@@ -33,7 +34,6 @@ import {
   getResponsiveHeight,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-
 import {convertPhUriToFileUri} from '../../../utils/photoUriConverter';
 import {getSelectOrder, toggleSelectImage} from '../../../utils/selection';
 import {
@@ -41,18 +41,19 @@ import {
   loadGalleryPhotos,
 } from '../../../utils/gallery';
 import formatDuration from '../../../utils/formatDuration';
-import LinearGradient from 'react-native-linear-gradient';
 import ToastModal from '../../../components/ToastModal';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-// 기본 값은 3컬럼, 나중에 state로 바뀜
+
 const BASE_NUM_COLUMNS = 3;
+const PAGE_SIZE = 60;
 
 const GAP = getResponsiveWidth(2);
 const PADDING_H = getResponsiveWidth(2);
-const PAGE_SIZE = 60;
 
-// 🔹 Android에서 LayoutAnimation 활성화
+const ICON_PLUS = 'https://i.postimg.cc/yxdVHRq7/Group-478.png';
+const ICON_SEND = 'https://i.postimg.cc/fLWscdRY/Group-477-1.png';
+
 if (
   Platform.OS === 'android' &&
   UIManager.setLayoutAnimationEnabledExperimental
@@ -64,66 +65,68 @@ const ChatInput = forwardRef(function ChatInput(
   {chatRoom, userId, socketRef, enableMediaPicker = true},
   ref,
 ) {
+  // ====== state ======
   const [message, setMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
+
   const [showGallery, setShowGallery] = useState(false);
   const [photos, setPhotos] = useState([]);
   const [endCursor, setEndCursor] = useState(null);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
   const [selectedImages, setSelectedImages] = useState([]);
 
-  const [isSending, setIsSending] = useState(false);
-  const inputRef = useRef(null);
-
-  // 🔹 그리드 컬럼 (핀치로 2~4 사이 변경)
+  // grid
   const [gridColumns, setGridColumns] = useState(BASE_NUM_COLUMNS);
 
-  // 🔹 동적으로 타일 사이즈 계산
-  const imageSize = React.useMemo(() => {
+  // drag select
+  const [scrollOffset, setScrollOffset] = useState(0);
+  const [dragMode, setDragMode] = useState(null); // 'add' | 'remove' | null
+  const lastIndexRef = useRef(null);
+
+  // toast
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const inputRef = useRef(null);
+
+  // ====== derived ======
+  const trimmed = message.trim();
+  const hasSelection = selectedImages.length > 0;
+  const canSend = !isSending && (trimmed.length > 0 || hasSelection);
+
+  const imageSize = useMemo(() => {
     const totalGap = GAP * (gridColumns - 1);
     const totalPad = PADDING_H * 2;
     return (SCREEN_WIDTH - totalPad - totalGap) / gridColumns;
   }, [gridColumns]);
 
-  // ✅ 드래그 선택용
-  const [scrollOffset, setScrollOffset] = useState(0);
-  const [dragMode, setDragMode] = useState(null); // 'add' | 'remove' | null
-  const lastIndexRef = useRef(null);
-
-  const [toastVisible, setToastVisible] = useState(false);
-  const [toastMessage, setToastMessage] = useState('');
-
-  // 갤러리 열고 닫기 외부에서 제어할 수 있게 열어두기
+  // ====== imperative handle ======
   useImperativeHandle(ref, () => ({
-    closeGallery: () => {
-      setShowGallery(false);
-    },
-    openGallery: () => {
-      setShowGallery(true);
-    },
-    toggleGallery: () => {
-      setShowGallery(prev => !prev);
-    },
+    closeGallery: () => setShowGallery(false),
+    openGallery: () => setShowGallery(true),
+    toggleGallery: () => setShowGallery(prev => !prev),
   }));
 
+  // ====== toast ======
   const showToast = useCallback(msg => {
     setToastMessage(msg);
     setToastVisible(true);
   }, []);
 
-  const hideToast = useCallback(() => {
-    setToastVisible(false);
-  }, []);
+  const hideToast = useCallback(() => setToastVisible(false), []);
 
+  // ====== gallery load ======
   const loadPhotos = useCallback(
     async (after = null) => {
       if (!enableMediaPicker) return;
-      const {
-        photos: newPhotos,
-        endCursor: nextCursor,
-        hasNextPage: nextHasNextPage,
-      } = await loadGalleryPhotos(after, PAGE_SIZE);
+
+      const res = await loadGalleryPhotos(after, PAGE_SIZE);
+      const newPhotos = res?.photos ?? [];
+      const nextCursor = res?.endCursor ?? null;
+      const nextHasNextPage = !!res?.hasNextPage;
 
       setPhotos(prev => (after ? [...prev, ...newPhotos] : newPhotos));
       setEndCursor(nextCursor);
@@ -133,43 +136,50 @@ const ChatInput = forwardRef(function ChatInput(
   );
 
   useEffect(() => {
-    if (enableMediaPicker && showGallery) {
-      setEndCursor(null);
-      setHasNextPage(true);
-      setPhotos([]);
-      loadPhotos(null);
-    }
+    if (!enableMediaPicker) return;
+    if (!showGallery) return;
+
+    setEndCursor(null);
+    setHasNextPage(true);
+    setPhotos([]);
+    loadPhotos(null);
   }, [showGallery, enableMediaPicker, loadPhotos]);
 
-  const handleEndReached = async () => {
+  const handleEndReached = useCallback(async () => {
     if (!showGallery) return;
     if (isLoadingMore || !hasNextPage || !endCursor) return;
+
     setIsLoadingMore(true);
     await loadPhotos(endCursor);
     setIsLoadingMore(false);
-  };
+  }, [showGallery, isLoadingMore, hasNextPage, endCursor, loadPhotos]);
 
-  const onRefresh = async () => {
+  const onRefresh = useCallback(async () => {
     if (!showGallery) return;
+
     setIsRefreshing(true);
     await loadPhotos(null);
     setIsRefreshing(false);
-  };
+  }, [showGallery, loadPhotos]);
 
-  const handleSend = async () => {
+  // ====== actions ======
+  const toggleGallery = useCallback(() => {
+    if (!enableMediaPicker) return;
+    Keyboard.dismiss();
+    setShowGallery(prev => !prev);
+  }, [enableMediaPicker]);
+
+  const handleToggleImage = useCallback(item => {
+    setSelectedImages(prev => toggleSelectImage(prev, item));
+  }, []);
+
+  const handleSend = useCallback(async () => {
     if (isSending) return;
 
-    const trimmed = message.trim();
-
-    if (!trimmed && selectedImages.length === 0) {
-      return;
-    }
+    const text = message.trim();
+    if (!text && selectedImages.length === 0) return;
 
     const socket = socketRef?.current;
-    console.log('💬 socket 상태:', {
-      hasSocket: !!socket,
-      readyState: socket?.readyState,
-    });
 
     if (!socket || socket.readyState !== 1) {
       showToast('연결이 불안정해요. 다시 시도해주세요.');
@@ -179,97 +189,95 @@ const ChatInput = forwardRef(function ChatInput(
     try {
       setIsSending(true);
 
-      // 🔹 텍스트 전송
-      if (trimmed) {
-        const newMessage = {
-          content: trimmed,
+      // 1) text
+      if (text) {
+        const payload = {
+          content: text,
           chatRoomId: chatRoom.chatRoomId,
           senderId: userId,
           messageType: 'text',
         };
-        socket.send(JSON.stringify(newMessage));
-        console.log('📤 텍스트 전송:', newMessage);
+        socket.send(JSON.stringify(payload));
         setMessage('');
       }
 
       if (!enableMediaPicker) return;
 
-      // 🔹 이미지/영상 전송
+      // 2) media
       if (selectedImages.length > 0) {
-        try {
-          const fileNames = selectedImages.map((file, index) =>
-            getFileNameWithExtension(file, index),
-          );
-          console.log('📂 요청 fileNames:', fileNames);
+        const fileNames = selectedImages.map((file, index) =>
+          getFileNameWithExtension(file, index),
+        );
 
-          const presignedUrls = await getPresignedUrls(fileNames);
+        const presignedUrls = await getPresignedUrls(fileNames);
 
-          for (let i = 0; i < selectedImages.length; i++) {
-            let fileUri = selectedImages[i].uri;
-            if (Platform.OS === 'ios' && fileUri.startsWith('ph://')) {
-              fileUri = await convertPhUriToFileUri(
-                fileUri,
-                i,
-                selectedImages[i].isVideo,
-              );
-              if (!fileUri) continue;
-            }
-            await uploadFileToS3(presignedUrls[i], fileUri, fileNames[i]);
+        for (let i = 0; i < selectedImages.length; i++) {
+          let fileUri = selectedImages[i].uri;
+
+          if (Platform.OS === 'ios' && fileUri.startsWith('ph://')) {
+            fileUri = await convertPhUriToFileUri(
+              fileUri,
+              i,
+              selectedImages[i].isVideo,
+            );
+            if (!fileUri) continue;
           }
 
-          socket.send(
-            JSON.stringify({
-              messageType: 'IMAGE',
-              chatRoomId: chatRoom.chatRoomId,
-              senderId: userId,
-              imageUrls: fileNames,
-            }),
-          );
-          console.log('🖼️ 여러 이미지/영상 전송됨:', fileNames);
-          setShowGallery(false);
-          setSelectedImages([]);
-        } catch (error) {
-          console.error('이미지 전송 실패:', error);
-          showToast('이미지 전송 중 오류가 발생했어요.');
+          await uploadFileToS3(presignedUrls[i], fileUri, fileNames[i]);
         }
+
+        socket.send(
+          JSON.stringify({
+            messageType: 'IMAGE',
+            chatRoomId: chatRoom.chatRoomId,
+            senderId: userId,
+            imageUrls: fileNames,
+          }),
+        );
+
+        setShowGallery(false);
+        setSelectedImages([]);
       }
+    } catch (e) {
+      console.error(e);
+      showToast('전송 중 오류가 발생했어요.');
     } finally {
       setIsSending(false);
     }
-  };
+  }, [
+    isSending,
+    message,
+    selectedImages,
+    socketRef,
+    showToast,
+    chatRoom?.chatRoomId,
+    userId,
+    enableMediaPicker,
+  ]);
 
-  // ✅ 플러스 버튼 눌렀을 때 키보드 먼저 내리기
-  const toggleGallery = () => {
-    if (!enableMediaPicker) return;
-    Keyboard.dismiss(); // 🔹 여기 추가
-    setShowGallery(prev => !prev);
-  };
-
-  const handleToggleImage = item => {
-    setSelectedImages(prev => toggleSelectImage(prev, item));
-  };
-
-  // ✅ 드래그 모드에 따라 선택/해제 업데이트
+  // ====== drag select helpers ======
   const updateSelectionByMode = useCallback((item, mode) => {
     if (!item) return;
     setSelectedImages(prev => {
       const exists = prev.some(f => f.uri === item.uri);
+
       if (mode === 'add') {
         if (exists) return prev;
         return [...prev, item];
       }
+
       if (mode === 'remove') {
         if (!exists) return prev;
         return prev.filter(f => f.uri !== item.uri);
       }
+
       return prev;
     });
   }, []);
 
-  // ✅ 드래그 위치(x, y)에서 어떤 셀인지 계산해서 선택/해제
   const handleDragAtLocation = useCallback(
     (x, y, isStart = false) => {
-      if (!photos || photos.length === 0) return;
+      if (!photos?.length) return;
 
       const localX = x - PADDING_H;
       if (localX < 0) return;
@@ -304,20 +312,19 @@ const ChatInput = forwardRef(function ChatInput(
     },
     [
       photos,
+      imageSize,
+      gridColumns,
       scrollOffset,
       selectedImages,
       dragMode,
       updateSelectionByMode,
-      imageSize,
-      gridColumns,
     ],
   );
 
-  // ✅ 가로 드래그 선택용 PanResponder
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (evt, gestureState) => {
+      onMoveShouldSetPanResponder: (_, gestureState) => {
         const {dx, dy} = gestureState;
         return Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy);
       },
@@ -340,63 +347,63 @@ const ChatInput = forwardRef(function ChatInput(
     }),
   ).current;
 
-  // 🔹 Pinch 제스처: 2~4 컬럼 변경 (Gesture API)
-  // 🔹 Pinch 제스처: 2~4 컬럼 변경 (Gesture API)
-  const pinchGesture = Gesture.Pinch()
-    .runOnJS(true) // ✅ 콜백을 JS 스레드에서 실행하게 강제
-    .onEnd(e => {
-      const {scale} = e;
+  // ====== pinch gesture ======
+  const pinchGesture = useMemo(() => {
+    return Gesture.Pinch()
+      .runOnJS(true)
+      .onEnd(e => {
+        const {scale} = e;
 
-      setGridColumns(prev => {
-        let next = prev;
+        setGridColumns(prev => {
+          let next = prev;
 
-        // 손가락 벌리기 → 확대 → 컬럼 줄이기
-        if (scale > 1.07 && prev > 2) {
-          next = prev - 1;
-        }
-        // 손가락 오므리기 → 축소 → 컬럼 늘리기
-        else if (scale < 0.93 && prev < 4) {
-          next = prev + 1;
-        }
+          if (scale > 1.07 && prev > 2) next = prev - 1;
+          else if (scale < 0.93 && prev < 4) next = prev + 1;
 
-        if (next !== prev) {
-          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-        }
-        return next;
+          if (next !== prev) {
+            LayoutAnimation.configureNext(
+              LayoutAnimation.Presets.easeInEaseOut,
+            );
+          }
+          return next;
+        });
       });
-    });
+  }, []);
 
-  const renderPhoto = ({item}) => {
-    const isSelected = selectedImages.some(f => f.uri === item.uri);
-    const order = getSelectOrder(selectedImages, item.uri);
+  // ====== render items ======
+  const renderPhoto = useCallback(
+    ({item}) => {
+      const isSelected = selectedImages.some(f => f.uri === item.uri);
+      const order = getSelectOrder(selectedImages, item.uri);
 
-    return (
-      <TouchableOpacity onPress={() => handleToggleImage(item)}>
-        <View style={[styles.tile, {width: imageSize, height: imageSize}]}>
-          <Image source={{uri: item.uri}} style={styles.tileImage} />
-          {item.isVideo && (
-            <View style={styles.videoBadge}>
-              <Text style={styles.videoBadgeText}>
-                {formatDuration(item.duration)}
-              </Text>
-            </View>
-          )}
-          {isSelected && <View style={styles.tileSelectedOverlay} />}
-          {isSelected && (
-            <View style={styles.orderBadge}>
-              <Text style={styles.orderBadgeText}>{order}</Text>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
-    );
-  };
+      return (
+        <TouchableOpacity onPress={() => handleToggleImage(item)}>
+          <View style={[styles.tile, {width: imageSize, height: imageSize}]}>
+            <Image source={{uri: item.uri}} style={styles.tileImage} />
 
-  const hasSelection = selectedImages.length > 0;
-  const trimmed = message.trim();
-  const canSend =
-    !isSending && (trimmed.length > 0 || selectedImages.length > 0);
+            {item.isVideo && (
+              <View style={styles.videoBadge}>
+                <Text style={styles.videoBadgeText}>
+                  {formatDuration(item.duration)}
+                </Text>
+              </View>
+            )}
 
+            {isSelected && <View style={styles.tileSelectedOverlay} />}
+
+            {isSelected && (
+              <View style={styles.orderBadge}>
+                <Text style={styles.orderBadgeText}>{order}</Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+      );
+    },
+    [selectedImages, handleToggleImage, imageSize],
+  );
+
+  // ====== UI ======
   return (
     <SafeAreaView>
       <View style={styles.innerContainer}>
@@ -411,7 +418,7 @@ const ChatInput = forwardRef(function ChatInput(
               onPress={toggleGallery}
               disabled={isSending}>
               <FastImage
-                source={{uri: 'https://i.postimg.cc/yxdVHRq7/Group-478.png'}}
+                source={{uri: ICON_PLUS}}
                 style={[styles.icon, isSending && {opacity: 0.4}]}
               />
             </TouchableOpacity>
@@ -422,22 +429,19 @@ const ChatInput = forwardRef(function ChatInput(
             style={styles.input}
             value={message}
             onChangeText={setMessage}
-            placeholderTextColor="#999"
             placeholder="메시지를 입력하세요"
+            placeholderTextColor="#999"
             returnKeyType="send"
-            onFocus={() => {
-              // 🔹 입력창 눌렀을 때 갤러리 열려 있으면 먼저 닫기
-              if (showGallery) {
-                setShowGallery(false);
-              }
-            }}
             editable={!isSending}
+            onFocus={() => {
+              if (showGallery) setShowGallery(false);
+            }}
             onSubmitEditing={() => {
               if (!isSending) handleSend();
             }}
           />
 
-          {message.length > 0 && !isSending && (
+          {/* {message.length > 0 && !isSending && (
             <TouchableOpacity
               style={styles.clearButton}
               onPress={() => setMessage('')}>
@@ -446,28 +450,36 @@ const ChatInput = forwardRef(function ChatInput(
                 style={styles.clearIcon}
               />
             </TouchableOpacity>
-          )}
-        </View>
+          )} */}
 
-        <TouchableOpacity
-          onPress={handleSend}
-          style={[styles.sendButton, canSend && styles.sendButtonActive]}
-          disabled={!canSend}>
-          {hasSelection ? (
-            <View style={[styles.sendCountBubble, !canSend && {opacity: 0.5}]}>
-              <Text style={styles.sendCountText}>{selectedImages.length}</Text>
-            </View>
-          ) : (
-            <FastImage
-              resizeMode="contain"
-              source={{uri: 'https://i.postimg.cc/fLWscdRY/Group-477-1.png'}}
-              style={[
-                styles.icon,
-                canSend ? styles.sendIconActive : styles.sendIconInactive,
-              ]}
-            />
-          )}
-        </TouchableOpacity>
+          {/* send button (input 안쪽) */}
+          <TouchableOpacity
+            onPress={handleSend}
+            style={[
+              styles.sendButton,
+              {paddingRight: getResponsiveWidth(5)},
+              canSend && styles.sendButtonActive,
+            ]}
+            disabled={!canSend}>
+            {hasSelection ? (
+              <View
+                style={[styles.sendCountBubble, !canSend && {opacity: 0.5}]}>
+                <Text style={styles.sendCountText}>
+                  {selectedImages.length}
+                </Text>
+              </View>
+            ) : (
+              // ✅ tintColor 먹이려고 send만 Image 사용
+              <Image
+                source={{uri: ICON_SEND}}
+                style={[
+                  styles.sendIcon,
+                  canSend ? styles.sendIconWhite : styles.sendIconInactive,
+                ]}
+              />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {enableMediaPicker && (
@@ -485,7 +497,7 @@ const ChatInput = forwardRef(function ChatInput(
               <View style={{flex: 1}}>
                 <FlatList
                   data={photos}
-                  key={`chat-gallery-${gridColumns}`} // 컬럼 바뀔 때 리렌더
+                  key={`chat-gallery-${gridColumns}`}
                   keyExtractor={(item, index) => item.uri + index}
                   renderItem={renderPhoto}
                   numColumns={gridColumns}
@@ -525,9 +537,9 @@ const ChatInput = forwardRef(function ChatInput(
     </SafeAreaView>
   );
 });
+
 export default ChatInput;
 
-// 이하 styles 그대로 유지
 const styles = StyleSheet.create({
   innerContainer: {
     flexDirection: 'row',
@@ -539,20 +551,21 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderColor: '#ddd',
   },
+
   inputContainer: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    height:
-      Platform.OS === 'android'
-        ? getResponsiveHeight(45)
-        : getResponsiveHeight(42),
+    height: getResponsiveHeight(45),
     borderWidth: 1,
     borderColor: '#FFC84D',
     borderRadius: getResponsiveWidth(30),
     backgroundColor: 'rgba(255, 231, 178, 0.2)',
-    paddingHorizontal: getResponsiveWidth(10),
+    paddingHorizontal: getResponsiveWidth(8),
   },
+
+  inputPlusButton: {marginRight: getResponsiveWidth(5)},
+
   input: {
     flex: 1,
     height: '100%',
@@ -561,30 +574,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(4),
     textAlignVertical: 'center',
   },
-  inputPlusButton: {marginRight: getResponsiveWidth(6)},
 
-  icon: {
-    width: getResponsiveIconSize(25),
-    height: getResponsiveIconSize(25),
-    resizeMode: 'contain',
-  },
-  sendCountBubble: {
-    minWidth: getResponsiveWidth(25),
-    height: getResponsiveWidth(25),
-    borderRadius: getResponsiveWidth(13),
-    backgroundColor: '#FFC84D',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: getResponsiveWidth(6),
-  },
-  sendCountText: {
-    color: 'white',
-    fontWeight: '600',
-    fontSize: getResponsiveIconSize(15),
-    includeFontPadding: false,
-    textAlignVertical: 'center',
-    fontFamily: 'Pretendard-Medium',
-  },
   clearButton: {
     paddingHorizontal: getResponsiveWidth(4),
     justifyContent: 'center',
@@ -595,6 +585,64 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(18),
     height: getResponsiveWidth(18),
   },
+
+  icon: {
+    width: getResponsiveIconSize(30),
+    height: getResponsiveIconSize(30),
+    resizeMode: 'contain',
+  },
+
+  // send
+  sendButton: {
+    paddingVertical: getResponsiveWidth(5),
+    paddingLeft: getResponsiveWidth(5),
+    paddingRight: getResponsiveWidth(7),
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent',
+    borderRadius: getResponsiveWidth(20),
+  },
+  sendButtonActive: {
+    backgroundColor: '#FFC84D',
+    borderRadius: getResponsiveWidth(20),
+  },
+  sendIcon: {
+    width: getResponsiveIconSize(20),
+    height: getResponsiveIconSize(20),
+    resizeMode: 'contain',
+  },
+  sendIconWhite: {
+    tintColor: '#FFFFFF',
+    opacity: 1,
+    transform: [{scale: 0.85}],
+  },
+  sendIconInactive: {
+    tintColor: '#FFC84D',
+    opacity: 1,
+    transform: [{scale: 0.85}],
+  },
+
+  sendCountBubble: {
+    minWidth: getResponsiveWidth(18),
+    height: getResponsiveWidth(18),
+    borderRadius: getResponsiveWidth(10),
+    backgroundColor: '#FFC84D',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 0,
+  },
+  sendCountText: {
+    color: 'white',
+    fontWeight: '600',
+    fontSize: getResponsiveIconSize(14),
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    fontFamily: 'Pretendard-Medium',
+  },
+
+  // gallery
   galleryContainer: {
     maxHeight: getResponsiveHeight(300),
     backgroundColor: '#fff',
@@ -609,6 +657,7 @@ const styles = StyleSheet.create({
   columnWrapper: {
     columnGap: GAP,
   },
+
   tile: {
     marginBottom: GAP,
     borderRadius: getResponsiveWidth(1),
@@ -649,11 +698,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     textAlignVertical: 'center',
   },
-  footer: {
-    textAlign: 'center',
-    paddingVertical: getResponsiveHeight(4),
-    color: '#666',
-  },
+
   videoBadge: {
     position: 'absolute',
     bottom: getResponsiveWidth(6),
@@ -669,6 +714,7 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveIconSize(12),
     fontWeight: '600',
   },
+
   bottomFade: {
     position: 'absolute',
     left: 0,
@@ -676,32 +722,11 @@ const styles = StyleSheet.create({
     bottom: -1,
     height: getResponsiveHeight(30),
   },
-  sendButtonActive: {
-    // backgroundColor: 'rgba(255, 200, 77, 0.25)', // ✅ 활성화 배경
-    backgroundColor: 'rgba(255, 231, 178, 0.2)',
 
-    borderColor: '#FFC84D', // ✅ 테두리도 살짝 강조
-    borderWidth: 1,
-    borderRadius: getResponsiveWidth(20),
-    // transform: [{scale: 1.06}], // ✅ 살짝 커지게
-  },
-
-  sendIconInactive: {
-    opacity: 0.8, // ✅ 비활성 흐리게
-    transform: [{scale: 1}],
-  },
-
-  sendIconActive: {
-    opacity: 1,
-    // transform: [{scale: 1.06}],                  // ✅ 활성일 때만 살짝 커짐
-  },
-
-  sendButton: {
-    padding: getResponsiveWidth(7),
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'transparent', // ✅ 기본은 티 안 나게
-    borderRadius: getResponsiveWidth(20),
+  footer: {
+    textAlign: 'center',
+    paddingVertical: getResponsiveHeight(4),
+    color: '#666',
   },
 });
+

@@ -27,18 +27,18 @@ export default function CommunicationScreen({navigation}) {
   const {familyId} = useSelector(s => s.family);
   const {chatRoomList, loading, listRevision} = useSelector(s => s.chatRoom);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   const load = useCallback(() => {
-    console.log('[CommunicationScreen] load 호출', { familyId, userId });
-  
+    console.log('[CommunicationScreen] load 호출', {familyId, userId});
+
     if (familyId != null && userId != null) {
       console.log('[CommunicationScreen] fetchChatRoomListThunk 디스패치');
       dispatch(fetchChatRoomListThunk(familyId, userId));
     } else {
-      console.log(
-        '[CommunicationScreen] 조건 불만족으로 fetch 생략',
-        { familyId, userId },
-      );
+      console.log('[CommunicationScreen] 조건 불만족으로 fetch 생략', {
+        familyId,
+        userId,
+      });
     }
   }, [dispatch, familyId, userId]);
 
@@ -64,39 +64,39 @@ export default function CommunicationScreen({navigation}) {
     //   rightTo="일정" // 오른쪽→왼쪽 스와이프
     //   leftTo="홈" // 필요하면 다른 화면 넣기
     // >
-      <View style={styles.container}>
-        {loading && chatRoomList.length === 0 ? (
-          <View style={styles.loaderWrapper}>
-            <YellowSpinner />
-          </View>
-        ) : (
-          <FlatList
-            data={chatRoomList}
-            key={`chatlist-${listRevision}`}
-            renderItem={renderItem}
-            extraData={listRevision}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-            ListEmptyComponent={
-              <Text style={styles.noChatMessage}>
-                {'아직 채팅방이 없어요.\n가족과의 첫 대화를 시작해볼까요?'}
-              </Text>
-            }
-          />
-        )}
+    <View style={styles.container}>
+      {loading && chatRoomList.length === 0 ? (
+        <View style={styles.loaderWrapper}>
+          <YellowSpinner />
+        </View>
+      ) : (
+        <FlatList
+          data={chatRoomList}
+          key={`chatlist-${listRevision}`}
+          renderItem={renderItem}
+          extraData={listRevision}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          ListEmptyComponent={
+            <Text style={styles.noChatMessage}>
+              {'아직 채팅방이 없어요.\n가족과의 첫 대화를 시작해볼까요?'}
+            </Text>
+          }
+        />
+      )}
 
-        <TouchableOpacity
-          onPress={() => navigation.navigate('채팅방생성화면')}
-          style={styles.fab}>
-          <FastImage
-            source={require('../../../assets/icons/chat-floating-bt.png')}
-            style={{width: '100%', height: '100%', resizeMode: 'contain'}}
-          />
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity
+        onPress={() => navigation.navigate('채팅방생성화면')}
+        style={styles.fab}>
+        <FastImage
+          source={require('../../../assets/icons/chat-floating-bt.png')}
+          style={{width: '100%', height: '100%', resizeMode: 'contain'}}
+        />
+      </TouchableOpacity>
+    </View>
     // </SwipeNavigator>
   );
 }

@@ -6,14 +6,16 @@ import {
   setMessageLoading,
   setMessageError,
   setSendMessage,
+  setMessageFetched, // ✅ 추가
 } from './messageSlice';
 import {applyMessagePreview, bumpListRevision} from './chatRoomSlice';
-
 
 // ✅ 초기 메시지 로딩 (덮어쓰기)
 export const fetchMessageThunk = (chatRoomId, before = null, limit = 20) => {
   return async dispatch => {
     dispatch(setMessageLoading(true));
+    dispatch(setMessageFetched(false)); // ✅ 요청 시작 시 false
+
     try {
       const token = await getToken();
 
@@ -31,11 +33,11 @@ export const fetchMessageThunk = (chatRoomId, before = null, limit = 20) => {
       console.log('fetchMesssage', response.data);
 
       dispatch(setMessageList(response.data)); // ✅ 최신 → 오래된 순서 그대로
-
       dispatch(bumpListRevision()); // ⭐️ 선택 (보수적으로 리렌더 보장)
-
+      dispatch(setMessageFetched(true)); // ✅ 성공하면 true
     } catch (error) {
       dispatch(setMessageError(error.message));
+      dispatch(setMessageFetched(true)); // ✅ 실패해도 “끝난 건 끝난 거”라 true
     } finally {
       dispatch(setMessageLoading(false));
     }
@@ -59,7 +61,6 @@ export const fetchMoreMessagesThunk = (chatRoomId, beforeTime) => {
       });
 
       console.log('fetchMoreMesssage', response.data);
-
 
       dispatch(appendMessageList(response.data)); // ✅ 뒤에 붙이기
 

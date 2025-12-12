@@ -16,16 +16,49 @@ export default function MessageFlatList({
   loadOlderMessages,
   handleScroll,
   scrollToBottom,
+  isMessageFetched
 }) {
-  const [showKinoTyping, setShowKinoTyping] = useState(false); // 키노 ... 말풍선
-  const [introSequenceRunning, setIntroSequenceRunning] = useState(false); // 첫 입장 연출 중인지
-  const [showIntroMessage, setShowIntroMessage] = useState(false); // 인트로 말풍선 실제 노출 여부
+  const [showKinoTyping, setShowKinoTyping] = useState(false);
+  const [introSequenceRunning, setIntroSequenceRunning] = useState(false);
+  const [showIntroMessage, setShowIntroMessage] = useState(false);
+  const [isInitialLoaded, setIsInitialLoaded] = useState(false);
 
-  const typingTimeoutRef = useRef(null); // 유저 발화용 타이핑 타이머
+  const typingTimeoutRef = useRef(null);
 
-  // ✅ 1) 키노방 + 채팅방별로 “처음 입장인지” 체크 (처음만 . . . → 인트로)
+  /* ===============================
+   * 채팅방 변경 시 상태 리셋
+   * =============================== */
+  useEffect(() => {
+    setIsInitialLoaded(false);
+    setShowKinoTyping(false);
+    setIntroSequenceRunning(false);
+    setShowIntroMessage(false);
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
+    }
+  }, [chatRoom?.chatRoomId]);
+
+  /* ===============================
+   * 초기 메시지 로딩 완료 감지
+   * =============================== */
+  useEffect(() => {
+    if (!chatRoom?.chatRoomId) return;
+
+    // ✅ 메시지가 0개여도 "fetch가 끝났으면" 초기 로딩 완료로 인정
+    if (isMessageFetched) {
+      setIsInitialLoaded(true);
+    }
+  }, [chatRoom?.chatRoomId, isMessageFetched]);
+  
+
+  /* ===============================
+   * 1️⃣ 키노 인트로 연출 (초기 로딩 이후에만)
+   * =============================== */
   useEffect(() => {
     if (!isKino || !chatRoom?.chatRoomId) return;
+    if (!isInitialLoaded) return;
 
     const storageKey = `kino_intro_shown_${chatRoom.chatRoomId}`;
     let timer;
@@ -34,27 +67,22 @@ export default function MessageFlatList({
       try {
         const alreadyShown = await AsyncStorage.getItem(storageKey);
 
-        // ✅ 이미 인트로를 본 방이면: 인트로만 항상 노출, 자동 ... 없음
         if (alreadyShown === 'true') {
-          setShowKinoTyping(false);
-          setIntroSequenceRunning(false);
-          setShowIntroMessage(true); // 인트로는 채팅 히스토리처럼 계속 보이게
+          setShowIntroMessage(true);
           return;
         }
 
-        // ✅ 처음 들어온 방: . . . → 인트로 순서
         setIntroSequenceRunning(true);
-        setShowKinoTyping(true); // 처음엔 . . . 만 보임
-        setShowIntroMessage(false); // 인트로는 숨김
+        setShowKinoTyping(true);
+        setShowIntroMessage(false);
 
         timer = setTimeout(async () => {
-          setShowKinoTyping(false); // . . . 숨기고
+          setShowKinoTyping(false);
           setIntroSequenceRunning(false);
-          setShowIntroMessage(true); // 인트로 등장
+          setShowIntroMessage(true);
           await AsyncStorage.setItem(storageKey, 'true');
         }, 1500);
-      } catch (e) {
-        // 에러 나면 그냥 인트로만 보여주고 끝
+      } catch {
         setShowKinoTyping(false);
         setIntroSequenceRunning(false);
         setShowIntroMessage(true);
@@ -66,19 +94,19 @@ export default function MessageFlatList({
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [isKino, chatRoom?.chatRoomId]);
+  }, [isKino, chatRoom?.chatRoomId, isInitialLoaded]);
 
-  // ✅ 2) 유저가 새 메시지 보낼 때마다: 0.5초 뒤 키노 타이핑 말풍선 표시
+  /* ===============================
+   * 2️⃣ 유저 메시지 이후 키노 타이핑 (. . .)
+   * =============================== */
   useEffect(() => {
     if (!isKino) return;
+    if (!isInitialLoaded) return;
     if (!messageList || messageList.length === 0) return;
-
-    // 입장 첫 연출 도는 중이면, 유저 발화 기반 타이핑은 잠깐 막기
     if (introSequenceRunning) return;
 
-    const latest = messageList[0]; // 🔹 inverted라 0번이 "최신"이라고 가정
+    const latest = messageList[0]; // inverted 기준 최신
 
-    // 최신 메시지가 유저가 아니면: 타이핑 끄고, 타이머 정리
     if (!latest || latest.senderId !== userId) {
       setShowKinoTyping(false);
       if (typingTimeoutRef.current) {
@@ -88,12 +116,10 @@ export default function MessageFlatList({
       return;
     }
 
-    // 로컬 타입(타이핑/인트로) 메시지면 무시
     if (latest.localType === 'kinoTyping' || latest.localType === 'kinoIntro') {
       return;
     }
 
-    // 유저가 새 메시지를 보냈을 때: 0.5초 후 `. . .` 표시
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
@@ -107,9 +133,11 @@ export default function MessageFlatList({
         clearTimeout(typingTimeoutRef.current);
       }
     };
-  }, [messageList, isKino, userId, introSequenceRunning]);
+  }, [messageList, isKino, userId, introSequenceRunning, isInitialLoaded]);
 
-  // ✅ 키노 자기소개 메시지
+  /* ===============================
+   * 키노 로컬 메시지 정의
+   * =============================== */
   const kinoIntroMessage = {
     messageId: 'kino-intro',
     senderId: 0,
@@ -119,7 +147,6 @@ export default function MessageFlatList({
     localType: 'kinoIntro',
   };
 
-  // ✅ 키노 타이핑 메시지
   const kinoTypingMessage = {
     messageId: 'kino-typing',
     senderId: 0,
@@ -128,39 +155,48 @@ export default function MessageFlatList({
     localType: 'kinoTyping',
   };
 
-  // ✅ 최종 메시지 리스트 생성
+  /* ===============================
+   * 최종 메시지 리스트
+   * =============================== */
   const finalMessages = useMemo(() => {
     let result = [...messageList];
 
-    if (isKino) {
-      // ✨ 인트로는 showIntroMessage가 true일 때만 붙이기
+    if (isKino && isInitialLoaded) {
       if (showIntroMessage) {
-        result = [...result, kinoIntroMessage]; // 오래된 쪽에 동작하도록 뒤에 붙임
+        result = [...result, kinoIntroMessage];
       }
-
-      // ✨ 타이핑 말풍선은 항상 "가장 최신" 위치에
       if (showKinoTyping) {
-        result = [kinoTypingMessage, ...result]; // inverted 기준 맨 아래쪽
+        result = [kinoTypingMessage, ...result];
       }
     }
 
     return result;
-  }, [messageList, isKino, showIntroMessage, showKinoTyping]);
+  }, [messageList, isKino, showIntroMessage, showKinoTyping, isInitialLoaded]);
 
   return (
     <FlatList
       ref={flatListRef}
       data={finalMessages}
-      keyExtractor={item => `${item.messageId}_${item.createdAt}`}
+      keyExtractor={(item, index) => {
+        // 서버 메시지: messageId가 있으면 그게 제일 안전
+        if (item?.messageId) return String(item.messageId);
+
+        // 로컬(typing/intro) 같은 경우
+        if (item?.localType)
+          return `${item.localType}_${item.createdAt ?? index}`;
+
+        // 최후의 수단
+        return `${item.senderId ?? 'x'}_${item.createdAt ?? 't'}_${index}`;
+      }}
       renderItem={({item, index}) => {
-        const prev = finalMessages[index + 1]; // inverted라 +1이 "이전(위쪽)" 메시지
+        const prev = finalMessages[index + 1];
         const prevDate = prev?.createdAt
           ? new Date(prev.createdAt).toDateString()
           : null;
         const curDate = new Date(item.createdAt).toDateString();
         const shouldShowDate = curDate !== prevDate;
 
-        const isSameSenderAsPrev = prev?.senderId === item.senderId;
+        const isGrouped = prev?.senderId === item.senderId;
 
         return (
           <ChatMessageItem
@@ -168,8 +204,9 @@ export default function MessageFlatList({
             message={item}
             currentUserId={userId}
             isKino={isKino}
+            kinoType={chatRoom.kinoType}
             shouldShowDate={shouldShowDate}
-            isGrouped={isSameSenderAsPrev}
+            isGrouped={isGrouped}
           />
         );
       }}
@@ -179,22 +216,12 @@ export default function MessageFlatList({
       ListFooterComponent={
         isFetchingMore && <ActivityIndicator size="small" color="#aaa" />
       }
-      ListHeaderComponent={
-        <View
-          style={{
-            height: getResponsiveHeight(30),
-          }}></View>
-      }
+      ListHeaderComponent={<View style={{height: getResponsiveHeight(30)}} />}
       removeClippedSubviews={false}
       onScroll={handleScroll}
       scrollEventThrottle={30}
-      onScrollToIndexFailed={() => setTimeout(scrollToBottom, 300)}
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
-      maintainVisibleContentPosition={{
-        minIndexForVisible: 1, // 현재 화면에 보이는 index 기준
-        autoscrollToTopThreshold: 50, // 아래쪽 근처(=최신)일 때만 자동으로 붙여 줌
-      }}
     />
   );
 }

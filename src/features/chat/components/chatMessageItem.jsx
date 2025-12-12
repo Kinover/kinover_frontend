@@ -20,6 +20,7 @@ export default function ChatMessageItem({
   isKino = false,
   shouldShowDate = false,
   isGrouped,
+  kinoType,
 }) {
   const navigation = useNavigation();
   const isMe = message.senderId === currentUserId;
@@ -59,6 +60,7 @@ export default function ChatMessageItem({
         isGrouped={false}
         isSameSender={false}
         isTyping={true}
+        kinoType={kinoType}
       />
     );
   }
@@ -86,6 +88,7 @@ export default function ChatMessageItem({
         message={message.content}
         chatTime={message.createdAt}
         isGrouped={isGrouped}
+        kinoType={kinoType}
       />
     ) : (
       <ReceiveChat

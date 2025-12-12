@@ -1,35 +1,29 @@
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useRef, useState, useCallback} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchMessageThunk, fetchMoreMessagesThunk} from '../store/messageThunk';
 import {addMessage} from '../store/messageSlice';
 import {getToken} from 'utils/storage';
 
-// ✅ userId 숫자를 받도록 변경
 export default function useChatRoomScreen(chatRoom, userId, isKino) {
   const messageList = useSelector(state => state.message?.messageList || []);
 
   const flatListRef = useRef(null);
   const isAtBottomRef = useRef(true);
   const dispatch = useDispatch();
+
   const socketRef = useRef(null);
+  const prevRoomIdRef = useRef(null);
+  const reconnectTimerRef = useRef(null);
+  const reconnectAttemptRef = useRef(0);
 
   const [noMoreMessages, setNoMoreMessages] = useState(false);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
-  const scrollToBottom = () => {
-    if (
-      isAtBottomRef.current &&
-      flatListRef.current &&
-      messageList.length > 0
-    ) {
-      flatListRef.current.scrollToIndex({
-        index: 0,
-        animated: true,
-        viewPosition: 30,
-      });
-    }
-  };
+  const scrollToBottom = useCallback(() => {
+    if (!flatListRef.current) return;
+    flatListRef.current.scrollToOffset({offset: 0, animated: true});
+  }, []);
 
   const handleScroll = event => {
     const y = event.nativeEvent.contentOffset.y;
@@ -60,72 +54,93 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
     }
   }, [chatRoom?.chatRoomId, dispatch]);
 
-  useEffect(() => {
-    const setupWebSocket = async () => {
-      const token = await getToken();
+  const connect = useCallback(async () => {
+    const roomId = chatRoom?.chatRoomId;
+    if (!roomId || !userId) return;
 
-      console.log('[WS /chat] params', {
-        chatRoomId: chatRoom?.chatRoomId,
-        userId,
-        hasToken: !!token,
-      });
+    const token = await getToken();
+    if (!token) return;
 
-      // ✅ 숫자 userId 기준으로 조건 체크
-      if (!chatRoom?.chatRoomId || !userId || !token) {
-        console.log('[WS /chat] 필수 값 없음, 연결 안 함');
-        return;
-      }
+    // ✅ 같은 방인데 이미 살아있으면 재연결 금지
+    if (
+      prevRoomIdRef.current === roomId &&
+      socketRef.current &&
+      socketRef.current.readyState === 1
+    ) {
+      return;
+    }
 
-      if (socketRef.current) {
-        socketRef.current.close();
-      }
+    prevRoomIdRef.current = roomId;
 
-      const ws = new WebSocket(`ws://kinover.shop:9090/chat?token=${token}`);
-      socketRef.current = ws;
+    // 기존 소켓/타이머 정리
+    if (reconnectTimerRef.current) {
+      clearTimeout(reconnectTimerRef.current);
+      reconnectTimerRef.current = null;
+    }
+    socketRef.current?.close();
 
-      ws.onopen = () => console.log('✅ WebSocket /chat 연결 성공');
-      // ws.onmessage = e => {
-      //   try {
-      //     const msg = JSON.parse(e.data);
-      //     dispatch(addMessage(msg));
-      //     if (isAtBottomRef.current) {
-      //       setTimeout(scrollToBottom, 100);
-      //     }
-      //   } catch (err) {
-      //     console.error('❌ 메시지 파싱 실패:', err);
-      //   }
-      // };
-      ws.onmessage = e => {
-        try {
-          const msg = JSON.parse(e.data);
-          dispatch(addMessage(msg));
-      
-          const isMyMessage = msg.senderId === userId;
-      
-          // 최신 위치에 있고 + 내가 보낸 메시지일 때만 부드럽게 붙어주기
-          if (isAtBottomRef.current && isMyMessage) {
-            setTimeout(scrollToBottom, 80);
-          }
-        } catch (err) {
-          console.error('❌ 메시지 파싱 실패:', err);
-        }
-      };
-      ws.onerror = err => console.error('⚠️ WebSocket 오류:', err);
-      ws.onclose = () => console.log('🔌 WebSocket 종료');
+    console.log('[WS /chat] connect', {roomId, userId});
+
+    const ws = new WebSocket(`ws://kinover.shop:9090/chat?token=${token}`);
+    socketRef.current = ws;
+
+    ws.onopen = () => {
+      reconnectAttemptRef.current = 0;
+      console.log('✅ WebSocket /chat 연결 성공');
     };
 
-    setupWebSocket();
+    ws.onmessage = e => {
+      try {
+        const msg = JSON.parse(e.data);
+        dispatch(addMessage(msg));
+
+        const isMyMessage = msg.senderId === userId;
+        if (isAtBottomRef.current && isMyMessage) {
+          setTimeout(scrollToBottom, 80);
+        }
+      } catch (err) {
+        console.error('❌ 메시지 파싱 실패:', err);
+      }
+    };
+
+    ws.onerror = err => {
+      console.error('⚠️ WebSocket 오류:', err);
+    };
+
+    ws.onclose = e => {
+      console.log('🔌 WebSocket 종료', {
+        code: e.code,
+        reason: e.reason,
+        wasClean: e.wasClean,
+      });
+
+      // ✅ 간단 재연결 (너무 빡세지 않게 1~5초 백오프)
+      const attempt = reconnectAttemptRef.current++;
+      const delay = Math.min(1000 * (attempt + 1), 5000);
+
+      reconnectTimerRef.current = setTimeout(() => {
+        // 화면이 살아있고 같은 방일 때만 재연결
+        if (prevRoomIdRef.current === roomId) connect();
+      }, delay);
+    };
+  }, [chatRoom?.chatRoomId, userId, dispatch, scrollToBottom]);
+
+  useEffect(() => {
+    connect();
+
     return () => {
+      // 방 나갈 때만 정리
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, [chatRoom?.chatRoomId, userId]); // ✅ userId 의존성으로 사용
+  }, [connect]);
 
   useEffect(() => {
     if (isAtBottomRef.current && messageList.length > 0) {
       scrollToBottom();
     }
-  }, [messageList.length]); // scrollToBottom 은 함수라 dep 에 안 넣는 게 안전
+  }, [messageList.length, scrollToBottom]);
 
   return {
     flatListRef,
@@ -140,3 +155,4 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
     isUserScrolling,
   };
 }
+

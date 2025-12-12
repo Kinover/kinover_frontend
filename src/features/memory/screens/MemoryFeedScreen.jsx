@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(8),
   },
   dateText: {
-    fontSize: getResponsiveFontSize(12),
+    fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-Regular',
     color: '#9CA3AF',
   },
@@ -410,7 +410,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4FF',
   },
   badgeText: {
-    fontSize: getResponsiveFontSize(11.5),
+    fontSize: getResponsiveFontSize(12),
     fontFamily: 'Pretendard-Medium',
     color: '#4B5563',
   },

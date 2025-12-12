@@ -144,7 +144,7 @@ export default function MemberGridSection({
     <Shadow
       distance={7} // 그림자 퍼짐 정도
       offset={[0, 0]} // x, y 오프셋
-      startColor="rgba(15, 23, 42, 0.16)" // 가장 진한 부분
+      startColor="rgba(0,0,0,0.1)"
       endColor="rgba(15, 23, 42, 0.01)" // 바깥쪽으로 갈수록 옅어지게
       radius={getResponsiveIconSize(10)} // 모서리 둥글기
       style={{

@@ -28,8 +28,6 @@ import {
 import {getSpacingStyle} from '../utils/getSpacingStyle';
 import {CHATROOM_STYLE} from 'styles/style';
 
-import kinoProfile from '../../../assets/images/kino-yellow.png';
-
 const AVATAR_W = getResponsiveWidth(35);
 
 export default function ReceiveKinoChat({
@@ -40,7 +38,18 @@ export default function ReceiveKinoChat({
   isGrouped = false,
   isSameSender = false,
   isTyping = false,
+  kinoType = 'YELLOW_KINO',
 }) {
+  const KINO_PROFILE_MAP = {
+    YELLOW_KINO: require('../../../assets/images/kino-yellow.png'),
+    BLUE_KINO: require('../../../assets/images/kino-blue.png'),
+    PINK_KINO: require('../../../assets/images/kino-pink.png'),
+  };
+
+  const getKinoProfileSource = kinoType =>
+    KINO_PROFILE_MAP[kinoType] ?? KINO_PROFILE_MAP.YELLOW_KINO;
+  const kinoProfileSource = getKinoProfileSource(kinoType);
+
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showTime, setShowTime] = useState(false);
@@ -125,7 +134,7 @@ export default function ReceiveKinoChat({
     return (
       <View style={[styles.receivedContainer, spacingStyle]}>
         <FastImage
-          source={kinoProfile}
+          source={kinoProfileSource}
           style={styles.kinoProfileImage}
           resizeMode={FastImage.resizeMode.contain}
         />
@@ -157,7 +166,7 @@ export default function ReceiveKinoChat({
   return (
     <View style={[styles.receivedContainer, spacingStyle]}>
       <FastImage
-        source={kinoProfile}
+        source={kinoProfileSource}
         style={styles.kinoProfileImage}
         resizeMode={FastImage.resizeMode.contain}
       />
@@ -210,9 +219,9 @@ const styles = StyleSheet.create({
   userName: {
     fontFamily: 'Pretendard-Medium',
     fontSize:
-    Platform.OS === 'android'
-      ? getResponsiveFontSize(14) // 🔽 14 → 12
-      : getResponsiveFontSize(15), // 🔽 15 → 13
+      Platform.OS === 'android'
+        ? getResponsiveFontSize(14) // 🔽 14 → 12
+        : getResponsiveFontSize(15), // 🔽 15 → 13
     color: '#444',
     marginBottom: getResponsiveHeight(7),
   },

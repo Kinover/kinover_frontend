@@ -19,6 +19,7 @@ import {
   getResponsiveIconSize,
 } from '../../../utils/responsive';
 import ImageViewer from './ImageViewer';
+import FastImage from '@d11/react-native-fast-image';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const ITEM_WIDTH =
@@ -100,7 +101,7 @@ export default function ImageCarousel({
           setCurrentImageIndex?.(index);
           setIsImageFullScreen?.(true);
         }}>
-        <Image source={{uri: item}} style={styles.image} />
+        <FastImage source={{uri: item}} style={styles.image} />
       </TouchableOpacity>
 
       <Animated.View
@@ -114,7 +115,7 @@ export default function ImageCarousel({
         ]}>
         <View style={styles.commentSection}>
           <TouchableOpacity onPress={handleCommentToggle}>
-            <Image
+            <FastImage
               source={require('../../../assets/icons/chatCircleDots.png')}
               style={styles.icon}
             />
@@ -162,7 +163,7 @@ export default function ImageCarousel({
       <ImageViewer
         visible={!!isImageFullScreen}
         images={localImages}
-        index={currentImageIndex}              // ✅ 단일 진실
+        index={currentImageIndex} // ✅ 단일 진실
         onIndexChange={idx => setCurrentImageIndex?.(idx)} // ✅ 뷰어 스와이프 -> currentImageIndex 변경
         onClose={() => setIsImageFullScreen?.(false)}
       />

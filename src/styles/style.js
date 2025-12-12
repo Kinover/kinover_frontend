@@ -10,6 +10,9 @@ import {
 export const BACKGROUND_COLORS = {
   primaryBg: '#FF3B30',
   secondaryBg: '#F9F9F9',
+  overlayBg: 'rgba(17,24,39,0.45)',
+
+  // overlayBg: Platform.OS === 'android' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(0, 0, 0, 0.22)',
 };
 
 export const BUTTON_STYLES = {
