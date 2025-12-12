@@ -29,18 +29,6 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
     userChatRooms, // 참여자 userId 목록
   } = chatRoom;
 
-  // 🔹 ❗ 아바타용 이미지: userId 기준으로 나를 제외하고 구성
-  // const otherMemberIds = (userChatRooms || [])
-  //   .map(uc => uc.userId) // ← userId만 뽑고
-  //   .filter(id => id !== userId); // ← 나 자신 제외
-
-  // const otherMembers = (familyUserList || []).filter(user =>
-  //   otherMemberIds.includes(user.userId),
-  // );
-
-  // const avatarImages = otherMembers
-  //   .map(member => member.image) // 실제 필드명 확인
-  //   .filter(Boolean);
   const screen = kino ? '키노상담소화면' : '채팅방화면';
 
   // 🔹 util 함수로 타이틀 생성 (familyUserList 사용)
@@ -162,7 +150,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Light',
     fontSize: getResponsiveFontSize(12.5),
     color: '#5A5A5A',
-    lineHeight: getResponsiveHeight(18),
+    lineHeight: getResponsiveHeight(16),
     textAlignVertical: 'top',
     flexWrap: 'wrap',
   },

@@ -496,6 +496,7 @@ const styles = StyleSheet.create({
   leaveOption: {
     position: 'absolute',
     bottom: '5%',
+    right: 0,
     marginTop: getResponsiveHeight(26),
     paddingVertical: getResponsiveHeight(10),
     alignItems: 'flex-start',
@@ -503,6 +504,7 @@ const styles = StyleSheet.create({
   leaveText: {
     fontFamily: 'Pretendard-Medium',
     color: '#EF4444',
+    // color: '#999999',
     fontSize: getResponsiveFontSize(13.5),
   },
 });

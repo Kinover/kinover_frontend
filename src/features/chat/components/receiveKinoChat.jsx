@@ -210,9 +210,9 @@ const styles = StyleSheet.create({
   userName: {
     fontFamily: 'Pretendard-Medium',
     fontSize:
-      Platform.OS === 'android'
-        ? getResponsiveFontSize(14)
-        : getResponsiveFontSize(15),
+    Platform.OS === 'android'
+      ? getResponsiveFontSize(14) // 🔽 14 → 12
+      : getResponsiveFontSize(15), // 🔽 15 → 13
     color: '#444',
     marginBottom: getResponsiveHeight(7),
   },

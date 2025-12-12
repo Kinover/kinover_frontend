@@ -20,7 +20,7 @@ import {
   PanResponder,
   LayoutAnimation,
   UIManager,
-  Keyboard,               // ✅ Keyboard 추가
+  Keyboard, // ✅ Keyboard 추가
 } from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 // eslint-disable-next-line import/named
@@ -241,7 +241,7 @@ const ChatInput = forwardRef(function ChatInput(
   // ✅ 플러스 버튼 눌렀을 때 키보드 먼저 내리기
   const toggleGallery = () => {
     if (!enableMediaPicker) return;
-    Keyboard.dismiss();              // 🔹 여기 추가
+    Keyboard.dismiss(); // 🔹 여기 추가
     setShowGallery(prev => !prev);
   };
 
@@ -342,32 +342,29 @@ const ChatInput = forwardRef(function ChatInput(
 
   // 🔹 Pinch 제스처: 2~4 컬럼 변경 (Gesture API)
   // 🔹 Pinch 제스처: 2~4 컬럼 변경 (Gesture API)
-const pinchGesture = Gesture.Pinch()
-.runOnJS(true)   // ✅ 콜백을 JS 스레드에서 실행하게 강제
-.onEnd(e => {
-  const {scale} = e;
+  const pinchGesture = Gesture.Pinch()
+    .runOnJS(true) // ✅ 콜백을 JS 스레드에서 실행하게 강제
+    .onEnd(e => {
+      const {scale} = e;
 
-  setGridColumns(prev => {
-    let next = prev;
+      setGridColumns(prev => {
+        let next = prev;
 
-    // 손가락 벌리기 → 확대 → 컬럼 줄이기
-    if (scale > 1.07 && prev > 2) {
-      next = prev - 1;
-    }
-    // 손가락 오므리기 → 축소 → 컬럼 늘리기
-    else if (scale < 0.93 && prev < 4) {
-      next = prev + 1;
-    }
+        // 손가락 벌리기 → 확대 → 컬럼 줄이기
+        if (scale > 1.07 && prev > 2) {
+          next = prev - 1;
+        }
+        // 손가락 오므리기 → 축소 → 컬럼 늘리기
+        else if (scale < 0.93 && prev < 4) {
+          next = prev + 1;
+        }
 
-    if (next !== prev) {
-      LayoutAnimation.configureNext(
-        LayoutAnimation.Presets.easeInEaseOut,
-      );
-    }
-    return next;
-  });
-});
-
+        if (next !== prev) {
+          LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        }
+        return next;
+      });
+    });
 
   const renderPhoto = ({item}) => {
     const isSelected = selectedImages.some(f => f.uri === item.uri);
@@ -396,6 +393,9 @@ const pinchGesture = Gesture.Pinch()
   };
 
   const hasSelection = selectedImages.length > 0;
+  const trimmed = message.trim();
+  const canSend =
+    !isSending && (trimmed.length > 0 || selectedImages.length > 0);
 
   return (
     <SafeAreaView>
@@ -451,16 +451,20 @@ const pinchGesture = Gesture.Pinch()
 
         <TouchableOpacity
           onPress={handleSend}
-          style={styles.sendButton}
-          disabled={isSending}>
+          style={[styles.sendButton, canSend && styles.sendButtonActive]}
+          disabled={!canSend}>
           {hasSelection ? (
-            <View style={[styles.sendCountBubble, isSending && {opacity: 0.5}]}>
+            <View style={[styles.sendCountBubble, !canSend && {opacity: 0.5}]}>
               <Text style={styles.sendCountText}>{selectedImages.length}</Text>
             </View>
           ) : (
             <FastImage
+              resizeMode="contain"
               source={{uri: 'https://i.postimg.cc/fLWscdRY/Group-477-1.png'}}
-              style={[styles.icon, isSending && {opacity: 0.5}]}
+              style={[
+                styles.icon,
+                canSend ? styles.sendIconActive : styles.sendIconInactive,
+              ]}
             />
           )}
         </TouchableOpacity>
@@ -530,7 +534,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(14),
-    gap: getResponsiveWidth(12),
+    gap: getResponsiveWidth(8),
     backgroundColor: '#fff',
     borderTopWidth: 1,
     borderColor: '#ddd',
@@ -558,19 +562,15 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center',
   },
   inputPlusButton: {marginRight: getResponsiveWidth(6)},
-  sendButton: {
-    padding: getResponsiveWidth(4),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+
   icon: {
-    width: getResponsiveIconSize(24),
-    height: getResponsiveIconSize(24),
+    width: getResponsiveIconSize(25),
+    height: getResponsiveIconSize(25),
     resizeMode: 'contain',
   },
   sendCountBubble: {
-    minWidth: getResponsiveWidth(24),
-    height: getResponsiveWidth(24),
+    minWidth: getResponsiveWidth(25),
+    height: getResponsiveWidth(25),
     borderRadius: getResponsiveWidth(13),
     backgroundColor: '#FFC84D',
     justifyContent: 'center',
@@ -676,5 +676,32 @@ const styles = StyleSheet.create({
     bottom: -1,
     height: getResponsiveHeight(30),
   },
-});
+  sendButtonActive: {
+    // backgroundColor: 'rgba(255, 200, 77, 0.25)', // ✅ 활성화 배경
+    backgroundColor: 'rgba(255, 231, 178, 0.2)',
 
+    borderColor: '#FFC84D', // ✅ 테두리도 살짝 강조
+    borderWidth: 1,
+    borderRadius: getResponsiveWidth(20),
+    // transform: [{scale: 1.06}], // ✅ 살짝 커지게
+  },
+
+  sendIconInactive: {
+    opacity: 0.8, // ✅ 비활성 흐리게
+    transform: [{scale: 1}],
+  },
+
+  sendIconActive: {
+    opacity: 1,
+    // transform: [{scale: 1.06}],                  // ✅ 활성일 때만 살짝 커짐
+  },
+
+  sendButton: {
+    padding: getResponsiveWidth(7),
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'transparent', // ✅ 기본은 티 안 나게
+    borderRadius: getResponsiveWidth(20),
+  },
+});

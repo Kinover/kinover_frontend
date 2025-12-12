@@ -188,9 +188,7 @@ export default function ImageSelectPage() {
 
     navigation.setOptions({
       headerTitle: () => (
-        <Text style={styles.headerTitle}>
-          사진 업로드 ({selected.length})
-        </Text>
+        <Text style={styles.headerTitle}>사진 업로드 ({selected.length})</Text>
       ),
       headerRight: () => (
         <TouchableOpacity
@@ -234,12 +232,11 @@ export default function ImageSelectPage() {
     });
   }, []);
 
-  // 🔹 드래그 지점(x,y)에서 어떤 인덱스인지 계산
+  // 1) 먼저 얘부터
   const handleDragAtLocation = useCallback(
     (x, y, isStart = false) => {
       if (!photos || photos.length === 0) return;
 
-      // 한 타일의 전체 세로/가로 폭 (이미지 + margin*2 가량)
       const tileFullSize = IMAGE_SIZE + IMAGE_MARGIN * 2;
 
       const col = Math.floor(x / tileFullSize);
@@ -251,14 +248,11 @@ export default function ImageSelectPage() {
       const index = row * gridColumns + col;
       if (index < 0 || index >= photos.length) return;
 
-      if (lastIndexRef.current === index && !isStart) {
-        return; // 같은 셀이면 다시 처리 안 함
-      }
+      if (lastIndexRef.current === index && !isStart) return;
 
       const item = photos[index];
 
       if (isStart) {
-        // 시작 시점에 현재 셀의 상태를 보고 드래그 모드 결정
         const alreadySelected = selected.some(f => f.uri === item.uri);
         const mode = alreadySelected ? 'remove' : 'add';
         setDragMode(mode);
@@ -270,7 +264,25 @@ export default function ImageSelectPage() {
 
       lastIndexRef.current = index;
     },
-    [photos, scrollOffset, gridColumns, selected, dragMode, IMAGE_SIZE],
+    [
+      photos,
+      scrollOffset,
+      gridColumns,
+      selected,
+      dragMode,
+      IMAGE_SIZE,
+      updateSelectionByMode,
+    ],
+  );
+
+  // 2) 그 다음에 safe wrapper
+  const safeHandleDragAtLocation = useCallback(
+    (x, y, isStart = false) => {
+      requestAnimationFrame(() => {
+        handleDragAtLocation(x, y, isStart);
+      });
+    },
+    [handleDragAtLocation],
   );
 
   // 🔹 PanResponder: 가로로 손가락 끌면 드래그 선택 (세로 스크롤은 FlatList가 담당)
@@ -279,16 +291,15 @@ export default function ImageSelectPage() {
       onStartShouldSetPanResponder: () => false,
       onMoveShouldSetPanResponder: (evt, gestureState) => {
         const {dx, dy} = gestureState;
-        // 가로 이동이 크고, 세로보다 우세할 때만 드래그 선택 시작
         return Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy);
       },
       onPanResponderGrant: evt => {
         const {locationX, locationY} = evt.nativeEvent;
-        handleDragAtLocation(locationX, locationY, true);
+        safeHandleDragAtLocation(locationX, locationY, true);
       },
       onPanResponderMove: evt => {
         const {locationX, locationY} = evt.nativeEvent;
-        handleDragAtLocation(locationX, locationY, false);
+        safeHandleDragAtLocation(locationX, locationY, false);
       },
       onPanResponderRelease: () => {
         setDragMode(null);
@@ -318,9 +329,7 @@ export default function ImageSelectPage() {
       }
 
       if (next !== prev) {
-        LayoutAnimation.configureNext(
-          LayoutAnimation.Presets.easeInEaseOut,
-        );
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
       }
       return next;
     });
@@ -332,7 +341,12 @@ export default function ImageSelectPage() {
 
     return (
       <TouchableOpacity onPress={() => toggleSelect(item)} activeOpacity={0.8}>
-        <View style={[styles.imageWrapper, {width: IMAGE_SIZE, height: IMAGE_SIZE}, isSelected && styles.selectedImage]}>
+        <View
+          style={[
+            styles.imageWrapper,
+            {width: IMAGE_SIZE, height: IMAGE_SIZE},
+            isSelected && styles.selectedImage,
+          ]}>
           <Image source={{uri: item.uri}} style={styles.image} />
 
           {item.isVideo && (
@@ -370,9 +384,7 @@ export default function ImageSelectPage() {
           onEndReachedThreshold={0.2}
           refreshing={isRefreshing}
           onRefresh={onRefresh}
-          onScroll={e =>
-            setScrollOffset(e.nativeEvent.contentOffset?.y ?? 0)
-          }
+          onScroll={e => setScrollOffset(e.nativeEvent.contentOffset?.y ?? 0)}
           scrollEventThrottle={16}
           ListFooterComponent={
             isLoadingMore ? <Text style={styles.footer} /> : null

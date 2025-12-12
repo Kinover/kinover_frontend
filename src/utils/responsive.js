@@ -1,4 +1,4 @@
-import {Dimensions} from 'react-native';
+import {Dimensions, PixelRatio} from 'react-native';
 
 // 현재 디바이스의 너비와 높이
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
@@ -30,13 +30,27 @@ export const getResponsiveIconSize = figmaIconSize => {
 };
 
 // 폰트 크기 계산 함수
+// export const getResponsiveFontSize = figmaFontSize => {
+//   // 피그마 기준 크기와 화면 크기의 비율을 계산하여 폰트 크기 변환
+//   const widthRatio = screenWidth / figmaWidth;
+//   const heightRatio = screenHeight / figmaHeight;
+
+//   // 화면 크기 비율을 폰트 크기에도 적용
+//   return Math.min(widthRatio, heightRatio) * figmaFontSize;
+// };
 export const getResponsiveFontSize = figmaFontSize => {
-  // 피그마 기준 크기와 화면 크기의 비율을 계산하여 폰트 크기 변환
+  // 화면 비율 계산
   const widthRatio = screenWidth / figmaWidth;
   const heightRatio = screenHeight / figmaHeight;
 
-  // 화면 크기 비율을 폰트 크기에도 적용
-  return Math.min(widthRatio, heightRatio) * figmaFontSize;
+  // 기본 responsive 사이즈
+  const baseSize = Math.min(widthRatio, heightRatio) * figmaFontSize;
+
+  // 시스템 폰트 스케일 (접근성 설정)
+  const scaledSize = baseSize * PixelRatio.getFontScale();
+
+  // 최소 폰트 크기 = 피그마 폰트 크기
+  return Math.max(scaledSize, figmaFontSize);
 };
 
 export default getResponsiveFontSize;
