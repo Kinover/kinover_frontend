@@ -124,10 +124,7 @@ export default function AnimatedAlbumTabSelector({
         {/* 기간 버튼 */}
         {onPressDateFilter && (
           <TouchableOpacity
-            style={[
-              styles.filterButton,
-              isActive && styles.filterButtonActive,
-            ]}
+            style={[styles.filterButton, isActive && styles.filterButtonActive]}
             activeOpacity={0.7}
             onPress={onPressDateFilter}>
             <Image
@@ -162,7 +159,7 @@ const styles = StyleSheet.create({
       Platform.OS === 'android'
         ? getResponsiveHeight(5)
         : getResponsiveHeight(5),
-    paddingHorizontal: getResponsiveWidth(23),
+    paddingHorizontal: getResponsiveWidth(21),
   },
 
   headerRow: {
@@ -185,6 +182,7 @@ const styles = StyleSheet.create({
     marginRight: getResponsiveWidth(25),
   },
   tabText: {
+    textAlign: 'center',
     fontSize: getResponsiveFontSize(18),
     fontFamily: 'Pretendard-SemiBold',
     fontWeight: '600',
@@ -192,6 +190,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'bottom',
   },
   selectedText: {
+    textAlign: 'center',
     color: '#111827',
     fontWeight: 'bold',
     fontFamily: 'Pretendard-Bold',
@@ -202,8 +201,8 @@ const styles = StyleSheet.create({
     width: BASE_UNDERLINE_WIDTH + 5,
     backgroundColor: '#111827',
     position: 'absolute',
-    bottom: -11,
-    left: 0,
+    bottom: -10,
+    // left: 0,
   },
 
   // 기간 버튼
@@ -220,26 +219,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  
+  // ✅ 활성화: 배경 밝게 + 글씨/아이콘 어둡게
   filterButtonActive: {
     borderColor: '#111827',
-    backgroundColor: '#111827',
+    backgroundColor: '#FFFFFF',
   },
+  
   filterButtonText: {
     fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-Medium',
     color: '#9CA3AF',
   },
+  
   filterButtonTextActive: {
     fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-SemiBold',
-    color: '#FFFFFF',
+    color: '#111827',
   },
+  
   calendarIcon: {
     width: getResponsiveWidth(16),
     height: getResponsiveWidth(16),
     tintColor: '#9CA3AF',
   },
+  
   calendarIconActive: {
-    tintColor: '#FFFFFF',
+    tintColor: '#111827',
   },
+  
 });

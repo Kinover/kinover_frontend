@@ -190,7 +190,7 @@ export default function MemoryFeed({
                 </View>
                 {imageCount > 0 && (
                   <View style={styles.imageCountBadge}>
-                    <Text style={styles.badgeText}>사진 {imageCount}장</Text>
+                    <Text style={styles.badgeText}>사진 {imageCount}</Text>
                   </View>
                 )}
               </View>

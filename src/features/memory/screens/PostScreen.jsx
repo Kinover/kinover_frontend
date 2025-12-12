@@ -35,6 +35,7 @@ import {HEADER_STYLES} from 'styles/style';
 export default function PostPage({route}) {
   const dispatch = useDispatch();
   const navigation = useNavigation();
+  const didInitIndexRef = useRef(false);
 
   const {
     memory: preloadedPost,
@@ -79,10 +80,12 @@ export default function PostPage({route}) {
   }, [postId, memory, dispatch]);
 
   useEffect(() => {
+    if (didInitIndexRef.current) return;
     if (imageIndex != null) {
       vm.setCurrentImageIndex(imageIndex);
     }
-  }, [imageIndex, vm]);
+    didInitIndexRef.current = true;
+  }, [imageIndex, vm.setCurrentImageIndex]); // ✅ vm 말고 setter만
 
   useHideTabBar();
 

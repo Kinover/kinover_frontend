@@ -1,4 +1,5 @@
-import React, {useEffect, useRef, useState} from 'react';
+// src/features/memory/components/ImageCarousel.jsx
+import React, {useEffect, useRef} from 'react';
 import {
   Dimensions,
   Image,
@@ -17,29 +18,25 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
+import ImageViewer from './ImageViewer';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
-const SCREEN_HEIGHT = Dimensions.get('window').height;
 const ITEM_WIDTH =
   Platform.OS === 'android' ? SCREEN_WIDTH * 0.98 : SCREEN_WIDTH * 0.97;
 
 export default function ImageCarousel({
-  localImages,
-  currentImageIndex,
+  localImages = [],
+  currentImageIndex = 0,
   setCurrentImageIndex,
   setCommentIndex,
-  commentCount,
+  commentCount = 0,
   isCommentMode = false,
   isImageFullScreen,
   setIsImageFullScreen,
 }) {
   const mainCarouselRef = useRef(null);
-  const fullCarouselRef = useRef(null);
 
-  // ✅ 풀스크린 시작 인덱스를 이 컴포넌트 안에서 따로 관리
-  const [fullStartIndex, setFullStartIndex] = useState(0);
-
-  // ===== 댓글 모드 애니메이션 =====
+  // ===== 댓글 모드 애니메이션 (RN Animated) =====
   const progressRef = useRef(new Animated.Value(isCommentMode ? 1 : 0));
   useEffect(() => {
     Animated.timing(progressRef.current, {
@@ -72,43 +69,40 @@ export default function ImageCarousel({
     outputRange: ['10%', '15%'],
   });
 
-  const handleCommentToggle = () => setCommentIndex(prev => !prev);
+  const handleCommentToggle = () => setCommentIndex?.(prev => !prev);
 
-  // ✅ 풀스크린 닫힐 때, 메인 캐러셀도 마지막 인덱스로 싱크 (선택)
-  const prevIsFullRef = useRef(isImageFullScreen);
+  // =========================================================
+  // ✅ 핵심 1) "단일 진실" currentImageIndex가 바뀌면
+  //    메인 캐러셀도 즉시 scrollTo로 따라가게 만든다
+  // =========================================================
+  const lastSyncedRef = useRef(-1);
   useEffect(() => {
-    if (
-      prevIsFullRef.current === true &&
-      isImageFullScreen === false &&
-      mainCarouselRef.current &&
-      Number.isInteger(currentImageIndex)
-    ) {
-      mainCarouselRef.current.scrollTo?.({
-        index: currentImageIndex,
+    const idx = Number.isInteger(currentImageIndex) ? currentImageIndex : 0;
+    if (lastSyncedRef.current === idx) return;
+    lastSyncedRef.current = idx;
+
+    // 메인이 이미 렌더된 뒤에 이동시키는 게 안전함
+    requestAnimationFrame(() => {
+      mainCarouselRef.current?.scrollTo?.({
+        index: idx,
         animated: false,
       });
-    }
-    prevIsFullRef.current = isImageFullScreen;
-  }, [isImageFullScreen, currentImageIndex]);
+    });
+  }, [currentImageIndex]);
 
-  // ===== 렌더러들 =====
   const renderMainItem = ({item, index}) => (
     <View style={[styles.imageWrapper, {width: ITEM_WIDTH}]}>
       <TouchableOpacity
         style={styles.image}
         activeOpacity={1}
         onPress={() => {
-          // ✅ 1. 부모 인덱스도 업데이트
-          setCurrentImageIndex(index);
-          // ✅ 2. 풀스크린 시작 인덱스를 로컬 state에 저장
-          setFullStartIndex(index);
-          // ✅ 3. 그 다음 풀스크린 열기
+          // ✅ 누른 순간 currentImageIndex 업데이트 + 뷰어 오픈
+          setCurrentImageIndex?.(index);
           setIsImageFullScreen?.(true);
         }}>
         <Image source={{uri: item}} style={styles.image} />
       </TouchableOpacity>
 
-      {/* 하단 오버레이 */}
       <Animated.View
         style={[
           styles.overlay,
@@ -137,20 +131,8 @@ export default function ImageCarousel({
     </View>
   );
 
-  const renderFullScreenItem = ({item}) => (
-    <View style={styles.fullImageWrapper}>
-      <Image source={{uri: item}} style={styles.fullImage} />
-      <TouchableOpacity
-        style={StyleSheet.absoluteFill}
-        activeOpacity={1}
-        onPress={() => setIsImageFullScreen?.(false)}
-      />
-    </View>
-  );
-
   return (
     <View style={styles.container}>
-      {/* 메인 캐러셀 */}
       <Animated.View
         style={{
           width: SCREEN_WIDTH,
@@ -159,13 +141,12 @@ export default function ImageCarousel({
           alignItems: 'center',
         }}>
         <Carousel
-          key={`main-carousel-${localImages?.length || 0}`}
+          key={`main-${localImages?.length ?? 0}`}
           ref={mainCarouselRef}
           width={SCREEN_WIDTH}
-          height={undefined}
           data={localImages}
-          defaultIndex={currentImageIndex ?? 0} // 처음 진입 기준
-          onSnapToItem={index => setCurrentImageIndex(index)}
+          defaultIndex={currentImageIndex}
+          onSnapToItem={idx => setCurrentImageIndex?.(idx)}
           loop={false}
           mode="parallax"
           scrollAnimationDuration={400}
@@ -177,30 +158,14 @@ export default function ImageCarousel({
         />
       </Animated.View>
 
-      {/* 전체 화면 캐러셀 */}
-      {isImageFullScreen && (
-        <View style={styles.fullscreenOverlay}>
-          <Carousel
-            ref={fullCarouselRef}
-            key={`full-${localImages?.length ?? 0}`} // length 기준으로만 리마운트
-            width={SCREEN_WIDTH}
-            height={SCREEN_HEIGHT}
-            data={localImages}
-            defaultIndex={fullStartIndex} // ✅ 항상 내가 누른 index로 시작
-            onSnapToItem={setCurrentImageIndex}
-            scrollAnimationDuration={300}
-            loop={false}
-            mode="normal"
-            panGestureHandlerProps={{
-              activeOffsetX: [-2, 2],
-              failOffsetY: [-50, 50],
-              minDist: 1,
-              minVelocityX: 0,
-            }}
-            renderItem={renderFullScreenItem}
-          />
-        </View>
-      )}
+      {/* ✅ 같은 currentImageIndex를 공유하는 Viewer */}
+      <ImageViewer
+        visible={!!isImageFullScreen}
+        images={localImages}
+        index={currentImageIndex}              // ✅ 단일 진실
+        onIndexChange={idx => setCurrentImageIndex?.(idx)} // ✅ 뷰어 스와이프 -> currentImageIndex 변경
+        onClose={() => setIsImageFullScreen?.(false)}
+      />
     </View>
   );
 }
@@ -231,7 +196,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     width: '100%',
-    height: '10%',
     paddingHorizontal: getResponsiveWidth(15),
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -262,22 +226,5 @@ const styles = StyleSheet.create({
     color: '#FFC84D',
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveIconSize(20),
-  },
-  fullscreenOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#F9F9F9',
-    zIndex: 999,
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fullImageWrapper: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
-  },
-  fullImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'contain',
   },
 });
