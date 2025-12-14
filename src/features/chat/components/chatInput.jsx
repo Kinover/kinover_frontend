@@ -45,7 +45,8 @@ import {
 import formatDuration from '../../../utils/formatDuration';
 import ToastModal from '../../../components/ToastModal';
 
-import {addMessage} from '../store/messageSlice';
+// import {addMessage} from '../store/messageSlice';
+import {addMessageAndUpdateRoom} from '../utils/messageActions';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -221,7 +222,7 @@ const ChatInput = forwardRef(function ChatInput(
         const optimisticId = `client-${clientMessageId}`; // ✅ 핵심: optimistic messageId 규칙 고정
 
         dispatch(
-          addMessage({
+          addMessageAndUpdateRoom({
             chatRoomId: roomId,
             message: {
               messageId: optimisticId,
@@ -278,7 +279,7 @@ const ChatInput = forwardRef(function ChatInput(
         const optimisticId = `client-${clientMessageId}`; // ✅ 동일 규칙
 
         dispatch(
-          addMessage({
+          addMessageAndUpdateRoom({
             chatRoomId: roomId,
             message: {
               messageId: optimisticId,

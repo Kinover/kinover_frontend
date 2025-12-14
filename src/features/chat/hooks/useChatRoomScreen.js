@@ -8,6 +8,7 @@ import {
   selectRoomMeta,
 } from '../store/messageSlice';
 import {getToken} from 'utils/storage';
+import {addMessageAndUpdateRoom} from '../utils/messageActions';
 
 export default function useChatRoomScreen(chatRoom, userId, isKino) {
   const dispatch = useDispatch();
@@ -127,7 +128,9 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
         const msg = JSON.parse(e.data);
         const incomingRoomId = String(msg?.chatRoomId ?? roomId);
 
-        dispatch(addMessage({chatRoomId: incomingRoomId, message: msg}));
+        dispatch(
+          addMessageAndUpdateRoom({chatRoomId: incomingRoomId, message: msg}),
+        );
 
         const isMyMessage = String(msg?.senderId) === String(userId);
         if (isAtBottomRef.current && isMyMessage) {
