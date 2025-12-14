@@ -1,15 +1,27 @@
-import {useEffect, useRef, useState, useCallback} from 'react';
+import {useEffect, useRef, useState, useCallback, useMemo} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
-import {fetchMessageThunk, fetchMoreMessagesThunk} from '../store/messageThunk';
-import {addMessage} from '../store/messageSlice';
+import {fetchMoreMessagesThunk} from '../store/messageThunk';
+import {
+  addMessage,
+  initRoom,
+  selectRoomMessages,
+  selectRoomMeta,
+} from '../store/messageSlice';
 import {getToken} from 'utils/storage';
 
 export default function useChatRoomScreen(chatRoom, userId, isKino) {
-  const messageList = useSelector(state => state.message?.messageList || []);
+  const dispatch = useDispatch();
+
+  const roomId = useMemo(() => {
+    const id = chatRoom?.chatRoomId;
+    return id == null ? null : String(id);
+  }, [chatRoom?.chatRoomId]);
+
+  const messageList = useSelector(state => selectRoomMessages(state, roomId));
+  const roomMeta = useSelector(state => selectRoomMeta(state, roomId));
 
   const flatListRef = useRef(null);
   const isAtBottomRef = useRef(true);
-  const dispatch = useDispatch();
 
   const socketRef = useRef(null);
   const prevRoomIdRef = useRef(null);
@@ -25,61 +37,82 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
     flatListRef.current.scrollToOffset({offset: 0, animated: true});
   }, []);
 
-  const handleScroll = event => {
-    const y = event.nativeEvent.contentOffset.y;
+  const handleScroll = useCallback(event => {
+    const y = event?.nativeEvent?.contentOffset?.y ?? 0;
     isAtBottomRef.current = y <= 50;
     setIsUserScrolling(!isAtBottomRef.current);
-  };
+  }, []);
 
-  const loadOlderMessages = async () => {
+  const loadOlderMessages = useCallback(async () => {
+    if (!roomId) return;
     if (isFetchingMore || noMoreMessages || messageList.length === 0) return;
 
     setIsFetchingMore(true);
-    const oldest = messageList[messageList.length - 1];
-    const {payload} = await dispatch(
-      fetchMoreMessagesThunk(chatRoom.chatRoomId, oldest.createdAt),
-    );
 
-    if (!payload || payload.length < 20) {
-      setNoMoreMessages(true);
-    }
+    const before =
+      roomMeta?.cursor ?? messageList[messageList.length - 1]?.createdAt;
+
+    const {payload} = await dispatch(fetchMoreMessagesThunk(roomId, before));
+
+    if (!payload || payload.length < 20) setNoMoreMessages(true);
 
     setIsFetchingMore(false);
-  };
+  }, [
+    dispatch,
+    roomId,
+    isFetchingMore,
+    noMoreMessages,
+    messageList,
+    roomMeta?.cursor,
+  ]);
 
+  // ✅ room init만 하고, “초기 fetch”는 Screen에서만 함
   useEffect(() => {
-    if (chatRoom?.chatRoomId) {
-      dispatch(fetchMessageThunk(chatRoom.chatRoomId));
-      setNoMoreMessages(false);
-    }
-  }, [chatRoom?.chatRoomId, dispatch]);
+    if (!roomId) return;
+    dispatch(initRoom(roomId));
 
-  const connect = useCallback(async () => {
-    const roomId = chatRoom?.chatRoomId;
-    if (!roomId || !userId) return;
+    isAtBottomRef.current = true;
+    setIsUserScrolling(false);
+    setNoMoreMessages(false);
+  }, [roomId, dispatch]);
 
-    const token = await getToken();
-    if (!token) return;
-
-    // ✅ 같은 방인데 이미 살아있으면 재연결 금지
-    if (
-      prevRoomIdRef.current === roomId &&
-      socketRef.current &&
-      socketRef.current.readyState === 1
-    ) {
-      return;
-    }
-
-    prevRoomIdRef.current = roomId;
-
-    // 기존 소켓/타이머 정리
+  const cleanupSocket = useCallback(() => {
     if (reconnectTimerRef.current) {
       clearTimeout(reconnectTimerRef.current);
       reconnectTimerRef.current = null;
     }
-    socketRef.current?.close();
+    if (socketRef.current) {
+      try {
+        socketRef.current.onopen = null;
+        socketRef.current.onmessage = null;
+        socketRef.current.onerror = null;
+        socketRef.current.onclose = null;
+        socketRef.current.close();
+      } catch {
+        null;
+      }
+      socketRef.current = null;
+    }
+  }, []);
 
-    console.log('[WS /chat] connect', {roomId, userId});
+  const connect = useCallback(async () => {
+    if (!roomId || !userId) return;
+
+    const tokenRaw = await getToken();
+    if (!tokenRaw) return;
+
+    const token = encodeURIComponent(tokenRaw);
+
+    if (
+      prevRoomIdRef.current === roomId &&
+      socketRef.current &&
+      socketRef.current.readyState === WebSocket.OPEN
+    )
+      return;
+
+    prevRoomIdRef.current = roomId;
+
+    cleanupSocket();
 
     const ws = new WebSocket(`ws://kinover.shop:9090/chat?token=${token}`);
     socketRef.current = ws;
@@ -92,11 +125,13 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
     ws.onmessage = e => {
       try {
         const msg = JSON.parse(e.data);
-        dispatch(addMessage(msg));
+        const incomingRoomId = String(msg?.chatRoomId ?? roomId);
 
-        const isMyMessage = msg.senderId === userId;
+        dispatch(addMessage({chatRoomId: incomingRoomId, message: msg}));
+
+        const isMyMessage = String(msg?.senderId) === String(userId);
         if (isAtBottomRef.current && isMyMessage) {
-          setTimeout(scrollToBottom, 80);
+          setTimeout(scrollToBottom, 50);
         }
       } catch (err) {
         console.error('❌ 메시지 파싱 실패:', err);
@@ -104,55 +139,46 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
     };
 
     ws.onerror = err => {
-      console.error('⚠️ WebSocket 오류:', err);
+      console.error('⚠️ WebSocket 오류:', err?.message ?? err);
     };
 
     ws.onclose = e => {
-      console.log('🔌 WebSocket 종료', {
-        code: e.code,
-        reason: e.reason,
-        wasClean: e.wasClean,
-      });
-
-      // ✅ 간단 재연결 (너무 빡세지 않게 1~5초 백오프)
       const attempt = reconnectAttemptRef.current++;
       const delay = Math.min(1000 * (attempt + 1), 5000);
 
       reconnectTimerRef.current = setTimeout(() => {
-        // 화면이 살아있고 같은 방일 때만 재연결
         if (prevRoomIdRef.current === roomId) connect();
       }, delay);
     };
-  }, [chatRoom?.chatRoomId, userId, dispatch, scrollToBottom]);
+  }, [roomId, userId, dispatch, scrollToBottom, cleanupSocket]);
 
   useEffect(() => {
     connect();
-
     return () => {
-      // 방 나갈 때만 정리
-      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
-      socketRef.current?.close();
-      socketRef.current = null;
+      cleanupSocket();
+      prevRoomIdRef.current = null;
     };
-  }, [connect]);
+  }, [connect, cleanupSocket]);
 
   useEffect(() => {
-    if (isAtBottomRef.current && messageList.length > 0) {
-      scrollToBottom();
-    }
+    if (!messageList || messageList.length === 0) return;
+    if (isAtBottomRef.current) scrollToBottom();
   }, [messageList.length, scrollToBottom]);
 
   return {
     flatListRef,
     messageList,
-    setNoMoreMessages,
+
     noMoreMessages,
+    setNoMoreMessages,
+
     isFetchingMore,
     loadOlderMessages,
+
     handleScroll,
     scrollToBottom,
+
     socketRef,
     isUserScrolling,
   };
 }
-

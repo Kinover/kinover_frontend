@@ -72,8 +72,7 @@ const STROKE = 4;
 
 const styles = StyleSheet.create({
   container: {
-    width: SIZE,
-    height: SIZE,
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },

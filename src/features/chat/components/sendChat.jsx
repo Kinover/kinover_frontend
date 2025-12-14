@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   FlatList,
   TouchableOpacity,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {
@@ -31,6 +32,7 @@ export default function SendChat({
   message,
   mediaUrls,
   messageType = 'text',
+  uploadStatus = 'sent', // uploading | sent | failed
   style,
   isGrouped = false,
   isSameSender = false,
@@ -38,51 +40,84 @@ export default function SendChat({
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  // ✅ mediaUrls를 항상 배열로 강제
-  const safeMediaUrls = Array.isArray(mediaUrls)
-    ? mediaUrls
-    : mediaUrls
-    ? [mediaUrls]
-    : [];
+  // ✅ 타입/상태 정규화
+  const normalizedType = useMemo(
+    () => String(messageType ?? 'text').toLowerCase(),
+    [messageType],
+  );
+  const isImage = normalizedType === 'image';
+  const isUploading = uploadStatus === 'uploading';
+  const isFailed = uploadStatus === 'failed';
+
+  // ✅ mediaUrls 항상 배열
+  const safeMediaUrls = useMemo(() => {
+    if (Array.isArray(mediaUrls)) return mediaUrls;
+    if (mediaUrls) return [mediaUrls];
+    return [];
+  }, [mediaUrls]);
+
+  // ✅ 9장 초과 처리
+  const hasExtra = safeMediaUrls.length > 9;
+  const displayMedia = hasExtra ? safeMediaUrls.slice(0, 9) : safeMediaUrls;
 
   // === 시간 그룹 레지스트리 ===
   const [showTime, setShowTime] = useState(false);
   const idRef = useRef(Math.random().toString(36).slice(2));
-  const key = `ME|${minuteKey(chatTime)}`;
-  const timeMs = toEpochMs(chatTime);
+
+  // ✅ chatTime 없을 때 안전 처리 (이게 핵심)
+  const timeKey = useMemo(() => {
+    if (!chatTime) return null;
+    return `ME|${minuteKey(chatTime)}`;
+  }, [chatTime]);
+
+  const timeMs = useMemo(() => {
+    if (!chatTime) return 0;
+    return toEpochMs(chatTime);
+  }, [chatTime]);
 
   useEffect(() => {
-    registerTimeLast(key, idRef.current, timeMs, setShowTime);
-    return () => unregisterTimeLast(key, idRef.current);
-  }, [key, timeMs]);
+    if (!timeKey || !chatTime) return;
+    registerTimeLast(timeKey, idRef.current, timeMs, setShowTime);
+    return () => unregisterTimeLast(timeKey, idRef.current);
+  }, [timeKey, timeMs, chatTime]);
 
   // === 간격 계산 ===
   const spacingStyle = getSpacingStyle({isGrouped, isSameSender});
 
   const handleImagePress = (uri, index) => {
+    if (isUploading) return; // 업로드 중에는 확대 방지
     setSelectedIndex(index);
     setModalVisible(true);
   };
 
-  // ✅ 9장 초과 여부 & 그리드에 실제로 보여줄 리스트
-  const hasExtra = safeMediaUrls.length > 9;
-  const displayMedia = hasExtra
-    ? safeMediaUrls.slice(0, 9)
-    : safeMediaUrls;
+  const renderUploadOverlay = (radius = 10) => {
+    if (!isUploading && !isFailed) return null;
+
+    return (
+      <View style={[styles.loadingOverlay, {borderRadius: radius}]}>
+        {isUploading ? (
+          <>
+            <ActivityIndicator color="#fff" />
+            <Text style={styles.loadingText}>전송 중…</Text>
+          </>
+        ) : (
+          <Text style={styles.failText}>전송 실패</Text>
+        )}
+      </View>
+    );
+  };
 
   const renderImages = () => (
     <View style={[styles.sendBubble, styles.imagePadding]}>
       <FlatList
         data={displayMedia}
-        keyExtractor={(item, index) => item + index}
+        keyExtractor={(item, index) => String(item) + index}
         numColumns={3}
         scrollEnabled={false}
         contentContainerStyle={styles.imageGrid}
         renderItem={({item, index}) => {
-          const isLastCell =
-            hasExtra && index === displayMedia.length - 1;
-          const extraCount =
-            safeMediaUrls.length - displayMedia.length;
+          const isLastCell = hasExtra && index === displayMedia.length - 1;
+          const extraCount = safeMediaUrls.length - displayMedia.length;
 
           return (
             <TouchableOpacity
@@ -90,12 +125,9 @@ export default function SendChat({
               activeOpacity={0.9}>
               <View>
                 <FastImage source={{uri: item}} style={styles.imageItem} />
-                {/* 🔹 9장 초과일 때 마지막 셀에 +N 오버레이 */}
                 {isLastCell && (
                   <View style={styles.moreOverlay}>
-                    <Text style={styles.moreOverlayText}>
-                      +{extraCount}
-                    </Text>
+                    <Text style={styles.moreOverlayText}>+{extraCount}</Text>
                   </View>
                 )}
               </View>
@@ -103,24 +135,34 @@ export default function SendChat({
           );
         }}
       />
+
+      {/* ✅ 그리드는 모서리 20에 맞춰 오버레이도 20 */}
+      {renderUploadOverlay(getResponsiveIconSize(20))}
     </View>
   );
 
   return (
     <View style={[styles.sendContainer, spacingStyle, style]}>
-      {showTime && <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>}
+      {showTime && !!chatTime && (
+        <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>
+      )}
 
-      {messageType === 'image' ? (
+      {isImage ? (
         safeMediaUrls.length === 1 ? (
-          <TouchableOpacity
-            onPress={() => handleImagePress(safeMediaUrls[0], 0)}
-            activeOpacity={0.9}>
-            <FastImage
-              source={{uri: safeMediaUrls[0]}}
-              style={styles.singleImage}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
+          <View style={styles.singleWrapper}>
+            <TouchableOpacity
+              onPress={() => handleImagePress(safeMediaUrls[0], 0)}
+              activeOpacity={0.9}>
+              <FastImage
+                source={{uri: safeMediaUrls[0]}}
+                style={styles.singleImage}
+                resizeMode="cover"
+              />
+            </TouchableOpacity>
+
+            {/* ✅ 단일 이미지는 radius 10 */}
+            {renderUploadOverlay(10)}
+          </View>
         ) : (
           renderImages()
         )
@@ -132,8 +174,8 @@ export default function SendChat({
 
       <MediaModal
         visible={modalVisible}
-        mediaUrls={safeMediaUrls}      // ✅ 항상 배열
-        mediaType={messageType}
+        mediaUrls={safeMediaUrls}
+        mediaType={normalizedType}
         initialIndex={selectedIndex}
         onClose={() => setModalVisible(false)}
       />
@@ -167,7 +209,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Regular',
     fontSize: CHATROOM_STYLE.messageFontSize,
     color: 'black',
-    flexWrap: 'wrap',
     lineHeight: getResponsiveFontSize(17),
   },
   sendTime: {
@@ -187,6 +228,11 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     margin: 2,
   },
+
+  singleWrapper: {
+    position: 'relative',
+    alignSelf: 'flex-end',
+  },
   singleImage: {
     width: getResponsiveWidth(200),
     aspectRatio: 1,
@@ -194,10 +240,9 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
 
-  // 🔹 +N 오버레이
   moreOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 4,
@@ -206,5 +251,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: getResponsiveFontSize(16),
     fontFamily: 'Pretendard-SemiBold',
+  },
+
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 6,
+    color: '#fff',
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(12),
+  },
+  failText: {
+    color: '#fff',
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(13),
   },
 });

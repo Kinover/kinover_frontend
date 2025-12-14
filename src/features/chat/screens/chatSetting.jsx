@@ -32,6 +32,7 @@ import {
 } from '../../../utils/responsive';
 import {updateChatRoomNameInList} from '../store/chatRoomSlice';
 import ToastModal from '../../../components/ToastModal';
+import {resetMessageFetched, setMessageList} from '../store/messageSlice';
 
 export default function ChatSettings({
   isOpen,
@@ -181,6 +182,8 @@ export default function ChatSettings({
   };
 
   const handleGoToKinoSelect = () => {
+    dispatch(resetMessageFetched());
+    dispatch(setMessageList([])); // (선택이지만 강추: 화면 깔끔)
     setShouldNavigate(true);
     onClose();
   };
@@ -508,3 +511,4 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(13.5),
   },
 });
+

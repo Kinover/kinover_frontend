@@ -1,3 +1,4 @@
+// components/ChatInput.jsx
 import React, {
   useState,
   useRef,
@@ -23,6 +24,7 @@ import {
   UIManager,
   Keyboard,
 } from 'react-native';
+import {useDispatch} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
 import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
@@ -42,6 +44,8 @@ import {
 } from '../../../utils/gallery';
 import formatDuration from '../../../utils/formatDuration';
 import ToastModal from '../../../components/ToastModal';
+
+import {addMessage} from '../store/messageSlice';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -65,6 +69,16 @@ const ChatInput = forwardRef(function ChatInput(
   {chatRoom, userId, socketRef, enableMediaPicker = true},
   ref,
 ) {
+  const dispatch = useDispatch();
+
+  const makeClientId = useCallback(
+    () => `${Date.now()}_${Math.random().toString(16).slice(2)}`,
+    [],
+  );
+
+  // ✅ 중복 전송(엔터+버튼/연타) 강제 차단용 락
+  const sendingLockRef = useRef(false);
+
   // ====== state ======
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -174,36 +188,70 @@ const ChatInput = forwardRef(function ChatInput(
   }, []);
 
   const handleSend = useCallback(async () => {
-    if (isSending) return;
+    // ✅ 1) 중복 호출 자체를 ref 락으로 차단
+    if (sendingLockRef.current) return;
+    sendingLockRef.current = true;
 
     const text = message.trim();
-    if (!text && selectedImages.length === 0) return;
+    if (!text && selectedImages.length === 0) {
+      sendingLockRef.current = false;
+      return;
+    }
+
+    const roomId = chatRoom?.chatRoomId;
+    if (!roomId) {
+      sendingLockRef.current = false;
+      return;
+    }
 
     const socket = socketRef?.current;
 
     if (!socket || socket.readyState !== 1) {
       showToast('연결이 불안정해요. 다시 시도해주세요.');
+      sendingLockRef.current = false;
       return;
     }
 
     try {
       setIsSending(true);
 
-      // 1) text
+      // 1) text (✅ optimistic)
       if (text) {
-        const payload = {
-          content: text,
-          chatRoomId: chatRoom.chatRoomId,
-          senderId: userId,
-          messageType: 'text',
-        };
-        socket.send(JSON.stringify(payload));
+        const clientMessageId = makeClientId();
+        const optimisticId = `client-${clientMessageId}`; // ✅ 핵심: optimistic messageId 규칙 고정
+
+        dispatch(
+          addMessage({
+            chatRoomId: roomId,
+            message: {
+              messageId: optimisticId,
+              clientMessageId,
+              chatRoomId: roomId,
+              senderId: userId,
+              content: text,
+              messageType: 'text',
+              createdAt: new Date().toISOString(),
+              localStatus: 'sending',
+            },
+          }),
+        );
+
+        socket.send(
+          JSON.stringify({
+            content: text,
+            chatRoomId: roomId,
+            senderId: userId,
+            messageType: 'text',
+            clientMessageId,
+          }),
+        );
+
         setMessage('');
       }
 
       if (!enableMediaPicker) return;
 
-      // 2) media
+      // 2) media (✅ optimistic)
       if (selectedImages.length > 0) {
         const fileNames = selectedImages.map((file, index) =>
           getFileNameWithExtension(file, index),
@@ -226,12 +274,32 @@ const ChatInput = forwardRef(function ChatInput(
           await uploadFileToS3(presignedUrls[i], fileUri, fileNames[i]);
         }
 
+        const clientMessageId = makeClientId();
+        const optimisticId = `client-${clientMessageId}`; // ✅ 동일 규칙
+
+        dispatch(
+          addMessage({
+            chatRoomId: roomId,
+            message: {
+              messageId: optimisticId,
+              clientMessageId,
+              chatRoomId: roomId,
+              senderId: userId,
+              messageType: 'image',
+              imageUrls: fileNames,
+              createdAt: new Date().toISOString(),
+              localStatus: 'sending',
+            },
+          }),
+        );
+
         socket.send(
           JSON.stringify({
-            messageType: 'IMAGE',
-            chatRoomId: chatRoom.chatRoomId,
+            messageType: 'image',
+            chatRoomId: roomId,
             senderId: userId,
             imageUrls: fileNames,
+            clientMessageId,
           }),
         );
 
@@ -243,9 +311,10 @@ const ChatInput = forwardRef(function ChatInput(
       showToast('전송 중 오류가 발생했어요.');
     } finally {
       setIsSending(false);
+      sendingLockRef.current = false;
     }
   }, [
-    isSending,
+    dispatch,
     message,
     selectedImages,
     socketRef,
@@ -253,6 +322,7 @@ const ChatInput = forwardRef(function ChatInput(
     chatRoom?.chatRoomId,
     userId,
     enableMediaPicker,
+    makeClientId,
   ]);
 
   // ====== drag select helpers ======
@@ -416,10 +486,13 @@ const ChatInput = forwardRef(function ChatInput(
             <TouchableOpacity
               style={styles.inputPlusButton}
               onPress={toggleGallery}
-              disabled={isSending}>
+              disabled={isSending || sendingLockRef.current}>
               <FastImage
                 source={{uri: ICON_PLUS}}
-                style={[styles.icon, isSending && {opacity: 0.4}]}
+                style={[
+                  styles.icon,
+                  (isSending || sendingLockRef.current) && {opacity: 0.4},
+                ]}
               />
             </TouchableOpacity>
           )}
@@ -432,16 +505,14 @@ const ChatInput = forwardRef(function ChatInput(
             placeholder="메시지를 입력하세요"
             placeholderTextColor="#999"
             returnKeyType="send"
-            editable={!isSending}
+            editable={!isSending && !sendingLockRef.current}
             onFocus={() => {
               if (showGallery) setShowGallery(false);
             }}
-            onSubmitEditing={() => {
-              if (!isSending) handleSend();
-            }}
+            onSubmitEditing={handleSend}
           />
 
-          {/* {message.length > 0 && !isSending && (
+          {message.length > 0 && !isSending && !sendingLockRef.current && (
             <TouchableOpacity
               style={styles.clearButton}
               onPress={() => setMessage('')}>
@@ -450,17 +521,12 @@ const ChatInput = forwardRef(function ChatInput(
                 style={styles.clearIcon}
               />
             </TouchableOpacity>
-          )} */}
+          )}
 
-          {/* send button (input 안쪽) */}
           <TouchableOpacity
             onPress={handleSend}
-            style={[
-              styles.sendButton,
-              {paddingRight: getResponsiveWidth(5)},
-              canSend && styles.sendButtonActive,
-            ]}
-            disabled={!canSend}>
+            style={[styles.sendButton, canSend && styles.sendButtonActive]}
+            disabled={!canSend || sendingLockRef.current}>
             {hasSelection ? (
               <View
                 style={[styles.sendCountBubble, !canSend && {opacity: 0.5}]}>
@@ -469,7 +535,6 @@ const ChatInput = forwardRef(function ChatInput(
                 </Text>
               </View>
             ) : (
-              // ✅ tintColor 먹이려고 send만 Image 사용
               <Image
                 source={{uri: ICON_SEND}}
                 style={[
@@ -592,11 +657,9 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
 
-  // send
   sendButton: {
     paddingVertical: getResponsiveWidth(5),
-    paddingLeft: getResponsiveWidth(5),
-    paddingRight: getResponsiveWidth(7),
+    paddingHorizontal: getResponsiveWidth(5),
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
@@ -616,12 +679,12 @@ const styles = StyleSheet.create({
   sendIconWhite: {
     tintColor: '#FFFFFF',
     opacity: 1,
-    transform: [{scale: 0.85}],
+    transform: [{scale: 0.9}],
   },
   sendIconInactive: {
-    tintColor: '#FFC84D',
+    tintColor: 'gray',
     opacity: 1,
-    transform: [{scale: 0.85}],
+    transform: [{scale: 0.9}],
   },
 
   sendCountBubble: {
@@ -636,13 +699,12 @@ const styles = StyleSheet.create({
   sendCountText: {
     color: 'white',
     fontWeight: '600',
-    fontSize: getResponsiveIconSize(14),
+    fontSize: getResponsiveIconSize(13),
     includeFontPadding: false,
     textAlignVertical: 'center',
     fontFamily: 'Pretendard-Medium',
   },
 
-  // gallery
   galleryContainer: {
     maxHeight: getResponsiveHeight(300),
     backgroundColor: '#fff',
@@ -698,7 +760,6 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     textAlignVertical: 'center',
   },
-
   videoBadge: {
     position: 'absolute',
     bottom: getResponsiveWidth(6),
@@ -714,7 +775,6 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveIconSize(12),
     fontWeight: '600',
   },
-
   bottomFade: {
     position: 'absolute',
     left: 0,
@@ -722,11 +782,9 @@ const styles = StyleSheet.create({
     bottom: -1,
     height: getResponsiveHeight(30),
   },
-
   footer: {
     textAlign: 'center',
     paddingVertical: getResponsiveHeight(4),
     color: '#666',
   },
 });
-
