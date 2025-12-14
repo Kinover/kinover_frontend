@@ -14,6 +14,38 @@ import SendChat from './sendChat';
 import ReceiveKinoChat from './receiveKinoChat';
 import SendKinoChat from './sendKinoChat';
 
+const getSenderId = message => {
+  if (!message) return null;
+  return (
+    message.senderId ??
+    message.senderID ??
+    message.userId ??
+    message.sender?.id ??
+    message.sender?.userId ??
+    null
+  );
+};
+
+const isSameId = (a, b) => {
+  if (a == null || b == null) return false;
+  return String(a) === String(b);
+};
+
+const getImageUrls = message => {
+  const raw =
+    message?.imageUrls ??
+    message?.mediaUrls ??
+    message?.images ??
+    message?.imageUrl ??
+    [];
+  return Array.isArray(raw) ? raw : raw ? [raw] : [];
+};
+
+const getMessageType = message => {
+  const t = message?.messageType ?? message?.type ?? 'text';
+  return String(t).toLowerCase();
+};
+
 export default function ChatMessageItem({
   message,
   currentUserId,
@@ -23,12 +55,19 @@ export default function ChatMessageItem({
   kinoType,
 }) {
   const navigation = useNavigation();
-  const isMe = message.senderId === currentUserId;
-  const localType = message.localType; // 클라 전용 타입 (kinoTyping, kinoIntro 등)
 
   useEffect(() => {
     navigation.getParent()?.setOptions({tabBarStyle: {display: 'none'}});
   }, [navigation]);
+
+  if (!message) return null;
+
+  const localType = message?.localType;
+  const senderId = getSenderId(message);
+  const isMe = isSameId(senderId, currentUserId);
+
+  const messageType = getMessageType(message);
+  const imageUrls = getImageUrls(message);
 
   const formatDate = dateString => {
     const date = new Date(dateString);
@@ -36,7 +75,6 @@ export default function ChatMessageItem({
     const year = date.getFullYear();
     const month = date.getMonth() + 1;
     const day = date.getDate();
-
     const weekdays = [
       '일요일',
       '월요일',
@@ -46,15 +84,13 @@ export default function ChatMessageItem({
       '금요일',
       '토요일',
     ];
-    const weekday = weekdays[date.getDay()];
-
-    return `${year}년 ${month}월 ${day}일 ${weekday}`;
+    return `${year}년 ${month}월 ${day}일 ${weekdays[date.getDay()]}`;
   };
 
   let ChatComponent;
 
-  // ✅ 1) 키노 타이핑 버블 (. . .)
-  if (isKino && !isMe && localType === 'kinoTyping') {
+  // 1) 키노 타이핑
+  if (isKino && localType === 'kinoTyping') {
     ChatComponent = (
       <ReceiveKinoChat
         isGrouped={false}
@@ -64,50 +100,56 @@ export default function ChatMessageItem({
       />
     );
   }
-  // ✅ 2) 나(현재 유저)가 보낸 메시지
+  // 2) 내가 보낸 메시지
   else if (isMe) {
     ChatComponent = isKino ? (
       <SendKinoChat
-        message={message.content}
-        chatTime={message.createdAt}
+        message={message?.content}
+        chatTime={message?.createdAt}
         isGrouped={isGrouped}
+        messageType={messageType}
+        imageUrls={imageUrls}
       />
     ) : (
       <SendChat
-        message={message.content}
-        chatTime={message.createdAt}
-        mediaUrls={message.imageUrls}
+        message={message?.content}
+        chatTime={message?.createdAt}
+        mediaUrls={imageUrls}
+        messageType={messageType}
+        uploadStatus={message?.uploadStatus} // ✅ 핵심
         isGrouped={isGrouped}
       />
     );
   }
-  // ✅ 3) 상대방 메시지 (키노 / 일반)
+  // 3) 상대 메시지
   else {
     ChatComponent = isKino ? (
       <ReceiveKinoChat
-        message={message.content}
-        chatTime={message.createdAt}
+        message={message?.content}
+        chatTime={message?.createdAt}
         isGrouped={isGrouped}
         kinoType={kinoType}
+        messageType={messageType}
+        imageUrls={imageUrls}
       />
     ) : (
       <ReceiveChat
-        userName={message.senderName}
-        userProfileImage={message.senderImage}
-        message={message.content}
-        chatTime={message.createdAt}
-        mediaUrls={message.imageUrls}
+        userName={message?.senderName}
+        userProfileImage={message?.senderImage}
+        message={message?.content}
+        chatTime={message?.createdAt}
+        mediaUrls={imageUrls}
+        messageType={messageType}
         isGrouped={isGrouped}
       />
     );
   }
 
-  // ✅ 타이핑 메시지에는 날짜 구분선 안 보이게
   const hideDateSeparator = localType === 'kinoTyping';
 
   return (
     <View style={[styles.wrapper, isMe ? styles.alignRight : styles.alignLeft]}>
-      {shouldShowDate && !hideDateSeparator && message.createdAt && (
+      {shouldShowDate && !hideDateSeparator && message?.createdAt && (
         <View style={styles.dateSeparator}>
           <Text style={styles.dateSeparatorText}>
             {formatDate(message.createdAt)}
@@ -120,16 +162,9 @@ export default function ChatMessageItem({
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    width: '100%',
-    paddingHorizontal: '2.5%',
-  },
-  alignRight: {
-    alignItems: 'flex-end',
-  },
-  alignLeft: {
-    alignItems: 'flex-start',
-  },
+  wrapper: {width: '100%', paddingHorizontal: '2.5%'},
+  alignRight: {alignItems: 'flex-end'},
+  alignLeft: {alignItems: 'flex-start'},
   dateSeparator: {
     alignSelf: 'center',
     paddingHorizontal: getResponsiveWidth(13),

@@ -7,6 +7,7 @@ import {
   getResponsiveWidth,
 } from '../../../utils/responsive';
 
+
 export default function ChangeKinoModal({visible, onClose, onConfirm}) {
   return (
     <CustomModal

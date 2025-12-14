@@ -1,3 +1,4 @@
+// messageThunk.js
 import axios from 'axios';
 import {getToken} from '../../../utils/storage';
 import {
@@ -5,106 +6,114 @@ import {
   appendMessageList,
   setMessageLoading,
   setMessageError,
-  setSendMessage,
-  setMessageFetched, // ✅ 추가
+  setMessageFetched,
+  addMessage,
 } from './messageSlice';
 import {applyMessagePreview, bumpListRevision} from './chatRoomSlice';
 
-// ✅ 초기 메시지 로딩 (덮어쓰기)
+/** ✅ 초기 메시지 fetch (해당 방에만 저장) */
 export const fetchMessageThunk = (chatRoomId, before = null, limit = 20) => {
   return async dispatch => {
-    dispatch(setMessageLoading(true));
-    dispatch(setMessageFetched(false)); // ✅ 요청 시작 시 false
+    dispatch(setMessageLoading({chatRoomId, isLoading: true}));
+    dispatch(setMessageFetched({chatRoomId, isFetched: false}));
 
     try {
       const token = await getToken();
 
       let apiUrl = `https://kinover.shop/api/chatRoom/${chatRoomId}/messages/fetch?limit=${limit}`;
-      if (before) {
-        apiUrl += `&before=${encodeURIComponent(before)}`;
-      }
+      if (before) apiUrl += `&before=${encodeURIComponent(before)}`;
 
       const response = await axios.get(apiUrl, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: {Authorization: `Bearer ${token}`},
       });
 
-      console.log('fetchMesssage', response.data);
-
-      dispatch(setMessageList(response.data)); // ✅ 최신 → 오래된 순서 그대로
-      dispatch(bumpListRevision()); // ⭐️ 선택 (보수적으로 리렌더 보장)
-      dispatch(setMessageFetched(true)); // ✅ 성공하면 true
+      dispatch(setMessageList({chatRoomId, messages: response.data}));
+      dispatch(bumpListRevision());
     } catch (error) {
-      dispatch(setMessageError(error.message));
-      dispatch(setMessageFetched(true)); // ✅ 실패해도 “끝난 건 끝난 거”라 true
+      dispatch(setMessageError({chatRoomId, error: error.message}));
     } finally {
-      dispatch(setMessageLoading(false));
+      dispatch(setMessageFetched({chatRoomId, isFetched: true}));
+      dispatch(setMessageLoading({chatRoomId, isLoading: false}));
     }
   };
 };
 
-// ✅ 추가 메시지 로딩 (뒤에 추가)
+/** ✅ 이전 메시지 더 불러오기 (해당 방에만 append) */
 export const fetchMoreMessagesThunk = (chatRoomId, beforeTime) => {
   return async dispatch => {
     try {
       const token = await getToken();
       const limit = 20;
-      let apiUrl = `https://kinover.shop/api/chatRoom/${chatRoomId}/messages/fetch?limit=${limit}&before=${encodeURIComponent(
+
+      const apiUrl = `https://kinover.shop/api/chatRoom/${chatRoomId}/messages/fetch?limit=${limit}&before=${encodeURIComponent(
         beforeTime,
       )}`;
 
       const response = await axios.get(apiUrl, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: {Authorization: `Bearer ${token}`},
       });
 
-      console.log('fetchMoreMesssage', response.data);
-
-      dispatch(appendMessageList(response.data)); // ✅ 뒤에 붙이기
+      dispatch(appendMessageList({chatRoomId, messages: response.data}));
 
       return {payload: response.data};
     } catch (error) {
-      console.error('추가 메시지 로딩 실패:', error);
+      dispatch(setMessageError({chatRoomId, error: error.message}));
       return {payload: []};
     }
   };
 };
 
-// ✅ 메시지 전송 후 최신 메시지 다시 로딩
-export const sendMessageThunk = (message, chatRoomId) => {
+/**
+ * ✅ 서버 REST로 보내는 send(너 기존 코드 유지하면서 “방별 저장”만 정리)
+ * - 너는 지금 WebSocket으로 이미지/텍스트도 보내는 구조라면 이 thunk는 “안 써도 됨”
+ * - 만약 텍스트는 REST로 보내는 구조면 사용
+ */
+export const sendMessageThunk = (messageBody, chatRoomId) => {
   return async dispatch => {
-    dispatch(setMessageLoading(true));
-    try {
-      const apiUrl = 'https://kinover.shop/api/chatRoom/messages/send';
-      const token = await getToken();
+    dispatch(setMessageLoading({chatRoomId, isLoading: true}));
 
-      const response = await axios.post(apiUrl, message, {
+    try {
+      const token = await getToken();
+      const apiUrl = 'https://kinover.shop/api/chatRoom/messages/send';
+
+      const res = await axios.post(apiUrl, messageBody, {
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
       });
 
-      dispatch(setSendMessage(response.data));
+      const msg = res.data;
 
-      // ✅ 리스트 프리뷰 갱신
+      // ✅ 방별 메시지 저장
+      dispatch(addMessage({chatRoomId, message: msg}));
+
+      // ✅ 여기 핵심: preview용 최소 필드 보정
+      const previewPayload = {
+        ...msg,
+        createdAt: msg?.createdAt ?? new Date().toISOString(),
+        content: msg?.content ?? messageBody?.content ?? '',
+        messageType: msg?.messageType ?? messageBody?.messageType ?? 'text',
+      };
+
+      // ✅ 방 목록 미리보기 즉시 갱신
       dispatch(
         applyMessagePreview({
-          chatRoomId,
-          message: response.data,
+          chatRoomId: String(chatRoomId),
+          message: previewPayload,
           isSelf: true,
         }),
       );
 
-      dispatch(bumpListRevision()); // ⭐️ 선택 (보수적으로 리렌더 보장)
+      // ✅ 방 목록 화면이 리렌더 안 먹을 때 대비(보수적으로)
+      dispatch(bumpListRevision());
 
-      dispatch(fetchMessageThunk(chatRoomId)); // ✅ 오타 수정
-    } catch (error) {
-      dispatch(setMessageError(error.message));
+      return msg;
+    } catch (e) {
+      dispatch(setMessageError({chatRoomId, error: e.message}));
+      throw e;
     } finally {
-      dispatch(setMessageLoading(false));
+      dispatch(setMessageLoading({chatRoomId, isLoading: false}));
     }
   };
 };

@@ -85,7 +85,7 @@ export default function CalendarToggle({
   const isHoliday = date => {
     const key = getLocalDateKey(date);
     const day = date.getDay(); // 0:일, 6:토
-    return day === 0 || day === 6 || !!holidayMap?.[key];
+    return day === 0 || !!holidayMap?.[key];
   };
 
   // =========================
@@ -181,7 +181,7 @@ export default function CalendarToggle({
           {/* 요일 헤더 */}
           <View style={[styles.weekRow, {width: gridWidth}]}>
             {['일', '월', '화', '수', '목', '금', '토'].map(d => {
-              const isRestDow = d === '일' || d === '토';
+              const isRestDow = d === '일';
               return (
                 <View key={d} style={[styles.weekCell, {width: cellSize}]}>
                   <Text
@@ -302,7 +302,7 @@ export default function CalendarToggle({
 const styles = StyleSheet.create({
   container: {
     paddingTop: getResponsiveHeight(8),
-    marginBottom: getResponsiveHeight(16),
+    marginBottom: getResponsiveHeight(5),
   },
 
   // ✅ 그림자 컨테이너(바깥): shadow/elevation만 담당
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     borderRadius: RADIUS,
     backgroundColor: '#FFFFFF', // ✅ Android elevation 안정화
-    marginBottom: getResponsiveHeight(12),
+    marginBottom: getResponsiveHeight(10),
   },
 
   // ✅ 안쪽: 둥근 모서리 + 클립(overflow) 담당

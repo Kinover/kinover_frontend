@@ -45,10 +45,10 @@ export default function NotificationScreen() {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {rows.map(row => {
+      {rows.map((row, index) => {
         if (row.type === 'section') {
           return (
-            <Text key={`sec-${row.key}`} style={styles.sectionTitle}>
+            <Text key={`sec-${row.key}-${index}`} style={styles.sectionTitle}>
               {row.title}
             </Text>
           );
@@ -56,7 +56,7 @@ export default function NotificationScreen() {
 
         return (
           <TouchableOpacity
-            key={`n-${row.key}`}
+            key={`n-${row.key}-${index}`}
             activeOpacity={0.8}
             onPress={() => handlePress(row.notification)}
             style={[styles.card, row.isNew && styles.cardNew]}>
