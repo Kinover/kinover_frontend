@@ -25,6 +25,9 @@ const initialState = {
   rooms: {},
 };
 
+/**
+ * ✅ 서버가 ASC/DESC 아무거나 줘도 state는 DESC(최신->과거)로 통일
+ */
 const normalizeDesc = arr => {
   const list = Array.isArray(arr) ? arr : [];
   if (list.length < 2) return list;
@@ -41,7 +44,9 @@ const normalizeDesc = arr => {
 const arrayEqual = (a, b) => {
   if (!Array.isArray(a) || !Array.isArray(b)) return false;
   if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) if (String(a[i]) !== String(b[i])) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (String(a[i]) !== String(b[i])) return false;
+  }
   return true;
 };
 
@@ -65,9 +70,8 @@ const looksLikeSameMyMessage = (optimistic, incoming) => {
   if (Number.isFinite(ot) && Number.isFinite(it)) {
     const diff = Math.abs(it - ot);
     if (diff > 10000) {
-      // 10초 넘게 차이나면 다른 메시지로 보자
-      // (서버 createdAt이 완전 다른 기준이면 이 조건이 걸릴 수 있는데,
-      // 그 경우에는 아래 content/image 비교로도 잡혀서 통과할 수 있음)
+      // 10초 넘게 차이나면 다른 메시지일 가능성 높음
+      // (서버 createdAt이 다른 기준이면 아래 content/image 비교가 추가로 잡아줌)
     }
   }
 
@@ -79,8 +83,10 @@ const looksLikeSameMyMessage = (optimistic, incoming) => {
   }
 
   if (oType === 'image') {
-    const oa = optimistic.imageUrls ?? optimistic.mediaUrls ?? optimistic.images ?? [];
-    const ia = incoming.imageUrls ?? incoming.mediaUrls ?? incoming.images ?? [];
+    const oa =
+      optimistic.imageUrls ?? optimistic.mediaUrls ?? optimistic.images ?? [];
+    const ia =
+      incoming.imageUrls ?? incoming.mediaUrls ?? incoming.images ?? [];
     const oArr = Array.isArray(oa) ? oa : oa ? [oa] : [];
     const iArr = Array.isArray(ia) ? ia : ia ? [ia] : [];
     if (oArr.length === 0 || iArr.length === 0) return false;
@@ -105,6 +111,7 @@ const upsertByIdOrClientId = (list, message) => {
 
   // ✅ 1) clientMessageId로 교체 (가장 강력)
   if (clientId) {
+    // (A) clientMessageId 동일한 optimistic 찾기
     const idx = list.findIndex(m => toStr(m?.clientMessageId) === clientId);
     if (idx !== -1) {
       const next = [...list];
@@ -112,12 +119,20 @@ const upsertByIdOrClientId = (list, message) => {
       return next;
     }
 
-    // ✅ optimistic messageId가 `client-${clientId}`로 들어가므로 이것도 교체 대상으로
+    // (B) 너가 optimistic messageId를 "client-xxx"로 줄 수도 있으니 그것도 교체
     const optimisticKey = `client-${clientId}`;
     const idx2 = list.findIndex(m => toStr(m?.messageId) === optimisticKey);
     if (idx2 !== -1) {
       const next = [...list];
       next[idx2] = message;
+      return next;
+    }
+
+    // (C) 과거에 messageId=clientId로 넣어둔 경우도 커버
+    const idx3 = list.findIndex(m => toStr(m?.messageId) === clientId);
+    if (idx3 !== -1) {
+      const next = [...list];
+      next[idx3] = message;
       return next;
     }
   }
@@ -132,7 +147,7 @@ const upsertByIdOrClientId = (list, message) => {
     }
   }
 
-  // ✅ 3) 서버 echo가 clientMessageId를 안 줄 때: "가장 가까운 sending optimistic" 교체
+  // ✅ 3) 서버 echo가 clientMessageId를 안 줄 때: sending optimistic 교체
   const optimisticIdx = list.findIndex(m => looksLikeSameMyMessage(m, message));
   if (optimisticIdx !== -1) {
     const next = [...list];
@@ -157,6 +172,9 @@ const messageSlice = createSlice({
       if (rid && state.rooms[rid]) delete state.rooms[rid];
     },
 
+    /**
+     * ✅ 초기 메시지 세팅 (state: DESC)
+     */
     setMessageList(state, action) {
       const {chatRoomId, messages} = action.payload || {};
       const room = ensureRoom(state, chatRoomId);
@@ -174,6 +192,9 @@ const messageSlice = createSlice({
       room.hasMore = arr.length > 0;
     },
 
+    /**
+     * ✅ 더 과거 메시지 append (DESC에서 뒤로 붙임)
+     */
     appendMessageList(state, action) {
       const {chatRoomId, messages} = action.payload || {};
       const room = ensureRoom(state, chatRoomId);
@@ -199,6 +220,9 @@ const messageSlice = createSlice({
       room.hasMore = incoming.length > 0;
     },
 
+    /**
+     * ✅ optimistic/실시간/서버응답 모두 여기로
+     */
     addMessage(state, action) {
       const {chatRoomId, message} = action.payload || {};
       const room = ensureRoom(state, chatRoomId);
@@ -206,6 +230,8 @@ const messageSlice = createSlice({
 
       room.messageList = upsertByIdOrClientId(room.messageList, message);
 
+      // cursor는 "과거 기준"이라 보통 최신 추가로는 변하지 않음
+      // 비어있던 상태에서만 보정
       if (!room.cursor) {
         const oldest = room.messageList?.[room.messageList.length - 1];
         room.cursor = oldest?.createdAt ?? null;
