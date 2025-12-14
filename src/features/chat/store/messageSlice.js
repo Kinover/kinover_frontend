@@ -25,6 +25,28 @@ const initialState = {
   rooms: {},
 };
 
+const normalizeImageKey = v => {
+  if (!v) return null;
+  const s = String(v);
+
+  // 쿼리 제거
+  const noQuery = s.split('?')[0];
+
+  // cloudfront / s3 url이면 마지막 path만
+  return noQuery.split('/').pop();
+};
+
+const arrayEqualLoose = (a, b) => {
+  const A = (Array.isArray(a) ? a : a ? [a] : []).map(normalizeImageKey);
+  const B = (Array.isArray(b) ? b : b ? [b] : []).map(normalizeImageKey);
+
+  if (A.length !== B.length) return false;
+  for (let i = 0; i < A.length; i++) {
+    if (A[i] !== B[i]) return false;
+  }
+  return true;
+};
+
 /**
  * ✅ 서버가 ASC/DESC 아무거나 줘도 state는 DESC(최신->과거)로 통일
  */
@@ -90,7 +112,7 @@ const looksLikeSameMyMessage = (optimistic, incoming) => {
     const oArr = Array.isArray(oa) ? oa : oa ? [oa] : [];
     const iArr = Array.isArray(ia) ? ia : ia ? [ia] : [];
     if (oArr.length === 0 || iArr.length === 0) return false;
-    return arrayEqual(oArr, iArr);
+    return arrayEqualLoose(oArr, iArr);
   }
 
   return false;
@@ -103,9 +125,33 @@ const looksLikeSameMyMessage = (optimistic, incoming) => {
  * 3) server가 clientMessageId를 안 줄 때 대비: "내 optimistic(sending)"를 휴리스틱으로 교체
  * 4) 아니면 신규로 앞에 추가
  */
+
 const upsertByIdOrClientId = (list, message) => {
   if (!message) return list;
 
+  const type = toStr(message?.messageType ?? message?.type ?? 'text')
+    ?.toLowerCase()
+    ?.trim();
+
+  const content = toStr(message?.content ?? '').trim();
+
+  const media =
+    message?.imageUrls ??
+    message?.mediaUrls ??
+    message?.images ??
+    message?.imageUrl ?? // 이것도 같이 커버
+    [];
+
+  const mediaArr = Array.isArray(media) ? media : media ? [media] : [];
+  const hasMedia = mediaArr.length > 0;
+
+  // ✅ 1) 빈 text는 무시
+  if (type === 'text' && !content) return list;
+
+  // ✅ 2) 빈 image는 무시 (이게 스샷 원인 잡는 핵심)
+  if (type === 'image' && !hasMedia) return list;
+
+  // ---- 아래는 기존 로직 그대로 ----
   const msgId = toStr(message?.messageId);
   const clientId = toStr(message?.clientMessageId);
 

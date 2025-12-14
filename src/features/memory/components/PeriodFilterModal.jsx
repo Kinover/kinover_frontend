@@ -1,5 +1,5 @@
 // src/screens/memory/components/PeriodFilterModal.js
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useMemo, useState, useCallback} from 'react';
 import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
 import CustomModal from 'components/CustomModal';
 import {
@@ -24,12 +24,11 @@ export default function PeriodFilterModal({
   initialWeeks = 1, // 호환용 (안 써도 됨)
 }) {
   const today = useMemo(() => new Date(), []);
-  const [mode, setMode] = useState('ALL'); // 'ALL' | 'RECENT' | 'MONTH' |
+  const [mode, setMode] = useState('ALL'); // 'ALL' | 'RECENT' | 'MONTH'
   const [recentWeeks, setRecentWeeks] = useState(1); // 1 / 2 / 4
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth()); // 0~11
 
-  // 모달 열릴 때 기본값 초기화
   useEffect(() => {
     if (!visible) return;
     setMode('ALL');
@@ -38,44 +37,46 @@ export default function PeriodFilterModal({
     setMonth(today.getMonth());
   }, [visible, initialWeeks, today]);
 
-  // 현재 선택 상태에 따라 실제 날짜 범위 계산
-  const {startDate, endDate, summaryText} = useMemo(() => {
+  const {startDate, endDate, summaryText, subtitleText} = useMemo(() => {
     if (mode === 'ALL') {
       return {
         startDate: '',
         endDate: '',
-        summaryText: '전체 기간의 추억을 모두 볼게요',
+        summaryText: '전체 기간',
+        subtitleText: '모든 추억을 한 번에 모아볼게요',
       };
     }
 
     if (mode === 'RECENT') {
       const end = new Date();
       const start = new Date();
-      const days = recentWeeks * 7 - 1; // 1주 → 7일, 2주 → 14일, 4주 → 28일
+      const days = recentWeeks * 7 - 1;
       start.setDate(end.getDate() - days);
+
       return {
         startDate: formatYMD(start),
         endDate: formatYMD(end),
-        summaryText: `${formatYMD(start)} ~ ${formatYMD(
-          end,
-        )} (최근 ${recentWeeks}주)`,
+        summaryText: `최근 ${recentWeeks}주`,
+        subtitleText: `${formatYMD(start)} ~ ${formatYMD(end)}`,
       };
     }
 
-    // mode === 'MONTH'
     const start = new Date(year, month, 1);
     const end = new Date(year, month + 1, 0);
+
     return {
       startDate: formatYMD(start),
       endDate: formatYMD(end),
-      summaryText: `${year}.${String(month + 1).padStart(2, '0')} 한 달 전체`,
+      summaryText: `${year}.${String(month + 1).padStart(2, '0')}`,
+      subtitleText: '선택한 달의 추억만 모아볼게요',
     };
   }, [mode, recentWeeks, year, month]);
 
-  const handleChangeMonth = diff => {
-    setMode('MONTH');
-    setYear(prevYear => {
-      let newYear = prevYear;
+  const handleChangeMonth = useCallback(
+    diff => {
+      setMode('MONTH');
+
+      let newYear = year;
       let newMonth = month + diff;
 
       if (newMonth < 0) {
@@ -86,14 +87,15 @@ export default function PeriodFilterModal({
         newMonth = 0;
       }
 
+      setYear(newYear);
       setMonth(newMonth);
-      return newYear;
-    });
-  };
+    },
+    [year, month],
+  );
 
-  const handleApply = () => {
+  const handleApply = useCallback(() => {
     onApply({startDate, endDate});
-  };
+  }, [onApply, startDate, endDate]);
 
   return (
     <CustomModal
@@ -103,127 +105,116 @@ export default function PeriodFilterModal({
       title="기간 설정"
       confirmText="적용하기"
       closeText="취소">
-      <View
-        style={{
-          position: 'relative',
-          width: '100%',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-        {/* 요약 */}
-        <Text style={styles.summary}>{summaryText}</Text>
+      <View style={styles.container}>
+        {/* 요약 카드 */}
+        {/* <View style={styles.summaryCard}>
+          <View style={styles.summaryBadge}>
+            <Text style={styles.summaryBadgeText}>{summaryText}</Text>
+          </View>
+          <Text style={styles.summarySub}>{subtitleText}</Text>
+        </View> */}
 
-        {/* 모드 탭: 최근 / 월별 / 전체 */}
-        <View style={styles.modeTabs}>
-          <ModeTab
+        {/* 세그먼트 탭 */}
+        <View style={styles.segment}>
+          <SegmentTab
             label="전체"
             active={mode === 'ALL'}
             onPress={() => setMode('ALL')}
           />
-          <ModeTab
+          <SegmentTab
             label="최근"
             active={mode === 'RECENT'}
             onPress={() => setMode('RECENT')}
           />
-          <ModeTab
+          <SegmentTab
             label="월별"
             active={mode === 'MONTH'}
             onPress={() => setMode('MONTH')}
           />
         </View>
 
-        {/* 모드별 내용 */}
+        {/* 내용 카드 */}
         {mode === 'RECENT' && (
-          <View
-            style={{
-              position: 'relative',
-              alignSelf: 'flex-start',
-              marginTop: getResponsiveHeight(10),
-              marginHorizontal: getResponsiveHeight(5),
-            }}>
-            <Text style={styles.sectionLabel}>최근 기준</Text>
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>최근 기준</Text>
+
             <View style={styles.chipRow}>
               <PresetChip
-                label="최근 1주"
+                label="1주"
                 active={recentWeeks === 1}
                 onPress={() => setRecentWeeks(1)}
               />
               <PresetChip
-                label="최근 2주"
+                label="2주"
                 active={recentWeeks === 2}
                 onPress={() => setRecentWeeks(2)}
               />
               <PresetChip
-                label="최근 4주"
+                label="4주"
                 active={recentWeeks === 4}
                 onPress={() => setRecentWeeks(4)}
               />
             </View>
-            <Text style={styles.helperText}>
-              최소 1주 단위로, 최근 N주 동안의 추억을 볼 수 있어요.
+
+            <Text style={styles.cardHint}>
+              최근 N주 동안의 추억을 모아볼 수 있어요.
             </Text>
           </View>
         )}
 
         {mode === 'MONTH' && (
-          <View
-            style={{
-              position: 'relative',
-              alignSelf: 'center',
-              marginTop: getResponsiveHeight(10),
-              marginHorizontal: getResponsiveHeight(5),
-            }}>
-            <Text style={[styles.sectionLabel, {alignSelf: 'center'}]}>
-              월별 선택
-            </Text>
-            <View style={styles.monthRow}>
+          <View style={styles.card}>
+            <Text style={styles.cardTitleCenter}>월별 선택</Text>
+
+            <View style={styles.monthPicker}>
               <TouchableOpacity
-                style={styles.monthArrow}
+                style={styles.monthBtn}
                 onPress={() => handleChangeMonth(-1)}>
-                <Text style={styles.monthArrowText}>◀</Text>
+                <Text style={styles.monthBtnText}>‹</Text>
               </TouchableOpacity>
 
-              <Text style={styles.monthText}>
-                {year}.{String(month + 1).padStart(2, '0')}
-              </Text>
+              <View style={styles.monthCenter}>
+                <Text style={styles.monthMain}>
+                  {year}.{String(month + 1).padStart(2, '0')}
+                </Text>
+                <Text style={styles.monthRange}>
+                  {startDate} ~ {endDate}
+                </Text>
+              </View>
 
               <TouchableOpacity
-                style={styles.monthArrow}
+                style={styles.monthBtn}
                 onPress={() => handleChangeMonth(1)}>
-                <Text style={styles.monthArrowText}>▶</Text>
+                <Text style={styles.monthBtnText}>›</Text>
               </TouchableOpacity>
             </View>
-            <Text style={styles.helperText}>
-              선택한 달에 등록된 추억만 모아볼게요.
+
+            <Text style={styles.cardHint}>
+              선택한 달에 등록된 추억만 보여줘요.
             </Text>
           </View>
         )}
 
-        {/* {mode === 'ALL' && (
-          <View
-            style={{
-              position: 'relative',
-              alignSelf: 'flex-start',
-              marginTop: getResponsiveHeight(10),
-              marginHorizontal: getResponsiveHeight(5),
-            }}>
-            <Text style={styles.sectionLabel}>전체 기간</Text>
-            <Text style={styles.helperText}>
-              기간 제한 없이, 모든 추억을 시간순으로 볼 수 있어요.
+        {mode === 'ALL' && (
+          <View style={styles.card}>
+            <Text style={styles.cardTitle}>전체 기간</Text>
+            <Text style={styles.cardHint}>
+              기간 제한 없이 모든 추억을 시간순으로 볼 수 있어요.
             </Text>
           </View>
-        )} */}
+        )}
       </View>
     </CustomModal>
   );
 }
 
-function ModeTab({label, active, onPress}) {
+function SegmentTab({label, active, onPress}) {
   return (
     <TouchableOpacity
       onPress={onPress}
-      style={[styles.modeTab, active && styles.modeTabActive]}>
-      <Text style={[styles.modeTabText, active && styles.modeTabTextActive]}>
+      activeOpacity={0.85}
+      style={[styles.segmentTab, active && styles.segmentTabActive]}>
+      <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -234,7 +225,8 @@ function PresetChip({label, active, onPress}) {
   return (
     <TouchableOpacity
       style={[styles.chip, active && styles.chipActive]}
-      onPress={onPress}>
+      onPress={onPress}
+      activeOpacity={0.85}>
       <Text style={[styles.chipText, active && styles.chipTextActive]}>
         {label}
       </Text>
@@ -243,100 +235,170 @@ function PresetChip({label, active, onPress}) {
 }
 
 const styles = StyleSheet.create({
-  summary: {
-    fontSize: getResponsiveFontSize(13),
-    color: '#4B5563',
-    marginBottom: getResponsiveHeight(10),
-    textAlign: 'left',
+  container: {
+    width: '100%',
+    paddingTop: getResponsiveHeight(2),
   },
 
-  // 모드 탭
-  modeTabs: {
-    flexDirection: 'row',
-    borderRadius: 999,
-    backgroundColor: '#F3F4F6',
-    padding: getResponsiveHeight(3),
-    marginBottom: getResponsiveHeight(10),
+  // ===== Summary =====
+  summaryCard: {
+    width: '100%',
+    backgroundColor: 'rgba(255, 231, 178, 0.22)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 200, 77, 0.45)',
+    borderRadius: getResponsiveWidth(14),
+    paddingVertical: getResponsiveHeight(12),
+    paddingHorizontal: getResponsiveWidth(12),
+    marginBottom: getResponsiveHeight(12),
+    gap: getResponsiveHeight(6),
   },
-  modeTab: {
+  summaryBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: getResponsiveWidth(10),
+    paddingVertical: getResponsiveHeight(5),
+    borderRadius: 999,
+    backgroundColor: '#FFC84D',
+  },
+  summaryBadgeText: {
+    color: '#fff',
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(12),
+  },
+  summarySub: {
+    color: '#374151',
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(12.5),
+    lineHeight: getResponsiveHeight(18),
+  },
+
+  // ===== Segment =====
+  segment: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 999,
+    padding: getResponsiveHeight(4),
+    gap: getResponsiveWidth(6),
+    marginBottom: getResponsiveHeight(12),
+  },
+  segmentTab: {
     flex: 1,
     paddingVertical: getResponsiveHeight(8),
     borderRadius: 999,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  modeTabActive: {
+  segmentTabActive: {
     backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(17, 24, 39, 0.06)',
   },
-  modeTabText: {
+  segmentText: {
     fontSize: getResponsiveFontSize(12),
     color: '#6B7280',
+    fontFamily: 'Pretendard-Medium',
   },
-  modeTabTextActive: {
+  segmentTextActive: {
     color: '#111827',
     fontFamily: 'Pretendard-SemiBold',
   },
 
-  sectionLabel: {
+  // ===== Card =====
+  card: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: getResponsiveWidth(14),
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    paddingVertical: getResponsiveHeight(12),
+    paddingHorizontal: getResponsiveWidth(12),
+    gap: getResponsiveHeight(8),
+  },
+  cardTitle: {
     fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-SemiBold',
-    marginBottom: getResponsiveHeight(4),
+    color: '#111827',
+  },
+  cardTitleCenter: {
+    fontSize: getResponsiveFontSize(13),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#111827',
+    alignSelf: 'center',
+  },
+  cardHint: {
+    fontSize: getResponsiveFontSize(11.5),
+    color: '#9CA3AF',
+    fontFamily: 'Pretendard-Regular',
+    lineHeight: getResponsiveHeight(16),
   },
 
+  // ===== Chips =====
   chipRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: getResponsiveWidth(6),
-    // justifyContent: 'center',
+    gap: getResponsiveWidth(8),
   },
   chip: {
-    paddingHorizontal: getResponsiveWidth(10),
-    paddingVertical: getResponsiveHeight(5),
+    flex: 1,
+    paddingVertical: getResponsiveHeight(9),
     borderRadius: 999,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     backgroundColor: '#F9FAFB',
-  },
-  chipActive: {
-    // backgroundColor: '#FFC84D',
-    backgroundColor: BUTTON_STYLES.saveBg,
-    borderColor: BUTTON_STYLES.saveBg,
-
-    // borderColor: '#FFC84D',
-  },
-  chipText: {
-    fontSize: getResponsiveFontSize(12),
-    color: '#4B5563',
-  },
-  chipTextActive: {
-    fontFamily: 'Pretendard-Bold',
-    // color: '#111827',
-    color: 'white',
-  },
-
-  monthRow: {
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: getResponsiveHeight(4),
   },
-  monthArrow: {
-    paddingHorizontal: getResponsiveWidth(10),
-    paddingVertical: getResponsiveHeight(4),
+  chipActive: {
+    backgroundColor: BUTTON_STYLES.saveBg,
+    borderColor: BUTTON_STYLES.saveBg,
   },
-  monthArrowText: {
-    fontSize: getResponsiveFontSize(16),
+  chipText: {
+    fontSize: getResponsiveFontSize(12.5),
     color: '#4B5563',
-  },
-  monthText: {
-    fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-Medium',
-    color: '#111827',
-    marginHorizontal: getResponsiveWidth(12),
+  },
+  chipTextActive: {
+    color: '#fff',
+    fontFamily: 'Pretendard-SemiBold',
   },
 
-  helperText: {
+  // ===== Month Picker =====
+  monthPicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: getResponsiveWidth(12),
+    borderWidth: 1,
+    borderColor: 'rgba(255, 200, 77, 0.35)',
+    backgroundColor: 'rgba(255, 231, 178, 0.18)',
+    paddingVertical: getResponsiveHeight(10),
+    paddingHorizontal: getResponsiveWidth(10),
+  },
+  monthBtn: {
+    width: getResponsiveWidth(36),
+    height: getResponsiveWidth(36),
+    borderRadius: 999,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: 'rgba(17, 24, 39, 0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monthBtnText: {
+    fontSize: getResponsiveFontSize(22),
+    color: '#111827',
+    includeFontPadding: false,
+  },
+  monthCenter: {
+    alignItems: 'center',
+    gap: getResponsiveHeight(2),
+  },
+  monthMain: {
+    fontSize: getResponsiveFontSize(14),
+    color: '#111827',
+    fontFamily: 'Pretendard-SemiBold',
+  },
+  monthRange: {
     fontSize: getResponsiveFontSize(11),
-    color: '#9CA3AF',
-    marginTop: getResponsiveHeight(6),
+    color: '#6B7280',
+    fontFamily: 'Pretendard-Regular',
   },
 });
