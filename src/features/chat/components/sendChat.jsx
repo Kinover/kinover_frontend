@@ -141,6 +141,14 @@ export default function SendChat({
     </View>
   );
 
+  const safeText = useMemo(() => String(message ?? '').trim(), [message]);
+  const hasText = safeText.length > 0;
+  const hasMedia = safeMediaUrls.length > 0;
+
+  if (isImage && safeMediaUrls.length === 0) {
+    return null;
+  }
+
   return (
     <View style={[styles.sendContainer, spacingStyle, style]}>
       {showTime && !!chatTime && (
@@ -166,11 +174,11 @@ export default function SendChat({
         ) : (
           renderImages()
         )
-      ) : (
+      ) : hasText ? (
         <View style={[styles.sendBubble, styles.textPadding]}>
           <Text style={styles.sendText}>{message}</Text>
         </View>
-      )}
+      ) : null}
 
       <MediaModal
         visible={modalVisible}

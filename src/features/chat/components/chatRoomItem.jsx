@@ -141,9 +141,9 @@ const styles = StyleSheet.create({
   },
   time: {
     top: 0,
-    fontSize: getResponsiveFontSize(11.5),
+    fontSize: getResponsiveFontSize(12),
     color: '#8B8B8B',
-    lineHeight: getResponsiveHeight(20),
+    lineHeight: getResponsiveHeight(22),
     textAlignVertical: 'top',
   },
   description: {

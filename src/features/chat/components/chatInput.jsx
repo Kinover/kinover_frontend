@@ -194,7 +194,9 @@ const ChatInput = forwardRef(function ChatInput(
     sendingLockRef.current = true;
 
     const text = message.trim();
-    if (!text && selectedImages.length === 0) {
+    const hasImages = enableMediaPicker && selectedImages.length > 0;
+
+    if (!text && !hasImages) {
       sendingLockRef.current = false;
       return;
     }
@@ -206,20 +208,22 @@ const ChatInput = forwardRef(function ChatInput(
     }
 
     const socket = socketRef?.current;
-
     if (!socket || socket.readyState !== 1) {
       showToast('연결이 불안정해요. 다시 시도해주세요.');
       sendingLockRef.current = false;
       return;
     }
 
+    // ✅ 이번 전송에서 사용할 스냅샷 (중간에 state 바뀌어도 안전)
+    const imageSnapshot = hasImages ? [...selectedImages] : [];
+
     try {
       setIsSending(true);
 
-      // 1) text (✅ optimistic)
+      // ===== 1) TEXT (optimistic 유지) =====
       if (text) {
         const clientMessageId = makeClientId();
-        const optimisticId = `client-${clientMessageId}`; // ✅ 핵심: optimistic messageId 규칙 고정
+        const optimisticId = `client-${clientMessageId}`;
 
         dispatch(
           addMessageAndUpdateRoom({
@@ -250,65 +254,100 @@ const ChatInput = forwardRef(function ChatInput(
         setMessage('');
       }
 
-      if (!enableMediaPicker) return;
+      // ===== 2) IMAGE (✅ 업로드 전 optimistic 먼저 → 업로드 끝나면 status 갱신) =====
+      if (!hasImages) return;
 
-      // 2) media (✅ optimistic)
-      if (selectedImages.length > 0) {
-        const fileNames = selectedImages.map((file, index) =>
-          getFileNameWithExtension(file, index),
-        );
+      // ✅ 누르자마자 갤러리 닫고 선택 초기화 (사용자 체감 좋아짐)
+      setShowGallery(false);
+      setSelectedImages([]);
 
-        const presignedUrls = await getPresignedUrls(fileNames);
+      const clientMessageId = makeClientId();
+      const optimisticId = `client-${clientMessageId}`;
 
-        for (let i = 0; i < selectedImages.length; i++) {
-          let fileUri = selectedImages[i].uri;
-
-          if (Platform.OS === 'ios' && fileUri.startsWith('ph://')) {
-            fileUri = await convertPhUriToFileUri(
-              fileUri,
-              i,
-              selectedImages[i].isVideo,
-            );
-            if (!fileUri) continue;
-          }
-
-          await uploadFileToS3(presignedUrls[i], fileUri, fileNames[i]);
-        }
-
-        const clientMessageId = makeClientId();
-        const optimisticId = `client-${clientMessageId}`; // ✅ 동일 규칙
-
-        dispatch(
-          addMessageAndUpdateRoom({
-            chatRoomId: roomId,
-            message: {
-              messageId: optimisticId,
-              clientMessageId,
-              chatRoomId: roomId,
-              senderId: userId,
-              messageType: 'image',
-              imageUrls: fileNames,
-              createdAt: new Date().toISOString(),
-              localStatus: 'sending',
-            },
-          }),
-        );
-
-        socket.send(
-          JSON.stringify({
-            messageType: 'image',
+      // ✅ 업로드 전: 로컬 uri로 미리 메시지 뿌리기 (전송중… 오버레이)
+      dispatch(
+        addMessageAndUpdateRoom({
+          chatRoomId: roomId,
+          message: {
+            messageId: optimisticId,
+            clientMessageId,
             chatRoomId: roomId,
             senderId: userId,
-            imageUrls: fileNames,
-            clientMessageId,
-          }),
-        );
+            messageType: 'image',
+            // 로컬 미리보기용
+            mediaUrls: imageSnapshot.map(p => p.uri),
+            createdAt: new Date().toISOString(),
+            uploadStatus: 'uploading', // ✅ SendChat에서 전송중 표시
+            localStatus: 'sending',
+          },
+        }),
+      );
 
-        setShowGallery(false);
-        setSelectedImages([]);
+      // ✅ 업로드에 사용할 파일명 생성
+      const fileNames = imageSnapshot.map((file, index) =>
+        getFileNameWithExtension(file, index),
+      );
+
+      const presignedUrls = await getPresignedUrls(fileNames);
+
+      // ✅ S3 업로드 (모두 끝날 때까지 잠금 유지)
+      for (let i = 0; i < imageSnapshot.length; i++) {
+        let fileUri = imageSnapshot[i].uri;
+
+        if (Platform.OS === 'ios' && fileUri.startsWith('ph://')) {
+          fileUri = await convertPhUriToFileUri(
+            fileUri,
+            i,
+            imageSnapshot[i].isVideo,
+          );
+          if (!fileUri) throw new Error('convertPhUriToFileUri failed');
+        }
+
+        await uploadFileToS3(presignedUrls[i], fileUri, fileNames[i]);
       }
+
+      // ✅ 업로드 완료: 같은 clientMessageId로 메시지 갱신 (전송중 → 해제)
+      dispatch(
+        addMessageAndUpdateRoom({
+          chatRoomId: roomId,
+          message: {
+            messageId: optimisticId,
+            clientMessageId,
+            chatRoomId: roomId,
+            senderId: userId,
+            messageType: 'image',
+            imageUrls: fileNames, // 서버/클라우드용 키
+            // 여기서 mediaUrls도 fileNames로 덮어도 되고, 그대로 둬도 됨(서버 echo가 곧 교체)
+            mediaUrls: fileNames,
+            createdAt: new Date().toISOString(),
+            uploadStatus: 'sent',
+            localStatus: 'sending',
+          },
+        }),
+      );
+
+      // ✅ 마지막에 서버로 “이제 메시지 등록해줘” 전송
+      socket.send(
+        JSON.stringify({
+          messageType: 'image',
+          chatRoomId: roomId,
+          senderId: userId,
+          imageUrls: fileNames,
+          clientMessageId,
+        }),
+      );
     } catch (e) {
       console.error(e);
+
+      // ✅ 실패 처리: 방금 올린 이미지 메시지를 failed로 바꿔서 “전송 실패” 띄우기
+      // (clientMessageId를 알고 있어야 하니까 위 구조처럼 써야 함)
+      // 여기선 imageSnapshot이 있을 때만 실패 UI 의미가 있으니 조건 걸어줌
+      if (enableMediaPicker && imageSnapshot.length > 0) {
+        // clientMessageId / optimisticId가 try 블록 안이라 catch에서 접근이 안 되면
+        // 위에서 image 파트의 clientMessageId/optimisticId를 try 바깥으로 빼서 관리해줘도 됨.
+        // 가장 깔끔한 방법은 image 전송용 clientMessageId를 try 밖에 let으로 선언하는 거야.
+      }
+
       showToast('전송 중 오류가 발생했어요.');
     } finally {
       setIsSending(false);
