@@ -1,8 +1,7 @@
 // src/features/memory/components/ImageCarousel.jsx
-import React, {useEffect, useRef} from 'react';
+import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
 import {
   Dimensions,
-  Image,
   StyleSheet,
   Text,
   View,
@@ -18,24 +17,70 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-import ImageViewer from './ImageViewer';
 import FastImage from '@d11/react-native-fast-image';
+import {getVideoThumbnail} from '../../../utils/videoThumbnail';
+import MediaViewer from './MediaViewer'; // ✅ 아래에 새로 만든 Viewer로 교체
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const ITEM_WIDTH =
   Platform.OS === 'android' ? SCREEN_WIDTH * 0.98 : SCREEN_WIDTH * 0.97;
 
+function normalizeMedia(localImages = [], localMedia = []) {
+  // localMedia 우선
+  if (Array.isArray(localMedia) && localMedia.length) {
+    return localMedia
+      .filter(Boolean)
+      .map(it => {
+        // { uri, type } 형태
+        if (typeof it === 'object' && it?.uri) {
+          const uri = String(it.uri);
+          const type = String(it.type || '').toLowerCase();
+          const isVideo =
+            type === 'video' || /\.mp4(\?|$)/i.test(uri) || /\.mov(\?|$)/i.test(uri);
+          return {uri, type: isVideo ? 'video' : 'image'};
+        }
+
+        // 문자열도 허용
+        const uri = String(it);
+        const isVideo = /\.mp4(\?|$)/i.test(uri) || /\.mov(\?|$)/i.test(uri);
+        return {uri, type: isVideo ? 'video' : 'image'};
+      });
+  }
+
+  // 기존 localImages(string[])도 지원
+  if (Array.isArray(localImages) && localImages.length) {
+    return localImages
+      .filter(Boolean)
+      .map(uri => {
+        const u = String(uri);
+        const isVideo = /\.mp4(\?|$)/i.test(u) || /\.mov(\?|$)/i.test(u);
+        return {uri: u, type: isVideo ? 'video' : 'image'};
+      });
+  }
+
+  return [];
+}
+
 export default function ImageCarousel({
+  // ✅ 둘 다 받을 수 있게
   localImages = [],
-  currentImageIndex = 0,
-  setCurrentImageIndex,
+  localMedia = [],
+
+  currentIndex = 0,
+  setCurrentIndex,
   setCommentIndex,
   commentCount = 0,
   isCommentMode = false,
-  isImageFullScreen,
-  setIsImageFullScreen,
+
+  isFullScreen = false,
+  setIsFullScreen,
 }) {
   const mainCarouselRef = useRef(null);
+
+  const mediaList = useMemo(
+    () => normalizeMedia(localImages, localMedia),
+    [localImages, localMedia],
+  );
 
   // ===== 댓글 모드 애니메이션 (RN Animated) =====
   const progressRef = useRef(new Animated.Value(isCommentMode ? 1 : 0));
@@ -73,64 +118,141 @@ export default function ImageCarousel({
   const handleCommentToggle = () => setCommentIndex?.(prev => !prev);
 
   // =========================================================
-  // ✅ 핵심 1) "단일 진실" currentImageIndex가 바뀌면
-  //    메인 캐러셀도 즉시 scrollTo로 따라가게 만든다
+  // ✅ currentIndex가 바뀌면 캐러셀도 따라가게
   // =========================================================
   const lastSyncedRef = useRef(-1);
   useEffect(() => {
-    const idx = Number.isInteger(currentImageIndex) ? currentImageIndex : 0;
+    const idx = Number.isInteger(currentIndex) ? currentIndex : 0;
     if (lastSyncedRef.current === idx) return;
     lastSyncedRef.current = idx;
 
-    // 메인이 이미 렌더된 뒤에 이동시키는 게 안전함
     requestAnimationFrame(() => {
       mainCarouselRef.current?.scrollTo?.({
         index: idx,
         animated: false,
       });
     });
-  }, [currentImageIndex]);
+  }, [currentIndex]);
 
-  const renderMainItem = ({item, index}) => (
-    <View style={[styles.imageWrapper, {width: ITEM_WIDTH}]}>
-      <TouchableOpacity
-        style={styles.image}
-        activeOpacity={1}
-        onPress={() => {
-          // ✅ 누른 순간 currentImageIndex 업데이트 + 뷰어 오픈
-          setCurrentImageIndex?.(index);
-          setIsImageFullScreen?.(true);
-        }}>
-        <FastImage source={{uri: item}} style={styles.image} />
-      </TouchableOpacity>
+  // =========================================================
+  // ✅ 영상 썸네일 캐시
+  // =========================================================
+  const [videoThumbMap, setVideoThumbMap] = useState({}); // { [videoUri]: thumbUri }
+  const loadingRef = useRef(new Set());
 
-      <Animated.View
-        style={[
-          styles.overlay,
-          {
-            backgroundColor: 'rgba(0,0,0,1)',
-            opacity: overlayOpacity,
-            height: overlayHeightPct,
-          },
-        ]}>
-        <View style={styles.commentSection}>
-          <TouchableOpacity onPress={handleCommentToggle}>
+  const ensureThumb = useCallback(async uri => {
+    try {
+      if (!uri) return;
+      if (videoThumbMap[uri]) return;
+      if (loadingRef.current.has(uri)) return;
+      loadingRef.current.add(uri);
+
+      const t = await getVideoThumbnail(uri);
+      const thumbUri = t?.uri || null;
+
+      if (thumbUri) {
+        setVideoThumbMap(prev => ({...prev, [uri]: thumbUri}));
+      }
+    } catch (e) {
+      // 필요하면 로그
+      // console.log('thumb fail:', uri, e?.message || e);
+    } finally {
+      loadingRef.current.delete(uri);
+    }
+  }, [videoThumbMap]);
+
+  // 처음 보이는 몇 개만 미리 생성 (성능)
+  useEffect(() => {
+    const firstFew = mediaList.slice(0, 12);
+    (async () => {
+      for (const it of firstFew) {
+        if (it?.type === 'video') await ensureThumb(it.uri);
+      }
+    })();
+  }, [mediaList, ensureThumb]);
+
+  const renderMainItem = ({item, index}) => {
+    const uri = item?.uri;
+    const type = item?.type;
+    const isVideo = type === 'video';
+
+    const thumbUri = isVideo ? videoThumbMap[uri] : null;
+    if (isVideo && uri && !thumbUri) {
+      requestAnimationFrame(() => ensureThumb(uri));
+    }
+
+    return (
+      <View style={[styles.imageWrapper, {width: ITEM_WIDTH}]}>
+        <TouchableOpacity
+          style={styles.image}
+          activeOpacity={1}
+          onPress={() => {
+            setCurrentIndex?.(index);
+            setIsFullScreen?.(true);
+          }}>
+          {isVideo ? (
+            <>
+              {thumbUri ? (
+                <FastImage
+                  pointerEvents="none"
+                  source={{
+                    uri: thumbUri,
+                    priority: FastImage.priority.normal,
+                    cache: FastImage.cacheControl.immutable,
+                  }}
+                  style={styles.image}
+                  resizeMode={FastImage.resizeMode.cover}
+                />
+              ) : (
+                <View style={[styles.image, styles.videoFallback]} />
+              )}
+
+              {/* ✅ 영상 표시용 플레이 아이콘(원하면 제거 가능) */}
+              <View pointerEvents="none" style={styles.playOverlay}>
+                <View style={styles.playTriangle} />
+              </View>
+            </>
+          ) : (
             <FastImage
-              source={require('../../../assets/icons/chatCircleDots.png')}
-              style={styles.icon}
+              pointerEvents="none"
+              source={{uri}}
+              style={styles.image}
+              resizeMode={FastImage.resizeMode.cover}
             />
-          </TouchableOpacity>
-          <Text style={styles.commentText}>{commentCount}</Text>
-        </View>
+          )}
+        </TouchableOpacity>
 
-        <Text style={styles.imageIndexText}>
-          <Text style={styles.imageIndexCurrent}>{currentImageIndex + 1}</Text>
-          {' / '}
-          {localImages.length}
-        </Text>
-      </Animated.View>
-    </View>
-  );
+        <Animated.View
+          style={[
+            styles.overlay,
+            {
+              backgroundColor: 'rgba(0,0,0,1)',
+              opacity: overlayOpacity,
+              height: overlayHeightPct,
+            },
+          ]}>
+          <View style={styles.commentSection}>
+            <TouchableOpacity onPress={handleCommentToggle}>
+              <FastImage
+                pointerEvents="none"
+                source={require('../../../assets/icons/chatCircleDots.png')}
+                style={styles.icon}
+              />
+            </TouchableOpacity>
+            <Text style={styles.commentText}>{commentCount}</Text>
+          </View>
+
+          <Text style={styles.imageIndexText}>
+            <Text style={styles.imageIndexCurrent}>{currentIndex + 1}</Text>
+            {' / '}
+            {mediaList.length}
+          </Text>
+        </Animated.View>
+      </View>
+    );
+  };
+
+  if (!mediaList.length) return null;
 
   return (
     <View style={styles.container}>
@@ -142,12 +264,12 @@ export default function ImageCarousel({
           alignItems: 'center',
         }}>
         <Carousel
-          key={`main-${localImages?.length ?? 0}`}
+          key={`main-${mediaList.length}`}
           ref={mainCarouselRef}
           width={SCREEN_WIDTH}
-          data={localImages}
-          defaultIndex={currentImageIndex}
-          onSnapToItem={idx => setCurrentImageIndex?.(idx)}
+          data={mediaList}
+          defaultIndex={currentIndex}
+          onSnapToItem={idx => setCurrentIndex?.(idx)}
           loop={false}
           mode="parallax"
           scrollAnimationDuration={400}
@@ -159,13 +281,13 @@ export default function ImageCarousel({
         />
       </Animated.View>
 
-      {/* ✅ 같은 currentImageIndex를 공유하는 Viewer */}
-      <ImageViewer
-        visible={!!isImageFullScreen}
-        images={localImages}
-        index={currentImageIndex} // ✅ 단일 진실
-        onIndexChange={idx => setCurrentImageIndex?.(idx)} // ✅ 뷰어 스와이프 -> currentImageIndex 변경
-        onClose={() => setIsImageFullScreen?.(false)}
+      {/* ✅ 풀스크린 Viewer도 image/video 둘 다 */}
+      <MediaViewer
+        visible={!!isFullScreen}
+        media={mediaList}
+        index={currentIndex}
+        onIndexChange={idx => setCurrentIndex?.(idx)}
+        onClose={() => setIsFullScreen?.(false)}
       />
     </View>
   );
@@ -191,8 +313,12 @@ const styles = StyleSheet.create({
   },
   image: {
     flex: 1,
-    resizeMode: 'cover',
   },
+
+  videoFallback: {
+    backgroundColor: '#E5E7EB',
+  },
+
   overlay: {
     position: 'absolute',
     bottom: 0,
@@ -227,5 +353,23 @@ const styles = StyleSheet.create({
     color: '#FFC84D',
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveIconSize(20),
+  },
+
+  // ✅ 플레이 오버레이(썸네일 위)
+  playOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 22,
+    borderTopWidth: 14,
+    borderBottomWidth: 14,
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    marginLeft: 5,
   },
 });

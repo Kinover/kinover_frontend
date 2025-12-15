@@ -193,15 +193,18 @@ export default function PostPage({route}) {
         <View style={{flex: 1}}>
           <ImageCarousel
             commentCount={memory.commentCount}
-            localImages={vm.localImages}
-            currentImageIndex={vm.currentImageIndex}
-            setCurrentImageIndex={vm.setCurrentImageIndex}
+            // ✅ 기존 localImages -> localMedia로 바꿔서 전달
+            localMedia={vm.localImages.map(uri => ({
+              uri,
+              type: /\.mp4(\?|$)/i.test(String(uri)) ? 'video' : 'image',
+            }))}
+            currentIndex={vm.currentImageIndex}
+            setCurrentIndex={vm.setCurrentImageIndex}
             setCommentIndex={vm.setCommentIndex}
-            onImagePress={() => vm.setIsImageFullScreen(true)}
+            onMediaPress={() => vm.setIsImageFullScreen(true)}
             isCommentMode={vm.commentIndex}
-            isImageFullScreen={vm.isImageFullScreen}
-            setIsImageFullScreen={vm.setIsImageFullScreen}
-            initialIndex={imageIndex}
+            isFullScreen={vm.isImageFullScreen}
+            setIsFullScreen={vm.setIsImageFullScreen}
           />
         </View>
       )}

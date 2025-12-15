@@ -14,11 +14,9 @@ import {
   Platform,
   Image,
   Dimensions,
-  Linking,
   PanResponder,
   LayoutAnimation,
   UIManager,
-  AppState,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {
@@ -38,15 +36,6 @@ import formatDuration from '../../../utils/formatDuration';
 import {HEADER_STYLES} from 'styles/style';
 import ToastModal from '../../../components/ToastModal';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
-
-// ✅ iOS 사진 권한(모든 사진) 유도용
-import {
-  check,
-  request,
-  openSettings,
-  PERMISSIONS,
-  RESULTS,
-} from 'react-native-permissions';
 
 // ====== 이미지 그리드 설정 ======
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -90,9 +79,6 @@ export default function ImageSelectPage() {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  // ✅ iOS “모든 사진”이 아니면 화면 막기
-  const [mustAllowAll, setMustAllowAll] = useState(false);
-
   const showToast = useCallback(msg => {
     setToastMessage(msg);
     setToastVisible(true);
@@ -102,104 +88,37 @@ export default function ImageSelectPage() {
     setToastVisible(false);
   }, []);
 
-  // ✅ iOS: "모든 사진" 권한인지 체크 (limited면 막기)
-  const ensureFullPhotoAccessIOS = useCallback(async () => {
-    if (Platform.OS !== 'ios') return true;
+  const loadPhotosPage = useCallback(async (after = null) => {
+    const res = await loadGalleryPhotos(after, PAGE_SIZE);
 
-    const status = await check(PERMISSIONS.IOS.PHOTO_LIBRARY);
+    const newPhotos = res?.photos ?? [];
+    const newCursor = res?.endCursor ?? null;
+    const newHasNext = !!res?.hasNextPage;
 
-    // ✅ 전체 허용
-    if (status === RESULTS.GRANTED) {
-      setMustAllowAll(false);
-      return true;
-    }
+    if (after) setPhotos(prev => [...prev, ...newPhotos]);
+    else setPhotos(newPhotos);
 
-    // ✅ limited(선택한 사진만) → 반드시 설정으로 유도
-    if (status === RESULTS.LIMITED) {
-      setMustAllowAll(true);
-      return false;
-    }
-
-    // ✅ 아직 미요청/거절 → 요청 시도
-    if (status === RESULTS.DENIED) {
-      const req = await request(PERMISSIONS.IOS.PHOTO_LIBRARY);
-
-      if (req === RESULTS.GRANTED) {
-        setMustAllowAll(false);
-        return true;
-      }
-      if (req === RESULTS.LIMITED) {
-        setMustAllowAll(true);
-        return false;
-      }
-
-      // denied/blocked
-      setMustAllowAll(true);
-      return false;
-    }
-
-    // blocked / unavailable 등
-    setMustAllowAll(true);
-    return false;
-  }, []);
-
-  const loadPhotos = async (after = null) => {
-    const {
-      photos: newPhotos,
-      endCursor: newCursor,
-      hasNextPage: newHasNext,
-    } = await loadGalleryPhotos(after, PAGE_SIZE);
-
-    if (after) {
-      setPhotos(prev => [...prev, ...newPhotos]);
-    } else {
-      setPhotos(newPhotos);
-    }
     setEndCursor(newCursor);
     setHasNextPage(newHasNext);
-  };
+  }, []);
 
-  // ✅ 처음 진입 시: 권한 확인 후 로딩
+  // ✅ 처음 진입 시 로딩
   useEffect(() => {
-    const init = async () => {
-      const ok = await ensureFullPhotoAccessIOS();
-      if (!ok) return;
-      loadPhotos();
-    };
-    init();
-  }, [ensureFullPhotoAccessIOS]);
+    loadPhotosPage(null);
+  }, [loadPhotosPage]);
 
-  // ✅ 설정 앱 갔다가 돌아오면 자동 재체크 → ok면 로딩
-  useEffect(() => {
-    if (Platform.OS !== 'ios') return;
-
-    const sub = AppState.addEventListener('change', async state => {
-      if (state !== 'active') return;
-
-      const ok = await ensureFullPhotoAccessIOS();
-      if (ok && photos.length === 0) {
-        // 처음에 막혀서 로딩 못 했던 케이스
-        loadPhotos();
-      }
-    });
-
-    return () => sub.remove();
-  }, [ensureFullPhotoAccessIOS, photos.length]);
-
-  const handleEndReached = async () => {
-    if (mustAllowAll) return; // ✅ 막혀있으면 페이징도 금지
+  const handleEndReached = useCallback(async () => {
     if (isLoadingMore || !hasNextPage || !endCursor) return;
     setIsLoadingMore(true);
-    await loadPhotos(endCursor);
+    await loadPhotosPage(endCursor);
     setIsLoadingMore(false);
-  };
+  }, [isLoadingMore, hasNextPage, endCursor, loadPhotosPage]);
 
-  const onRefresh = async () => {
-    if (mustAllowAll) return; // ✅ 막혀있으면 리프레시 금지
+  const onRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    await loadPhotos(null);
+    await loadPhotosPage(null);
     setIsRefreshing(false);
-  };
+  }, [loadPhotosPage]);
 
   // 🔹 그리드 한 칸의 실제 크기 (컬럼 수에 따라 자동 변경)
   const IMAGE_SIZE = React.useMemo(() => {
@@ -207,21 +126,46 @@ export default function ImageSelectPage() {
     return (SCREEN_WIDTH - totalMargin) / gridColumns;
   }, [gridColumns]);
 
+  // ✅ uri에서 확장자 추정 (변환 후 file:// 경로면 잘 잡힘)
+  const getExtFromUri = useCallback(uri => {
+    try {
+      const clean = (uri || '').split('?')[0];
+      const ext = clean.split('.').pop()?.toLowerCase();
+      if (!ext || ext.includes('/') || ext.length > 6) return null;
+      return ext;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const extToMime = useCallback(ext => {
+    const e = (ext || '').toLowerCase();
+    if (e === 'jpg' || e === 'jpeg') return 'image/jpeg';
+    if (e === 'png') return 'image/png';
+    if (e === 'webp') return 'image/webp';
+    if (e === 'mp4') return 'video/mp4';
+    if (e === 'mov') return 'video/quicktime';
+    return 'application/octet-stream';
+  }, []);
+
   // ✅ 탭으로 선택/해제할 때 30장 제한 적용
-  const toggleSelect = item => {
-    setSelected(prev => {
-      const exists = prev.some(f => f.uri === item.uri);
+  const toggleSelect = useCallback(
+    item => {
+      setSelected(prev => {
+        const exists = prev.some(f => f.uri === item.uri);
 
-      if (exists) return prev.filter(f => f.uri !== item.uri);
+        if (exists) return prev.filter(f => f.uri !== item.uri);
 
-      if (prev.length >= MAX_SELECTION) {
-        showToast(`사진은 최대 ${MAX_SELECTION}장까지 선택할 수 있어요.`);
-        return prev;
-      }
+        if (prev.length >= MAX_SELECTION) {
+          showToast(`사진은 최대 ${MAX_SELECTION}장까지 선택할 수 있어요.`);
+          return prev;
+        }
 
-      return [...prev, item];
-    });
-  };
+        return [...prev, item];
+      });
+    },
+    [showToast],
+  );
 
   const handleNext = useCallback(async () => {
     if (selected.length === 0) {
@@ -229,31 +173,43 @@ export default function ImageSelectPage() {
       return;
     }
 
-    const convertedUris = [];
+    // ✅ 다음 화면(CreatePost)에서 영상/이미지 판단 가능하도록
+    //    { uri, isVideo, duration, ext, mimeType } 형태로 넘김
+    const convertedFiles = [];
+
     for (let i = 0; i < selected.length; i++) {
       const file = selected[i];
       let uri = file.uri;
 
       if (Platform.OS === 'ios' && uri.startsWith('ph://')) {
         const converted = await convertPhUriToFileUri(uri, i, file.isVideo);
-        if (converted) convertedUris.push(converted);
+        if (converted) uri = converted;
       } else if (Platform.OS === 'android' && uri.startsWith('content://')) {
         const converted = await convertContentUriToFileUri(
           uri,
           i,
           file.isVideo,
         );
-        if (converted) convertedUris.push(converted);
-      } else {
-        convertedUris.push(uri);
+        if (converted) uri = converted;
       }
+
+      const ext = getExtFromUri(uri) || (file.isVideo ? 'mp4' : 'jpg');
+      const mimeType = extToMime(ext);
+
+      convertedFiles.push({
+        uri,
+        isVideo: !!file.isVideo,
+        duration: file.duration ?? 0,
+        ext,
+        mimeType,
+      });
     }
 
     navigation.navigate('카테고리선택화면', {
-      selectedImages: convertedUris,
+      selectedImages: convertedFiles, // ✅ 이제 string[] 아님!
       from: '이미지선택화면',
     });
-  }, [selected, navigation, showToast]);
+  }, [selected, navigation, showToast, getExtFromUri, extToMime]);
 
   useHideTabBar();
 
@@ -267,10 +223,10 @@ export default function ImageSelectPage() {
       headerRight: () => (
         <TouchableOpacity
           onPress={handleNext}
-          disabled={disabled || mustAllowAll} // ✅ 막혀있으면 다음도 막기
+          disabled={disabled}
           style={[
             {marginRight: getResponsiveWidth(10)},
-            (disabled || mustAllowAll) && {opacity: 0.4},
+            disabled && {opacity: 0.4},
           ]}>
           <Image
             source={require('../../../assets/icons/check.png')}
@@ -279,34 +235,35 @@ export default function ImageSelectPage() {
         </TouchableOpacity>
       ),
     });
-  }, [selected, navigation, handleNext, mustAllowAll]);
+  }, [selected, navigation, handleNext]);
 
   // 🔹 드래그 모드에 따라 선택/해제 업데이트 (여기에도 30장 제한)
-  const updateSelectionByMode = useCallback((item, mode) => {
-    if (!item) return;
+  const updateSelectionByMode = useCallback(
+    (item, mode) => {
+      if (!item) return;
 
-    setSelected(prev => {
-      const exists = prev.some(f => f.uri === item.uri);
+      setSelected(prev => {
+        const exists = prev.some(f => f.uri === item.uri);
 
-      if (mode === 'add') {
-        if (exists) return prev;
-        if (prev.length >= MAX_SELECTION) return prev;
-        return [...prev, item];
-      }
+        if (mode === 'add') {
+          if (exists) return prev;
+          if (prev.length >= MAX_SELECTION) return prev;
+          return [...prev, item];
+        }
 
-      if (mode === 'remove') {
-        if (!exists) return prev;
-        return prev.filter(f => f.uri !== item.uri);
-      }
+        if (mode === 'remove') {
+          if (!exists) return prev;
+          return prev.filter(f => f.uri !== item.uri);
+        }
 
-      return prev;
-    });
-  }, []);
+        return prev;
+      });
+    },
+    [setSelected],
+  );
 
-  // 1) 먼저 얘부터
   const handleDragAtLocation = useCallback(
     (x, y, isStart = false) => {
-      if (mustAllowAll) return; // ✅ 막혀있으면 드래그도 막기
       if (!photos || photos.length === 0) return;
 
       const tileFullSize = IMAGE_SIZE + IMAGE_MARGIN * 2;
@@ -337,7 +294,6 @@ export default function ImageSelectPage() {
       lastIndexRef.current = index;
     },
     [
-      mustAllowAll,
       photos,
       scrollOffset,
       gridColumns,
@@ -348,7 +304,6 @@ export default function ImageSelectPage() {
     ],
   );
 
-  // 2) 그 다음에 safe wrapper
   const safeHandleDragAtLocation = useCallback(
     (x, y, isStart = false) => {
       requestAnimationFrame(() => {
@@ -362,18 +317,15 @@ export default function ImageSelectPage() {
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (evt, gestureState) => {
-        if (mustAllowAll) return false;
+      onMoveShouldSetPanResponder: (_, gestureState) => {
         const {dx, dy} = gestureState;
         return Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy);
       },
       onPanResponderGrant: evt => {
-        if (mustAllowAll) return;
         const {locationX, locationY} = evt.nativeEvent;
         safeHandleDragAtLocation(locationX, locationY, true);
       },
       onPanResponderMove: evt => {
-        if (mustAllowAll) return;
         const {locationX, locationY} = evt.nativeEvent;
         safeHandleDragAtLocation(locationX, locationY, false);
       },
@@ -410,11 +362,7 @@ export default function ImageSelectPage() {
     const order = getSelectOrder(selected, item.uri);
 
     return (
-      <TouchableOpacity
-        onPress={() => toggleSelect(item)}
-        activeOpacity={0.8}
-        disabled={mustAllowAll} // ✅ 막혀있으면 선택도 막기
-      >
+      <TouchableOpacity onPress={() => toggleSelect(item)} activeOpacity={0.8}>
         <View
           style={[
             styles.imageWrapper,
@@ -466,30 +414,6 @@ export default function ImageSelectPage() {
         />
       </GestureDetector>
 
-      {/* ✅ iOS: “모든 사진” 아니면 강제 오버레이 */}
-      {Platform.OS === 'ios' && mustAllowAll && (
-        <View style={styles.blockOverlay}>
-          <Text style={styles.blockTitle}>사진 권한이 필요해요</Text>
-          <Text style={styles.blockDesc}>
-            키노버는 업로드를 위해 “모든 사진” 접근이 필요해요.{'\n'}
-            설정에서 사진 접근을 “모든 사진”으로 바꿔주세요.
-          </Text>
-
-          <TouchableOpacity
-            style={styles.blockBtn}
-            onPress={() => openSettings()}>
-            <Text style={styles.blockBtnText}>설정 열기</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.blockSubBtn}
-            onPress={() => Linking.openURL('app-settings:')}>
-            <Text style={styles.blockSubBtnText}>안 열리면 여기 눌러줘요</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {/* ✅ 토스트 모달 */}
       <ToastModal
         visible={toastVisible}
         onClose={hideToast}
@@ -567,22 +491,6 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(10),
     color: '#666',
   },
-  permissionHint: {
-    position: 'absolute',
-    bottom: getResponsiveHeight(50),
-    left: getResponsiveWidth(10),
-    right: getResponsiveWidth(10),
-    backgroundColor: '#00000088',
-    paddingVertical: getResponsiveHeight(8),
-    paddingHorizontal: getResponsiveWidth(10),
-    borderRadius: 8,
-  },
-  permissionHintText: {
-    color: 'white',
-    textAlign: 'center',
-    fontSize: getResponsiveFontSize(12),
-    lineHeight: getResponsiveHeight(16),
-  },
   videoBadge: {
     position: 'absolute',
     bottom: getResponsiveWidth(4),
@@ -597,49 +505,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: getResponsiveFontSize(10.5),
     fontWeight: '600',
-  },
-
-  // ✅ iOS 권한 강제 오버레이
-  blockOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 999,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: getResponsiveWidth(24),
-  },
-  blockTitle: {
-    color: 'white',
-    fontSize: getResponsiveFontSize(16),
-    fontFamily: 'Pretendard-SemiBold',
-    marginBottom: getResponsiveHeight(10),
-  },
-  blockDesc: {
-    color: 'white',
-    fontSize: getResponsiveFontSize(12.5),
-    textAlign: 'center',
-    lineHeight: getResponsiveHeight(18),
-    marginBottom: getResponsiveHeight(16),
-  },
-  blockBtn: {
-    backgroundColor: '#FFC84D',
-    paddingVertical: getResponsiveHeight(12),
-    paddingHorizontal: getResponsiveWidth(20),
-    borderRadius: 10,
-  },
-  blockBtnText: {
-    color: '#111',
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(13),
-  },
-  blockSubBtn: {
-    marginTop: getResponsiveHeight(10),
-    paddingVertical: getResponsiveHeight(6),
-    paddingHorizontal: getResponsiveWidth(10),
-  },
-  blockSubBtnText: {
-    color: '#fff',
-    fontSize: getResponsiveFontSize(11.5),
-    textDecorationLine: 'underline',
   },
 });

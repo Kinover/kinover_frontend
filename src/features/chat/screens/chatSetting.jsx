@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -15,24 +15,32 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
+import {useSelector, useDispatch} from 'react-redux';
+
 import {
   fetchChatRoomUsersThunk,
   renameChatRoomThunk,
   toggleChatRoomNotificationThunk,
 } from '../store/chatRoomThunk';
-import {useSelector, useDispatch} from 'react-redux';
+
 import LeaveChatRoomModal from '../components/leaveChatRoomModal';
 import RenameChatRoomModal from '../components/renameChatRoomModal';
 import ChangeKinoModal from '../components/ChangeKinoModal';
+
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-import {updateChatRoomNameInList} from '../store/chatRoomSlice';
+
+import {
+  bumpChatRoomToTop,
+  updateChatRoomNameInList,
+} from '../store/chatRoomSlice';
+
 import ToastModal from '../../../components/ToastModal';
-import {resetMessageFetched, setMessageList} from '../store/messageSlice';
+import {resetRoomMessageList} from '../store/messageSlice';
 
 export default function ChatSettings({
   isOpen,
@@ -42,18 +50,24 @@ export default function ChatSettings({
   navigation,
   isKino,
 }) {
+  const dispatch = useDispatch();
+
   const [isChangeKinoModalVisible, setIsChangeKinoModalVisible] =
     useState(false);
   const [isLeaveModalVisible, setIsLeaveModalVisible] = useState(false);
   const [isRenameModalVisible, setIsRenameModalVisible] = useState(false);
+
   const [newRoomName, setNewRoomName] = useState('');
   const [showMembers, setShowMembers] = useState(false);
   const [isAlarmOn, setIsAlarmOn] = useState(true);
+
   const [shouldNavigate, setShouldNavigate] = useState(false);
   const [internalVisible, setInternalVisible] = useState(false);
-  const translateX = useSharedValue(getResponsiveWidth(320));
 
-  // ✅ 토스트 관련 상태
+  const translateX = useSharedValue(getResponsiveWidth(320));
+  const navTimerRef = useRef(null);
+
+  // ✅ 토스트
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
@@ -64,11 +78,12 @@ export default function ChatSettings({
     state => state.userFamily.familyUserList || [],
   );
 
-  // ✅ 현재 채팅방 정보 & notificationOn 가져오기
+  // ✅ 현재 채팅방 정보
   const chatRoomList = useSelector(state => state.chatRoom.chatRoomList || []);
-  const currentRoom = chatRoomList.find(room => room.chatRoomId === chatRoomId);
-
-  const dispatch = useDispatch();
+  const rid = chatRoomId == null ? null : String(chatRoomId);
+  const currentRoom = chatRoomList.find(
+    room => String(room.chatRoomId) === rid,
+  );
 
   const isAllFamilyInChat =
     Array.isArray(familyMembers) &&
@@ -76,6 +91,7 @@ export default function ChatSettings({
     Array.isArray(chatRoomUsers) &&
     chatRoomUsers.length >= familyMembers.length;
 
+  // ✅ 채팅방 유저 조회
   useEffect(() => {
     if (isOpen && chatRoomId) {
       dispatch(fetchChatRoomUsersThunk(chatRoomId));
@@ -97,10 +113,9 @@ export default function ChatSettings({
     }
   }, [isOpen, translateX]);
 
-  // ✅ currentRoom.notificationOn 값에 따라 알림 상태 동기화
+  // ✅ 알림 상태 동기화
   useEffect(() => {
     if (!currentRoom) return;
-    // 서버/스토어에서 notificationOn === true/false 인 값에 맞춰 세팅
     setIsAlarmOn(!!currentRoom.notificationOn);
   }, [currentRoom]);
 
@@ -111,11 +126,16 @@ export default function ChatSettings({
   // ✅ 토스트 자동 닫기
   useEffect(() => {
     if (!toastVisible) return;
-    const timer = setTimeout(() => {
-      setToastVisible(false);
-    }, 1800);
+    const timer = setTimeout(() => setToastVisible(false), 1800);
     return () => clearTimeout(timer);
   }, [toastVisible]);
+
+  // ✅ 네비 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (navTimerRef.current) clearTimeout(navTimerRef.current);
+    };
+  }, []);
 
   const handleToggleAlarm = () => {
     const newIsOn = !isAlarmOn;
@@ -130,14 +150,11 @@ export default function ChatSettings({
     )
       .unwrap()
       .then(() => {
-        console.log('🔔 알림 설정 변경 성공');
-
         setToastMessage(newIsOn ? '알림을 켰어요' : '알림을 껐어요');
         setToastVisible(true);
       })
       .catch(err => {
         console.warn('❌ 알림 설정 변경 실패:', err);
-        // 실패 시 원래 상태로 롤백해도 됨
         setIsAlarmOn(!newIsOn);
         setToastMessage('알림 설정 변경에 실패했어요.\n다시 시도해 주세요.');
         setToastVisible(true);
@@ -157,13 +174,7 @@ export default function ChatSettings({
     )
       .unwrap()
       .then(() => {
-        dispatch(
-          updateChatRoomNameInList({
-            chatRoomId,
-            newRoomName,
-          }),
-        );
-
+        dispatch(updateChatRoomNameInList({chatRoomId, newRoomName}));
         setIsRenameModalVisible(false);
         setNewRoomName('');
       })
@@ -181,21 +192,36 @@ export default function ChatSettings({
     onLeaveChat(dispatch, navigation, chatRoomId);
   };
 
+  /**
+   * ✅ 키노 변경하기 눌렀을 때:
+   * 1) 해당 채팅방 메시지 비우기 + isFetched false
+   * 2) 리스트에서 해당 방을 “최신”으로 올리기
+   * 3) 키노 선택 화면으로 이동
+   *
+   * ⚠️ 진짜 “키노 변경 성공”은 키노선택화면에서 일어나니까,
+   *    성공 후에는 그쪽에서 fetchChatRoomListThunk를 한 번 더 해주는 게 좋아.
+   */
   const handleGoToKinoSelect = () => {
-    dispatch(resetMessageFetched());
-    dispatch(setMessageList([])); // (선택이지만 강추: 화면 깔끔)
+    if (!chatRoomId) return;
+
+    dispatch(resetRoomMessageList(chatRoomId));
+    dispatch(bumpChatRoomToTop(chatRoomId));
+
     setShouldNavigate(true);
     onClose();
   };
 
-  // 키노 선택 화면 이동
+  // ✅ 키노 선택 화면 이동 (슬라이드 닫힘 애니메이션 끝난 뒤)
   useEffect(() => {
     if (!isOpen && shouldNavigate) {
-      const timeout = setTimeout(() => {
+      navTimerRef.current = setTimeout(() => {
         navigation.navigate('키노선택화면', {chatRoomId});
         setShouldNavigate(false);
       }, 260);
-      return () => clearTimeout(timeout);
+
+      return () => {
+        if (navTimerRef.current) clearTimeout(navTimerRef.current);
+      };
     }
   }, [isOpen, shouldNavigate, navigation, chatRoomId]);
 
@@ -205,7 +231,7 @@ export default function ChatSettings({
       transparent
       animationType="none"
       onRequestClose={onClose}
-      statusBarTranslucent={true}>
+      statusBarTranslucent>
       {/* 내부 모달들 */}
       <View>
         <LeaveChatRoomModal
@@ -213,6 +239,7 @@ export default function ChatSettings({
           onClose={() => setIsLeaveModalVisible(false)}
           onConfirm={handleLeaveConfirm}
         />
+
         <RenameChatRoomModal
           visible={isRenameModalVisible}
           onClose={() => {
@@ -223,13 +250,13 @@ export default function ChatSettings({
           newRoomName={newRoomName}
           setNewRoomName={setNewRoomName}
         />
+
         <ChangeKinoModal
           visible={isChangeKinoModalVisible}
           onClose={() => setIsChangeKinoModalVisible(false)}
           onConfirm={handleGoToKinoSelect}
         />
 
-        {/* ✅ 토스트 모달 */}
         <ToastModal
           visible={toastVisible}
           message={toastMessage}
@@ -255,6 +282,7 @@ export default function ChatSettings({
               이름, 멤버, 알림을 한 번에 관리해요.
             </Text>
           </View>
+
           <TouchableOpacity onPress={handleToggleAlarm}>
             <Image
               style={styles.alarmIcon}
@@ -288,6 +316,7 @@ export default function ChatSettings({
                     함께 채팅하는 가족을 확인해요.
                   </Text>
                 </View>
+
                 <TouchableOpacity
                   onPress={() => setShowMembers(!showMembers)}
                   style={styles.expandButton}>
@@ -337,20 +366,14 @@ export default function ChatSettings({
               <Text style={styles.optionText}>키노 교체하기</Text>
             </TouchableOpacity>
           )}
-          {/* 
+
           {!isKino && (
             <TouchableOpacity
               style={styles.leaveOption}
               onPress={() => setIsLeaveModalVisible(true)}>
               <Text style={styles.leaveText}>채팅방 나가기</Text>
             </TouchableOpacity>
-          )} */}
-
-          <TouchableOpacity
-            style={styles.leaveOption}
-            onPress={() => setIsLeaveModalVisible(true)}>
-            <Text style={styles.leaveText}>채팅방 나가기</Text>
-          </TouchableOpacity>
+          )}
         </View>
       </Animated.View>
     </Modal>
@@ -507,8 +530,6 @@ const styles = StyleSheet.create({
   leaveText: {
     fontFamily: 'Pretendard-Medium',
     color: '#EF4444',
-    // color: '#999999',
     fontSize: getResponsiveFontSize(13.5),
   },
 });
-

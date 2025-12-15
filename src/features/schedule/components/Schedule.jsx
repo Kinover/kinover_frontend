@@ -21,13 +21,50 @@ import {useScheduleListByDate} from '../hooks/useScheduleListByDate';
 import {useFormattedScheduleDate} from '../hooks/useFormattedScheduleDate';
 import {EMPTY_STYLE} from 'styles/style';
 
-function Schedule({selectedDate, onOpenSheet, refreshTrigger}) {
+function Schedule({
+  selectedDate,
+  onOpenSheet,
+  refreshTrigger,
+  birthdayNames = [],
+}) {
   const {scheduleList} = useScheduleListByDate(selectedDate, refreshTrigger);
   const formattedDate = useFormattedScheduleDate(selectedDate);
+
+  const hasBirthday = Array.isArray(birthdayNames) && birthdayNames.length > 0;
+
+  // 이름이 길면 깔끔하게 줄이기
+  const displayNames =
+    birthdayNames.length > 2
+      ? `${birthdayNames.slice(0, 2).join(', ')} 외 ${
+          birthdayNames.length - 2
+        }명`
+      : birthdayNames.join(', ');
 
   return (
     <View style={styles.container}>
       <Text style={styles.dateText}>{formattedDate}</Text>
+
+      {/* ✅ 생일 배너 (미니멀 + 고급 버전) */}
+      {hasBirthday && (
+        <View style={styles.birthdayWrap}>
+          <View style={styles.birthdayHeaderRow}>
+            <View style={styles.birthdayLeft}>
+              <View style={styles.birthdayIconCircle}>
+                <Text style={styles.birthdayIconText}>🎂</Text>
+              </View>
+              <View style={styles.birthdayTexts}>
+                <Text style={styles.birthdaySubtitle}>오늘</Text>
+                <Text style={styles.birthdayTitle} numberOfLines={1}>
+                  {displayNames}님의 생일이에요
+                </Text>
+              </View>
+            </View>
+            <View style={styles.birthdayPill}>
+              <Text style={styles.birthdayPillText}>HBD</Text>
+            </View>
+          </View>
+        </View>
+      )}
 
       <View style={styles.timelineWrapper}>
         <View style={styles.scheduleCards}>
@@ -68,10 +105,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: getResponsiveWidth(0),
-    paddingBottom: getResponsiveHeight(30),
+    paddingBottom: getResponsiveHeight(150),
   },
+
   dateText: {
     color: 'black',
+    // paddingHorizontal:getResponsiveWidth(5),
     fontSize: getResponsiveFontSize(16),
     fontFamily: 'Pretendard-SemiBold',
     marginTop: getResponsiveHeight(15),
@@ -79,16 +118,114 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     fontWeight: Platform.OS === 'ios' ? undefined : 'bold',
   },
+
+  /* =========================
+   * ✅ Birthday Banner (V2)
+   * ========================= */
+  birthdayWrap: {
+    width: '100%',
+    borderRadius: getResponsiveHeight(16),
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(17,24,39,0.08)',
+    paddingVertical: getResponsiveHeight(12),
+    paddingHorizontal: getResponsiveWidth(14),
+    marginBottom: getResponsiveHeight(12),
+
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: {width: 0, height: 8},
+    elevation: 2,
+  },
+
+  birthdayHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  birthdayLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(10),
+  },
+
+  birthdayIconCircle: {
+    width: getResponsiveWidth(36),
+    height: getResponsiveWidth(36),
+    borderRadius: 999,
+    backgroundColor: 'rgba(255, 200, 77, 0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  birthdayIconText: {
+    fontSize: getResponsiveFontSize(16),
+    lineHeight: getResponsiveFontSize(18),
+  },
+
+  birthdayTexts: {
+    flexDirection: 'column',
+    gap: getResponsiveHeight(2),
+  },
+
+  birthdaySubtitle: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(12),
+    color: '#6B7280',
+  },
+
+  birthdayTitle: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(14.5),
+    color: '#111827',
+  },
+
+  birthdayPill: {
+    paddingVertical: getResponsiveHeight(5),
+    paddingHorizontal: getResponsiveWidth(10),
+    borderRadius: 999,
+    backgroundColor: 'rgba(17,24,39,0.05)',
+  },
+
+  birthdayPillText: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(11.5),
+    color: '#111827',
+    letterSpacing: 0.4,
+  },
+
+  birthdayDivider: {
+    height: 1,
+    width: '100%',
+    backgroundColor: 'rgba(17,24,39,0.06)',
+    marginTop: getResponsiveHeight(10),
+    marginBottom: getResponsiveHeight(10),
+  },
+
+  birthdayNamesLine: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(14),
+    color: '#111827',
+    lineHeight: getResponsiveFontSize(18),
+  },
+
+  /* =========================
+   * Original Schedule styles
+   * ========================= */
   timelineWrapper: {
     position: 'relative',
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
+
   scheduleCards: {
     flex: 1,
     width: '100%',
     gap: getResponsiveHeight(10),
   },
+
   card: {
     position: 'relative',
     width: '100%',
@@ -96,6 +233,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderRadius: getResponsiveHeight(12),
   },
+
   cardBg: {
     position: 'absolute',
     top: 0,
@@ -104,11 +242,13 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'stretch',
   },
+
   cardContent: {
     flex: 1,
     paddingHorizontal: getResponsiveWidth(16),
     paddingTop: getResponsiveHeight(11),
   },
+
   cardTitle: {
     color: 'black',
     fontSize:
@@ -118,6 +258,7 @@ const styles = StyleSheet.create({
     fontWeight: Platform.OS === 'android' ? '500' : undefined,
     marginBottom: getResponsiveHeight(2),
   },
+
   cardMemo: {
     fontSize:
       Platform.OS === 'android'
@@ -127,21 +268,25 @@ const styles = StyleSheet.create({
     color: '#6E6E6E',
     paddingTop: getResponsiveHeight(2),
   },
+
   memoIcon: {
     position: 'absolute',
     right: getResponsiveWidth(20),
     bottom: getResponsiveHeight(27.5),
   },
+
   icon: {
     width: 20,
     height: 20,
   },
+
   plus: {
     color: '#FFC84D',
     width: getResponsiveIconSize(20),
     height: getResponsiveIconSize(20),
     resizeMode: 'contain',
   },
+
   emptyText: {
     marginTop: getResponsiveHeight(60),
     fontSize: EMPTY_STYLE.emptyFontSize,

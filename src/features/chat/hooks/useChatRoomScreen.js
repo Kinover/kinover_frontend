@@ -1,18 +1,17 @@
+// src/features/chat/hooks/useChatRoomScreen.js
+// ✅ 소켓 제거 버전 (화면은 Redux 구독 + 스크롤/페이징만)
+
 import {useEffect, useRef, useState, useCallback, useMemo} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchMoreMessagesThunk} from '../store/messageThunk';
-import {
-  addMessage,
-  initRoom,
-  selectRoomMessages,
-  selectRoomMeta,
-} from '../store/messageSlice';
-import {getToken} from 'utils/storage';
-import {addMessageAndUpdateRoom} from '../utils/messageActions';
+import {initRoom, selectRoomMessages, selectRoomMeta} from '../store/messageSlice';
 
 export default function useChatRoomScreen(chatRoom, userId, isKino) {
   const dispatch = useDispatch();
 
+  /** =====================
+   * Room ID
+   * ===================== */
   const roomId = useMemo(() => {
     const id = chatRoom?.chatRoomId;
     return id == null ? null : String(id);
@@ -21,20 +20,22 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
   const messageList = useSelector(state => selectRoomMessages(state, roomId));
   const roomMeta = useSelector(state => selectRoomMeta(state, roomId));
 
+  /** =====================
+   * Refs / State
+   * ===================== */
   const flatListRef = useRef(null);
   const isAtBottomRef = useRef(true);
-
-  const socketRef = useRef(null);
-  const prevRoomIdRef = useRef(null);
-  const reconnectTimerRef = useRef(null);
-  const reconnectAttemptRef = useRef(0);
 
   const [noMoreMessages, setNoMoreMessages] = useState(false);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
+  /** =====================
+   * Scroll helpers
+   * ===================== */
   const scrollToBottom = useCallback(() => {
     if (!flatListRef.current) return;
+    // inverted FlatList 기준이면 offset 0이 바닥
     flatListRef.current.scrollToOffset({offset: 0, animated: true});
   }, []);
 
@@ -44,18 +45,23 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
     setIsUserScrolling(!isAtBottomRef.current);
   }, []);
 
+  /** =====================
+   * Load older messages (pagination)
+   * ===================== */
   const loadOlderMessages = useCallback(async () => {
     if (!roomId) return;
-    if (isFetchingMore || noMoreMessages || messageList.length === 0) return;
+    if (isFetchingMore || noMoreMessages || !messageList || messageList.length === 0)
+      return;
 
     setIsFetchingMore(true);
 
-    const before =
-      roomMeta?.cursor ?? messageList[messageList.length - 1]?.createdAt;
+    const before = roomMeta?.cursor ?? messageList[messageList.length - 1]?.createdAt;
 
     const {payload} = await dispatch(fetchMoreMessagesThunk(roomId, before));
 
-    if (!payload || payload.length < 20) setNoMoreMessages(true);
+    if (!payload || payload.length < 20) {
+      setNoMoreMessages(true);
+    }
 
     setIsFetchingMore(false);
   }, [
@@ -67,107 +73,39 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
     roomMeta?.cursor,
   ]);
 
-  // ✅ room init만 하고, “초기 fetch”는 Screen에서만 함
+  /** =====================
+   * Init room (중요)
+   * ===================== */
   useEffect(() => {
     if (!roomId) return;
+
     dispatch(initRoom(roomId));
 
     isAtBottomRef.current = true;
     setIsUserScrolling(false);
     setNoMoreMessages(false);
-  }, [roomId, dispatch]);
 
-  const cleanupSocket = useCallback(() => {
-    if (reconnectTimerRef.current) {
-      clearTimeout(reconnectTimerRef.current);
-      reconnectTimerRef.current = null;
+    // 방 진입 직후 맨 아래로
+    if (!roomMeta?.isFetched) {
+      setTimeout(scrollToBottom, 0);
     }
-    if (socketRef.current) {
-      try {
-        socketRef.current.onopen = null;
-        socketRef.current.onmessage = null;
-        socketRef.current.onerror = null;
-        socketRef.current.onclose = null;
-        socketRef.current.close();
-      } catch {
-        null;
-      }
-      socketRef.current = null;
-    }
-  }, []);
+  }, [roomId, dispatch, roomMeta?.isFetched, scrollToBottom]);
 
-  const connect = useCallback(async () => {
-    if (!roomId || !userId) return;
-
-    const tokenRaw = await getToken();
-    if (!tokenRaw) return;
-
-    const token = encodeURIComponent(tokenRaw);
-
-    if (
-      prevRoomIdRef.current === roomId &&
-      socketRef.current &&
-      socketRef.current.readyState === WebSocket.OPEN
-    )
-      return;
-
-    prevRoomIdRef.current = roomId;
-
-    cleanupSocket();
-
-    const ws = new WebSocket(`ws://kinover.shop:9090/chat?token=${token}`);
-    socketRef.current = ws;
-
-    ws.onopen = () => {
-      reconnectAttemptRef.current = 0;
-      console.log('✅ WebSocket /chat 연결 성공');
-    };
-
-    ws.onmessage = e => {
-      try {
-        const msg = JSON.parse(e.data);
-        const incomingRoomId = String(msg?.chatRoomId ?? roomId);
-
-        dispatch(
-          addMessageAndUpdateRoom({chatRoomId: incomingRoomId, message: msg}),
-        );
-
-        const isMyMessage = String(msg?.senderId) === String(userId);
-        if (isAtBottomRef.current && isMyMessage) {
-          setTimeout(scrollToBottom, 50);
-        }
-      } catch (err) {
-        console.error('❌ 메시지 파싱 실패:', err);
-      }
-    };
-
-    ws.onerror = err => {
-      console.error('⚠️ WebSocket 오류:', err?.message ?? err);
-    };
-
-    ws.onclose = e => {
-      const attempt = reconnectAttemptRef.current++;
-      const delay = Math.min(1000 * (attempt + 1), 5000);
-
-      reconnectTimerRef.current = setTimeout(() => {
-        if (prevRoomIdRef.current === roomId) connect();
-      }, delay);
-    };
-  }, [roomId, userId, dispatch, scrollToBottom, cleanupSocket]);
-
-  useEffect(() => {
-    connect();
-    return () => {
-      cleanupSocket();
-      prevRoomIdRef.current = null;
-    };
-  }, [connect, cleanupSocket]);
-
+  /** =====================
+   * 메시지 변화 시 자동 스크롤
+   * ===================== */
   useEffect(() => {
     if (!messageList || messageList.length === 0) return;
-    if (isAtBottomRef.current) scrollToBottom();
-  }, [messageList.length, scrollToBottom]);
 
+    // ✅ 맨 아래 붙어있을 때는 상대/내 메시지 상관없이 내려주기
+    if (isAtBottomRef.current) {
+      setTimeout(scrollToBottom, 0);
+    }
+  }, [messageList?.length, scrollToBottom]);
+
+  /** =====================
+   * Return
+   * ===================== */
   return {
     flatListRef,
     messageList,
@@ -181,7 +119,6 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
     handleScroll,
     scrollToBottom,
 
-    socketRef,
     isUserScrolling,
   };
 }
