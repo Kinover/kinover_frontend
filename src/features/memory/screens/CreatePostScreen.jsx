@@ -1,12 +1,20 @@
 // src/features/memory/screens/CreatePostScreen.jsx
 
+/* eslint-disable react-native/no-inline-styles */
 import React, {
   useState,
   useLayoutEffect,
   useCallback,
   useRef,
   useEffect,
+  useMemo,
 } from 'react';
+
+import {
+  Image as ImageCompressor,
+  Video as VideoCompressor,
+} from 'react-native-compressor';
+
 import {
   StyleSheet,
   View,
@@ -25,11 +33,13 @@ import {
   PanResponder,
 } from 'react-native';
 
+import Video from 'react-native-video';
+import FastImage from '@d11/react-native-fast-image';
+
 import {
   getResponsiveWidth,
   getResponsiveHeight,
   getResponsiveFontSize,
-  getResponsiveIconSize,
 } from '../../../utils/responsive';
 
 import {getPresignedUrls, uploadFileToS3} from '../../../api/imageUrlApi';
@@ -40,13 +50,15 @@ import {HEADER_STYLES} from 'styles/style';
 import {uploadPostApi} from 'api/uploadPostApi';
 import {useDispatch, useSelector} from 'react-redux';
 import {createCategoryThunk} from '../store/categoryThunk';
+import formatDuration from '../../../utils/formatDuration';
+
+import {getVideoThumbnail} from '../../../utils/videoThumbnail';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
 export default function CreatePostPage({navigation, route}) {
   const [text, setText] = useState('');
   const [isUploading, setIsUploading] = useState(false);
-  const [focused, setFocused] = useState(false);
 
   const {selectedImages: initImages} = route.params ?? {};
   const [selectedImages] = useState(initImages ?? []);
@@ -64,50 +76,165 @@ export default function CreatePostPage({navigation, route}) {
 
   useHideTabBar({stayHidden: true});
 
-  // Toast
+  /* =========================
+   * helpers
+   * ========================= */
+
   const showToast = useCallback(msg => {
     setToastMessage(msg);
     setToastVisible(true);
   }, []);
 
-  // 업로드 핸들러
-  const handleUpload = useCallback(async () => {
-    if (isUploading) {
-      console.log('⚠️ 이미 업로드 중입니다. 중복 요청 방지');
-      return;
-    }
+  const getItemUri = useCallback(item => {
+    return typeof item === 'string' ? item : item?.uri || item?.path;
+  }, []);
 
-    console.log('➡️ 업로드 시작');
-    console.log('🧾 route.params:', route?.params);
-    console.log('🧾 선택된 이미지 개수:', selectedImages.length);
-    console.log('🧾 userId:', userId, 'familyId:', familyId);
+  const getExtFromUri = useCallback(uriOrObj => {
+    const uri =
+      typeof uriOrObj === 'string'
+        ? uriOrObj
+        : uriOrObj?.uri || uriOrObj?.path || '';
+    const raw = uri.split('?')[0];
+    const ext = raw.split('.').pop()?.toLowerCase();
+    return ext || 'jpg';
+  }, []);
+
+  const inferContentTypeByExt = useCallback(ext => {
+    if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
+    if (ext === 'png') return 'image/png';
+    if (ext === 'webp') return 'image/webp';
+    if (ext === 'mp4') return 'video/mp4';
+    if (ext === 'mov') return 'video/quicktime';
+    return 'application/octet-stream';
+  }, []);
+
+  const inferPostType = useCallback(ext => {
+    if (ext === 'mp4' || ext === 'mov') return 'video';
+    return 'image';
+  }, []);
+
+  const isVideoItem = useCallback(
+    item => {
+      if (typeof item === 'string') {
+        const ext = getExtFromUri(item);
+        return ext === 'mp4' || ext === 'mov';
+      }
+      const ext = getExtFromUri(item);
+      return item?.isVideo === true || ext === 'mp4' || ext === 'mov';
+    },
+    [getExtFromUri],
+  );
+
+  const getDuration = useCallback(item => {
+    return typeof item === 'string' ? 0 : item?.duration ?? 0;
+  }, []);
+
+  /* =========================
+   * ✅ video thumbnail cache
+   * ========================= */
+
+  const [videoThumbMap, setVideoThumbMap] = useState({}); // { [videoUri]: thumbUri }
+  const thumbLoadingRef = useRef(new Set());
+
+  const ensureVideoThumb = useCallback(
+    async item => {
+      try {
+        if (!isVideoItem(item)) return;
+
+        const uri = getItemUri(item);
+        if (!uri) return;
+
+        if (videoThumbMap[uri]) return;
+        if (thumbLoadingRef.current.has(uri)) return;
+
+        thumbLoadingRef.current.add(uri);
+
+        const t = await getVideoThumbnail(uri);
+        const thumbUri = t?.uri || null;
+
+        if (thumbUri) {
+          setVideoThumbMap(prev => ({...prev, [uri]: thumbUri}));
+        }
+      } catch {
+        // ignore
+      } finally {
+        const uri = getItemUri(item);
+        if (uri) thumbLoadingRef.current.delete(uri);
+      }
+    },
+    [getItemUri, isVideoItem, videoThumbMap],
+  );
+
+  const hasExtra = selectedImages.length > 3;
+  const gridImages = useMemo(
+    () => (hasExtra ? selectedImages.slice(0, 3) : selectedImages),
+    [selectedImages, hasExtra],
+  );
+
+  useEffect(() => {
+    (async () => {
+      for (const item of gridImages) {
+        if (isVideoItem(item)) await ensureVideoThumb(item);
+      }
+    })();
+  }, [gridImages, isVideoItem, ensureVideoThumb]);
+
+  /* =========================
+   * ✅ compress
+   * ========================= */
+
+  const compressIfNeeded = useCallback(
+    async item => {
+      const uri = getItemUri(item);
+      if (!uri) return {uri, ext: getExtFromUri(item)};
+
+      // ✅ 영상 압축
+      if (isVideoItem(item)) {
+        const compressedUri = await VideoCompressor.compress(uri, {
+          compressionMethod: 'auto',
+          // minimumFileSizeForCompress 옵션이 버전에 따라 없으면 빼도 됨
+          minimumFileSizeForCompress: 5,
+        });
+
+        const ext = getExtFromUri(compressedUri) || 'mp4';
+        return {uri: compressedUri, ext};
+      }
+
+      // ✅ 이미지 압축(원치 않으면 이 블록 통째로 지워도 됨)
+      const compressedUri = await ImageCompressor.compress(uri, {
+        compressionMethod: 'auto',
+        quality: 0.8,
+      });
+      const ext = getExtFromUri(compressedUri) || 'jpg';
+      return {uri: compressedUri, ext};
+    },
+    [getItemUri, getExtFromUri, isVideoItem],
+  );
+
+  /* =========================
+   * upload
+   * ========================= */
+
+  const handleUpload = useCallback(async () => {
+    if (isUploading) return;
 
     const {selectedCategory} = route.params ?? {};
-    console.log('🧾 선택된 카테고리:', selectedCategory);
 
-    // 기본 체크
     if (!selectedCategory) {
-      console.log('❌ selectedCategory 없음');
       showToast('카테고리를 먼저 선택해 주세요.');
       return;
     }
     if (!familyId || !userId) {
-      console.log('❌ familyId 또는 userId 없음', {familyId, userId});
-      showToast('로그인 또는 가족 정보를 확인해 주세요.');
+      showToast('로그인 정보를 확인해 주세요.');
       return;
     }
 
     try {
       setIsUploading(true);
 
-      // 최종 카테고리 id
       let finalCategoryId = selectedCategory.categoryId;
-      console.log('🔹 초기 finalCategoryId:', finalCategoryId);
 
-      // 새 카테고리면 먼저 생성
       if (selectedCategory.isTemporary) {
-        console.log('🟡 임시 카테고리이므로 createCategoryThunk 실행');
-
         const action = await dispatch(
           createCategoryThunk({
             title: selectedCategory.title,
@@ -115,75 +242,66 @@ export default function CreatePostPage({navigation, route}) {
           }),
         );
 
-        console.log('📩 createCategoryThunk 결과:', action);
-
         if (action.meta.requestStatus !== 'fulfilled') {
-          console.log('❌ createCategoryThunk 실패:', action.payload);
-          showToast('카테고리 생성 중 문제가 발생했어요.');
-          setIsUploading(false);
+          showToast('카테고리 생성에 실패했어요.');
           return;
         }
 
-        const newCat = action.payload;
-        console.log('🧩 새 카테고리 응답 newCat:', newCat);
-
         finalCategoryId =
-          newCat?.categoryId ??
-          newCat?.id ??
-          newCat?.data?.categoryId ??
-          newCat?.data?.id ??
-          selectedCategory.categoryId;
-
-        console.log(
-          '✅ 최종 finalCategoryId (카테고리 생성 후):',
-          finalCategoryId,
-        );
+          action.payload?.categoryId ?? selectedCategory.categoryId;
       }
 
-      // 이미지 업로드(S3)
       let imageUrls = [];
       let postTypes = [];
 
       if (selectedImages.length > 0) {
         const now = Date.now();
 
-        const fileNames = selectedImages.map((uri, i) => {
-          let ext = uri.split('.').pop()?.toLowerCase() || 'jpg';
-          if (ext === 'mov') ext = 'mp4';
-          return `media_${now}_${i}_${Math.floor(Math.random() * 1000)}.${ext}`;
-        });
-
-        console.log('🖼 생성된 파일 이름 목록:', fileNames);
-
-        const presignedUrls = await getPresignedUrls(fileNames);
-        console.log('🔗 presignedUrls 개수:', presignedUrls.length);
-
+        // ✅ 1) 압축 먼저 하고, 압축 결과 기준으로 presigned 요청
+        const filesForUpload = [];
         for (let i = 0; i < selectedImages.length; i++) {
-          console.log(
-            `⬆️ [${i + 1}/${selectedImages.length}] S3 업로드 시작`,
-            '\n   fileName:',
-            fileNames[i],
-            '\n   uri:',
-            selectedImages[i],
-          );
-          await uploadFileToS3(
-            presignedUrls[i],
-            selectedImages[i],
-            fileNames[i],
-          );
-          console.log(`✅ [${i + 1}/${selectedImages.length}] S3 업로드 완료`);
+          const item = selectedImages[i];
+
+          const {uri: compressedUri, ext} = await compressIfNeeded(item);
+
+          if (!compressedUri) {
+            showToast('파일 경로를 불러오지 못했어요.');
+            return;
+          }
+
+          const fileName = `media_${now}_${i}.${ext}`;
+          const contentType = inferContentTypeByExt(ext);
+          const postType = inferPostType(ext);
+
+          filesForUpload.push({
+            uri: compressedUri,
+            fileName,
+            contentType,
+            postType,
+          });
         }
 
-        imageUrls = [...fileNames];
-        postTypes = selectedImages.map(() => 'image');
+        const presignedUrls = await getPresignedUrls(
+          filesForUpload.map(f => ({
+            fileName: f.fileName,
+            contentType: f.contentType,
+          })),
+        );
 
-        console.log('🧾 업로드 후 imageUrls:', imageUrls);
-        console.log('🧾 업로드 후 postTypes:', postTypes);
-      } else {
-        console.log('ℹ️ 이미지 없이 텍스트만 업로드합니다.');
+        // ✅ 2) 압축된 uri로 PUT
+        for (let i = 0; i < filesForUpload.length; i++) {
+          await uploadFileToS3(
+            presignedUrls[i],
+            filesForUpload[i].uri,
+            filesForUpload[i].contentType,
+            filesForUpload[i].fileName,
+          );
+        }
+
+        imageUrls = filesForUpload.map(f => f.fileName);
+        postTypes = filesForUpload.map(f => f.postType);
       }
 
-      // 게시글 업로드
       const newPost = {
         authorId: userId,
         content: text || '',
@@ -193,96 +311,63 @@ export default function CreatePostPage({navigation, route}) {
         postTypes,
       };
 
-      console.log('📮 업로드할 게시글 데이터(newPost):', newPost);
-
-      const res = await uploadPostApi(newPost);
-      console.log('✅ 게시글 업로드 성공 응답:', res);
-
+      await uploadPostApi(newPost);
       setSuccessModalVisible(true);
-    } catch (error) {
-      const status = error?.response?.status;
-      const data = error?.response?.data;
-
-      console.log('❌ 업로드 중 에러 status:', status);
-      console.log('❌ 업로드 중 에러 data:', data);
-      console.error('🔥 업로드 중 오류 발생:', data || error);
-
-      showToast('업로드 중 문제가 발생했어요.');
+    } catch (e) {
+      showToast('업로드 중 오류가 발생했어요.');
     } finally {
-      console.log('⬅️ 업로드 로직 종료, isUploading false로 변경');
       setIsUploading(false);
     }
   }, [
+    isUploading,
     route?.params,
     selectedImages,
     text,
     familyId,
     userId,
-    isUploading,
-    showToast,
     dispatch,
+    showToast,
+    inferContentTypeByExt,
+    inferPostType,
+    compressIfNeeded,
   ]);
 
-  // 헤더 설정
+  /* =========================
+   * header
+   * ========================= */
+
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitle: () => (
-        <View style={styles.headerContainer}>
-          <Text style={styles.headerText}>글쓰기</Text>
-        </View>
-      ),
+      headerTitle: () => <Text style={styles.headerText}>글쓰기</Text>,
       headerRight: () => (
         <TouchableOpacity
           onPress={handleUpload}
-          style={{marginRight: getResponsiveWidth(10)}}
-          disabled={isUploading}>
+          disabled={isUploading}
+          style={{marginRight: getResponsiveWidth(10)}}>
           <Image
             source={require('../../../assets/icons/check.png')}
-            style={[styles.headerCheckIcon, isUploading && {opacity: 0.5}]}
+            style={[styles.headerCheckIcon, isUploading && {opacity: 0.4}]}
           />
         </TouchableOpacity>
       ),
     });
   }, [navigation, handleUpload, isUploading]);
 
-  // Grid에 보여줄 이미지 (최대 3장)
-  const hasExtra = selectedImages.length > 3;
-  const gridImages = hasExtra ? selectedImages.slice(0, 3) : selectedImages;
+  /* =========================
+   * modal pan
+   * ========================= */
 
-  // 풀 이미지 스와이프 닫기 애니메이션
   const translateY = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (modalVisible) {
-      translateY.setValue(0);
-    }
-  }, [modalVisible, translateY]);
-
-  const scale = translateY.interpolate({
-    inputRange: [-200, 0],
-    outputRange: [0.85, 1],
-    extrapolate: 'clamp',
-  });
 
   const panResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        const {dx, dy} = gestureState;
-        return Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 5;
+      onMoveShouldSetPanResponder: (_, g) =>
+        Math.abs(g.dy) > Math.abs(g.dx) && Math.abs(g.dy) > 5,
+      onPanResponderMove: (_, g) => {
+        if (g.dy < 0) translateY.setValue(g.dy);
       },
-      onPanResponderMove: (_, gestureState) => {
-        const {dy} = gestureState;
-        if (dy < 0) {
-          translateY.setValue(dy);
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        const {dy, vy} = gestureState;
-        const distance = Math.abs(dy);
-
-        const SHOULD_CLOSE = distance > 120 || vy < -1.2;
-
-        if (SHOULD_CLOSE) {
+      onPanResponderRelease: (_, g) => {
+        if (Math.abs(g.dy) > 120 || g.vy < -1.2) {
           Animated.timing(translateY, {
             toValue: -300,
             duration: 200,
@@ -295,12 +380,15 @@ export default function CreatePostPage({navigation, route}) {
           Animated.spring(translateY, {
             toValue: 0,
             useNativeDriver: true,
-            bounciness: 8,
           }).start();
         }
       },
     }),
   ).current;
+
+  /* =========================
+   * UI
+   * ========================= */
 
   return (
     <KeyboardAvoidingView
@@ -313,125 +401,165 @@ export default function CreatePostPage({navigation, route}) {
           </View>
         )}
 
-        {/* 사진 그리드 */}
+        {/* 미리보기 그리드 */}
         {gridImages.length > 0 && (
           <View style={styles.gridContainer}>
-            {gridImages.map((item, index) => (
-              <Pressable
-                key={item + index}
-                onPress={() => {
-                  setCurrentIndex(index);
-                  setModalVisible(true);
-                }}
-                style={styles.gridImageWrapper}>
-                <Image source={{uri: item}} style={styles.gridImage} />
+            {gridImages.map((item, index) => {
+              const uri = getItemUri(item);
+              const isVideo = isVideoItem(item);
+              const thumbUri = isVideo && uri ? videoThumbMap[uri] : null;
 
-                {hasExtra && index === gridImages.length - 1 && (
-                  <View style={styles.moreOverlay}>
-                    <Text style={styles.moreOverlayText}>
-                      +{selectedImages.length - 3}
-                    </Text>
-                  </View>
-                )}
-              </Pressable>
-            ))}
+              // ✅ 렌더 중 호출은 과호출될 수 있어서 requestAnimationFrame으로 한 번 감쌈
+              if (isVideo && uri && !thumbUri) {
+                requestAnimationFrame(() => ensureVideoThumb(item));
+              }
+
+              return (
+                <Pressable
+                  key={(uri || 'unknown') + index}
+                  style={styles.gridImageWrapper}
+                  onPress={() => {
+                    setCurrentIndex(index);
+                    setModalVisible(true);
+                  }}>
+                  {isVideo ? (
+                    thumbUri ? (
+                      <FastImage
+                        source={{
+                          uri: thumbUri,
+                          priority: FastImage.priority.normal,
+                          cache: FastImage.cacheControl.immutable,
+                        }}
+                        style={styles.gridImage}
+                        resizeMode={FastImage.resizeMode.cover}
+                      />
+                    ) : (
+                      <View style={[styles.gridImage, styles.thumbFallback]} />
+                    )
+                  ) : (
+                    <Image source={{uri}} style={styles.gridImage} />
+                  )}
+
+                  {isVideo && (
+                    <>
+                      <View pointerEvents="none" style={styles.playOverlay}>
+                        <View style={styles.playTriangle} />
+                      </View>
+
+                      <View pointerEvents="none" style={styles.videoBadge}>
+                        <Text style={styles.videoBadgeText}>
+                          {formatDuration(getDuration(item))}
+                        </Text>
+                      </View>
+                    </>
+                  )}
+
+                  {hasExtra && index === gridImages.length - 1 && (
+                    <View pointerEvents="none" style={styles.moreOverlay}>
+                      <Text style={styles.moreOverlayText}>
+                        +{selectedImages.length - 3}
+                      </Text>
+                    </View>
+                  )}
+                </Pressable>
+              );
+            })}
           </View>
         )}
 
-        {/* 🔹 내용 입력 – 높이 고정 + 내부 스크롤 */}
         <TextInput
-          style={[
-            styles.input,
-            focused && {borderColor: '#9C9C9C', backgroundColor: '#fff'},
-          ]}
+          style={styles.input}
           multiline
-          scrollEnabled={true}         // ← 내용 많아지면 TextInput 안에서 스크롤
           value={text}
           onChangeText={setText}
           placeholder="글로 남긴 추억은 더 생생해요"
           placeholderTextColor="#999"
-          textAlignVertical="top"
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
         />
 
-        {/* 전체 이미지 모달 */}
-        <Modal visible={modalVisible} transparent animationType="fade">
+        {/* 전체 미리보기 모달 */}
+        <Modal
+          visible={modalVisible}
+          transparent
+          onRequestClose={() => setModalVisible(false)}>
           <View style={styles.modalOverlay}>
+            {/* ✅ 닫기 버튼: FlatList보다 위 + pointerEvents + zIndex/elevation */}
+            <Pressable
+              style={styles.modalClose}
+              onPress={() => setModalVisible(false)}
+              hitSlop={12}>
+              <Text style={{color: '#fff'}}>닫기</Text>
+            </Pressable>
+
+            {/* ✅ FlatList가 터치 다 먹는 경우가 있어서 contentContainerStyle로 여백 */}
             <FlatList
               data={selectedImages}
               horizontal
               pagingEnabled
               initialScrollIndex={currentIndex}
-              getItemLayout={(_, index) => ({
+              keyExtractor={(item, idx) => `${getItemUri(item)}-${idx}`}
+              getItemLayout={(_, i) => ({
                 length: SCREEN_WIDTH,
-                offset: SCREEN_WIDTH * index,
-                index,
+                offset: SCREEN_WIDTH * i,
+                index: i,
               })}
-              showsHorizontalScrollIndicator={false}
-              onMomentumScrollEnd={e => {
-                const idx = Math.round(
-                  e.nativeEvent.contentOffset.x / SCREEN_WIDTH,
-                );
-                setCurrentIndex(idx);
+              onScrollToIndexFailed={info => {
+                // iOS/Android 둘 다 안전하게
+                requestAnimationFrame(() => {
+                  // 대충 근처로 이동
+                  const offset = info.averageItemLength * info.index;
+                  info?.highestMeasuredFrameIndex;
+                  // eslint-disable-next-line no-unused-expressions
+                  info;
+                });
               }}
               renderItem={({item}) => (
-                <View style={styles.fullImageWrapper}>
-                  <Animated.View
-                    {...panResponder.panHandlers}
-                    style={[
-                      styles.fullImageInner,
-                      {
-                        transform: [{translateY}, {scale}],
-                      },
-                    ]}>
-                    <Image source={{uri: item}} style={styles.fullImage} />
-                  </Animated.View>
-                </View>
+                <Animated.View
+                  {...panResponder.panHandlers}
+                  style={[
+                    styles.fullImageWrapper,
+                    {transform: [{translateY}]},
+                  ]}>
+                  {isVideoItem(item) ? (
+                    <Video
+                      source={{uri: getItemUri(item)}}
+                      style={styles.fullImage}
+                      resizeMode="contain"
+                      controls
+                    />
+                  ) : (
+                    <Image
+                      source={{uri: getItemUri(item)}}
+                      style={styles.fullImage}
+                    />
+                  )}
+                </Animated.View>
               )}
             />
-
-            <View style={styles.imageCountBadge}>
-              <Text style={styles.imageCountText}>
-                {currentIndex + 1} / {selectedImages.length}
-              </Text>
-            </View>
-
-            <Pressable
-              style={styles.modalCloseArea}
-              onPress={() => setModalVisible(false)}>
-              <Image
-                source={require('../../../assets/images/clearBt1.png')}
-                style={{
-                  width: getResponsiveWidth(20),
-                  height: getResponsiveHeight(20),
-                  resizeMode: 'contain',
-                }}
-              />
-            </Pressable>
           </View>
         </Modal>
 
-        {/* 업로드 성공 토스트 */}
         <ToastModal
-          message="게시글을 업로드했어요"
           visible={successModalVisible}
+          message="게시글을 업로드했어요"
           onClose={() => {
             setSuccessModalVisible(false);
             navigation.navigate('추억');
           }}
         />
 
-        {/* 오류 토스트 */}
         <ToastModal
-          message={toastMessage}
           visible={toastVisible}
+          message={toastMessage}
           onClose={() => setToastVisible(false)}
         />
       </View>
     </KeyboardAvoidingView>
   );
 }
+
+/* =========================
+ * styles
+ * ========================= */
 
 const H_MARGIN = getResponsiveWidth(8);
 const SIDE_PADDING = getResponsiveWidth(15);
@@ -440,14 +568,20 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    borderTopWidth: 2,
-    borderColor: '#E5E5E5',
     padding: SIDE_PADDING,
+  },
+  headerText: {
+    fontSize: HEADER_STYLES.defaultTitleFontSize,
+    fontFamily: HEADER_STYLES.defaultTitleFontFamily,
+  },
+  headerCheckIcon: {
+    width: HEADER_STYLES.headerRightIconWidth,
+    height: HEADER_STYLES.headerRightIconHeight,
+    resizeMode: 'contain',
   },
 
   gridContainer: {
     flexDirection: 'row',
-    justifyContent: 'flex-start',
     marginBottom: getResponsiveHeight(16),
   },
   gridImageWrapper: {
@@ -456,17 +590,52 @@ const styles = StyleSheet.create({
     marginRight: H_MARGIN,
     borderRadius: 12,
     overflow: 'hidden',
-    backgroundColor: '#F3F4F6',
+    position: 'relative',
   },
   gridImage: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
   },
+  thumbFallback: {
+    backgroundColor: '#E5E7EB',
+  },
+
+  playOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 18,
+    borderTopWidth: 12,
+    borderBottomWidth: 12,
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    marginLeft: 4,
+  },
+
+  videoBadge: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  videoBadgeText: {
+    color: '#fff',
+    fontSize: getResponsiveFontSize(11),
+    fontWeight: '600',
+  },
 
   moreOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -476,89 +645,49 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-SemiBold',
   },
 
-  // 🔹 여기: 높이 고정
   input: {
-    height: getResponsiveHeight(200),   // ← 고정 높이
+    height: getResponsiveHeight(200),
     borderWidth: 1,
-    borderColor: '#DDDDDD',
+    borderColor: '#ddd',
     borderRadius: 12,
-    padding: getResponsiveWidth(12),
-    fontSize: getResponsiveFontSize(14),
-    fontFamily: 'Pretendard-Regular',
-    backgroundColor: '#FAFAFA',
-    marginBottom: getResponsiveHeight(20),
+    padding: 12,
   },
 
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
-    justifyContent: 'center',
-    alignItems: 'center',
     zIndex: 10,
-  },
-
-  headerContainer: {
-    width: '100%',
-    height: '100%',
-    alignItems: 'center',
     justifyContent: 'center',
-  },
-  headerText: {
-    fontSize: HEADER_STYLES.defaultTitleFontSize,
-    fontFamily: HEADER_STYLES.defaultTitleFontFamily,
-    color: HEADER_STYLES.defaultTitleFontColor,
-    lineHeight: getResponsiveHeight(26),
-  },
-  headerCheckIcon: {
-    width: HEADER_STYLES.headerRightIconWidth,
-    height: HEADER_STYLES.headerRightIconHeight,
-    marginRight: HEADER_STYLES.headerRightIconRightPadding,
-    resizeMode: 'contain',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.6)',
   },
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,1)',
+    backgroundColor: '#000',
     justifyContent: 'center',
-    alignItems: 'center',
+    position: 'relative',
   },
   fullImageWrapper: {
     width: SCREEN_WIDTH,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  fullImageInner: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   fullImage: {
     width: '100%',
     height: '80%',
     resizeMode: 'contain',
+  },
+
+  // ✅ 여기 핵심: FlatList 위에 "확실히" 뜨게 + 터치도 먹게
+  modalClose: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 30,
+    right: 20,
+    zIndex: 999999,
+    elevation: 999999, // android
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: 'rgba(0,0,0,0.25)',
     borderRadius: 10,
-  },
-  modalCloseArea: {
-    position: 'absolute',
-    top:
-      Platform.OS === 'ios' ? getResponsiveHeight(50) : getResponsiveHeight(25),
-    right: getResponsiveWidth(15),
-    width: getResponsiveIconSize(24),
-    height: getResponsiveIconSize(24),
-  },
-  imageCountBadge: {
-    position: 'absolute',
-    top:
-      Platform.OS === 'ios' ? getResponsiveHeight(50) : getResponsiveHeight(20),
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-  },
-  imageCountText: {
-    color: '#fff',
-    fontSize: getResponsiveFontSize(13),
-    fontWeight: '600',
   },
 });

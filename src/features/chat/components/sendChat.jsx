@@ -1,4 +1,5 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+/* eslint-disable react-native/no-inline-styles */
+import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
 import {
   View,
   Text,
@@ -9,6 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
+
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -26,6 +28,11 @@ import {
 } from '../utils/timeRegistry';
 import {getSpacingStyle} from '../utils/getSpacingStyle';
 import {CHATROOM_STYLE} from 'styles/style';
+
+import {getVideoThumbnail} from '../../../utils/videoThumbnail';
+
+// ✅ utils로 뺀 함수 import
+import {toCdnUrl} from '../../../utils/mediaUrl';
 
 export default function SendChat({
   chatTime,
@@ -46,25 +53,45 @@ export default function SendChat({
     [messageType],
   );
   const isImage = normalizedType === 'image';
+  const isVideo = normalizedType === 'video';
+  const isMedia = isImage || isVideo;
+
   const isUploading = uploadStatus === 'uploading';
   const isFailed = uploadStatus === 'failed';
 
-  // ✅ mediaUrls 항상 배열
-  const safeMediaUrls = useMemo(() => {
-    if (Array.isArray(mediaUrls)) return mediaUrls;
-    if (mediaUrls) return [mediaUrls];
+  // ✅ mediaUrls 항상 배열 (키 or URL 둘 다 가능)
+  const safeMediaRaw = useMemo(() => {
+    if (Array.isArray(mediaUrls)) return mediaUrls.filter(Boolean);
+    if (mediaUrls) return [mediaUrls].filter(Boolean);
     return [];
   }, [mediaUrls]);
 
-  // ✅ 9장 초과 처리
+  // ✅ raw -> 최종 URL(CloudFront or 원본 URL)
+  const safeMediaUrls = useMemo(() => {
+    return safeMediaRaw.map(toCdnUrl).filter(Boolean);
+  }, [safeMediaRaw]);
+
+  // ✅ 9장 초과 처리(그리드용)
   const hasExtra = safeMediaUrls.length > 9;
   const displayMedia = hasExtra ? safeMediaUrls.slice(0, 9) : safeMediaUrls;
+
+  // ✅ 이미지면 프리로드(체감 개선 큼)
+  useEffect(() => {
+    if (!isImage) return;
+    if (!displayMedia.length) return;
+
+    FastImage.preload(
+      displayMedia.map(uri => ({
+        uri,
+        priority: FastImage.priority.normal,
+      })),
+    );
+  }, [isImage, displayMedia]);
 
   // === 시간 그룹 레지스트리 ===
   const [showTime, setShowTime] = useState(false);
   const idRef = useRef(Math.random().toString(36).slice(2));
 
-  // ✅ chatTime 없을 때 안전 처리 (이게 핵심)
   const timeKey = useMemo(() => {
     if (!chatTime) return null;
     return `ME|${minuteKey(chatTime)}`;
@@ -84,30 +111,100 @@ export default function SendChat({
   // === 간격 계산 ===
   const spacingStyle = getSpacingStyle({isGrouped, isSameSender});
 
-  const handleImagePress = (uri, index) => {
-    if (isUploading) return; // 업로드 중에는 확대 방지
-    setSelectedIndex(index);
-    setModalVisible(true);
-  };
+  const handleMediaPress = useCallback(
+    (uri, index) => {
+      if (isUploading) return;
+      setSelectedIndex(index);
+      setModalVisible(true);
+    },
+    [isUploading],
+  );
 
-  const renderUploadOverlay = (radius = 10) => {
-    if (!isUploading && !isFailed) return null;
+  const renderUploadOverlay = useCallback(
+    (radius = 10) => {
+      if (!isUploading && !isFailed) return null;
 
-    return (
-      <View style={[styles.loadingOverlay, {borderRadius: radius}]}>
-        {isUploading ? (
-          <>
-            <ActivityIndicator color="#fff" />
-            <Text style={styles.loadingText}>전송 중…</Text>
-          </>
-        ) : (
-          <Text style={styles.failText}>전송 실패</Text>
-        )}
-      </View>
-    );
-  };
+      return (
+        <View style={[styles.loadingOverlay, {borderRadius: radius}]}>
+          {isUploading ? (
+            <>
+              <ActivityIndicator color="#fff" />
+              <Text style={styles.loadingText}>전송 중…</Text>
+            </>
+          ) : (
+            <Text style={styles.failText}>전송 실패</Text>
+          )}
+        </View>
+      );
+    },
+    [isUploading, isFailed],
+  );
 
-  const renderImages = () => (
+  const safeText = useMemo(() => String(message ?? '').trim(), [message]);
+  const hasText = safeText.length > 0;
+
+  // ✅ media인데 url이 없으면 렌더 스킵
+  if (isMedia && safeMediaUrls.length === 0) return null;
+
+  // ====== ✅ 영상 썸네일 캐시 ======
+  const [videoThumbMap, setVideoThumbMap] = useState({}); // { [videoUrl]: thumbUri }
+  useEffect(() => {
+    if (!isVideo) return;
+    if (!safeMediaUrls.length) return;
+
+    let alive = true;
+
+    (async () => {
+      const results = await Promise.all(
+        safeMediaUrls.map(async url => {
+          try {
+            const t = await getVideoThumbnail(url);
+            return [url, t?.uri || null];
+          } catch {
+            return [url, null];
+          }
+        }),
+      );
+
+      if (!alive) return;
+
+      const next = {};
+      for (const [url, thumbUri] of results) {
+        if (thumbUri) next[url] = thumbUri;
+      }
+      if (Object.keys(next).length) {
+        setVideoThumbMap(prev => ({...prev, ...next}));
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [isVideo, safeMediaUrls]);
+
+  const getThumbSource = useCallback(
+    uri => {
+      if (isImage) {
+        return {
+          uri,
+          priority: FastImage.priority.normal,
+          cache: FastImage.cacheControl.immutable,
+        };
+      }
+      const thumbUri = videoThumbMap[uri];
+      if (thumbUri) {
+        return {
+          uri: thumbUri,
+          priority: FastImage.priority.normal,
+          cache: FastImage.cacheControl.immutable,
+        };
+      }
+      return null;
+    },
+    [isImage, videoThumbMap],
+  );
+
+  const renderGrid = () => (
     <View style={[styles.sendBubble, styles.imagePadding]}>
       <FlatList
         data={displayMedia}
@@ -119,35 +216,92 @@ export default function SendChat({
           const isLastCell = hasExtra && index === displayMedia.length - 1;
           const extraCount = safeMediaUrls.length - displayMedia.length;
 
+          const thumbSource = getThumbSource(item);
+
           return (
             <TouchableOpacity
-              onPress={() => handleImagePress(item, index)}
+              onPress={() => handleMediaPress(item, index)}
               activeOpacity={0.9}>
               <View>
-                <FastImage source={{uri: item}} style={styles.imageItem} />
-                {isLastCell && (
-                  <View style={styles.moreOverlay}>
-                    <Text style={styles.moreOverlayText}>+{extraCount}</Text>
-                  </View>
-                )}
+                <View style={styles.thumbWrap}>
+                  {thumbSource ? (
+                    <FastImage
+                      source={thumbSource}
+                      style={styles.imageItem}
+                      resizeMode={FastImage.resizeMode.cover}
+                      onError={e => {
+                        console.log(
+                          '❌ SendChat thumb error:',
+                          item,
+                          e?.nativeEvent,
+                        );
+                      }}
+                    />
+                  ) : (
+                    <View style={[styles.imageItem, styles.thumbFallback]} />
+                  )}
+
+                  {isVideo && (
+                    <View style={styles.playOverlay}>
+                      <View style={styles.playTriangle} />
+                    </View>
+                  )}
+
+                  {isLastCell && (
+                    <View style={styles.moreOverlay}>
+                      <Text style={styles.moreOverlayText}>+{extraCount}</Text>
+                    </View>
+                  )}
+                </View>
               </View>
             </TouchableOpacity>
           );
         }}
       />
 
-      {/* ✅ 그리드는 모서리 20에 맞춰 오버레이도 20 */}
       {renderUploadOverlay(getResponsiveIconSize(20))}
     </View>
   );
 
-  const safeText = useMemo(() => String(message ?? '').trim(), [message]);
-  const hasText = safeText.length > 0;
-  const hasMedia = safeMediaUrls.length > 0;
+  const renderSingle = () => {
+    const uri = safeMediaUrls[0];
+    const thumbSource = getThumbSource(uri);
 
-  if (isImage && safeMediaUrls.length === 0) {
-    return null;
-  }
+    return (
+      <View style={styles.singleWrapper}>
+        <TouchableOpacity
+          onPress={() => handleMediaPress(uri, 0)}
+          activeOpacity={0.9}>
+          <View>
+            {thumbSource ? (
+              <FastImage
+                source={thumbSource}
+                style={styles.singleImage}
+                resizeMode={FastImage.resizeMode.cover}
+                onError={e => {
+                  console.log(
+                    '❌ SendChat single thumb error:',
+                    uri,
+                    e?.nativeEvent,
+                  );
+                }}
+              />
+            ) : (
+              <View style={[styles.singleImage, styles.thumbFallback]} />
+            )}
+
+            {isVideo && (
+              <View style={styles.playOverlaySingle}>
+                <View style={styles.playTriangleBig} />
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+
+        {renderUploadOverlay(10)}
+      </View>
+    );
+  };
 
   return (
     <View style={[styles.sendContainer, spacingStyle, style]}>
@@ -155,24 +309,11 @@ export default function SendChat({
         <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>
       )}
 
-      {isImage ? (
+      {isMedia ? (
         safeMediaUrls.length === 1 ? (
-          <View style={styles.singleWrapper}>
-            <TouchableOpacity
-              onPress={() => handleImagePress(safeMediaUrls[0], 0)}
-              activeOpacity={0.9}>
-              <FastImage
-                source={{uri: safeMediaUrls[0]}}
-                style={styles.singleImage}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
-
-            {/* ✅ 단일 이미지는 radius 10 */}
-            {renderUploadOverlay(10)}
-          </View>
+          renderSingle()
         ) : (
-          renderImages()
+          renderGrid()
         )
       ) : hasText ? (
         <View style={[styles.sendBubble, styles.textPadding]}>
@@ -180,9 +321,10 @@ export default function SendChat({
         </View>
       ) : null}
 
+      {/* ✅ 모달에는 raw(키/URL) 그대로 넘기면 됨 (모달에서 toCdnUrl로 정규화) */}
       <MediaModal
         visible={modalVisible}
-        mediaUrls={safeMediaUrls}
+        mediaUrls={safeMediaRaw}
         mediaType={normalizedType}
         initialIndex={selectedIndex}
         onClose={() => setModalVisible(false)}
@@ -230,11 +372,21 @@ const styles = StyleSheet.create({
   imageGrid: {
     gap: getResponsiveWidth(4),
   },
+
+  thumbWrap: {
+    position: 'relative',
+  },
+
   imageItem: {
     width: getResponsiveWidth(70),
     height: getResponsiveWidth(70),
     borderRadius: 4,
     margin: 2,
+    backgroundColor: '#F3F4F6',
+  },
+
+  thumbFallback: {
+    backgroundColor: '#E5E7EB',
   },
 
   singleWrapper: {
@@ -246,6 +398,7 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: 10,
     alignSelf: 'flex-end',
+    backgroundColor: '#F3F4F6',
   },
 
   moreOverlay: {
@@ -277,5 +430,47 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(13),
+  },
+
+  playOverlay: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 12,
+    borderTopWidth: 8,
+    borderBottomWidth: 8,
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    marginLeft: 3,
+  },
+
+  playOverlaySingle: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playTriangleBig: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 22,
+    borderTopWidth: 14,
+    borderBottomWidth: 14,
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    marginLeft: 5,
   },
 });

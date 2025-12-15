@@ -344,7 +344,7 @@
 				CODE_SIGN_ENTITLEMENTS = kinover_frontend/kinover_frontend.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 31;
 				DEVELOPMENT_TEAM = W4GFUV5HLX;
 				ENABLE_BITCODE = NO;
 				"EXCLUDED_ARCHS[sdk=*]" = "";
@@ -527,7 +527,7 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 11;
+				CURRENT_PROJECT_VERSION = 31;
 				DEVELOPMENT_TEAM = W4GFUV5HLX;
 				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = "";
 				GCC_TREAT_WARNINGS_AS_ERRORS = NO;

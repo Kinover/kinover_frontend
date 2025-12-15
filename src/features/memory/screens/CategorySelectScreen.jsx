@@ -1,6 +1,6 @@
 // src/features/memory/screens/CategorySelectScreen.jsx
 
-import React, {useState, useLayoutEffect, useEffect} from 'react';
+import React, {useState, useLayoutEffect, useEffect, useMemo} from 'react';
 import {
   View,
   Text,
@@ -33,7 +33,11 @@ export default function CategorySelectPage({route}) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [newCategory, setNewCategory] = useState('');
-
+  // ✅ 전달받은 selectedImages (string[] or object[] 모두 가능)
+  const selectedImagesFromRoute = useMemo(
+    () => route?.params?.selectedImages ?? [],
+    [route?.params?.selectedImages],
+  );
   // 디버깅용
   useEffect(() => {
     console.log('📂 CategorySelectPage 진입');
@@ -65,15 +69,12 @@ export default function CategorySelectPage({route}) {
               '➡️ 게시글작성화면으로 이동, selectedCategory:',
               selectedCategory,
             );
-            console.log(
-              '➡️ 전달할 selectedImages:',
-              route.params?.selectedImages,
-            );
+            console.log('➡️ 전달할 selectedImages:', selectedImagesFromRoute);
 
             if (selectedCategory) {
               navigation.navigate('게시글작성화면', {
                 selectedCategory,
-                selectedImages: route.params?.selectedImages,
+                selectedImages: selectedImagesFromRoute,
               });
             } else {
               console.log('❌ selectedCategory 없음, 이동 안 함');
@@ -104,7 +105,7 @@ export default function CategorySelectPage({route}) {
       //   </TouchableOpacity>
       // ),
     });
-  }, [navigation, selectedCategory, route.params?.selectedImages]);
+  }, [navigation, selectedCategory, selectedImagesFromRoute]);
 
   // 카테고리 목록 조회
   useEffect(() => {

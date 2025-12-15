@@ -1,14 +1,11 @@
-// chatRoomSlice.js
 import {createSlice} from '@reduxjs/toolkit';
 
 /* =========================
  * Utilities / Helpers
  * ========================= */
 
-/** 안전한 문자열 ID 변환 */
 const toId = v => (v == null ? null : String(v));
 
-/** 안전한 ISO 시각 문자열 반환 (잘못된 값이면 now) */
 const toIso = d => {
   try {
     const t = d ? new Date(d) : new Date();
@@ -19,7 +16,6 @@ const toIso = d => {
   }
 };
 
-/** 최근 메시지 시각 기준 정렬 (내림차순) */
 const sortByLatest = list =>
   [...list].sort(
     (a, b) =>
@@ -27,7 +23,6 @@ const sortByLatest = list =>
       new Date(a.latestMessageTime || 0).getTime(),
   );
 
-/** 미리보기 텍스트 매핑 */
 const MESSAGE_TYPE_LABELS = {
   image: '[사진]',
   video: '[동영상]',
@@ -35,16 +30,33 @@ const MESSAGE_TYPE_LABELS = {
 };
 const previewText = msg => {
   if (!msg) return '';
+
   const type = msg.messageType?.toLowerCase?.();
-  if (MESSAGE_TYPE_LABELS[type]) return MESSAGE_TYPE_LABELS[type];
+
+  const n = Array.isArray(msg.imageUrls)
+    ? msg.imageUrls.length
+    : Array.isArray(msg.mediaUrls)
+    ? msg.mediaUrls.length
+    : 1;
+    
+  // ✅ 이미지: n장
+  if (type === 'image') {
+    return `사진을 ${n}장 보냈습니다.`;
+  }
+
+  // ✅ 비디오: n개
+  if (type === 'video') {
+    return `동영상을 ${n}개 보냈습니다.`;
+  }
+
+  if (type === 'file') return '[파일]';
+
   return msg.content ?? '';
 };
 
-/** 리스트에서 채팅방 인덱스 찾기 */
 const findRoomIndex = (state, rid) =>
   state.chatRoomList.findIndex(r => toId(r.chatRoomId) === rid);
 
-/** 공통: “리스트 항목 업데이트 + 정렬 + 리비전 증가” */
 const finalizeList = state => {
   state.chatRoomList = sortByLatest(state.chatRoomList);
   state.listRevision += 1;
@@ -60,7 +72,10 @@ const initialChatRoomState = {
   loading: false,
   error: null,
   activeChatRoomId: null,
-  listRevision: 0, // 강제 리렌더 트리거 용 카운터
+  listRevision: 0,
+
+  // ✅ “서버가 리스트를 다시 덮어써도” 특정 방은 맨 위 유지용
+  pendingTopRoomId: null,
 };
 
 /* =========================
@@ -71,8 +86,41 @@ const chatRoomSlice = createSlice({
   name: 'chatRoom',
   initialState: initialChatRoomState,
   reducers: {
-    /** 필요할 때 강제로 리렌더 트리거 */
     bumpListRevision(state) {
+      state.listRevision += 1;
+    },
+
+    /** ✅ 특정 채팅방을 “최신”으로 올리기 + 유지 플래그 저장 */
+    bumpChatRoomToTop(state, action) {
+      const rid = toId(action.payload);
+      if (!rid) return;
+
+      state.pendingTopRoomId = rid; // ✅ 유지용
+
+      const idx = findRoomIndex(state, rid);
+      if (idx === -1) {
+        // 방이 아직 리스트에 없으면 일단 pending만 걸어둠
+        state.listRevision += 1;
+        return;
+      }
+
+      const nowIso = new Date().toISOString();
+      const target = state.chatRoomList[idx];
+
+      const bumped = {
+        ...target,
+        latestMessageTime: nowIso,
+      };
+
+      state.chatRoomList.splice(idx, 1);
+      state.chatRoomList.unshift(bumped);
+
+      finalizeList(state);
+    },
+
+    /** (선택) 이제 유지가 필요 없을 때 끄기 */
+    clearPendingTopRoom(state) {
+      state.pendingTopRoomId = null;
       state.listRevision += 1;
     },
 
@@ -80,39 +128,44 @@ const chatRoomSlice = createSlice({
     setChatRoomList(state, action) {
       const src = Array.isArray(action.payload) ? action.payload : [];
 
-      state.chatRoomList = sortByLatest(
-        src.map(r => {
-          const rid = toId(r.chatRoomId);
+      const mapped = src.map(r => {
+        const rid = toId(r.chatRoomId);
 
-          // ✅ latestMessageTime → updatedAt → createdAt → now 순으로 fallback
-          const latestRaw =
-            r.latestMessageTime ??
-            r.updatedAt ??
-            r.createdAt ??
-            new Date().toISOString();
+        const latestRaw =
+          r.latestMessageTime ??
+          r.updatedAt ??
+          r.createdAt ??
+          new Date().toISOString();
 
-          return {
-            ...r,
-            chatRoomId: rid,
-            roomName: r.roomName ?? `채팅방 ${rid ?? ''}`,
-            latestMessageContent: r.latestMessageContent ?? '',
-            latestMessageTime: toIso(latestRaw),
-            unreadCount: Number.isFinite(r.unreadCount) ? r.unreadCount : 0,
-            notificationOn:
-              typeof r.notificationOn === 'boolean' ? r.notificationOn : true,
+        return {
+          ...r,
+          chatRoomId: rid,
+          roomName: r.roomName ?? `채팅방 ${rid ?? ''}`,
+          latestMessageContent: r.latestMessageContent ?? '',
+          latestMessageTime: toIso(latestRaw),
+          unreadCount: Number.isFinite(r.unreadCount) ? r.unreadCount : 0,
+          notificationOn:
+            typeof r.notificationOn === 'boolean' ? r.notificationOn : true,
+          userChatRooms: Array.isArray(r.userChatRooms) ? r.userChatRooms : [],
+        };
+      });
 
-            // ✅ 여기 추가: 백엔드에서 내려온 userChatRooms를 그대로 보존
-            userChatRooms: Array.isArray(r.userChatRooms)
-              ? r.userChatRooms
-              : [],
+      // ✅ 서버가 덮어써도 “방 맨 위 유지”
+      if (state.pendingTopRoomId) {
+        const rid = state.pendingTopRoomId;
+        const idx = mapped.findIndex(x => toId(x.chatRoomId) === rid);
+        if (idx !== -1) {
+          mapped[idx] = {
+            ...mapped[idx],
+            latestMessageTime: new Date().toISOString(),
           };
-        }),
-      );
+        }
+      }
 
+      state.chatRoomList = sortByLatest(mapped);
       state.listRevision += 1;
     },
 
-    /** 특정 채팅방의 사용자 목록(프로필 등) */
     setChatRoomUsers(state, action) {
       state.chatRoomUsers = Array.isArray(action.payload)
         ? [...action.payload]
@@ -127,12 +180,10 @@ const chatRoomSlice = createSlice({
       state.error = action.payload || null;
     },
 
-    /** 현재 열려있는(활성) 채팅방 지정 */
     setActiveChatRoom(state, action) {
       state.activeChatRoomId = action.payload ? toId(action.payload) : null;
     },
 
-    // ✅ 알림 on/off 상태를 방별로 업데이트
     setChatRoomNotificationState(state, action) {
       const {chatRoomId, isOn} = action.payload || {};
       const rid = toId(chatRoomId);
@@ -147,66 +198,50 @@ const chatRoomSlice = createSlice({
       }
     },
 
-    /**
-     * 새 메시지 수신/발신 시 리스트에 미리보기 반영
-     * - 방이 없으면 새로 추가
-     * - 방이 있으면 최신 내용/시각/안읽음 갱신
-     */
     applyMessagePreview(state, action) {
       const {chatRoomId, message, isSelf} = action.payload || {};
       const rid = toId(chatRoomId);
       const lastText = previewText(message);
       const lastTime = toIso(message?.createdAt);
-    
+
       const idx = findRoomIndex(state, rid);
-    
+
       if (idx === -1) {
-        // 리스트에 없는 방이면 헤더 정보 최소로 넣어준다
         state.chatRoomList.unshift({
           chatRoomId: rid,
           roomName: message?.chatRoom?.roomName ?? `채팅방 ${rid}`,
           latestMessageContent: lastText,
           latestMessageTime: lastTime,
-          unreadCount: isSelf ? 0 : 1, // 내가 보낸 메시지는 안읽음 증가 X
-    
+          unreadCount: isSelf ? 0 : 1,
           memberImages: message?.chatRoom?.memberImages || [],
           kino: message?.chatRoom?.kino || false,
           notificationOn: true,
-    
-          // ✅ 새 메시지로부터도 userChatRooms를 받아서 저장
           userChatRooms: Array.isArray(message?.chatRoom?.userChatRooms)
             ? message.chatRoom.userChatRooms
             : [],
         });
       } else {
         const prev = state.chatRoomList[idx];
-    
         let unread = prev.unreadCount || 0;
-    
+
         if (!isSelf) {
           unread =
             state.activeChatRoomId && state.activeChatRoomId === rid
               ? 0
               : unread + 1;
         }
-    
+
         state.chatRoomList[idx] = {
           ...prev,
           latestMessageContent: lastText,
           latestMessageTime: lastTime,
           unreadCount: unread,
-          // ❗ 여기서는 prev.userChatRooms 그대로 유지 (이미 setChatRoomList에서 넣어줬음)
         };
       }
-    
+
       finalizeList(state);
     },
-    
 
-    /**
-     * 방을 읽음 처리 (리스트에서 해당 방의 unreadCount = 0)
-     * - activeChatRoomId도 동기화
-     */
     markRoomRead(state, action) {
       const rid = toId(action.payload);
       const idx = findRoomIndex(state, rid);
@@ -222,7 +257,6 @@ const chatRoomSlice = createSlice({
       state.activeChatRoomId = rid;
     },
 
-    /** 리스트에서 해당 방의 이름만 변경 */
     updateChatRoomNameInList(state, action) {
       const {chatRoomId, newRoomName} = action.payload || {};
       const rid = toId(chatRoomId);
@@ -236,6 +270,7 @@ const chatRoomSlice = createSlice({
         state.listRevision += 1;
       }
     },
+
     removeChatRoomFromList(state, action) {
       const rid = toId(action.payload);
 
@@ -243,9 +278,13 @@ const chatRoomSlice = createSlice({
         room => toId(room.chatRoomId) !== rid,
       );
 
-      // 만약 현재 활성 방이 이 방이면 activeChatRoomId도 초기화
       if (state.activeChatRoomId === rid) {
         state.activeChatRoomId = null;
+      }
+
+      // 삭제된 방이 pending이면 해제
+      if (state.pendingTopRoomId === rid) {
+        state.pendingTopRoomId = null;
       }
 
       state.listRevision += 1;
@@ -259,6 +298,8 @@ const chatRoomSlice = createSlice({
 
 export const {
   bumpListRevision,
+  bumpChatRoomToTop,
+  clearPendingTopRoom,
   setChatRoomList,
   setChatRoomUsers,
   setChatRoomLoading,
@@ -268,7 +309,7 @@ export const {
   markRoomRead,
   updateChatRoomNameInList,
   removeChatRoomFromList,
-  setChatRoomNotificationState, // ✅ 추가
+  setChatRoomNotificationState,
 } = chatRoomSlice.actions;
 
 export default chatRoomSlice.reducer;

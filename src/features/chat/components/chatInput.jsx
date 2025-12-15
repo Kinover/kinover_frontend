@@ -19,7 +19,6 @@ import {
   SafeAreaView,
   Text,
   Image,
-  PanResponder,
   LayoutAnimation,
   UIManager,
   Keyboard,
@@ -28,24 +27,28 @@ import {useDispatch} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
 import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
-import LinearGradient from 'react-native-linear-gradient';
+// import LinearGradient from 'react-native-linear-gradient';
+import RNBlobUtil from 'react-native-blob-util';
 
+import {
+  Image as ImageCompressor,
+  Video as VideoCompressor,
+} from 'react-native-compressor';
+
+import {sendChat, isChatSocketOpen} from 'features/chat/hooks/ChatSocket';
 import {getPresignedUrls, uploadFileToS3} from '../../../api/imageUrlApi';
+
 import {
   getResponsiveWidth,
   getResponsiveHeight,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
+
 import {convertPhUriToFileUri} from '../../../utils/photoUriConverter';
 import {getSelectOrder, toggleSelectImage} from '../../../utils/selection';
-import {
-  getFileNameWithExtension,
-  loadGalleryPhotos,
-} from '../../../utils/gallery';
+import {loadGalleryPhotos} from '../../../utils/gallery';
 import formatDuration from '../../../utils/formatDuration';
 import ToastModal from '../../../components/ToastModal';
-
-// import {addMessage} from '../store/messageSlice';
 import {addMessageAndUpdateRoom} from '../utils/messageActions';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -66,8 +69,37 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
+// ✅ 파일명 기반 content-type (반드시 모든 케이스 리턴)
+const inferContentTypeByName = fileName => {
+  const lower = String(fileName || '').toLowerCase();
+  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+  if (lower.endsWith('.png')) return 'image/png';
+  if (lower.endsWith('.webp')) return 'image/webp';
+  if (lower.endsWith('.mp4')) return 'video/mp4';
+  if (lower.endsWith('.mov')) return 'video/quicktime';
+  return 'application/octet-stream';
+};
+
+// ✅ uri에서 확장자 추정
+const getExtFromUri = uri => {
+  try {
+    const clean = String(uri || '').split('?')[0];
+    const ext = clean.split('.').pop()?.toLowerCase();
+    if (!ext || ext.includes('/') || ext.length > 6) return null;
+    return ext;
+  } catch {
+    return null;
+  }
+};
+
+// ✅ file:// 제거한 path
+const stripFileScheme = uri =>
+  String(uri || '').startsWith('file://')
+    ? String(uri).replace('file://', '')
+    : String(uri);
+
 const ChatInput = forwardRef(function ChatInput(
-  {chatRoom, userId, socketRef, enableMediaPicker = true},
+  {chatRoom, userId, enableMediaPicker = true},
   ref,
 ) {
   const dispatch = useDispatch();
@@ -77,7 +109,7 @@ const ChatInput = forwardRef(function ChatInput(
     [],
   );
 
-  // ✅ 중복 전송(엔터+버튼/연타) 강제 차단용 락
+  // ✅ 중복 전송 락
   const sendingLockRef = useRef(false);
 
   // ====== state ======
@@ -95,11 +127,6 @@ const ChatInput = forwardRef(function ChatInput(
 
   // grid
   const [gridColumns, setGridColumns] = useState(BASE_NUM_COLUMNS);
-
-  // drag select
-  const [scrollOffset, setScrollOffset] = useState(0);
-  const [dragMode, setDragMode] = useState(null); // 'add' | 'remove' | null
-  const lastIndexRef = useRef(null);
 
   // toast
   const [toastVisible, setToastVisible] = useState(false);
@@ -126,11 +153,10 @@ const ChatInput = forwardRef(function ChatInput(
   }));
 
   // ====== toast ======
-  const showToast = useCallback(msg => {
+  const showToastFn = useCallback(msg => {
     setToastMessage(msg);
     setToastVisible(true);
   }, []);
-
   const hideToast = useCallback(() => setToastVisible(false), []);
 
   // ====== gallery load ======
@@ -188,15 +214,89 @@ const ChatInput = forwardRef(function ChatInput(
     setSelectedImages(prev => toggleSelectImage(prev, item));
   }, []);
 
+  const isVideoItem = useCallback(item => !!item?.isVideo, []);
+
+  // ✅ 업로드 전 uri 정리: iOS(ph://), Android(content://)
+  const resolveUploadUri = useCallback(async (uri, index, isVideo) => {
+    if (!uri) return uri;
+
+    // iOS: ph:// -> file://
+    if (Platform.OS === 'ios' && String(uri).startsWith('ph://')) {
+      const converted = await convertPhUriToFileUri(uri, index, isVideo);
+      return converted || uri;
+    }
+
+    // Android: content:// -> cache file (GET fetch)
+    if (Platform.OS === 'android' && String(uri).startsWith('content://')) {
+      const ext = isVideo ? 'mp4' : 'jpg';
+      const destPath = `${
+        RNBlobUtil.fs.dirs.CacheDir
+      }/kino_${Date.now()}_${index}.${ext}`;
+
+      const r = await RNBlobUtil.config({
+        path: destPath,
+        fileCache: true,
+      }).fetch('GET', uri);
+
+      const savedPath = r?.path?.() || destPath;
+
+      const exists = await RNBlobUtil.fs.exists(savedPath);
+      if (!exists) {
+        throw new Error(`android content -> file 변환 실패: ${savedPath}`);
+      }
+
+      return `file://${savedPath}`;
+    }
+
+    return uri;
+  }, []);
+
+  /* =========================
+   * ✅ 압축 유틸
+   * ========================= */
+
+  const compressUploadUri = useCallback(async (fileUri, isVideo) => {
+    if (!fileUri)
+      return {
+        uri: fileUri,
+        ext: getExtFromUri(fileUri) || (isVideo ? 'mp4' : 'jpg'),
+      };
+
+    // react-native-compressor는 file://, ph://, content://를 받기도 하지만
+    // 너는 이미 resolveUploadUri로 file://로 맞춰줄 거라 안정적임.
+    if (isVideo) {
+      // ⚠️ 옵션은 버전별로 조금 다를 수 있음
+      // 가장 무난: auto/medium 계열
+      const compressed = await VideoCompressor.compress(fileUri, {
+        compressionMethod: 'auto',
+        // 너무 느리면 아래로 바꿔:
+        // compressionMethod: 'manual',
+        // maxSize: 720, // 지원 버전이면 사용
+      });
+
+      const ext = getExtFromUri(compressed) || 'mp4';
+      return {uri: compressed, ext};
+    }
+
+    // image
+    const compressed = await ImageCompressor.compress(fileUri, {
+      compressionMethod: 'auto',
+      quality: 0.8,
+    });
+
+    const ext = getExtFromUri(compressed) || 'jpg';
+    return {uri: compressed, ext};
+  }, []);
+
+  // ====== send ======
   const handleSend = useCallback(async () => {
-    // ✅ 1) 중복 호출 자체를 ref 락으로 차단
     if (sendingLockRef.current) return;
     sendingLockRef.current = true;
 
     const text = message.trim();
-    const hasImages = enableMediaPicker && selectedImages.length > 0;
+    const hasMedia = enableMediaPicker && selectedImages.length > 0;
 
-    if (!text && !hasImages) {
+    if (!text && !hasMedia) {
       sendingLockRef.current = false;
       return;
     }
@@ -207,20 +307,32 @@ const ChatInput = forwardRef(function ChatInput(
       return;
     }
 
-    const socket = socketRef?.current;
-    if (!socket || socket.readyState !== 1) {
-      showToast('연결이 불안정해요. 다시 시도해주세요.');
+    if (!isChatSocketOpen()) {
+      showToastFn('연결이 불안정해요. 다시 시도해주세요.');
       sendingLockRef.current = false;
       return;
     }
 
-    // ✅ 이번 전송에서 사용할 스냅샷 (중간에 state 바뀌어도 안전)
-    const imageSnapshot = hasImages ? [...selectedImages] : [];
+    const mediaSnapshot = hasMedia ? [...selectedImages] : [];
+
+    // ✅ 이미지/영상 섞어서 선택 금지
+    const hasVideo = mediaSnapshot.some(f => !!f.isVideo);
+    const hasImage = mediaSnapshot.some(f => !f.isVideo);
+    if (hasMedia && hasVideo && hasImage) {
+      showToastFn('사진이랑 영상은 한 번에 같이 보낼 수 없어요. 따로 보내줘!');
+      sendingLockRef.current = false;
+      return;
+    }
+
+    const mediaType = hasVideo ? 'video' : 'image';
+
+    let mediaClientMessageId = null;
+    let mediaOptimisticId = null;
 
     try {
       setIsSending(true);
 
-      // ===== 1) TEXT (optimistic 유지) =====
+      // ===== 1) TEXT =====
       if (text) {
         const clientMessageId = makeClientId();
         const optimisticId = `client-${clientMessageId}`;
@@ -241,83 +353,141 @@ const ChatInput = forwardRef(function ChatInput(
           }),
         );
 
-        socket.send(
-          JSON.stringify({
-            content: text,
-            chatRoomId: roomId,
-            senderId: userId,
-            messageType: 'text',
-            clientMessageId,
-          }),
-        );
+        const ok = sendChat({
+          content: text,
+          chatRoomId: roomId,
+          senderId: userId,
+          messageType: 'text',
+          clientMessageId,
+        });
+
+        if (!ok) {
+          showToastFn('연결이 불안정해요. 다시 시도해주세요.');
+          return;
+        }
 
         setMessage('');
       }
 
-      // ===== 2) IMAGE (✅ 업로드 전 optimistic 먼저 → 업로드 끝나면 status 갱신) =====
-      if (!hasImages) return;
+      // ===== 2) MEDIA =====
+      if (!hasMedia) return;
 
-      // ✅ 누르자마자 갤러리 닫고 선택 초기화 (사용자 체감 좋아짐)
       setShowGallery(false);
       setSelectedImages([]);
 
-      const clientMessageId = makeClientId();
-      const optimisticId = `client-${clientMessageId}`;
+      mediaClientMessageId = makeClientId();
+      mediaOptimisticId = `client-${mediaClientMessageId}`;
 
-      // ✅ 업로드 전: 로컬 uri로 미리 메시지 뿌리기 (전송중… 오버레이)
+      // ✅ 낙관적 UI (로컬 uri로 미리 보여주기)
       dispatch(
         addMessageAndUpdateRoom({
           chatRoomId: roomId,
           message: {
-            messageId: optimisticId,
-            clientMessageId,
+            messageId: mediaOptimisticId,
+            clientMessageId: mediaClientMessageId,
             chatRoomId: roomId,
             senderId: userId,
-            messageType: 'image',
-            // 로컬 미리보기용
-            mediaUrls: imageSnapshot.map(p => p.uri),
+            messageType: mediaType,
+            mediaUrls: mediaSnapshot.map(p => p.uri),
             createdAt: new Date().toISOString(),
-            uploadStatus: 'uploading', // ✅ SendChat에서 전송중 표시
+            uploadStatus: 'uploading',
             localStatus: 'sending',
           },
         }),
       );
 
-      // ✅ 업로드에 사용할 파일명 생성
-      const fileNames = imageSnapshot.map((file, index) =>
-        getFileNameWithExtension(file, index),
-      );
+      // ✅ 1) 업로드용 uri 준비(file://) + 2) 압축 + 3) fileName/contentType 결정
+      const now = Date.now();
+      const prepared = [];
 
-      const presignedUrls = await getPresignedUrls(fileNames);
+      for (let i = 0; i < mediaSnapshot.length; i++) {
+        const original = mediaSnapshot[i];
+        const originalUri = original?.uri;
 
-      // ✅ S3 업로드 (모두 끝날 때까지 잠금 유지)
-      for (let i = 0; i < imageSnapshot.length; i++) {
-        let fileUri = imageSnapshot[i].uri;
+        // file:// 로 통일
+        const resolvedUri = await resolveUploadUri(
+          originalUri,
+          i,
+          !!original?.isVideo,
+        );
 
-        if (Platform.OS === 'ios' && fileUri.startsWith('ph://')) {
-          fileUri = await convertPhUriToFileUri(
-            fileUri,
-            i,
-            imageSnapshot[i].isVideo,
-          );
-          if (!fileUri) throw new Error('convertPhUriToFileUri failed');
-        }
+        // 압축
+        const {uri: compressedUri, ext} = await compressUploadUri(
+          resolvedUri,
+          !!original?.isVideo,
+        );
 
-        await uploadFileToS3(presignedUrls[i], fileUri, fileNames[i]);
+        // fileName은 "압축 결과 ext" 기준
+        const safeExt = ext || (original?.isVideo ? 'mp4' : 'jpg');
+        const fileName = `chat_${now}_${i}.${safeExt}`;
+        const contentType = inferContentTypeByName(fileName);
+
+        // 0바이트 방지용 체크(특히 영상)
+        const p = stripFileScheme(compressedUri);
+        const stat = await RNBlobUtil.fs.stat(p);
+        const size = Number(stat?.size || 0);
+        if (!size)
+          throw new Error(`압축 결과 파일이 비었어요: ${compressedUri}`);
+
+        prepared.push({
+          uploadUri: compressedUri,
+          fileName,
+          contentType,
+        });
+
+        console.log('🗜️ compressed meta', {
+          i,
+          isVideo: !!original?.isVideo,
+          resolvedUri,
+          compressedUri,
+          fileName,
+          contentType,
+          size,
+        });
       }
 
-      // ✅ 업로드 완료: 같은 clientMessageId로 메시지 갱신 (전송중 → 해제)
+      // presigned
+      const presignedUrls = await getPresignedUrls(
+        prepared.map(p => ({fileName: p.fileName, contentType: p.contentType})),
+      );
+
+      // upload
+      for (let i = 0; i < prepared.length; i++) {
+        const presigned =
+          typeof presignedUrls[i] === 'string'
+            ? presignedUrls[i]
+            : presignedUrls[i]?.url;
+
+        if (!presigned) throw new Error('presigned url is missing');
+
+        console.log('🧾 PUT 직전', {
+          presigned: String(presigned).split('?')[0],
+          contentType: prepared[i].contentType,
+          uploadUri: prepared[i].uploadUri,
+          fileName: prepared[i].fileName,
+        });
+
+        await uploadFileToS3(
+          presigned,
+          prepared[i].uploadUri,
+          prepared[i].contentType,
+          prepared[i].fileName,
+        );
+      }
+
+      const fileNames = prepared.map(p => p.fileName);
+
+      // 업로드 완료로 상태 업데이트
       dispatch(
         addMessageAndUpdateRoom({
           chatRoomId: roomId,
           message: {
-            messageId: optimisticId,
-            clientMessageId,
+            messageId: mediaOptimisticId,
+            clientMessageId: mediaClientMessageId,
             chatRoomId: roomId,
             senderId: userId,
-            messageType: 'image',
-            imageUrls: fileNames, // 서버/클라우드용 키
-            // 여기서 mediaUrls도 fileNames로 덮어도 되고, 그대로 둬도 됨(서버 echo가 곧 교체)
+            messageType: mediaType,
+            imageUrls: fileNames,
             mediaUrls: fileNames,
             createdAt: new Date().toISOString(),
             uploadStatus: 'sent',
@@ -326,29 +496,38 @@ const ChatInput = forwardRef(function ChatInput(
         }),
       );
 
-      // ✅ 마지막에 서버로 “이제 메시지 등록해줘” 전송
-      socket.send(
-        JSON.stringify({
-          messageType: 'image',
-          chatRoomId: roomId,
-          senderId: userId,
-          imageUrls: fileNames,
-          clientMessageId,
-        }),
-      );
+      // 서버/소켓 전송
+      const ok = sendChat({
+        messageType: mediaType,
+        chatRoomId: roomId,
+        senderId: userId,
+        imageUrls: fileNames,
+        clientMessageId: mediaClientMessageId,
+      });
+
+      if (!ok) showToastFn('연결이 불안정해요. 다시 시도해주세요.');
     } catch (e) {
       console.error(e);
 
-      // ✅ 실패 처리: 방금 올린 이미지 메시지를 failed로 바꿔서 “전송 실패” 띄우기
-      // (clientMessageId를 알고 있어야 하니까 위 구조처럼 써야 함)
-      // 여기선 imageSnapshot이 있을 때만 실패 UI 의미가 있으니 조건 걸어줌
-      if (enableMediaPicker && imageSnapshot.length > 0) {
-        // clientMessageId / optimisticId가 try 블록 안이라 catch에서 접근이 안 되면
-        // 위에서 image 파트의 clientMessageId/optimisticId를 try 바깥으로 빼서 관리해줘도 됨.
-        // 가장 깔끔한 방법은 image 전송용 clientMessageId를 try 밖에 let으로 선언하는 거야.
+      if (hasMedia && mediaClientMessageId && mediaOptimisticId) {
+        dispatch(
+          addMessageAndUpdateRoom({
+            chatRoomId: chatRoom?.chatRoomId,
+            message: {
+              messageId: mediaOptimisticId,
+              clientMessageId: mediaClientMessageId,
+              chatRoomId: chatRoom?.chatRoomId,
+              senderId: userId,
+              messageType: mediaType,
+              createdAt: new Date().toISOString(),
+              uploadStatus: 'failed',
+              localStatus: 'failed',
+            },
+          }),
+        );
       }
 
-      showToast('전송 중 오류가 발생했어요.');
+      showToastFn('전송 중 오류가 발생했어요.');
     } finally {
       setIsSending(false);
       sendingLockRef.current = false;
@@ -357,107 +536,16 @@ const ChatInput = forwardRef(function ChatInput(
     dispatch,
     message,
     selectedImages,
-    socketRef,
-    showToast,
+    showToastFn,
     chatRoom?.chatRoomId,
     userId,
     enableMediaPicker,
     makeClientId,
+    resolveUploadUri,
+    compressUploadUri,
   ]);
 
-  // ====== drag select helpers ======
-  const updateSelectionByMode = useCallback((item, mode) => {
-    if (!item) return;
-    setSelectedImages(prev => {
-      const exists = prev.some(f => f.uri === item.uri);
-
-      if (mode === 'add') {
-        if (exists) return prev;
-        return [...prev, item];
-      }
-
-      if (mode === 'remove') {
-        if (!exists) return prev;
-        return prev.filter(f => f.uri !== item.uri);
-      }
-
-      return prev;
-    });
-  }, []);
-
-  const handleDragAtLocation = useCallback(
-    (x, y, isStart = false) => {
-      if (!photos?.length) return;
-
-      const localX = x - PADDING_H;
-      if (localX < 0) return;
-
-      const tileWidth = imageSize + GAP;
-      const tileHeight = imageSize + GAP;
-
-      const col = Math.floor(localX / tileWidth);
-      if (col < 0 || col >= gridColumns) return;
-
-      const row = Math.floor((scrollOffset + y) / tileHeight);
-      if (row < 0) return;
-
-      const index = row * gridColumns + col;
-      if (index < 0 || index >= photos.length) return;
-
-      if (!isStart && lastIndexRef.current === index) return;
-
-      const item = photos[index];
-
-      if (isStart) {
-        const already = selectedImages.some(f => f.uri === item.uri);
-        const mode = already ? 'remove' : 'add';
-        setDragMode(mode);
-        updateSelectionByMode(item, mode);
-      } else {
-        if (!dragMode) return;
-        updateSelectionByMode(item, dragMode);
-      }
-
-      lastIndexRef.current = index;
-    },
-    [
-      photos,
-      imageSize,
-      gridColumns,
-      scrollOffset,
-      selectedImages,
-      dragMode,
-      updateSelectionByMode,
-    ],
-  );
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => false,
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        const {dx, dy} = gestureState;
-        return Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy);
-      },
-      onPanResponderGrant: evt => {
-        const {locationX, locationY} = evt.nativeEvent;
-        handleDragAtLocation(locationX, locationY, true);
-      },
-      onPanResponderMove: evt => {
-        const {locationX, locationY} = evt.nativeEvent;
-        handleDragAtLocation(locationX, locationY, false);
-      },
-      onPanResponderRelease: () => {
-        setDragMode(null);
-        lastIndexRef.current = null;
-      },
-      onPanResponderTerminate: () => {
-        setDragMode(null);
-        lastIndexRef.current = null;
-      },
-    }),
-  ).current;
-
-  // ====== pinch gesture ======
+  // ====== pinch gesture (grid columns) ======
   const pinchGesture = useMemo(() => {
     return Gesture.Pinch()
       .runOnJS(true)
@@ -487,9 +575,15 @@ const ChatInput = forwardRef(function ChatInput(
       const order = getSelectOrder(selectedImages, item.uri);
 
       return (
-        <TouchableOpacity onPress={() => handleToggleImage(item)}>
+        <TouchableOpacity
+          onPress={() => handleToggleImage(item)}
+          activeOpacity={0.9}>
           <View style={[styles.tile, {width: imageSize, height: imageSize}]}>
-            <Image source={{uri: item.uri}} style={styles.tileImage} />
+            <Image
+              source={{uri: item.uri}}
+              style={styles.tileImage}
+              resizeMode={FastImage.resizeMode.cover}
+            />
 
             {item.isVideo && (
               <View style={styles.videoBadge}>
@@ -513,7 +607,6 @@ const ChatInput = forwardRef(function ChatInput(
     [selectedImages, handleToggleImage, imageSize],
   );
 
-  // ====== UI ======
   return (
     <SafeAreaView>
       <View style={styles.innerContainer}>
@@ -595,8 +688,7 @@ const ChatInput = forwardRef(function ChatInput(
           style={[
             styles.galleryContainer,
             {height: showGallery ? getResponsiveHeight(300) : 0},
-          ]}
-          {...(showGallery ? panResponder.panHandlers : {})}>
+          ]}>
           {showGallery && (
             <GestureDetector gesture={pinchGesture}>
               <View style={{flex: 1}}>
@@ -612,22 +704,22 @@ const ChatInput = forwardRef(function ChatInput(
                   onEndReachedThreshold={0.2}
                   refreshing={isRefreshing}
                   onRefresh={onRefresh}
-                  onScroll={e =>
-                    setScrollOffset(e.nativeEvent.contentOffset?.y ?? 0)
-                  }
                   scrollEventThrottle={16}
                   ListFooterComponent={
-                    isLoadingMore ? <Text style={styles.footer}></Text> : null
+                    isLoadingMore ? <Text style={styles.footer} /> : null
                   }
+                  nestedScrollEnabled
+                  keyboardShouldPersistTaps="handled"
+                  removeClippedSubviews={false}
                 />
 
-                {photos.length > 0 && (
+                {/* {photos.length > 0 && (
                   <LinearGradient
                     pointerEvents="none"
                     colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.6)']}
                     style={styles.bottomFade}
                   />
-                )}
+                )} */}
               </View>
             </GestureDetector>
           )}
@@ -765,11 +857,11 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveWidth(1),
     overflow: 'hidden',
     position: 'relative',
+    backgroundColor: '#F3F4F6',
   },
   tileImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
   tileSelectedOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -800,21 +892,24 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     textAlignVertical: 'center',
   },
+
   videoBadge: {
     position: 'absolute',
-    bottom: getResponsiveWidth(6),
     right: getResponsiveWidth(6),
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    bottom: getResponsiveWidth(6),
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    paddingHorizontal: getResponsiveWidth(6),
+    paddingVertical: getResponsiveHeight(2),
+    borderRadius: getResponsiveWidth(4),
     zIndex: 2,
   },
   videoBadgeText: {
     color: '#fff',
-    fontSize: getResponsiveIconSize(12),
-    fontWeight: '600',
+    fontSize: getResponsiveIconSize(11.5),
+    fontFamily: 'Pretendard-SemiBold',
+    includeFontPadding: false,
   },
+
   bottomFade: {
     position: 'absolute',
     left: 0,

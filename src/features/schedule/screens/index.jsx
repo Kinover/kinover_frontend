@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 // ScheduleScreen.jsx
-import React from 'react';
+import React, {useMemo} from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -27,8 +27,8 @@ import {useScheduleCrud} from '../hooks/useScheduleCRUD';
 // import SwipeNavigator from 'components/SwipeNavigator';
 
 // 날짜 → "YYYY-MM-DD" 키로 변환하는 훅 (달력에서 이미 쓰는 것)
-import {useLocalDateKey} from '../hooks/useLocalDateKey';
 import useHolidayMap from '../hooks/useHolidayMap';
+import {useLocalDateKey} from '../hooks/useLocalDateKey';
 
 // 🔹 공통 인앱 가이드 훅 & 모달
 import useGuide from 'hooks/useGuide';
@@ -74,6 +74,32 @@ export default function ScheduleScreen() {
   const getLocalDateKey = useLocalDateKey();
   const selectedDateKey = getLocalDateKey(selectedDate); // ✅ 달력 key와 동일 포맷
 
+  const birthdayMap = useMemo(() => {
+    const map = {};
+
+    (familyUserList || []).forEach(u => {
+      const birthRaw = u?.birth ?? u?.birthday;
+      if (!birthRaw) return;
+
+      const birthDate = new Date(birthRaw);
+      if (isNaN(birthDate.getTime())) return;
+
+      const mm = birthDate.getMonth() + 1;
+      const dd = birthDate.getDate();
+
+      // ✅ "현재 달력 연도"로 생일 날짜 만들기
+      // (타임존 꼬임 방지용으로 정오(12:00) 추천)
+      const thisYearBirth = new Date(year, mm - 1, dd, 12, 0, 0);
+
+      // ✅ CalendarToggle이 쓰는 키 생성 방식과 100% 동일하게 맞춤
+      const key = getLocalDateKey(thisYearBirth);
+
+      const name = u?.nickname ?? u?.name ?? '가족';
+      map[key] = map[key] ? [...map[key], name] : [name];
+    });
+
+    return map;
+  }, [familyUserList, year, getLocalDateKey]);
   // 일정 개수, 로딩, 리프레시
   const {
     scheduleCountPerDay,
@@ -129,6 +155,7 @@ export default function ScheduleScreen() {
       </View>
     );
   }
+  const birthdayNamesForSelectedDate = birthdayMap?.[selectedDateKey] ?? [];
 
   return (
     // <SwipeNavigator rightTo="추억" leftTo="소통">
@@ -142,12 +169,14 @@ export default function ScheduleScreen() {
           setSelectedDate={setSelectedDate}
           scheduleCountPerDay={scheduleCountPerDay} // 🔹 날짜별 개수 map
           holidayMap={holidayMap}
+          birthdayMap={birthdayMap} // ✅ 추가
         />
 
         <Schedule
           selectedDate={selectedDate}
           onOpenSheet={openSheet}
           refreshTrigger={refreshTrigger}
+          birthdayNames={birthdayNamesForSelectedDate} // ✅ 추가
         />
       </ScrollView>
 
@@ -197,7 +226,7 @@ const styles = StyleSheet.create({
   },
   mainContainer: {
     flex: 1,
-    paddingHorizontal: getResponsiveWidth(20),
+    paddingHorizontal: getResponsiveWidth(15),
     paddingTop: getResponsiveHeight(5),
   },
   fab: {

@@ -1,4 +1,5 @@
-import React, {useEffect, useRef, useState} from 'react';
+/* eslint-disable react-native/no-inline-styles */
+import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
 import {
   View,
   Text,
@@ -26,19 +27,34 @@ import {
 import {getSpacingStyle} from '../utils/getSpacingStyle';
 import {CHATROOM_STYLE} from 'styles/style';
 
+import {getVideoThumbnail} from '../../../utils/videoThumbnail';
+
+// ✅ 여기만 추가
+import {toCdnUrl} from '../../../utils/mediaUrl';
+
 export default function ReceiveChat({
-  userProfileImage,
+  userProfileImage, // 키 or URL 둘 다 가능 (toCdnUrl이 처리)
   userName,
   message,
   chatTime,
   style,
   messageType = 'text',
-  mediaUrls = [],
-  isGrouped = false, // 같은 사람 + 같은 분
-  isSameSender = false, // 같은 사람
+  mediaUrls = [], // 키 배열 or URL 배열 (섞여도 됨)
+  isGrouped = false,
+  isSameSender = false,
 }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [profileModalVisible, setProfileModalVisible] = useState(false);
+
+  // ✅ 타입 정규화
+  const normalizedType = useMemo(
+    () => String(messageType ?? 'text').toLowerCase(),
+    [messageType],
+  );
+  const isImage = normalizedType === 'image';
+  const isVideo = normalizedType === 'video';
+  const isMedia = isImage || isVideo;
 
   // --- 마지막만 시간 표시 로직 ---
   const [showTime, setShowTime] = useState(false);
@@ -54,81 +70,251 @@ export default function ReceiveChat({
   }, [key, timeMs]);
   // -----------------------------
 
-  const handleImagePress = (uri, index) => {
+  // ✅ mediaUrls 항상 배열
+  const safeMediaRaw = useMemo(() => {
+    if (Array.isArray(mediaUrls)) return mediaUrls.filter(Boolean);
+    if (mediaUrls) return [mediaUrls].filter(Boolean);
+    return [];
+  }, [mediaUrls]);
+
+  // ✅ 키/URL -> 최종 URL로 변환(CloudFront 또는 원본 URL)
+  const safeMediaUrls = useMemo(() => {
+    return safeMediaRaw.map(toCdnUrl).filter(Boolean);
+  }, [safeMediaRaw]);
+
+  // ✅ 프로필도 변환
+  const profileUrl = useMemo(() => {
+    return toCdnUrl(userProfileImage);
+  }, [userProfileImage]);
+
+  // ✅ 9장 초과 처리(그리드용)
+  const hasExtra = safeMediaUrls.length > 9;
+  const displayMedia = hasExtra ? safeMediaUrls.slice(0, 9) : safeMediaUrls;
+
+  // ✅ 이미지면 프리로드
+  useEffect(() => {
+    if (!isImage) return;
+    if (!displayMedia.length) return;
+
+    FastImage.preload(
+      displayMedia.map(uri => ({
+        uri,
+        priority: FastImage.priority.normal,
+      })),
+    );
+  }, [isImage, displayMedia]);
+
+  // ✅ 프로필 프리로드
+  useEffect(() => {
+    if (!profileUrl) return;
+    FastImage.preload([{uri: profileUrl, priority: FastImage.priority.low}]);
+  }, [profileUrl]);
+
+  const handleMediaPress = useCallback((uri, index) => {
     setSelectedIndex(index);
     setModalVisible(true);
-  };
+  }, []);
 
   // === 간격 계산 ===
   const spacingStyle = getSpacingStyle({isGrouped, isSameSender});
 
-  const renderImages = () => (
+  // ====== ✅ 영상 썸네일 캐시 ======
+  const [videoThumbMap, setVideoThumbMap] = useState({}); // { [videoUrl]: thumbUri }
+  useEffect(() => {
+    if (!isVideo) return;
+    if (!safeMediaUrls.length) return;
+
+    let alive = true;
+
+    (async () => {
+      const results = await Promise.all(
+        safeMediaUrls.map(async url => {
+          try {
+            const t = await getVideoThumbnail(url);
+            return [url, t?.uri || null];
+          } catch {
+            return [url, null];
+          }
+        }),
+      );
+
+      if (!alive) return;
+
+      const next = {};
+      for (const [url, thumbUri] of results) {
+        if (thumbUri) next[url] = thumbUri;
+      }
+      if (Object.keys(next).length) {
+        setVideoThumbMap(prev => ({...prev, ...next}));
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [isVideo, safeMediaUrls]);
+
+  const getThumbSource = useCallback(
+    uri => {
+      if (isImage) {
+        return {
+          uri,
+          priority: FastImage.priority.normal,
+          cache: FastImage.cacheControl.immutable,
+        };
+      }
+      const thumbUri = videoThumbMap[uri];
+      if (thumbUri) {
+        return {
+          uri: thumbUri,
+          priority: FastImage.priority.normal,
+          cache: FastImage.cacheControl.immutable,
+        };
+      }
+      return null;
+    },
+    [isImage, videoThumbMap],
+  );
+
+  // ✅ grid 렌더
+  const renderMediaGrid = () => (
     <FlatList
-      data={mediaUrls}
-      keyExtractor={(item, index) => item + index}
+      data={displayMedia}
+      keyExtractor={(item, index) => String(item) + index}
       numColumns={3}
-      renderItem={({item, index}) => (
-        <TouchableOpacity onPress={() => handleImagePress(item, index)}>
-          <FastImage source={{uri: item}} style={styles.imageItem} />
-        </TouchableOpacity>
-      )}
       scrollEnabled={false}
       contentContainerStyle={styles.imageGrid}
+      renderItem={({item, index}) => {
+        const isLastCell = hasExtra && index === displayMedia.length - 1;
+        const extraCount = safeMediaUrls.length - displayMedia.length;
+        const thumbSource = getThumbSource(item);
+
+        return (
+          <TouchableOpacity
+            onPress={() => handleMediaPress(item, index)}
+            activeOpacity={0.9}>
+            <View style={styles.thumbWrap}>
+              {thumbSource ? (
+                <FastImage
+                  source={thumbSource}
+                  style={styles.imageItem}
+                  resizeMode={FastImage.resizeMode.cover}
+                  onError={e => {
+                    console.log(
+                      '❌ ReceiveChat thumb error:',
+                      item,
+                      e?.nativeEvent,
+                    );
+                  }}
+                />
+              ) : (
+                <View style={[styles.imageItem, styles.thumbFallback]} />
+              )}
+
+              {isLastCell && (
+                <View style={styles.moreOverlay}>
+                  <Text style={styles.moreOverlayText}>+{extraCount}</Text>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
+        );
+      }}
     />
   );
 
+  const renderSingle = () => {
+    const uri = safeMediaUrls[0];
+    const thumbSource = getThumbSource(uri);
+
+    return (
+      <TouchableOpacity
+        onPress={() => handleMediaPress(uri, 0)}
+        activeOpacity={0.9}>
+        {thumbSource ? (
+          <FastImage
+            source={thumbSource}
+            style={styles.singleImage}
+            resizeMode={FastImage.resizeMode.cover}
+            onError={e => {
+              console.log(
+                '❌ ReceiveChat single thumb error:',
+                uri,
+                e?.nativeEvent,
+              );
+            }}
+          />
+        ) : (
+          <View style={[styles.singleImage, styles.thumbFallback]} />
+        )}
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <View style={[styles.receivedContainer, spacingStyle, style]}>
-      {/* 그룹이면 아바타 숨기고 동일 폭 스페이서 */}
       {isGrouped ? (
         <View style={styles.avatarSpacer} />
       ) : (
-        <FastImage
-          source={{uri: userProfileImage}}
-          style={styles.receivedUserImage}
-        />
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={() => {
+            if (!profileUrl) return;
+            setProfileModalVisible(true);
+          }}>
+          <FastImage
+            source={{
+              uri: profileUrl,
+              priority: FastImage.priority.low,
+              cache: FastImage.cacheControl.immutable,
+            }}
+            style={styles.receivedUserImage}
+            onError={e => {
+              console.log('❌ profile error:', profileUrl, e?.nativeEvent);
+            }}
+          />
+        </TouchableOpacity>
       )}
 
       <View style={styles.textContainer}>
         {!isGrouped && <Text style={styles.userName}>{userName}</Text>}
 
         <View style={styles.messageLine}>
-          {messageType === 'image' && mediaUrls.length === 1 ? (
-            <TouchableOpacity onPress={() => handleImagePress(mediaUrls[0], 0)}>
-              <FastImage
-                source={{uri: mediaUrls[0]}}
-                style={styles.singleImage}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
+          {isMedia && safeMediaUrls.length === 1 ? (
+            renderSingle()
           ) : (
             <View
               style={[
                 styles.receivedBubble,
-                messageType === 'text'
-                  ? styles.textPadding
-                  : styles.imagePadding,
+                normalizedType === 'text' ? styles.textPadding : styles.imagePadding,
               ]}>
-              {messageType === 'image' ? (
-                renderImages()
-              ) : (
+              {isMedia ? renderMediaGrid() : (
                 <Text style={styles.receivedText}>{message}</Text>
               )}
             </View>
           )}
 
-          {/* ✅ 해당 분 그룹의 '진짜 마지막'일 때만 시간 표시 */}
           {showTime && (
             <Text style={styles.receivedTime}>{formatTime(chatTime)}</Text>
           )}
         </View>
       </View>
 
+      {/* ✅ 모달에는 “원본(raw)”을 넘겨도 됨. (모달에서도 toCdnUrl 쓰면 안전) */}
       <MediaModal
         visible={modalVisible}
-        mediaUrls={mediaUrls}
+        mediaUrls={safeMediaRaw}
+        mediaType={normalizedType}
         initialIndex={selectedIndex}
         onClose={() => setModalVisible(false)}
+      />
+
+      <MediaModal
+        visible={profileModalVisible}
+        mediaUrls={userProfileImage ? [userProfileImage] : []}
+        mediaType="image"
+        initialIndex={0}
+        onClose={() => setProfileModalVisible(false)}
       />
     </View>
   );
@@ -158,8 +344,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Medium',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(14) // 🔽 14 → 12
-        : getResponsiveFontSize(15), // 🔽 15 → 13
+        ? getResponsiveFontSize(14)
+        : getResponsiveFontSize(15),
     color: '#444',
     marginBottom: getResponsiveHeight(7),
   },
@@ -187,27 +373,44 @@ const styles = StyleSheet.create({
     fontSize: CHATROOM_STYLE.messageFontSize,
     color: 'black',
     flexWrap: 'wrap',
-    lineHeight: getResponsiveFontSize(17), // 🔽 18 → 17
+    lineHeight: getResponsiveFontSize(17),
   },
 
   receivedTime: {
     fontSize: CHATROOM_STYLE.messageTimeFontSize,
     color: '#666',
     marginLeft: getResponsiveWidth(5),
-    lineHeight: getResponsiveFontSize(11), // 🔽 12 → 11
+    lineHeight: getResponsiveFontSize(11),
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
 
   imageGrid: {gap: getResponsiveWidth(4)},
+  thumbWrap: {position: 'relative'},
   imageItem: {
     width: getResponsiveWidth(70),
     height: getResponsiveWidth(70),
     borderRadius: 8,
     margin: 2,
+    backgroundColor: '#F3F4F6',
   },
+  thumbFallback: {backgroundColor: '#E5E7EB'},
   singleImage: {
     width: getResponsiveWidth(200),
     aspectRatio: 1,
     borderRadius: 10,
+    backgroundColor: '#F3F4F6',
+  },
+
+  moreOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  moreOverlayText: {
+    color: '#fff',
+    fontSize: getResponsiveFontSize(16),
+    fontFamily: 'Pretendard-SemiBold',
   },
 });

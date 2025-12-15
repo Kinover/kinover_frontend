@@ -1,5 +1,5 @@
 // src/features/schedule/components/Calendar.jsx (CalendarToggle)
-import React, {useRef} from 'react';
+import React, {useRef, useMemo} from 'react';
 import {
   View,
   Text,
@@ -36,9 +36,40 @@ const shadowWrapStyle = Platform.select({
   },
   android: {
     elevation: 6,
-    // borderRadius:200,
   },
 });
+
+/**
+ * ✅ 생일 문자열을 YYYY-MM-DD로 정규화
+ * - "1999-03-07", "1999.03.07", "19990307" 다 대응
+ * - "03-07" 같이 연도 없는 건 표시 불가(연도 필요)
+ */
+const normalizeBirthToKey = birth => {
+  if (!birth) return null;
+  const digits = String(birth).replace(/\D/g, '');
+  if (digits.length < 8) return null;
+
+  const y = digits.slice(0, 4);
+  const m = digits.slice(4, 6);
+  const d = digits.slice(6, 8);
+  return `${y}-${m}-${d}`;
+};
+
+/**
+ * ✅ members -> { 'YYYY-MM-DD': ['이름1','이름2'] }
+ * member 필드 후보: birth / birthday, nickname / name
+ */
+const buildBirthdayMap = members => {
+  const map = {};
+  (members || []).forEach(m => {
+    const key = normalizeBirthToKey(m?.birth ?? m?.birthday);
+    if (!key) return;
+
+    const name = m?.nickname ?? m?.name ?? '가족';
+    map[key] = map[key] ? [...map[key], name] : [name];
+  });
+  return map;
+};
 
 export default function CalendarToggle({
   selectedDate,
@@ -46,6 +77,9 @@ export default function CalendarToggle({
   scheduleCountPerDay = {},
   initialMode = 'month',
   holidayMap = {},
+  // ✅ 추가: 아래 2개 중 하나만 넘기면 됨
+  familyMembers = null, // [{name/nickname, birth/birthday}, ...]
+  birthdayMap: birthdayMapProp = null, // {'YYYY-MM-DD': ['누구', ...]}
 }) {
   const {OUTER_HPAD, GAP, cellSize, gridWidth, cardWidth} = useCalendarLayout();
 
@@ -80,6 +114,13 @@ export default function CalendarToggle({
   const handleNext = () => {
     mode === 'month' ? changeMonth(1) : changeWeek(1);
   };
+
+  // ✅ birthdayMap 결정: prop 우선, 없으면 familyMembers로 생성
+  const birthdayMap = useMemo(() => {
+    if (birthdayMapProp) return birthdayMapProp;
+    if (familyMembers) return buildBirthdayMap(familyMembers);
+    return {};
+  }, [birthdayMapProp, familyMembers]);
 
   // ✅ 토/일까지 + holidayMap이면 쉬는날
   const isHoliday = date => {
@@ -206,6 +247,9 @@ export default function CalendarToggle({
                 const CIRCLE_SIZE = cellSize * 0.78;
                 const holiday = isHoliday(item.date);
 
+                const birthNames = birthdayMap?.[item.key];
+                const hasBirthday = !!birthNames?.length;
+
                 return (
                   <TouchableOpacity
                     key={idx}
@@ -218,6 +262,8 @@ export default function CalendarToggle({
                     <View
                       style={[
                         styles.innerCircle,
+                        hasBirthday && styles.birthdayRing,
+
                         {
                           width: CIRCLE_SIZE,
                           height: CIRCLE_SIZE,
@@ -235,6 +281,29 @@ export default function CalendarToggle({
                         ]}>
                         {item.date.getDate()}
                       </Text>
+
+                      {/* ✅ 생일 표시 (작은 점) */}
+                      {/* {hasBirthday && <View style={styles.birthdayDot} />} */}
+                      {/* {hasBirthday && (
+    <View style={styles.birthdayBadge}>
+      <Text style={styles.birthdayBadgeText}>🎂</Text>
+    </View>
+  )} */}
+                      {/* {hasBirthday && (
+  <View style={styles.birthdayDots}>
+    <View style={styles.birthdayDotMini} />
+    <View style={styles.birthdayDotMini} />
+  </View>
+)} */}
+                      {/* {hasBirthday && <View style={styles.balloonTail} />} */}
+                      {/* {hasBirthday && (
+                        <>
+                          <View style={[styles.confetti, {top: 6, left: 8}]} />
+                          <View
+                            style={[styles.confetti, {top: 14, right: 10}]}
+                          />
+                        </>
+                      )} */}
                     </View>
                   </TouchableOpacity>
                 );
@@ -246,6 +315,9 @@ export default function CalendarToggle({
                 const count = scheduleCountPerDay[item.key] || 0;
                 const CIRCLE_SIZE = cellSize * 0.78;
                 const holiday = isHoliday(item.date);
+
+                const birthNames = birthdayMap?.[item.key];
+                const hasBirthday = !!birthNames?.length;
 
                 return (
                   <TouchableOpacity
@@ -259,6 +331,7 @@ export default function CalendarToggle({
                     <View
                       style={[
                         styles.innerCircle,
+                        hasBirthday && styles.birthdayRing,
                         {
                           width: CIRCLE_SIZE,
                           height: CIRCLE_SIZE,
@@ -275,6 +348,15 @@ export default function CalendarToggle({
                         ]}>
                         {item.date.getDate()}
                       </Text>
+                      {/* ✅ 생일 표시 (작은 점) */}
+                      {hasBirthday && (
+                        <>
+                          <View style={[styles.confetti, {top: 6, left: 8}]} />
+                          <View
+                            style={[styles.confetti, {top: 14, right: 10}]}
+                          />
+                        </>
+                      )}
                     </View>
                   </TouchableOpacity>
                 );
@@ -323,11 +405,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-
-    // Android에서 모서리 “찌글” 방지용 아주 얇은 라인 (선택)
-    borderWidth: Platform.OS === 'android' ? 1 : 0,
-    borderColor:
-      Platform.OS === 'android' ? 'rgba(17,24,39,0.06)' : 'transparent',
+    borderWidth: 1,
+    borderColor: 'rgba(17,24,39,0.08)',
   },
 
   cardInnerCalendar: {
@@ -339,9 +418,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(10),
     alignItems: 'center',
 
-    borderWidth: Platform.OS === 'android' ? 1 : 0,
-    borderColor:
-      Platform.OS === 'android' ? 'rgba(17,24,39,0.06)' : 'transparent',
+    borderWidth: 1,
+    borderColor: 'rgba(17,24,39,0.08)',
   },
 
   headerLeft: {
@@ -489,4 +567,63 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     fontFamily: 'Pretendard-SemiBold',
   },
+
+  // ✅ 생일 표시 점
+  birthdayDot: {
+    marginTop: getResponsiveHeight(3),
+    width: getResponsiveWidth(5),
+    height: getResponsiveWidth(5),
+    borderRadius: 999,
+    backgroundColor: '#FF5A5F',
+  },
+
+  birthdayBadge: {
+    position: 'absolute',
+    top: getResponsiveHeight(2),
+    right: getResponsiveWidth(2),
+    width: getResponsiveWidth(16),
+    height: getResponsiveWidth(16),
+    borderRadius: 999,
+    backgroundColor: '#FFF', // 배경 깔아서 가독성 확보
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(17,24,39,0.08)',
+  },
+  birthdayBadgeText: {
+    fontSize: getResponsiveFontSize(10.5),
+    lineHeight: getResponsiveFontSize(12),
+  },
+  birthdayDots: {
+    marginTop: getResponsiveHeight(3),
+    flexDirection: 'row',
+    gap: getResponsiveWidth(2),
+  },
+  birthdayDotMini: {
+    width: getResponsiveWidth(4),
+    height: getResponsiveWidth(4),
+    borderRadius: 999,
+    backgroundColor: '#FF5A5F',
+  },
+  birthdayRing: {
+    borderWidth: 1.5,
+    borderColor: '#FF7A7A',
+    borderStyle: 'dashed', // iOS 느낌 좋음
+  },
+  balloonTail: {
+    position: 'absolute',
+    bottom: -getResponsiveHeight(4),
+    width: getResponsiveWidth(6),
+    height: getResponsiveHeight(6),
+    backgroundColor: '#FF6B6B',
+    borderRadius: 2,
+  },
+  // confetti: {
+  //   position: 'absolute',
+  //   width: 3,
+  //   height: 3,
+  //   borderRadius: 999,
+  //   backgroundColor: '#FF9AA2',
+  //   opacity: 0.7,
+  // },
 });
