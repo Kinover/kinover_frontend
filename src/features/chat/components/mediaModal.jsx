@@ -195,7 +195,9 @@ export default function MediaModal({
           offset: safeInitialIndex * screenWidth,
           animated: false,
         });
-      } catch {}
+      } catch {
+        null;
+      }
     });
 
     return () => {
@@ -375,7 +377,7 @@ const styles = StyleSheet.create({
   },
   video: {
     width: screenWidth,
-    height: screenHeight,
+    height: screenHeight * 0.75,
   },
 
   closeButtonContainer: {

@@ -46,11 +46,9 @@ export const HEADER_STYLES = {
 };
 
 export const CHATROOM_STYLE = {
-  messageFontSize: getResponsiveFontSize(13), // 🔽 15 → 14
-
-  messageTimeFontSize: getResponsiveFontSize(10.5), // 🔽 10 → 9
-
-  KinoMessageFontSize: getResponsiveFontSize(13),
+  messageFontSize: getResponsiveFontSize(14), // 🔽 15 → 14
+  messageTimeFontSize: getResponsiveFontSize(11), // 🔽 10 → 9
+  KinoMessageFontSize: getResponsiveFontSize(14),
 };
 
 export const EMPTY_STYLE = {
