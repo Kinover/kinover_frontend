@@ -5,12 +5,17 @@ import HomeStack from './stacks/homeStack';
 import CommunicationStack from './stacks/communicationStack';
 import ScheduleStack from './stacks/scheduleStack';
 import MemoryStack from './stacks/memoryStack';
+import {AnimatedTabBar, TabBarVisibilityProvider} from './animatedTabBar';
 
 import {renderTabBarIcon, renderTabBarLabel} from './helpers/tabHeaderHelpers';
-import {getResponsiveHeight, getResponsiveIconSize, getResponsiveWidth} from '../../utils/responsive';
+import {
+  getResponsiveHeight,
+  getResponsiveIconSize,
+  getResponsiveWidth,
+} from '../../utils/responsive';
+import {useSharedValue} from 'react-native-reanimated';
 
 const Tab = createBottomTabNavigator();
-
 
 const tabBarBaseStyle = {
   backgroundColor: 'white',
@@ -19,7 +24,8 @@ const tabBarBaseStyle = {
   borderTopRightRadius: getResponsiveIconSize(15),
   paddingTop: 8,
   paddingHorizontal: getResponsiveWidth(15),
-  height: getResponsiveHeight(90)
+  height: getResponsiveHeight(90),
+  
 };
 const TABS = [
   {
@@ -57,29 +63,39 @@ const TABS = [
 ];
 
 export default function TabNavigator() {
-  return (
-    <Tab.Navigator
-      initialRouteName="홈"
-      tabBar={props => <TabBarWrapper {...props} />}
-      screenOptions={({route}) => {
-        const currentTab = TABS.find(tab => tab.name === route.name);
+  const tabBarHiddenSV = useSharedValue(0); // 0: 보임, 1: 숨김
 
-        return {
-          headerShown: false,
-          keyboardHidesTabBar: true,
-          tabBarStyle: tabBarBaseStyle,
-          tabBarLabel: ({focused}) => renderTabBarLabel(route.name, focused),
-          tabBarIcon: ({focused}) =>
-            renderTabBarIcon(
-              focused,
-              currentTab?.icon.focused,
-              currentTab?.icon.default,
-            ),
-        };
-      }}>
-      {TABS.map(({name, component}) => (
-        <Tab.Screen key={name} name={name} component={component} />
-      ))}
-    </Tab.Navigator>
+  return (
+    <TabBarVisibilityProvider sharedValue={tabBarHiddenSV}>
+      <Tab.Navigator
+        initialRouteName="홈"
+        tabBar={props => <AnimatedTabBar {...props} />}
+        screenOptions={({route}) => {
+          const currentTab = TABS.find(tab => tab.name === route.name);
+
+          return {
+            headerShown: false,
+            keyboardHidesTabBar: true,
+            tabBarStyle: {
+              ...tabBarBaseStyle,
+              backgroundColor: 'transparent', // ✅ wrapper가 배경/그림자 담당
+              elevation: 0,                   // ✅ Android 기본 그림자 제거
+              shadowOpacity: 0,               // ✅ iOS 기본 그림자 제거
+              borderTopWidth: 0,              // ✅ 경계선도 wrapper에서 처리
+            },
+            tabBarLabel: ({focused}) => renderTabBarLabel(route.name, focused),
+            tabBarIcon: ({focused}) =>
+              renderTabBarIcon(
+                focused,
+                currentTab?.icon.focused,
+                currentTab?.icon.default,
+              ),
+          };
+        }}>
+        {TABS.map(({name, component}) => (
+          <Tab.Screen key={name} name={name} component={component} />
+        ))}
+      </Tab.Navigator>
+    </TabBarVisibilityProvider>
   );
 }

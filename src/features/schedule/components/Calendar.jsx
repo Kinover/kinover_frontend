@@ -1,5 +1,5 @@
 // src/features/schedule/components/Calendar.jsx (CalendarToggle)
-import React, {useRef, useMemo} from 'react';
+import React, {useRef, useMemo, useEffect} from 'react';
 import {
   View,
   Text,
@@ -26,7 +26,6 @@ import {useYMDPicker} from '../hooks/useYMDPicker';
 
 const RADIUS = 14;
 
-// ✅ 바깥(그림자 담당) / 안쪽(클립 담당) 분리
 const shadowWrapStyle = Platform.select({
   ios: {
     shadowColor: '#000',
@@ -39,11 +38,6 @@ const shadowWrapStyle = Platform.select({
   },
 });
 
-/**
- * ✅ 생일 문자열을 YYYY-MM-DD로 정규화
- * - "1999-03-07", "1999.03.07", "19990307" 다 대응
- * - "03-07" 같이 연도 없는 건 표시 불가(연도 필요)
- */
 const normalizeBirthToKey = birth => {
   if (!birth) return null;
   const digits = String(birth).replace(/\D/g, '');
@@ -55,10 +49,6 @@ const normalizeBirthToKey = birth => {
   return `${y}-${m}-${d}`;
 };
 
-/**
- * ✅ members -> { 'YYYY-MM-DD': ['이름1','이름2'] }
- * member 필드 후보: birth / birthday, nickname / name
- */
 const buildBirthdayMap = members => {
   const map = {};
   (members || []).forEach(m => {
@@ -77,9 +67,12 @@ export default function CalendarToggle({
   scheduleCountPerDay = {},
   initialMode = 'month',
   holidayMap = {},
-  // ✅ 추가: 아래 2개 중 하나만 넘기면 됨
-  familyMembers = null, // [{name/nickname, birth/birthday}, ...]
-  birthdayMap: birthdayMapProp = null, // {'YYYY-MM-DD': ['누구', ...]}
+  familyMembers = null,
+  birthdayMap: birthdayMapProp = null,
+
+  // ✅ 추가: 모드 외부 제어 (이거 넣으면 리마운트돼도 절대 안 튐)
+  mode: modeProp = null,
+  setMode: setModeProp = null,
 }) {
   const {OUTER_HPAD, GAP, cellSize, gridWidth, cardWidth} = useCalendarLayout();
 
@@ -91,7 +84,13 @@ export default function CalendarToggle({
     changeMonth,
     changeWeek,
     headerLabel,
-  } = useCalendarMode(initialMode, selectedDate, setSelectedDate);
+  } = useCalendarMode(
+    initialMode,
+    selectedDate,
+    setSelectedDate,
+    modeProp,
+    setModeProp,
+  );
 
   const getLocalDateKey = useLocalDateKey();
 
@@ -107,33 +106,38 @@ export default function CalendarToggle({
   const {getCountColorStyle} = useScheduleCountStyle(cellSize);
   const {showYMD, openYMD, closeYMD} = useYMDPicker();
 
-  const handlePrev = () => {
-    mode === 'month' ? changeMonth(-1) : changeWeek(-1);
-  };
-
-  const handleNext = () => {
-    mode === 'month' ? changeMonth(1) : changeWeek(1);
-  };
-
-  // ✅ birthdayMap 결정: prop 우선, 없으면 familyMembers로 생성
   const birthdayMap = useMemo(() => {
     if (birthdayMapProp) return birthdayMapProp;
     if (familyMembers) return buildBirthdayMap(familyMembers);
     return {};
   }, [birthdayMapProp, familyMembers]);
 
-  // ✅ 토/일까지 + holidayMap이면 쉬는날
   const isHoliday = date => {
     const key = getLocalDateKey(date);
-    const day = date.getDay(); // 0:일, 6:토
+    const day = date.getDay();
     return day === 0 || !!holidayMap?.[key];
   };
-
   // =========================
   // ✅ 좌우 스와이프로 월/주 변경
   // =========================
   const SWIPE_THRESHOLD = getResponsiveWidth(40);
   const SWIPE_VS_SCROLL_SLOP = 6;
+
+  // ✅ panResponder는 1번만 만들되, 실제 실행할 로직은 ref로 "최신 함수"를 넣어준다
+  const swipePrevRef = useRef(() => {});
+  const swipeNextRef = useRef(() => {});
+
+  useEffect(() => {
+    swipePrevRef.current = () => {
+      if (mode === 'month') changeMonth(-1);
+      else changeWeek(-1);
+    };
+
+    swipeNextRef.current = () => {
+      if (mode === 'month') changeMonth(1);
+      else changeWeek(1);
+    };
+  }, [mode, changeMonth, changeWeek]);
 
   const panResponder = useRef(
     PanResponder.create({
@@ -147,17 +151,14 @@ export default function CalendarToggle({
       },
       onPanResponderRelease: (_, g) => {
         if (Math.abs(g.dx) < SWIPE_THRESHOLD) return;
-        if (g.dx > 0) handlePrev();
-        else handleNext();
+        if (g.dx > 0) swipePrevRef.current();
+        else swipeNextRef.current();
       },
     }),
   ).current;
 
   return (
     <View style={[styles.container, {paddingHorizontal: OUTER_HPAD}]}>
-      {/* =======================
-          헤더 (그림자 분리 적용)
-         ======================= */}
       <View style={[styles.shadowWrap, shadowWrapStyle, {width: cardWidth}]}>
         <View style={styles.cardInnerHeader}>
           <View style={styles.headerLeft}>
@@ -176,7 +177,9 @@ export default function CalendarToggle({
           <View style={styles.headerRight}>
             <View style={styles.navButtons}>
               <TouchableOpacity
-                onPress={handlePrev}
+                onPress={() =>
+                  mode === 'month' ? changeMonth(-1) : changeWeek(-1)
+                }
                 hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
                 <Image
                   source={{
@@ -187,7 +190,9 @@ export default function CalendarToggle({
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={handleNext}
+                onPress={() =>
+                  mode === 'month' ? changeMonth(1) : changeWeek(1)
+                }
                 hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
                 <Image
                   source={{
@@ -212,14 +217,10 @@ export default function CalendarToggle({
         </View>
       </View>
 
-      {/* =======================
-          캘린더 카드 (그림자 분리 + 스와이프)
-         ======================= */}
       <View
         {...panResponder.panHandlers}
         style={[styles.shadowWrap, shadowWrapStyle, {width: cardWidth}]}>
         <View style={styles.cardInnerCalendar}>
-          {/* 요일 헤더 */}
           <View style={[styles.weekRow, {width: gridWidth}]}>
             {['일', '월', '화', '수', '목', '금', '토'].map(d => {
               const isRestDow = d === '일';
@@ -263,7 +264,6 @@ export default function CalendarToggle({
                       style={[
                         styles.innerCircle,
                         hasBirthday && styles.birthdayRing,
-
                         {
                           width: CIRCLE_SIZE,
                           height: CIRCLE_SIZE,
@@ -281,29 +281,6 @@ export default function CalendarToggle({
                         ]}>
                         {item.date.getDate()}
                       </Text>
-
-                      {/* ✅ 생일 표시 (작은 점) */}
-                      {/* {hasBirthday && <View style={styles.birthdayDot} />} */}
-                      {/* {hasBirthday && (
-    <View style={styles.birthdayBadge}>
-      <Text style={styles.birthdayBadgeText}>🎂</Text>
-    </View>
-  )} */}
-                      {/* {hasBirthday && (
-  <View style={styles.birthdayDots}>
-    <View style={styles.birthdayDotMini} />
-    <View style={styles.birthdayDotMini} />
-  </View>
-)} */}
-                      {/* {hasBirthday && <View style={styles.balloonTail} />} */}
-                      {/* {hasBirthday && (
-                        <>
-                          <View style={[styles.confetti, {top: 6, left: 8}]} />
-                          <View
-                            style={[styles.confetti, {top: 14, right: 10}]}
-                          />
-                        </>
-                      )} */}
                     </View>
                   </TouchableOpacity>
                 );
@@ -348,15 +325,6 @@ export default function CalendarToggle({
                         ]}>
                         {item.date.getDate()}
                       </Text>
-                      {/* ✅ 생일 표시 (작은 점) */}
-                      {hasBirthday && (
-                        <>
-                          <View style={[styles.confetti, {top: 6, left: 8}]} />
-                          <View
-                            style={[styles.confetti, {top: 14, right: 10}]}
-                          />
-                        </>
-                      )}
                     </View>
                   </TouchableOpacity>
                 );
@@ -386,16 +354,12 @@ const styles = StyleSheet.create({
     paddingTop: getResponsiveHeight(8),
     marginBottom: getResponsiveHeight(5),
   },
-
-  // ✅ 그림자 컨테이너(바깥): shadow/elevation만 담당
   shadowWrap: {
     alignSelf: 'center',
     borderRadius: RADIUS,
-    backgroundColor: '#FFFFFF', // ✅ Android elevation 안정화
+    backgroundColor: '#FFFFFF',
     marginBottom: getResponsiveHeight(10),
   },
-
-  // ✅ 안쪽: 둥근 모서리 + 클립(overflow) 담당
   cardInnerHeader: {
     borderRadius: RADIUS,
     overflow: 'hidden',
@@ -408,7 +372,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(17,24,39,0.08)',
   },
-
   cardInnerCalendar: {
     borderRadius: RADIUS,
     overflow: 'hidden',
@@ -417,30 +380,25 @@ const styles = StyleSheet.create({
     paddingBottom: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(10),
     alignItems: 'center',
-
     borderWidth: 1,
     borderColor: 'rgba(17,24,39,0.08)',
   },
-
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: getResponsiveWidth(8),
   },
-
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: getResponsiveWidth(10),
   },
-
   monthText: {
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(20),
     color: '#111827',
     letterSpacing: -0.2,
   },
-
   iconBtn: {
     width: getResponsiveWidth(32),
     height: getResponsiveWidth(32),
@@ -449,74 +407,61 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F3F4F6',
   },
-
   calendarIcon: {
     width: getResponsiveWidth(18),
     height: getResponsiveWidth(18),
     resizeMode: 'contain',
     tintColor: '#111827',
   },
-
   navButtons: {
     flexDirection: 'row',
     gap: getResponsiveWidth(6),
     alignItems: 'center',
   },
-
   navIcon: {
     width: getResponsiveWidth(16),
     height: getResponsiveWidth(16),
     resizeMode: 'contain',
   },
-
   modeToggle: {
     flexDirection: 'row',
     backgroundColor: '#F3F4F6',
     borderRadius: 999,
     padding: 2,
   },
-
   toggleChip: {
     paddingVertical: getResponsiveHeight(5),
     paddingHorizontal: getResponsiveWidth(10),
     borderRadius: 999,
   },
-
   toggleActive: {},
-
   toggleText: {
     fontFamily: 'Pretendard-Medium',
     fontSize: getResponsiveFontSize(13.5),
     color: '#6B7280',
   },
-
   toggleTextActive: {
     color: '#111827',
     fontFamily: 'Pretendard-SemiBold',
   },
-
   weekRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     paddingVertical: getResponsiveHeight(6),
   },
-
   weekCell: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   dayText: {
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(12.5),
     color: '#6B7280',
     textAlign: 'center',
   },
-
   sundayText: {
     color: '#EF4444',
   },
-
   divider: {
     height: 1,
     width: '100%',
@@ -524,12 +469,10 @@ const styles = StyleSheet.create({
     marginTop: getResponsiveHeight(6),
     marginBottom: getResponsiveHeight(10),
   },
-
   dayCell: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   innerCircle: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -537,93 +480,33 @@ const styles = StyleSheet.create({
     borderColor: 'white',
     backgroundColor: '#FFFFFF',
   },
-
   selectedBox: {
     backgroundColor: '#FFF3D2',
     borderColor: '#FFB000',
   },
-
   dateGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
-
   weekGrid: {
     flexDirection: 'row',
   },
-
   dateText: {
     fontFamily: 'Pretendard-Medium',
     fontSize: getResponsiveFontSize(13.5),
     color: '#111827',
   },
-
   selectedText: {
     fontFamily: 'Pretendard-SemiBold',
     color: '#111827',
   },
-
   holidayText: {
     color: '#EF4444',
     fontFamily: 'Pretendard-SemiBold',
   },
-
-  // ✅ 생일 표시 점
-  birthdayDot: {
-    marginTop: getResponsiveHeight(3),
-    width: getResponsiveWidth(5),
-    height: getResponsiveWidth(5),
-    borderRadius: 999,
-    backgroundColor: '#FF5A5F',
-  },
-
-  birthdayBadge: {
-    position: 'absolute',
-    top: getResponsiveHeight(2),
-    right: getResponsiveWidth(2),
-    width: getResponsiveWidth(16),
-    height: getResponsiveWidth(16),
-    borderRadius: 999,
-    backgroundColor: '#FFF', // 배경 깔아서 가독성 확보
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.08)',
-  },
-  birthdayBadgeText: {
-    fontSize: getResponsiveFontSize(10.5),
-    lineHeight: getResponsiveFontSize(12),
-  },
-  birthdayDots: {
-    marginTop: getResponsiveHeight(3),
-    flexDirection: 'row',
-    gap: getResponsiveWidth(2),
-  },
-  birthdayDotMini: {
-    width: getResponsiveWidth(4),
-    height: getResponsiveWidth(4),
-    borderRadius: 999,
-    backgroundColor: '#FF5A5F',
-  },
   birthdayRing: {
     borderWidth: 1.5,
     borderColor: '#FF7A7A',
-    borderStyle: 'dashed', // iOS 느낌 좋음
+    borderStyle: 'dashed',
   },
-  balloonTail: {
-    position: 'absolute',
-    bottom: -getResponsiveHeight(4),
-    width: getResponsiveWidth(6),
-    height: getResponsiveHeight(6),
-    backgroundColor: '#FF6B6B',
-    borderRadius: 2,
-  },
-  // confetti: {
-  //   position: 'absolute',
-  //   width: 3,
-  //   height: 3,
-  //   borderRadius: 999,
-  //   backgroundColor: '#FF9AA2',
-  //   opacity: 0.7,
-  // },
 });

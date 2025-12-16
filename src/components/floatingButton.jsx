@@ -27,7 +27,7 @@ export default function FloatingButton({type, navigation}) {
 
   return (
     <TouchableOpacity
-      style={[styles.floatingButton, {bottom: 20}]}
+      style={[styles.floatingButton]}
       onPress={handleClick}>
       <Image style={styles.buttonImage} source={getImageSource()} />
     </TouchableOpacity>
@@ -37,7 +37,7 @@ export default function FloatingButton({type, navigation}) {
 const styles = StyleSheet.create({
   floatingButton: {
     position: 'absolute',
-    bottom: 23,
+    bottom: 53,
     right: 23,
     zIndex: 9,
     elevation: 10,

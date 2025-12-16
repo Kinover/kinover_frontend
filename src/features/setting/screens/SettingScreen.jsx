@@ -21,6 +21,7 @@ import {
 } from '../../../utils/responsive';
 import {useLogout} from '../../auth/hooks/useLogout';
 import useHideTabBar from '../../../hooks/useHideTabBar';
+import {SETTING_STYLES} from 'styles/style';
 
 export default function SettingScreen() {
   const navigation = useNavigation();
@@ -140,18 +141,18 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
     paddingHorizontal: getResponsiveWidth(18), // 🔽 20 → 18
-    paddingTop: getResponsiveHeight(16),       // 🔽 20 → 16
+    paddingTop: getResponsiveHeight(16), // 🔽 20 → 16
     flex: 1,
   },
   header: {
-    fontSize: getResponsiveFontSize(20),       // 🔽 24 → 20
-    fontWeight: '700',
-    marginBottom: getResponsiveHeight(20),     // 🔽 30 → 20
-    color: '#000',
-    fontFamily: 'Pretendard-Bold',
+    fontSize: SETTING_STYLES.titleFontSize,
+    fontWeight: SETTING_STYLES.titleFontWeight,
+    marginBottom: getResponsiveHeight(20), // 🔽 30 → 20
+    color: SETTING_STYLES.titleFontColor,
+    fontFamily: SETTING_STYLES.titleFontFamily,
   },
   sectionTitle: {
-    fontSize: getResponsiveFontSize(12.5),     // 🔽 14 → 12.5
+    fontSize: getResponsiveFontSize(12.5), // 🔽 14 → 12.5
     color: '#888',
     marginTop: getResponsiveHeight(6),
     marginBottom: getResponsiveHeight(6),
@@ -164,17 +165,17 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(10), // 🔽 12 → 10
   },
   label: {
-    fontSize: getResponsiveFontSize(15),      // 🔽 18 → 15
-    color: '#222',
-    fontFamily: 'Pretendard-Medium',
+    fontSize: SETTING_STYLES.labelFontSize,
+    color: SETTING_STYLES.labelFontColor,
+    fontFamily: SETTING_STYLES.labelFontFamily,
   },
   value: {
-    fontSize: getResponsiveFontSize(14),      // 🔽 17 → 14
+    fontSize: getResponsiveFontSize(14), // 🔽 17 → 14
     color: '#555',
     fontFamily: 'Pretendard-Regular',
   },
   arrow: {
-    width: getResponsiveIconSize(11),         // 🔽 12.5 → 11
+    width: getResponsiveIconSize(11), // 🔽 12.5 → 11
     height: getResponsiveIconSize(11),
     resizeMode: 'contain',
   },

@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/screens/memory/MemoryScreen.js
-import React, {useMemo, useState} from 'react';
+import React, {useMemo, useState, useRef, useCallback, useEffect} from 'react';
 import {View, StyleSheet, TouchableOpacity, Image} from 'react-native';
 
 import MemoryFeed from './MemoryFeedScreen';
@@ -14,12 +14,13 @@ import {
   getResponsiveFontSize,
 } from '../../../utils/responsive';
 import {useMemoryScreen} from '../hooks/useMemoryScreen';
-// import SwipeNavigator from 'components/SwipeNavigator';
 
-// 공통 인앱 가이드
 import useGuide from 'hooks/useGuide';
 import GuideModal from 'components/GuideModal';
 import PeriodFilterModal from '../components/PeriodFilterModal';
+
+// ✅ 탭바 숨김 제어 훅
+import {useTabBarVisibility} from 'app/navigation/animatedTabBar';
 
 const MEMORY_GUIDE_STEPS = [
   {
@@ -66,46 +67,80 @@ export default function MemoryScreen() {
   const [endDate, setEndDate] = useState('');
   const [rangePreset, setRangePreset] = useState('ALL'); // 프리셋 이름 저장
 
+  // ✅ 탭바 숨김 sharedValue
+  const {tabBarTranslateY} = useTabBarVisibility();
+
+  // ✅ 스크롤 방향 감지용 ref
+  const lastYRef = useRef(0);
+  const lastToggleTsRef = useRef(0);
+
   // 'YYYY-MM-DD' → 'YYYY.MM.DD'로 보여주기
   const periodLabel = useMemo(() => {
-    if (!startDate || !endDate) return null; // 설정 안 되어 있으면 null
-    const formatDot = s => s.replace(/-/g, '.'); // 2025-11-01 → 2025.11.01
+    if (!startDate || !endDate) return null;
+    const formatDot = s => s.replace(/-/g, '.');
     return `${formatDot(startDate)} ~ ${formatDot(endDate)}`;
   }, [startDate, endDate]);
 
   const handleApplyPeriod = ({startDate: s, endDate: e}) => {
-    // 전체 기간 선택한 경우: 둘 다 '' 내려오도록 했으면, 필터 해제
     setStartDate(s || '');
     setEndDate(e || '');
     setIsFilterVisible(false);
   };
-  const getPresetLabel = preset => {
-    switch (preset) {
-      case 'LAST_1WEEK':
-        return '최근 1주일';
-      case 'LAST_2WEEK':
-        return '최근 2주일';
-      case 'LAST_4WEEK':
-        return '최근 4주일';
-      case 'THIS_WEEK':
-        return '이번 주';
-      case 'PREV_WEEK':
-        return '지난 주';
-      case 'THIS_MONTH':
-        return '이번 달';
-      default:
-        return '전체 기간';
-    }
-  };
+
+  // ✅ 탭바 보이기/숨기기 함수
+  const showTabBar = useCallback(() => {
+    tabBarTranslateY.value = 0;
+  }, [tabBarTranslateY]);
+
+  const hideTabBar = useCallback(() => {
+    tabBarTranslateY.value = 1;
+  }, [tabBarTranslateY]);
+
+  // ✅ MemoryFeed에서 올라오는 스크롤 이벤트로 탭바 제어
+  const handleFeedScroll = useCallback(
+    e => {
+      const y = e?.nativeEvent?.contentOffset?.y ?? 0;
+
+      // 너무 민감하면 덜컥거려서, 약간의 임계값/쿨타임 줌
+      const dy = y - lastYRef.current;
+      lastYRef.current = y;
+
+      const now = Date.now();
+      const coolTime = 120; // ms
+      if (now - lastToggleTsRef.current < coolTime) return;
+
+      const THRESHOLD = 8; // px 이상 움직일 때만 반응
+
+      // 컨텐츠가 위로 올라가는 방향(손가락 아래->위) => y 증가 => dy > 0 => 탭바 숨김
+      if (dy > THRESHOLD) {
+        lastToggleTsRef.current = now;
+        hideTabBar();
+        return;
+      }
+
+      // 컨텐츠가 내려오는 방향(손가락 위->아래) => y 감소 => dy < 0 => 탭바 보임
+      if (dy < -THRESHOLD) {
+        lastToggleTsRef.current = now;
+        showTabBar();
+      }
+    },
+    [hideTabBar, showTabBar],
+  );
+
+  // ✅ 화면 나갈 때 탭바 무조건 복구 (중요)
+  useEffect(() => {
+    return () => {
+      tabBarTranslateY.value = 0;
+    };
+  }, [tabBarTranslateY]);
 
   return (
-    // <SwipeNavigator rightTo={null} leftTo="일정">
     <View style={styles.container}>
       <AnimatedAlbumTabSelector
         selected={selectedTab}
         onSelect={setSelectedTab}
         onPressDateFilter={() => setIsFilterVisible(true)}
-        periodLabel={periodLabel} // ✅ 여기!
+        periodLabel={periodLabel}
       />
 
       <MemoryFeed
@@ -113,6 +148,8 @@ export default function MemoryScreen() {
         selectedCategoryTitle={selectedCategoryTitle}
         startDate={startDate}
         endDate={endDate}
+        // ✅ 추가: 스크롤 이벤트 전달
+        onScroll={handleFeedScroll}
       />
 
       <CategoryBottomSheetModal
@@ -126,7 +163,7 @@ export default function MemoryScreen() {
       <TouchableOpacity
         style={{
           position: 'absolute',
-          bottom: getResponsiveHeight(20),
+          bottom: getResponsiveHeight(110),
           right: getResponsiveWidth(18),
           width: getResponsiveIconSize(60),
           height: getResponsiveIconSize(60),
@@ -140,18 +177,17 @@ export default function MemoryScreen() {
 
       {/* 인앱 가이드 모달 */}
       {/* {currentGuide && (
-            <GuideModal
-              visible={isGuideVisible}
-              step={guideStep}
-              totalSteps={totalSteps}
-              title={currentGuide.title}
-              description={currentGuide.description}
-              onNext={nextStep}
-              onSkip={skipGuide}
-            />
-          )} */}
+        <GuideModal
+          visible={isGuideVisible}
+          step={guideStep}
+          totalSteps={totalSteps}
+          title={currentGuide.title}
+          description={currentGuide.description}
+          onNext={nextStep}
+          onSkip={skipGuide}
+        />
+      )} */}
 
-      {/* 🔹 구체적인 기간 설정 모달 */}
       <PeriodFilterModal
         visible={isFilterVisible}
         onClose={() => setIsFilterVisible(false)}
@@ -160,7 +196,6 @@ export default function MemoryScreen() {
         initialWeeks={1}
       />
     </View>
-    // </SwipeNavigator>
   );
 }
 
@@ -179,7 +214,6 @@ const styles = StyleSheet.create({
     color: '#777',
   },
 
-  // 모달
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.35)',

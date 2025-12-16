@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 // ScheduleScreen.jsx
-import React, {useMemo} from 'react';
+import React, {useMemo, useState} from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -24,17 +24,14 @@ import {useScheduleDate} from '../hooks/useScheduleDate';
 import {useScheduleCounts} from '../hooks/useScheduleCounts';
 import {useScheduleEditor} from '../hooks/useScheduleEditor';
 import {useScheduleCrud} from '../hooks/useScheduleCRUD';
-// import SwipeNavigator from 'components/SwipeNavigator';
 
-// 날짜 → "YYYY-MM-DD" 키로 변환하는 훅 (달력에서 이미 쓰는 것)
 import useHolidayMap from '../hooks/useHolidayMap';
 import {useLocalDateKey} from '../hooks/useLocalDateKey';
 
 // 🔹 공통 인앱 가이드 훅 & 모달
 import useGuide from 'hooks/useGuide';
-import GuideModal from 'components/GuideModal';
+// import GuideModal from 'components/GuideModal';
 
-// 🔹 일정 화면 가이드 스텝
 const SCHEDULE_GUIDE_STEPS = [
   {
     title: '날짜별 일정 한눈에 보기',
@@ -62,17 +59,17 @@ export default function ScheduleScreen() {
   const {familyId} = useSelector(state => state.family);
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
   const currentUserId = useSelector(state => state.user.userId);
-
-  // const year = selectedDate.getFullYear();
+  const [calendarMode, setCalendarMode] = useState('month');
 
   // 날짜 관련 상태
   const {selectedDate, setSelectedDate, formattedDate, year, month} =
     useScheduleDate();
+
   const holidayMap = useHolidayMap(year);
 
   // 날짜 → "YYYY-MM-DD" 로 변환하는 함수
   const getLocalDateKey = useLocalDateKey();
-  const selectedDateKey = getLocalDateKey(selectedDate); // ✅ 달력 key와 동일 포맷
+  const selectedDateKey = getLocalDateKey(selectedDate);
 
   const birthdayMap = useMemo(() => {
     const map = {};
@@ -87,11 +84,8 @@ export default function ScheduleScreen() {
       const mm = birthDate.getMonth() + 1;
       const dd = birthDate.getDate();
 
-      // ✅ "현재 달력 연도"로 생일 날짜 만들기
-      // (타임존 꼬임 방지용으로 정오(12:00) 추천)
+      // ✅ 현재 연도 기준 생일 날짜 (정오로 타임존 꼬임 방지)
       const thisYearBirth = new Date(year, mm - 1, dd, 12, 0, 0);
-
-      // ✅ CalendarToggle이 쓰는 키 생성 방식과 100% 동일하게 맞춤
       const key = getLocalDateKey(thisYearBirth);
 
       const name = u?.nickname ?? u?.name ?? '가족';
@@ -100,6 +94,7 @@ export default function ScheduleScreen() {
 
     return map;
   }, [familyUserList, year, getLocalDateKey]);
+
   // 일정 개수, 로딩, 리프레시
   const {
     scheduleCountPerDay,
@@ -133,10 +128,10 @@ export default function ScheduleScreen() {
     bumpCount,
     setRefreshTrigger,
     closeSheet,
-    selectedDateKey, // ✅ 여기서 넘겨줌
+    selectedDateKey,
   });
 
-  // 🔹 인앱 가이드 훅은 무조건 여기서 항상 호출 (조건 X)
+  // 가이드
   const guideEnabled = !familyId;
   const {
     isGuideVisible,
@@ -147,36 +142,31 @@ export default function ScheduleScreen() {
     skipGuide,
   } = useGuide('SCHEDULE_GUIDE_SHOWN_V1', SCHEDULE_GUIDE_STEPS, guideEnabled);
 
-  // 🔹 로딩 분기
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <YellowSpinner />
-      </View>
-    );
-  }
   const birthdayNamesForSelectedDate = birthdayMap?.[selectedDateKey] ?? [];
 
   return (
-    // <SwipeNavigator rightTo="추억" leftTo="소통">
     <View style={styles.container}>
-      {/* 메인 콘텐츠 */}
+      {/* 메인 콘텐츠 (로딩이어도 유지!) */}
       <ScrollView
         style={styles.mainContainer}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        scrollEnabled={!isLoading} // ✅ 로딩 중 스크롤 막고 싶으면
+      >
         <CalendarToggle
           selectedDate={selectedDate}
           setSelectedDate={setSelectedDate}
-          scheduleCountPerDay={scheduleCountPerDay} // 🔹 날짜별 개수 map
+          scheduleCountPerDay={scheduleCountPerDay}
           holidayMap={holidayMap}
-          birthdayMap={birthdayMap} // ✅ 추가
+          birthdayMap={birthdayMap}
+          mode={calendarMode}
+          setMode={setCalendarMode}
         />
 
         <Schedule
           selectedDate={selectedDate}
           onOpenSheet={openSheet}
           refreshTrigger={refreshTrigger}
-          birthdayNames={birthdayNamesForSelectedDate} // ✅ 추가
+          birthdayNames={birthdayNamesForSelectedDate}
         />
       </ScrollView>
 
@@ -195,27 +185,36 @@ export default function ScheduleScreen() {
       />
 
       {/* 플로팅 추가 버튼 */}
-      <TouchableOpacity style={styles.fab} onPress={() => openSheet(null)}>
+      <TouchableOpacity
+        style={[styles.fab, isLoading && {opacity: 0.4}]}
+        onPress={() => !isLoading && openSheet(null)}
+        activeOpacity={0.8}>
         <Image
           source={require('../../../assets/icons/schedule-bt.png')}
           style={styles.fabIcon}
         />
       </TouchableOpacity>
 
+      {/* ✅ 로딩 오버레이 (언마운트 방지 핵심) */}
+      {isLoading && (
+        <View style={styles.loadingOverlay} pointerEvents="auto">
+          <YellowSpinner />
+        </View>
+      )}
+
       {/* 인앱 가이드 모달 */}
       {/* {currentGuide && (
-          <GuideModal
-            visible={isGuideVisible}
-            step={guideStep}
-            totalSteps={totalSteps}
-            title={currentGuide.title}
-            description={currentGuide.description}
-            onNext={nextStep}
-            onSkip={skipGuide}
-          />
-        )} */}
+        <GuideModal
+          visible={isGuideVisible}
+          step={guideStep}
+          totalSteps={totalSteps}
+          title={currentGuide.title}
+          description={currentGuide.description}
+          onNext={nextStep}
+          onSkip={skipGuide}
+        />
+      )} */}
     </View>
-    // </SwipeNavigator>
   );
 }
 
@@ -231,7 +230,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: getResponsiveHeight(20),
+    bottom: getResponsiveHeight(110),
     right: getResponsiveWidth(18),
     width: getResponsiveIconSize(60),
     height: getResponsiveIconSize(60),
@@ -241,9 +240,13 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'contain',
   },
-  loadingContainer: {
-    flex: 1,
+
+  // ✅ 로딩 오버레이
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
     alignItems: 'center',
+    // 살짝 덮는 느낌만 (원치 않으면 삭제해도 됨)
+    backgroundColor: 'rgba(249,249,249,0.6)',
   },
 });

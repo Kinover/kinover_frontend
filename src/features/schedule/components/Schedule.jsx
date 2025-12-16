@@ -110,8 +110,7 @@ const styles = StyleSheet.create({
 
   dateText: {
     color: 'black',
-    // paddingHorizontal:getResponsiveWidth(5),
-    fontSize: getResponsiveFontSize(16),
+    fontSize: getResponsiveFontSize(18),
     fontFamily: 'Pretendard-SemiBold',
     marginTop: getResponsiveHeight(15),
     marginBottom: getResponsiveHeight(16),
