@@ -1,14 +1,8 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Platform,
-} from 'react-native';
+import {View, Text, StyleSheet, FlatList, TouchableOpacity, Platform} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
+
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -28,18 +22,16 @@ import {getSpacingStyle} from '../utils/getSpacingStyle';
 import {CHATROOM_STYLE} from 'styles/style';
 
 import {getVideoThumbnail} from '../../../utils/videoThumbnail';
-
-// ✅ 여기만 추가
 import {toCdnUrl} from '../../../utils/mediaUrl';
 
 export default function ReceiveChat({
-  userProfileImage, // 키 or URL 둘 다 가능 (toCdnUrl이 처리)
+  userProfileImage,
   userName,
   message,
   chatTime,
   style,
   messageType = 'text',
-  mediaUrls = [], // 키 배열 or URL 배열 (섞여도 됨)
+  mediaUrls = [],
   isGrouped = false,
   isSameSender = false,
 }) {
@@ -47,7 +39,6 @@ export default function ReceiveChat({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
 
-  // ✅ 타입 정규화
   const normalizedType = useMemo(
     () => String(messageType ?? 'text').toLowerCase(),
     [messageType],
@@ -56,7 +47,6 @@ export default function ReceiveChat({
   const isVideo = normalizedType === 'video';
   const isMedia = isImage || isVideo;
 
-  // --- 마지막만 시간 표시 로직 ---
   const [showTime, setShowTime] = useState(false);
   const idRef = useRef(Math.random().toString(36).slice(2));
 
@@ -68,58 +58,41 @@ export default function ReceiveChat({
     registerTimeLast(key, idRef.current, timeMs, setShowTime);
     return () => unregisterTimeLast(key, idRef.current);
   }, [key, timeMs]);
-  // -----------------------------
 
-  // ✅ mediaUrls 항상 배열
   const safeMediaRaw = useMemo(() => {
     if (Array.isArray(mediaUrls)) return mediaUrls.filter(Boolean);
     if (mediaUrls) return [mediaUrls].filter(Boolean);
     return [];
   }, [mediaUrls]);
 
-  // ✅ 키/URL -> 최종 URL로 변환(CloudFront 또는 원본 URL)
   const safeMediaUrls = useMemo(() => {
     return safeMediaRaw.map(toCdnUrl).filter(Boolean);
   }, [safeMediaRaw]);
 
-  // ✅ 프로필도 변환
-  const profileUrl = useMemo(() => {
-    return toCdnUrl(userProfileImage);
-  }, [userProfileImage]);
+  const profileUrl = useMemo(() => toCdnUrl(userProfileImage), [userProfileImage]);
 
-  // ✅ 9장 초과 처리(그리드용)
   const hasExtra = safeMediaUrls.length > 9;
   const displayMedia = hasExtra ? safeMediaUrls.slice(0, 9) : safeMediaUrls;
 
-  // ✅ 이미지면 프리로드
   useEffect(() => {
     if (!isImage) return;
     if (!displayMedia.length) return;
-
-    FastImage.preload(
-      displayMedia.map(uri => ({
-        uri,
-        priority: FastImage.priority.normal,
-      })),
-    );
+    FastImage.preload(displayMedia.map(uri => ({uri, priority: FastImage.priority.normal})));
   }, [isImage, displayMedia]);
 
-  // ✅ 프로필 프리로드
   useEffect(() => {
     if (!profileUrl) return;
     FastImage.preload([{uri: profileUrl, priority: FastImage.priority.low}]);
   }, [profileUrl]);
 
-  const handleMediaPress = useCallback((uri, index) => {
+  const spacingStyle = getSpacingStyle({isGrouped, isSameSender});
+
+  const handleMediaPress = useCallback((_, index) => {
     setSelectedIndex(index);
     setModalVisible(true);
   }, []);
 
-  // === 간격 계산 ===
-  const spacingStyle = getSpacingStyle({isGrouped, isSameSender});
-
-  // ====== ✅ 영상 썸네일 캐시 ======
-  const [videoThumbMap, setVideoThumbMap] = useState({}); // { [videoUrl]: thumbUri }
+  const [videoThumbMap, setVideoThumbMap] = useState({});
   useEffect(() => {
     if (!isVideo) return;
     if (!safeMediaUrls.length) return;
@@ -141,12 +114,8 @@ export default function ReceiveChat({
       if (!alive) return;
 
       const next = {};
-      for (const [url, thumbUri] of results) {
-        if (thumbUri) next[url] = thumbUri;
-      }
-      if (Object.keys(next).length) {
-        setVideoThumbMap(prev => ({...prev, ...next}));
-      }
+      for (const [url, thumbUri] of results) if (thumbUri) next[url] = thumbUri;
+      if (Object.keys(next).length) setVideoThumbMap(prev => ({...prev, ...next}));
     })();
 
     return () => {
@@ -176,7 +145,6 @@ export default function ReceiveChat({
     [isImage, videoThumbMap],
   );
 
-  // ✅ grid 렌더
   const renderMediaGrid = () => (
     <FlatList
       data={displayMedia}
@@ -190,22 +158,14 @@ export default function ReceiveChat({
         const thumbSource = getThumbSource(item);
 
         return (
-          <TouchableOpacity
-            onPress={() => handleMediaPress(item, index)}
-            activeOpacity={0.9}>
+          <TouchableOpacity onPress={() => handleMediaPress(item, index)} activeOpacity={0.9}>
             <View style={styles.thumbWrap}>
               {thumbSource ? (
                 <FastImage
                   source={thumbSource}
                   style={styles.imageItem}
                   resizeMode={FastImage.resizeMode.cover}
-                  onError={e => {
-                    console.log(
-                      '❌ ReceiveChat thumb error:',
-                      item,
-                      e?.nativeEvent,
-                    );
-                  }}
+                  onError={e => console.log('❌ ReceiveChat thumb error:', item, e?.nativeEvent)}
                 />
               ) : (
                 <View style={[styles.imageItem, styles.thumbFallback]} />
@@ -228,21 +188,13 @@ export default function ReceiveChat({
     const thumbSource = getThumbSource(uri);
 
     return (
-      <TouchableOpacity
-        onPress={() => handleMediaPress(uri, 0)}
-        activeOpacity={0.9}>
+      <TouchableOpacity onPress={() => handleMediaPress(uri, 0)} activeOpacity={0.9}>
         {thumbSource ? (
           <FastImage
             source={thumbSource}
             style={styles.singleImage}
             resizeMode={FastImage.resizeMode.cover}
-            onError={e => {
-              console.log(
-                '❌ ReceiveChat single thumb error:',
-                uri,
-                e?.nativeEvent,
-              );
-            }}
+            onError={e => console.log('❌ ReceiveChat single thumb error:', uri, e?.nativeEvent)}
           />
         ) : (
           <View style={[styles.singleImage, styles.thumbFallback]} />
@@ -269,9 +221,7 @@ export default function ReceiveChat({
               cache: FastImage.cacheControl.immutable,
             }}
             style={styles.receivedUserImage}
-            onError={e => {
-              console.log('❌ profile error:', profileUrl, e?.nativeEvent);
-            }}
+            onError={e => console.log('❌ profile error:', profileUrl, e?.nativeEvent)}
           />
         </TouchableOpacity>
       )}
@@ -288,19 +238,14 @@ export default function ReceiveChat({
                 styles.receivedBubble,
                 normalizedType === 'text' ? styles.textPadding : styles.imagePadding,
               ]}>
-              {isMedia ? renderMediaGrid() : (
-                <Text style={styles.receivedText}>{message}</Text>
-              )}
+              {isMedia ? renderMediaGrid() : <Text style={styles.receivedText}>{message}</Text>}
             </View>
           )}
 
-          {showTime && (
-            <Text style={styles.receivedTime}>{formatTime(chatTime)}</Text>
-          )}
+          {showTime && <Text style={styles.receivedTime}>{formatTime(chatTime)}</Text>}
         </View>
       </View>
 
-      {/* ✅ 모달에는 “원본(raw)”을 넘겨도 됨. (모달에서도 toCdnUrl 쓰면 안전) */}
       <MediaModal
         visible={modalVisible}
         mediaUrls={safeMediaRaw}
@@ -320,7 +265,6 @@ export default function ReceiveChat({
   );
 }
 
-/* ===== 스타일 ===== */
 const AVATAR_W = getResponsiveWidth(40);
 
 const styles = StyleSheet.create({

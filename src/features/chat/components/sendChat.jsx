@@ -30,8 +30,6 @@ import {getSpacingStyle} from '../utils/getSpacingStyle';
 import {CHATROOM_STYLE} from 'styles/style';
 
 import {getVideoThumbnail} from '../../../utils/videoThumbnail';
-
-// ✅ utils로 뺀 함수 import
 import {toCdnUrl} from '../../../utils/mediaUrl';
 
 export default function SendChat({
@@ -47,7 +45,6 @@ export default function SendChat({
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  // ✅ 타입/상태 정규화
   const normalizedType = useMemo(
     () => String(messageType ?? 'text').toLowerCase(),
     [messageType],
@@ -59,36 +56,25 @@ export default function SendChat({
   const isUploading = uploadStatus === 'uploading';
   const isFailed = uploadStatus === 'failed';
 
-  // ✅ mediaUrls 항상 배열 (키 or URL 둘 다 가능)
   const safeMediaRaw = useMemo(() => {
     if (Array.isArray(mediaUrls)) return mediaUrls.filter(Boolean);
     if (mediaUrls) return [mediaUrls].filter(Boolean);
     return [];
   }, [mediaUrls]);
 
-  // ✅ raw -> 최종 URL(CloudFront or 원본 URL)
   const safeMediaUrls = useMemo(() => {
     return safeMediaRaw.map(toCdnUrl).filter(Boolean);
   }, [safeMediaRaw]);
 
-  // ✅ 9장 초과 처리(그리드용)
   const hasExtra = safeMediaUrls.length > 9;
   const displayMedia = hasExtra ? safeMediaUrls.slice(0, 9) : safeMediaUrls;
 
-  // ✅ 이미지면 프리로드(체감 개선 큼)
   useEffect(() => {
     if (!isImage) return;
     if (!displayMedia.length) return;
-
-    FastImage.preload(
-      displayMedia.map(uri => ({
-        uri,
-        priority: FastImage.priority.normal,
-      })),
-    );
+    FastImage.preload(displayMedia.map(uri => ({uri, priority: FastImage.priority.normal})));
   }, [isImage, displayMedia]);
 
-  // === 시간 그룹 레지스트리 ===
   const [showTime, setShowTime] = useState(false);
   const idRef = useRef(Math.random().toString(36).slice(2));
 
@@ -108,11 +94,10 @@ export default function SendChat({
     return () => unregisterTimeLast(timeKey, idRef.current);
   }, [timeKey, timeMs, chatTime]);
 
-  // === 간격 계산 ===
   const spacingStyle = getSpacingStyle({isGrouped, isSameSender});
 
   const handleMediaPress = useCallback(
-    (uri, index) => {
+    (_, index) => {
       if (isUploading) return;
       setSelectedIndex(index);
       setModalVisible(true);
@@ -143,11 +128,9 @@ export default function SendChat({
   const safeText = useMemo(() => String(message ?? '').trim(), [message]);
   const hasText = safeText.length > 0;
 
-  // ✅ media인데 url이 없으면 렌더 스킵
   if (isMedia && safeMediaUrls.length === 0) return null;
 
-  // ====== ✅ 영상 썸네일 캐시 ======
-  const [videoThumbMap, setVideoThumbMap] = useState({}); // { [videoUrl]: thumbUri }
+  const [videoThumbMap, setVideoThumbMap] = useState({});
   useEffect(() => {
     if (!isVideo) return;
     if (!safeMediaUrls.length) return;
@@ -169,12 +152,8 @@ export default function SendChat({
       if (!alive) return;
 
       const next = {};
-      for (const [url, thumbUri] of results) {
-        if (thumbUri) next[url] = thumbUri;
-      }
-      if (Object.keys(next).length) {
-        setVideoThumbMap(prev => ({...prev, ...next}));
-      }
+      for (const [url, thumbUri] of results) if (thumbUri) next[url] = thumbUri;
+      if (Object.keys(next).length) setVideoThumbMap(prev => ({...prev, ...next}));
     })();
 
     return () => {
@@ -219,40 +198,30 @@ export default function SendChat({
           const thumbSource = getThumbSource(item);
 
           return (
-            <TouchableOpacity
-              onPress={() => handleMediaPress(item, index)}
-              activeOpacity={0.9}>
-              <View>
-                <View style={styles.thumbWrap}>
-                  {thumbSource ? (
-                    <FastImage
-                      source={thumbSource}
-                      style={styles.imageItem}
-                      resizeMode={FastImage.resizeMode.cover}
-                      onError={e => {
-                        console.log(
-                          '❌ SendChat thumb error:',
-                          item,
-                          e?.nativeEvent,
-                        );
-                      }}
-                    />
-                  ) : (
-                    <View style={[styles.imageItem, styles.thumbFallback]} />
-                  )}
+            <TouchableOpacity onPress={() => handleMediaPress(item, index)} activeOpacity={0.9}>
+              <View style={styles.thumbWrap}>
+                {thumbSource ? (
+                  <FastImage
+                    source={thumbSource}
+                    style={styles.imageItem}
+                    resizeMode={FastImage.resizeMode.cover}
+                    onError={e => console.log('❌ SendChat thumb error:', item, e?.nativeEvent)}
+                  />
+                ) : (
+                  <View style={[styles.imageItem, styles.thumbFallback]} />
+                )}
 
-                  {isVideo && (
-                    <View style={styles.playOverlay}>
-                      <View style={styles.playTriangle} />
-                    </View>
-                  )}
+                {isVideo && (
+                  <View style={styles.playOverlay}>
+                    <View style={styles.playTriangle} />
+                  </View>
+                )}
 
-                  {isLastCell && (
-                    <View style={styles.moreOverlay}>
-                      <Text style={styles.moreOverlayText}>+{extraCount}</Text>
-                    </View>
-                  )}
-                </View>
+                {isLastCell && (
+                  <View style={styles.moreOverlay}>
+                    <Text style={styles.moreOverlayText}>+{extraCount}</Text>
+                  </View>
+                )}
               </View>
             </TouchableOpacity>
           );
@@ -269,22 +238,14 @@ export default function SendChat({
 
     return (
       <View style={styles.singleWrapper}>
-        <TouchableOpacity
-          onPress={() => handleMediaPress(uri, 0)}
-          activeOpacity={0.9}>
+        <TouchableOpacity onPress={() => handleMediaPress(uri, 0)} activeOpacity={0.9}>
           <View>
             {thumbSource ? (
               <FastImage
                 source={thumbSource}
                 style={styles.singleImage}
                 resizeMode={FastImage.resizeMode.cover}
-                onError={e => {
-                  console.log(
-                    '❌ SendChat single thumb error:',
-                    uri,
-                    e?.nativeEvent,
-                  );
-                }}
+                onError={e => console.log('❌ SendChat single thumb error:', uri, e?.nativeEvent)}
               />
             ) : (
               <View style={[styles.singleImage, styles.thumbFallback]} />
@@ -305,9 +266,7 @@ export default function SendChat({
 
   return (
     <View style={[styles.sendContainer, spacingStyle, style]}>
-      {showTime && !!chatTime && (
-        <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>
-      )}
+      {showTime && !!chatTime && <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>}
 
       {isMedia ? (
         safeMediaUrls.length === 1 ? (
@@ -321,7 +280,6 @@ export default function SendChat({
         </View>
       ) : null}
 
-      {/* ✅ 모달에는 raw(키/URL) 그대로 넘기면 됨 (모달에서 toCdnUrl로 정규화) */}
       <MediaModal
         visible={modalVisible}
         mediaUrls={safeMediaRaw}
@@ -333,7 +291,6 @@ export default function SendChat({
   );
 }
 
-/* ===== 스타일 ===== */
 const styles = StyleSheet.create({
   sendContainer: {
     flexDirection: 'row',
@@ -369,13 +326,8 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
 
-  imageGrid: {
-    gap: getResponsiveWidth(4),
-  },
-
-  thumbWrap: {
-    position: 'relative',
-  },
+  imageGrid: {gap: getResponsiveWidth(4)},
+  thumbWrap: {position: 'relative'},
 
   imageItem: {
     width: getResponsiveWidth(70),
@@ -384,15 +336,9 @@ const styles = StyleSheet.create({
     margin: 2,
     backgroundColor: '#F3F4F6',
   },
+  thumbFallback: {backgroundColor: '#E5E7EB'},
 
-  thumbFallback: {
-    backgroundColor: '#E5E7EB',
-  },
-
-  singleWrapper: {
-    position: 'relative',
-    alignSelf: 'flex-end',
-  },
+  singleWrapper: {position: 'relative', alignSelf: 'flex-end'},
   singleImage: {
     width: getResponsiveWidth(200),
     aspectRatio: 1,

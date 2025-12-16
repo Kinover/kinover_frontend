@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
     lineHeight: getResponsiveFontSize(18),
   },
   sendTime: {
-    fontSize: getResponsiveFontSize(10),
+    fontSize: CHATROOM_STYLE.messageTimeFontSize,
     color: '#666',
     marginRight: getResponsiveWidth(5),
     marginBottom: getResponsiveHeight(2),
