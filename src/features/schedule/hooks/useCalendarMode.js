@@ -1,12 +1,24 @@
-// src/hooks/schedule/useCalendarMode.js
-import {useState, useEffect, useMemo, useCallback} from 'react';
+import {useState, useEffect, useMemo, useCallback, useRef} from 'react';
 
-export const useCalendarMode = (initialMode, selectedDate, setSelectedDate) => {
-  const [mode, setMode] = useState(initialMode);
+export const useCalendarMode = (
+  initialMode,
+  selectedDate,
+  setSelectedDate,
+  modeProp,
+  setModeProp,
+) => {
+  const initialModeRef = useRef(initialMode);
+
+  const isControlled = modeProp != null && typeof setModeProp === 'function';
+
+  const [modeState, setModeState] = useState(initialModeRef.current);
+
+  const mode = isControlled ? modeProp : modeState;
+  const setMode = isControlled ? setModeProp : setModeState;
+
   const [currentMonth, setCurrentMonth] = useState(selectedDate.getMonth());
   const [currentYear, setCurrentYear] = useState(selectedDate.getFullYear());
 
-  // selectedDate 바뀌면 현재 연/월 동기화
   useEffect(() => {
     setCurrentMonth(selectedDate.getMonth());
     setCurrentYear(selectedDate.getFullYear());
@@ -14,12 +26,16 @@ export const useCalendarMode = (initialMode, selectedDate, setSelectedDate) => {
 
   const changeMonth = useCallback(
     dir => {
-      const newDate = new Date(currentYear, currentMonth + dir, 1);
-      setCurrentMonth(newDate.getMonth());
-      setCurrentYear(newDate.getFullYear());
-      setSelectedDate(newDate);
+      const base = new Date(
+        selectedDate.getFullYear(),
+        selectedDate.getMonth() + dir,
+        1,
+      );
+      setCurrentMonth(base.getMonth());
+      setCurrentYear(base.getFullYear());
+      setSelectedDate(base);
     },
-    [currentYear, currentMonth, setSelectedDate],
+    [selectedDate, setSelectedDate],
   );
 
   const changeWeek = useCallback(
@@ -33,16 +49,13 @@ export const useCalendarMode = (initialMode, selectedDate, setSelectedDate) => {
 
   const toggleMode = useCallback(() => {
     setMode(m => (m === 'month' ? 'week' : 'month'));
-  }, []);
+  }, [setMode]);
 
   const headerLabel = useMemo(() => {
-    if (mode === 'month') {
-      return `${currentYear}년 ${currentMonth + 1}월`;
-    }
-    return `${selectedDate.getFullYear()}년 ${
-      selectedDate.getMonth() + 1
-    }월`;
-  }, [mode, currentYear, currentMonth, selectedDate]);
+    const y = selectedDate.getFullYear();
+    const m = selectedDate.getMonth() + 1;
+    return `${y}년 ${m}월`;
+  }, [selectedDate]);
 
   return {
     mode,

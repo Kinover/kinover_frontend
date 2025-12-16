@@ -4,7 +4,6 @@ import {View, Text, StyleSheet, ScrollView} from 'react-native';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
-  getResponsiveFontSize,
 } from '../../../utils/responsive';
 import CustomSwitch from '../../../components/CustomSwitch';
 import useHideTabBar from '../../../hooks/useHideTabBar';
@@ -16,6 +15,7 @@ import {togglePostNotificationThunk} from '../../memory/store/memoryThunk';
 
 // ✅ 토스트 모달 import
 import ToastModal from '../../../components/ToastModal';
+import {SETTING_STYLES} from 'styles/style';
 
 export default function NotificationSettingScreen() {
   const dispatch = useDispatch();
@@ -48,7 +48,9 @@ export default function NotificationSettingScreen() {
     }
 
     try {
-      await dispatch(toggleAllChatRoomNotificationThunk({userId, isOn: newValue}));
+      await dispatch(
+        toggleAllChatRoomNotificationThunk({userId, isOn: newValue}),
+      );
       await dispatch(togglePostNotificationThunk({userId, isOn: newValue}));
       await dispatch(toggleCommentNotificationThunk({userId, isOn: newValue}));
 
@@ -69,7 +71,9 @@ export default function NotificationSettingScreen() {
 
     if (!userId) return;
     try {
-      await dispatch(toggleAllChatRoomNotificationThunk({userId, isOn: newValue}));
+      await dispatch(
+        toggleAllChatRoomNotificationThunk({userId, isOn: newValue}),
+      );
 
       setToastMessage(
         newValue ? '채팅방 알림이 켜졌어요' : '채팅방 알림이 꺼졌어요',
@@ -188,11 +192,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    fontSize: getResponsiveFontSize(20),
-    fontWeight: '700',
-    fontFamily: 'Pretendard-Bold',
-    marginBottom: getResponsiveHeight(20),
-    color: '#000',
+    fontSize: SETTING_STYLES.titleFontSize,
+    fontWeight: SETTING_STYLES.titleFontWeight,
+    marginBottom: getResponsiveHeight(20), // 🔽 30 → 20
+    color: SETTING_STYLES.titleFontColor,
+    fontFamily: SETTING_STYLES.titleFontFamily,
   },
   section: {
     borderBottomWidth: 0.5,
@@ -206,8 +210,8 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(8),
   },
   label: {
-    fontSize: getResponsiveFontSize(15),
-    color: '#222',
-    fontFamily: 'Pretendard-Medium',
+    fontSize: SETTING_STYLES.labelFontSize,
+    color: SETTING_STYLES.labelFontColor,
+    fontFamily: SETTING_STYLES.labelFontFamily,
   },
 });

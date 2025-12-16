@@ -45,6 +45,17 @@ export const HEADER_STYLES = {
   headerRightIconRightPadding: getResponsiveWidth(16),
 };
 
+export const SETTING_STYLES = {
+  titleFontSize: getResponsiveFontSize(21),
+  titleFontColor: '#000',
+  titleFontFamily: 'Pretendard-Bold',
+  titleFontWeight: '700',
+
+  labelFontSize: getResponsiveFontSize(16),
+  labelFontColor: '#222',
+  labelFontFamily: 'Pretendard-Medium',
+};
+
 export const CHATROOM_STYLE = {
   messageFontSize: getResponsiveFontSize(14), // 🔽 15 → 14
   messageTimeFontSize: getResponsiveFontSize(11), // 🔽 10 → 9

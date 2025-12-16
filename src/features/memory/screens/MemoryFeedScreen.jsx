@@ -52,6 +52,8 @@ export default function MemoryFeed({
   selectedCategoryTitle,
   selectedTab,
   startDate,
+  onScroll, // ✅ 추가
+
   endDate,
 }) {
   const dispatch = useDispatch();
@@ -132,7 +134,11 @@ export default function MemoryFeed({
     const type = memory?.postTypes?.[index];
     if (type) return String(type).toLowerCase() === 'video';
 
-    const ext = String(uri || '').split('?')[0].split('.').pop()?.toLowerCase();
+    const ext = String(uri || '')
+      .split('?')[0]
+      .split('.')
+      .pop()
+      ?.toLowerCase();
     return ext === 'mp4' || ext === 'mov';
   }, []);
 
@@ -140,12 +146,11 @@ export default function MemoryFeed({
   const getMediaStats = useCallback(
     memory => {
       const rawUrls = Array.isArray(memory?.imageUrls) ? memory.imageUrls : [];
-      const normalized = rawUrls
-        .map(u => normalizeMediaUrl(u))
-        .filter(Boolean);
+      const normalized = rawUrls.map(u => normalizeMediaUrl(u)).filter(Boolean);
 
       const mediaCount = normalized.length;
-      if (mediaCount === 0) return {mediaCount: 0, videoCount: 0, imageCount: 0};
+      if (mediaCount === 0)
+        return {mediaCount: 0, videoCount: 0, imageCount: 0};
 
       let videoCount = 0;
       for (let i = 0; i < normalized.length; i++) {
@@ -243,7 +248,8 @@ export default function MemoryFeed({
     const firstUri = rawFirstUri ? normalizeMediaUrl(rawFirstUri) : null;
 
     const firstIsVideo = firstUri ? inferIsVideo(memory, 0, firstUri) : false;
-    const firstThumb = firstIsVideo && firstUri ? videoThumbMap[firstUri] : null;
+    const firstThumb =
+      firstIsVideo && firstUri ? videoThumbMap[firstUri] : null;
 
     if (firstIsVideo && firstUri && !firstThumb) {
       requestAnimationFrame(() => ensureVideoThumbByUri(firstUri));
@@ -271,11 +277,15 @@ export default function MemoryFeed({
             onPress={() => navigation.navigate('게시글화면', {memory})}
             style={styles.memoryItem}>
             <View style={styles.topRow}>
-              <Text style={styles.dateText}>{formatDate(memory.createdAt)}</Text>
+              <Text style={styles.dateText}>
+                {formatDate(memory.createdAt)}
+              </Text>
 
               <View style={styles.badgeRow}>
                 <View style={styles.commentBadge}>
-                  <Text style={styles.badgeText}>댓글 {memory.commentCount}</Text>
+                  <Text style={styles.badgeText}>
+                    댓글 {memory.commentCount}
+                  </Text>
                 </View>
 
                 {/* ✅ 사진/영상 합쳐서 "미디어"로 통일 */}
@@ -416,7 +426,11 @@ export default function MemoryFeed({
             style={styles.galleryImage}
             resizeMode={FastImage.resizeMode.cover}
             onError={e =>
-              console.log('❌ MemoryFeed album image error:', uri, e?.nativeEvent)
+              console.log(
+                '❌ MemoryFeed album image error:',
+                uri,
+                e?.nativeEvent,
+              )
             }
           />
         )}
@@ -500,6 +514,8 @@ export default function MemoryFeed({
           <FlatList
             key={`album-${gridColumns}`}
             data={data}
+            onScroll={onScroll} // ✅ 여기 연결
+            scrollEventThrottle={16}
             showsVerticalScrollIndicator={false}
             keyExtractor={(item, index) => `${item.uri}_${index}`}
             numColumns={gridColumns}
@@ -515,7 +531,9 @@ export default function MemoryFeed({
             }}
             ListEmptyComponent={
               <View style={styles.emptyWrapper}>
-                <Text style={styles.emptyText}>아직 등록된 게시글이 없어요</Text>
+                <Text style={styles.emptyText}>
+                  아직 등록된 게시글이 없어요
+                </Text>
               </View>
             }
           />
@@ -524,6 +542,8 @@ export default function MemoryFeed({
         <FlatList
           key="post"
           data={data}
+          onScroll={onScroll} // ✅ 여기 연결
+          scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
           keyExtractor={(item, index) =>
             item.postId?.toString() || `no-id-${index}`

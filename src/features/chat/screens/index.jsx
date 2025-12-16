@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: getResponsiveHeight(20),
+    bottom: getResponsiveHeight(110),
     right: getResponsiveWidth(18),
     width: getResponsiveIconSize(60), // 🔽 75 → 60
     height: getResponsiveIconSize(60),

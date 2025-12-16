@@ -42,6 +42,7 @@
     "react-native-compressor": "^1.13.0",
     "react-native-config": "^1.6.0",
     "react-native-create-thumbnail": "^2.2.0",
+    "react-native-draggable-flatlist": "^4.0.3",
     "react-native-drop-shadow": "^1.0.3",
     "react-native-dropdown-picker": "^5.4.6",
     "react-native-fonts": "^0.0.0",
