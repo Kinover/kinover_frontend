@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveIconSize(20),
     paddingVertical: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(14.5),
-    maxWidth: '85%',
+    maxWidth: '80%',
     flexShrink: 1,
   },
   receivedText: {

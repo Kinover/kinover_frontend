@@ -1,4 +1,4 @@
-// SetupFinishScreen.tsx - Animated Version
+// SetupFinishScreen.tsx - Refined Animated Version
 
 import React, {useEffect, useRef} from 'react';
 import {View, StyleSheet, Text, Animated, Easing, Platform} from 'react-native';
@@ -20,67 +20,64 @@ export default function SetupFinishScreen() {
   };
 
   // 애니메이션 값들
-  const illustrationScale = useRef(new Animated.Value(0.8)).current;
+  const illustrationScale = useRef(new Animated.Value(0.9)).current;
   const illustrationOpacity = useRef(new Animated.Value(0)).current;
-  const illustrationTranslateY = useRef(new Animated.Value(20)).current;
+  const illustrationTranslateY = useRef(new Animated.Value(24)).current;
 
   const bottomOpacity = useRef(new Animated.Value(0)).current;
-  const bottomTranslateY = useRef(new Animated.Value(30)).current;
+  const bottomTranslateY = useRef(new Animated.Value(24)).current;
 
-  // 살짝 통통 튀는 느낌용
   const pulseScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    // 처음 등장 애니메이션
     Animated.parallel([
       Animated.timing(illustrationOpacity, {
         toValue: 1,
-        duration: 500,
+        duration: 520,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
       Animated.timing(illustrationScale, {
         toValue: 1,
-        duration: 500,
-        easing: Easing.out(Easing.back(1.4)),
+        duration: 520,
+        easing: Easing.out(Easing.back(1.25)),
         useNativeDriver: true,
       }),
       Animated.timing(illustrationTranslateY, {
         toValue: 0,
-        duration: 500,
+        duration: 520,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
       Animated.sequence([
-        Animated.delay(150),
+        Animated.delay(200),
         Animated.parallel([
           Animated.timing(bottomOpacity, {
             toValue: 1,
-            duration: 400,
+            duration: 420,
             easing: Easing.out(Easing.quad),
             useNativeDriver: true,
           }),
           Animated.timing(bottomTranslateY, {
             toValue: 0,
-            duration: 400,
+            duration: 420,
             easing: Easing.out(Easing.quad),
             useNativeDriver: true,
           }),
         ]),
       ]),
     ]).start(() => {
-      // 등장 후에는 살짝살짝 커졌다 줄어드는 모션 반복
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseScale, {
             toValue: 1.03,
-            duration: 900,
+            duration: 1100,
             easing: Easing.inOut(Easing.quad),
             useNativeDriver: true,
           }),
           Animated.timing(pulseScale, {
             toValue: 1,
-            duration: 900,
+            duration: 1100,
             easing: Easing.inOut(Easing.quad),
             useNativeDriver: true,
           }),
@@ -102,7 +99,7 @@ export default function SetupFinishScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      {/* 상단 일러스트 영역 (애니메이션 적용) */}
+      {/* 상단 일러스트 영역 */}
       <Animated.View
         style={[
           styles.illustrationArea,
@@ -122,7 +119,7 @@ export default function SetupFinishScreen() {
         />
       </Animated.View>
 
-      {/* 텍스트 + 버튼 (슬라이드 업 + 페이드 인) */}
+      {/* 텍스트 영역 */}
       <Animated.View
         style={[
           styles.bottomArea,
@@ -132,12 +129,14 @@ export default function SetupFinishScreen() {
           },
         ]}>
         <View style={styles.textBlock}>
-          <Text style={styles.headerTitle}>가족 모임이 준비되었어요</Text>
+          <Text style={styles.headerTitle}>가족 모임 준비 완료!</Text>
           <Text style={styles.headerSubTitle}>
-            가족과 함께 특별한 순간을 만들어보세요
+            이제 키노와 함께 가족의 하루를 나누고,{'\n'}
+            소중한 순간들을 편하게 기록해 보세요.
           </Text>
         </View>
       </Animated.View>
+
       {navigationButton}
     </SafeAreaView>
   );
@@ -146,59 +145,60 @@ export default function SetupFinishScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: getResponsiveWidth(24),
   },
 
   illustrationArea: {
-    flex: 1.2,
+    flex: 1.15,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingBottom: getResponsiveHeight(24),
+    paddingBottom: getResponsiveHeight(22),
   },
   circleBg: {
     position: 'absolute',
-    width: getResponsiveWidth(250),
-    height: getResponsiveWidth(250),
-    borderRadius: getResponsiveWidth(300) / 2,
+    width: getResponsiveWidth(260),
+    height: getResponsiveWidth(260),
+    borderRadius: getResponsiveWidth(260) / 2,
     backgroundColor: '#FFF3DE',
-    opacity: 1,
+    opacity: 0.9,
     top:
       Platform.OS === 'android'
-        ? getResponsiveHeight(170)
-        : getResponsiveHeight(155),
+        ? getResponsiveHeight(150)
+        : getResponsiveHeight(140),
   },
   mainImage: {
-    width: '50%',
-    aspectRatio: 1.1,
+    width: '60%',
+    aspectRatio: 1.05,
     marginBottom:
       Platform.OS === 'android'
-        ? getResponsiveHeight(60)
-        : getResponsiveHeight(45),
+        ? getResponsiveHeight(36)
+        : getResponsiveHeight(30),
   },
 
   bottomArea: {
-    flex: 0.9,
+    flex: 0.85,
     justifyContent: 'space-between',
-    paddingBottom: getResponsiveHeight(20),
+    paddingBottom: getResponsiveHeight(22),
   },
   textBlock: {
     alignItems: 'center',
-    marginBottom: getResponsiveHeight(16),
+    marginBottom: getResponsiveHeight(10),
   },
   headerTitle: {
     fontSize: getResponsiveFontSize(24),
     fontFamily: 'Pretendard-SemiBold',
-    color: '#111827',
+    color: '#161823',
     textAlign: 'center',
     lineHeight: getResponsiveHeight(30),
-    marginBottom: getResponsiveHeight(6),
+    marginBottom: getResponsiveHeight(10),
   },
   headerSubTitle: {
-    fontSize: getResponsiveFontSize(13),
+    fontSize: getResponsiveFontSize(13.5),
     fontFamily: 'Pretendard-Regular',
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: getResponsiveHeight(20),
   },
 });
+
