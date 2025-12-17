@@ -1,6 +1,5 @@
 // src/features/home/screens/HomeScreen.jsx
-
-import React, {useRef, useEffect, useState} from 'react';
+import React, {useRef, useEffect, useState, useCallback} from 'react';
 import {View, StyleSheet, ScrollView} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -28,9 +27,7 @@ import {
 } from '../../notification/utils/requestNotificationPermission';
 import useWebSocketStatus from '../../../hooks/useWebSocketStatus';
 import useFamilyStatusSocket from '../../../hooks/useFamilyStatusSocket';
-// import SwipeNavigator from 'components/SwipeNavigator';
 
-// 공통 가이드 훅 + 모달
 import useGuide from 'hooks/useGuide';
 import GuideModal from 'components/GuideModal';
 
@@ -67,12 +64,13 @@ export default function HomeScreen() {
   const family = useSelector(state => state.family);
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
 
-  const {familyId, onlineUserIds, lastActiveMap} = useSelector(
-    state => state.family,
-  );
+  const {onlineUserIds, lastActiveMap} = useSelector(state => state.family);
 
   const [isVisible, setIsVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+
+  // ✅ 새로고침 로딩 상태 (멤버 영역 오버레이용)
+  const [isRefreshingMembers, setIsRefreshingMembers] = useState(false);
 
   const familyLoaded = !!family?.familyId;
   const membersLoaded = familyUserList.length > 0;
@@ -119,6 +117,26 @@ export default function HomeScreen() {
     }
   }, [dispatch, user.userId, family.familyId]);
 
+  // ✅ 새로고침 버튼 핸들러: 멤버 영역에 로딩 띄우고, 끝나면 갱신
+  const handleRefreshMembers = useCallback(async () => {
+    if (!family?.familyId) return;
+    if (isRefreshingMembers) return;
+
+    try {
+      setIsRefreshingMembers(true);
+
+      // ✅ 여기서 “멤버 영역” 갱신에 필요한 것들만 갱신
+      // - 멤버 리스트(가족 구성원)
+      // - 온라인 상태/마지막 접속
+      // - (선택) 가족 정보
+      await dispatch(fetchFamilyUserListThunk(family.familyId));
+      await dispatch(fetchFamilyStatusThunk(family.familyId));
+      await dispatch(fetchFamilyThunk(family.familyId));
+    } finally {
+      setIsRefreshingMembers(false);
+    }
+  }, [dispatch, family?.familyId, isRefreshingMembers]);
+
   // 인앱 가이드 (공통 훅 사용)
   const guideEnabled = familyLoaded && membersLoaded;
 
@@ -146,15 +164,15 @@ export default function HomeScreen() {
     };
 
     const trimmedImage = (imageUrl || '').trim();
-
-    // 🔹 실제 값이 있을 때만 image 필드 전송 → 빈 문자열로 기존 이미지 안 지움
-    if (trimmedImage) {
-      payload.image = trimmedImage;
-    }
-
-    console.log('🧾 modifyUserThunk payload =', payload);
+    if (trimmedImage) payload.image = trimmedImage;
 
     await dispatch(modifyUserThunk(payload));
+
+    // ✅ 저장 후 멤버 리스트도 최신화(선택)
+    if (family?.familyId) {
+      dispatch(fetchFamilyUserListThunk(family.familyId));
+    }
+
     userSheetRef.current?.dismiss();
     setSelectedUser(null);
   };
@@ -168,9 +186,7 @@ export default function HomeScreen() {
   }
 
   return (
-    // <SwipeNavigator rightTo="소통" leftTo={null}>
     <View style={styles.container}>
-      {/* 노랑 배경 + 하단 곡선 */}
       <View style={styles.backgroundCurve} />
 
       <ScrollView
@@ -184,6 +200,9 @@ export default function HomeScreen() {
           lastActiveMap={lastActiveMap}
           onUserPress={handleUserPress}
           onAddPress={() => setIsVisible(true)}
+          // ✅ 추가: 새로고침 + 로딩 오버레이 제어
+          onRefreshPress={handleRefreshMembers}
+          isRefreshing={isRefreshingMembers}
         />
       </ScrollView>
 
@@ -203,20 +222,19 @@ export default function HomeScreen() {
         }}
       />
 
-      {/* 인앱 가이드 모달 (공통) */}
+      {/* 가이드 필요하면 주석 해제 */}
       {/* {currentGuide && (
-          <GuideModal
-            visible={isGuideVisible}
-            step={guideStep}
-            totalSteps={totalSteps}
-            title={currentGuide.title}
-            description={currentGuide.description}
-            onNext={nextStep}
-            onSkip={skipGuide}
-          />
-        )} */}
+        <GuideModal
+          visible={isGuideVisible}
+          step={guideStep}
+          totalSteps={totalSteps}
+          title={currentGuide.title}
+          description={currentGuide.description}
+          onNext={nextStep}
+          onSkip={skipGuide}
+        />
+      )} */}
     </View>
-    // </SwipeNavigator>
   );
 }
 
@@ -224,7 +242,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFC84D',
-    
   },
   scrollContent: {
     width: '100%',
@@ -239,7 +256,6 @@ const styles = StyleSheet.create({
     left: '-60%',
     height: '100%',
     backgroundColor: '#F9F9F9',
-    
     borderTopLeftRadius: getResponsiveWidth(600),
     borderTopRightRadius: getResponsiveWidth(600),
     zIndex: -1,

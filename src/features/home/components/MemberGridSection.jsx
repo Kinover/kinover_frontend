@@ -1,4 +1,4 @@
-import React, {useMemo} from 'react';
+import React, {useMemo, useCallback, useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   useWindowDimensions,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 
 import {
@@ -20,22 +21,24 @@ import {EMPTY_STYLE} from 'styles/style';
 import DropShadow from 'react-native-drop-shadow';
 
 const AVATAR = getResponsiveIconSize(60);
-const DOT_BASE = Math.max(10, Math.round(AVATAR * 0.28));
 
 export default function MemberGridSection({
   members = [],
   onUserPress,
   onAddPress,
+  onRefreshPress, // ✅ async 함수(권장): await onRefreshPress()
   onlineUserIds = [],
   lastActiveMap = {},
   chunkSize = 3,
+
+  // ✅ 선택: 부모에서 로딩을 제어하고 싶으면 이거 넘겨줘도 됨
+  isRefreshing: isRefreshingProp = null,
 }) {
   const {width: screenWidth, height: screenHeight} = useWindowDimensions();
 
   const marginH = getResponsiveWidth(14);
   const paddingH = getResponsiveWidth(8);
 
-  // ✅ “진짜” 간격은 wrapRow에서 관리 (아이템에 marginRight 주지 않기)
   const gapX = getResponsiveWidth(8);
   const gapY = getResponsiveHeight(14);
 
@@ -48,145 +51,169 @@ export default function MemberGridSection({
     return new Set((onlineUserIds || []).map(v => String(v)));
   }, [onlineUserIds]);
 
-  const renderUser = (member, index) => {
-    const rawId = member.userId ?? member.id ?? member._id ?? index;
-    const memberId = String(rawId);
+  // ✅ 로컬 로딩 상태(부모에서 안 주면 여기서 제어)
+  const [isRefreshingLocal, setIsRefreshingLocal] = useState(false);
+  const isRefreshing =
+    typeof isRefreshingProp === 'boolean'
+      ? isRefreshingProp
+      : isRefreshingLocal;
 
-    const isOnline = onlineSet.has(memberId);
-    const lastRaw = lastActiveMap?.[memberId];
+  const handleRefresh = useCallback(async () => {
+    if (!onRefreshPress) return;
+    if (isRefreshing) return;
 
-    const statusText = isOnline
-      ? '접속중'
-      : lastRaw
-      ? `${formatRelativeKorean(lastRaw)} 접속`
-      : null;
-
-    // emotion 처리 (24시간 이내만 표시)
-    let finalEmotion = member.emotion;
-    if (!member.emotionUpdatedAt) {
-      finalEmotion = null;
-    } else {
-      const updatedTime = new Date(member.emotionUpdatedAt).getTime();
-      if (!Number.isNaN(updatedTime)) {
-        const diff = Date.now() - updatedTime;
-        if (diff > 24 * 60 * 60 * 1000) finalEmotion = null;
-      } else {
-        finalEmotion = null;
-      }
+    try {
+      setIsRefreshingLocal(true);
+      await onRefreshPress?.(); // ✅ 부모에서 실제 fetch/dispatch 끝날 때 resolve 되게
+    } finally {
+      setIsRefreshingLocal(false);
     }
+  }, [onRefreshPress, isRefreshing]);
 
-    const emotionImage = finalEmotion ? getEmotionImage(finalEmotion) : null;
+  const renderUser = useCallback(
+    (member, index) => {
+      const rawId = member.userId ?? member.id ?? member._id ?? index;
+      const memberId = String(rawId);
 
-    // ✅ itemWidth에 맞춰 아바타 영역이 줄어들도록 (최대는 기존 크기 유지)
-    const shellMax = AVATAR * 1.36;
-    const shellSize = Math.min(shellMax, itemWidth); // 칸이 작으면 칸에 맞춤
+      const isOnline = onlineSet.has(memberId);
+      const lastRaw = lastActiveMap?.[memberId];
 
-    const ringSize = shellSize * 0.985;
-    const imageSizeWithEmotion = shellSize * 0.74;
-    const imageSizeNoEmotion = shellSize * 0.88;
+      const statusText = isOnline
+        ? '접속중'
+        : lastRaw
+        ? `${formatRelativeKorean(lastRaw)} 접속`
+        : null;
 
-    const dot = Math.max(8, Math.round(shellSize * 0.22));
-    const dotTop = Math.max(2, Math.round(shellSize * 0.07));
-    const dotRight = Math.max(2, Math.round(shellSize * 0.07));
+      let finalEmotion = member.emotion;
+      if (!member.emotionUpdatedAt) {
+        finalEmotion = null;
+      } else {
+        const updatedTime = new Date(member.emotionUpdatedAt).getTime();
+        if (!Number.isNaN(updatedTime)) {
+          const diff = Date.now() - updatedTime;
+          if (diff > 24 * 60 * 60 * 1000) finalEmotion = null;
+        } else {
+          finalEmotion = null;
+        }
+      }
 
-    return (
-      <TouchableOpacity
-        key={memberId}
-        style={[styles.user, {width: itemWidth}]}
-        onPress={() => onUserPress?.(member)}
-        activeOpacity={0.85}>
-        <View
-          style={[styles.avatarShell, {width: shellSize, height: shellSize}]}>
+      const emotionImage = finalEmotion ? getEmotionImage(finalEmotion) : null;
+
+      const shellMax = AVATAR * 1.36;
+      const shellSize = Math.min(shellMax, itemWidth);
+
+      const ringSize = shellSize * 0.985;
+      const imageSizeWithEmotion = shellSize * 0.74;
+      const imageSizeNoEmotion = shellSize * 0.88;
+
+      const dot = Math.max(8, Math.round(shellSize * 0.22));
+      const dotTop = Math.max(2, Math.round(shellSize * 0.07));
+      const dotRight = Math.max(2, Math.round(shellSize * 0.07));
+
+      return (
+        <TouchableOpacity
+          key={memberId}
+          style={[styles.user, {width: itemWidth}]}
+          onPress={() => onUserPress?.(member)}
+          activeOpacity={0.85}
+          disabled={isRefreshing}>
           <View
-            style={[
-              styles.avatarRing,
-              {width: ringSize, height: ringSize, borderRadius: ringSize / 2},
-              isOnline && styles.avatarRingOnline,
-            ]}
-          />
-
-          {!!emotionImage && (
-            <Image
-              source={emotionImage}
+            style={[styles.avatarShell, {width: shellSize, height: shellSize}]}>
+            <View
               style={[
-                styles.emotionImage,
+                styles.avatarRing,
                 {
-                  width: shellSize * 1.18,
-                  height: shellSize * 1.18,
+                  width: ringSize,
+                  height: ringSize,
+                  borderRadius: ringSize / 2,
+                },
+                isOnline && styles.avatarRingOnline,
+              ]}
+            />
+
+            {!!emotionImage && (
+              <Image
+                source={emotionImage}
+                style={[
+                  styles.emotionImage,
+                  {width: shellSize * 1.18, height: shellSize * 1.18},
+                ]}
+              />
+            )}
+
+            <Image
+              source={
+                member.image
+                  ? {uri: member.image}
+                  : require('../../../assets/images/kino-blue.png')
+              }
+              style={[
+                styles.userImage,
+                {
+                  width: emotionImage
+                    ? imageSizeWithEmotion
+                    : imageSizeNoEmotion,
+                  height: emotionImage
+                    ? imageSizeWithEmotion
+                    : imageSizeNoEmotion,
                 },
               ]}
             />
-          )}
 
-          <Image
-            source={
-              member.image
-                ? {uri: member.image}
-                : require('../../../assets/images/kino-blue.png')
-            }
-            style={[
-              styles.userImage,
-              {
-                width: emotionImage ? imageSizeWithEmotion : imageSizeNoEmotion,
-                height: emotionImage
-                  ? imageSizeWithEmotion
-                  : imageSizeNoEmotion,
-              },
-            ]}
-          />
-
-          <View
-            style={[
-              styles.dotBorder,
-              {
-                width: dot + 2,
-                height: dot + 2,
-                borderRadius: (dot + 2) / 2,
-                top: dotTop - 1,
-                right: dotRight - 1,
-              },
-            ]}
-          />
-          <View
-            style={[
-              styles.dotBase,
-              isOnline ? styles.onlineDot : styles.offlineDot,
-              {
-                width: dot,
-                height: dot,
-                borderRadius: dot / 2,
-                top: dotTop,
-                right: dotRight,
-              },
-            ]}
-          />
-        </View>
-
-        <View style={styles.infoCol}>
-          <Text style={styles.userName} numberOfLines={1}>
-            {member.name}
-          </Text>
-
-          {!!statusText && (
             <View
               style={[
-                styles.statusPill,
-                isOnline ? styles.statusPillOnline : styles.statusPillOffline,
-              ]}>
-              <Text
+                styles.dotBorder,
+                {
+                  width: dot + 2,
+                  height: dot + 2,
+                  borderRadius: (dot + 2) / 2,
+                  top: dotTop - 1,
+                  right: dotRight - 1,
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.dotBase,
+                isOnline ? styles.onlineDot : styles.offlineDot,
+                {
+                  width: dot,
+                  height: dot,
+                  borderRadius: dot / 2,
+                  top: dotTop,
+                  right: dotRight,
+                },
+              ]}
+            />
+          </View>
+
+          <View style={styles.infoCol}>
+            <Text style={styles.userName} numberOfLines={1}>
+              {member.name}
+            </Text>
+
+            {!!statusText && (
+              <View
                 style={[
-                  styles.statusText,
-                  isOnline ? styles.statusOnline : styles.statusOffline,
-                ]}
-                numberOfLines={1}>
-                {statusText}
-              </Text>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
-    );
-  };
+                  styles.statusPill,
+                  isOnline ? styles.statusPillOnline : styles.statusPillOffline,
+                ]}>
+                <Text
+                  style={[
+                    styles.statusText,
+                    isOnline ? styles.statusOnline : styles.statusOffline,
+                  ]}
+                  numberOfLines={1}>
+                  {statusText}
+                </Text>
+              </View>
+            )}
+          </View>
+        </TouchableOpacity>
+      );
+    },
+    [itemWidth, lastActiveMap, onlineSet, onUserPress, isRefreshing],
+  );
 
   return (
     <DropShadow
@@ -198,7 +225,6 @@ export default function MemberGridSection({
           shadowOpacity: 0.12,
           shadowRadius: 5,
         },
-        
       ]}>
       <View
         style={[
@@ -215,48 +241,80 @@ export default function MemberGridSection({
             <Text style={styles.sectionSubtitle}>실시간 접속 상태</Text>
           </View>
 
-          <TouchableOpacity
-            onPress={onAddPress}
-            hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
-            activeOpacity={0.85}
-            style={styles.addButton}>
-            <Image
-              source={require('../../../assets/icons/add-contact.png')}
-              style={styles.addIcon}
-            />
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              onPress={handleRefresh}
+              disabled={!onRefreshPress || isRefreshing}
+              hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+              activeOpacity={0.85}
+              style={[styles.iconButton, isRefreshing && {opacity: 0.6}]}>
+              {isRefreshing ? (
+                <ActivityIndicator size="small" color="#6B7280" />
+              ) : (
+                <Image
+                  source={require('../../../assets/icons/refresh.png')}
+                  style={styles.iconButtonIcon}
+                />
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={onAddPress}
+              disabled={isRefreshing}
+              hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+              activeOpacity={0.85}
+              style={[styles.iconButton, isRefreshing && {opacity: 0.6}]}>
+              <Image
+                source={require('../../../assets/icons/add-contact.png')}
+                style={styles.iconButtonIcon}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {isEmptyState ? (
-          <View style={styles.emptyStateContainer}>
-            <Text style={styles.emptyDesc}>
-              {
-                '아직 가족 모임이 완성되지 않았어요\n가족을 초대해서 모임을 완성해보세요!'
-              }
-            </Text>
+        {/* ✅ “멤버 뜨는 그곳”에 로딩중 오버레이 */}
+        <View style={styles.gridArea}>
+          {isEmptyState ? (
+            <View style={styles.emptyStateContainer}>
+              <Text style={styles.emptyDesc}>
+                {
+                  '아직 가족 모임이 완성되지 않았어요\n가족을 초대해서 모임을 완성해보세요!'
+                }
+              </Text>
 
-            {!!onAddPress && (
-              <TouchableOpacity
-                onPress={onAddPress}
-                activeOpacity={0.9}
-                style={styles.emptyCta}>
-                <Text style={styles.emptyCtaText}>가족 초대하기</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        ) : (
-          <View
-            style={[
-              styles.wrapRow,
-              {
-                width: innerContentWidth,
-                columnGap: gapX,
-                rowGap: gapY,
-              },
-            ]}>
-            {members.map(renderUser)}
-          </View>
-        )}
+              {!!onAddPress && (
+                <TouchableOpacity
+                  onPress={onAddPress}
+                  disabled={isRefreshing}
+                  activeOpacity={0.9}
+                  style={[styles.emptyCta, isRefreshing && {opacity: 0.6}]}>
+                  <Text style={styles.emptyCtaText}>가족 초대하기</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : (
+            <View
+              style={[
+                styles.wrapRow,
+                {
+                  width: innerContentWidth,
+                  columnGap: gapX,
+                  rowGap: gapY,
+                },
+              ]}>
+              {members.map(renderUser)}
+            </View>
+          )}
+
+          {isRefreshing && (
+            <View style={styles.loadingOverlay} pointerEvents="auto">
+              <View style={styles.loadingCard}>
+                <ActivityIndicator size="small" color="#111827" />
+                <Text style={styles.loadingText}>로딩중…</Text>
+              </View>
+            </View>
+          )}
+        </View>
       </View>
     </DropShadow>
   );
@@ -296,7 +354,13 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
 
-  addButton: {
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(8),
+  },
+
+  iconButton: {
     width: getResponsiveIconSize(36),
     height: getResponsiveIconSize(36),
     borderRadius: 999,
@@ -306,10 +370,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ECEFF3',
   },
-  addIcon: {
+  iconButtonIcon: {
     width: '50%',
     height: '50%',
     tintColor: '#6B7280',
+    resizeMode: 'contain',
+  },
+
+  gridArea: {
+    position: 'relative',
   },
 
   wrapRow: {
@@ -403,6 +472,31 @@ const styles = StyleSheet.create({
   },
   statusOnline: {color: '#16A34A'},
   statusOffline: {color: '#6B7280'},
+
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(255,255,255,0.55)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: getResponsiveIconSize(16),
+  },
+  loadingCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(8),
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(8),
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(17,24,39,0.08)',
+  },
+  loadingText: {
+    fontSize: getResponsiveFontSize(12.5),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#111827',
+    letterSpacing: -0.1,
+  },
 
   emptyStateContainer: {
     flex: 1,
