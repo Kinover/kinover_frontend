@@ -29,7 +29,7 @@ import {
 
 import useHideTabBar from '../../../hooks/useHideTabBar';
 import ToastModal from '../../../components/ToastModal';
-import {HEADER_STYLES} from 'styles/style';
+import {EMPTY_STYLE, HEADER_STYLES, SETTING_STYLES} from 'styles/style';
 
 import {
   convertPhUriToFileUri,
@@ -299,9 +299,6 @@ export default function ImageSelectPage() {
       ) : (
         <View style={styles.emptyBox}>
           <Text style={styles.emptyTitle}>선택된 사진이 없어요</Text>
-          <Text style={styles.emptyDesc}>
-            갤러리에서 고르면 여기서 순서만 툭툭 바꾸면 돼요.
-          </Text>
 
           <TouchableOpacity
             onPress={openSystemAlbum}
@@ -462,7 +459,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyTitle: {
-    fontSize: getResponsiveFontSize(15),
+    fontSize: EMPTY_STYLE.emptyFontSize,
     fontWeight: '900',
     color: '#222',
     marginBottom: getResponsiveHeight(6),
@@ -478,7 +475,7 @@ const styles = StyleSheet.create({
   emptyCta: {
     paddingHorizontal: getResponsiveWidth(16),
     paddingVertical: getResponsiveHeight(10),
-    borderRadius: getResponsiveWidth(14),
+    borderRadius: getResponsiveWidth(25),
     backgroundColor: '#FFC84D',
   },
   emptyCtaText: {

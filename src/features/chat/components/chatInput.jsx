@@ -27,7 +27,7 @@ import {useDispatch} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
 import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
-// import LinearGradient from 'react-native-linear-gradient';
+import LinearGradient from 'react-native-linear-gradient';
 import RNBlobUtil from 'react-native-blob-util';
 
 import {

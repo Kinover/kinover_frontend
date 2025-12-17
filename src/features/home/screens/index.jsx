@@ -224,6 +224,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#FFC84D',
+    
   },
   scrollContent: {
     width: '100%',
@@ -238,6 +239,7 @@ const styles = StyleSheet.create({
     left: '-60%',
     height: '100%',
     backgroundColor: '#F9F9F9',
+    
     borderTopLeftRadius: getResponsiveWidth(600),
     borderTopRightRadius: getResponsiveWidth(600),
     zIndex: -1,

@@ -7,7 +7,6 @@ import {
   Image,
   StyleSheet,
   PanResponder,
-  Platform,
 } from 'react-native';
 import {
   getResponsiveFontSize,
@@ -24,19 +23,9 @@ import {useWeekDates} from '../hooks/useWeekDates';
 import {useScheduleCountStyle} from '../hooks/useScheduleCountStyle';
 import {useYMDPicker} from '../hooks/useYMDPicker';
 
-const RADIUS = 14;
+import DropShadow from 'react-native-drop-shadow';
 
-const shadowWrapStyle = Platform.select({
-  ios: {
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    shadowOffset: {width: 0, height: 6},
-  },
-  android: {
-    elevation: 6,
-  },
-});
+const RADIUS = 14;
 
 const normalizeBirthToKey = birth => {
   if (!birth) return null;
@@ -70,7 +59,6 @@ export default function CalendarToggle({
   familyMembers = null,
   birthdayMap: birthdayMapProp = null,
 
-  // ✅ 추가: 모드 외부 제어 (이거 넣으면 리마운트돼도 절대 안 튐)
   mode: modeProp = null,
   setMode: setModeProp = null,
 }) {
@@ -117,13 +105,13 @@ export default function CalendarToggle({
     const day = date.getDay();
     return day === 0 || !!holidayMap?.[key];
   };
+
   // =========================
   // ✅ 좌우 스와이프로 월/주 변경
   // =========================
   const SWIPE_THRESHOLD = getResponsiveWidth(40);
   const SWIPE_VS_SCROLL_SLOP = 6;
 
-  // ✅ panResponder는 1번만 만들되, 실제 실행할 로직은 ref로 "최신 함수"를 넣어준다
   const swipePrevRef = useRef(() => {});
   const swipeNextRef = useRef(() => {});
 
@@ -159,7 +147,18 @@ export default function CalendarToggle({
 
   return (
     <View style={[styles.container, {paddingHorizontal: OUTER_HPAD}]}>
-      <View style={[styles.shadowWrap, shadowWrapStyle, {width: cardWidth}]}>
+      {/* ✅ Header Card - DropShadow */}
+      <DropShadow
+        style={[
+          styles.shadowBox,
+          {
+            width: cardWidth,
+            shadowColor: '#000',
+            shadowOffset: {width: 0, height: 4},
+            shadowOpacity: 0.05,
+            shadowRadius: 5,
+          },
+        ]}>
         <View style={styles.cardInnerHeader}>
           <View style={styles.headerLeft}>
             <TouchableOpacity
@@ -215,124 +214,136 @@ export default function CalendarToggle({
             </View>
           </View>
         </View>
-      </View>
+      </DropShadow>
 
-      <View
-        {...panResponder.panHandlers}
-        style={[styles.shadowWrap, shadowWrapStyle, {width: cardWidth}]}>
-        <View style={styles.cardInnerCalendar}>
-          <View style={[styles.weekRow, {width: gridWidth}]}>
-            {['일', '월', '화', '수', '목', '금', '토'].map(d => {
-              const isRestDow = d === '일';
-              return (
-                <View key={d} style={[styles.weekCell, {width: cellSize}]}>
-                  <Text
-                    style={[styles.dayText, isRestDow && styles.sundayText]}>
-                    {d}
-                  </Text>
-                </View>
-              );
-            })}
+      {/* ✅ Calendar Card - DropShadow + swipe handlers */}
+      <DropShadow
+        style={[
+          styles.shadowBox,
+          {
+            width: cardWidth,
+            shadowColor: '#000',
+            shadowOffset: {width: 0, height: 3},
+            shadowOpacity: 0.12,
+            shadowRadius: 5,
+          },
+        ]}>
+        <View {...panResponder.panHandlers} style={styles.calendarTouchWrap}>
+          <View style={styles.cardInnerCalendar}>
+            <View style={[styles.weekRow, {width: gridWidth}]}>
+              {['일', '월', '화', '수', '목', '금', '토'].map(d => {
+                const isRestDow = d === '일';
+                return (
+                  <View key={d} style={[styles.weekCell, {width: cellSize}]}>
+                    <Text
+                      style={[styles.dayText, isRestDow && styles.sundayText]}>
+                      {d}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+
+            <View style={styles.divider} />
+
+            {mode === 'month' ? (
+              <View
+                style={[
+                  styles.dateGrid,
+                  {width: gridWidth, columnGap: GAP, rowGap: GAP},
+                ]}>
+                {monthDates.map((item, idx) => {
+                  const count = scheduleCountPerDay[item.key] || 0;
+                  const CIRCLE_SIZE = cellSize * 0.78;
+                  const holiday = isHoliday(item.date);
+
+                  const birthNames = birthdayMap?.[item.key];
+                  const hasBirthday = !!birthNames?.length;
+
+                  return (
+                    <TouchableOpacity
+                      key={idx}
+                      style={[
+                        styles.dayCell,
+                        {width: cellSize, height: cellSize},
+                      ]}
+                      onPress={() => setSelectedDate(item.date)}
+                      hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
+                      <View
+                        style={[
+                          styles.innerCircle,
+                          hasBirthday && styles.birthdayRing,
+                          {
+                            width: CIRCLE_SIZE,
+                            height: CIRCLE_SIZE,
+                            borderRadius: CIRCLE_SIZE / 2,
+                          },
+                          getCountColorStyle(count),
+                          item.isSelected && styles.selectedBox,
+                          !item.isCurrentMonth && {opacity: 0.35},
+                        ]}>
+                        <Text
+                          style={[
+                            styles.dateText,
+                            item.isSelected && styles.selectedText,
+                            holiday && styles.holidayText,
+                          ]}>
+                          {item.date.getDate()}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            ) : (
+              <View
+                style={[styles.weekGrid, {width: gridWidth, columnGap: GAP}]}>
+                {weekDates.map((item, idx) => {
+                  const count = scheduleCountPerDay[item.key] || 0;
+                  const CIRCLE_SIZE = cellSize * 0.78;
+                  const holiday = isHoliday(item.date);
+
+                  const birthNames = birthdayMap?.[item.key];
+                  const hasBirthday = !!birthNames?.length;
+
+                  return (
+                    <TouchableOpacity
+                      key={idx}
+                      style={[
+                        styles.dayCell,
+                        {width: cellSize, height: cellSize},
+                      ]}
+                      onPress={() => setSelectedDate(item.date)}
+                      hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
+                      <View
+                        style={[
+                          styles.innerCircle,
+                          hasBirthday && styles.birthdayRing,
+                          {
+                            width: CIRCLE_SIZE,
+                            height: CIRCLE_SIZE,
+                            borderRadius: CIRCLE_SIZE / 2,
+                          },
+                          getCountColorStyle(count),
+                          item.isSelected && styles.selectedBox,
+                        ]}>
+                        <Text
+                          style={[
+                            styles.dateText,
+                            item.isSelected && styles.selectedText,
+                            holiday && styles.holidayText,
+                          ]}>
+                          {item.date.getDate()}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            )}
           </View>
-
-          <View style={styles.divider} />
-
-          {mode === 'month' ? (
-            <View
-              style={[
-                styles.dateGrid,
-                {width: gridWidth, columnGap: GAP, rowGap: GAP},
-              ]}>
-              {monthDates.map((item, idx) => {
-                const count = scheduleCountPerDay[item.key] || 0;
-                const CIRCLE_SIZE = cellSize * 0.78;
-                const holiday = isHoliday(item.date);
-
-                const birthNames = birthdayMap?.[item.key];
-                const hasBirthday = !!birthNames?.length;
-
-                return (
-                  <TouchableOpacity
-                    key={idx}
-                    style={[
-                      styles.dayCell,
-                      {width: cellSize, height: cellSize},
-                    ]}
-                    onPress={() => setSelectedDate(item.date)}
-                    hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
-                    <View
-                      style={[
-                        styles.innerCircle,
-                        hasBirthday && styles.birthdayRing,
-                        {
-                          width: CIRCLE_SIZE,
-                          height: CIRCLE_SIZE,
-                          borderRadius: CIRCLE_SIZE / 2,
-                        },
-                        getCountColorStyle(count),
-                        item.isSelected && styles.selectedBox,
-                        !item.isCurrentMonth && {opacity: 0.35},
-                      ]}>
-                      <Text
-                        style={[
-                          styles.dateText,
-                          item.isSelected && styles.selectedText,
-                          holiday && styles.holidayText,
-                        ]}>
-                        {item.date.getDate()}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          ) : (
-            <View style={[styles.weekGrid, {width: gridWidth, columnGap: GAP}]}>
-              {weekDates.map((item, idx) => {
-                const count = scheduleCountPerDay[item.key] || 0;
-                const CIRCLE_SIZE = cellSize * 0.78;
-                const holiday = isHoliday(item.date);
-
-                const birthNames = birthdayMap?.[item.key];
-                const hasBirthday = !!birthNames?.length;
-
-                return (
-                  <TouchableOpacity
-                    key={idx}
-                    style={[
-                      styles.dayCell,
-                      {width: cellSize, height: cellSize},
-                    ]}
-                    onPress={() => setSelectedDate(item.date)}
-                    hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
-                    <View
-                      style={[
-                        styles.innerCircle,
-                        hasBirthday && styles.birthdayRing,
-                        {
-                          width: CIRCLE_SIZE,
-                          height: CIRCLE_SIZE,
-                          borderRadius: CIRCLE_SIZE / 2,
-                        },
-                        getCountColorStyle(count),
-                        item.isSelected && styles.selectedBox,
-                      ]}>
-                      <Text
-                        style={[
-                          styles.dateText,
-                          item.isSelected && styles.selectedText,
-                          holiday && styles.holidayText,
-                        ]}>
-                        {item.date.getDate()}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
         </View>
-      </View>
+      </DropShadow>
 
       <YMDPickerModal
         visible={showYMD}
@@ -354,12 +365,21 @@ const styles = StyleSheet.create({
     paddingTop: getResponsiveHeight(8),
     marginBottom: getResponsiveHeight(5),
   },
-  shadowWrap: {
+
+  // ✅ DropShadow wrapper base
+  shadowBox: {
     alignSelf: 'center',
     borderRadius: RADIUS,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     marginBottom: getResponsiveHeight(10),
   },
+
+  // ✅ swipe handler용 래퍼(그림자랑 분리)
+  calendarTouchWrap: {
+    width: '100%',
+    borderRadius: RADIUS,
+  },
+
   cardInnerHeader: {
     borderRadius: RADIUS,
     overflow: 'hidden',
@@ -383,6 +403,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(17,24,39,0.08)',
   },
+
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -444,6 +465,7 @@ const styles = StyleSheet.create({
     color: '#111827',
     fontFamily: 'Pretendard-SemiBold',
   },
+
   weekRow: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -462,6 +484,7 @@ const styles = StyleSheet.create({
   sundayText: {
     color: '#EF4444',
   },
+
   divider: {
     height: 1,
     width: '100%',
@@ -469,6 +492,7 @@ const styles = StyleSheet.create({
     marginTop: getResponsiveHeight(6),
     marginBottom: getResponsiveHeight(10),
   },
+
   dayCell: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -484,6 +508,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF3D2',
     borderColor: '#FFB000',
   },
+
   dateGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -491,6 +516,7 @@ const styles = StyleSheet.create({
   weekGrid: {
     flexDirection: 'row',
   },
+
   dateText: {
     fontFamily: 'Pretendard-Medium',
     fontSize: getResponsiveFontSize(13.5),
@@ -504,6 +530,7 @@ const styles = StyleSheet.create({
     color: '#EF4444',
     fontFamily: 'Pretendard-SemiBold',
   },
+
   birthdayRing: {
     borderWidth: 1.5,
     borderColor: '#FF7A7A',

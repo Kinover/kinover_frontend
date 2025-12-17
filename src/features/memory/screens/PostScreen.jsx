@@ -1,7 +1,8 @@
 /* eslint-disable react-native/no-inline-styles */
 /* eslint-disable react/no-unstable-nested-components */
-// PostPage.jsx
-import React, {useEffect, useRef, useMemo, useState} from 'react';
+// src/screens/memory/PostPage.jsx
+
+import React, {useEffect, useRef, useMemo} from 'react';
 import {
   Animated,
   Platform,
@@ -10,32 +11,38 @@ import {
   TouchableOpacity,
   View,
   Image,
-  Keyboard,
+  Dimensions,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {useDispatch, useSelector} from 'react-redux';
+
 import {fetchPostByIdThunk} from '../store/memoryThunk';
+import useHideTabBar from '../../../hooks/useHideTabBar';
+
+import ImageDeleteModal from '../components/DeleteOptionModal';
+import usePostPageViewModel from '../hooks/usePostPageViewModel';
+import ImageCarousel from '../components/ImageCarousel';
+import ToastModal from '../../../components/ToastModal';
+import CustomModal from '../../../components/CustomModal';
 
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../../utils/responsive';
-import useHideTabBar from '../../../hooks/useHideTabBar';
-import ImageDeleteModal from '../components/DeleteOptionModal';
-import CommentSection from '../components/CommentSection';
-import DescriptionSection from '../components/DescriptionSection';
-import usePostPageViewModel from '../hooks/usePostPageViewModel';
-import {useDispatch, useSelector} from 'react-redux';
-import ImageCarousel from '../components/ImageCarousel';
-import ToastModal from '../../../components/ToastModal';
-import CustomModal from '../../../components/CustomModal';
 import {HEADER_STYLES} from 'styles/style';
+
+import MemoryDetailBottomSheet from '../components/MemoryDetailBottomSheet';
+
+const {height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 export default function PostPage({route}) {
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const didInitIndexRef = useRef(false);
+
+  const detailSheetRef = useRef(null);
 
   const {
     memory: preloadedPost,
@@ -52,6 +59,7 @@ export default function PostPage({route}) {
     postId ? state.memory?.postsById?.[postId] : null,
   );
   const memory = preloadedPost || postFromStore;
+
   const categoryList = useSelector(state => state.category.categoryList);
 
   const safeMemory = useMemo(
@@ -70,25 +78,62 @@ export default function PostPage({route}) {
 
   const vm = usePostPageViewModel(safeMemory);
 
-  // 🔥 키보드 높이 상태
-  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  useHideTabBar();
 
+  // ✅ 게시글 데이터 없으면 fetch
   useEffect(() => {
     if (!memory && postId) {
       dispatch(fetchPostByIdThunk(postId));
     }
   }, [postId, memory, dispatch]);
 
+  // ✅ 초기 이미지 인덱스 세팅
   useEffect(() => {
     if (didInitIndexRef.current) return;
     if (imageIndex != null) {
       vm.setCurrentImageIndex(imageIndex);
     }
     didInitIndexRef.current = true;
-  }, [imageIndex, vm.setCurrentImageIndex]); // ✅ vm 말고 setter만
+  }, [imageIndex, vm]);
 
-  useHideTabBar();
+  // ✅ 헤더 타이틀/삭제 버튼
+  useEffect(() => {
+    const matchedCategory = categoryList.find(
+      cat => cat.categoryId === memory?.categoryId,
+    );
+    const categoryTitle = matchedCategory?.title || '게시물';
 
+    navigation.setOptions({
+      headerTitle: () => (
+        <Text style={styles.headerTitle}>{categoryTitle}</Text>
+      ),
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => vm.setShowDeleteOptions(prev => !prev)}>
+          <Image
+            source={require('../../../assets/images/trash.png')}
+            style={styles.headerIcon}
+          />
+        </TouchableOpacity>
+      ),
+    });
+  }, [memory, categoryList, navigation, vm]);
+
+  useEffect(() => {
+    if (vm.isImageFullScreen) return; // 풀스크린이면 안 열기
+    if (!detailSheetRef.current) return;
+
+    // ✅ 모달 오픈
+    detailSheetRef.current.present();
+  }, [vm.isImageFullScreen]);
+
+  useEffect(() => {
+    if (vm.isImageFullScreen) {
+      detailSheetRef.current?.dismiss();
+    }
+  }, [vm.isImageFullScreen]);
+
+  // ✅ 삭제 옵션 드롭다운 애니메이션
   const deleteAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -117,138 +162,42 @@ export default function PostPage({route}) {
     ],
   };
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const [showCommentSection, setShowCommentSection] = useState(false);
-
-  useEffect(() => {
-    if (vm.commentIndex) {
-      setTimeout(() => {
-        setShowCommentSection(true);
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 250,
-          useNativeDriver: true,
-        }).start();
-      }, 100);
-    } else {
-      Animated.timing(fadeAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start(() => setShowCommentSection(false));
-    }
-  }, [fadeAnim, vm.commentIndex]);
-
-  useEffect(() => {
-    const matchedCategory = categoryList.find(
-      cat => cat.categoryId === memory?.categoryId,
-    );
-    const categoryTitle = matchedCategory?.title || '게시물';
-
-    navigation.setOptions({
-      headerTitle: () => (
-        <Text style={styles.headerTitle}>{categoryTitle}</Text>
-      ),
-      headerRight: () => (
-        <TouchableOpacity
-          onPress={() => vm.setShowDeleteOptions(prev => !prev)}>
-          <Image
-            source={require('../../../assets/images/trash.png')}
-            style={styles.headerIcon}
-          />
-        </TouchableOpacity>
-      ),
-    });
-  }, [memory, categoryList, navigation, vm]);
-
-  // 🔥 키보드 이벤트로 댓글 시트 전체를 keyboardHeight만큼 올리기
-  useEffect(() => {
-    const showEvt =
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvt =
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-
-    const showSub = Keyboard.addListener(showEvt, e => {
-      setKeyboardHeight(e.endCoordinates?.height || 0);
-    });
-
-    const hideSub = Keyboard.addListener(hideEvt, () => {
-      setKeyboardHeight(0);
-    });
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
-
   if (!memory) {
     return <SafeAreaView style={styles.container} />;
   }
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
-      {/* 상단 이미지 캐러셀 */}
+    <SafeAreaView edges={['bottom']} style={styles.container}>
+      {/* ✅ 상단 이미지 캐러셀 */}
       {vm.localImages?.length > 0 && (
-        <View style={{flex: 1}}>
+        <View style={styles.carouselContainer}>
           <ImageCarousel
-            commentCount={memory.commentCount}
-            // ✅ 기존 localImages -> localMedia로 바꿔서 전달
-            localMedia={vm.localImages.map(uri => ({
-              uri,
-              type: /\.mp4(\?|$)/i.test(String(uri)) ? 'video' : 'image',
-            }))}
+            localImages={vm.localImages}
             currentIndex={vm.currentImageIndex}
             setCurrentIndex={vm.setCurrentImageIndex}
-            setCommentIndex={vm.setCommentIndex}
-            onMediaPress={() => vm.setIsImageFullScreen(true)}
-            isCommentMode={vm.commentIndex}
             isFullScreen={vm.isImageFullScreen}
             setIsFullScreen={vm.setIsImageFullScreen}
           />
         </View>
       )}
 
-      {/* 설명 섹션 (댓글 모드 / 풀스크린 아닐 때만) */}
-      {!vm.commentIndex && !vm.isImageFullScreen && (
-        <View style={styles.descriptionWrapper}>
-          <DescriptionSection
-            memory={memory}
-            onPressComment={() => vm.setCommentIndex(true)}
-          />
-        </View>
+      {/* ✅ 설명 + 댓글 통합 바텀시트 (풀스크린이면 숨김) */}
+      {!vm.isImageFullScreen && (
+        <MemoryDetailBottomSheet
+          sheetRef={detailSheetRef}
+          memory={memory}
+          commentList={vm.commentList}
+          user={vm.user}
+          commentText={vm.commentText}
+          onChangeComment={vm.setCommentText}
+          onSubmitComment={vm.handleSendComment}
+          onDeleteComment={commentId => vm.openDeleteCommentModal(commentId)}
+          initialIndex={0}
+          snapPoints={['15%', '85%']}
+        />
       )}
 
-      {/* 댓글 섹션 — absolute + bottom: keyboardHeight */}
-      {showCommentSection && !vm.isImageFullScreen && (
-        <Animated.View
-          style={[
-            styles.commentWrapper,
-            {
-              bottom: keyboardHeight, // 🔥 키보드 높이만큼 전체 시트 위로
-              opacity: fadeAnim,
-              transform: [
-                {
-                  translateY: fadeAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [20, 0],
-                  }),
-                },
-              ],
-            },
-          ]}>
-          <CommentSection
-            commentList={vm.commentList}
-            commentText={vm.commentText}
-            onChangeComment={vm.setCommentText}
-            onSubmitComment={vm.handleSendComment}
-            user={vm.user}
-            onDeleteComment={commentId => vm.openDeleteCommentModal(commentId)}
-          />
-        </Animated.View>
-      )}
-
-      {/* 댓글 삭제 모달 */}
+      {/* ✅ 댓글 삭제 모달 */}
       {vm.commentDeleteModalVisible && (
         <CustomModal
           visible={vm.commentDeleteModalVisible}
@@ -265,7 +214,7 @@ export default function PostPage({route}) {
         />
       )}
 
-      {/* 게시물/사진 삭제 모달 */}
+      {/* ✅ 게시물/사진 삭제 모달 */}
       {vm.deleteModalVisible && (
         <ImageDeleteModal
           visible={vm.deleteModalVisible}
@@ -299,7 +248,7 @@ export default function PostPage({route}) {
         </ImageDeleteModal>
       )}
 
-      {/* 삭제 옵션 드롭다운 */}
+      {/* ✅ 삭제 옵션 드롭다운 */}
       <Animated.View style={[styles.deleteOptions, deleteOptionsStyle]}>
         {['게시물', '사진'].map(option => (
           <TouchableOpacity
@@ -318,7 +267,7 @@ export default function PostPage({route}) {
         <View style={styles.divider} />
       </Animated.View>
 
-      {/* 토스트 */}
+      {/* ✅ 토스트 */}
       <ToastModal
         visible={vm.toastVisible}
         message={vm.toastMessage}
@@ -330,7 +279,8 @@ export default function PostPage({route}) {
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F9F9F9'},
+  container: {flex: 1, backgroundColor: '#F9F9F9', height: SCREEN_HEIGHT},
+
   headerTitle: {
     fontSize: HEADER_STYLES.defaultTitleFontSize,
     fontFamily: HEADER_STYLES.defaultTitleFontFamily,
@@ -338,26 +288,18 @@ const styles = StyleSheet.create({
     lineHeight: getResponsiveHeight(26),
     textAlign: 'center',
   },
-  descriptionWrapper: {
-    width: '100%',
-    height: Platform.OS === 'ios' ? '22%' : '24%',
-    zIndex: 1,
+
+  carouselContainer: {
+    flex: 1,
   },
-  commentWrapper: {
-    position: 'absolute',
-    bottom: 0, // 기본값, 위에서 bottom: keyboardHeight로 덮어씀
-    width: '100%',
-    height: Platform.OS === 'android' ? '56.5%' : '59%',
-    backgroundColor: '#F9F9F9',
-    zIndex: 2,
-  },
+
   deleteOptions: {
     position: 'absolute',
     top: getResponsiveHeight(10),
     right: getResponsiveWidth(20),
     backgroundColor: 'rgba(220,220,220,0.86)',
     borderRadius: 7,
-    zIndex: 11,
+    zIndex: 50,
     paddingHorizontal: 5,
   },
   deleteOptionButton: {
@@ -374,6 +316,7 @@ const styles = StyleSheet.create({
     bottom: '50%',
     backgroundColor: 'lightgray',
   },
+
   modalTitle: {
     color: 'black',
     fontSize:
@@ -385,6 +328,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: getResponsiveHeight(8),
   },
+
   headerIcon: {
     width: HEADER_STYLES.headerRightIconWidth,
     height: HEADER_STYLES.headerRightIconHeight,

@@ -17,9 +17,9 @@ export const BACKGROUND_COLORS = {
 
 export const BUTTON_STYLES = {
   // saveBg: '#FFC84D',
-  // saveBg: '#111827',
+  saveBg: '#111827',
   // saveBg: '#23314F',
-  saveBg: '#1F2B45',
+  // saveBg: '#1F2B45',
   cancelBg: ' #FFFFFF',
   fontSize: getResponsiveFontSize(14),
   fontFamily: 'Pretendard-Medium',

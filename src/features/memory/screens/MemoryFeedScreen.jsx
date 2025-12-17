@@ -260,9 +260,9 @@ export default function MemoryFeed({
         key={memory.postId}
         style={{
           shadowColor: '#000',
-          shadowOffset: {width: 0, height: 0},
+          shadowOffset: {width: 0, height: 3},
           shadowOpacity: 0.12,
-          shadowRadius: 10,
+          shadowRadius: 4,
         }}>
         <View
           style={{
