@@ -1,24 +1,26 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/features/post/components/MemoryDetailBottomSheet.js
 
-import React, {useMemo, useCallback, useState, useEffect} from 'react';
+import React, {useMemo, useCallback, useState, useEffect, useRef} from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   Platform,
+  Animated,
 } from 'react-native';
-import {BottomSheetTextInput} from '@gorhom/bottom-sheet';
 
-import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
-import {BottomSheetFlatList} from '@gorhom/bottom-sheet';
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetFlatList,
+  BottomSheetTextInput,
+} from '@gorhom/bottom-sheet';
 
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import FastImage from '@d11/react-native-fast-image';
 import {Swipeable} from 'react-native-gesture-handler';
-import {Animated} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 
 import {
@@ -41,47 +43,71 @@ export default function MemoryDetailBottomSheet({
   onChangeComment,
   onSubmitComment,
   onDeleteComment,
-  initialIndex = 0,
   snapPoints: snapPointsProp,
   backgroundColor = '#F9F9F9',
 }) {
   const insets = useSafeAreaInsets();
 
-  const snapPoints = useMemo(() => {
-    return snapPointsProp || ['22%', '80%'];
-  }, [snapPointsProp]);
+  const snapPoints = useMemo(
+    () => snapPointsProp || ['80%'],
+    [snapPointsProp],
+  );
 
-  // 그라데이션 표시용(댓글 리스트 스크롤 기준)
+  const [inputFocused, setInputFocused] = useState(false);
   const [showTopFade, setShowTopFade] = useState(false);
   const [showBottomFade, setShowBottomFade] = useState(false);
 
-  const handleListScroll = useCallback(e => {
-    const {
-      contentOffset: {y},
-      layoutMeasurement,
-      contentSize,
-    } = e.nativeEvent;
+  const lastFadeRef = useRef({top: false, bottom: false});
+  const scrollThrottleRef = useRef(0);
 
-    const visibleHeight = layoutMeasurement.height;
-    const totalHeight = contentSize.height;
-    const threshold = 10;
+  const handleListScroll = useCallback(
+    e => {
+      if (inputFocused) return;
 
-    setShowTopFade(y > threshold);
-    setShowBottomFade(y + visibleHeight < totalHeight - threshold);
-  }, []);
+      const now = Date.now();
+      if (now - scrollThrottleRef.current < 80) return;
+      scrollThrottleRef.current = now;
+
+      const {
+        contentOffset: {y},
+        layoutMeasurement,
+        contentSize,
+      } = e.nativeEvent;
+
+      const visibleHeight = layoutMeasurement.height;
+      const totalHeight = contentSize.height;
+      const threshold = 10;
+
+      const nextTop = y > threshold;
+      const nextBottom = y + visibleHeight < totalHeight - threshold;
+
+      if (lastFadeRef.current.top !== nextTop) {
+        lastFadeRef.current.top = nextTop;
+        setShowTopFade(nextTop);
+      }
+      if (lastFadeRef.current.bottom !== nextBottom) {
+        lastFadeRef.current.bottom = nextBottom;
+        setShowBottomFade(nextBottom);
+      }
+    },
+    [inputFocused],
+  );
+
+  useEffect(() => {
+    if (!commentList.length) {
+      setShowTopFade(false);
+      setShowBottomFade(false);
+    }
+  }, [commentList.length]);
 
   const renderBackdrop = useCallback(
     props => (
       <BottomSheetBackdrop
         {...props}
-        // ✅ 1단(최대 확장)에서 더 진하게
-        opacity={0.45}
-        // ✅ index 1일 때부터 나타남 (snapPoints[1])
-        appearsOnIndex={1}
-        // ✅ index 0으로 내려가면 사라짐
-        disappearsOnIndex={0}
-        // ✅ 탭하면 0으로 접히게
-        pressBehavior="collapse"
+        opacity={0.65}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        pressBehavior="close"
       />
     ),
     [],
@@ -89,7 +115,8 @@ export default function MemoryDetailBottomSheet({
 
   const isMyComment = useCallback(
     c =>
-      user?.userId && (c.authorId === user.userId || c.userId === user.userId),
+      user?.userId &&
+      (c.authorId === user.userId || c.userId === user.userId),
     [user?.userId],
   );
 
@@ -101,18 +128,11 @@ export default function MemoryDetailBottomSheet({
         extrapolate: 'clamp',
       });
 
-      const opacity = progress.interpolate({
-        inputRange: [0, 0.3, 1],
-        outputRange: [0, 0.6, 1],
-        extrapolate: 'clamp',
-      });
-
-      // ✅ scale 애니메이션은 기기별로 꼬일 수 있어서 제거(안전)
       return (
         <View style={styles.rightActionContainer}>
-          <Animated.View style={{flex: 1, transform: [{translateX}], opacity}}>
+          <Animated.View style={{flex: 1, transform: [{translateX}]}}>
             <TouchableOpacity
-              style={[styles.deleteAction, {flex: 1}]}
+              style={styles.deleteAction}
               activeOpacity={0.85}
               onPress={() => onDeleteComment?.(commentId)}>
               <Text style={styles.deleteActionText}>삭제</Text>
@@ -124,48 +144,18 @@ export default function MemoryDetailBottomSheet({
     [onDeleteComment],
   );
 
-  const DescriptionHeader = useMemo(() => {
-    if (!memory) return null;
-
-    return (
-      <View style={[styles.headerWrap, {backgroundColor}]}>
-        <View style={styles.headerTopRow}>
-          <View style={styles.writerRow}>
-            <Image
-              style={styles.writerImage}
-              source={{uri: memory.authorImage}}
-            />
-            <Text style={styles.writerName}>{memory.authorName}</Text>
-          </View>
-        </View>
-
-        <View style={styles.descriptionBlock}>
-          <Text style={styles.descriptionText}>{memory.content}</Text>
-        </View>
-
-        <View style={styles.sectionDivider} />
-
-        <View style={styles.commentTitleRow}>
-          <Text style={styles.commentTitle}>댓글</Text>
-          <Text style={styles.commentCount}>{commentList.length}</Text>
-        </View>
-      </View>
-    );
-  }, [memory, commentList.length, backgroundColor]);
-
   const renderCommentItem = useCallback(
     ({item}) => {
       const mine = isMyComment(item);
 
       return (
         <Swipeable
+          enabled={mine}
+          overshootRight={false}
+          rightThreshold={ACTION_W / 2}
           renderRightActions={progress =>
             mine ? renderRightActions(item.commentId, progress) : null
-          }
-          enabled={!!mine}
-          overshootRight={false}
-          friction={2}
-          rightThreshold={ACTION_W / 2}>
+          }>
           <View style={styles.commentBox}>
             <View style={styles.commentRow}>
               <FastImage
@@ -189,87 +179,59 @@ export default function MemoryDetailBottomSheet({
     [isMyComment, renderRightActions],
   );
 
-  const EmptyComments = useMemo(() => {
-    return (
-      <View style={[styles.emptyContainer, {backgroundColor}]}>
-        <Text style={styles.emptyText}>
-          {'아직 댓글이 없어요.\n첫 댓글을 남겨보세요!'}
-        </Text>
-      </View>
-    );
-  }, [backgroundColor]);
-
-  // 리스트 짧을 때 그라데이션 초기화
-  useEffect(() => {
-    if (!commentList?.length) {
-      setShowTopFade(false);
-      setShowBottomFade(false);
-    }
-  }, [commentList?.length]);
-
   const bottomSafe =
     Platform.OS === 'android'
       ? getResponsiveHeight(18)
       : Math.max(insets.bottom, getResponsiveHeight(10));
 
-  const inputWrapperBottom = bottomSafe;
-  const listPaddingBottom =
-    inputWrapperBottom + INPUT_H + getResponsiveHeight(14);
+  const listPaddingBottom = bottomSafe + INPUT_H + getResponsiveHeight(14);
 
   return (
     <BottomSheetModal
       ref={sheetRef}
-      //   index={initialIndex}
       snapPoints={snapPoints}
       enablePanDownToClose
       backdropComponent={renderBackdrop}
-      style={styles.sheetContainer} // ✅ 핵심
-      backgroundStyle={[styles.sheetBackground, {backgroundColor}]}
-      handleIndicatorStyle={{backgroundColor: '#D6D6D6'}}
       keyboardBehavior="interactive"
-      keyboardBlurBehavior="restore">
-      <View style={[styles.sheetInner, {backgroundColor}]}>
-        {/* ✅ 1) 설명은 고정 */}
-        {DescriptionHeader}
+      keyboardBlurBehavior="restore"
+      backgroundStyle={[styles.sheetBackground, {backgroundColor}]}>
+      <View style={styles.sheetInner}>
+        <BottomSheetFlatList
+          data={commentList}
+          keyExtractor={item => String(item.commentId)}
+          renderItem={renderCommentItem}
+          onScroll={handleListScroll}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{paddingBottom: listPaddingBottom}}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>
+                아직 댓글이 없어요.
+                {'\n'}첫 댓글을 남겨보세요!
+              </Text>
+            </View>
+          }
+        />
 
-        {/* ✅ 2) 댓글만 스크롤 */}
-        <View style={styles.listArea}>
-          <BottomSheetFlatList
-            data={commentList}
-            keyExtractor={item => String(item.commentId)}
-            renderItem={renderCommentItem}
-            ListEmptyComponent={EmptyComments}
-            showsVerticalScrollIndicator={false}
-            onScroll={handleListScroll}
-            scrollEventThrottle={16}
-            contentContainerStyle={{
-              paddingBottom: listPaddingBottom, // ✅ 입력창에 안 가리게
-            }}
+        {showTopFade && (
+          <LinearGradient
+            pointerEvents="none"
+            colors={[backgroundColor, 'rgba(249,249,249,0)']}
+            style={styles.topFade}
           />
+        )}
 
-          {showTopFade && (
-            <LinearGradient
-              pointerEvents="none"
-              colors={[backgroundColor, 'rgba(249,249,249,0)']}
-              style={styles.topFade}
-            />
-          )}
+        {showBottomFade && (
+          <LinearGradient
+            pointerEvents="none"
+            colors={['rgba(249,249,249,0)', backgroundColor]}
+            style={styles.bottomFade}
+          />
+        )}
 
-          {showBottomFade && (
-            <LinearGradient
-              pointerEvents="none"
-              colors={['rgba(249,249,249,0)', backgroundColor]}
-              style={styles.bottomFade}
-            />
-          )}
-        </View>
-
-        {/* ✅ 3) 입력창은 하단 고정 */}
-        <SafeAreaView
-          edges={['bottom']}
-          pointerEvents="box-none"
-          style={styles.inputOverlaySafe}>
-          <View style={[styles.inputOverlay, {bottom: inputWrapperBottom}]}>
+        <SafeAreaView edges={['bottom']} style={styles.inputSafe}>
+          <View style={[styles.inputWrap, {bottom: bottomSafe}]}>
             <View style={styles.commentInputContainer}>
               <BottomSheetTextInput
                 style={styles.commentInput}
@@ -277,10 +239,11 @@ export default function MemoryDetailBottomSheet({
                 placeholderTextColor="#D9D9D9"
                 value={commentText}
                 onChangeText={onChangeComment}
-                onSubmitEditing={onSubmitComment}
-                returnKeyType="send"
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
+                returnKeyType="default"
               />
-              <TouchableOpacity onPress={onSubmitComment} activeOpacity={0.85}>
+              <TouchableOpacity onPress={onSubmitComment} activeOpacity={0.9}>
                 <FastImage
                   style={styles.commentSendBt}
                   source={require('../../../assets/icons/paperPlaneTilt.png')}
@@ -298,118 +261,36 @@ function formatPreviewTime(time) {
   if (!time) return '';
   const date = new Date(time);
   const now = new Date();
+
   const isToday =
     date.getFullYear() === now.getFullYear() &&
     date.getMonth() === now.getMonth() &&
     date.getDate() === now.getDate();
 
   if (isToday) {
-    let hours = date.getHours();
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const ampm = hours < 12 ? '오전' : '오후';
-    if (hours === 0) hours = 12;
-    else if (hours > 12) hours -= 12;
-    return `${ampm} ${hours}:${minutes}`;
+    let h = date.getHours();
+    const m = String(date.getMinutes()).padStart(2, '0');
+    const ampm = h < 12 ? '오전' : '오후';
+    if (h === 0) h = 12;
+    else if (h > 12) h -= 12;
+    return `${ampm} ${h}:${m}`;
   }
 
   return `${date.getMonth() + 1}월 ${date.getDate()}일`;
 }
 
 const styles = StyleSheet.create({
-  sheetInner: {
-    flex: 1,
-  },
-
-  // ======= Header (고정) =======
-  headerWrap: {
-    paddingTop: getResponsiveHeight(0),
-    paddingBottom: getResponsiveHeight(10),
-  },
-  headerTopRow: {
-    width: '100%',
-    paddingHorizontal: getResponsiveWidth(20),
-    height: getResponsiveHeight(44),
-    justifyContent: 'center',
-  },
-  writerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(10),
-  },
-  writerImage: {
-    width:
-      Platform.OS === 'ios' ? getResponsiveWidth(39) : getResponsiveWidth(36.5),
-    height:
-      Platform.OS === 'ios' ? getResponsiveWidth(39) : getResponsiveWidth(36.5),
-    borderRadius: getResponsiveWidth(20),
-    backgroundColor: 'white',
-    borderColor: 'gray',
-    borderWidth: getResponsiveWidth(0.25),
-  },
-  writerName: {
-    color: 'black',
-    fontSize:
-      Platform.OS === 'ios'
-        ? getResponsiveFontSize(18)
-        : getResponsiveFontSize(16),
-    fontFamily: 'Pretendard-Medium',
-    lineHeight:
-      Platform.OS === 'ios' ? getResponsiveHeight(26) : getResponsiveHeight(22),
-  },
-  descriptionBlock: {
-    paddingHorizontal: getResponsiveWidth(25),
-    paddingTop: getResponsiveHeight(2),
-    paddingBottom: getResponsiveHeight(40),
-  },
-  descriptionText: {
-    color: 'black',
-    fontFamily: 'Pretendard-Light',
-    fontSize:
-      Platform.OS === 'ios'
-        ? getResponsiveFontSize(15)
-        : getResponsiveFontSize(14),
-    lineHeight:
-      Platform.OS === 'ios' ? getResponsiveHeight(24) : getResponsiveHeight(22),
-  },
-  sectionDivider: {
-    height: 1,
-    backgroundColor: 'rgba(0,0,0,0.06)',
-    marginHorizontal: getResponsiveWidth(20),
-    marginBottom: getResponsiveHeight(10),
-  },
-  commentTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(8),
-    paddingHorizontal: getResponsiveWidth(20),
-    paddingBottom: getResponsiveHeight(6),
-  },
-  commentTitle: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(14),
-    color: '#111',
-  },
-  commentCount: {
-    fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(12),
-    color: '#777',
-    marginTop: 1,
-  },
-
-  // ======= List (댓글만 스크롤) =======
-  listArea: {
-    flex: 1,
-    position: 'relative',
+  sheetInner: {flex: 1},
+  sheetBackground: {
+    borderTopLeftRadius: getResponsiveWidth(18),
+    borderTopRightRadius: getResponsiveWidth(18),
   },
 
   commentBox: {
     paddingHorizontal: getResponsiveWidth(20),
     paddingVertical: getResponsiveHeight(10),
   },
-  commentRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
+  commentRow: {flexDirection: 'row'},
   commentWriterImage: {
     width: getResponsiveWidth(34),
     height: getResponsiveWidth(34),
@@ -417,66 +298,53 @@ const styles = StyleSheet.create({
     backgroundColor: '#D9D9D9',
     marginRight: getResponsiveWidth(10),
   },
-  commentTextCol: {
-    flex: 1,
-    flexDirection: 'column',
-  },
+  commentTextCol: {flex: 1},
   nameTimeRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    gap: getResponsiveWidth(10),
   },
   commentWriter: {
     fontFamily: 'Pretendard-Regular',
     fontWeight: '600',
     fontSize: getResponsiveFontSize(14),
     color: '#000',
-    lineHeight: getResponsiveHeight(20),
   },
   timeText: {
     fontSize: getResponsiveFontSize(11),
     color: '#999',
-    marginTop: 2,
   },
   commentContent: {
     marginTop: getResponsiveHeight(4),
-    flexWrap: 'wrap',
     fontFamily: 'Pretendard-Light',
     fontSize: getResponsiveFontSize(13),
-    color: '#000',
     lineHeight: 20,
+    color: '#000',
   },
 
   emptyContainer: {
     paddingTop: getResponsiveHeight(30),
-    paddingBottom: getResponsiveHeight(20),
-    justifyContent: 'center',
     alignItems: 'center',
   },
   emptyText: {
+    textAlign: 'center',
     fontSize: EMPTY_STYLE.emptyFontSize,
     fontFamily: EMPTY_STYLE.emptyFontFamily,
     color: EMPTY_STYLE.emptyColor,
-    textAlign: 'center',
   },
 
   rightActionContainer: {
     width: ACTION_W,
     justifyContent: 'center',
-    alignItems: 'stretch',
   },
   deleteAction: {
-    width: '100%',
+    flex: 1,
     backgroundColor: '#FF3B30',
     justifyContent: 'center',
     alignItems: 'center',
-    flex: 1,
   },
   deleteActionText: {
     color: '#FFF',
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(14),
   },
 
   topFade: {
@@ -494,61 +362,39 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(26),
   },
 
-  // ======= Input (하단 고정) =======
-  inputOverlaySafe: {
+  inputSafe: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
   },
-  inputOverlay: {
+  inputWrap: {
     position: 'absolute',
     left: 0,
     right: 0,
     paddingTop: getResponsiveHeight(8),
-    paddingBottom: getResponsiveHeight(6),
   },
   commentInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     width: '90%',
     alignSelf: 'center',
-    backgroundColor: 'white',
-    paddingHorizontal: INPUT_SIDE_PAD,
+    backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#FFC84D',
     borderRadius: getResponsiveWidth(10),
+    paddingHorizontal: INPUT_SIDE_PAD,
     height: INPUT_H,
   },
   commentInput: {
     flex: 1,
     fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-Regular',
-    paddingVertical: getResponsiveHeight(8),
+    lineHeight: getResponsiveHeight(20),
+    color: '#000',
   },
   commentSendBt: {
     width: getResponsiveWidth(24),
     height: getResponsiveWidth(24),
-    resizeMode: 'contain',
-  },
-
-  sheetContainer: {
-    ...(Platform.OS === 'ios'
-      ? {
-          shadowColor: '#000',
-          shadowOffset: {width: 0, height: -10},
-          shadowOpacity: 0.12,
-          shadowRadius: 16,
-        }
-      : {
-          elevation: 18,
-        }),
-  },
-
-  // ✅ 실제 바텀시트 배경
-  sheetBackground: {
-    borderTopLeftRadius: getResponsiveWidth(18),
-    borderTopRightRadius: getResponsiveWidth(18),
-    overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
   },
 });

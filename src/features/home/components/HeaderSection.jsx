@@ -47,23 +47,26 @@ const getEmotionImage = emotion => {
 const AVATAR = getResponsiveIconSize(92);
 const CARD_RADIUS = getResponsiveIconSize(16);
 
-// ✅ 레이아웃 흔들림 방지용: “최대”로 보여질 때 크기를 기준으로 자리 고정
+// ✅ 레이아웃 흔들림 방지용
 const SCALE_NO_EMOTION = 1.3;
-const BASE_DISPLAY = AVATAR * SCALE_NO_EMOTION; // 감정 없을 때 커지는 최대치
+const BASE_DISPLAY = AVATAR * SCALE_NO_EMOTION;
 const BASE_RING = BASE_DISPLAY * 0.82;
 const BASE_AREA = BASE_DISPLAY * 1.05;
 const BASE_OVERLAP = -BASE_DISPLAY * 0.299;
 
 export default function HeaderSection({user, onUserPress}) {
   const navigation = useNavigation();
-  const {width: SCREEN_WIDTH} = useWindowDimensions();
+  const {width: screenWidth} = useWindowDimensions();
 
-  const CARD_WIDTH = Math.min(SCREEN_WIDTH * 1, getResponsiveWidth(360));
+  // ✅ MemberGridSection과 동일한 바깥 여백/안쪽 패딩
+  const marginH = getResponsiveWidth(14);
+  const paddingH = getResponsiveWidth(8);
+
+  // ✅ MemberGridSection이 “보이는 폭”이랑 동일
+  const containerWidth = screenWidth - marginH * 2;
 
   const rawEmotion = user?.emotion;
   const emotionKey = rawEmotion ? String(rawEmotion).toUpperCase() : null;
-
-  // ✅ 버그 수정: 감정 있을 때만 이미지 매핑
   const emotionImage = emotionKey ? getEmotionImage(emotionKey) : null;
   const hasEmotion = !!emotionImage;
 
@@ -79,12 +82,10 @@ export default function HeaderSection({user, onUserPress}) {
 
   const nameText = user?.name || '이름';
   const traitText = user?.trait || '이 사람을 한마디로 표현한다면?';
-
-  // ✅ 감정 없을 때만 “이미지 자체”를 확대 (레이아웃 크기는 고정)
   const imageScale = hasEmotion ? 1 : SCALE_NO_EMOTION;
 
   return (
-    <View style={styles.headerContainer}>
+    <View style={[styles.headerContainer, {width: containerWidth}]}>
       {/* 프로필 (자리 고정) */}
       <View
         style={[
@@ -92,7 +93,7 @@ export default function HeaderSection({user, onUserPress}) {
           {
             width: BASE_AREA,
             height: BASE_AREA,
-            marginBottom: BASE_OVERLAP, // ✅ 항상 동일 → 아래 컴포넌트 안 밀림
+            marginBottom: BASE_OVERLAP,
           },
         ]}>
         {!!emotionImage && (
@@ -108,7 +109,6 @@ export default function HeaderSection({user, onUserPress}) {
           />
         )}
 
-        {/* 링/터치영역도 항상 동일 크기 */}
         <View
           style={[
             styles.avatarRing,
@@ -123,11 +123,7 @@ export default function HeaderSection({user, onUserPress}) {
             onPress={() => navigation.navigate('감정상태화면')}
             style={[
               styles.avatarPress,
-              {
-                width: AVATAR,
-                height: AVATAR,
-                borderRadius: AVATAR / 2,
-              },
+              {width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2},
             ]}>
             <Image
               source={profileSource}
@@ -138,7 +134,7 @@ export default function HeaderSection({user, onUserPress}) {
                   width: AVATAR,
                   height: AVATAR,
                   borderRadius: AVATAR / 2,
-                  transform: [{scale: imageScale}], // ✅ 커져도 레이아웃은 그대로
+                  transform: [{scale: imageScale}],
                 },
               ]}
             />
@@ -146,12 +142,12 @@ export default function HeaderSection({user, onUserPress}) {
         </View>
       </View>
 
-      {/* 카드 */}
+      {/* 카드 (MemberGridSection과 동일 폭/패딩 느낌) */}
       <DropShadow
         style={[
           styles.shadowBox,
           {
-            width: CARD_WIDTH,
+            width: '100%',
             shadowColor: '#000',
             shadowOffset: {width: 0, height: 3},
             shadowOpacity: 0.12,
@@ -161,7 +157,12 @@ export default function HeaderSection({user, onUserPress}) {
         <TouchableOpacity
           activeOpacity={0.92}
           onPress={() => onUserPress?.(user)}
-          style={styles.headerCard}>
+          style={[
+            styles.headerCard,
+            {
+              paddingHorizontal: paddingH, // ✅ MemberGridSection과 동일
+            },
+          ]}>
           <Text style={styles.userNameHeader} numberOfLines={1}>
             {nameText}
           </Text>
@@ -179,7 +180,7 @@ const styles = StyleSheet.create({
   headerContainer: {
     position: 'relative',
     alignItems: 'center',
-    width: '100%',
+    alignSelf: 'center',
     marginTop: getResponsiveHeight(34),
     marginBottom: getResponsiveHeight(16),
   },
@@ -202,13 +203,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
-    // borderWidth: 0,
-    // borderColor: '#EEF2F7',
   },
 
   avatarPress: {
     borderRadius: 999,
-    overflow: 'hidden', // ✅ scale로 커져도 원 안에서만 보이게(잘림은 의도된 마스킹)
+    overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -227,7 +226,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingTop: getResponsiveHeight(46),
     paddingBottom: getResponsiveHeight(22),
-    paddingHorizontal: getResponsiveWidth(18),
   },
 
   userNameHeader: {

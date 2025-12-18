@@ -23,7 +23,6 @@ const TABS = [
 
 const BASE_UNDERLINE_WIDTH = 40;
 
-// "2025.01.31 ~ 2025.02.01" → "25.01.31 ~ 25.02.01"
 const formatPeriodLabel = raw => {
   if (!raw) return '';
 
@@ -91,7 +90,6 @@ export default function AnimatedAlbumTabSelector({
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        {/* 탭 */}
         <View style={styles.tabRowContainer}>
           <View style={styles.tabRow}>
             {TABS.map(tab => (
@@ -122,7 +120,6 @@ export default function AnimatedAlbumTabSelector({
           </View>
         </View>
 
-        {/* 기간 버튼 */}
         {onPressDateFilter && (
           <TouchableOpacity
             style={[styles.filterButton, isActive && styles.filterButtonActive]}
@@ -170,19 +167,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 
-  tabRowContainer: {
-    position: 'relative',
-    flexShrink: 1,
-  },
-  tabRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-start',
-    position: 'relative',
-  },
+  tabRowContainer: {position: 'relative', flexShrink: 1},
+  tabRow: {flexDirection: 'row', justifyContent: 'flex-start', position: 'relative'},
 
-  tab: {
-    marginRight: getResponsiveWidth(25),
-  },
+  tab: {marginRight: getResponsiveWidth(25)},
   tabText: {
     textAlign: 'center',
     fontSize: getResponsiveFontSize(18),
@@ -192,7 +180,6 @@ const styles = StyleSheet.create({
     textAlignVertical: 'bottom',
   },
   selectedText: {
-    textAlign: 'center',
     color: '#111827',
     fontWeight: 'bold',
     fontFamily: 'Pretendard-Bold',
@@ -204,10 +191,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#111827',
     position: 'absolute',
     bottom: -10,
-    // left: 0,
   },
 
-  // 기간 버튼
   filterButton: {
     maxWidth: getResponsiveWidth(220),
     paddingHorizontal: getResponsiveWidth(12),
@@ -218,11 +203,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
     gap: getResponsiveWidth(6),
     flexDirection: 'row',
-    // alignItems: 'center',
-    // justifyContent: 'center',
   },
 
-  // ✅ 활성화: 배경 밝게 + 글씨/아이콘 어둡게
   filterButtonActive: {
     borderColor: BUTTON_STYLES.backgroundColor,
     backgroundColor: '#FFFFFF',
@@ -246,7 +228,5 @@ const styles = StyleSheet.create({
     tintColor: '#9CA3AF',
   },
 
-  calendarIconActive: {
-    tintColor: '#111827',
-  },
+  calendarIconActive: {tintColor: '#111827'},
 });

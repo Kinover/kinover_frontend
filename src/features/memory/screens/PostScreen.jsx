@@ -1,115 +1,143 @@
 /* eslint-disable react-native/no-inline-styles */
 /* eslint-disable react/no-unstable-nested-components */
-// src/screens/memory/PostPage.jsx
 
-import React, {useEffect, useRef, useMemo} from 'react';
+import React, {useEffect, useRef, useMemo, useCallback, useState} from 'react';
 import {
-  Animated,
-  Platform,
-  StyleSheet,
+  View,
   Text,
   TouchableOpacity,
-  View,
   Image,
+  StyleSheet,
   Dimensions,
+  ScrollView,
+  Pressable,
+  Platform,
 } from 'react-native';
+import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 import {useNavigation} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
 
-import {fetchPostByIdThunk} from '../store/memoryThunk';
-import useHideTabBar from '../../../hooks/useHideTabBar';
+import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
+import LinearGradient from 'react-native-linear-gradient';
 
-import ImageDeleteModal from '../components/DeleteOptionModal';
+import {fetchPostByIdThunk} from '../store/memoryThunk';
+import {setMemorySelectedTab} from '../store/memorySlice';
+
+import useHideTabBar from '../../../hooks/useHideTabBar';
 import usePostPageViewModel from '../hooks/usePostPageViewModel';
+
 import ImageCarousel from '../components/ImageCarousel';
+import MemoryDetailBottomSheet from '../components/MemoryDetailBottomSheet';
 import ToastModal from '../../../components/ToastModal';
-import CustomModal from '../../../components/CustomModal';
 
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
+  getResponsiveIconSize,
   getResponsiveWidth,
 } from '../../../utils/responsive';
 import {HEADER_STYLES} from 'styles/style';
-
-import MemoryDetailBottomSheet from '../components/MemoryDetailBottomSheet';
 
 const {height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 export default function PostPage({route}) {
   const dispatch = useDispatch();
   const navigation = useNavigation();
+
+  const descSheetRef = useRef(null);
+  const commentSheetRef = useRef(null);
   const didInitIndexRef = useRef(false);
 
-  const detailSheetRef = useRef(null);
-
-  const {
-    memory: preloadedPost,
-    postId: paramPostId,
-    imageIndex = 0,
-  } = route.params || {};
-
-  const postId = useMemo(
-    () => preloadedPost?.postId ?? paramPostId,
-    [preloadedPost, paramPostId],
-  );
+  const {postId, imageIndex = 0} = route.params || {};
 
   const postFromStore = useSelector(state =>
     postId ? state.memory?.postsById?.[postId] : null,
   );
-  const memory = preloadedPost || postFromStore;
-
-  const categoryList = useSelector(state => state.category.categoryList);
+  const categoryList = useSelector(state => state.category.categoryList || []);
 
   const safeMemory = useMemo(
     () => ({
-      postId: postId ?? null,
-      categoryId: null,
-      title: '',
+      postId,
+      authorName: '',
+      authorImage: null,
       content: '',
-      imageUrls: [],
-      commentCount: 0,
-      createdAt: null,
-      ...(memory || {}),
+      ...(postFromStore || {}),
     }),
-    [memory, postId],
+    [postFromStore, postId],
   );
 
   const vm = usePostPageViewModel(safeMemory);
 
   useHideTabBar();
 
-  // ✅ 게시글 데이터 없으면 fetch
+  /** ---------------- state: description sheet expanded/collapsed ---------------- */
+  const [descExpanded, setDescExpanded] = useState(false);
+
+  /** ---------------- fetch ---------------- */
   useEffect(() => {
-    if (!memory && postId) {
+    if (postId && !postFromStore) {
       dispatch(fetchPostByIdThunk(postId));
     }
-  }, [postId, memory, dispatch]);
+  }, [postId, postFromStore, dispatch]);
 
-  // ✅ 초기 이미지 인덱스 세팅
   useEffect(() => {
     if (didInitIndexRef.current) return;
-    if (imageIndex != null) {
+    if (Number.isFinite(imageIndex)) {
       vm.setCurrentImageIndex(imageIndex);
     }
     didInitIndexRef.current = true;
   }, [imageIndex, vm]);
 
-  // ✅ 헤더 타이틀/삭제 버튼
+  /** ---------------- header (✅ 투명 헤더) ---------------- */
   useEffect(() => {
-    const matchedCategory = categoryList.find(
-      cat => cat.categoryId === memory?.categoryId,
+    const matched = categoryList.find(
+      c => c.categoryId === safeMemory?.categoryId,
     );
-    const categoryTitle = matchedCategory?.title || '게시물';
 
     navigation.setOptions({
+      headerTransparent: true, // ✅ 핵심
       headerTitle: () => (
-        <Text style={styles.headerTitle}>{categoryTitle}</Text>
+        <Text style={styles.headerTitle}>{matched?.title || '게시물'}</Text>
       ),
+      headerTitleAlign: 'center',
+
+      // ✅ iOS/Android 공통: 배경 투명 + 그림자 제거
+      headerStyle: {
+        backgroundColor: 'transparent',
+      },
+      headerShadowVisible: false, // iOS
+      headerTintColor: '#fff',
+
+      // ✅ Android에서 반투명 상태에서 회색/그림자 생기는 경우 방지
+      headerBackground: () => (
+        <View style={{flex: 1, backgroundColor: 'transparent'}} />
+      ),
+
+      // ✅ 여기 추가
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{paddingHorizontal: getResponsiveWidth(13)}}>
+          <Image
+            source={require('../../../assets/images/leftArrow.png')}
+            style={{
+              width: getResponsiveIconSize(20),
+              height: getResponsiveIconSize(20),
+              tintColor: '#fff', // ✅ 완전 흰색
+              resizeMode: 'contain',
+            }}
+          />
+        </TouchableOpacity>
+      ),
+
       headerRight: () => (
         <TouchableOpacity
-          onPress={() => vm.setShowDeleteOptions(prev => !prev)}>
+          onPress={() => {
+            if (!vm.isImageFullScreen) {
+              vm.setShowDeleteOptions(v => !v);
+            }
+          }}>
           <Image
             source={require('../../../assets/images/trash.png')}
             style={styles.headerIcon}
@@ -117,60 +145,76 @@ export default function PostPage({route}) {
         </TouchableOpacity>
       ),
     });
-  }, [memory, categoryList, navigation, vm]);
+  }, [navigation, categoryList, safeMemory, vm]);
 
-  useEffect(() => {
-    if (vm.isImageFullScreen) return; // 풀스크린이면 안 열기
-    if (!detailSheetRef.current) return;
-
-    // ✅ 모달 오픈
-    detailSheetRef.current.present();
-  }, [vm.isImageFullScreen]);
-
-  useEffect(() => {
-    if (vm.isImageFullScreen) {
-      detailSheetRef.current?.dismiss();
-    }
-  }, [vm.isImageFullScreen]);
-
-  // ✅ 삭제 옵션 드롭다운 애니메이션
-  const deleteAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(deleteAnim, {
-      toValue: vm.showDeleteOptions ? 1 : 0,
-      duration: vm.showDeleteOptions ? 200 : 150,
-      useNativeDriver: true,
-    }).start();
-  }, [deleteAnim, vm.showDeleteOptions]);
-
-  const deleteOptionsStyle = {
-    opacity: deleteAnim,
-    transform: [
-      {
-        translateY: deleteAnim.interpolate({
-          inputRange: [0, 1],
-          outputRange: [-10, 0],
+  /** ---------------- swipe ---------------- */
+  const swipe = useMemo(
+    () =>
+      Gesture.Pan()
+        .activeOffsetX([-24, 24])
+        .onEnd(e => {
+          if (vm.isImageFullScreen) return;
+          if (Math.abs(e.translationX) > 80) {
+            dispatch(
+              setMemorySelectedTab(e.translationX < 0 ? 'album' : 'post'),
+            );
+          }
         }),
-      },
-      {
-        scale: deleteAnim.interpolate({
-          inputRange: [0, 1],
-          outputRange: [0.95, 1],
-        }),
-      },
-    ],
-  };
+    [dispatch, vm.isImageFullScreen],
+  );
 
-  if (!memory) {
-    return <SafeAreaView style={styles.container} />;
-  }
+  /** ---------------- description sheet: always visible, controlled by click only ---------------- */
+  const descSnapPoints = useMemo(() => ['20%', '30%'], []);
+
+  const presentDescSheet = useCallback(() => {
+    descSheetRef.current?.present?.();
+  }, []);
+
+  const applyDescIndex = useCallback(nextExpanded => {
+    const nextIndex = nextExpanded ? 1 : 0;
+    descSheetRef.current?.present?.();
+    descSheetRef.current?.snapToIndex?.(nextIndex);
+  }, []);
+
+  const toggleDescByClick = useCallback(() => {
+    if (vm.isImageFullScreen) return;
+    setDescExpanded(prev => {
+      const next = !prev;
+      applyDescIndex(next);
+      return next;
+    });
+  }, [applyDescIndex, vm.isImageFullScreen]);
+
+  const collapseDesc = useCallback(() => {
+    setDescExpanded(false);
+    applyDescIndex(false);
+  }, [applyDescIndex]);
+
+  useEffect(() => {
+    presentDescSheet();
+    requestAnimationFrame(() => {
+      applyDescIndex(false);
+    });
+  }, [presentDescSheet, applyDescIndex]);
+
+  useEffect(() => {
+    if (vm.isImageFullScreen) collapseDesc();
+  }, [vm.isImageFullScreen, collapseDesc]);
+
+  /** ---------------- comment sheet ---------------- */
+  const openCommentSheet = useCallback(() => {
+    collapseDesc();
+    setTimeout(() => {
+      commentSheetRef.current?.present?.();
+    }, 120);
+  }, [collapseDesc]);
+
+  if (!postFromStore) return <SafeAreaView style={{flex: 1}} />;
 
   return (
-    <SafeAreaView edges={['bottom']} style={styles.container}>
-      {/* ✅ 상단 이미지 캐러셀 */}
-      {vm.localImages?.length > 0 && (
-        <View style={styles.carouselContainer}>
+    <SafeAreaView edges={[]} style={styles.container}>
+      <GestureDetector gesture={swipe}>
+        <View style={{flex: 1}}>
           <ImageCarousel
             localImages={vm.localImages}
             currentIndex={vm.currentImageIndex}
@@ -178,155 +222,135 @@ export default function PostPage({route}) {
             isFullScreen={vm.isImageFullScreen}
             setIsFullScreen={vm.setIsImageFullScreen}
           />
+          {/* 헤더용 그라데이션 오버레이 */}
+          <LinearGradient
+            pointerEvents="none"
+            colors={[
+              'rgba(18,18,18,0.6)',
+              'rgba(18,18,18,0.45)',
+              'rgba(18,18,18,0.25)',
+              'rgba(18,18,18,0.15)',
+              'rgba(18,18,18,0)',
+            ]}
+            locations={[0, 0.2, 0.4, 0.55, 1]}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: getResponsiveHeight(120), // 헤더 높이 + 여유
+              zIndex: 5,
+            }}></LinearGradient>
         </View>
-      )}
+      </GestureDetector>
 
-      {/* ✅ 설명 + 댓글 통합 바텀시트 (풀스크린이면 숨김) */}
+      {/* ---------------- 설명 BottomSheet (항상 존재 / 클릭으로만 확장/축소) ---------------- */}
+      <BottomSheetModal
+        ref={descSheetRef}
+        snapPoints={descSnapPoints}
+        handleIndicatorStyle={{backgroundColor: 'transparent'}}
+        enableContentPanningGesture={false}
+        enableHandlePanningGesture={false}
+        enablePanDownToClose={false}
+        onDismiss={() => {
+          presentDescSheet();
+          applyDescIndex(descExpanded);
+        }}
+        backdropComponent={props => (
+          <BottomSheetBackdrop
+            {...props}
+            appearsOnIndex={1}
+            disappearsOnIndex={0}
+            opacity={0.25}
+            pressBehavior="none"
+          />
+        )}
+        backgroundStyle={{backgroundColor: 'transparent'}}>
+        <Pressable onPress={toggleDescByClick} style={{flex: 1}}>
+          <LinearGradient
+            colors={[
+              'rgba(18,18,18,0)',
+              'rgba(18,18,18,0.2)',
+              'rgba(18,18,18,0.42)',
+              'rgba(18,18,18,0.6)',
+              'rgba(18,18,18,0.76)',
+            ]}
+            locations={[0, 0.3, 0.5, 0.7, 1]}
+            style={styles.descSheet}>
+            <View style={styles.descHeader}>
+              <Image
+                style={styles.avatar}
+                source={
+                  safeMemory.authorImage
+                    ? {uri: safeMemory.authorImage}
+                    : require('../../../assets/images/default.png')
+                }
+              />
+              <Text style={styles.author} numberOfLines={1}>
+                {safeMemory.authorName}
+              </Text>
+
+              <View style={{flex: 1}} />
+
+              <TouchableOpacity
+                onPress={openCommentSheet}
+                activeOpacity={0.85}
+                style={styles.commentBtn}>
+                <Image
+                  source={require('../../../assets/icons/chatCircleDots.png')}
+                  style={{width: '100%', height: '100%'}}
+                />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              scrollEnabled={descExpanded}
+              showsVerticalScrollIndicator={false}>
+              <Text
+                style={styles.descContent}
+                numberOfLines={descExpanded ? undefined : 2}>
+                {safeMemory.content}
+              </Text>
+            </ScrollView>
+          </LinearGradient>
+        </Pressable>
+      </BottomSheetModal>
+
+      {/* ---------------- 댓글 BottomSheet ---------------- */}
       {!vm.isImageFullScreen && (
         <MemoryDetailBottomSheet
-          sheetRef={detailSheetRef}
-          memory={memory}
+          sheetRef={commentSheetRef}
+          memory={safeMemory}
           commentList={vm.commentList}
           user={vm.user}
           commentText={vm.commentText}
           onChangeComment={vm.setCommentText}
           onSubmitComment={vm.handleSendComment}
-          onDeleteComment={commentId => vm.openDeleteCommentModal(commentId)}
-          initialIndex={0}
-          snapPoints={['15%', '85%']}
+          onDeleteComment={id => vm.openDeleteCommentModal(id)}
+          snapPoints={['75%']}
         />
       )}
 
-      {/* ✅ 댓글 삭제 모달 */}
-      {vm.commentDeleteModalVisible && (
-        <CustomModal
-          visible={vm.commentDeleteModalVisible}
-          onClose={() => vm.setCommentDeleteModalVisible(false)}
-          onConfirm={vm.confirmDeleteComment}
-          title="댓글을 삭제할까요?"
-          closeText="취소"
-          confirmText="삭제"
-          buttonBottomStyle={{
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            gap: getResponsiveWidth(10),
-          }}
-        />
-      )}
-
-      {/* ✅ 게시물/사진 삭제 모달 */}
-      {vm.deleteModalVisible && (
-        <ImageDeleteModal
-          visible={vm.deleteModalVisible}
-          onClose={() => vm.setDeleteModalVisible(false)}
-          onConfirm={async () => {
-            vm.setDeleteModalVisible(false);
-            try {
-              if (vm.deleteTarget === '게시물') {
-                await vm.handleDeletePost();
-              } else {
-                await vm.handleDeleteImage();
-              }
-            } catch (e) {
-              console.error('삭제 실패:', e);
-            }
-          }}>
-          <Text style={styles.modalTitle}>
-            {vm.deleteTarget === '게시물'
-              ? '게시물을 삭제할까요?'
-              : '사진을 삭제할까요?'}
-          </Text>
-          <Text
-            style={{
-              fontSize: getResponsiveFontSize(14),
-              color: 'gray',
-              alignSelf: 'center',
-              marginBottom: getResponsiveHeight(7),
-            }}>
-            삭제하면 다시 되돌릴 수 없어요
-          </Text>
-        </ImageDeleteModal>
-      )}
-
-      {/* ✅ 삭제 옵션 드롭다운 */}
-      <Animated.View style={[styles.deleteOptions, deleteOptionsStyle]}>
-        {['게시물', '사진'].map(option => (
-          <TouchableOpacity
-            key={option}
-            style={styles.deleteOptionButton}
-            onPress={() => {
-              vm.setShowDeleteOptions(false);
-              vm.setDeleteTarget(option);
-              vm.setDeleteModalVisible(true);
-            }}>
-            <Text style={styles.deleteOptionText}>
-              {option === '게시물' ? '게시물 전체 삭제' : '이 사진만 삭제'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-        <View style={styles.divider} />
-      </Animated.View>
-
-      {/* ✅ 토스트 */}
       <ToastModal
         visible={vm.toastVisible}
         message={vm.toastMessage}
         onClose={() => vm.setToastVisible(false)}
-        duration={1500}
       />
     </SafeAreaView>
   );
 }
 
+/* ---------------- styles ---------------- */
+
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F9F9F9', height: SCREEN_HEIGHT},
+  container: {flex: 1, backgroundColor: '#000'},
 
   headerTitle: {
     fontSize: HEADER_STYLES.defaultTitleFontSize,
     fontFamily: HEADER_STYLES.defaultTitleFontFamily,
-    color: HEADER_STYLES.defaultTitleFontColor,
+    color: '#fff', // ✅ 투명 헤더 위에서 잘 보이게
     lineHeight: getResponsiveHeight(26),
     textAlign: 'center',
-  },
-
-  carouselContainer: {
-    flex: 1,
-  },
-
-  deleteOptions: {
-    position: 'absolute',
-    top: getResponsiveHeight(10),
-    right: getResponsiveWidth(20),
-    backgroundColor: 'rgba(220,220,220,0.86)',
-    borderRadius: 7,
-    zIndex: 50,
-    paddingHorizontal: 5,
-  },
-  deleteOptionButton: {
-    paddingVertical: getResponsiveHeight(9),
-    paddingHorizontal: getResponsiveWidth(18),
-  },
-  deleteOptionText: {
-    color: 'black',
-    fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-Light',
-  },
-  divider: {
-    height: 1,
-    bottom: '50%',
-    backgroundColor: 'lightgray',
-  },
-
-  modalTitle: {
-    color: 'black',
-    fontSize:
-      Platform.OS === 'android'
-        ? getResponsiveFontSize(17)
-        : getResponsiveFontSize(18),
-    fontWeight: '700',
-    fontFamily: 'Pretendard-SemiBold',
-    textAlign: 'center',
-    marginVertical: getResponsiveHeight(8),
   },
 
   headerIcon: {
@@ -334,5 +358,45 @@ const styles = StyleSheet.create({
     height: HEADER_STYLES.headerRightIconHeight,
     resizeMode: 'contain',
     marginRight: HEADER_STYLES.headerRightIconRightPadding,
+    tintColor: '#fff', // ✅ 아이콘도 흰색
+  },
+
+  descSheet: {
+    flex: 1,
+    paddingHorizontal: getResponsiveWidth(16),
+    paddingTop: getResponsiveHeight(40),
+    borderTopLeftRadius: getResponsiveWidth(22),
+    borderTopRightRadius: getResponsiveWidth(22),
+  },
+
+  descHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: getResponsiveHeight(10),
+  },
+
+  avatar: {
+    width: getResponsiveWidth(28),
+    height: getResponsiveWidth(28),
+    borderRadius: getResponsiveWidth(14),
+  },
+
+  author: {
+    marginLeft: getResponsiveWidth(8),
+    color: 'white',
+    fontSize: getResponsiveFontSize(15),
+    fontFamily: 'Pretendard-SemiBold',
+  },
+
+  commentBtn: {
+    width: getResponsiveIconSize(26),
+    height: getResponsiveIconSize(26),
+  },
+
+  descContent: {
+    color: 'rgba(255,255,255,0.92)',
+    fontSize: getResponsiveFontSize(14),
+    lineHeight: getResponsiveHeight(22),
+    fontFamily: 'Pretendard-Medium',
   },
 });

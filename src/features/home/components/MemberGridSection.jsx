@@ -1,4 +1,4 @@
-import React, {useMemo, useCallback, useState, useEffect} from 'react';
+import React, {useMemo, useCallback, useState} from 'react';
 import {
   View,
   Text,
@@ -41,6 +41,9 @@ export default function MemberGridSection({
 
   const gapX = getResponsiveWidth(8);
   const gapY = getResponsiveHeight(14);
+
+  // ✅ 카드(섀도우 포함) 전체 폭: Empty여도 항상 유지
+  const containerWidth = screenWidth - marginH * 2;
 
   const innerContentWidth = screenWidth - marginH * 2 - paddingH * 2;
   const itemWidth = (innerContentWidth - gapX * (chunkSize - 1)) / chunkSize;
@@ -220,6 +223,7 @@ export default function MemberGridSection({
       style={[
         styles.shadowWrap,
         {
+          width: containerWidth, // ✅ Empty여도 폭 고정
           shadowColor: '#000',
           shadowOffset: {width: 0, height: 3},
           shadowOpacity: 0.12,
@@ -230,7 +234,7 @@ export default function MemberGridSection({
         style={[
           styles.bodyContainer,
           {
-            minWidth: '87%',
+            width: '100%', // ✅ DropShadow 폭을 꽉 채움
             paddingHorizontal: paddingH,
             minHeight: screenHeight - getResponsiveHeight(470),
           },
@@ -242,22 +246,6 @@ export default function MemberGridSection({
           </View>
 
           <View style={styles.headerButtons}>
-            <TouchableOpacity
-              onPress={handleRefresh}
-              disabled={!onRefreshPress || isRefreshing}
-              hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
-              activeOpacity={0.85}
-              style={[styles.iconButton, isRefreshing && {opacity: 0.6}]}>
-              {isRefreshing ? (
-                <ActivityIndicator size="small" color="#6B7280" />
-              ) : (
-                <Image
-                  source={require('../../../assets/icons/refresh.png')}
-                  style={styles.iconButtonIcon}
-                />
-              )}
-            </TouchableOpacity>
-
             <TouchableOpacity
               onPress={onAddPress}
               disabled={isRefreshing}
@@ -281,16 +269,6 @@ export default function MemberGridSection({
                   '아직 가족 모임이 완성되지 않았어요\n가족을 초대해서 모임을 완성해보세요!'
                 }
               </Text>
-
-              {!!onAddPress && (
-                <TouchableOpacity
-                  onPress={onAddPress}
-                  disabled={isRefreshing}
-                  activeOpacity={0.9}
-                  style={[styles.emptyCta, isRefreshing && {opacity: 0.6}]}>
-                  <Text style={styles.emptyCtaText}>가족 초대하기</Text>
-                </TouchableOpacity>
-              )}
             </View>
           ) : (
             <View
@@ -324,9 +302,11 @@ const styles = StyleSheet.create({
   shadowWrap: {
     position: 'relative',
     alignItems: 'center',
+    alignSelf: 'center', // ✅ 가운데 정렬 유지
   },
 
   bodyContainer: {
+    width: '100%', // ✅ Empty여도 폭 유지
     backgroundColor: '#FFFFFF',
     borderRadius: getResponsiveIconSize(16),
     paddingTop: getResponsiveHeight(16),
@@ -503,8 +483,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: getResponsiveHeight(18),
-    paddingBottom: getResponsiveHeight(44),
+    paddingTop: '25%',
     paddingHorizontal: getResponsiveWidth(18),
   },
   emptyDesc: {
@@ -512,8 +491,6 @@ const styles = StyleSheet.create({
     fontFamily: EMPTY_STYLE.emptyFontFamily,
     color: EMPTY_STYLE.emptyColor,
     textAlign: 'center',
-    marginBottom: getResponsiveHeight(14),
-    lineHeight: getResponsiveHeight(20),
   },
   emptyCta: {
     paddingHorizontal: getResponsiveWidth(16),
