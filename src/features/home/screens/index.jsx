@@ -1,6 +1,12 @@
 // src/features/home/screens/HomeScreen.jsx
 import React, {useRef, useEffect, useState, useCallback} from 'react';
-import {View, StyleSheet, ScrollView} from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+  Platform,
+} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -11,10 +17,7 @@ import {fetchFamilyThunk, fetchFamilyStatusThunk} from '../store/familyThunk';
 import {fetchFamilyUserListThunk} from '../store/familyUserThunk';
 import {modifyUserThunk} from '../store/userThunk';
 
-import {
-  getResponsiveWidth,
-  getResponsiveHeight,
-} from '../../../utils/responsive';
+import {getResponsiveWidth, getResponsiveHeight} from '../../../utils/responsive';
 
 import HeaderSection from '../components/HeaderSection';
 import MemberGridSection from '../components/MemberGridSection';
@@ -28,33 +31,8 @@ import {
 import useWebSocketStatus from '../../../hooks/useWebSocketStatus';
 import useFamilyStatusSocket from '../../../hooks/useFamilyStatusSocket';
 
-import useGuide from 'hooks/useGuide';
-import GuideModal from 'components/GuideModal';
-
-const GUIDE_STORAGE_KEY = 'HOME_GUIDE_SHOWN_V1';
-
-const GUIDE_STEPS = [
-  {
-    title: '프로필 카드',
-    description:
-      '상단의 프로필 카드를 눌러 자신의 이름, 한 줄 소개, 프로필 사진을 편집할 수 있어요.',
-  },
-  {
-    title: '감정 상태 선택',
-    description:
-      '프로필 사진을 눌러 오늘의 감정을 선택하고 가족과 기분을 공유해보세요.',
-  },
-  {
-    title: '접속 상태 확인',
-    description:
-      '가족이 현재 접속 중인지, 마지막으로 활동한 시간까지 한눈에 확인할 수 있어요.',
-  },
-  {
-    title: '가족 정보 관리',
-    description:
-      '가족 카드를 눌러 구성원 정보를 수정하고, + 버튼으로 초대 코드를 공유할 수 있어요.',
-  },
-];
+// import useGuide from 'hooks/useGuide';
+// import GuideModal from 'components/GuideModal';
 
 export default function HomeScreen() {
   const dispatch = useDispatch();
@@ -69,16 +47,18 @@ export default function HomeScreen() {
   const [isVisible, setIsVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // ✅ 새로고침 로딩 상태 (멤버 영역 오버레이용)
-  const [isRefreshingMembers, setIsRefreshingMembers] = useState(false);
+  // ✅ Pull-to-refresh 상태
+  const [refreshing, setRefreshing] = useState(false);
+
+  // ✅ “최초 로딩 완료 여부” (0명이어도 완료로 봐야 함)
+  const [didInitialLoad, setDidInitialLoad] = useState(false);
 
   const familyLoaded = !!family?.familyId;
-  const membersLoaded = familyUserList.length > 0;
-  const isLoading = !familyLoaded || !membersLoaded;
 
-  const familyMembers = familyUserList.filter(m => m.userId !== user.userId);
+  // ✅ 홈에서 보여줄 멤버: 본인 제외
+  const familyMembers = (familyUserList || []).filter(m => m.userId !== user.userId);
 
-  // 🔔 알림 리스너 등록/해제
+  // 🔔 알림 리스너
   useEffect(() => {
     const unsubscribe = handleNotificationListeners();
     return () => {
@@ -86,7 +66,7 @@ export default function HomeScreen() {
     };
   }, []);
 
-  // 🔑 권한 요청 → FCM 토큰 발급/전송
+  // 🔑 권한 요청 → FCM 토큰
   useEffect(() => {
     if (!user?.userId) return;
 
@@ -108,46 +88,47 @@ export default function HomeScreen() {
   useWebSocketStatus(user.userId);
   useFamilyStatusSocket(family.familyId);
 
-  // 패밀리/멤버 데이터 로드
+  // ✅ 패밀리/멤버 데이터 로드
   useEffect(() => {
-    if (user.userId && family.familyId) {
-      dispatch(fetchFamilyThunk(family.familyId));
-      dispatch(fetchFamilyUserListThunk(family.familyId));
-      dispatch(fetchFamilyStatusThunk(family.familyId));
-    }
+    let mounted = true;
+
+    (async () => {
+      if (user.userId && family.familyId) {
+        try {
+          await dispatch(fetchFamilyThunk(family.familyId));
+          await dispatch(fetchFamilyUserListThunk(family.familyId));
+          await dispatch(fetchFamilyStatusThunk(family.familyId));
+        } finally {
+          if (mounted) setDidInitialLoad(true);
+        }
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
   }, [dispatch, user.userId, family.familyId]);
 
-  // ✅ 새로고침 버튼 핸들러: 멤버 영역에 로딩 띄우고, 끝나면 갱신
-  const handleRefreshMembers = useCallback(async () => {
+  // ✅ 멤버/상태 갱신
+  const doRefreshMembers = useCallback(async () => {
     if (!family?.familyId) return;
-    if (isRefreshingMembers) return;
 
-    try {
-      setIsRefreshingMembers(true);
+    await dispatch(fetchFamilyUserListThunk(family.familyId));
+    await dispatch(fetchFamilyStatusThunk(family.familyId));
+    await dispatch(fetchFamilyThunk(family.familyId));
+  }, [dispatch, family?.familyId]);
 
-      // ✅ 여기서 “멤버 영역” 갱신에 필요한 것들만 갱신
-      // - 멤버 리스트(가족 구성원)
-      // - 온라인 상태/마지막 접속
-      // - (선택) 가족 정보
-      await dispatch(fetchFamilyUserListThunk(family.familyId));
-      await dispatch(fetchFamilyStatusThunk(family.familyId));
-      await dispatch(fetchFamilyThunk(family.familyId));
-    } finally {
-      setIsRefreshingMembers(false);
-    }
-  }, [dispatch, family?.familyId, isRefreshingMembers]);
+  const onPullRefresh = useCallback(() => {
+    if (!family?.familyId) return;
+    if (refreshing) return;
 
-  // 인앱 가이드 (공통 훅 사용)
-  const guideEnabled = familyLoaded && membersLoaded;
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 350);
 
-  const {
-    isGuideVisible,
-    guideStep,
-    currentGuide,
-    totalSteps,
-    nextStep,
-    skipGuide,
-  } = useGuide(GUIDE_STORAGE_KEY, GUIDE_STEPS, guideEnabled);
+    requestAnimationFrame(() => {
+      doRefreshMembers();
+    });
+  }, [doRefreshMembers, family?.familyId, refreshing]);
 
   const handleUserPress = member => {
     setSelectedUser(member);
@@ -168,14 +149,17 @@ export default function HomeScreen() {
 
     await dispatch(modifyUserThunk(payload));
 
-    // ✅ 저장 후 멤버 리스트도 최신화(선택)
     if (family?.familyId) {
       dispatch(fetchFamilyUserListThunk(family.familyId));
+      dispatch(fetchFamilyStatusThunk(family.familyId));
     }
 
     userSheetRef.current?.dismiss();
     setSelectedUser(null);
   };
+
+  // ✅ 여기 핵심: “멤버가 0명”이어도 로딩 끝나면 화면을 보여줘야 함
+  const isLoading = !familyLoaded || !didInitialLoad;
 
   if (isLoading) {
     return (
@@ -185,24 +169,30 @@ export default function HomeScreen() {
     );
   }
 
+  const refreshControl = (
+    <RefreshControl
+      refreshing={refreshing}
+      onRefresh={onPullRefresh}
+      progressViewOffset={Platform.OS === 'ios' ? 0 : 8}
+    />
+  );
+
   return (
     <View style={styles.container}>
       <View style={styles.backgroundCurve} />
 
       <ScrollView
+        refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}>
         <HeaderSection user={user} onUserPress={handleUserPress} />
 
         <MemberGridSection
-          members={familyMembers}
+          members={familyMembers} // ✅ 0명이면 MemberGridSection emptyState가 떠야 정상
           onlineUserIds={onlineUserIds}
           lastActiveMap={lastActiveMap}
           onUserPress={handleUserPress}
           onAddPress={() => setIsVisible(true)}
-          // ✅ 추가: 새로고침 + 로딩 오버레이 제어
-          onRefreshPress={handleRefreshMembers}
-          isRefreshing={isRefreshingMembers}
         />
       </ScrollView>
 
@@ -221,19 +211,6 @@ export default function HomeScreen() {
           userSheetRef.current?.dismiss();
         }}
       />
-
-      {/* 가이드 필요하면 주석 해제 */}
-      {/* {currentGuide && (
-        <GuideModal
-          visible={isGuideVisible}
-          step={guideStep}
-          totalSteps={totalSteps}
-          title={currentGuide.title}
-          description={currentGuide.description}
-          onNext={nextStep}
-          onSkip={skipGuide}
-        />
-      )} */}
     </View>
   );
 }
@@ -245,7 +222,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     width: '100%',
-    height: getResponsiveHeight(200),
+    // ✅ height 고정은 비추 (빈 상태 문구가 아래로 밀리거나 잘릴 수 있음)
+    // height: getResponsiveHeight(200),
     paddingBottom: getResponsiveHeight(30),
     alignItems: 'center',
   },

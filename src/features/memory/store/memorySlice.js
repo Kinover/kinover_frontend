@@ -1,4 +1,4 @@
-// memorySlice.js
+// src/screens/memory/store/memorySlice.js
 import {createSlice} from '@reduxjs/toolkit';
 
 const initialMemoryState = {
@@ -9,7 +9,12 @@ const initialMemoryState = {
   image: '',
   createdAt: '',
   loading: false,
-  postsById: {}, // ✅ 여기 추가
+  postsById: {},
+
+  // ✅ UI 상태 (탭)
+  ui: {
+    selectedTab: 'post', // 'post' | 'album'
+  },
 
   error: null,
 };
@@ -19,9 +24,9 @@ const memorySlice = createSlice({
   initialState: initialMemoryState,
   reducers: {
     setMemoryList(state, action) {
-      const list = action.payload;
+      const list = action.payload || [];
       state.memoryList = [...list];
-    
+
       // 🔁 postsById도 같이 채워 넣기
       list.forEach(post => {
         if (post?.postId) {
@@ -29,23 +34,38 @@ const memorySlice = createSlice({
         }
       });
     },
+
     setMemoryLoading(state, action) {
       state.loading = action.payload;
     },
+
     setMemoryError(state, action) {
       state.error = action.payload;
     },
-    // ⭐ 새로 추가된 리듀서 ⭐
-    setPostDetail: (state, action) => {
+
+    setPostDetail(state, action) {
       const post = action.payload;
       if (post && post.postId) {
-        // Post 객체에 'postId' 필드가 있다고 가정
         state.postsById[post.postId] = post;
+      }
+    },
+
+    // ✅ 탭 변경 액션
+    setMemorySelectedTab(state, action) {
+      const tab = action.payload;
+      if (tab === 'post' || tab === 'album') {
+        state.ui.selectedTab = tab;
       }
     },
   },
 });
 
-export const {setMemoryList, setMemoryLoading, setMemoryError, setPostDetail} =
-  memorySlice.actions;
+export const {
+  setMemoryList,
+  setMemoryLoading,
+  setMemoryError,
+  setPostDetail,
+  setMemorySelectedTab,
+} = memorySlice.actions;
+
 export default memorySlice.reducer;

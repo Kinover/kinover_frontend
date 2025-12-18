@@ -106,14 +106,6 @@ export default function PeriodFilterModal({
       confirmText="적용하기"
       closeText="취소">
       <View style={styles.container}>
-        {/* 요약 카드 */}
-        {/* <View style={styles.summaryCard}>
-          <View style={styles.summaryBadge}>
-            <Text style={styles.summaryBadgeText}>{summaryText}</Text>
-          </View>
-          <Text style={styles.summarySub}>{subtitleText}</Text>
-        </View> */}
-
         {/* 세그먼트 탭 */}
         <View style={styles.segment}>
           <SegmentTab
@@ -238,6 +230,7 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     paddingTop: getResponsiveHeight(2),
+    marginBottom: getResponsiveHeight(7),
   },
 
   // ===== Summary =====
@@ -367,8 +360,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     borderRadius: getResponsiveWidth(12),
     borderWidth: 1,
-    borderColor: 'rgba(255, 200, 77, 0.35)',
-    backgroundColor: 'rgba(255, 231, 178, 0.18)',
+    borderColor: 'rgba(0, 0, 0, 0.07)',
+    backgroundColor: 'rgba(0, 0, 0, 0.015)',
     paddingVertical: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(10),
   },
