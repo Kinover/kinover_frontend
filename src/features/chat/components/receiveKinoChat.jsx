@@ -46,9 +46,23 @@ export default function ReceiveKinoChat({
     PINK_KINO: require('../../../assets/images/kino-pink.png'),
   };
 
-  const getKinoProfileSource = kinoType =>
-    KINO_PROFILE_MAP[kinoType] ?? KINO_PROFILE_MAP.YELLOW_KINO;
+  // ✅ 말풍선 색상 팔레트 (kinoType별)
+  // - bubble: 말풍선 배경
+  // - dot: 타이핑 점 색
+  // - text: 말풍선 텍스트 색
+  const KINO_BUBBLE_PALETTE = {
+    YELLOW_KINO: {bubble: '#FFC84D', dot: '#2A2A2A', text: 'black'},
+    BLUE_KINO: {bubble: '#334EA7', dot: '#1F2A44', text: 'white'},
+    PINK_KINO: {bubble: '#FFC3DE', dot: '#3A1F2A', text: 'black'},
+    // BLUE_KINO: {bubble: '#D7E9FF', dot: '#1F2A44', text: '#0F172A'},
+    // PINK_KINO: {bubble: '#FFEAF2', dot: '#3A1F2A', text: '#111827'},
+  };
+  const getKinoProfileSource = type =>
+    KINO_PROFILE_MAP[type] ?? KINO_PROFILE_MAP.YELLOW_KINO;
   const kinoProfileSource = getKinoProfileSource(kinoType);
+
+  const bubbleColors =
+    KINO_BUBBLE_PALETTE[kinoType] ?? KINO_BUBBLE_PALETTE.YELLOW_KINO;
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -87,12 +101,12 @@ export default function ReceiveKinoChat({
         Animated.sequence([
           Animated.delay(delay),
           Animated.timing(anim, {
-            toValue: -4, // 위로 살짝 튐
+            toValue: -4,
             duration: 220,
             useNativeDriver: true,
           }),
           Animated.timing(anim, {
-            toValue: 0, // 원위치
+            toValue: 0,
             duration: 220,
             useNativeDriver: true,
           }),
@@ -143,16 +157,33 @@ export default function ReceiveKinoChat({
           <Text style={styles.userName}>키노</Text>
 
           <View style={styles.messageContainer}>
-            <View style={[styles.receivedBubble, styles.typingBubble]}>
+            <View
+              style={[
+                styles.receivedBubble,
+                styles.typingBubble,
+                {backgroundColor: bubbleColors.bubble},
+              ]}>
               <View style={styles.typingRow}>
                 <Animated.View
-                  style={[styles.typingDot, {transform: [{translateY: dot1}]}]}
+                  style={[
+                    styles.typingDot,
+                    {backgroundColor: bubbleColors.dot},
+                    {transform: [{translateY: dot1}]},
+                  ]}
                 />
                 <Animated.View
-                  style={[styles.typingDot, {transform: [{translateY: dot2}]}]}
+                  style={[
+                    styles.typingDot,
+                    {backgroundColor: bubbleColors.dot},
+                    {transform: [{translateY: dot2}]},
+                  ]}
                 />
                 <Animated.View
-                  style={[styles.typingDot, {transform: [{translateY: dot3}]}]}
+                  style={[
+                    styles.typingDot,
+                    {backgroundColor: bubbleColors.dot},
+                    {transform: [{translateY: dot3}]},
+                  ]}
                 />
               </View>
             </View>
@@ -189,8 +220,14 @@ export default function ReceiveKinoChat({
               renderImages()
             )
           ) : (
-            <View style={styles.receivedBubble}>
-              <Text style={styles.receivedText}>{message}</Text>
+            <View
+              style={[
+                styles.receivedBubble,
+                {backgroundColor: bubbleColors.bubble},
+              ]}>
+              <Text style={[styles.receivedText, {color: bubbleColors.text}]}>
+                {message}
+              </Text>
             </View>
           )}
 
@@ -220,8 +257,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Medium',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(14) // 🔽 14 → 12
-        : getResponsiveFontSize(15), // 🔽 15 → 13
+        ? getResponsiveFontSize(14)
+        : getResponsiveFontSize(15),
     color: '#444',
     marginBottom: getResponsiveHeight(7),
   },
@@ -239,7 +276,7 @@ const styles = StyleSheet.create({
   messageContainer: {flexDirection: 'row', alignItems: 'flex-end'},
 
   receivedBubble: {
-    backgroundColor: '#FFC84D',
+    backgroundColor: '#FFC84D', // ✅ 기본값(동적으로 override 됨)
     borderRadius: getResponsiveIconSize(20),
     paddingVertical: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(14.5),
@@ -247,9 +284,9 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   receivedText: {
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: CHATROOM_STYLE.messageFontFamily,
     fontSize: CHATROOM_STYLE.KinoMessageFontSize,
-    color: 'black',
+    color: 'black', // ✅ 기본값(동적으로 override 됨)
     flexWrap: 'wrap',
     lineHeight: getResponsiveFontSize(18),
   },
@@ -276,7 +313,7 @@ const styles = StyleSheet.create({
 
   // ✅ typing 전용 스타일
   typingBubble: {
-    backgroundColor: '#FFC84D',
+    backgroundColor: '#FFC84D', // ✅ 기본값(동적으로 override 됨)
     paddingHorizontal: getResponsiveWidth(20),
     paddingVertical: getResponsiveHeight(12),
     borderRadius: getResponsiveIconSize(24),
@@ -293,6 +330,6 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(7),
     height: getResponsiveWidth(7),
     borderRadius: 999,
-    backgroundColor: '#2A2A2A',
+    backgroundColor: '#2A2A2A', // ✅ 기본값(동적으로 override 됨)
   },
 });

@@ -11,7 +11,6 @@ import {
   Dimensions,
   ScrollView,
   Pressable,
-  Platform,
 } from 'react-native';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 import {useNavigation} from '@react-navigation/native';
@@ -96,25 +95,17 @@ export default function PostPage({route}) {
     );
 
     navigation.setOptions({
-      headerTransparent: true, // ✅ 핵심
+      headerTransparent: true,
       headerTitle: () => (
         <Text style={styles.headerTitle}>{matched?.title || '게시물'}</Text>
       ),
       headerTitleAlign: 'center',
-
-      // ✅ iOS/Android 공통: 배경 투명 + 그림자 제거
-      headerStyle: {
-        backgroundColor: 'transparent',
-      },
-      headerShadowVisible: false, // iOS
+      headerStyle: {backgroundColor: 'transparent'},
+      headerShadowVisible: false,
       headerTintColor: '#fff',
-
-      // ✅ Android에서 반투명 상태에서 회색/그림자 생기는 경우 방지
       headerBackground: () => (
         <View style={{flex: 1, backgroundColor: 'transparent'}} />
       ),
-
-      // ✅ 여기 추가
       headerLeft: () => (
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -124,13 +115,12 @@ export default function PostPage({route}) {
             style={{
               width: getResponsiveIconSize(20),
               height: getResponsiveIconSize(20),
-              tintColor: '#fff', // ✅ 완전 흰색
+              tintColor: '#fff',
               resizeMode: 'contain',
             }}
           />
         </TouchableOpacity>
       ),
-
       headerRight: () => (
         <TouchableOpacity
           onPress={() => {
@@ -148,20 +138,40 @@ export default function PostPage({route}) {
   }, [navigation, categoryList, safeMemory, vm]);
 
   /** ---------------- swipe ---------------- */
-  const swipe = useMemo(
-    () =>
+  const swipe = useMemo(() => {
+    const THRESHOLD = 80;
+
+    return (
       Gesture.Pan()
+        // 가로 스와이프만
         .activeOffsetX([-24, 24])
+        .failOffsetY([-18, 18])
         .onEnd(e => {
+          // 풀스크린이면 스와이프 액션 막기
           if (vm.isImageFullScreen) return;
-          if (Math.abs(e.translationX) > 80) {
-            dispatch(
-              setMemorySelectedTab(e.translationX < 0 ? 'album' : 'post'),
-            );
+
+          // ✅ "첫 번째 사진"에서만: 왼→오 스와이프하면 추억화면(기본탭)으로
+          const isFirstImage = (vm.currentImageIndex ?? 0) === 0;
+          const isSwipeRight = e.translationX > THRESHOLD;
+
+          if (isFirstImage && isSwipeRight) {
+            dispatch(setMemorySelectedTab('post')); // ✅ 추억화면 기본탭
+            navigation.goBack(); // ✅ 추억화면으로 복귀
+            return;
           }
-        }),
-    [dispatch, vm.isImageFullScreen],
-  );
+
+          // (선택) 기존 탭 스와이프 유지하고 싶으면 아래 유지
+          // if (Math.abs(e.translationX) > THRESHOLD) {
+          //   dispatch(setMemorySelectedTab(e.translationX < 0 ? 'album' : 'post'));
+          // }
+        })
+    );
+  }, [
+    dispatch,
+    navigation,
+    vm.isImageFullScreen,
+    vm.currentImageIndex,
+  ]);
 
   /** ---------------- description sheet: always visible, controlled by click only ---------------- */
   const descSnapPoints = useMemo(() => ['20%', '30%'], []);
@@ -222,6 +232,7 @@ export default function PostPage({route}) {
             isFullScreen={vm.isImageFullScreen}
             setIsFullScreen={vm.setIsImageFullScreen}
           />
+
           {/* 헤더용 그라데이션 오버레이 */}
           <LinearGradient
             pointerEvents="none"
@@ -238,13 +249,14 @@ export default function PostPage({route}) {
               top: 0,
               left: 0,
               right: 0,
-              height: getResponsiveHeight(120), // 헤더 높이 + 여유
+              height: getResponsiveHeight(120),
               zIndex: 5,
-            }}></LinearGradient>
+            }}
+          />
         </View>
       </GestureDetector>
 
-      {/* ---------------- 설명 BottomSheet (항상 존재 / 클릭으로만 확장/축소) ---------------- */}
+      {/* ---------------- 설명 BottomSheet ---------------- */}
       <BottomSheetModal
         ref={descSheetRef}
         snapPoints={descSnapPoints}
@@ -348,7 +360,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: HEADER_STYLES.defaultTitleFontSize,
     fontFamily: HEADER_STYLES.defaultTitleFontFamily,
-    color: '#fff', // ✅ 투명 헤더 위에서 잘 보이게
+    color: '#fff',
     lineHeight: getResponsiveHeight(26),
     textAlign: 'center',
   },
@@ -358,7 +370,7 @@ const styles = StyleSheet.create({
     height: HEADER_STYLES.headerRightIconHeight,
     resizeMode: 'contain',
     marginRight: HEADER_STYLES.headerRightIconRightPadding,
-    tintColor: '#fff', // ✅ 아이콘도 흰색
+    tintColor: '#fff',
   },
 
   descSheet: {

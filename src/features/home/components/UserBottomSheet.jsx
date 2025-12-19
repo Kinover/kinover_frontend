@@ -40,7 +40,7 @@ const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 const windowHeight = Dimensions.get('window').height;
 
 function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
-  const snapPoints = useMemo(() => ['60%'], []);
+  const snapPoints = useMemo(() => ['62%'], []);
 
   const nameRef = useRef('');
   const traitRef = useRef('');
@@ -398,7 +398,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(12),
   },
   label: {
-    fontSize: getResponsiveFontSize(12.5),
+    fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-Medium',
     color: '#4B5563',
     marginBottom: getResponsiveHeight(4),

@@ -29,9 +29,6 @@
                                 <color key="textColor" systemColor="scrollViewTexturedBackgroundColor"/>
                                 <nil key="highlightedColor"/>
                             </label>
-                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" verticalCompressionResistancePriority="749" image="kino family.png" translatesAutoresizingMaskIntoConstraints="NO" id="V3l-he-rlg">
-                                <rect key="frame" x="57.5" y="491" width="260" height="176"/>
-                            </imageView>
                             <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="kino-logo2.png" translatesAutoresizingMaskIntoConstraints="NO" id="gAL-Jy-JKh">
                                 <rect key="frame" x="137" y="160" width="99" height="57"/>
                             </imageView>
@@ -41,15 +38,11 @@
                         <constraints>
                             <constraint firstItem="gAL-Jy-JKh" firstAttribute="leading" secondItem="Bcu-3y-fUS" secondAttribute="leading" constant="137.09" id="3qi-IJ-1SE"/>
                             <constraint firstItem="GJd-Yh-RWb" firstAttribute="top" secondItem="gAL-Jy-JKh" secondAttribute="bottom" constant="-15" id="EFV-82-Oj4"/>
-                            <constraint firstItem="Bcu-3y-fUS" firstAttribute="bottom" secondItem="V3l-he-rlg" secondAttribute="bottom" id="K0d-SF-VmG"/>
                             <constraint firstItem="Bcu-3y-fUS" firstAttribute="trailing" secondItem="gAL-Jy-JKh" secondAttribute="trailing" constant="138.91" id="MYf-n5-Ix5"/>
-                            <constraint firstItem="V3l-he-rlg" firstAttribute="leading" secondItem="Bcu-3y-fUS" secondAttribute="leading" constant="57.270000000000003" id="NF6-MH-GrZ"/>
                             <constraint firstItem="GJd-Yh-RWb" firstAttribute="bottom" secondItem="MN2-I3-ftu" secondAttribute="bottom" constant="-20" id="OZV-Vh-mqD"/>
                             <constraint firstItem="Bcu-3y-fUS" firstAttribute="centerX" secondItem="GJd-Yh-RWb" secondAttribute="centerX" id="Q3B-4B-g5h"/>
                             <constraint firstItem="GJd-Yh-RWb" firstAttribute="top" secondItem="Bcu-3y-fUS" secondAttribute="top" constant="182" id="Vyq-jv-dyj"/>
                             <constraint firstItem="MN2-I3-ftu" firstAttribute="centerX" secondItem="Bcu-3y-fUS" secondAttribute="centerX" id="akx-eg-2ui"/>
-                            <constraint firstItem="V3l-he-rlg" firstAttribute="top" secondItem="MN2-I3-ftu" secondAttribute="bottom" constant="206.5" id="bUX-ll-YBI"/>
-                            <constraint firstItem="Bcu-3y-fUS" firstAttribute="trailing" secondItem="V3l-he-rlg" secondAttribute="trailing" constant="57.729999999999997" id="fj1-ru-sOB"/>
                             <constraint firstItem="MN2-I3-ftu" firstAttribute="leading" secondItem="Bcu-3y-fUS" secondAttribute="leading" id="i1E-0Y-4RG"/>
                             <constraint firstItem="gAL-Jy-JKh" firstAttribute="top" secondItem="Bcu-3y-fUS" secondAttribute="top" constant="140" id="xga-xk-zpW"/>
                         </constraints>
@@ -61,7 +54,6 @@
         </scene>
     </scenes>
     <resources>
-        <image name="kino family.png" width="974.66668701171875" height="474.33334350585938"/>
         <image name="kino-logo2.png" width="288" height="268"/>
         <systemColor name="scrollViewTexturedBackgroundColor">
             <color red="0.43529411764705883" green="0.44313725490196076" blue="0.47450980392156861" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
