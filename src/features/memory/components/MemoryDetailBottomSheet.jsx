@@ -246,7 +246,7 @@ export default function MemoryDetailBottomSheet({
               <TouchableOpacity onPress={onSubmitComment} activeOpacity={0.9}>
                 <FastImage
                   style={styles.commentSendBt}
-                  source={require('../../../assets/icons/paperPlaneTilt.png')}
+                  source={require('../../../assets/icons/sendBt.png')}
                 />
               </TouchableOpacity>
             </View>

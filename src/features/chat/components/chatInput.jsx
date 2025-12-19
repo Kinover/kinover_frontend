@@ -1,3 +1,5 @@
+
+/* eslint-disable react-native/no-inline-styles */
 // components/ChatInput.jsx
 import React, {
   useState,
@@ -27,7 +29,6 @@ import {useDispatch} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
 import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
-import LinearGradient from 'react-native-linear-gradient';
 import RNBlobUtil from 'react-native-blob-util';
 
 import {
@@ -50,7 +51,6 @@ import {loadGalleryPhotos} from '../../../utils/gallery';
 import formatDuration from '../../../utils/formatDuration';
 import ToastModal from '../../../components/ToastModal';
 import {addMessageAndUpdateRoom} from '../utils/messageActions';
-import {BUTTON_STYLES} from 'styles/style';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -60,8 +60,8 @@ const PAGE_SIZE = 60;
 const GAP = getResponsiveWidth(2);
 const PADDING_H = getResponsiveWidth(2);
 
-const ICON_PLUS = 'https://i.postimg.cc/yxdVHRq7/Group-478.png';
-const ICON_SEND = 'https://i.postimg.cc/fLWscdRY/Group-477-1.png';
+const ICON_SEND = require('../../../assets/icons/sendBt-dark.png');
+const ICON_PLUS = require('../../../assets/icons/optionBt-dark.png');
 
 if (
   Platform.OS === 'android' &&
@@ -215,8 +215,6 @@ const ChatInput = forwardRef(function ChatInput(
     setSelectedImages(prev => toggleSelectImage(prev, item));
   }, []);
 
-  const isVideoItem = useCallback(item => !!item?.isVideo, []);
-
   // ✅ 업로드 전 uri 정리: iOS(ph://), Android(content://)
   const resolveUploadUri = useCallback(async (uri, index, isVideo) => {
     if (!uri) return uri;
@@ -255,7 +253,6 @@ const ChatInput = forwardRef(function ChatInput(
   /* =========================
    * ✅ 압축 유틸
    * ========================= */
-
   const compressUploadUri = useCallback(async (fileUri, isVideo) => {
     if (!fileUri)
       return {
@@ -263,16 +260,9 @@ const ChatInput = forwardRef(function ChatInput(
         ext: getExtFromUri(fileUri) || (isVideo ? 'mp4' : 'jpg'),
       };
 
-    // react-native-compressor는 file://, ph://, content://를 받기도 하지만
-    // 너는 이미 resolveUploadUri로 file://로 맞춰줄 거라 안정적임.
     if (isVideo) {
-      // ⚠️ 옵션은 버전별로 조금 다를 수 있음
-      // 가장 무난: auto/medium 계열
       const compressed = await VideoCompressor.compress(fileUri, {
         compressionMethod: 'auto',
-        // 너무 느리면 아래로 바꿔:
-        // compressionMethod: 'manual',
-        // maxSize: 720, // 지원 버전이면 사용
       });
 
       const ext = getExtFromUri(compressed) || 'mp4';
@@ -435,16 +425,6 @@ const ChatInput = forwardRef(function ChatInput(
           fileName,
           contentType,
         });
-
-        console.log('🗜️ compressed meta', {
-          i,
-          isVideo: !!original?.isVideo,
-          resolvedUri,
-          compressedUri,
-          fileName,
-          contentType,
-          size,
-        });
       }
 
       // presigned
@@ -460,13 +440,6 @@ const ChatInput = forwardRef(function ChatInput(
             : presignedUrls[i]?.url;
 
         if (!presigned) throw new Error('presigned url is missing');
-
-        console.log('🧾 PUT 직전', {
-          presigned: String(presigned).split('?')[0],
-          contentType: prepared[i].contentType,
-          uploadUri: prepared[i].uploadUri,
-          fileName: prepared[i].fileName,
-        });
 
         await uploadFileToS3(
           presigned,
@@ -519,7 +492,7 @@ const ChatInput = forwardRef(function ChatInput(
               clientMessageId: mediaClientMessageId,
               chatRoomId: chatRoom?.chatRoomId,
               senderId: userId,
-              messageType: mediaType,
+              messageType: 'image',
               createdAt: new Date().toISOString(),
               uploadStatus: 'failed',
               localStatus: 'failed',
@@ -622,7 +595,7 @@ const ChatInput = forwardRef(function ChatInput(
               onPress={toggleGallery}
               disabled={isSending || sendingLockRef.current}>
               <FastImage
-                source={{uri: ICON_PLUS}}
+                source={ICON_PLUS}
                 style={[
                   styles.icon,
                   (isSending || sendingLockRef.current) && {opacity: 0.4},
@@ -659,24 +632,25 @@ const ChatInput = forwardRef(function ChatInput(
 
           <TouchableOpacity
             onPress={handleSend}
-            style={[styles.sendButton, canSend && styles.sendButtonActive]}
+            style={[styles.sendButton]}
             disabled={!canSend || sendingLockRef.current}>
-            {hasSelection ? (
-              <View
-                style={[styles.sendCountBubble, !canSend && {opacity: 0.5}]}>
-                <Text style={styles.sendCountText}>
-                  {selectedImages.length}
-                </Text>
-              </View>
-            ) : (
+            <View style={styles.sendIconWrap}>
               <Image
-                source={{uri: ICON_SEND}}
+                source={ICON_SEND}
                 style={[
                   styles.sendIcon,
                   canSend ? styles.sendIconWhite : styles.sendIconInactive,
                 ]}
               />
-            )}
+
+              {hasSelection && (
+                <View style={[styles.sendBadge, !canSend && {opacity: 0.5}]}>
+                  <Text style={styles.sendBadgeText}>
+                    {selectedImages.length > 99 ? '99+' : selectedImages.length}
+                  </Text>
+                </View>
+              )}
+            </View>
           </TouchableOpacity>
         </View>
       </View>
@@ -713,14 +687,6 @@ const ChatInput = forwardRef(function ChatInput(
                   keyboardShouldPersistTaps="handled"
                   removeClippedSubviews={false}
                 />
-
-                {/* {photos.length > 0 && (
-                  <LinearGradient
-                    pointerEvents="none"
-                    colors={['rgba(255,255,255,0)', 'rgba(255,255,255,0.6)']}
-                    style={styles.bottomFade}
-                  />
-                )} */}
               </View>
             </GestureDetector>
           )}
@@ -757,11 +723,8 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(45),
     borderRadius: getResponsiveWidth(30),
     borderWidth: 1,
-    // borderColor: '#FFC84D',
-    // backgroundColor: 'rgba(255, 231, 178, 0.2)',
     backgroundColor: 'rgba(80, 100, 100, 0.1)',
     borderColor: 'rgba(55, 65, 81,0.45)',
-
     paddingHorizontal: getResponsiveWidth(8),
   },
 
@@ -777,7 +740,8 @@ const styles = StyleSheet.create({
   },
 
   clearButton: {
-    paddingHorizontal: getResponsiveWidth(4),
+    paddingLeft: getResponsiveWidth(4),
+    paddingRight: getResponsiveWidth(0),
     justifyContent: 'center',
     alignItems: 'center',
     opacity: 0.5,
@@ -795,7 +759,7 @@ const styles = StyleSheet.create({
 
   sendButton: {
     paddingVertical: getResponsiveWidth(5),
-    paddingHorizontal: getResponsiveWidth(5),
+    paddingRight: getResponsiveWidth(3),
     justifyContent: 'center',
     alignItems: 'center',
     alignSelf: 'center',
@@ -803,42 +767,48 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     borderRadius: getResponsiveWidth(20),
   },
-  sendButtonActive: {
-    backgroundColor: '#FFC84D',
-    borderRadius: getResponsiveWidth(20),
+
+  // ✅ 아이콘 + 뱃지 래퍼
+  sendIconWrap: {
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
+
   sendIcon: {
-    width: getResponsiveIconSize(20),
-    height: getResponsiveIconSize(20),
+    width: getResponsiveIconSize(31),
+    height: getResponsiveIconSize(31),
     resizeMode: 'contain',
   },
   sendIconWhite: {
-    tintColor: '#FFFFFF',
     opacity: 1,
     transform: [{scale: 0.9}],
   },
   sendIconInactive: {
-    tintColor: 'gray',
     opacity: 1,
     transform: [{scale: 0.9}],
   },
 
-  sendCountBubble: {
+  // ✅ 숫자 뱃지 (아이콘 위에 살짝 겹치게)
+  sendBadge: {
+    position: 'absolute',
+    top: -getResponsiveWidth(-9),
+    right: -getResponsiveWidth(8),
     minWidth: getResponsiveWidth(18),
     height: getResponsiveWidth(18),
-    borderRadius: getResponsiveWidth(10),
+    borderRadius: getResponsiveWidth(9),
     backgroundColor: '#FFC84D',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 0,
+    paddingHorizontal: getResponsiveWidth(2),
+    borderWidth: 1.5,
+    borderColor: '#fff',
   },
-  sendCountText: {
-    color: 'white',
-    fontWeight: '600',
-    fontSize: getResponsiveIconSize(13),
+  sendBadgeText: {
+    color: '#fff',
+    fontSize: getResponsiveIconSize(11),
+    fontFamily: 'Pretendard-SemiBold',
     includeFontPadding: false,
-    textAlignVertical: 'center',
-    fontFamily: 'Pretendard-Medium',
   },
 
   galleryContainer: {
@@ -914,13 +884,6 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
 
-  bottomFade: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: -1,
-    height: getResponsiveHeight(30),
-  },
   footer: {
     textAlign: 'center',
     paddingVertical: getResponsiveHeight(4),
