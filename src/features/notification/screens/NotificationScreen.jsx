@@ -1,29 +1,34 @@
-/* eslint-disable react-native/no-inline-styles */
 // NotificationScreen.js
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
+import React, {useCallback} from 'react';
+import {View, Text, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
-import {
-  getResponsiveFontSize,
-  getResponsiveHeight,
-  getResponsiveWidth,
-} from '../../../utils/responsive';
+import {getResponsiveFontSize, getResponsiveHeight, getResponsiveWidth} from '../../../utils/responsive';
 import useHideTabBar from '../../../hooks/useHideTabBar';
 import YellowSpinner from '../../../components/YellowSpinner';
 import {useNotificationList} from '../hooks/useNotificationList';
 import {EMPTY_STYLE} from 'styles/style';
+import {useFocusEffect} from '@react-navigation/native';
+import {fetchHasUnreadThunk, fetchNotificationsThunk} from '../store/notificationThunk';
+import {useDispatch} from 'react-redux';
 
 const AVATAR = getResponsiveWidth(46);
 
 export default function NotificationScreen() {
+  const dispatch = useDispatch();
   useHideTabBar();
   const {isLoading, error, rows, handlePress} = useNotificationList();
+
+  useFocusEffect(
+    useCallback(() => {
+      // ✅ 여기서만 1번 호출
+      dispatch(fetchNotificationsThunk());
+
+      return () => {
+        // ✅ 나갈 때 벨 빨간점 동기화
+        dispatch(fetchHasUnreadThunk());
+      };
+    }, [dispatch]),
+  );
 
   if (isLoading) {
     return (
@@ -36,7 +41,7 @@ export default function NotificationScreen() {
   if (error) {
     return (
       <View style={[styles.container, {justifyContent: 'center'}]}>
-        <Text style={styles.error}>오류 발생: {error}</Text>
+        <Text style={styles.error}>오류 발생: {String(error)}</Text>
       </View>
     );
   }
@@ -60,7 +65,6 @@ export default function NotificationScreen() {
             activeOpacity={0.8}
             onPress={() => handlePress(row.notification)}
             style={[styles.card, row.isNew && styles.cardNew]}>
-            {/* 왼쪽 이미지 */}
             <View style={styles.avatarWrap}>
               <FastImage
                 source={
@@ -72,14 +76,9 @@ export default function NotificationScreen() {
               />
             </View>
 
-            {/* 가운데 텍스트 영역 */}
             <View style={styles.center}>
               <View style={styles.rowTop}>
-                <Text
-                  style={[
-                    styles.typeBadgeText,
-                    {color: row.typeColor || 'black'},
-                  ]}>
+                <Text style={[styles.typeBadgeText, {color: row.typeColor || 'black'}]}>
                   {row.title}
                 </Text>
                 <Text style={styles.when}>{row.when}</Text>
@@ -108,12 +107,8 @@ export default function NotificationScreen() {
   );
 }
 
-/* ======= styles ======= */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
+  container: {flex: 1, backgroundColor: '#fff'},
   sectionTitle: {
     marginTop: getResponsiveHeight(14),
     marginBottom: getResponsiveHeight(4),
@@ -136,22 +131,15 @@ const styles = StyleSheet.create({
     borderBottomColor: '#EFEFEF',
     gap: getResponsiveWidth(12),
   },
-  cardNew: {
-    backgroundColor: '#FFF9EC',
-  },
-  avatarWrap: {
-    position: 'relative',
-  },
+  cardNew: {backgroundColor: '#FFF9EC'},
+  avatarWrap: {position: 'relative'},
   profileImage: {
     width: AVATAR,
     height: AVATAR,
     borderRadius: getResponsiveWidth(5),
     backgroundColor: '#EAEAEA',
   },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-  },
+  center: {flex: 1, justifyContent: 'center'},
   rowTop: {
     flexDirection: 'row',
     alignItems: 'center',

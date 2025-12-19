@@ -18,6 +18,11 @@ import FastImage from '@d11/react-native-fast-image';
 import {getVideoThumbnail} from '../../../utils/videoThumbnail';
 import MediaViewer from './MediaViewer';
 
+// ✅ RNGH v2
+import {Gesture, GestureDetector} from 'react-native-gesture-handler';
+// ✅ 핵심: worklet -> JS 호출
+import {runOnJS} from 'react-native-reanimated';
+
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
 function normalizeMedia(localImages = [], localMedia = []) {
@@ -58,6 +63,9 @@ export default function ImageCarousel({
 
   isFullScreen = false,
   setIsFullScreen,
+
+  // ✅ 첫 번째 이미지에서 왼→오 스와이프 시 콜백
+  onSwipeFromFirstToRight,
 }) {
   const mainCarouselRef = useRef(null);
 
@@ -141,7 +149,7 @@ export default function ImageCarousel({
                     cache: FastImage.cacheControl.immutable,
                   }}
                   style={styles.fullMedia}
-                  resizeMode={FastImage.resizeMode.contain} // ✅ 화면 “가득”
+                  resizeMode={FastImage.resizeMode.contain}
                 />
               ) : (
                 <View style={[styles.fullMedia, styles.videoFallback]} />
@@ -158,13 +166,37 @@ export default function ImageCarousel({
               pointerEvents="none"
               source={{uri}}
               style={styles.fullMedia}
-              resizeMode={FastImage.resizeMode.contain} // ✅ 화면 “가득”
+              resizeMode={FastImage.resizeMode.contain}
             />
           )}
         </TouchableOpacity>
       </View>
     );
   };
+
+  // ✅ 핵심: “엣지 스와이프 레이어” + runOnJS로 콜백 호출
+  const edgeSwipeGesture = useMemo(() => {
+    const THRESHOLD = 70;
+
+    return Gesture.Pan()
+      .enabled(!isFullScreen && (currentIndex ?? 0) === 0)
+      .activeOffsetX([18, 9999]) // 오른쪽으로 의미있게 움직일 때만
+      .failOffsetY([-18, 18]) // 세로 흔들림이면 실패
+      .onEnd(e => {
+        'worklet';
+
+        const idx = currentIndex ?? 0;
+        if (isFullScreen) return;
+        if (idx !== 0) return;
+
+        const tx = e.translationX || 0;
+        if (tx > THRESHOLD) {
+          if (typeof onSwipeFromFirstToRight === 'function') {
+            runOnJS(onSwipeFromFirstToRight)();
+          }
+        }
+      });
+  }, [currentIndex, isFullScreen, onSwipeFromFirstToRight]);
 
   if (!mediaList.length) return null;
 
@@ -193,6 +225,11 @@ export default function ImageCarousel({
           scrollAnimationDuration={320}
           renderItem={renderMainItem}
         />
+
+        {/* ✅ 왼쪽 “엣지 스와이프” 투명 레이어 */}
+        <GestureDetector gesture={edgeSwipeGesture}>
+          <View pointerEvents="box-only" style={styles.edgeSwipeZone} />
+        </GestureDetector>
       </View>
 
       <MediaViewer
@@ -207,29 +244,13 @@ export default function ImageCarousel({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f9f9f9', // ✅ “가득 찬” 체감 제일 좋아짐
-  },
+  container: {flex: 1, backgroundColor: '#f9f9f9'},
+  carouselWrap: {flex: 1},
 
-  carouselWrap: {
-    flex: 1,
-  },
-
-  fullItem: {
-    flex: 1,
-    backgroundColor: '#f9f9f9',
-  },
-  fullTouch: {
-    flex: 1,
-  },
-  fullMedia: {
-    width: '100%',
-    height: '100%',
-  },
-  videoFallback: {
-    backgroundColor: '#111827',
-  },
+  fullItem: {flex: 1, backgroundColor: '#f9f9f9'},
+  fullTouch: {flex: 1},
+  fullMedia: {width: '100%', height: '100%'},
+  videoFallback: {backgroundColor: '#111827'},
 
   fixedTopBar: {
     position: 'absolute',
@@ -241,7 +262,6 @@ const styles = StyleSheet.create({
     elevation: 50,
     alignItems: 'center',
   },
-
   indexPill: {
     backgroundColor: 'rgba(0,0,0,0.28)',
     paddingHorizontal: getResponsiveWidth(10),
@@ -282,5 +302,16 @@ const styles = StyleSheet.create({
     borderTopColor: 'transparent',
     borderBottomColor: 'transparent',
     marginLeft: 4,
+  },
+
+  edgeSwipeZone: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: getResponsiveWidth(32),
+    zIndex: 999,
+    elevation: 999,
+    backgroundColor: 'transparent',
   },
 });

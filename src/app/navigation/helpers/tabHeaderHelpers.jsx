@@ -1,30 +1,108 @@
-import React from 'react';
-import {Platform, Text, TouchableOpacity, View} from 'react-native';
+// src/utils/navigationRenderers.js
+import React, {memo} from 'react';
+import {Platform, Text, TouchableOpacity, View, StyleSheet} from 'react-native';
+import {useSelector} from 'react-redux';
+import FastImage from '@d11/react-native-fast-image';
 import {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveFontSize,
   getResponsiveWidth,
 } from '../../../utils/responsive';
-import {useSelector} from 'react-redux';
-import FastImage from '@d11/react-native-fast-image';
 import {BUTTON_STYLES, HEADER_STYLES} from 'styles/style';
 
-// ✅ 공통 아이콘 버튼 생성기 (size는 "기본 px" 개념으로만 넘기면 됨)
+/** ---------------------------------------------------
+ *  ✅ 공통: 아이콘 위에 빨간 점(뱃지) 얹는 컴포넌트
+ *  - hook은 "컴포넌트" 안에서만 씀 (중요)
+ *  --------------------------------------------------- */
+const IconWithDot = memo(function IconWithDot({
+  source,
+  size = 24,
+  showDot = false,
+  dotStyle,
+  imageStyle,
+}) {
+  return (
+    <View style={styles.iconWrap}>
+      <FastImage
+        source={source}
+        style={[
+          {
+            width: getResponsiveIconSize(size),
+            height: getResponsiveIconSize(size),
+          },
+          imageStyle,
+        ]}
+        resizeMode={FastImage.resizeMode.contain}
+      />
+      {showDot && <View style={[styles.dot, dotStyle]} />}
+    </View>
+  );
+});
+
+/** ---------------------------------------------------
+ *  ✅ 탭바 아이콘 (알림 탭일 때 unread면 빨간점)
+ *  - Tab.Navigator screenOptions에서 사용
+ *  --------------------------------------------------- */
+export const TabBarIcon = memo(function TabBarIcon({
+  focused,
+  focusedUri,
+  defaultUri,
+  tabName,
+}) {
+  const hasUnread = useSelector(state => state.notification.hasUnread);
+
+  const size = Platform.OS === 'ios' ? 22 : 24;
+  const showDot = tabName === '알림' && !!hasUnread;
+
+  return (
+    <IconWithDot
+      source={{uri: focused ? focusedUri : defaultUri}}
+      size={size}
+      showDot={showDot}
+      dotStyle={styles.tabDot}
+    />
+  );
+});
+
+/** ---------------------------------------------------
+ *  ✅ 탭바 라벨
+ *  --------------------------------------------------- */
+export const renderTabBarLabel = (label, focused) => (
+  <Text
+    style={
+      Platform.OS === 'ios'
+        ? {
+            color: focused ? BUTTON_STYLES.saveBg : 'gray',
+            fontSize: getResponsiveFontSize(11),
+            marginTop: getResponsiveHeight(6),
+          }
+        : {
+            color: focused ? BUTTON_STYLES.saveBg : 'gray',
+            fontSize: getResponsiveFontSize(12),
+            marginTop: getResponsiveHeight(6),
+          }
+    }>
+    {label}
+  </Text>
+);
+
+/** ---------------------------------------------------
+ *  ✅ 공통 아이콘 버튼 생성기
+ *  --------------------------------------------------- */
 const createIconButton = (
-  navigationFunc,
+  onPress,
   imageSource,
-  sizeWidth,
-  sizeHeight,
+  size,
   margin = {},
   additionalStyle = {},
 ) => (
-  <TouchableOpacity onPress={navigationFunc} activeOpacity={0.8}>
+  <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
     <FastImage
       source={imageSource}
       style={{
-        width: getResponsiveIconSize(sizeWidth),
-        height: getResponsiveIconSize(sizeHeight),
+        width: getResponsiveIconSize(size),
+        height: getResponsiveIconSize(size),
         ...margin,
         ...additionalStyle,
       }}
@@ -33,74 +111,16 @@ const createIconButton = (
   </TouchableOpacity>
 );
 
-// ✅ 탭바 아이콘 및 라벨 렌더러
-
-export const renderTabBarIcon = (focused, focusedUri, defaultUri, tabName) => {
-  const hasUnread = useSelector(state => state.notification.hasUnread);
-
-  return (
-    <View style={{position: 'relative'}}>
-      <FastImage
-        source={{uri: focused ? focusedUri : defaultUri}}
-        style={
-          Platform.OS === 'ios'
-            ? {
-                width: getResponsiveIconSize(22), // 25 → 22
-                height: getResponsiveIconSize(22),
-                resizeMode: 'contain',
-              }
-            : {
-                width: getResponsiveIconSize(24), // 27.5 → 24
-                height: getResponsiveIconSize(24),
-                resizeMode: 'contain',
-              }
-        }
-      />
-      {/* ✅ 알림 탭일 때만 빨간 점 */}
-      {tabName === '알림' && hasUnread && (
-        <View
-          style={{
-            position: 'absolute',
-            top: -2,
-            right: -2,
-            width: 7,
-            height: 7,
-            borderRadius: 3.5,
-            backgroundColor: 'red',
-          }}
-        />
-      )}
-    </View>
-  );
-};
-
-export const renderTabBarLabel = (label, focused) => (
-  <Text
-    style={
-      Platform.OS === 'ios'
-        ? {
-            color: focused ? BUTTON_STYLES.saveBg : 'gray',
-            fontSize: getResponsiveFontSize(11), // 12 → 11
-            marginTop: getResponsiveHeight(6),
-          }
-        : {
-            color: focused ? BUTTON_STYLES.saveBg : 'gray',
-            fontSize: getResponsiveFontSize(12), // 13 → 12
-            marginTop: getResponsiveHeight(6),
-          }
-    }>
-    {label}
-  </Text>
-);
-
-// ✅ 헤더 컴포넌트 모음
+/** ---------------------------------------------------
+ *  ✅ 헤더: 로고
+ *  --------------------------------------------------- */
 export const RenderHeaderTitleLogo = () => (
   <View style={{paddingBottom: getResponsiveHeight(14)}}>
     <FastImage
       source={require('@/assets/icons/kino-logo.png')}
       style={{
         top: getResponsiveHeight(4),
-        width: getResponsiveWidth(40), // 47 → 40
+        width: getResponsiveWidth(40),
         height: getResponsiveHeight(40),
         resizeMode: 'contain',
         marginLeft: getResponsiveWidth(16),
@@ -109,49 +129,59 @@ export const RenderHeaderTitleLogo = () => (
   </View>
 );
 
+/** ---------------------------------------------------
+ *  ✅ 헤더: 홈(종 + 설정)
+ *  - 여기서도 unread 빨간점 표시
+ *  --------------------------------------------------- */
 export const RenderHeaderHome = ({navigation, currentScreen}) => {
+  const hasUnread = useSelector(state => state.notification.hasUnread);
+  // const hasUnread = true;
+
   const bellIcon =
     currentScreen === '홈'
       ? require('@/assets/icons/bell-white.png')
       : require('@/assets/icons/bell.png');
+
   const settingIcon =
     currentScreen === '홈'
       ? require('@/assets/icons/setting-white.png')
       : require('@/assets/icons/setting.png');
 
+  const goAlarm = () =>
+    navigation.navigate('Tabs', {
+      screen: currentScreen,
+      params: {screen: '알림화면'},
+    });
+
+  const goSetting = () =>
+    navigation.navigate('Tabs', {
+      screen: currentScreen,
+      params: {screen: '설정화면'},
+    });
+
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        marginRight: getResponsiveWidth(20), // 25 → 20
-      }}>
-      {createIconButton(
-        () =>
-          navigation.navigate('Tabs', {
-            screen: currentScreen,
-            params: {screen: '알림화면'},
-          }),
-        bellIcon,
-        getResponsiveIconSize(25), // 29 → 22
-        getResponsiveIconSize(25), // 29 → 22
-      )}
-      <View
-        style={{width: getResponsiveWidth(12), justifyContent: 'flex-end'}}
-      />
-      {createIconButton(
-        () =>
-          navigation.navigate('Tabs', {
-            screen: currentScreen,
-            params: {screen: '설정화면'},
-          }),
-        settingIcon,
-        getResponsiveIconSize(25), // 29 → 22
-        getResponsiveIconSize(25), // 29 → 22
-      )}
+    <View style={{flexDirection: 'row', marginRight: getResponsiveWidth(20)}}>
+      {/* ✅ 종(빨간점 포함) */}
+      <TouchableOpacity onPress={goAlarm} activeOpacity={0.8}>
+        <IconWithDot
+          source={bellIcon}
+          size={25}
+          showDot={!!hasUnread}
+          dotStyle={styles.headerDot}
+        />
+      </TouchableOpacity>
+
+      <View style={{width: getResponsiveWidth(12)}} />
+
+      {/* ✅ 설정 */}
+      {createIconButton(goSetting, settingIcon, 25, {})}
     </View>
   );
 };
 
+/** ---------------------------------------------------
+ *  ✅ 나머지 헤더 버튼들 (기존 그대로)
+ *  --------------------------------------------------- */
 export const RenderHeaderLeft1 = ({navigation}) =>
   createIconButton(
     () =>
@@ -161,7 +191,6 @@ export const RenderHeaderLeft1 = ({navigation}) =>
       }),
     require('@/assets/images/navigator_alarm-button.png'),
     HEADER_STYLES.headerLeftIconWidth,
-    HEADER_STYLES.headerLeftIconHeight,
     {marginLeft: HEADER_STYLES.headerLeftIconLeftPadding},
   );
 
@@ -174,7 +203,6 @@ export const RenderHeaderRightSetting = ({navigation}) =>
       }),
     require('@/assets/images/setting_bt.png'),
     HEADER_STYLES.headerRightIconWidth,
-    HEADER_STYLES.headerRightIconHeight,
     {marginRight: HEADER_STYLES.headerRightIconRightPadding},
   );
 
@@ -183,7 +211,6 @@ export const RenderHeaderRightChatSetting = ({setIsSettingsOpen}) =>
     () => setIsSettingsOpen(true),
     require('@/assets/images/dots2.png'),
     HEADER_STYLES.headerRightIconWidth - 2,
-    HEADER_STYLES.headerRightIconHeight,
     {marginRight: HEADER_STYLES.headerRightIconRightPadding},
   );
 
@@ -192,7 +219,6 @@ export const RenderHeaderDeletePost = () =>
     () => {},
     require('@/assets/images/trash.png'),
     HEADER_STYLES.headerRightIconWidth,
-    HEADER_STYLES.headerRightIconHeight,
     {marginRight: HEADER_STYLES.headerRightIconRightPadding},
     {zIndex: 999},
   );
@@ -202,7 +228,6 @@ export const RenderGoBackButton = ({navigation}) =>
     () => navigation.goBack(),
     require('@/assets/icons/caretDown.png'),
     HEADER_STYLES.headerLeftIconWidth,
-    HEADER_STYLES.headerLeftIconHeight,
     {marginLeft: HEADER_STYLES.headerLeftIconLeftPadding},
     {zIndex: 999},
   );
@@ -212,7 +237,6 @@ export const RenderGoBackButtonGallery = ({navigation}) =>
     () => navigation.goBack(),
     require('@/assets/images/navigator_goback-button.png'),
     HEADER_STYLES.headerLeftIconWidth,
-    HEADER_STYLES.headerLeftIconHeight,
     {marginLeft: HEADER_STYLES.headerLeftIconLeftPadding},
     {zIndex: 999},
   );
@@ -229,7 +253,7 @@ export const RenderHeaderLogo = ({navigation}) => (
     <FastImage
       source={require('@/assets/images/kinover.png')}
       style={{
-        width: getResponsiveWidth(60), // 70 → 60
+        width: getResponsiveWidth(60),
         height: getResponsiveHeight(60),
         marginLeft: getResponsiveWidth(8),
         resizeMode: 'contain',
@@ -241,10 +265,36 @@ export const RenderHeaderLogo = ({navigation}) => (
         bottom: getResponsiveHeight(6),
         width: getResponsiveWidth(110),
         height: getResponsiveHeight(24),
-        fontSize: getResponsiveFontSize(20), // 24 → 20
+        fontSize: getResponsiveFontSize(20),
         fontFamily: 'Pretendard-SemiBold',
       }}>
       Kinover
     </Text>
   </TouchableOpacity>
 );
+
+const styles = StyleSheet.create({
+  iconWrap: {position: 'relative'},
+
+  dot: {
+    position: 'absolute',
+    width: 9,
+    height: 9,
+    borderRadius: 999,
+    backgroundColor: '#FF3B30',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+
+  // ✅ 헤더 종 빨간점 (조금 더 눈에 띄게)
+  headerDot: {
+    top:-3,
+    right: -3,
+  },
+
+  // ✅ 탭바 빨간점
+  tabDot: {
+    top: -2,
+    right: -2,
+  },
+});
