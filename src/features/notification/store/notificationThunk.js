@@ -1,27 +1,43 @@
 // redux/thunk/notificationThunk.js
 import {createAsyncThunk} from '@reduxjs/toolkit';
 import axios from 'axios';
-import {getToken} from '../../../utils/storage'; // 로컬 스토리지나 AsyncStorage에서 토큰 불러오는 함수
+import {getToken} from '../../../utils/storage';
+
+const BASE = 'https://kinover.shop/api';
 
 export const fetchNotificationsThunk = createAsyncThunk(
   'notification/fetchNotifications',
   async (_, {rejectWithValue}) => {
     try {
       const token = await getToken();
-      const response = await axios.get(
-        'https://kinover.shop/api/user/notifications',
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-      console.log('알림데이터:' + JSON.stringify(response.data));
+      const res = await axios.get(`${BASE}/user/notifications`, {
+        headers: {Authorization: `Bearer ${token}`},
+      });
 
-      return response.data;
+      // res.data 가 { lastCheckedAt, notifications } 형태라고 가정
+      return res.data;
     } catch (error) {
       console.error('🔴 알림 조회 실패:', error);
       return rejectWithValue(error.response?.data || '알림 조회 실패');
+    }
+  },
+);
+
+export const fetchHasUnreadThunk = createAsyncThunk(
+  'notification/fetchHasUnread',
+  async (_, {rejectWithValue}) => {
+    try {
+      const token = await getToken();
+      const res = await axios.get(`${BASE}/user/notifications/unread`, {
+        headers: {Authorization: `Bearer ${token}`},
+      });
+      // { hasUnread: true/false }
+      return res.data?.hasUnread ?? false;
+    } catch (error) {
+      console.error('🔴 안읽은 알림 여부 조회 실패:', error);
+      return rejectWithValue(
+        error.response?.data || '안읽은 알림 여부 조회 실패',
+      );
     }
   },
 );

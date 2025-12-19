@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import {Platform, View} from 'react-native';
 import HomeScreen from '../../../features/home/screens';
@@ -12,6 +12,9 @@ import {
 } from '../helpers/tabHeaderHelpers';
 import {getResponsiveHeight} from '../../../utils/responsive';
 import StateScreen from '../../../features/home/screens/stateScreen';
+import {fetchHasUnreadThunk} from 'features/notification/store/notificationThunk';
+import {useDispatch, useSelector} from 'react-redux';
+import {useIsFocused} from '@react-navigation/native';
 
 const Stack = createStackNavigator();
 
@@ -26,6 +29,17 @@ const defaultHeaderStyle = {
 };
 
 const HomeStack = () => {
+  const dispatch = useDispatch();
+
+  const isFocused = useIsFocused();
+  const userId = useSelector(state => state.user.userId);
+
+  useEffect(() => {
+    if (!userId) return;
+    if (!isFocused) return;
+
+    dispatch(fetchHasUnreadThunk());
+  }, [dispatch, userId, isFocused]);
   return (
     <Stack.Navigator
       initialRouteName="홈"
@@ -35,7 +49,7 @@ const HomeStack = () => {
         headerTitleAlign: 'bottom',
         headerShown: true,
         // headerLeft: () => <RenderHeaderTitleLogo />,
-        headerLeft:null,
+        headerLeft: null,
 
         headerTitle: '',
       }}>
@@ -48,7 +62,7 @@ const HomeStack = () => {
           headerRight: () => (
             <RenderHeaderHome navigation={navigation} currentScreen="홈" />
           ),
-          headerStyle: [defaultHeaderStyle,],
+          headerStyle: [defaultHeaderStyle],
         })}
       />
 
@@ -100,4 +114,3 @@ const HomeStack = () => {
 };
 
 export default HomeStack;
-

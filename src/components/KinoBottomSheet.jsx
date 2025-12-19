@@ -4,13 +4,27 @@ import React from 'react';
 import {Keyboard} from 'react-native';
 import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
 import {getResponsiveWidth} from 'utils/responsive';
-
+const SOFT_ANIM = {
+  damping: 26,
+  stiffness: 140,
+  mass: 1.05,
+  overshootClamping: true, // ✅ 튕김 방지
+  restDisplacementThreshold: 0.5,
+  restSpeedThreshold: 0.5,
+};
 export function KinoBottomSheet({
   modalRef,
   snapPoints,
   children,
   enableContentPanningGesture = false,
-  animationConfigs = {damping: 18, stiffness: 220, mass: 1},
+  animationConfigs = {
+    damping: 22,
+    stiffness: 190,
+    mass: 0.95,
+    overshootClamping:false,
+    restDisplacementThreshold: 0.5,
+    restSpeedThreshold: 0.5,
+  },
   keyboardBehavior = 'extend',
   androidKeyboardInputMode = 'adjustResize',
   footerComponent,
@@ -40,14 +54,13 @@ export function KinoBottomSheet({
           {...props}
           appearsOnIndex={0}
           disappearsOnIndex={-1}
-          pressBehavior="close"         // ✅ 배경 탭 → 시트 닫힘
+          pressBehavior="close" // ✅ 배경 탭 → 시트 닫힘
           onPress={() => {
-            Keyboard.dismiss();        // ✅ 추가로 키보드만 내리기
+            Keyboard.dismiss(); // ✅ 추가로 키보드만 내리기
           }}
         />
       )}
-      footerComponent={footerComponent}
-    >
+      footerComponent={footerComponent}>
       {children}
     </BottomSheetModal>
   );

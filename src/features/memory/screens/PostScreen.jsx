@@ -12,7 +12,6 @@ import {
   ScrollView,
   Pressable,
 } from 'react-native';
-import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 import {useNavigation} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
@@ -70,7 +69,6 @@ export default function PostPage({route}) {
 
   useHideTabBar();
 
-  /** ---------------- state: description sheet expanded/collapsed ---------------- */
   const [descExpanded, setDescExpanded] = useState(false);
 
   /** ---------------- fetch ---------------- */
@@ -106,6 +104,7 @@ export default function PostPage({route}) {
       headerBackground: () => (
         <View style={{flex: 1, backgroundColor: 'transparent'}} />
       ),
+
       headerLeft: () => (
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -121,6 +120,7 @@ export default function PostPage({route}) {
           />
         </TouchableOpacity>
       ),
+
       headerRight: () => (
         <TouchableOpacity
           onPress={() => {
@@ -137,43 +137,7 @@ export default function PostPage({route}) {
     });
   }, [navigation, categoryList, safeMemory, vm]);
 
-  /** ---------------- swipe ---------------- */
-  const swipe = useMemo(() => {
-    const THRESHOLD = 80;
-
-    return (
-      Gesture.Pan()
-        // 가로 스와이프만
-        .activeOffsetX([-24, 24])
-        .failOffsetY([-18, 18])
-        .onEnd(e => {
-          // 풀스크린이면 스와이프 액션 막기
-          if (vm.isImageFullScreen) return;
-
-          // ✅ "첫 번째 사진"에서만: 왼→오 스와이프하면 추억화면(기본탭)으로
-          const isFirstImage = (vm.currentImageIndex ?? 0) === 0;
-          const isSwipeRight = e.translationX > THRESHOLD;
-
-          if (isFirstImage && isSwipeRight) {
-            dispatch(setMemorySelectedTab('post')); // ✅ 추억화면 기본탭
-            navigation.goBack(); // ✅ 추억화면으로 복귀
-            return;
-          }
-
-          // (선택) 기존 탭 스와이프 유지하고 싶으면 아래 유지
-          // if (Math.abs(e.translationX) > THRESHOLD) {
-          //   dispatch(setMemorySelectedTab(e.translationX < 0 ? 'album' : 'post'));
-          // }
-        })
-    );
-  }, [
-    dispatch,
-    navigation,
-    vm.isImageFullScreen,
-    vm.currentImageIndex,
-  ]);
-
-  /** ---------------- description sheet: always visible, controlled by click only ---------------- */
+  /** ---------------- description sheet ---------------- */
   const descSnapPoints = useMemo(() => ['20%', '30%'], []);
 
   const presentDescSheet = useCallback(() => {
@@ -202,9 +166,7 @@ export default function PostPage({route}) {
 
   useEffect(() => {
     presentDescSheet();
-    requestAnimationFrame(() => {
-      applyDescIndex(false);
-    });
+    requestAnimationFrame(() => applyDescIndex(false));
   }, [presentDescSheet, applyDescIndex]);
 
   useEffect(() => {
@@ -214,47 +176,50 @@ export default function PostPage({route}) {
   /** ---------------- comment sheet ---------------- */
   const openCommentSheet = useCallback(() => {
     collapseDesc();
-    setTimeout(() => {
-      commentSheetRef.current?.present?.();
-    }, 120);
+    setTimeout(() => commentSheetRef.current?.present?.(), 120);
   }, [collapseDesc]);
+
+  // ✅ “첫 번째 이미지에서 오른쪽 스와이프” 콜백
+  const handleSwipeFromFirstToRight = useCallback(() => {
+    if (vm.isImageFullScreen) return;
+    dispatch(setMemorySelectedTab('post')); // ✅ 추억화면 기본탭
+    navigation.goBack(); // ✅ 추억화면으로 복귀
+  }, [dispatch, navigation, vm.isImageFullScreen]);
 
   if (!postFromStore) return <SafeAreaView style={{flex: 1}} />;
 
   return (
     <SafeAreaView edges={[]} style={styles.container}>
-      <GestureDetector gesture={swipe}>
-        <View style={{flex: 1}}>
-          <ImageCarousel
-            localImages={vm.localImages}
-            currentIndex={vm.currentImageIndex}
-            setCurrentIndex={vm.setCurrentImageIndex}
-            isFullScreen={vm.isImageFullScreen}
-            setIsFullScreen={vm.setIsImageFullScreen}
-          />
+      <View style={{flex: 1}}>
+        <ImageCarousel
+          localImages={vm.localImages}
+          currentIndex={vm.currentImageIndex}
+          setCurrentIndex={vm.setCurrentImageIndex}
+          isFullScreen={vm.isImageFullScreen}
+          setIsFullScreen={vm.setIsImageFullScreen}
+          onSwipeFromFirstToRight={handleSwipeFromFirstToRight} // ✅ 추가
+        />
 
-          {/* 헤더용 그라데이션 오버레이 */}
-          <LinearGradient
-            pointerEvents="none"
-            colors={[
-              'rgba(18,18,18,0.6)',
-              'rgba(18,18,18,0.45)',
-              'rgba(18,18,18,0.25)',
-              'rgba(18,18,18,0.15)',
-              'rgba(18,18,18,0)',
-            ]}
-            locations={[0, 0.2, 0.4, 0.55, 1]}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              height: getResponsiveHeight(120),
-              zIndex: 5,
-            }}
-          />
-        </View>
-      </GestureDetector>
+        <LinearGradient
+          pointerEvents="none"
+          colors={[
+            'rgba(18,18,18,0.6)',
+            'rgba(18,18,18,0.45)',
+            'rgba(18,18,18,0.25)',
+            'rgba(18,18,18,0.15)',
+            'rgba(18,18,18,0)',
+          ]}
+          locations={[0, 0.2, 0.4, 0.55, 1]}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            height: getResponsiveHeight(120),
+            zIndex: 5,
+          }}
+        />
+      </View>
 
       {/* ---------------- 설명 BottomSheet ---------------- */}
       <BottomSheetModal
@@ -263,6 +228,7 @@ export default function PostPage({route}) {
         handleIndicatorStyle={{backgroundColor: 'transparent'}}
         enableContentPanningGesture={false}
         enableHandlePanningGesture={false}
+        
         enablePanDownToClose={false}
         onDismiss={() => {
           presentDescSheet();
@@ -351,8 +317,6 @@ export default function PostPage({route}) {
     </SafeAreaView>
   );
 }
-
-/* ---------------- styles ---------------- */
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#000'},

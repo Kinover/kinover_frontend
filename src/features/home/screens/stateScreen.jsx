@@ -1,4 +1,8 @@
-import React, {useRef} from 'react';
+/* eslint-disable react-native/no-inline-styles */
+/* eslint-disable react/no-unstable-nested-components */
+
+// StateScreen.jsx (DropShadow per-item + No Clipping on Edges)
+import React, {useRef, useMemo} from 'react';
 import {
   View,
   Text,
@@ -6,18 +10,24 @@ import {
   StyleSheet,
   FlatList,
   Animated,
+  Dimensions,
+  Platform,
 } from 'react-native';
+
+import DropShadow from 'react-native-drop-shadow';
+import FastImage from '@d11/react-native-fast-image';
+
 import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
 } from '../../../utils/responsive';
+
 import useHideTabBar from '../../../hooks/useHideTabBar';
 import {useDispatch, useSelector} from 'react-redux';
 import {modifyUserThunk} from '../store/userThunk';
 import {useNavigation} from '@react-navigation/native';
 import BottomActionButton from 'components/BottomActionButton';
-import FastImage from '@d11/react-native-fast-image';
 
 const EMOTIONS = [
   {
@@ -62,40 +72,90 @@ const EMOTIONS = [
   },
 ];
 
-const EmotionItem = ({item, isSelected, onPress}) => {
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+const CARD_H = getResponsiveHeight(115);
+const RADIUS = 14;
+
+// ✅ 그림자 잘림 방지용 “가장자리 여백”
+const EDGE_GUTTER = getResponsiveWidth(6);
+// ✅ 두 카드 사이 간격
+const GAP = getResponsiveWidth(12);
+
+const EmotionItem = ({item, index, isSelected, onPress, itemWidth}) => {
+  const appear = useRef(new Animated.Value(0)).current;
+  const press = useRef(new Animated.Value(0)).current;
+  const select = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
   const bgAnim = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
+
+  React.useEffect(() => {
+    Animated.timing(appear, {
+      toValue: 1,
+      duration: 360,
+      delay: Math.min(index * 45, 260),
+      useNativeDriver: true,
+    }).start();
+  }, [appear, index]);
 
   React.useEffect(() => {
     Animated.timing(bgAnim, {
       toValue: isSelected ? 1 : 0,
-      duration: 100,
+      duration: 160,
       useNativeDriver: false,
     }).start();
-  }, [isSelected]);
+
+    Animated.timing(select, {
+      toValue: isSelected ? 1 : 0,
+      duration: 180,
+      useNativeDriver: true,
+    }).start();
+  }, [isSelected, bgAnim, select]);
 
   const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.93,
-      useNativeDriver: false,
+    Animated.spring(press, {
+      toValue: 1,
+      friction: 7,
+      tension: 160,
+      useNativeDriver: true,
     }).start();
   };
 
   const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: false,
+    Animated.spring(press, {
+      toValue: 0,
+      friction: 7,
+      tension: 160,
+      useNativeDriver: true,
     }).start();
   };
 
   const backgroundColor = bgAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['white', '#FFF5D1'],
+    outputRange: ['#FFFFFF', '#FFF8E6'],
   });
 
   const borderColor = bgAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['#F4F4F4', '#FFC84D'],
+    outputRange: ['#EEEEEE', '#FFC84D'],
+  });
+
+  const opacity = appear.interpolate({inputRange: [0, 1], outputRange: [0, 1]});
+  const translateY = appear.interpolate({
+    inputRange: [0, 1],
+    outputRange: [12, 0],
+  });
+
+  const pressScale = press.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.985],
+  });
+  const selectScale = select.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 1.03],
+  });
+  const scale = Animated.multiply(pressScale, selectScale);
+
+  const badgeOpacity = select.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
   });
 
   return (
@@ -104,27 +164,55 @@ const EmotionItem = ({item, isSelected, onPress}) => {
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}>
       <Animated.View
-        style={[
-          styles.emotionBox,
-          {
-            transform: [{scale: scaleAnim}],
-            backgroundColor,
-            borderColor,
-            borderWidth: 1.5,
-          },
-        ]}>
-        <FastImage
-          source={item.url}
-          style={styles.emotionImage}
-          resizeMode="contain"
-        />
-        <Text
+        style={{
+          alignSelf: 'flex-start',
+          opacity,
+          transform: [{translateY}, {scale}],
+        }}>
+        <DropShadow
           style={[
-            styles.emotionText,
-            isSelected && styles.emotionTextSelected,
+            styles.shadow,
+            {
+              width: itemWidth,
+              height: CARD_H,
+              borderRadius: RADIUS,
+            },
           ]}>
-          {item.label}
-        </Text>
+          <Animated.View
+            style={[
+              styles.emotionBox,
+              {
+                backgroundColor,
+                borderColor,
+              },
+            ]}>
+            <Animated.View style={[styles.checkBadge, {opacity: badgeOpacity}]}>
+              <Text style={styles.checkText}>✓</Text>
+            </Animated.View>
+
+            <FastImage
+              source={item.url}
+              style={styles.emotionImage}
+              resizeMode="contain"
+            />
+
+            <Text
+              style={[
+                styles.emotionText,
+                isSelected && styles.emotionTextSelected,
+              ]}>
+              {item.label}
+            </Text>
+
+            <Animated.View
+              pointerEvents="none"
+              style={[
+                styles.ring,
+                {opacity: badgeOpacity, borderColor: '#FFC84D'},
+              ]}
+            />
+          </Animated.View>
+        </DropShadow>
       </Animated.View>
     </TouchableWithoutFeedback>
   );
@@ -140,53 +228,57 @@ export default function StateScreen() {
 
   useHideTabBar();
 
+  // ✅ “컨테이너 패딩 + 리스트 가장자리 여백(그림자용)”까지 반영해서 width 계산
+  const itemWidth = useMemo(() => {
+    const screenW = Dimensions.get('window').width;
+
+    const containerPad = getResponsiveWidth(20) * 2; // container paddingHorizontal
+    const listEdge = EDGE_GUTTER * 2; // ✅ 그림자 잘림 방지 여백
+    const available = screenW - containerPad - listEdge - GAP;
+
+    return Math.floor(available / 2);
+  }, []);
+
   const handleConfirm = () => {
-    if (selectedEmotion) {
-      dispatch(
-        modifyUserThunk({
-          userId: user.userId,
-          trait: user.trait,
-          emotion: selectedEmotion,
-        }),
-      )
-        .then(() => {
-          navigation.goBack();
-        })
-        .catch(err => {
-          console.error('❌ 감정 저장 실패:', err);
-        });
-    }
+    if (!selectedEmotion) return;
+
+    dispatch(
+      modifyUserThunk({
+        userId: user.userId,
+        trait: user.trait,
+        emotion: selectedEmotion,
+      }),
+    )
+      .then(() => navigation.goBack())
+      .catch(err => console.error('❌ 감정 저장 실패:', err));
   };
 
-  const renderEmotion = ({item}) => {
-    const isSelected = selectedEmotion === item.id;
-    return (
-      <EmotionItem
-        item={item}
-        isSelected={isSelected}
-        onPress={setSelectedEmotion}
-      />
-    );
-  };
+  const renderEmotion = ({item, index}) => (
+    <EmotionItem
+      item={item}
+      index={index}
+      itemWidth={itemWidth}
+      isSelected={selectedEmotion === item.id}
+      onPress={setSelectedEmotion}
+    />
+  );
 
   return (
     <View style={styles.container}>
-      {/* 제목 */}
       <Text style={styles.title}>지금 나의 감정을 골라주세요</Text>
-
-      {/* 부제목 */}
       <Text style={styles.subtitle}>
         {'선택한 감정은 24시간 동안 유지돼요.'}
       </Text>
 
       <FlatList
+        scrollEnabled={false}
         data={EMOTIONS}
         renderItem={renderEmotion}
         keyExtractor={item => item.id}
         numColumns={2}
-        columnWrapperStyle={styles.row}
-        contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.listContent}
+        columnWrapperStyle={styles.row}
       />
 
       <BottomActionButton label="선택 완료" onPress={handleConfirm} />
@@ -202,7 +294,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9F9F9',
   },
 
-  /** 제목 스타일 (앱 전체 통일 버전) */
   title: {
     fontSize: getResponsiveFontSize(20),
     fontFamily: 'Pretendard-SemiBold',
@@ -211,7 +302,6 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(6),
   },
 
-  /** 부제목 스타일 */
   subtitle: {
     fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-Light',
@@ -221,26 +311,61 @@ const styles = StyleSheet.create({
   },
 
   listContent: {
-    alignItems: 'center',
-    paddingBottom: getResponsiveHeight(40),
+    paddingTop: getResponsiveHeight(5),
+    paddingBottom: getResponsiveHeight(30),
+
+    // ✅ 여기! 그림자 잘림 방지용 리스트 좌우 여백
+    paddingHorizontal: EDGE_GUTTER,
   },
+
   row: {
     justifyContent: 'space-between',
-    marginBottom: getResponsiveHeight(16),
+    marginBottom: getResponsiveHeight(14),
+  },
+
+  shadow: {
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
+    ...(Platform.OS === 'android' ? {elevation: 4} : null),
   },
 
   emotionBox: {
-    width: '45%',
-    height: getResponsiveHeight(115),
-    borderRadius: 10,
+    width: '100%',
+    height: CARD_H,
+    borderRadius: RADIUS,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1.2,
+    overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
+  },
 
-    shadowOffset: {width: 0, height: 2},
-    shadowColor: '#000',
-    shadowRadius: 5,
-    shadowOpacity: 0.08,
-    marginHorizontal: 10,
+  ring: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: RADIUS,
+    borderWidth: 2,
+    opacity: 0,
+  },
+
+  checkBadge: {
+    position: 'absolute',
+    top: getResponsiveHeight(8),
+    right: getResponsiveWidth(8),
+    width: getResponsiveWidth(22),
+    height: getResponsiveWidth(22),
+    borderRadius: 999,
+    backgroundColor: '#FFC84D',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  checkText: {
+    color: '#000',
+    fontFamily: 'Pretendard-Bold',
+    fontSize: getResponsiveFontSize(13),
+    lineHeight: getResponsiveFontSize(16),
   },
 
   emotionImage: {

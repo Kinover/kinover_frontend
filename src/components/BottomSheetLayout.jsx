@@ -18,7 +18,7 @@ export default function BottomSheetLayout({
   modalRef,
   snapPoints,
   enableContentPanningGesture = false,
-  animationConfigs = {damping: 18, stiffness: 220, mass: 1},
+  animationConfigs,
   keyboardBehavior = 'extend',
   androidKeyboardInputMode = 'adjustResize',
   title,
@@ -53,9 +53,7 @@ export default function BottomSheetLayout({
   const footerComponent =
     hasFixedFooter &&
     (footerPropsArg => (
-      <BottomSheetFooter
-        {...footerPropsArg}
-        bottomInset={insets.bottom}>
+      <BottomSheetFooter {...footerPropsArg} bottomInset={insets.bottom}>
         <View style={[styles.footer, footerStyle]}>
           <BottomSheetButtons {...injectedFooterProps} />
         </View>
