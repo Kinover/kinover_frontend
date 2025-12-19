@@ -26,12 +26,11 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
     latestMessageTime,
     memberImages,
     unreadCount = 0,
-    userChatRooms, // 참여자 userId 목록
+    userChatRooms,
   } = chatRoom;
 
   const screen = kino ? '키노상담소화면' : '채팅방화면';
 
-  // 🔹 util 함수로 타이틀 생성 (familyUserList 사용)
   const title = getChatRoomTitle(
     roomName,
     kino,
@@ -47,17 +46,31 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
     dispatch(markRoomRead(chatRoomId));
     navigation.navigate(screen, {chatRoom, title, userId});
   };
-  console.log('userId:', userId);
-  console.log('userChatRooms:', userChatRooms);
-  console.log('familyUserList:', familyUserList);
-  console.log('avatarImages:', memberImages);
+
+  const AVATAR_SIZE = getResponsiveIconSize(55);
+  const AI_BADGE_SIZE = getResponsiveIconSize(16);
 
   return (
     <TouchableOpacity
       style={styles.container}
       onPress={onPress}
       activeOpacity={0.75}>
-      <GroupAvatar images={memberImages} size={getResponsiveIconSize(55)} />
+      {/* ✅ 아바타 + AI 뱃지 래퍼 */}
+      <View
+        style={[styles.avatarWrap, {width: AVATAR_SIZE, height: AVATAR_SIZE}]}>
+        <GroupAvatar images={memberImages} size={AVATAR_SIZE} />
+
+        {/* ✅ 키노 상담소면 우측 상단 AI 뱃지 */}
+        {kino && (
+          <View
+            style={[
+              styles.aiBadge,
+              {width: AI_BADGE_SIZE, height: AI_BADGE_SIZE},
+            ]}>
+            <Text style={styles.aiBadgeText}>AI</Text>
+          </View>
+        )}
+      </View>
 
       <View style={styles.textArea}>
         <View style={styles.headerRow}>
@@ -79,20 +92,19 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
           {description}
         </Text>
       </View>
+
       <View style={styles.metaCol}>
         <Text style={styles.time}>
           {latestMessageTime ? formatPreviewTime(latestMessageTime) : ''}
         </Text>
 
-        {unreadCount > 0 && (
+        {unreadCount > 0 ? (
           <View style={styles.badge}>
             <Text style={styles.badgeText}>
               {unreadCount > 99 ? '99+' : unreadCount}
             </Text>
           </View>
-        )}
-
-        {unreadCount == 0 && (
+        ) : (
           <View style={[styles.badge, {backgroundColor: 'transparent'}]}>
             <Text style={styles.badgeText}>0</Text>
           </View>
@@ -113,6 +125,32 @@ const styles = StyleSheet.create({
     width: '100%',
     height: getResponsiveHeight(80),
   },
+
+  // ✅ 아바타 래퍼 (AI 뱃지 absolute 기준)
+  avatarWrap: {
+    position: 'relative',
+    
+  },
+
+  // ✅ AI 뱃지
+  aiBadge: {
+    position: 'absolute',
+    top: -getResponsiveHeight(1.5),
+    right: -getResponsiveWidth(1.5),
+    borderRadius: 999,
+    backgroundColor: '#111827', // 진한색
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 0.5,
+    borderColor: 'rgba(255,255,255,0.9)',
+  },
+  aiBadgeText: {
+    color: '#FFFFFF',
+    fontSize: getResponsiveFontSize(11),
+    fontFamily: 'Pretendard-Bold',
+    includeFontPadding: false,
+  },
+
   textArea: {
     flex: 1,
     gap: getResponsiveHeight(4),

@@ -52,7 +52,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const [scrollContainerWidth, setScrollContainerWidth] = useState(0);
     const [canScroll, setCanScroll] = useState(false);
 
-    const snapPoints = useMemo(() => ['54%'], []);
+    const snapPoints = useMemo(() => ['56%'], []);
 
     const [toastVisible, setToastVisible] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(10),
   },
   subTitle: {
-    fontSize: getResponsiveFontSize(12.5),
+    fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-Medium',
     color: '#4B5563',
     marginBottom: getResponsiveHeight(4),

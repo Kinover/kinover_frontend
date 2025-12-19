@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   },
 
   receivedText: {
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: CHATROOM_STYLE.messageFontFamily,
     fontSize: CHATROOM_STYLE.messageFontSize,
     color: 'black',
     flexWrap: 'wrap',

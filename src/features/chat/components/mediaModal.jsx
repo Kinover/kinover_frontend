@@ -1,3 +1,4 @@
+
 /* eslint-disable react-native/no-inline-styles */
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
 import {
@@ -24,6 +25,7 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  runOnJS,
 } from 'react-native-reanimated';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
@@ -43,86 +45,116 @@ const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
 /** =========================
  *  ZoomableImage
- *  ✅ FlatList 가로 스와이프 살리기:
- *  - pan은 "확대 상태"에서만 enabled
+ *  ✅ 핀치 줌 / 드래그 이동 / 더블탭 확대↔원복
+ *  ✅ 확대 중에는 FlatList 스와이프(넘김) 막기 위해 onTogglePaging 사용
  * ========================= */
-function ZoomableImage({uri}) {
+function ZoomableImage({
+  uri,
+  isActive,
+  onTogglePaging,
+  doubleTapScale = 2,
+  maxScale = 4,
+}) {
   const scale = useSharedValue(1);
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
+  const tx = useSharedValue(0);
+  const ty = useSharedValue(0);
 
-  const startScale = useSharedValue(1);
-  const startX = useSharedValue(0);
-  const startY = useSharedValue(0);
+  const lastScale = useSharedValue(1);
+  const lastTx = useSharedValue(0);
+  const lastTy = useSharedValue(0);
 
-  const [panEnabled, setPanEnabled] = useState(false);
-  const setPanEnabledSafe = useCallback(v => {
-    setPanEnabled(prev => (prev === v ? prev : v));
-  }, []);
+  const setPaging = useCallback(
+    enabled => {
+      onTogglePaging?.(enabled);
+    },
+    [onTogglePaging],
+  );
 
   const reset = useCallback(() => {
     scale.value = withTiming(1);
-    translateX.value = withTiming(0);
-    translateY.value = withTiming(0);
-    setPanEnabledSafe(false);
-  }, [scale, translateX, translateY, setPanEnabledSafe]);
+    tx.value = withTiming(0);
+    ty.value = withTiming(0);
+    lastScale.value = 1;
+    lastTx.value = 0;
+    lastTy.value = 0;
+    setPaging(true);
+  }, [scale, tx, ty, lastScale, lastTx, lastTy, setPaging]);
+
+  // ✅ 페이지가 바뀌면(비활성) 자동 리셋
+  useEffect(() => {
+    if (!isActive) reset();
+  }, [isActive, reset]);
 
   const pinch = useMemo(() => {
     return Gesture.Pinch()
+      .runOnJS(true)
       .onBegin(() => {
-        startScale.value = scale.value;
+        setPaging(false);
       })
       .onUpdate(e => {
-        const next = startScale.value * e.scale;
-        const clamped = Math.min(Math.max(next, 1), 4);
-        scale.value = clamped;
+        const next = clamp(lastScale.value * e.scale, 1, maxScale);
+        scale.value = next;
       })
       .onEnd(() => {
+        lastScale.value = scale.value;
+
         if (scale.value <= 1.01) {
-          reset();
-        } else {
-          setPanEnabledSafe(true);
+          runOnJS(reset)();
         }
       });
-  }, [reset, scale, startScale, setPanEnabledSafe]);
+  }, [maxScale, reset, scale, lastScale, setPaging]);
 
   const pan = useMemo(() => {
     return Gesture.Pan()
-      .enabled(panEnabled) // ✅ 핵심
+      .runOnJS(true)
       .onBegin(() => {
-        startX.value = translateX.value;
-        startY.value = translateY.value;
+        if (scale.value > 1.01) setPaging(false);
       })
       .onUpdate(e => {
-        translateX.value = startX.value + e.translationX;
-        translateY.value = startY.value + e.translationY;
+        if (scale.value <= 1.01) return;
+
+        const limitX = (screenWidth * (scale.value - 1)) / 2;
+        const limitY = (screenHeight * (scale.value - 1)) / 2;
+
+        const nextX = clamp(lastTx.value + e.translationX, -limitX, limitX);
+        const nextY = clamp(lastTy.value + e.translationY, -limitY, limitY);
+
+        tx.value = nextX;
+        ty.value = nextY;
+      })
+      .onEnd(() => {
+        lastTx.value = tx.value;
+        lastTy.value = ty.value;
+
+        if (scale.value <= 1.01) {
+          runOnJS(reset)();
+        }
       });
-  }, [panEnabled, startX, startY, translateX, translateY]);
+  }, [reset, scale, setPaging, tx, ty, lastTx, lastTy]);
 
   const doubleTap = useMemo(() => {
     return Gesture.Tap()
       .numberOfTaps(2)
+      .runOnJS(true)
       .onEnd(() => {
         if (scale.value > 1.01) {
           reset();
-        } else {
-          scale.value = withTiming(2);
-          setPanEnabledSafe(true);
+          return;
         }
+        setPaging(false);
+        scale.value = withTiming(doubleTapScale);
+        lastScale.value = doubleTapScale;
       });
-  }, [reset, scale, setPanEnabledSafe]);
+  }, [doubleTapScale, reset, scale, setPaging, lastScale]);
 
   const composed = useMemo(() => {
+    // 동시에 동작 (핀치/팬/더블탭)
     return Gesture.Simultaneous(pinch, pan, doubleTap);
   }, [pinch, pan, doubleTap]);
 
   const animatedStyle = useAnimatedStyle(() => {
     return {
-      transform: [
-        {translateX: translateX.value},
-        {translateY: translateY.value},
-        {scale: scale.value},
-      ],
+      transform: [{translateX: tx.value}, {translateY: ty.value}, {scale: scale.value}],
     };
   });
 
@@ -177,9 +209,22 @@ export default function MediaModal({
 
   const [currentIndex, setCurrentIndex] = useState(safeInitialIndex);
 
+  // ✅ 확대 중이면 FlatList 넘김 막기
+  const pagingEnabledRef = useRef(true);
+  const [pagingEnabled, setPagingEnabled] = useState(true);
+
+  const togglePaging = useCallback(enabled => {
+    if (pagingEnabledRef.current === enabled) return;
+    pagingEnabledRef.current = enabled;
+    setPagingEnabled(enabled);
+  }, []);
+
   useEffect(() => {
     if (!visible) return;
     setCurrentIndex(safeInitialIndex);
+    // 모달 다시 열면 스와이프는 기본 허용
+    setPagingEnabled(true);
+    pagingEnabledRef.current = true;
   }, [visible, safeInitialIndex]);
 
   useEffect(() => {
@@ -226,6 +271,8 @@ export default function MediaModal({
 
   const renderItem = useCallback(
     ({item, index}) => {
+      const isActive = currentIndex === index;
+
       return (
         <View style={styles.page}>
           {isVideo ? (
@@ -235,7 +282,7 @@ export default function MediaModal({
                 style={styles.video}
                 resizeMode="contain"
                 controls
-                paused={currentIndex !== index}
+                paused={!isActive}
                 repeat={false}
                 playInBackground={false}
                 playWhenInactive={false}
@@ -247,12 +294,16 @@ export default function MediaModal({
               />
             </View>
           ) : (
-            <ZoomableImage uri={item} />
+            <ZoomableImage
+              uri={item}
+              isActive={isActive}
+              onTogglePaging={togglePaging}
+            />
           )}
         </View>
       );
     },
-    [isVideo, currentIndex],
+    [isVideo, currentIndex, togglePaging],
   );
 
   return (
@@ -286,7 +337,8 @@ export default function MediaModal({
           data={resolvedUrls}
           keyExtractor={(item, index) => String(item) + index}
           horizontal
-          pagingEnabled
+          pagingEnabled={pagingEnabled}
+          scrollEnabled={pagingEnabled}
           showsHorizontalScrollIndicator={false}
           getItemLayout={(_, index) => ({
             length: screenWidth,
@@ -301,6 +353,9 @@ export default function MediaModal({
             const idx = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
             const safeIdx = clamp(idx, 0, resolvedUrls.length - 1);
             setCurrentIndex(safeIdx);
+
+            // ✅ 페이지 바뀌면 스와이프 기본 복귀 (각 페이지 ZoomableImage가 비활성되며 reset됨)
+            togglePaging(true);
 
             if (!isVideo && resolvedUrls.length) {
               const candidates = [safeIdx, safeIdx - 1, safeIdx + 1]

@@ -1,8 +1,7 @@
 // components/common/GroupAvatar.jsx
 import React from 'react';
-import {View,  StyleSheet} from 'react-native';
+import {View, StyleSheet} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
-
 
 export default function GroupAvatar({images = [], size = 60}) {
   const count = Math.min(images.length, 4);
@@ -85,6 +84,7 @@ const styles = StyleSheet.create({
   absolute: {
     position: 'absolute',
     resizeMode: 'cover',
-    borderColor: 'white',
+    borderColor: '#F3F3F3',
+    borderWidth: 1,
   },
 });

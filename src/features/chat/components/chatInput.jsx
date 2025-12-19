@@ -50,6 +50,7 @@ import {loadGalleryPhotos} from '../../../utils/gallery';
 import formatDuration from '../../../utils/formatDuration';
 import ToastModal from '../../../components/ToastModal';
 import {addMessageAndUpdateRoom} from '../utils/messageActions';
+import {BUTTON_STYLES} from 'styles/style';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -754,10 +755,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: getResponsiveHeight(45),
-    borderWidth: 1,
-    borderColor: '#FFC84D',
     borderRadius: getResponsiveWidth(30),
-    backgroundColor: 'rgba(255, 231, 178, 0.2)',
+    borderWidth: 1,
+    // borderColor: '#FFC84D',
+    // backgroundColor: 'rgba(255, 231, 178, 0.2)',
+    backgroundColor: 'rgba(80, 100, 100, 0.1)',
+    borderColor: 'rgba(55, 65, 81,0.45)',
+
     paddingHorizontal: getResponsiveWidth(8),
   },
 

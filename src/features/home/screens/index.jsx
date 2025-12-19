@@ -17,7 +17,10 @@ import {fetchFamilyThunk, fetchFamilyStatusThunk} from '../store/familyThunk';
 import {fetchFamilyUserListThunk} from '../store/familyUserThunk';
 import {modifyUserThunk} from '../store/userThunk';
 
-import {getResponsiveWidth, getResponsiveHeight} from '../../../utils/responsive';
+import {
+  getResponsiveWidth,
+  getResponsiveHeight,
+} from '../../../utils/responsive';
 
 import HeaderSection from '../components/HeaderSection';
 import MemberGridSection from '../components/MemberGridSection';
@@ -56,7 +59,9 @@ export default function HomeScreen() {
   const familyLoaded = !!family?.familyId;
 
   // ✅ 홈에서 보여줄 멤버: 본인 제외
-  const familyMembers = (familyUserList || []).filter(m => m.userId !== user.userId);
+  const familyMembers = (familyUserList || []).filter(
+    m => m.userId !== user.userId,
+  );
 
   // 🔔 알림 리스너
   useEffect(() => {
@@ -178,7 +183,7 @@ export default function HomeScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <View edges={['top']} style={styles.container}>
       <View style={styles.backgroundCurve} />
 
       <ScrollView
@@ -217,11 +222,14 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    // paddingTop:'25%',
     flex: 1,
     backgroundColor: '#FFC84D',
+    overflow:'visible',
   },
   scrollContent: {
     width: '100%',
+    paddingTop:'25%',
     // ✅ height 고정은 비추 (빈 상태 문구가 아래로 밀리거나 잘릴 수 있음)
     // height: getResponsiveHeight(200),
     paddingBottom: getResponsiveHeight(30),
@@ -229,7 +237,10 @@ const styles = StyleSheet.create({
   },
   backgroundCurve: {
     position: 'absolute',
-    bottom: -getResponsiveHeight(130),
+    // paddingTop:'25%',
+    bottom: '-28%',
+
+    // bottom: -getResponsiveHeight(130),
     width: '220%',
     left: '-60%',
     height: '100%',

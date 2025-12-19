@@ -8,7 +8,7 @@ import {
 
 // src/styles/colors.ts
 export const BACKGROUND_COLORS = {
-  primaryBg: '#FF3B30',
+  primaryBg: '#FFC84D',
   secondaryBg: '#F9F9F9',
   overlayBg: 'rgba(17,24,39,0.45)',
 
@@ -57,6 +57,8 @@ export const SETTING_STYLES = {
 };
 
 export const CHATROOM_STYLE = {
+  messageFontFamily:
+    Platform.OS === 'android' ? 'Pretendard-Regular' : 'Pretendard-Light',
   messageFontSize: getResponsiveFontSize(14), // 🔽 15 → 14
   messageTimeFontSize: getResponsiveFontSize(11), // 🔽 10 → 9
   KinoMessageFontSize: getResponsiveFontSize(14),

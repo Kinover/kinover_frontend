@@ -8,7 +8,7 @@ import {
 } from '../../../utils/responsive';
 import {useSelector} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
-import {HEADER_STYLES} from 'styles/style';
+import {BUTTON_STYLES, HEADER_STYLES} from 'styles/style';
 
 // ✅ 공통 아이콘 버튼 생성기 (size는 "기본 px" 개념으로만 넘기면 됨)
 const createIconButton = (
@@ -79,12 +79,12 @@ export const renderTabBarLabel = (label, focused) => (
     style={
       Platform.OS === 'ios'
         ? {
-            color: focused ? '#FFC84D' : 'gray',
+            color: focused ? BUTTON_STYLES.saveBg : 'gray',
             fontSize: getResponsiveFontSize(11), // 12 → 11
             marginTop: getResponsiveHeight(6),
           }
         : {
-            color: focused ? '#FFC84D' : 'gray',
+            color: focused ? BUTTON_STYLES.saveBg : 'gray',
             fontSize: getResponsiveFontSize(12), // 13 → 12
             marginTop: getResponsiveHeight(6),
           }

@@ -1,6 +1,6 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
-import {Platform} from 'react-native';
+import {Platform, View} from 'react-native';
 import HomeScreen from '../../../features/home/screens';
 import NotificationScreen from '../../../features/notification/screens/NotificationScreen';
 import SettingScreen from '../../../features/setting/screens/SettingScreen';
@@ -34,7 +34,9 @@ const HomeStack = () => {
         headerStyle: defaultHeaderStyle,
         headerTitleAlign: 'bottom',
         headerShown: true,
-        headerLeft: () => <RenderHeaderTitleLogo />,
+        // headerLeft: () => <RenderHeaderTitleLogo />,
+        headerLeft:null,
+
         headerTitle: '',
       }}>
       <Stack.Screen
@@ -42,11 +44,11 @@ const HomeStack = () => {
         component={HomeScreen}
         options={({navigation}) => ({
           gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
-
+          headerTransparent: true, // ✅ 핵심
           headerRight: () => (
             <RenderHeaderHome navigation={navigation} currentScreen="홈" />
           ),
-          headerStyle: [defaultHeaderStyle, {backgroundColor: '#FFC84D'}],
+          headerStyle: [defaultHeaderStyle,],
         })}
       />
 

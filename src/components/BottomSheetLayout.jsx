@@ -118,16 +118,16 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    marginBottom: getResponsiveHeight(10),
+    marginBottom: getResponsiveHeight(15),
   },
   title: {
-    fontSize: getResponsiveFontSize(16.5),
+    fontSize: getResponsiveFontSize(18),
     fontFamily: 'Pretendard-SemiBold',
     color: '#111827',
   },
   subtitle: {
     marginTop: getResponsiveHeight(4),
-    fontSize: getResponsiveFontSize(12),
+    fontSize: getResponsiveFontSize(13.5),
     fontFamily: 'Pretendard-Regular',
     color: '#6B7280',
   },

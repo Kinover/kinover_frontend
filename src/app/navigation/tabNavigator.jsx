@@ -1,13 +1,13 @@
+// TabNavigator.jsx
 import React from 'react';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import TabBarWrapper from './helpers/tabBarWrapper';
 import HomeStack from './stacks/homeStack';
 import CommunicationStack from './stacks/communicationStack';
 import ScheduleStack from './stacks/scheduleStack';
 import MemoryStack from './stacks/memoryStack';
 import {AnimatedTabBar, TabBarVisibilityProvider} from './animatedTabBar';
 
-import {renderTabBarIcon, renderTabBarLabel} from './helpers/tabHeaderHelpers';
+import {renderTabBarLabel} from './helpers/tabHeaderHelpers';
 import {
   getResponsiveHeight,
   getResponsiveIconSize,
@@ -25,14 +25,13 @@ const tabBarBaseStyle = {
   paddingTop: 8,
   paddingHorizontal: getResponsiveWidth(15),
   height: getResponsiveHeight(90),
-  
 };
+
 const TABS = [
   {
     name: '홈',
     component: HomeStack,
     icon: {
-      focused: 'https://i.postimg.cc/SxNFGjZS/Vector-17.png',
       default: 'https://i.postimg.cc/RFw0KNFS/Vector-20.png',
     },
   },
@@ -40,15 +39,13 @@ const TABS = [
     name: '소통',
     component: CommunicationStack,
     icon: {
-      focused: 'https://i.postimg.cc/k45KQp31/chat.png',
-      default: 'https://i.postimg.cc/j5NkNNTN/Group-1171276556.jpg',
+      default: 'https://i.postimg.cc/SN3tKTt9/Group-1171276556.png',
     },
   },
   {
     name: '일정',
     component: ScheduleStack,
     icon: {
-      focused: 'https://i.postimg.cc/RZHzbYXC/Vector-9.png',
       default: 'https://i.postimg.cc/02K38wmc/Vector-10.png',
     },
   },
@@ -56,8 +53,7 @@ const TABS = [
     name: '추억',
     component: MemoryStack,
     icon: {
-      focused: 'https://i.postimg.cc/3NCVXHm0/Vector-16.png',
-      default: 'https://i.postimg.cc/sgz4hhgX/Vector-19.png',
+      default: 'https://i.postimg.cc/63WZwKrn/Images.png',
     },
   },
 ];
@@ -79,17 +75,14 @@ export default function TabNavigator() {
             tabBarStyle: {
               ...tabBarBaseStyle,
               backgroundColor: 'transparent', // ✅ wrapper가 배경/그림자 담당
-              elevation: 0,                   // ✅ Android 기본 그림자 제거
-              shadowOpacity: 0,               // ✅ iOS 기본 그림자 제거
-              borderTopWidth: 0,              // ✅ 경계선도 wrapper에서 처리
+              elevation: 0, // ✅ Android 기본 그림자 제거
+              shadowOpacity: 0, // ✅ iOS 기본 그림자 제거
+              borderTopWidth: 0, // ✅ 경계선도 wrapper에서 처리
             },
             tabBarLabel: ({focused}) => renderTabBarLabel(route.name, focused),
-            tabBarIcon: ({focused}) =>
-              renderTabBarIcon(
-                focused,
-                currentTab?.icon.focused,
-                currentTab?.icon.default,
-              ),
+            tabBarIcon: ({focused}) => (
+              <TabIcon focused={focused} uri={currentTab?.icon?.default} />
+            ),
           };
         }}>
         {TABS.map(({name, component}) => (
@@ -97,5 +90,31 @@ export default function TabNavigator() {
         ))}
       </Tab.Navigator>
     </TabBarVisibilityProvider>
+  );
+}
+
+// ✅ default 이미지만 쓰고, focused일 때 tintColor만 변경
+function TabIcon({focused, uri}) {
+  return (
+    <ImageWithTint
+      uri={uri}
+      tintColor={focused ? '#111827' : '#9CA3AF'}
+    />
+  );
+}
+
+// ✅ 아이콘 이미지 컴포넌트 (사이즈 통일)
+import {Image} from 'react-native';
+function ImageWithTint({uri, tintColor}) {
+  return (
+    <Image
+      source={{uri}}
+      style={{
+        width: getResponsiveIconSize(22),
+        height: getResponsiveIconSize(22),
+        resizeMode: 'contain',
+        tintColor,
+      }}
+    />
   );
 }
