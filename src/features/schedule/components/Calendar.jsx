@@ -8,6 +8,7 @@ import {
   StyleSheet,
   PanResponder,
 } from 'react-native';
+import Animated, {FadeInDown, FadeOutUp} from 'react-native-reanimated';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -246,101 +247,108 @@ export default function CalendarToggle({
 
             <View style={styles.divider} />
 
-            {mode === 'month' ? (
-              <View
-                style={[
-                  styles.dateGrid,
-                  {width: gridWidth, columnGap: GAP, rowGap: GAP},
-                ]}>
-                {monthDates.map((item, idx) => {
-                  const count = scheduleCountPerDay[item.key] || 0;
-                  const CIRCLE_SIZE = cellSize * 0.78;
-                  const holiday = isHoliday(item.date);
+            {/* ✅ 월/주 전환 애니메이션: Fade + 살짝 Slide */}
+            <Animated.View
+              key={mode} // mode 바뀔 때마다 교체되며 애니메이션 적용
+              entering={FadeInDown.duration(180)}
+              exiting={FadeOutUp.duration(120)}
+              style={{width: gridWidth}}>
+              {mode === 'month' ? (
+                <View
+                  style={[
+                    styles.dateGrid,
+                    {width: gridWidth, columnGap: GAP, rowGap: GAP},
+                  ]}>
+                  {monthDates.map((item, idx) => {
+                    const count = scheduleCountPerDay[item.key] || 0;
+                    const CIRCLE_SIZE = cellSize * 0.78;
+                    const holiday = isHoliday(item.date);
 
-                  const birthNames = birthdayMap?.[item.key];
-                  const hasBirthday = !!birthNames?.length;
+                    const birthNames = birthdayMap?.[item.key];
+                    const hasBirthday = !!birthNames?.length;
 
-                  return (
-                    <TouchableOpacity
-                      key={idx}
-                      style={[
-                        styles.dayCell,
-                        {width: cellSize, height: cellSize},
-                      ]}
-                      onPress={() => setSelectedDate(item.date)}
-                      hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
-                      <View
+                    return (
+                      <TouchableOpacity
+                        key={idx}
                         style={[
-                          styles.innerCircle,
-                          hasBirthday && styles.birthdayRing,
-                          {
-                            width: CIRCLE_SIZE,
-                            height: CIRCLE_SIZE,
-                            borderRadius: CIRCLE_SIZE / 2,
-                          },
-                          getCountColorStyle(count),
-                          item.isSelected && styles.selectedBox,
-                          !item.isCurrentMonth && {opacity: 0.35},
-                        ]}>
-                        <Text
+                          styles.dayCell,
+                          {width: cellSize, height: cellSize},
+                        ]}
+                        onPress={() => setSelectedDate(item.date)}
+                        hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
+                        <View
                           style={[
-                            styles.dateText,
-                            item.isSelected && styles.selectedText,
-                            holiday && styles.holidayText,
+                            styles.innerCircle,
+                            hasBirthday && styles.birthdayRing,
+                            {
+                              width: CIRCLE_SIZE,
+                              height: CIRCLE_SIZE,
+                              borderRadius: CIRCLE_SIZE / 2,
+                            },
+                            getCountColorStyle(count),
+                            item.isSelected && styles.selectedBox,
+                            !item.isCurrentMonth && {opacity: 0.35},
                           ]}>
-                          {item.date.getDate()}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            ) : (
-              <View
-                style={[styles.weekGrid, {width: gridWidth, columnGap: GAP}]}>
-                {weekDates.map((item, idx) => {
-                  const count = scheduleCountPerDay[item.key] || 0;
-                  const CIRCLE_SIZE = cellSize * 0.78;
-                  const holiday = isHoliday(item.date);
+                          <Text
+                            style={[
+                              styles.dateText,
+                              item.isSelected && styles.selectedText,
+                              holiday && styles.holidayText,
+                            ]}>
+                            {item.date.getDate()}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ) : (
+                <View
+                  style={[styles.weekGrid, {width: gridWidth, columnGap: GAP}]}>
+                  {weekDates.map((item, idx) => {
+                    const count = scheduleCountPerDay[item.key] || 0;
+                    const CIRCLE_SIZE = cellSize * 0.78;
+                    const holiday = isHoliday(item.date);
 
-                  const birthNames = birthdayMap?.[item.key];
-                  const hasBirthday = !!birthNames?.length;
+                    const birthNames = birthdayMap?.[item.key];
+                    const hasBirthday = !!birthNames?.length;
 
-                  return (
-                    <TouchableOpacity
-                      key={idx}
-                      style={[
-                        styles.dayCell,
-                        {width: cellSize, height: cellSize},
-                      ]}
-                      onPress={() => setSelectedDate(item.date)}
-                      hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
-                      <View
+                    return (
+                      <TouchableOpacity
+                        key={idx}
                         style={[
-                          styles.innerCircle,
-                          hasBirthday && styles.birthdayRing,
-                          {
-                            width: CIRCLE_SIZE,
-                            height: CIRCLE_SIZE,
-                            borderRadius: CIRCLE_SIZE / 2,
-                          },
-                          getCountColorStyle(count),
-                          item.isSelected && styles.selectedBox,
-                        ]}>
-                        <Text
+                          styles.dayCell,
+                          {width: cellSize, height: cellSize},
+                        ]}
+                        onPress={() => setSelectedDate(item.date)}
+                        hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
+                        <View
                           style={[
-                            styles.dateText,
-                            item.isSelected && styles.selectedText,
-                            holiday && styles.holidayText,
+                            styles.innerCircle,
+                            hasBirthday && styles.birthdayRing,
+                            {
+                              width: CIRCLE_SIZE,
+                              height: CIRCLE_SIZE,
+                              borderRadius: CIRCLE_SIZE / 2,
+                            },
+                            getCountColorStyle(count),
+                            item.isSelected && styles.selectedBox,
                           ]}>
-                          {item.date.getDate()}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-            )}
+                          <Text
+                            style={[
+                              styles.dateText,
+                              item.isSelected && styles.selectedText,
+                              holiday && styles.holidayText,
+                            ]}>
+                            {item.date.getDate()}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </Animated.View>
           </View>
         </View>
       </DropShadow>

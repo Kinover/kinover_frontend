@@ -36,6 +36,9 @@ import {useLocalDateKey} from '../hooks/useLocalDateKey';
 import useGuide from 'hooks/useGuide';
 // import GuideModal from 'components/GuideModal';
 
+// ✅ HAPTIC (경로는 네 프로젝트에 맞게 유지/조정)
+import {hapticLight} from '../../../utils/haptic';
+
 const SCHEDULE_GUIDE_STEPS = [
   {
     title: '날짜별 일정 한눈에 보기',
@@ -175,6 +178,13 @@ export default function ScheduleScreen() {
 
   const birthdayNamesForSelectedDate = birthdayMap?.[selectedDateKey] ?? [];
 
+  // ✅ FAB 클릭 핸들러 (햅틱 포함)
+  const handleFabPress = useCallback(() => {
+    if (isLoading) return;
+    hapticLight();
+    openSheet(null);
+  }, [isLoading, openSheet]);
+
   return (
     <View style={styles.container}>
       {/* 메인 콘텐츠 */}
@@ -220,7 +230,7 @@ export default function ScheduleScreen() {
       {/* 플로팅 버튼 */}
       <TouchableOpacity
         style={[styles.fab, isLoading && {opacity: 0.4}]}
-        onPress={() => !isLoading && openSheet(null)}
+        onPress={handleFabPress}
         activeOpacity={0.8}>
         <Image
           source={require('../../../assets/icons/schedule-bt.png')}

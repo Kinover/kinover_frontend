@@ -18,6 +18,9 @@ import {
 } from '../utils/responsive';
 import {BACKGROUND_COLORS, BUTTON_STYLES} from 'styles/style';
 
+// ✅ 햅틱 유틸 import (경로는 네 프로젝트에 맞게)
+import {hapticLight, hapticMedium, hapticHeavy} from '../utils/haptic';
+
 export default function CustomModal({
   visible,
   onClose,
@@ -42,18 +45,41 @@ export default function CustomModal({
 }) {
   if (!visible) return null;
 
+  // ✅ 안전한 래퍼들 (햅틱 먼저, 그다음 원래 동작)
+  const handleBackdropPress = () => {
+    hapticLight();
+    onClose?.();
+  };
+
+  const handleClosePress = () => {
+    hapticLight();
+    onClose?.();
+  };
+
+  const handleConfirmPress = () => {
+    // 저장/확인은 좀 더 확실한 촉감 추천
+    hapticMedium();
+    onConfirm?.();
+  };
+
+  const handleTrashPress = () => {
+    // 삭제 버튼은 강하게(원하면 Medium으로 바꿔도 됨)
+    hapticHeavy();
+    onTrashPress?.();
+  };
+
   return (
     <Modal
       animationType="fade"
       transparent
       visible={visible}
-      onRequestClose={onClose}
+      onRequestClose={handleClosePress}
       presentationStyle="overFullScreen"
       statusBarTranslucent>
       {/* 🔹 배경 아무데나 탭하면 닫힘 */}
-      <TouchableWithoutFeedback onPress={onClose}>
+      <TouchableWithoutFeedback onPress={handleBackdropPress}>
         <View style={styles.overlay}>
-          {/* 블러 배경 (터치 이벤트 안 먹게) */}
+          {/* 블러 배경 */}
           <BlurView
             style={StyleSheet.absoluteFill}
             blurType="light"
@@ -61,7 +87,7 @@ export default function CustomModal({
             reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.4)"
           />
 
-          {/* 🔹 모달 박스는 탭해도 닫히지 않도록 한 번 더 감싸기 */}
+          {/* 🔹 모달 박스는 탭해도 닫히지 않도록 */}
           <TouchableWithoutFeedback onPress={() => {}}>
             <View style={[styles.modalBox, modalBoxStyle]}>
               {/* 상단 버튼들 */}
@@ -77,7 +103,7 @@ export default function CustomModal({
                 ]}>
                 {showTrashButton && (
                   <TouchableOpacity
-                    onPress={onTrashPress}
+                    onPress={handleTrashPress}
                     style={styles.trashButton}
                     hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
                     <Image
@@ -91,7 +117,7 @@ export default function CustomModal({
                 {showCloseButton && (
                   <TouchableOpacity
                     style={styles.closeXButton}
-                    onPress={onClose}
+                    onPress={handleClosePress}
                     hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
                     <Image
                       style={styles.closeXIcon}
@@ -123,16 +149,17 @@ export default function CustomModal({
               <View style={[styles.buttonBottom, buttonBottomStyle]}>
                 {closeText && (
                   <TouchableOpacity
-                    onPress={onClose}
+                    onPress={handleClosePress}
                     style={[styles.closeButton, closeButtonStyle]}>
                     <Text style={[styles.closeText, closeTextStyle]}>
                       {closeText}
                     </Text>
                   </TouchableOpacity>
                 )}
+
                 {onConfirm && (
                   <TouchableOpacity
-                    onPress={onConfirm}
+                    onPress={handleConfirmPress}
                     style={[styles.confirmButton, confirmButtonStyle]}>
                     <Text style={[styles.confirmText, confirmTextStyle]}>
                       {confirmText}

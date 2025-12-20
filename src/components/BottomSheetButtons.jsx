@@ -7,37 +7,52 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 
+// ✅ 햅틱 유틸 (아까 만든/쓰는 파일)
+import {hapticLight, hapticSuccess, hapticError} from 'utils/haptic';
+
 export function BottomSheetButtons({
   onCancel,
   onSave,
   cancelLabel = '되돌리기',
   saveLabel = '저장하기',
   showCancel = true,
-  bottomSheetRef, // ✅ 추가: 바텀시트 ref
-  autoCloseOnSave = true, // ✅ 추가: 저장 후 자동 닫기 옵션
+  bottomSheetRef,
+  autoCloseOnSave = true,
 }) {
-  const [saving, setSaving] = React.useState(false); // ✅ 연타 방지용
+  const [saving, setSaving] = React.useState(false);
+
+  const handleCancelPress = () => {
+    hapticLight();
+    onCancel?.();
+  };
 
   const handleSavePress = async () => {
     if (saving) return;
 
     try {
       setSaving(true);
+
+      // ✅ 저장 버튼 누르는 순간(터치 피드백)
+      hapticLight();
+
       if (onSave) {
         await onSave();
       }
 
-      // ✅ 저장 성공 후 바텀시트 닫기
+      // ✅ 저장 성공 피드백
+      hapticSuccess();
+
       if (autoCloseOnSave && bottomSheetRef?.current) {
-        // bottom-sheet 타입에 따라 메서드 다를 수 있어서 둘 다 처리
         if (typeof bottomSheetRef.current.dismiss === 'function') {
-          bottomSheetRef.current.dismiss(); // BottomSheetModal 계열
+          bottomSheetRef.current.dismiss();
         } else if (typeof bottomSheetRef.current.close === 'function') {
-          bottomSheetRef.current.close(); // BottomSheet 계열
+          bottomSheetRef.current.close();
         }
       }
     } catch (e) {
       console.log('BottomSheetButtons save error:', e);
+      // ✅ 저장 실패 피드백
+      hapticError();
     } finally {
       setSaving(false);
     }
@@ -48,22 +63,21 @@ export function BottomSheetButtons({
       {showCancel && (
         <TouchableOpacity
           style={[styles.button, styles.cancelButton]}
-          onPress={onCancel}
-          disabled={saving} // 저장 중에는 취소도 막고 싶으면 유지, 아니면 제거해도 됨
-        >
+          onPress={handleCancelPress}
+          disabled={saving}
+          activeOpacity={0.85}>
           <Text style={[styles.buttonText, styles.cancelButtonText]}>
             {cancelLabel}
           </Text>
         </TouchableOpacity>
       )}
+
       <TouchableOpacity
         style={[styles.button, styles.saveButton, saving && {opacity: 0.6}]}
         onPress={handleSavePress}
-        disabled={saving} // ✅ 연타 방지
-      >
-        <Text style={styles.buttonText}>
-          {saving ? '저장 중...' : saveLabel}
-        </Text>
+        disabled={saving}
+        activeOpacity={0.85}>
+        <Text style={styles.buttonText}>{saving ? '저장 중...' : saveLabel}</Text>
       </TouchableOpacity>
     </View>
   );

@@ -20,6 +20,9 @@ import {getEmotionImage} from '../utils/emotionUtils';
 import {EMPTY_STYLE} from 'styles/style';
 import DropShadow from 'react-native-drop-shadow';
 
+// ✅ HAPTIC
+import {hapticLight} from '../../../utils/haptic';
+
 const AVATAR = getResponsiveIconSize(60);
 
 export default function MemberGridSection({
@@ -61,13 +64,15 @@ export default function MemberGridSection({
       ? isRefreshingProp
       : isRefreshingLocal;
 
+  // ✅ 새로고침 버튼(여기서는 외부에서 호출할 일 있을 수 있어서 보존)
   const handleRefresh = useCallback(async () => {
     if (!onRefreshPress) return;
     if (isRefreshing) return;
 
     try {
       setIsRefreshingLocal(true);
-      await onRefreshPress?.(); // ✅ 부모에서 실제 fetch/dispatch 끝날 때 resolve 되게
+      hapticLight(); // ✅ 햅틱
+      await onRefreshPress?.();
     } finally {
       setIsRefreshingLocal(false);
     }
@@ -113,11 +118,16 @@ export default function MemberGridSection({
       const dotTop = Math.max(2, Math.round(shellSize * 0.07));
       const dotRight = Math.max(2, Math.round(shellSize * 0.07));
 
+      const handlePressUser = () => {
+        hapticLight(); // ✅ 유저 카드 탭 햅틱
+        onUserPress?.(member);
+      };
+
       return (
         <TouchableOpacity
           key={memberId}
           style={[styles.user, {width: itemWidth}]}
-          onPress={() => onUserPress?.(member)}
+          onPress={handlePressUser}
           activeOpacity={0.85}
           disabled={isRefreshing}>
           <View
@@ -218,6 +228,11 @@ export default function MemberGridSection({
     [itemWidth, lastActiveMap, onlineSet, onUserPress, isRefreshing],
   );
 
+  const handleAddPress = useCallback(() => {
+    hapticLight(); // ✅ +버튼 햅틱
+    onAddPress?.();
+  }, [onAddPress]);
+
   return (
     <DropShadow
       style={[
@@ -247,7 +262,7 @@ export default function MemberGridSection({
 
           <View style={styles.headerButtons}>
             <TouchableOpacity
-              onPress={onAddPress}
+              onPress={handleAddPress}
               disabled={isRefreshing}
               hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
               activeOpacity={0.85}
@@ -257,6 +272,10 @@ export default function MemberGridSection({
                 style={styles.iconButtonIcon}
               />
             </TouchableOpacity>
+
+            {/* ✅ (선택) 새로고침 버튼이 실제로 있다면 연결만 해두기
+                - 현재 UI에는 아이콘이 없어서 호출은 안 됨
+                - 필요하면 여기 버튼 추가하고 onPress={handleRefresh} 쓰면 됨 */}
           </View>
         </View>
 

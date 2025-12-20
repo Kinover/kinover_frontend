@@ -19,6 +19,9 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import DropShadow from 'react-native-drop-shadow';
 
+// ✅ HAPTIC
+import {hapticLight} from '../../../utils/haptic';
+
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 
 const getEmotionImage = emotion => {
@@ -84,6 +87,18 @@ export default function HeaderSection({user, onUserPress}) {
   const traitText = user?.trait || '이 사람을 한마디로 표현한다면?';
   const imageScale = hasEmotion ? 1 : SCALE_NO_EMOTION;
 
+  // ✅ 햅틱 + 네비게이션 (감정상태화면)
+  const goEmotion = () => {
+    hapticLight();
+    navigation.navigate('감정상태화면');
+  };
+
+  // ✅ 햅틱 + 카드 클릭 콜백
+  const handleCardPress = () => {
+    hapticLight();
+    onUserPress?.(user);
+  };
+
   return (
     <View style={[styles.headerContainer, {width: containerWidth}]}>
       {/* 프로필 (자리 고정) */}
@@ -120,7 +135,7 @@ export default function HeaderSection({user, onUserPress}) {
           ]}>
           <TouchableOpacity
             activeOpacity={0.85}
-            onPress={() => navigation.navigate('감정상태화면')}
+            onPress={goEmotion}
             style={[
               styles.avatarPress,
               {width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2},
@@ -156,7 +171,7 @@ export default function HeaderSection({user, onUserPress}) {
         ]}>
         <TouchableOpacity
           activeOpacity={0.92}
-          onPress={() => onUserPress?.(user)}
+          onPress={handleCardPress}
           style={[
             styles.headerCard,
             {

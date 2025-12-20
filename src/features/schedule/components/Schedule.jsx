@@ -136,9 +136,8 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: getResponsiveWidth(0),
-    paddingBottom: getResponsiveHeight(150),
+    paddingBottom: getResponsiveHeight(200),
   },
-
   dateText: {
     color: 'black',
     fontSize: getResponsiveFontSize(17),

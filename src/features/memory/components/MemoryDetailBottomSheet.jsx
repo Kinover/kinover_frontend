@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   },
 
   commentBox: {
-    paddingHorizontal: getResponsiveWidth(20),
+    paddingHorizontal: getResponsiveWidth(15),
     paddingVertical: getResponsiveHeight(10),
   },
   commentRow: {flexDirection: 'row'},
