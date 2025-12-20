@@ -1889,6 +1889,27 @@ PODS:
     - React-Core
   - RNPermissions (5.4.4):
     - React-Core
+  - RNReactNativeHapticFeedback (2.3.3):
+    - DoubleConversion
+    - glog
+    - hermes-engine
+    - RCT-Folly (= 2024.11.18.00)
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - Yoga
   - RNReanimated (3.19.4):
     - DoubleConversion
     - glog
@@ -2169,6 +2190,7 @@ DEPENDENCIES:
   - RNKeychain (from `../node_modules/react-native-keychain`)
   - "RNNotifee (from `../node_modules/@notifee/react-native`)"
   - RNPermissions (from `../node_modules/react-native-permissions`)
+  - RNReactNativeHapticFeedback (from `../node_modules/react-native-haptic-feedback`)
   - RNReanimated (from `../node_modules/react-native-reanimated`)
   - RNScreens (from `../node_modules/react-native-screens`)
   - RNSVG (from `../node_modules/react-native-svg`)
@@ -2392,6 +2414,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@notifee/react-native"
   RNPermissions:
     :path: "../node_modules/react-native-permissions"
+  RNReactNativeHapticFeedback:
+    :path: "../node_modules/react-native-haptic-feedback"
   RNReanimated:
     :path: "../node_modules/react-native-reanimated"
   RNScreens:
@@ -2516,6 +2540,7 @@ SPEC CHECKSUMS:
   RNKeychain: 74fb927843227b7bce9b8e305a1680c9734c6910
   RNNotifee: 4a6ee5c7deaf00e005050052d73ee6315dff7ec9
   RNPermissions: c98d72e827cba865b4e53f57b21e4e941bc8c63c
+  RNReactNativeHapticFeedback: 288ef2881046914e9108441e783f64899807282a
   RNReanimated: 50a238605beb0e3fb811af1c84d25363a0c466e2
   RNScreens: 52bf34e02b474a36fa3e4de06e29aa9d8e0c4f30
   RNSVG: 60d9624970b8a21d7cca47ce2ec31c6434a4c639

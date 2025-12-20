@@ -11,6 +11,10 @@ import {
 } from '../../../utils/responsive';
 import {BUTTON_STYLES, HEADER_STYLES} from 'styles/style';
 
+// ✅ 햅틱 유틸 (네가 만든 파일 기준으로 경로만 맞춰줘!)
+import { hapticLight } from 'utils/haptic';
+
+
 /** ---------------------------------------------------
  *  ✅ 공통: 아이콘 위에 빨간 점(뱃지) 얹는 컴포넌트
  *  - hook은 "컴포넌트" 안에서만 씀 (중요)
@@ -89,6 +93,7 @@ export const renderTabBarLabel = (label, focused) => (
 
 /** ---------------------------------------------------
  *  ✅ 공통 아이콘 버튼 생성기
+ *  - ✅ 여기서 햅틱을 공통으로 넣으면 전체 헤더 버튼이 다 통일됨
  *  --------------------------------------------------- */
 const createIconButton = (
   onPress,
@@ -97,7 +102,12 @@ const createIconButton = (
   margin = {},
   additionalStyle = {},
 ) => (
-  <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+  <TouchableOpacity
+    onPress={() => {
+      hapticLight();
+      onPress?.();
+    }}
+    activeOpacity={0.8}>
     <FastImage
       source={imageSource}
       style={{
@@ -132,6 +142,7 @@ export const RenderHeaderTitleLogo = () => (
 /** ---------------------------------------------------
  *  ✅ 헤더: 홈(종 + 설정)
  *  - 여기서도 unread 빨간점 표시
+ *  - ✅ 종/설정 모두 햅틱 적용
  *  --------------------------------------------------- */
 export const RenderHeaderHome = ({navigation, currentScreen}) => {
   const hasUnread = useSelector(state => state.notification.hasUnread);
@@ -161,8 +172,13 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
 
   return (
     <View style={{flexDirection: 'row', marginRight: getResponsiveWidth(20)}}>
-      {/* ✅ 종(빨간점 포함) */}
-      <TouchableOpacity onPress={goAlarm} activeOpacity={0.8}>
+      {/* ✅ 종(빨간점 포함) + ✅ 햅틱 */}
+      <TouchableOpacity
+        onPress={() => {
+          hapticLight();
+          goAlarm();
+        }}
+        activeOpacity={0.8}>
         <IconWithDot
           source={bellIcon}
           size={25}
@@ -173,14 +189,14 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
 
       <View style={{width: getResponsiveWidth(12)}} />
 
-      {/* ✅ 설정 */}
+      {/* ✅ 설정 (createIconButton 안에서 햅틱 자동 적용됨) */}
       {createIconButton(goSetting, settingIcon, 25, {})}
     </View>
   );
 };
 
 /** ---------------------------------------------------
- *  ✅ 나머지 헤더 버튼들 (기존 그대로)
+ *  ✅ 나머지 헤더 버튼들 (기존 그대로 + createIconButton에 햅틱이 들어가서 자동 적용됨)
  *  --------------------------------------------------- */
 export const RenderHeaderLeft1 = ({navigation}) =>
   createIconButton(
@@ -243,12 +259,13 @@ export const RenderGoBackButtonGallery = ({navigation}) =>
 
 export const RenderHeaderLogo = ({navigation}) => (
   <TouchableOpacity
-    onPress={() =>
+    onPress={() => {
+      hapticLight();
       navigation.navigate('Tabs', {
         screen: '홈',
         params: {screen: '알림화면'},
-      })
-    }
+      });
+    }}
     style={{flexDirection: 'row', alignItems: 'flex-end'}}>
     <FastImage
       source={require('@/assets/images/kinover.png')}
@@ -288,7 +305,7 @@ const styles = StyleSheet.create({
 
   // ✅ 헤더 종 빨간점 (조금 더 눈에 띄게)
   headerDot: {
-    top:-3,
+    top: -3,
     right: -3,
   },
 

@@ -11,13 +11,23 @@ import Clipboard from '@react-native-clipboard/clipboard';
 import FastImage from '@d11/react-native-fast-image';
 import {BUTTON_STYLES} from 'styles/style';
 
+// ✅ HAPTIC (경로는 네 프로젝트에 맞게 유지/조정)
+import {hapticLight, hapticSuccess} from '../../../utils/haptic';
+
 export default function FamilyCodeModal({visible, onClose, familyCode}) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(() => {
     if (!familyCode) return;
+
+    // ✅ 누르는 순간 가볍게
+    hapticLight();
+
     Clipboard.setString(familyCode);
     setCopied(true);
+
+    // ✅ 복사 성공 느낌
+    hapticSuccess();
   }, [familyCode]);
 
   useEffect(() => {

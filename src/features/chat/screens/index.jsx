@@ -21,6 +21,9 @@ import YellowSpinner from '../../../components/YellowSpinner';
 // import SwipeNavigator from 'components/SwipeNavigator';
 import {EMPTY_STYLE} from 'styles/style';
 
+// ✅ HAPTIC (경로는 네 프로젝트에 맞게 유지/조정)
+import {hapticLight} from '../../../utils/haptic';
+
 export default function CommunicationScreen({navigation}) {
   const dispatch = useDispatch();
   const {userId, login} = useSelector(s => s.user);
@@ -59,6 +62,12 @@ export default function CommunicationScreen({navigation}) {
     [navigation, userId],
   );
 
+  // ✅ FAB 클릭 핸들러 (햅틱 포함)
+  const handleFabPress = useCallback(() => {
+    hapticLight();
+    navigation.navigate('채팅방생성화면');
+  }, [navigation]);
+
   return (
     // <SwipeNavigator
     //   rightTo="일정" // 오른쪽→왼쪽 스와이프
@@ -88,9 +97,7 @@ export default function CommunicationScreen({navigation}) {
         />
       )}
 
-      <TouchableOpacity
-        onPress={() => navigation.navigate('채팅방생성화면')}
-        style={styles.fab}>
+      <TouchableOpacity onPress={handleFabPress} style={styles.fab}>
         <FastImage
           source={require('../../../assets/icons/chat-floating-bt.png')}
           style={{width: '100%', height: '100%', resizeMode: 'contain'}}

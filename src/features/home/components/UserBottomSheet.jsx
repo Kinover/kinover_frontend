@@ -159,55 +159,55 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
   };
 
   // ✅ 저장 로직: 서버/Redux 업데이트 동안 로딩 띄우기
- // ✅ 저장 로직: 서버/Redux 업데이트 동안 로딩 띄우기
-const handleSave = async () => {
-  if (isSaving) return; // 중복 저장 방지
-  setIsSaving(true);
+  // ✅ 저장 로직: 서버/Redux 업데이트 동안 로딩 띄우기
+  const handleSave = async () => {
+    if (isSaving) return; // 중복 저장 방지
+    setIsSaving(true);
 
-  try {
-    const {
-      name: initialName,
-      trait: initialTrait,
-      image: initialImage,
-    } = initialDataRef.current;
+    try {
+      const {
+        name: initialName,
+        trait: initialTrait,
+        image: initialImage,
+      } = initialDataRef.current;
 
-    const trimmedName = (nameRef.current || '').trim();
-    const finalName =
-      trimmedName.length > 0 ? trimmedName : initialName ?? '';
+      const trimmedName = (nameRef.current || '').trim();
+      const finalName =
+        trimmedName.length > 0 ? trimmedName : initialName ?? '';
 
-    const trimmedTrait = (traitRef.current || '').trim();
-    const finalTrait =
-      trimmedTrait.length > 0 ? trimmedTrait : initialTrait ?? '';
+      const trimmedTrait = (traitRef.current || '').trim();
+      const finalTrait =
+        trimmedTrait.length > 0 ? trimmedTrait : initialTrait ?? '';
 
-    // 새로 선택된 이미지가 있으면 그걸, 아니면 기존 이미지 유지
-    const rawImg =
-      (imageUrlRef.current && imageUrlRef.current.trim().length > 0
-        ? imageUrlRef.current
-        : initialImage) || '';
+      // 새로 선택된 이미지가 있으면 그걸, 아니면 기존 이미지 유지
+      const rawImg =
+        (imageUrlRef.current && imageUrlRef.current.trim().length > 0
+          ? imageUrlRef.current
+          : initialImage) || '';
 
-    const finalImageUrl = normalizeImageForSave(rawImg);
+      const finalImageUrl = normalizeImageForSave(rawImg);
 
-    console.log('🔥 user save payload image =', {
-      rawImg,
-      finalImageUrl,
-    });
+      console.log('🔥 user save payload image =', {
+        rawImg,
+        finalImageUrl,
+      });
 
-    // ✅ 닫히는 중 플래그 세팅 → 이 뒤로 들어오는 selectedUser 변화엔 반응하지 않도록
-    setIsClosing(true);
+      // ✅ 닫히는 중 플래그 세팅 → 이 뒤로 들어오는 selectedUser 변화엔 반응하지 않도록
+      setIsClosing(true);
 
-    // 1) 서버 / Redux 저장
-    await onSave(finalName, finalTrait, finalImageUrl);
+      // 1) 서버 / Redux 저장
+      await onSave(finalName, finalTrait, finalImageUrl);
 
-    // 2) 저장까지 끝나면 바텀시트 닫기
-    modalRef.current?.dismiss();
-  } catch (err) {
-    console.error('❌ 프로필 저장 실패:', err);
-    showToast('프로필 저장 중 문제가 발생했어요.');
-    // 에러나면 바텀시트는 그대로 열어두는 게 UX상 더 자연스러워서 여기서는 dismiss 안 함
-  } finally {
-    setIsSaving(false);
-  }
-};
+      // 2) 저장까지 끝나면 바텀시트 닫기
+      modalRef.current?.dismiss();
+    } catch (err) {
+      console.error('❌ 프로필 저장 실패:', err);
+      showToast('프로필 저장 중 문제가 발생했어요.');
+      // 에러나면 바텀시트는 그대로 열어두는 게 UX상 더 자연스러워서 여기서는 dismiss 안 함
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleCancel = () => {
     const {name, trait, image} = initialDataRef.current;

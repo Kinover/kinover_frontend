@@ -1,23 +1,35 @@
-import React, {useState} from 'react';
-import {View,  TouchableOpacity, Animated} from 'react-native';
-import {
-  getResponsiveWidth,
-} from '../utils/responsive';
+import React, {useState, useEffect} from 'react';
+import {View, TouchableOpacity, Animated} from 'react-native';
+import {getResponsiveWidth} from '../utils/responsive';
+
+// ✅ 햅틱 유틸 import
+import {hapticSelection} from '../utils/haptic';
 
 export default function CustomSwitch({isEnabled, toggleSwitch}) {
-  const [thumbPosition] = useState(new Animated.Value(isEnabled ? 40 : 0));
+  const [thumbPosition] = useState(
+    new Animated.Value(isEnabled ? getResponsiveWidth(24) : 0),
+  );
 
-  React.useEffect(() => {
+  useEffect(() => {
     Animated.spring(thumbPosition, {
       toValue: isEnabled ? getResponsiveWidth(24) : 0,
       useNativeDriver: false,
+      friction: 6,
+      tension: 80,
     }).start();
-  }, [isEnabled]);
+  }, [isEnabled, thumbPosition]);
+
+  const handlePress = () => {
+    // ✅ 스위치 토글용 햅틱 (가볍게)
+    hapticSelection();
+    toggleSwitch?.();
+  };
 
   return (
     <View style={styles.container}>
       <TouchableOpacity
-        onPress={toggleSwitch}
+        activeOpacity={0.9}
+        onPress={handlePress}
         style={[
           styles.switchContainer,
           {backgroundColor: isEnabled ? '#FFC84D' : '#ccc'},
@@ -38,31 +50,29 @@ const styles = {
     position: 'relative',
     width: getResponsiveWidth(60),
     height: getResponsiveWidth(30),
+    justifyContent: 'center',
   },
 
   switchContainer: {
     width: getResponsiveWidth(55),
     height: getResponsiveWidth(30),
-    backgroundColor: '#FFC84D',
     borderRadius: 30,
     justifyContent: 'center',
-    position: 'relative', // 위치 설정을 위해 relative로 설정
+    position: 'relative',
+    paddingHorizontal: 3,
   },
+
   switchThumb: {
     width: 25,
     height: 25,
     borderRadius: 12.5,
-    backgroundColor: 'white',
-    position: 'absolute', // thumb를 절대 위치로 설정
-    left: 3,
-  },
-  text: {
-    fontSize: 12,
-    fontWeight: '500',
+    backgroundColor: '#FFFFFF',
     position: 'absolute',
-    top: '30%', // 부모 컨테이너에서 50% 위치
-    zIndex: 999,
-    textAlign: 'center',
-    fontFamily: 'Pretendard-Light',
+    left: 3,
+    elevation: 2, // Android 살짝 떠 보이게
+    shadowColor: '#000', // iOS
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
   },
 };

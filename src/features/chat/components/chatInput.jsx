@@ -1,4 +1,3 @@
-
 /* eslint-disable react-native/no-inline-styles */
 // components/ChatInput.jsx
 import React, {
@@ -51,6 +50,9 @@ import {loadGalleryPhotos} from '../../../utils/gallery';
 import formatDuration from '../../../utils/formatDuration';
 import ToastModal from '../../../components/ToastModal';
 import {addMessageAndUpdateRoom} from '../utils/messageActions';
+
+// ✅ HAPTIC: 너가 만든 유틸 가져오기 (경로는 네 프로젝트에 맞게 조정)
+import {hapticLight, hapticSelection, hapticError} from '../../../utils/haptic';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -207,11 +209,17 @@ const ChatInput = forwardRef(function ChatInput(
   // ====== actions ======
   const toggleGallery = useCallback(() => {
     if (!enableMediaPicker) return;
+
+    // ✅ HAPTIC: 갤러리 열고닫기 느낌
+    hapticLight();
+
     Keyboard.dismiss();
     setShowGallery(prev => !prev);
   }, [enableMediaPicker]);
 
   const handleToggleImage = useCallback(item => {
+    // ✅ HAPTIC: 선택/해제는 selection이 더 자연스러움
+    hapticSelection();
     setSelectedImages(prev => toggleSelectImage(prev, item));
   }, []);
 
@@ -287,22 +295,29 @@ const ChatInput = forwardRef(function ChatInput(
     const text = message.trim();
     const hasMedia = enableMediaPicker && selectedImages.length > 0;
 
+    // ✅ HAPTIC: 눌렀는데 보낼게 없으면 가볍게 에러 느낌 주기(원하면 제거 가능)
     if (!text && !hasMedia) {
+      hapticError();
       sendingLockRef.current = false;
       return;
     }
 
     const roomId = chatRoom?.chatRoomId;
     if (!roomId) {
+      hapticError();
       sendingLockRef.current = false;
       return;
     }
 
     if (!isChatSocketOpen()) {
       showToastFn('연결이 불안정해요. 다시 시도해주세요.');
+      hapticError();
       sendingLockRef.current = false;
       return;
     }
+
+    // ✅ HAPTIC: 진짜 전송 시작(가볍게)
+    hapticLight();
 
     const mediaSnapshot = hasMedia ? [...selectedImages] : [];
 
@@ -311,6 +326,7 @@ const ChatInput = forwardRef(function ChatInput(
     const hasImage = mediaSnapshot.some(f => !f.isVideo);
     if (hasMedia && hasVideo && hasImage) {
       showToastFn('사진이랑 영상은 한 번에 같이 보낼 수 없어요. 따로 보내줘!');
+      hapticError();
       sendingLockRef.current = false;
       return;
     }
@@ -354,6 +370,7 @@ const ChatInput = forwardRef(function ChatInput(
 
         if (!ok) {
           showToastFn('연결이 불안정해요. 다시 시도해주세요.');
+          hapticError();
           return;
         }
 
@@ -479,9 +496,13 @@ const ChatInput = forwardRef(function ChatInput(
         clientMessageId: mediaClientMessageId,
       });
 
-      if (!ok) showToastFn('연결이 불안정해요. 다시 시도해주세요.');
+      if (!ok) {
+        showToastFn('연결이 불안정해요. 다시 시도해주세요.');
+        hapticError();
+      }
     } catch (e) {
       console.error(e);
+      hapticError();
 
       if (hasMedia && mediaClientMessageId && mediaOptimisticId) {
         dispatch(
@@ -616,13 +637,21 @@ const ChatInput = forwardRef(function ChatInput(
             onFocus={() => {
               if (showGallery) setShowGallery(false);
             }}
-            onSubmitEditing={handleSend}
+            onSubmitEditing={() => {
+              // ✅ HAPTIC: 키보드 엔터로 전송도 동일하게
+              hapticLight();
+              handleSend();
+            }}
           />
 
           {message.length > 0 && !isSending && !sendingLockRef.current && (
             <TouchableOpacity
               style={styles.clearButton}
-              onPress={() => setMessage('')}>
+              onPress={() => {
+                // ✅ HAPTIC: 입력 지우기(가볍게)
+                hapticSelection();
+                setMessage('');
+              }}>
               <FastImage
                 source={require('../../../assets/images/clearBt.png')}
                 style={styles.clearIcon}
@@ -631,7 +660,11 @@ const ChatInput = forwardRef(function ChatInput(
           )}
 
           <TouchableOpacity
-            onPress={handleSend}
+            onPress={() => {
+              // ✅ HAPTIC: 버튼 탭
+              hapticLight();
+              handleSend();
+            }}
             style={[styles.sendButton]}
             disabled={!canSend || sendingLockRef.current}>
             <View style={styles.sendIconWrap}>
@@ -792,8 +825,10 @@ const styles = StyleSheet.create({
   // ✅ 숫자 뱃지 (아이콘 위에 살짝 겹치게)
   sendBadge: {
     position: 'absolute',
-    top: -getResponsiveWidth(-9),
+    // ✅ 여기만 제대로 고치면 됨 (위로 살짝, 오른쪽으로 살짝)
+    top: -getResponsiveWidth(-7),
     right: -getResponsiveWidth(8),
+
     minWidth: getResponsiveWidth(18),
     height: getResponsiveWidth(18),
     borderRadius: getResponsiveWidth(9),

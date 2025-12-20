@@ -1,19 +1,21 @@
-import React, {createContext, useContext, useMemo} from 'react';
-import Animated, {useAnimatedStyle, withTiming} from 'react-native-reanimated';
-import {BottomTabBar} from '@react-navigation/bottom-tabs';
+import React, {createContext, useContext, useMemo, useEffect} from 'react';
+import {View, TouchableOpacity, StyleSheet, Platform} from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  withTiming,
+  useSharedValue,
+  withSequence,
+  withSpring,
+} from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
 
-/* =========================
- * Context
- * ========================= */
+import {hapticSelection, hapticLight} from 'utils/haptic';
 
 const TabBarVisibilityContext = createContext(null);
 
 export function useTabBarVisibility() {
   const ctx = useContext(TabBarVisibilityContext);
-  if (!ctx) {
-    throw new Error('useTabBarVisibility must be used within Provider');
-  }
+  if (!ctx) throw new Error('useTabBarVisibility must be used within Provider');
   return ctx;
 }
 
@@ -26,11 +28,6 @@ export function TabBarVisibilityProvider({children, sharedValue}) {
   );
 }
 
-/* =========================
- * Utils
- * ========================= */
-
-// ✅ 현재 탭 스택에서 가장 안쪽(활성) 화면 이름
 function getFocusedRouteName(state) {
   if (!state) return null;
 
@@ -42,23 +39,99 @@ function getFocusedRouteName(state) {
 }
 
 /* =========================
+ * Tab Button (with motion)
+ * ========================= */
+
+function AnimatedTabButton({route, focused, descriptor, navigation, onHaptic}) {
+  const options = descriptor?.options || {};
+  const renderIcon = options.tabBarIcon;
+  const renderLabel = options.tabBarLabel;
+
+  // ✅ press 애니메이션
+  const pressScale = useSharedValue(1);
+  const pressOpacity = useSharedValue(1);
+
+  // ✅ focused 상태 애니메이션(항상 살짝 강조)
+  const focusedScale = useSharedValue(focused ? 1.04 : 1);
+
+  useEffect(() => {
+    focusedScale.value = withTiming(focused ? 1.04 : 1, {duration: 180});
+  }, [focused, focusedScale]);
+
+  const animStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{scale: focusedScale.value * pressScale.value}],
+      opacity: pressOpacity.value,
+    };
+  });
+
+  const onPressIn = () => {
+    // 살짝 눌림
+    pressScale.value = withTiming(0.94, {duration: 90});
+    pressOpacity.value = withTiming(0.85, {duration: 90});
+  };
+
+  const onPressOut = () => {
+    // 살짝 튕김 + 복귀
+    pressScale.value = withSequence(
+      withTiming(1.06, {duration: 110}),
+      withSpring(1, {damping: 10, stiffness: 220}),
+    );
+    pressOpacity.value = withTiming(1, {duration: 120});
+  };
+
+  const onPress = () => {
+    onHaptic?.();
+
+    const event = navigation.emit({
+      type: 'tabPress',
+      target: route.key,
+      canPreventDefault: true,
+    });
+
+    if (!focused && !event.defaultPrevented) {
+      navigation.navigate(route.name);
+    }
+  };
+
+  const onLongPress = () => {
+    navigation.emit({type: 'tabLongPress', target: route.key});
+  };
+
+  return (
+    <TouchableOpacity
+      key={route.key}
+      onPressIn={onPressIn}
+      onPressOut={onPressOut}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      activeOpacity={1} // ✅ opacity는 우리가 애니메이션으로 제어
+      style={styles.item}>
+      <Animated.View style={[styles.itemInner, animStyle]}>
+        {typeof renderIcon === 'function'
+          ? renderIcon({focused, color: undefined, size: undefined})
+          : null}
+        {typeof renderLabel === 'function'
+          ? renderLabel({focused, color: undefined})
+          : null}
+      </Animated.View>
+    </TouchableOpacity>
+  );
+}
+
+/* =========================
  * Animated TabBar
  * ========================= */
 
 export function AnimatedTabBar(props) {
   const {tabBarTranslateY} = useTabBarVisibility();
 
-  const R = 18; // radius (참고용)
-  const H = 90; // tab bar height
+  const H = 90;
 
   const activeTabName = props?.state?.routes?.[props.state.index]?.name;
   const activeTabState = props?.state?.routes?.[props.state.index]?.state;
   const focusedScreenName = getFocusedRouteName(activeTabState);
 
-  /**
-   * ✅ 각 탭의 "루트 화면 이름"
-   * - 네비 구조에 맞게 반드시 실제 route name으로 맞춰야 함
-   */
   const ROOT_SCREENS = {
     홈: '홈',
     소통: '소통',
@@ -67,88 +140,86 @@ export function AnimatedTabBar(props) {
   };
 
   const root = ROOT_SCREENS[activeTabName];
-
-  /**
-   * ✅ 탭바를 보여줄 조건
-   * - 스택 상태가 없을 때 (루트)
-   * - 또는 현재 화면이 루트일 때
-   */
   const shouldShowTabBar =
     focusedScreenName == null || focusedScreenName === root;
 
-  /**
-   * ✅ 핵심 포인트
-   * - ❌ return null 하지 않음
-   * - ⭕ 항상 마운트
-   * - 애니메이션 + pointerEvents로만 제어
-   */
   const animStyle = useAnimatedStyle(() => {
     const hidden = tabBarTranslateY.value || !shouldShowTabBar;
 
     return {
-      transform: [
-        {
-          translateY: withTiming(hidden ? 140 : 0, {
-            duration: 220,
-          }),
-        },
-      ],
-      opacity: withTiming(hidden ? 0 : 1, {
-        duration: 180,
-      }),
+      transform: [{translateY: withTiming(hidden ? 140 : 0, {duration: 220})}],
+      opacity: withTiming(hidden ? 0 : 1, {duration: 180}),
     };
   });
 
-  const showGradient = true;
+  const onHaptic = () => {
+    if (Platform.OS === 'android') hapticLight();
+    else hapticSelection();
+  };
 
   return (
     <Animated.View
       pointerEvents={shouldShowTabBar ? 'auto' : 'none'}
-      style={[
-        {
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: 0,
-          height: H,
-          backgroundColor: 'white',
-          overflow: 'visible',
-          zIndex: 10,
-        },
-        animStyle,
-      ]}>
-      {/* ✅ 상단 그림자용 그라데이션 */}
-      {showGradient && (
-        <LinearGradient
-          pointerEvents="none"
-          colors={[
-            'rgba(0,0,0,0.00)',
-            'rgba(0,0,0,0.06)',
-            'rgba(0,0,0,0.12)',
-          ]}
-          style={{
-            position: 'absolute',
-            top: -18,
-            left: 0,
-            right: 0,
-            height: 18,
-          }}
-        />
-      )}
-
-      {/* ✅ 실제 탭바 (항상 마운트됨) */}
-      <BottomTabBar
-        {...props}
-        style={[
-          props?.style,
-          {
-            backgroundColor: 'transparent',
-            elevation: 0,
-            shadowOpacity: 0,
-            borderTopWidth: 0,
-          },
-        ]}
+      style={[styles.wrapper, {height: H}, animStyle]}>
+      <LinearGradient
+        pointerEvents="none"
+        colors={['rgba(0,0,0,0.00)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0.12)']}
+        style={styles.gradient}
       />
+
+      <View style={styles.row}>
+        {props.state.routes.map((route, index) => {
+          const focused = props.state.index === index;
+          const descriptor = props.descriptors?.[route.key];
+
+          return (
+            <AnimatedTabButton
+              key={route.key}
+              route={route}
+              focused={focused}
+              descriptor={descriptor}
+              navigation={props.navigation}
+              onHaptic={onHaptic}
+            />
+          );
+        })}
+      </View>
     </Animated.View>
   );
 }
+
+const styles = StyleSheet.create({
+  wrapper: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'white',
+    overflow: 'visible',
+    zIndex: 9999,
+    elevation: 9999,
+  },
+  gradient: {
+    position: 'absolute',
+    top: -18,
+    left: 0,
+    right: 0,
+    height: 18,
+  },
+  row: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 15,
+    paddingBottom: 15,
+  },
+  item: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  itemInner: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});
