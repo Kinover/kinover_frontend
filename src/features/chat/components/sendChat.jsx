@@ -32,6 +32,9 @@ import {CHATROOM_STYLE} from 'styles/style';
 import {getVideoThumbnail} from '../../../utils/videoThumbnail';
 import {toCdnUrl} from '../../../utils/mediaUrl';
 
+import MentionText from 'components/MentionText';
+// ✅ 추가
+
 export default function SendChat({
   chatTime,
   message,
@@ -41,6 +44,9 @@ export default function SendChat({
   style,
   isGrouped = false,
   isSameSender = false,
+
+  // ✅ 추가: 채팅방 유저 리스트 (멘션 하이라이트용)
+  mentionUsers = [],
 }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -49,6 +55,7 @@ export default function SendChat({
     () => String(messageType ?? 'text').toLowerCase(),
     [messageType],
   );
+
   const isImage = normalizedType === 'image';
   const isVideo = normalizedType === 'video';
   const isMedia = isImage || isVideo;
@@ -72,7 +79,9 @@ export default function SendChat({
   useEffect(() => {
     if (!isImage) return;
     if (!displayMedia.length) return;
-    FastImage.preload(displayMedia.map(uri => ({uri, priority: FastImage.priority.normal})));
+    FastImage.preload(
+      displayMedia.map(uri => ({uri, priority: FastImage.priority.normal})),
+    );
   }, [isImage, displayMedia]);
 
   const [showTime, setShowTime] = useState(false);
@@ -153,7 +162,8 @@ export default function SendChat({
 
       const next = {};
       for (const [url, thumbUri] of results) if (thumbUri) next[url] = thumbUri;
-      if (Object.keys(next).length) setVideoThumbMap(prev => ({...prev, ...next}));
+      if (Object.keys(next).length)
+        setVideoThumbMap(prev => ({...prev, ...next}));
     })();
 
     return () => {
@@ -198,14 +208,22 @@ export default function SendChat({
           const thumbSource = getThumbSource(item);
 
           return (
-            <TouchableOpacity onPress={() => handleMediaPress(item, index)} activeOpacity={0.9}>
+            <TouchableOpacity
+              onPress={() => handleMediaPress(item, index)}
+              activeOpacity={0.9}>
               <View style={styles.thumbWrap}>
                 {thumbSource ? (
                   <FastImage
                     source={thumbSource}
                     style={styles.imageItem}
                     resizeMode={FastImage.resizeMode.cover}
-                    onError={e => console.log('❌ SendChat thumb error:', item, e?.nativeEvent)}
+                    onError={e =>
+                      console.log(
+                        '❌ SendChat thumb error:',
+                        item,
+                        e?.nativeEvent,
+                      )
+                    }
                   />
                 ) : (
                   <View style={[styles.imageItem, styles.thumbFallback]} />
@@ -238,14 +256,22 @@ export default function SendChat({
 
     return (
       <View style={styles.singleWrapper}>
-        <TouchableOpacity onPress={() => handleMediaPress(uri, 0)} activeOpacity={0.9}>
+        <TouchableOpacity
+          onPress={() => handleMediaPress(uri, 0)}
+          activeOpacity={0.9}>
           <View>
             {thumbSource ? (
               <FastImage
                 source={thumbSource}
                 style={styles.singleImage}
                 resizeMode={FastImage.resizeMode.cover}
-                onError={e => console.log('❌ SendChat single thumb error:', uri, e?.nativeEvent)}
+                onError={e =>
+                  console.log(
+                    '❌ SendChat single thumb error:',
+                    uri,
+                    e?.nativeEvent,
+                  )
+                }
               />
             ) : (
               <View style={[styles.singleImage, styles.thumbFallback]} />
@@ -266,7 +292,9 @@ export default function SendChat({
 
   return (
     <View style={[styles.sendContainer, spacingStyle, style]}>
-      {showTime && !!chatTime && <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>}
+      {showTime && !!chatTime && (
+        <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>
+      )}
 
       {isMedia ? (
         safeMediaUrls.length === 1 ? (
@@ -276,7 +304,13 @@ export default function SendChat({
         )
       ) : hasText ? (
         <View style={[styles.sendBubble, styles.textPadding]}>
-          <Text style={styles.sendText}>{message}</Text>
+          {/* ✅ 멘션 하이라이트 */}
+          <MentionText
+            text={message}
+            users={mentionUsers}
+            textStyle={styles.sendText}
+            mentionStyle={[styles.sendText, styles.mentionText]}
+          />
         </View>
       ) : null}
 
@@ -318,6 +352,13 @@ const styles = StyleSheet.create({
     color: 'black',
     lineHeight: getResponsiveFontSize(17),
   },
+
+  // ✅ 추가: 멘션 스타일
+  mentionText: {
+    color: '#FFC84D',
+    fontFamily: 'Pretendard-SemiBold',
+  },
+
   sendTime: {
     fontSize: CHATROOM_STYLE.messageTimeFontSize,
     color: '#666',

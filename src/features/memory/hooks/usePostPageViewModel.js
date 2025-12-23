@@ -8,20 +8,19 @@ import {
   createCommentThunk,
   deleteCommentThunk,
 } from '../store/commentThunk';
-import {
-  deletePostThunk,
-  deletePostImageThunk,
-} from '../store/memoryThunk';
+import {deletePostThunk, deletePostImageThunk} from '../store/memoryThunk';
 
 export default function usePostPageViewModel(memory) {
   const dispatch = useDispatch();
   const navigation = useNavigation();
 
+  const rawFamilyUsers = useSelector(s => s.userFamily.familyUserList);
   const user = useSelector(state => state.user);
   const familyId = useSelector(state => state.family.familyId);
   const {commentList} = useSelector(state => state.comment);
 
   const safePostId = memory?.postId ?? null;
+
   const safeImages = useMemo(
     () => memory?.imageUrls ?? [],
     [memory?.imageUrls],
@@ -37,76 +36,127 @@ export default function usePostPageViewModel(memory) {
   const [deleteTarget, setDeleteTarget] = useState('');
   const [showDeleteOptions, setShowDeleteOptions] = useState(false);
 
-  // ✅ 댓글 삭제 모달 상태 추가
+  // ✅ 댓글 삭제 모달 상태
   const [commentDeleteModalVisible, setCommentDeleteModalVisible] =
     useState(false);
   const [commentToDelete, setCommentToDelete] = useState(null);
 
-  // ✅ 토스트 관련 상태
+  // ✅ 토스트
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  // ✅ 메모리/이미지 변경 시 로컬 이미지 동기화
+  // ✅ 멘션 후보용: familyUsers에서 "본인" 제거 + 최소 필드만 정리
+  const familyUsers = useMemo(() => {
+    const me = user?.userId;
+    const list = Array.isArray(rawFamilyUsers) ? rawFamilyUsers : [];
+
+    return list
+      .filter(u => u?.userId != null && u?.name)
+      .filter(u => (me == null ? true : String(u.userId) !== String(me)))
+      .map(u => ({
+        userId: u.userId,
+        name: u.name,
+        image: u.image || u.profileImage || u.avatar || null,
+      }));
+  }, [rawFamilyUsers, user?.userId]);
+
+  // ✅ 로컬 이미지 동기화
   useEffect(() => {
     setLocalImages(safeImages);
     setCurrentImageIndex(idx => {
-      if (safeImages.length === 0) {return 0;}
+      if (safeImages.length === 0) return 0;
       return Math.min(idx, safeImages.length - 1);
     });
   }, [safeImages]);
 
-  // ✅ 댓글 목록 가져오기
+  // ✅ 댓글 목록 fetch
   useEffect(() => {
-    if (safePostId) {
-      dispatch(fetchCommentsThunk(safePostId));
-    }
+    if (safePostId) dispatch(fetchCommentsThunk(safePostId));
   }, [dispatch, safePostId]);
 
-  const handleSendComment = useCallback(() => {
-    const text = commentText.trim();
-    if (!text || !safePostId || !user?.userId) {return;}
+  /**
+   * ✅ 댓글 전송 (멘션 확장)
+   * - 기존: handleSendComment()
+   * - 변경: handleSendComment(payload?) 도 가능
+   *
+   * BottomSheet에서 이렇게 호출할 거야:
+   * onSubmitComment({ content, mentionUserIds })
+   *
+   * 혹시 다른 곳에서 예전처럼 handleSendComment()로 부르더라도
+   * commentText 기반으로 동작하게 호환 유지.
+   */
+  const handleSendComment = useCallback(
+    payload => {
+      const contentFromPayload = payload?.content;
+      const mentionUserIds = payload?.mentionUserIds || [];
 
-    dispatch(
-      createCommentThunk({
-        postId: safePostId,
-        content: text,
-        authorId: user.userId,
-      }),
-    );
-    setCommentText('');
-    setToastMessage('댓글을 추가했어요');
-    setToastVisible(true);
-  }, [commentText, dispatch, safePostId, user?.userId]);
+      const text = String(
+        contentFromPayload != null ? contentFromPayload : commentText,
+      ).trim();
 
-  const openDeleteCommentModal = useCallback(
-    commentId => {
-      setCommentToDelete(commentId);
-      setCommentDeleteModalVisible(true);
+      if (!text || !safePostId || !user?.userId) return;
+
+      dispatch(
+        createCommentThunk({
+          postId: safePostId,
+          content: text,
+          authorId: user.userId,
+
+          // ✅ 서버가 받게 만들고 싶으면 DTO/Entity도 같이 확장 필요
+          // 지금은 프론트에서만 넘기고, 백에서 무시해도 에러는 안 나게 설계 권장
+          mentionUserIds,
+        }),
+      );
+
+      // 입력창 초기화는 ViewModel 기준으로도 처리
+      setCommentText('');
+
+      setToastMessage('댓글을 추가했어요');
+      setToastVisible(true);
     },
-    [setCommentToDelete, setCommentDeleteModalVisible],
+    [commentText, dispatch, safePostId, user?.userId],
   );
 
-  const [isDeleting, setIsDeleting] = useState(false);
+  // ✅ 삭제 모달 오픈
+  const openDeleteCommentModal = useCallback(commentId => {
+    setCommentToDelete(commentId);
+    setCommentDeleteModalVisible(true);
+  }, []);
 
-const confirmDeleteComment = useCallback(async () => {
-  if (!commentToDelete || !safePostId || isDeleting) {return;}
-  setIsDeleting(true);
-  try {
-    await dispatch(deleteCommentThunk(commentToDelete, safePostId));
-    setToastMessage('댓글을 삭제했어요');
-    setToastVisible(true);
-  } catch (e) {
-    console.error('댓글 삭제 실패:', e);
-  } finally {
+  const closeDeleteCommentModal = useCallback(() => {
     setCommentDeleteModalVisible(false);
     setCommentToDelete(null);
-    setIsDeleting(false);
-  }
-}, [commentToDelete, safePostId, isDeleting, dispatch]);
+  }, []);
 
+  const [isDeletingComment, setIsDeletingComment] = useState(false);
+
+  // ✅ 모달 "확인" 눌렀을 때만 실제 삭제
+  const confirmDeleteComment = useCallback(async () => {
+    if (!commentToDelete || !safePostId || isDeletingComment) return;
+
+    setIsDeletingComment(true);
+    try {
+      // ✅ 너의 thunk 시그니처: (commentId, postId)
+      await dispatch(deleteCommentThunk(commentToDelete, safePostId));
+
+      setToastMessage('댓글을 삭제했어요');
+      setToastVisible(true);
+    } catch (e) {
+      console.error('댓글 삭제 실패:', e);
+    } finally {
+      closeDeleteCommentModal();
+      setIsDeletingComment(false);
+    }
+  }, [
+    commentToDelete,
+    safePostId,
+    isDeletingComment,
+    dispatch,
+    closeDeleteCommentModal,
+  ]);
 
   const handleDeletePost = useCallback(async () => {
-    if (!safePostId || !familyId) {return;}
+    if (!safePostId || !familyId) return;
     try {
       await dispatch(deletePostThunk(safePostId, familyId));
       navigation.goBack();
@@ -118,7 +168,7 @@ const confirmDeleteComment = useCallback(async () => {
   }, [dispatch, safePostId, familyId, navigation]);
 
   const handleDeleteImage = useCallback(async () => {
-    if (!safePostId || !familyId || localImages.length === 0) {return;}
+    if (!safePostId || !familyId || localImages.length === 0) return;
 
     const targetImage = localImages[currentImageIndex];
     try {
@@ -150,6 +200,7 @@ const confirmDeleteComment = useCallback(async () => {
 
   return {
     user,
+    familyUsers, // ✅ "본인 제외된" 멘션 후보 리스트로 정리됨
     commentList,
     commentText,
     setCommentText,
@@ -170,12 +221,17 @@ const confirmDeleteComment = useCallback(async () => {
     handleSendComment,
     handleDeletePost,
     handleDeleteImage,
+
+    // ✅ 댓글 삭제 모달
     commentDeleteModalVisible,
     setCommentDeleteModalVisible,
     commentToDelete,
     openDeleteCommentModal,
+    closeDeleteCommentModal,
     confirmDeleteComment,
-    // ✅ 토스트 상태 반환
+    isDeletingComment,
+
+    // ✅ 토스트
     toastVisible,
     setToastVisible,
     toastMessage,

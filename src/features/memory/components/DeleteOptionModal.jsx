@@ -12,6 +12,8 @@ export default function ImageDeleteModal({
   onClose,
   onConfirm,
   children,
+  title,
+  subText,
 }) {
 
   if(!visible) return null;
@@ -22,6 +24,8 @@ export default function ImageDeleteModal({
       onConfirm={onConfirm}
       closeText="취소"
       confirmText="삭제"
+      title={title}
+      subText={subText}
       buttonBottomStyle={styles.buttonRow}
       modalBoxStyle={[styles.modalBox]}>
       {children}

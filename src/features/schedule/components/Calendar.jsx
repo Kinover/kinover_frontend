@@ -1,5 +1,5 @@
 // src/features/schedule/components/Calendar.jsx (CalendarToggle)
-import React, {useRef, useMemo, useEffect} from 'react';
+import React, {useRef, useMemo, useEffect, useCallback} from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,13 @@ import {
   StyleSheet,
   PanResponder,
 } from 'react-native';
-import Animated, {FadeInDown, FadeOutUp} from 'react-native-reanimated';
+
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
+
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -146,6 +152,98 @@ export default function CalendarToggle({
     }),
   ).current;
 
+  // =========================
+  // ✅ 월<->주 “접힘/펼침” 애니메이션 (height clip)
+  // =========================
+  const monthH = useSharedValue(0);
+  const weekH = useSharedValue(0);
+
+  // ✅ 첫 렌더부터 안 숨겨지게 "추정 높이"로 초기값 세팅
+  // month는 보통 6줄(최대)로 깔리니까 대략값: cellSize*6 + GAP*5
+  const EST_MONTH_H = cellSize * 6 + GAP * 5;
+  const EST_WEEK_H = cellSize;
+
+  const containerH = useSharedValue(
+    mode === 'month' ? EST_MONTH_H : EST_WEEK_H,
+  );
+  const monthOpacity = useSharedValue(mode === 'month' ? 1 : 0);
+  const weekOpacity = useSharedValue(mode === 'week' ? 1 : 0);
+
+  const onMonthLayout = useCallback(
+    e => {
+      const h = e?.nativeEvent?.layout?.height ?? 0;
+      if (!h) return;
+
+      monthH.value = h;
+
+      // ✅ 현재 모드가 month면 컨테이너도 즉시 반영(첫 렌더 공백 방지)
+      if (mode === 'month') {
+        containerH.value = h;
+      }
+    },
+    [mode, monthH, containerH],
+  );
+
+  const onWeekLayout = useCallback(
+    e => {
+      const h = e?.nativeEvent?.layout?.height ?? 0;
+      if (!h) return;
+
+      weekH.value = h;
+
+      if (mode === 'week') {
+        containerH.value = h;
+      }
+    },
+    [mode, weekH, containerH],
+  );
+
+  // 모드 변경 시: 컨테이너 height를 목표 높이로 애니메이션 + opacity 교체
+  useEffect(() => {
+    const toHeight =
+      mode === 'month'
+        ? monthH.value || EST_MONTH_H
+        : weekH.value || EST_WEEK_H;
+
+    containerH.value = withTiming(toHeight || 0, {duration: 260});
+
+    if (mode === 'month') {
+      monthOpacity.value = withTiming(1, {duration: 140});
+      weekOpacity.value = withTiming(0, {duration: 120});
+    } else {
+      weekOpacity.value = withTiming(1, {duration: 140});
+      monthOpacity.value = withTiming(0, {duration: 120});
+    }
+  }, [
+    mode,
+    EST_MONTH_H,
+    EST_WEEK_H,
+    monthH,
+    weekH,
+    containerH,
+    monthOpacity,
+    weekOpacity,
+  ]);
+
+  const gridClipStyle = useAnimatedStyle(() => {
+    return {
+      height: containerH.value,
+      overflow: 'hidden',
+    };
+  });
+
+  const monthLayerStyle = useAnimatedStyle(() => {
+    return {
+      opacity: monthOpacity.value,
+    };
+  });
+
+  const weekLayerStyle = useAnimatedStyle(() => {
+    return {
+      opacity: weekOpacity.value,
+    };
+  });
+
   return (
     <View style={[styles.container, {paddingHorizontal: OUTER_HPAD}]}>
       {/* ✅ Header Card - DropShadow */}
@@ -247,14 +345,15 @@ export default function CalendarToggle({
 
             <View style={styles.divider} />
 
-            {/* ✅ 월/주 전환 애니메이션: Fade + 살짝 Slide */}
-            <Animated.View
-              key={mode} // mode 바뀔 때마다 교체되며 애니메이션 적용
-              entering={FadeInDown.duration(180)}
-              exiting={FadeOutUp.duration(120)}
-              style={{width: gridWidth}}>
-              {mode === 'month' ? (
+            {/* ✅ 여기만: 진짜 접힘/펼침(height clip) */}
+            <Animated.View style={[{width: gridWidth}, gridClipStyle]}>
+              {/* 월/주 둘 다 렌더링해두고 opacity로 교체 */}
+              <Animated.View
+                style={monthLayerStyle}
+                pointerEvents={mode === 'month' ? 'auto' : 'none'}>
                 <View
+                  collapsable={false}
+                  onLayout={onMonthLayout}
                   style={[
                     styles.dateGrid,
                     {width: gridWidth, columnGap: GAP, rowGap: GAP},
@@ -302,8 +401,14 @@ export default function CalendarToggle({
                     );
                   })}
                 </View>
-              ) : (
+              </Animated.View>
+
+              <Animated.View
+                style={[styles.absoluteLayer, weekLayerStyle]}
+                pointerEvents={mode === 'week' ? 'auto' : 'none'}>
                 <View
+                  collapsable={false}
+                  onLayout={onWeekLayout}
                   style={[styles.weekGrid, {width: gridWidth, columnGap: GAP}]}>
                   {weekDates.map((item, idx) => {
                     const count = scheduleCountPerDay[item.key] || 0;
@@ -347,7 +452,7 @@ export default function CalendarToggle({
                     );
                   })}
                 </View>
-              )}
+              </Animated.View>
             </Animated.View>
           </View>
         </View>
@@ -374,7 +479,6 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(5),
   },
 
-  // ✅ DropShadow wrapper base
   shadowBox: {
     alignSelf: 'center',
     borderRadius: RADIUS,
@@ -382,7 +486,6 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(10),
   },
 
-  // ✅ swipe handler용 래퍼(그림자랑 분리)
   calendarTouchWrap: {
     width: '100%',
     borderRadius: RADIUS,
@@ -543,5 +646,13 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#FF7A7A',
     borderStyle: 'dashed',
+  },
+
+  // ✅ 주 그리드를 월 그리드 위에 겹쳐놓기 위한 레이어
+  absoluteLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
   },
 });

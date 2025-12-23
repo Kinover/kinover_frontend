@@ -1,5 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 // components/ChatInput.jsx
+
 import React, {
   useState,
   useRef,
@@ -23,6 +24,7 @@ import {
   LayoutAnimation,
   UIManager,
   Keyboard,
+  Pressable,
 } from 'react-native';
 import {useDispatch} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
@@ -42,6 +44,7 @@ import {
   getResponsiveWidth,
   getResponsiveHeight,
   getResponsiveIconSize,
+  getResponsiveFontSize,
 } from '../../../utils/responsive';
 
 import {convertPhUriToFileUri} from '../../../utils/photoUriConverter';
@@ -51,7 +54,6 @@ import formatDuration from '../../../utils/formatDuration';
 import ToastModal from '../../../components/ToastModal';
 import {addMessageAndUpdateRoom} from '../utils/messageActions';
 
-// ✅ HAPTIC: 너가 만든 유틸 가져오기 (경로는 네 프로젝트에 맞게 조정)
 import {hapticLight, hapticSelection, hapticError} from '../../../utils/haptic';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -65,6 +67,8 @@ const PADDING_H = getResponsiveWidth(2);
 const ICON_SEND = require('../../../assets/icons/sendBt-dark.png');
 const ICON_PLUS = require('../../../assets/icons/optionBt-dark.png');
 
+const INPUT_H = getResponsiveHeight(45);
+
 if (
   Platform.OS === 'android' &&
   UIManager.setLayoutAnimationEnabledExperimental
@@ -72,7 +76,52 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-// ✅ 파일명 기반 content-type (반드시 모든 케이스 리턴)
+/* =========================
+ * ✅ Mention Utils
+ * ========================= */
+function escapeRegExp(str) {
+  return String(str || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function findActiveMentionQuery(text, cursor) {
+  const before = (text || '').slice(0, cursor);
+  const match = before.match(/(^|\s)@([^\s@]{0,20})$/);
+  if (!match) return null;
+
+  const query = match[2] ?? '';
+  const atIndex = before.lastIndexOf('@');
+  if (atIndex < 0) return null;
+
+  return {query, atIndex};
+}
+
+function applyMention(text, atIndex, cursor, name) {
+  const beforeAt = (text || '').slice(0, atIndex);
+  const afterToken = (text || '').slice(cursor);
+  const next = `${beforeAt}@${name} ${afterToken}`;
+  const nextCursor = (beforeAt + `@${name} `).length;
+  return {next, nextCursor};
+}
+
+function extractMentionUserIds(text, users) {
+  if (!text?.trim() || !Array.isArray(users) || users.length === 0) return [];
+
+  const ids = new Set();
+  for (const u of users) {
+    if (!u?.name || u?.userId == null) continue;
+
+    const re = new RegExp(
+      `(^|\\s)@${escapeRegExp(u.name)}(?=\\s|$|[.,!?…])`,
+      'g',
+    );
+    if (re.test(text)) ids.add(String(u.userId));
+  }
+  return Array.from(ids);
+}
+
+/* =========================
+ * ✅ 파일명 기반 content-type
+ * ========================= */
 const inferContentTypeByName = fileName => {
   const lower = String(fileName || '').toLowerCase();
   if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
@@ -83,7 +132,6 @@ const inferContentTypeByName = fileName => {
   return 'application/octet-stream';
 };
 
-// ✅ uri에서 확장자 추정
 const getExtFromUri = uri => {
   try {
     const clean = String(uri || '').split('?')[0];
@@ -95,14 +143,18 @@ const getExtFromUri = uri => {
   }
 };
 
-// ✅ file:// 제거한 path
 const stripFileScheme = uri =>
   String(uri || '').startsWith('file://')
     ? String(uri).replace('file://', '')
     : String(uri);
 
 const ChatInput = forwardRef(function ChatInput(
-  {chatRoom, userId, enableMediaPicker = true},
+  {
+    chatRoom,
+    userId,
+    enableMediaPicker = true,
+    mentionUsers: mentionUsersProp = [], // ✅ 부모에서 내려주는 멘션 후보(권장)
+  },
   ref,
 ) {
   const dispatch = useDispatch();
@@ -112,7 +164,6 @@ const ChatInput = forwardRef(function ChatInput(
     [],
   );
 
-  // ✅ 중복 전송 락
   const sendingLockRef = useRef(false);
 
   // ====== state ======
@@ -127,15 +178,20 @@ const ChatInput = forwardRef(function ChatInput(
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [selectedImages, setSelectedImages] = useState([]);
-
-  // grid
   const [gridColumns, setGridColumns] = useState(BASE_NUM_COLUMNS);
 
-  // toast
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
+  // ✅ mention state
+  const [cursor, setCursor] = useState(0);
   const inputRef = useRef(null);
+
+  // ✅ 커서 안정화용
+  const cursorRef = useRef(0);
+  useEffect(() => {
+    cursorRef.current = cursor;
+  }, [cursor]);
 
   // ====== derived ======
   const trimmed = message.trim();
@@ -147,6 +203,67 @@ const ChatInput = forwardRef(function ChatInput(
     const totalPad = PADDING_H * 2;
     return (SCREEN_WIDTH - totalPad - totalGap) / gridColumns;
   }, [gridColumns]);
+
+  /**
+   * ✅ 멘션 후보 원본
+   * - 1순위: mentionUsersProp (Redux에서 fetch한 roomUsers를 내려줘!)
+   * - 2순위: chatRoom 내부 users/participants/members
+   */
+  const chatUsersRaw = useMemo(() => {
+    if (Array.isArray(mentionUsersProp) && mentionUsersProp.length > 0) {
+      return mentionUsersProp;
+    }
+    return chatRoom?.users || chatRoom?.participants || chatRoom?.members || [];
+  }, [mentionUsersProp, chatRoom]);
+
+  // ✅ 멘션 후보에서 "본인" 제외
+  const mentionUsers = useMemo(() => {
+    const me = String(userId ?? '');
+    return (chatUsersRaw || [])
+      .filter(u => u?.userId != null && u?.name)
+      .filter(u => String(u.userId) !== me);
+  }, [chatUsersRaw, userId]);
+
+  const activeMention = useMemo(
+    () => findActiveMentionQuery(message || '', cursor),
+    [message, cursor],
+  );
+
+  const mentionCandidates = useMemo(() => {
+    if (!activeMention) return [];
+    const q = (activeMention.query || '').toLowerCase().trim();
+
+    const list = mentionUsers;
+
+    if (!q) return list.slice(0, 6);
+    return list
+      .filter(u => String(u.name).toLowerCase().includes(q))
+      .slice(0, 6);
+  }, [activeMention, mentionUsers]);
+
+  const handlePickMention = useCallback(
+    user => {
+      if (!activeMention) return;
+
+      const {next, nextCursor} = applyMention(
+        message || '',
+        activeMention.atIndex,
+        cursor,
+        user.name,
+      );
+
+      setMessage(next);
+
+      requestAnimationFrame(() => {
+        inputRef.current?.focus?.();
+        inputRef.current?.setNativeProps?.({
+          selection: {start: nextCursor, end: nextCursor},
+        });
+        setCursor(nextCursor);
+      });
+    },
+    [activeMention, cursor, message],
+  );
 
   // ====== imperative handle ======
   useImperativeHandle(ref, () => ({
@@ -207,33 +324,19 @@ const ChatInput = forwardRef(function ChatInput(
   }, [showGallery, loadPhotos]);
 
   // ====== actions ======
-  const toggleGallery = useCallback(() => {
-    if (!enableMediaPicker) return;
-
-    // ✅ HAPTIC: 갤러리 열고닫기 느낌
-    hapticLight();
-
-    Keyboard.dismiss();
-    setShowGallery(prev => !prev);
-  }, [enableMediaPicker]);
-
   const handleToggleImage = useCallback(item => {
-    // ✅ HAPTIC: 선택/해제는 selection이 더 자연스러움
     hapticSelection();
     setSelectedImages(prev => toggleSelectImage(prev, item));
   }, []);
 
-  // ✅ 업로드 전 uri 정리: iOS(ph://), Android(content://)
   const resolveUploadUri = useCallback(async (uri, index, isVideo) => {
     if (!uri) return uri;
 
-    // iOS: ph:// -> file://
     if (Platform.OS === 'ios' && String(uri).startsWith('ph://')) {
       const converted = await convertPhUriToFileUri(uri, index, isVideo);
       return converted || uri;
     }
 
-    // Android: content:// -> cache file (GET fetch)
     if (Platform.OS === 'android' && String(uri).startsWith('content://')) {
       const ext = isVideo ? 'mp4' : 'jpg';
       const destPath = `${
@@ -248,9 +351,8 @@ const ChatInput = forwardRef(function ChatInput(
       const savedPath = r?.path?.() || destPath;
 
       const exists = await RNBlobUtil.fs.exists(savedPath);
-      if (!exists) {
+      if (!exists)
         throw new Error(`android content -> file 변환 실패: ${savedPath}`);
-      }
 
       return `file://${savedPath}`;
     }
@@ -258,9 +360,6 @@ const ChatInput = forwardRef(function ChatInput(
     return uri;
   }, []);
 
-  /* =========================
-   * ✅ 압축 유틸
-   * ========================= */
   const compressUploadUri = useCallback(async (fileUri, isVideo) => {
     if (!fileUri)
       return {
@@ -277,7 +376,6 @@ const ChatInput = forwardRef(function ChatInput(
       return {uri: compressed, ext};
     }
 
-    // image
     const compressed = await ImageCompressor.compress(fileUri, {
       compressionMethod: 'auto',
       quality: 0.8,
@@ -295,7 +393,6 @@ const ChatInput = forwardRef(function ChatInput(
     const text = message.trim();
     const hasMedia = enableMediaPicker && selectedImages.length > 0;
 
-    // ✅ HAPTIC: 눌렀는데 보낼게 없으면 가볍게 에러 느낌 주기(원하면 제거 가능)
     if (!text && !hasMedia) {
       hapticError();
       sendingLockRef.current = false;
@@ -316,12 +413,10 @@ const ChatInput = forwardRef(function ChatInput(
       return;
     }
 
-    // ✅ HAPTIC: 진짜 전송 시작(가볍게)
     hapticLight();
 
     const mediaSnapshot = hasMedia ? [...selectedImages] : [];
 
-    // ✅ 이미지/영상 섞어서 선택 금지
     const hasVideo = mediaSnapshot.some(f => !!f.isVideo);
     const hasImage = mediaSnapshot.some(f => !f.isVideo);
     if (hasMedia && hasVideo && hasImage) {
@@ -341,6 +436,8 @@ const ChatInput = forwardRef(function ChatInput(
 
       // ===== 1) TEXT =====
       if (text) {
+        const mentionUserIds = extractMentionUserIds(text, mentionUsers);
+
         const clientMessageId = makeClientId();
         const optimisticId = `client-${clientMessageId}`;
 
@@ -354,6 +451,7 @@ const ChatInput = forwardRef(function ChatInput(
               senderId: userId,
               content: text,
               messageType: 'text',
+              mentionUserIds,
               createdAt: new Date().toISOString(),
               localStatus: 'sending',
             },
@@ -366,6 +464,7 @@ const ChatInput = forwardRef(function ChatInput(
           senderId: userId,
           messageType: 'text',
           clientMessageId,
+          mentionUserIds,
         });
 
         if (!ok) {
@@ -375,6 +474,7 @@ const ChatInput = forwardRef(function ChatInput(
         }
 
         setMessage('');
+        setCursor(0);
       }
 
       // ===== 2) MEDIA =====
@@ -386,7 +486,6 @@ const ChatInput = forwardRef(function ChatInput(
       mediaClientMessageId = makeClientId();
       mediaOptimisticId = `client-${mediaClientMessageId}`;
 
-      // ✅ 낙관적 UI (로컬 uri로 미리 보여주기)
       dispatch(
         addMessageAndUpdateRoom({
           chatRoomId: roomId,
@@ -404,7 +503,6 @@ const ChatInput = forwardRef(function ChatInput(
         }),
       );
 
-      // ✅ 1) 업로드용 uri 준비(file://) + 2) 압축 + 3) fileName/contentType 결정
       const now = Date.now();
       const prepared = [];
 
@@ -412,25 +510,21 @@ const ChatInput = forwardRef(function ChatInput(
         const original = mediaSnapshot[i];
         const originalUri = original?.uri;
 
-        // file:// 로 통일
         const resolvedUri = await resolveUploadUri(
           originalUri,
           i,
           !!original?.isVideo,
         );
 
-        // 압축
         const {uri: compressedUri, ext} = await compressUploadUri(
           resolvedUri,
           !!original?.isVideo,
         );
 
-        // fileName은 "압축 결과 ext" 기준
         const safeExt = ext || (original?.isVideo ? 'mp4' : 'jpg');
         const fileName = `chat_${now}_${i}.${safeExt}`;
         const contentType = inferContentTypeByName(fileName);
 
-        // 0바이트 방지용 체크(특히 영상)
         const p = stripFileScheme(compressedUri);
         const stat = await RNBlobUtil.fs.stat(p);
         const size = Number(stat?.size || 0);
@@ -444,12 +538,10 @@ const ChatInput = forwardRef(function ChatInput(
         });
       }
 
-      // presigned
       const presignedUrls = await getPresignedUrls(
         prepared.map(p => ({fileName: p.fileName, contentType: p.contentType})),
       );
 
-      // upload
       for (let i = 0; i < prepared.length; i++) {
         const presigned =
           typeof presignedUrls[i] === 'string'
@@ -468,7 +560,6 @@ const ChatInput = forwardRef(function ChatInput(
 
       const fileNames = prepared.map(p => p.fileName);
 
-      // 업로드 완료로 상태 업데이트
       dispatch(
         addMessageAndUpdateRoom({
           chatRoomId: roomId,
@@ -487,7 +578,6 @@ const ChatInput = forwardRef(function ChatInput(
         }),
       );
 
-      // 서버/소켓 전송
       const ok = sendChat({
         messageType: mediaType,
         chatRoomId: roomId,
@@ -538,6 +628,7 @@ const ChatInput = forwardRef(function ChatInput(
     makeClientId,
     resolveUploadUri,
     compressUploadUri,
+    mentionUsers,
   ]);
 
   // ====== pinch gesture (grid columns) ======
@@ -563,7 +654,6 @@ const ChatInput = forwardRef(function ChatInput(
       });
   }, []);
 
-  // ====== render items ======
   const renderPhoto = useCallback(
     ({item}) => {
       const isSelected = selectedImages.some(f => f.uri === item.uri);
@@ -604,6 +694,45 @@ const ChatInput = forwardRef(function ChatInput(
 
   return (
     <SafeAreaView>
+      {/* ✅ 멘션 드롭다운: 입력창 "위"로 */}
+      {!!activeMention && mentionCandidates.length > 0 && (
+        <View
+          style={[
+            styles.mentionDropdown,
+            {bottom: INPUT_H + getResponsiveHeight(10)},
+          ]}
+          pointerEvents="box-none">
+          <View style={styles.mentionDropdownBox}>
+            <FlatList
+              keyboardShouldPersistTaps="always"
+              data={mentionCandidates}
+              keyExtractor={item => String(item.userId)}
+              renderItem={({item}) => (
+                <Pressable
+                  onPress={() => handlePickMention(item)}
+                  style={({pressed}) => [
+                    styles.mentionItem,
+                    pressed && {opacity: 0.86},
+                  ]}>
+                  <Image
+                    source={
+                      item.image
+                        ? {uri: item.image}
+                        : require('../../../assets/images/default.png')
+                    }
+                    style={styles.mentionAvatar}
+                  />
+                  <Text style={styles.mentionName} numberOfLines={1}>
+                    {item.name}
+                  </Text>
+                  <Text style={styles.mentionHint}>@{item.name}</Text>
+                </Pressable>
+              )}
+            />
+          </View>
+        </View>
+      )}
+
       <View style={styles.innerContainer}>
         <View
           style={[
@@ -613,7 +742,11 @@ const ChatInput = forwardRef(function ChatInput(
           {enableMediaPicker && (
             <TouchableOpacity
               style={styles.inputPlusButton}
-              onPress={toggleGallery}
+              onPress={() => {
+                hapticLight();
+                Keyboard.dismiss();
+                setShowGallery(prev => !prev);
+              }}
               disabled={isSending || sendingLockRef.current}>
               <FastImage
                 source={ICON_PLUS}
@@ -629,16 +762,34 @@ const ChatInput = forwardRef(function ChatInput(
             ref={inputRef}
             style={styles.input}
             value={message}
-            onChangeText={setMessage}
-            placeholder="메시지를 입력하세요"
+            onChangeText={t => {
+              // ✅ 커서 갱신이 안 따라오는 기기 대응
+              const prevCursor = cursorRef.current;
+              const prevLen = (message || '').length;
+
+              setMessage(t);
+
+              // "끝에서 타이핑 중"이면 커서를 끝으로 따라가게
+              if (prevCursor >= prevLen) {
+                setCursor(t.length);
+              } else {
+                // 중간 편집이면 selectionChange가 오긴 하지만,
+                // 그래도 안전하게 범위 보정만 해줌
+                setCursor(c => Math.min(c, t.length));
+              }
+            }}
+            placeholder="@이름 으로 멘션 가능"
             placeholderTextColor="#999"
             returnKeyType="send"
             editable={!isSending && !sendingLockRef.current}
             onFocus={() => {
               if (showGallery) setShowGallery(false);
             }}
+            onSelectionChange={e => {
+              const next = e?.nativeEvent?.selection?.start ?? 0;
+              setCursor(next);
+            }}
             onSubmitEditing={() => {
-              // ✅ HAPTIC: 키보드 엔터로 전송도 동일하게
               hapticLight();
               handleSend();
             }}
@@ -648,9 +799,9 @@ const ChatInput = forwardRef(function ChatInput(
             <TouchableOpacity
               style={styles.clearButton}
               onPress={() => {
-                // ✅ HAPTIC: 입력 지우기(가볍게)
                 hapticSelection();
                 setMessage('');
+                setCursor(0);
               }}>
               <FastImage
                 source={require('../../../assets/images/clearBt.png')}
@@ -661,7 +812,6 @@ const ChatInput = forwardRef(function ChatInput(
 
           <TouchableOpacity
             onPress={() => {
-              // ✅ HAPTIC: 버튼 탭
               hapticLight();
               handleSend();
             }}
@@ -738,6 +888,52 @@ const ChatInput = forwardRef(function ChatInput(
 export default ChatInput;
 
 const styles = StyleSheet.create({
+  // ✅ 멘션 드롭다운
+  mentionDropdown: {
+    position: 'absolute',
+    top: getResponsiveHeight(-40),
+    left: getResponsiveWidth(14),
+    right: getResponsiveWidth(14),
+    zIndex: 999,
+    elevation: 20,
+  },
+  mentionDropdownBox: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(17,24,39,0.10)',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: Platform.OS === 'ios' ? 0.08 : 0.2,
+    shadowRadius: 12,
+    shadowOffset: {width: 0, height: 6},
+  },
+  mentionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(10),
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(10),
+  },
+  mentionAvatar: {
+    width: getResponsiveWidth(28),
+    height: getResponsiveWidth(28),
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,200,77,0.15)',
+  },
+  mentionName: {
+    flex: 1,
+    minWidth: 0,
+    color: '#111827',
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(13.5),
+  },
+  mentionHint: {
+    color: '#6B7280',
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(12),
+  },
+
   innerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -753,7 +949,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    height: getResponsiveHeight(45),
+    height: INPUT_H,
     borderRadius: getResponsiveWidth(30),
     borderWidth: 1,
     backgroundColor: 'rgba(80, 100, 100, 0.1)',
@@ -801,7 +997,6 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveWidth(20),
   },
 
-  // ✅ 아이콘 + 뱃지 래퍼
   sendIconWrap: {
     position: 'relative',
     justifyContent: 'center',
@@ -822,11 +1017,9 @@ const styles = StyleSheet.create({
     transform: [{scale: 0.9}],
   },
 
-  // ✅ 숫자 뱃지 (아이콘 위에 살짝 겹치게)
   sendBadge: {
     position: 'absolute',
-    // ✅ 여기만 제대로 고치면 됨 (위로 살짝, 오른쪽으로 살짝)
-    top: -getResponsiveWidth(-7),
+    top: -getResponsiveWidth(7),
     right: -getResponsiveWidth(8),
 
     minWidth: getResponsiveWidth(18),

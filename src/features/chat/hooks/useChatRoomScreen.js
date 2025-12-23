@@ -5,6 +5,9 @@ import {useEffect, useRef, useState, useCallback, useMemo} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchMoreMessagesThunk} from '../store/messageThunk';
 import {initRoom, selectRoomMessages, selectRoomMeta} from '../store/messageSlice';
+import { useFocusEffect } from '@react-navigation/native';
+import { setActiveChatRoom } from '../store/chatRoomSlice';
+import { fetchChatRoomUsersThunk } from '../store/chatRoomThunk';
 
 export default function useChatRoomScreen(chatRoom, userId, isKino) {
   const dispatch = useDispatch();
@@ -29,6 +32,22 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
   const [noMoreMessages, setNoMoreMessages] = useState(false);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
+
+
+  useFocusEffect(
+    useCallback(() => {
+      dispatch(setActiveChatRoom(chatRoom.chatRoomId)); // 들어올 때
+
+      return () => {
+        dispatch(setActiveChatRoom(null)); // ✅ 나갈 때
+      };
+    }, [dispatch, chatRoom.chatRoomId]),
+  );
+
+  useEffect(() => {
+    if (!roomId) return;
+    dispatch(fetchChatRoomUsersThunk(roomId)); // ✅ 이게 있어야 roomUsers가 생김
+  }, [roomId, dispatch]);
 
   /** =====================
    * Scroll helpers

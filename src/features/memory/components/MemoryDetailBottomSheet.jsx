@@ -7,14 +7,18 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Platform,
   Animated,
+  Pressable,
+  FlatList,
+  Image,
+  Platform,
 } from 'react-native';
 
 import {
   BottomSheetModal,
   BottomSheetBackdrop,
   BottomSheetFlatList,
+  BottomSheetFooter,
   BottomSheetTextInput,
 } from '@gorhom/bottom-sheet';
 
@@ -31,8 +35,269 @@ import {
 import {EMPTY_STYLE} from 'styles/style';
 
 const ACTION_W = getResponsiveWidth(70);
-const INPUT_H = getResponsiveHeight(50);
+const INPUT_H = getResponsiveHeight(46);
 const INPUT_SIDE_PAD = getResponsiveWidth(16);
+
+/* =========================
+ * ✅ Mention Utils (파일 안에 같이 둠)
+ * ========================= */
+function escapeRegExp(str) {
+  return String(str || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function extractMentionUserIds(text, users) {
+  if (!text?.trim() || !Array.isArray(users) || users.length === 0) return [];
+
+  const ids = new Set();
+  for (const u of users) {
+    if (!u?.name || u?.userId == null) continue;
+
+    const re = new RegExp(
+      `(^|\\s)@${escapeRegExp(u.name)}(?=\\s|$|[.,!?…])`,
+      'g',
+    );
+    if (re.test(text)) ids.add(String(u.userId));
+  }
+  return Array.from(ids);
+}
+
+function findActiveMentionQuery(text, cursor) {
+  const before = (text || '').slice(0, cursor);
+  const match = before.match(/(^|\s)@([^\s@]{0,20})$/);
+  if (!match) return null;
+
+  const query = match[2] ?? '';
+  const atIndex = before.lastIndexOf('@');
+  if (atIndex < 0) return null;
+
+  return {query, atIndex};
+}
+
+function applyMention(text, atIndex, cursor, name) {
+  const beforeAt = (text || '').slice(0, atIndex);
+  const afterToken = (text || '').slice(cursor);
+  const next = `${beforeAt}@${name} ${afterToken}`;
+  const nextCursor = (beforeAt + `@${name} `).length;
+  return {next, nextCursor};
+}
+
+/* =========================
+ * ✅ MentionText (댓글 렌더에서 멘션 하이라이트)
+ * - familyUsers 기준으로만 하이라이트
+ * ========================= */
+function MentionText({text, familyUsers, textStyle, mentionStyle}) {
+  const nameMap = useMemo(() => {
+    const m = new Map();
+    (familyUsers || []).forEach(u => {
+      if (u?.name) m.set(u.name, u);
+    });
+    return m;
+  }, [familyUsers]);
+
+  const parts = useMemo(() => {
+    if (!text) return [''];
+    // @토큰만 분리 (공백 전까지)
+    return String(text).split(/(@[^\s@]{1,20})/g);
+  }, [text]);
+
+  return (
+    <Text style={textStyle}>
+      {parts.map((p, idx) => {
+        if (p?.startsWith('@')) {
+          const name = p.slice(1);
+          const user = nameMap.get(name);
+          if (user) {
+            return (
+              <Text
+                key={`${idx}_${p}`}
+                style={[styles.mentionText, mentionStyle]}>
+                {p}
+              </Text>
+            );
+          }
+        }
+        return <Text key={`${idx}_${p}`}>{p}</Text>;
+      })}
+    </Text>
+  );
+}
+
+/* =========================
+ * ✅ Footer: BottomSheetTextInput + 멘션 추천 드롭다운
+ * - 드롭다운은 "입력창 위"로 absolute 배치
+ * - onSubmitComment에 {content, mentionUserIds} 같이 넘김
+ * - ✅ 멘션 후보에서 "본인" 제외
+ * ========================= */
+function CommentFooter({
+  footerProps,
+  bottomInset,
+  initialText,
+  onSubmitComment,
+  onChangeComment,
+
+  familyUsers = [],
+
+  // ✅ 추가: 본인 userId (후보 제외 + 제출 안전장치)
+  myUserId,
+}) {
+  const draftRef = useRef(initialText || '');
+  const inputRef = useRef(null);
+
+  // 멘션용 상태들
+  const [cursor, setCursor] = useState(0);
+  const [draftText, setDraftText] = useState(initialText || '');
+
+  useEffect(() => {
+    const next = initialText || '';
+    draftRef.current = next;
+    setDraftText(next);
+    setCursor(next.length);
+    inputRef.current?.setNativeProps?.({text: next});
+  }, [initialText]);
+
+  const activeMention = useMemo(
+    () => findActiveMentionQuery(draftText, cursor),
+    [draftText, cursor],
+  );
+
+  const mentionCandidates = useMemo(() => {
+    if (!activeMention) return [];
+    const q = (activeMention.query || '').toLowerCase().trim();
+
+    const me = myUserId == null ? null : String(myUserId);
+
+    const list = (familyUsers || [])
+      .filter(u => !!u?.name && u?.userId != null)
+      // ✅ 본인 제외
+      .filter(u => (me ? String(u.userId) !== me : true));
+
+    if (!q) return list.slice(0, 6);
+    return list
+      .filter(u => String(u.name).toLowerCase().includes(q))
+      .slice(0, 6);
+  }, [activeMention, familyUsers, myUserId]);
+
+  const handlePickMention = useCallback(
+    user => {
+      if (!activeMention) return;
+
+      const current = String(draftRef.current || '');
+      const {next, nextCursor} = applyMention(
+        current,
+        activeMention.atIndex,
+        cursor,
+        user.name,
+      );
+
+      draftRef.current = next;
+      setDraftText(next);
+      setCursor(nextCursor);
+
+      requestAnimationFrame(() => {
+        inputRef.current?.setNativeProps?.({
+          text: next,
+          selection: {start: nextCursor, end: nextCursor},
+        });
+      });
+    },
+    [activeMention, cursor],
+  );
+
+  const handleSubmit = useCallback(() => {
+    const next = String(draftRef.current || '').trim();
+    if (!next) return;
+
+    // ✅ 멘션 추출 + 본인 제거(안전장치)
+    const me = myUserId == null ? null : String(myUserId);
+    const mentionUserIds = extractMentionUserIds(next, familyUsers).filter(id =>
+      me ? String(id) !== me : true,
+    );
+
+    onChangeComment?.(next);
+    onSubmitComment?.({content: next, mentionUserIds});
+
+    // 입력 초기화
+    draftRef.current = '';
+    setDraftText('');
+    setCursor(0);
+    inputRef.current?.setNativeProps?.({text: ''});
+  }, [familyUsers, myUserId, onChangeComment, onSubmitComment]);
+
+  return (
+    <BottomSheetFooter {...footerProps} bottomInset={0}>
+      <SafeAreaView edges={['bottom']} style={styles.footerSafe}>
+        <View style={[styles.footerInner, {paddingBottom: bottomInset}]}>
+          {/* ✅ 멘션 드롭다운: 입력창 위로 뜨게 */}
+          {!!activeMention && mentionCandidates.length > 0 && (
+            <View
+              style={[
+                styles.mentionDropdown,
+                {bottom: INPUT_H + getResponsiveHeight(10)},
+              ]}
+              pointerEvents="box-none">
+              <View style={styles.mentionDropdownBox}>
+                <FlatList
+                  keyboardShouldPersistTaps="always"
+                  data={mentionCandidates}
+                  keyExtractor={item => String(item.userId)}
+                  renderItem={({item}) => (
+                    <Pressable
+                      onPress={() => handlePickMention(item)}
+                      style={({pressed}) => [
+                        styles.mentionItem,
+                        pressed && {opacity: 0.86},
+                      ]}>
+                      <Image
+                        source={
+                          item.image
+                            ? {uri: item.image}
+                            : require('../../../assets/images/default.png')
+                        }
+                        style={styles.mentionAvatar}
+                      />
+                      <Text style={styles.mentionName} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <Text style={styles.mentionHint}>@{item.name}</Text>
+                    </Pressable>
+                  )}
+                />
+              </View>
+            </View>
+          )}
+
+          <View style={styles.commentInputContainer}>
+            <BottomSheetTextInput
+              ref={inputRef}
+              style={styles.commentInput}
+              placeholder="댓글을 달아보세요 ( @가족이름 멘션 가능 )"
+              placeholderTextColor="#999"
+              defaultValue={initialText || ''}
+              onChangeText={t => {
+                draftRef.current = t;
+                setDraftText(t);
+              }}
+              onSelectionChange={e => {
+                const nextCursor = e?.nativeEvent?.selection?.start ?? 0;
+                setCursor(nextCursor);
+              }}
+              returnKeyType="send"
+              onSubmitEditing={handleSubmit}
+              blurOnSubmit={false}
+            />
+
+            <TouchableOpacity onPress={handleSubmit} activeOpacity={0.9}>
+              <FastImage
+                style={styles.commentSendBt}
+                source={require('../../../assets/icons/sendBt-dark.png')}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </SafeAreaView>
+    </BottomSheetFooter>
+  );
+}
 
 export default function MemoryDetailBottomSheet({
   sheetRef,
@@ -45,53 +310,52 @@ export default function MemoryDetailBottomSheet({
   onDeleteComment,
   snapPoints: snapPointsProp,
   backgroundColor = '#F9F9F9',
+
+  // ✅ 멘션 후보(가족 유저 리스트)
+  // 형태 예: [{ userId: 1, name: '은재', image: 'https://...' }, ...]
+  familyUsers = [],
+
+  // ✅ 추가: 화면 밖에서 따로 전달하고 싶으면 사용 (없으면 user.userId 사용)
+  myUserId,
 }) {
   const insets = useSafeAreaInsets();
+  const snapPoints = useMemo(() => snapPointsProp || ['80%'], [snapPointsProp]);
 
-  const snapPoints = useMemo(
-    () => snapPointsProp || ['80%'],
-    [snapPointsProp],
-  );
+  const listRef = useRef(null);
 
-  const [inputFocused, setInputFocused] = useState(false);
   const [showTopFade, setShowTopFade] = useState(false);
   const [showBottomFade, setShowBottomFade] = useState(false);
 
   const lastFadeRef = useRef({top: false, bottom: false});
   const scrollThrottleRef = useRef(0);
 
-  const handleListScroll = useCallback(
-    e => {
-      if (inputFocused) return;
+  const handleListScroll = useCallback(e => {
+    const now = Date.now();
+    if (now - scrollThrottleRef.current < 80) return;
+    scrollThrottleRef.current = now;
 
-      const now = Date.now();
-      if (now - scrollThrottleRef.current < 80) return;
-      scrollThrottleRef.current = now;
+    const {
+      contentOffset: {y},
+      layoutMeasurement,
+      contentSize,
+    } = e.nativeEvent;
 
-      const {
-        contentOffset: {y},
-        layoutMeasurement,
-        contentSize,
-      } = e.nativeEvent;
+    const visibleHeight = layoutMeasurement.height;
+    const totalHeight = contentSize.height;
+    const threshold = 10;
 
-      const visibleHeight = layoutMeasurement.height;
-      const totalHeight = contentSize.height;
-      const threshold = 10;
+    const nextTop = y > threshold;
+    const nextBottom = y + visibleHeight < totalHeight - threshold;
 
-      const nextTop = y > threshold;
-      const nextBottom = y + visibleHeight < totalHeight - threshold;
-
-      if (lastFadeRef.current.top !== nextTop) {
-        lastFadeRef.current.top = nextTop;
-        setShowTopFade(nextTop);
-      }
-      if (lastFadeRef.current.bottom !== nextBottom) {
-        lastFadeRef.current.bottom = nextBottom;
-        setShowBottomFade(nextBottom);
-      }
-    },
-    [inputFocused],
-  );
+    if (lastFadeRef.current.top !== nextTop) {
+      lastFadeRef.current.top = nextTop;
+      setShowTopFade(nextTop);
+    }
+    if (lastFadeRef.current.bottom !== nextBottom) {
+      lastFadeRef.current.bottom = nextBottom;
+      setShowBottomFade(nextBottom);
+    }
+  }, []);
 
   useEffect(() => {
     if (!commentList.length) {
@@ -114,9 +378,16 @@ export default function MemoryDetailBottomSheet({
   );
 
   const isMyComment = useCallback(
-    c =>
-      user?.userId &&
-      (c.authorId === user.userId || c.userId === user.userId),
+    c => {
+      const me = user?.userId;
+      if (me == null) return false;
+
+      const meId = String(me);
+      const author = c?.authorId ?? c?.userId;
+      if (author == null) return false;
+
+      return String(author) === meId;
+    },
     [user?.userId],
   );
 
@@ -153,6 +424,7 @@ export default function MemoryDetailBottomSheet({
           enabled={mine}
           overshootRight={false}
           rightThreshold={ACTION_W / 2}
+          simultaneousHandlers={listRef}
           renderRightActions={progress =>
             mine ? renderRightActions(item.commentId, progress) : null
           }>
@@ -169,22 +441,24 @@ export default function MemoryDetailBottomSheet({
                     {formatPreviewTime(item.createdAt)}
                   </Text>
                 </View>
-                <Text style={styles.commentContent}>{item.content}</Text>
+
+                {/* ✅ 멘션 하이라이트 */}
+                <MentionText
+                  text={item.content}
+                  familyUsers={familyUsers}
+                  textStyle={styles.commentContent}
+                />
               </View>
             </View>
           </View>
         </Swipeable>
       );
     },
-    [isMyComment, renderRightActions],
+    [familyUsers, isMyComment, renderRightActions],
   );
 
-  const bottomSafe =
-    Platform.OS === 'android'
-      ? getResponsiveHeight(18)
-      : Math.max(insets.bottom, getResponsiveHeight(10));
-
-  const listPaddingBottom = bottomSafe + INPUT_H + getResponsiveHeight(14);
+  const bottomInset = getResponsiveHeight(6);
+  const listPaddingBottom = bottomInset + INPUT_H + getResponsiveHeight(18);
 
   return (
     <BottomSheetModal
@@ -194,9 +468,22 @@ export default function MemoryDetailBottomSheet({
       backdropComponent={renderBackdrop}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
-      backgroundStyle={[styles.sheetBackground, {backgroundColor}]}>
+      android_keyboardInputMode="adjustResize"
+      backgroundStyle={[styles.sheetBackground, {backgroundColor}]}
+      footerComponent={props => (
+        <CommentFooter
+          footerProps={props}
+          bottomInset={bottomInset}
+          initialText={commentText}
+          onChangeComment={onChangeComment}
+          onSubmitComment={onSubmitComment}
+          familyUsers={familyUsers}
+          myUserId={myUserId ?? user?.userId}
+        />
+      )}>
       <View style={styles.sheetInner}>
         <BottomSheetFlatList
+          ref={listRef}
           data={commentList}
           keyExtractor={item => String(item.commentId)}
           renderItem={renderCommentItem}
@@ -204,6 +491,7 @@ export default function MemoryDetailBottomSheet({
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{paddingBottom: listPaddingBottom}}
+          keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>
@@ -229,29 +517,6 @@ export default function MemoryDetailBottomSheet({
             style={styles.bottomFade}
           />
         )}
-
-        <SafeAreaView edges={['bottom']} style={styles.inputSafe}>
-          <View style={[styles.inputWrap, {bottom: bottomSafe}]}>
-            <View style={styles.commentInputContainer}>
-              <BottomSheetTextInput
-                style={styles.commentInput}
-                placeholder="댓글 달고 추억 쌓기...."
-                placeholderTextColor="#D9D9D9"
-                value={commentText}
-                onChangeText={onChangeComment}
-                onFocus={() => setInputFocused(true)}
-                onBlur={() => setInputFocused(false)}
-                returnKeyType="default"
-              />
-              <TouchableOpacity onPress={onSubmitComment} activeOpacity={0.9}>
-                <FastImage
-                  style={styles.commentSendBt}
-                  source={require('../../../assets/icons/sendBt.png')}
-                />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </SafeAreaView>
       </View>
     </BottomSheetModal>
   );
@@ -317,8 +582,18 @@ const styles = StyleSheet.create({
     marginTop: getResponsiveHeight(4),
     fontFamily: 'Pretendard-Light',
     fontSize: getResponsiveFontSize(13),
-    lineHeight: 20,
+    lineHeight: 15,
     color: '#000',
+  },
+
+  // ✅ 멘션 부분만 “태그 느낌”으로 확실히 다르게
+  mentionText: {
+    color: '#111827',
+    fontFamily: 'Pretendard-SemiBold',
+    backgroundColor: 'rgba(255,200,77,0.22)',
+    paddingHorizontal: getResponsiveWidth(6),
+    paddingVertical: getResponsiveHeight(2),
+    borderRadius: 8,
   },
 
   emptyContainer: {
@@ -362,26 +637,21 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(26),
   },
 
-  inputSafe: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
+  footerSafe: {backgroundColor: 'transparent'},
+  footerInner: {
+    paddingTop: getResponsiveHeight(6),
+    paddingHorizontal: getResponsiveWidth(14),
   },
-  inputWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    paddingTop: getResponsiveHeight(8),
-  },
+
   commentInputContainer: {
+    position: 'relative',
     flexDirection: 'row',
     alignItems: 'center',
-    width: '90%',
+    width: '100%',
     alignSelf: 'center',
-    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#FFC84D',
+    backgroundColor: 'rgba(80, 100, 100, 0.1)',
+    borderColor: 'rgba(55, 65, 81,0.45)',
     borderRadius: getResponsiveWidth(10),
     paddingHorizontal: INPUT_SIDE_PAD,
     height: INPUT_H,
@@ -390,11 +660,58 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-Regular',
-    lineHeight: getResponsiveHeight(20),
+    lineHeight: getResponsiveHeight(17),
     color: '#000',
+    paddingVertical: 0,
+    textAlignVertical: 'center',
   },
   commentSendBt: {
     width: getResponsiveWidth(24),
     height: getResponsiveWidth(24),
+  },
+
+  /* ===== 멘션 드롭다운 ===== */
+  mentionDropdown: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 999,
+    elevation: 20,
+  },
+  mentionDropdownBox: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(17,24,39,0.10)',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: Platform.OS === 'ios' ? 0.08 : 0.2,
+    shadowRadius: 12,
+    shadowOffset: {width: 0, height: 6},
+  },
+  mentionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(10),
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(10),
+  },
+  mentionAvatar: {
+    width: getResponsiveWidth(28),
+    height: getResponsiveWidth(28),
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,200,77,0.15)',
+  },
+  mentionName: {
+    flex: 1,
+    minWidth: 0,
+    color: '#111827',
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(13.5),
+  },
+  mentionHint: {
+    color: '#6B7280',
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(12),
   },
 });

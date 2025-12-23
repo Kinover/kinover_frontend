@@ -1469,7 +1469,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - react-native-safe-area-context (5.6.2):
+  - react-native-safe-area-context (5.4.0):
     - React-Core
   - react-native-video (6.18.0):
     - DoubleConversion
@@ -2029,7 +2029,7 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
-  - RNScreens (4.18.0):
+  - RNScreens (4.15.2):
     - DoubleConversion
     - glog
     - hermes-engine
@@ -2495,7 +2495,7 @@ SPEC CHECKSUMS:
   react-native-drop-shadow: a30a971eed0b9ef1a3656492b82f12ebe93de120
   react-native-get-random-values: 21325b2244dfa6b58878f51f9aa42821e7ba3d06
   react-native-image-picker: 186ad584e64736397c7d1f988d9d07bb0d85b942
-  react-native-safe-area-context: e48706fb09fde89f82e12bfb49b140cfdcb761f7
+  react-native-safe-area-context: 8870dc3e45c8d241336cd8ee3fa3fc76f3a040ac
   react-native-video: 865d91f3637dd7b6cc97e0bb05e485c0025dfedb
   react-native-video-helper: f5e1ccf46c0a1436c2b3c3891feeada00cf0d4fe
   React-NativeModulesApple: 16fbd5b040ff6c492dacc361d49e63cba7a6a7a1
@@ -2542,7 +2542,7 @@ SPEC CHECKSUMS:
   RNPermissions: c98d72e827cba865b4e53f57b21e4e941bc8c63c
   RNReactNativeHapticFeedback: 288ef2881046914e9108441e783f64899807282a
   RNReanimated: 50a238605beb0e3fb811af1c84d25363a0c466e2
-  RNScreens: 52bf34e02b474a36fa3e4de06e29aa9d8e0c4f30
+  RNScreens: c88e0cd4569d5c5cc8d0583b02df7a87d3254a42
   RNSVG: 60d9624970b8a21d7cca47ce2ec31c6434a4c639
   RNVectorIcons: 912e23787f83a9754f9fb9fa9a108554e4fb1958
   SDWebImage: e9c98383c7572d713c1a0d7dd2783b10599b9838

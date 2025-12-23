@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		02329FCCCE37F5261ECE573F /* libPods-kinover_frontend.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 925A2456551DF520D7972B3B /* libPods-kinover_frontend.a */; };
 		122B5C86F73841A8AFF58FBB /* Pretendard-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 23E070ACEDC24F319092620E /* Pretendard-SemiBold.ttf */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		165133DD2E5732220066FAD5 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 165133DC2E5732220066FAD5 /* GoogleService-Info.plist */; };
@@ -20,6 +19,7 @@
 		614BE0CC1DF94088850ED158 /* Pretendard-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2AB0C14DB0A74AF7A8F2B567 /* Pretendard-Medium.ttf */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		9E20377A87810549896B7569 /* libPods-kinover_frontend.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BDFAC6758CD17C89FE6FE642 /* libPods-kinover_frontend.a */; };
 		B0D8D1A56DD74BBD9F2B4F79 /* Pretendard-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A092DDCF5E154D8A90D88B5F /* Pretendard-Light.ttf */; };
 		DC5C471D9373FB5E6AC5F79B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		E90FBD82AD854747B8932F37 /* SpaceMono-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 27E0951A8C6D47C0A3FE218D /* SpaceMono-Regular.ttf */; };
@@ -42,12 +42,12 @@
 		27E0951A8C6D47C0A3FE218D /* SpaceMono-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "SpaceMono-Regular.ttf"; path = "../src/assets/fonts/SpaceMono-Regular.ttf"; sourceTree = "<group>"; };
 		2AB0C14DB0A74AF7A8F2B567 /* Pretendard-Medium.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Pretendard-Medium.ttf"; path = "../src/assets/fonts/Pretendard-Medium.ttf"; sourceTree = "<group>"; };
 		4C3D6314155745B2822E0C42 /* Pretendard-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Pretendard-Regular.ttf"; path = "../src/assets/fonts/Pretendard-Regular.ttf"; sourceTree = "<group>"; };
-		5BE3AE9715C4C4B5C261A143 /* Pods-kinover_frontend.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-kinover_frontend.release.xcconfig"; path = "Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend.release.xcconfig"; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = kinover_frontend/AppDelegate.swift; sourceTree = "<group>"; };
+		762A9CDB29814039A72F4F1B /* Pods-kinover_frontend.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-kinover_frontend.release.xcconfig"; path = "Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend.release.xcconfig"; sourceTree = "<group>"; };
+		785593E748B10F240430E4CA /* Pods-kinover_frontend.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-kinover_frontend.debug.xcconfig"; path = "Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend.debug.xcconfig"; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = kinover_frontend/LaunchScreen.storyboard; sourceTree = "<group>"; };
-		925A2456551DF520D7972B3B /* libPods-kinover_frontend.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-kinover_frontend.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		93F7565B83DDFBD616AAEE5B /* Pods-kinover_frontend.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-kinover_frontend.debug.xcconfig"; path = "Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend.debug.xcconfig"; sourceTree = "<group>"; };
 		A092DDCF5E154D8A90D88B5F /* Pretendard-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Pretendard-Light.ttf"; path = "../src/assets/fonts/Pretendard-Light.ttf"; sourceTree = "<group>"; };
+		BDFAC6758CD17C89FE6FE642 /* libPods-kinover_frontend.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-kinover_frontend.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E50A530B3F0C4D22A857BD37 /* Pretendard-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Pretendard-Bold.ttf"; path = "../src/assets/fonts/Pretendard-Bold.ttf"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
@@ -57,7 +57,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				02329FCCCE37F5261ECE573F /* libPods-kinover_frontend.a in Frameworks */,
+				9E20377A87810549896B7569 /* libPods-kinover_frontend.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -88,7 +88,7 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				925A2456551DF520D7972B3B /* libPods-kinover_frontend.a */,
+				BDFAC6758CD17C89FE6FE642 /* libPods-kinover_frontend.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -139,8 +139,8 @@
 		BBD78D7AC51CEA395F1C20DB /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				93F7565B83DDFBD616AAEE5B /* Pods-kinover_frontend.debug.xcconfig */,
-				5BE3AE9715C4C4B5C261A143 /* Pods-kinover_frontend.release.xcconfig */,
+				785593E748B10F240430E4CA /* Pods-kinover_frontend.debug.xcconfig */,
+				762A9CDB29814039A72F4F1B /* Pods-kinover_frontend.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -152,14 +152,14 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "kinover_frontend" */;
 			buildPhases = (
-				A275D25C71E82BB9255C09C8 /* [CP] Check Pods Manifest.lock */,
+				05D06E48417CBCE4B8796AFF /* [CP] Check Pods Manifest.lock */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
-				6E4E792544778744666B25DF /* [CP] Embed Pods Frameworks */,
-				5B86D683B41A61C777FD5CDF /* [CP] Copy Pods Resources */,
-				C1A8B7DB49D7854A9FE0AA14 /* [CP-User] [RNFB] Core Configuration */,
+				509C0AFC689C8CA15F1473A4 /* [CP] Embed Pods Frameworks */,
+				5CFC8B6F28CB3BF849D6D583 /* [CP] Copy Pods Resources */,
+				91A92A5A7FFCF5928FD7A818 /* [CP-User] [RNFB] Core Configuration */,
 			);
 			buildRules = (
 			);
@@ -243,41 +243,7 @@
 			shellPath = /bin/sh;
 			shellScript = "export NODE_BINARY=\"/Users/zzizi/.nvm/versions/node/v20.14.0/bin/node\"\n../node_modules/react-native/scripts/react-native-xcode.sh\n";
 		};
-		5B86D683B41A61C777FD5CDF /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend-resources-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Copy Pods Resources";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend-resources-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend-resources.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		6E4E792544778744666B25DF /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend-frameworks-${CONFIGURATION}-input-files.xcfilelist",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputFileListPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend-frameworks-${CONFIGURATION}-output-files.xcfilelist",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		A275D25C71E82BB9255C09C8 /* [CP] Check Pods Manifest.lock */ = {
+		05D06E48417CBCE4B8796AFF /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -299,7 +265,41 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		C1A8B7DB49D7854A9FE0AA14 /* [CP-User] [RNFB] Core Configuration */ = {
+		509C0AFC689C8CA15F1473A4 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		5CFC8B6F28CB3BF849D6D583 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		91A92A5A7FFCF5928FD7A818 /* [CP-User] [RNFB] Core Configuration */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -328,7 +328,7 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 93F7565B83DDFBD616AAEE5B /* Pods-kinover_frontend.debug.xcconfig */;
+			baseConfigurationReference = 785593E748B10F240430E4CA /* Pods-kinover_frontend.debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
@@ -510,7 +510,7 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 5BE3AE9715C4C4B5C261A143 /* Pods-kinover_frontend.release.xcconfig */;
+			baseConfigurationReference = 762A9CDB29814039A72F4F1B /* Pods-kinover_frontend.release.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ARCHS = "$(ARCHS_STANDARD)";
