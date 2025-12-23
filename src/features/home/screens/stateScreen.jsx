@@ -12,6 +12,7 @@ import {
   Animated,
   Dimensions,
   Platform,
+  Image,
 } from 'react-native';
 
 import DropShadow from 'react-native-drop-shadow';
@@ -28,6 +29,8 @@ import {useDispatch, useSelector} from 'react-redux';
 import {modifyUserThunk} from '../store/userThunk';
 import {useNavigation} from '@react-navigation/native';
 import BottomActionButton from 'components/BottomActionButton';
+
+const CHECK_IMAGE = require('../../../assets/icons/check-gray.png');
 
 const EMOTIONS = [
   {
@@ -186,8 +189,13 @@ const EmotionItem = ({item, index, isSelected, onPress, itemWidth}) => {
                 borderColor,
               },
             ]}>
+            {/* ✅ 기존 체크 텍스트 제거하고, 체크 이미지로 교체 + 흰색 tint */}
             <Animated.View style={[styles.checkBadge, {opacity: badgeOpacity}]}>
-              <Text style={styles.checkText}>✓</Text>
+              <Image
+                source={CHECK_IMAGE}
+                style={styles.checkIcon}
+                resizeMode="contain"
+              />
             </Animated.View>
 
             <FastImage
@@ -356,16 +364,16 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(22),
     height: getResponsiveWidth(22),
     borderRadius: 999,
-    backgroundColor: '#FFC84D',
+    backgroundColor: '#FFC84D', // ✅ 노란 배경 그대로
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  checkText: {
-    color: '#000',
-    fontFamily: 'Pretendard-Bold',
-    fontSize: getResponsiveFontSize(13),
-    lineHeight: getResponsiveFontSize(16),
+  // ✅ 체크 아이콘 (회색 png → 흰색 tint)
+  checkIcon: {
+    width: getResponsiveWidth(11),
+    height: getResponsiveWidth(11),
+    tintColor: '#FFFFFF',
   },
 
   emotionImage: {

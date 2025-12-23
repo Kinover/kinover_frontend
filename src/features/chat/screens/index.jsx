@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchChatRoomListThunk} from '../store/chatRoomThunk';
+// import ChatRoomItem from '../components/ChatRoomItem';
 import ChatRoomItem from '../components/ChatRoomItem';
 import {
   getResponsiveHeight,
@@ -112,11 +113,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F9F9F9',
-    paddingHorizontal: getResponsiveWidth(14), // 🔽 살짝 줄임
   },
   listContent: {
     paddingTop: getResponsiveHeight(4),
-    paddingBottom: getResponsiveHeight(80), // 🔽 여백 살짝 줄임
+    paddingBottom: getResponsiveHeight(150), // 🔽 여백 살짝 줄임
     gap: getResponsiveHeight(6), // 🔽 카드 사이 간격 줄임
   },
   noChatMessage: {

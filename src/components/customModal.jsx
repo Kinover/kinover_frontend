@@ -18,7 +18,6 @@ import {
 } from '../utils/responsive';
 import {BACKGROUND_COLORS, BUTTON_STYLES} from 'styles/style';
 
-// ✅ 햅틱 유틸 import (경로는 네 프로젝트에 맞게)
 import {hapticLight, hapticMedium, hapticHeavy} from '../utils/haptic';
 
 export default function CustomModal({
@@ -42,10 +41,12 @@ export default function CustomModal({
   subText,
   titleImage,
   titleImageStyle,
+
+  // ✅ 추가: 모달 박스 "밖"에서 렌더될 레이어
+  overlayChildren,
 }) {
   if (!visible) return null;
 
-  // ✅ 안전한 래퍼들 (햅틱 먼저, 그다음 원래 동작)
   const handleBackdropPress = () => {
     hapticLight();
     onClose?.();
@@ -57,13 +58,11 @@ export default function CustomModal({
   };
 
   const handleConfirmPress = () => {
-    // 저장/확인은 좀 더 확실한 촉감 추천
     hapticMedium();
     onConfirm?.();
   };
 
   const handleTrashPress = () => {
-    // 삭제 버튼은 강하게(원하면 Medium으로 바꿔도 됨)
     hapticHeavy();
     onTrashPress?.();
   };
@@ -79,7 +78,6 @@ export default function CustomModal({
       {/* 🔹 배경 아무데나 탭하면 닫힘 */}
       <TouchableWithoutFeedback onPress={handleBackdropPress}>
         <View style={styles.overlay}>
-          {/* 블러 배경 */}
           <BlurView
             style={StyleSheet.absoluteFill}
             blurType="light"
@@ -87,10 +85,16 @@ export default function CustomModal({
             reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.4)"
           />
 
+          {/* ✅ 여기: 모달 박스 밖(화면 전체) 레이어 */}
+          {overlayChildren ? (
+            <View style={StyleSheet.absoluteFill} pointerEvents="none">
+              {overlayChildren}
+            </View>
+          ) : null}
+
           {/* 🔹 모달 박스는 탭해도 닫히지 않도록 */}
           <TouchableWithoutFeedback onPress={() => {}}>
             <View style={[styles.modalBox, modalBoxStyle]}>
-              {/* 상단 버튼들 */}
               <View
                 style={[
                   styles.topButtonRow,
@@ -127,7 +131,6 @@ export default function CustomModal({
                 )}
               </View>
 
-              {/* 타이틀 이미지 */}
               {titleImage && (
                 <Image
                   source={titleImage}
@@ -136,16 +139,13 @@ export default function CustomModal({
                 />
               )}
 
-              {/* 제목 / 서브텍스트 */}
               {title && <Text style={styles.modalTitle}>{title}</Text>}
               {subText && <Text style={styles.modalSubText}>{subText}</Text>}
 
-              {/* 컨텐츠 영역 */}
               <View style={[styles.contentWrapper, contentStyle]}>
                 {children}
               </View>
 
-              {/* 버튼 영역 */}
               <View style={[styles.buttonBottom, buttonBottomStyle]}>
                 {closeText && (
                   <TouchableOpacity
@@ -276,17 +276,13 @@ const styles = StyleSheet.create({
     fontSize: BUTTON_STYLES.fontSize,
   },
 
-  trashButton: {
-    padding: 4,
-  },
+  trashButton: {padding: 4},
   trashIcon: {
     width: getResponsiveWidth(16),
     height: getResponsiveHeight(16),
   },
 
-  closeXButton: {
-    padding: 6,
-  },
+  closeXButton: {padding: 6},
   closeXIcon: {
     width: getResponsiveIconSize(12),
     height: getResponsiveIconSize(12),

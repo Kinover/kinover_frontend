@@ -32,16 +32,15 @@ import {setMemorySelectedTab} from '../store/memorySlice';
 
 // ✅ HAPTIC
 import {hapticLight} from '../../../utils/haptic';
+import {useFocusEffect} from '@react-navigation/native';
+
+useFocusEffect;
 
 export default function MemoryScreen() {
   const dispatch = useDispatch();
 
   // ✅ 탭: Redux에서 가져오기 (단일 소스)
   const selectedTab = useSelector(state => state.memory.ui.selectedTab);
-  const onSelectTab = useCallback(
-    tab => dispatch(setMemorySelectedTab(tab)),
-    [dispatch],
-  );
 
   const {
     selectedCategory,
@@ -59,6 +58,20 @@ export default function MemoryScreen() {
 
   // ✅ 탭바 숨김 sharedValue
   const {tabBarTranslateY} = useTabBarVisibility();
+
+  useFocusEffect(
+    useCallback(() => {
+      // ✅ 게시글 화면 갔다가 돌아올 때도 무조건 복구
+      requestAnimationFrame(() => {
+        forceShowHeaderAndTabBar();
+        // 혹시 progress가 꼬였을 때 대비로 showHeader도 한 번 더
+        showHeader();
+        showTabBar();
+      });
+
+      return () => {};
+    }, [forceShowHeaderAndTabBar, showHeader, showTabBar]),
+  );
 
   // ✅ 스크롤 방향 감지용 ref
   const lastYRef = useRef(0);
@@ -105,12 +118,6 @@ export default function MemoryScreen() {
     return `${formatDot(startDate)} ~ ${formatDot(endDate)}`;
   }, [startDate, endDate]);
 
-  const handleApplyPeriod = ({startDate: s, endDate: e}) => {
-    setStartDate(s || '');
-    setEndDate(e || '');
-    setIsFilterVisible(false);
-  };
-
   // ✅ 탭바 보이기/숨기기 함수
   const showTabBar = useCallback(() => {
     tabBarTranslateY.value = 0;
@@ -119,6 +126,22 @@ export default function MemoryScreen() {
   const hideTabBar = useCallback(() => {
     tabBarTranslateY.value = 1;
   }, [tabBarTranslateY]);
+
+  // ✅ ✅ ✅ 핵심: "컨텍스트 변경" 시 헤더/탭바/스크롤 기준값을 강제로 정상화
+  const forceShowHeaderAndTabBar = useCallback(() => {
+    // 1) 탭바/헤더 무조건 보여주기
+    showTabBar();
+
+    headerHiddenRef.current = false;
+    headerProgress.stopAnimation?.();
+    headerProgress.setValue(0);
+
+    // 2) 스크롤 기준값/쿨타임 초기화
+    lastYRef.current = 0;
+
+    // 쿨타임 걸려서 showHeader가 무시되는 케이스 방지
+    lastToggleTsRef.current = 0;
+  }, [showTabBar, headerProgress]);
 
   // ✅ MemoryFeed에서 올라오는 스크롤 이벤트로 탭바 + 상단 탭셀렉터 제어
   const handleFeedScroll = useCallback(
@@ -162,12 +185,47 @@ export default function MemoryScreen() {
     [hideTabBar, showTabBar, hideHeader, showHeader],
   );
 
+  // ✅ 기간 적용
+  const handleApplyPeriod = useCallback(
+    ({startDate: s, endDate: e}) => {
+      setStartDate(s || '');
+      setEndDate(e || '');
+      setIsFilterVisible(false);
+
+      // ✅ 기간 바뀌면 무조건 헤더/탭바 복구(탭셀렉터 “영영 안 나옴” 방지)
+      requestAnimationFrame(() => forceShowHeaderAndTabBar());
+    },
+    [forceShowHeaderAndTabBar],
+  );
+
+  // ✅ 탭 변경 (버튼/스와이프 포함)
+  const onSelectTab = useCallback(
+    tab => {
+      dispatch(setMemorySelectedTab(tab));
+
+      // ✅ 탭 바뀌는 순간에도 헤더/탭바 복구
+      requestAnimationFrame(() => forceShowHeaderAndTabBar());
+    },
+    [dispatch, forceShowHeaderAndTabBar],
+  );
+
+  // ✅ 카테고리 선택도 여기서 감싸서 복구까지 같이
+  const handleSelectCategoryWithReset = useCallback(
+    cat => {
+      handleSelectCategory?.(cat);
+      requestAnimationFrame(() => forceShowHeaderAndTabBar());
+    },
+    [handleSelectCategory, forceShowHeaderAndTabBar],
+  );
+
   // ✅ 화면 나갈 때 탭바/헤더 복구
   useEffect(() => {
     return () => {
       tabBarTranslateY.value = 0;
       headerHiddenRef.current = false;
       headerProgress.setValue(0);
+      lastYRef.current = 0;
+      lastToggleTsRef.current = 0;
     };
   }, [tabBarTranslateY, headerProgress]);
 
@@ -222,7 +280,7 @@ export default function MemoryScreen() {
         ref={categorySheetRef}
         categoryList={categoryList}
         selectedCategory={selectedCategory}
-        onSelectCategory={handleSelectCategory}
+        onSelectCategory={handleSelectCategoryWithReset}
         onCancel={() => {}}
       />
 

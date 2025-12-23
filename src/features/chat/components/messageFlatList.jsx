@@ -17,6 +17,9 @@ export default function MessageFlatList({
   handleScroll,
   scrollToBottom,
   isMessageFetched,
+
+  // ✅ 추가: 멘션 후보들
+  mentionUsers,
 }) {
   const [showKinoTyping, setShowKinoTyping] = useState(false);
   const [introSequenceRunning, setIntroSequenceRunning] = useState(false);
@@ -151,9 +154,7 @@ export default function MessageFlatList({
       ref={flatListRef}
       data={finalMessages}
       keyExtractor={(item, index) => {
-        // ✅ clientMessageId가 있으면 그걸로 key를 통일 (optimistic/서버가 같은 걸로 묶이게)
         if (item?.clientMessageId) return `cid-${String(item.clientMessageId)}`;
-
         if (item?.messageId) return String(item.messageId);
         if (item?.localType)
           return `${item.localType}_${item.createdAt ?? index}`;
@@ -182,6 +183,9 @@ export default function MessageFlatList({
             kinoType={chatRoom?.kinoType}
             shouldShowDate={shouldShowDate}
             isGrouped={isGrouped}
+
+            // ✅ 핵심: 말풍선에서 @ 하이라이트/탭 처리용
+            mentionUsers={mentionUsers}
           />
         );
       }}

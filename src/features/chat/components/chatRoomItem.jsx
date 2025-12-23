@@ -1,5 +1,5 @@
 import React from 'react';
-import {TouchableOpacity, Text, View, StyleSheet} from 'react-native';
+import {Pressable, Text, View, StyleSheet} from 'react-native';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -8,14 +8,11 @@ import {
 } from '../../../utils/responsive';
 import GroupAvatar from './groupAvatar';
 import {useDispatch, useSelector} from 'react-redux';
-import {markRoomRead} from '../store/chatRoomSlice';
+import {markRoomRead, setActiveChatRoom} from '../store/chatRoomSlice';
 import {getChatRoomTitle} from '../utils/chatRoomTitleHelper';
 
 function ChatRoomItem({chatRoom, userId, navigation}) {
   const dispatch = useDispatch();
-  const userImage = useSelector(state => state.user.image);
-
-  // 🔹 가족 유저 리스트
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
 
   const {
@@ -44,6 +41,7 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
 
   const onPress = () => {
     dispatch(markRoomRead(chatRoomId));
+    dispatch(setActiveChatRoom(chatRoomId)); // ✅ “지금 보고있는 방” 설정
     navigation.navigate(screen, {chatRoom, title, userId});
   };
 
@@ -51,94 +49,90 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
   const AI_BADGE_SIZE = getResponsiveIconSize(16);
 
   return (
-    <TouchableOpacity
-      style={styles.container}
-      onPress={onPress}
-      activeOpacity={0.75}>
-      {/* ✅ 아바타 + AI 뱃지 래퍼 */}
-      <View
-        style={[styles.avatarWrap, {width: AVATAR_SIZE, height: AVATAR_SIZE}]}>
-        <GroupAvatar images={memberImages} size={AVATAR_SIZE} />
+    <Pressable onPress={onPress} android_ripple={null} style={styles.pressable}>
+      {({pressed}) => (
+        <View style={styles.container}>
+          {pressed && <View style={styles.pressOverlay} />}
 
-        {/* ✅ 키노 상담소면 우측 상단 AI 뱃지 */}
-        {kino && (
           <View
             style={[
-              styles.aiBadge,
-              {width: AI_BADGE_SIZE, height: AI_BADGE_SIZE},
+              styles.avatarWrap,
+              {width: AVATAR_SIZE, height: AVATAR_SIZE},
             ]}>
-            <Text style={styles.aiBadgeText}>AI</Text>
+            <GroupAvatar images={memberImages} size={AVATAR_SIZE} />
+
+            {kino && (
+              <View
+                style={[
+                  styles.aiBadge,
+                  {width: AI_BADGE_SIZE, height: AI_BADGE_SIZE},
+                ]}>
+                <Text style={styles.aiBadgeText}>AI</Text>
+              </View>
+            )}
           </View>
-        )}
-      </View>
 
-      <View style={styles.textArea}>
-        <View style={styles.headerRow}>
-          <Text
-            style={[styles.name, unreadCount > 0 && styles.nameUnread]}
-            numberOfLines={1}
-            ellipsizeMode="tail">
-            {title}
-          </Text>
-        </View>
+          <View style={styles.textArea}>
+            <Text
+              style={[styles.name, unreadCount > 0 && styles.nameUnread]}
+              numberOfLines={1}>
+              {title}
+            </Text>
 
-        <Text
-          style={[
-            styles.description,
-            unreadCount > 0 && styles.descriptionUnread,
-          ]}
-          numberOfLines={2}
-          ellipsizeMode="tail">
-          {description}
-        </Text>
-      </View>
-
-      <View style={styles.metaCol}>
-        <Text style={styles.time}>
-          {latestMessageTime ? formatPreviewTime(latestMessageTime) : ''}
-        </Text>
-
-        {unreadCount > 0 ? (
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>
-              {unreadCount > 99 ? '99+' : unreadCount}
+            <Text
+              style={[
+                styles.description,
+                unreadCount > 0 && styles.descriptionUnread,
+              ]}
+              numberOfLines={2}>
+              {description}
             </Text>
           </View>
-        ) : (
-          <View style={[styles.badge, {backgroundColor: 'transparent'}]}>
-            <Text style={styles.badgeText}>0</Text>
+
+          <View style={styles.metaCol}>
+            <Text style={styles.time}>
+              {latestMessageTime ? formatPreviewTime(latestMessageTime) : ''}
+            </Text>
+
+            {unreadCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Text>
+              </View>
+            )}
           </View>
-        )}
-      </View>
-    </TouchableOpacity>
+        </View>
+      )}
+    </Pressable>
   );
 }
 
 export default ChatRoomItem;
 
 const styles = StyleSheet.create({
+  pressable: {width: '100%'},
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: getResponsiveWidth(13),
+    gap: getResponsiveWidth(10),
     paddingVertical: getResponsiveHeight(10),
-    width: '100%',
+    paddingHorizontal: getResponsiveWidth(13),
     height: getResponsiveHeight(80),
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
   },
-
-  // ✅ 아바타 래퍼 (AI 뱃지 absolute 기준)
-  avatarWrap: {
-    position: 'relative',
-    
+  pressOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.045)',
   },
-
-  // ✅ AI 뱃지
+  avatarWrap: {position: 'relative'},
   aiBadge: {
     position: 'absolute',
     top: -getResponsiveHeight(1.5),
     right: -getResponsiveWidth(1.5),
     borderRadius: 999,
-    backgroundColor: '#111827', // 진한색
+    backgroundColor: '#111827',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 0.5,
@@ -150,61 +144,33 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Bold',
     includeFontPadding: false,
   },
-
-  textArea: {
-    flex: 1,
-    gap: getResponsiveHeight(4),
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
+  textArea: {flex: 1, gap: getResponsiveHeight(4)},
   name: {
-    flex: 1,
     fontFamily: 'Pretendard-Medium',
     fontSize: getResponsiveFontSize(15.5),
     color: '#101010',
-    lineHeight: getResponsiveHeight(22),
-    textAlignVertical: 'center',
   },
-  nameUnread: {
-    fontFamily: 'Pretendard-SemiBold',
-  },
-  metaCol: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: getResponsiveHeight(2),
-    alignItems: 'flex-end',
-    justifyContent: 'flex-end',
-  },
-  time: {
-    top: 0,
-    fontSize: getResponsiveFontSize(12),
-    color: '#8B8B8B',
-    lineHeight: getResponsiveHeight(22),
-    textAlignVertical: 'top',
-  },
+  nameUnread: {fontFamily: 'Pretendard-SemiBold'},
   description: {
     fontFamily: 'Pretendard-Light',
     fontSize: getResponsiveFontSize(12.5),
     color: '#5A5A5A',
-    lineHeight: getResponsiveHeight(16),
-    textAlignVertical: 'top',
-    flexWrap: 'wrap',
   },
-  descriptionUnread: {
-    fontFamily: 'Pretendard-Medium',
-    color: '#2A2A2A',
+  descriptionUnread: {fontFamily: 'Pretendard-Medium', color: '#2A2A2A'},
+  metaCol: {
+    height: '80%',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-start',
   },
+  time: {fontSize: getResponsiveFontSize(12), color: '#8B8B8B'},
   badge: {
-    right: 0,
-    padding: getResponsiveHeight(5),
+    marginTop: getResponsiveHeight(4),
+    padding: getResponsiveHeight(4.5),
     minWidth: getResponsiveWidth(23),
     borderRadius: 999,
     backgroundColor: '#FFC84D',
     justifyContent: 'center',
     alignItems: 'center',
-    textAlign: 'center',
   },
   badgeText: {
     color: '#FFFFFF',
@@ -215,7 +181,6 @@ const styles = StyleSheet.create({
 
 function formatPreviewTime(time) {
   if (!time) return '';
-
   const date = new Date(time);
   const now = new Date();
 
@@ -228,14 +193,10 @@ function formatPreviewTime(time) {
     let hours = date.getHours();
     const minutes = String(date.getMinutes()).padStart(2, '0');
     const ampm = hours < 12 ? '오전' : '오후';
-
     if (hours === 0) hours = 12;
     else if (hours > 12) hours -= 12;
-
     return `${ampm} ${hours}:${minutes}`;
   }
 
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  return `${month}월 ${day}일`;
+  return `${date.getMonth() + 1}월 ${date.getDate()}일`;
 }

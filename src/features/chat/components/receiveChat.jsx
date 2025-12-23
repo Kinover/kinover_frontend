@@ -23,6 +23,8 @@ import {CHATROOM_STYLE} from 'styles/style';
 
 import {getVideoThumbnail} from '../../../utils/videoThumbnail';
 import {toCdnUrl} from '../../../utils/mediaUrl';
+import MentionText from 'components/MentionText';
+// ✅ 추가
 
 export default function ReceiveChat({
   userProfileImage,
@@ -34,6 +36,9 @@ export default function ReceiveChat({
   mediaUrls = [],
   isGrouped = false,
   isSameSender = false,
+
+  // ✅ 추가: 채팅방 유저 리스트 (멘션 하이라이트용)
+  mentionUsers = [],
 }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -171,6 +176,12 @@ export default function ReceiveChat({
                 <View style={[styles.imageItem, styles.thumbFallback]} />
               )}
 
+              {isVideo && (
+                <View style={styles.playOverlay}>
+                  <View style={styles.playTriangle} />
+                </View>
+              )}
+
               {isLastCell && (
                 <View style={styles.moreOverlay}>
                   <Text style={styles.moreOverlayText}>+{extraCount}</Text>
@@ -189,19 +200,32 @@ export default function ReceiveChat({
 
     return (
       <TouchableOpacity onPress={() => handleMediaPress(uri, 0)} activeOpacity={0.9}>
-        {thumbSource ? (
-          <FastImage
-            source={thumbSource}
-            style={styles.singleImage}
-            resizeMode={FastImage.resizeMode.cover}
-            onError={e => console.log('❌ ReceiveChat single thumb error:', uri, e?.nativeEvent)}
-          />
-        ) : (
-          <View style={[styles.singleImage, styles.thumbFallback]} />
-        )}
+        <View style={{position: 'relative'}}>
+          {thumbSource ? (
+            <FastImage
+              source={thumbSource}
+              style={styles.singleImage}
+              resizeMode={FastImage.resizeMode.cover}
+              onError={e =>
+                console.log('❌ ReceiveChat single thumb error:', uri, e?.nativeEvent)
+              }
+            />
+          ) : (
+            <View style={[styles.singleImage, styles.thumbFallback]} />
+          )}
+
+          {isVideo && (
+            <View style={styles.playOverlaySingle}>
+              <View style={styles.playTriangleBig} />
+            </View>
+          )}
+        </View>
       </TouchableOpacity>
     );
   };
+
+  const safeText = useMemo(() => String(message ?? '').trim(), [message]);
+  const hasText = safeText.length > 0;
 
   return (
     <View style={[styles.receivedContainer, spacingStyle, style]}>
@@ -238,7 +262,17 @@ export default function ReceiveChat({
                 styles.receivedBubble,
                 normalizedType === 'text' ? styles.textPadding : styles.imagePadding,
               ]}>
-              {isMedia ? renderMediaGrid() : <Text style={styles.receivedText}>{message}</Text>}
+              {isMedia ? (
+                renderMediaGrid()
+              ) : hasText ? (
+                // ✅ 멘션 하이라이트
+                <MentionText
+                  text={message}
+                  users={mentionUsers}
+                  textStyle={styles.receivedText}
+                  mentionStyle={[styles.receivedText, styles.mentionText]}
+                />
+              ) : null}
             </View>
           )}
 
@@ -320,6 +354,12 @@ const styles = StyleSheet.create({
     lineHeight: getResponsiveFontSize(17),
   },
 
+  // ✅ 추가: 멘션 스타일
+  mentionText: {
+    color: '#FFC84D',
+    fontFamily: 'Pretendard-SemiBold',
+  },
+
   receivedTime: {
     fontSize: CHATROOM_STYLE.messageTimeFontSize,
     color: '#666',
@@ -356,5 +396,46 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: getResponsiveFontSize(16),
     fontFamily: 'Pretendard-SemiBold',
+  },
+
+  playOverlay: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 12,
+    borderTopWidth: 8,
+    borderBottomWidth: 8,
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    marginLeft: 3,
+  },
+  playOverlaySingle: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playTriangleBig: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 22,
+    borderTopWidth: 14,
+    borderBottomWidth: 14,
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    marginLeft: 5,
   },
 });

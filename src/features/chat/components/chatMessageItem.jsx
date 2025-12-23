@@ -53,6 +53,10 @@ export default function ChatMessageItem({
   shouldShowDate = false,
   isGrouped,
   kinoType,
+
+  // ✅ 추가: 채팅방 유저 목록(멘션 하이라이트용)
+  // 형태: [{ userId, name, image }]
+  mentionUsers = [],
 }) {
   const navigation = useNavigation();
 
@@ -89,7 +93,6 @@ export default function ChatMessageItem({
 
   let ChatComponent;
 
-  // 1) 키노 타이핑
   if (isKino && localType === 'kinoTyping') {
     ChatComponent = (
       <ReceiveKinoChat
@@ -97,11 +100,10 @@ export default function ChatMessageItem({
         isSameSender={false}
         isTyping={true}
         kinoType={kinoType}
+        mentionUsers={mentionUsers}
       />
     );
-  }
-  // 2) 내가 보낸 메시지
-  else if (isMe) {
+  } else if (isMe) {
     ChatComponent = isKino ? (
       <SendKinoChat
         message={message?.content}
@@ -109,6 +111,7 @@ export default function ChatMessageItem({
         isGrouped={isGrouped}
         messageType={messageType}
         imageUrls={imageUrls}
+        mentionUsers={mentionUsers}
       />
     ) : (
       <SendChat
@@ -116,13 +119,12 @@ export default function ChatMessageItem({
         chatTime={message?.createdAt}
         mediaUrls={imageUrls}
         messageType={messageType}
-        uploadStatus={message?.uploadStatus} // ✅ 핵심
+        uploadStatus={message?.uploadStatus}
         isGrouped={isGrouped}
+        mentionUsers={mentionUsers}
       />
     );
-  }
-  // 3) 상대 메시지
-  else {
+  } else {
     ChatComponent = isKino ? (
       <ReceiveKinoChat
         message={message?.content}
@@ -131,6 +133,7 @@ export default function ChatMessageItem({
         kinoType={kinoType}
         messageType={messageType}
         imageUrls={imageUrls}
+        mentionUsers={mentionUsers}
       />
     ) : (
       <ReceiveChat
@@ -141,6 +144,7 @@ export default function ChatMessageItem({
         mediaUrls={imageUrls}
         messageType={messageType}
         isGrouped={isGrouped}
+        mentionUsers={mentionUsers}
       />
     );
   }

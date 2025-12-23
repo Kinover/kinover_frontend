@@ -3,7 +3,6 @@ import {createSlice} from '@reduxjs/toolkit';
 /* =========================
  * Utilities / Helpers
  * ========================= */
-
 const toId = v => (v == null ? null : String(v));
 
 const toIso = d => {
@@ -23,11 +22,6 @@ const sortByLatest = list =>
       new Date(a.latestMessageTime || 0).getTime(),
   );
 
-const MESSAGE_TYPE_LABELS = {
-  image: '[사진]',
-  video: '[동영상]',
-  file: '[파일]',
-};
 const previewText = msg => {
   if (!msg) return '';
 
@@ -38,17 +32,9 @@ const previewText = msg => {
     : Array.isArray(msg.mediaUrls)
     ? msg.mediaUrls.length
     : 1;
-    
-  // ✅ 이미지: n장
-  if (type === 'image') {
-    return `사진을 ${n}장 보냈습니다.`;
-  }
 
-  // ✅ 비디오: n개
-  if (type === 'video') {
-    return `동영상을 ${n}개 보냈습니다.`;
-  }
-
+  if (type === 'image') return `사진을 ${n}장 보냈습니다.`;
+  if (type === 'video') return `동영상을 ${n}개 보냈습니다.`;
   if (type === 'file') return '[파일]';
 
   return msg.content ?? '';
@@ -65,23 +51,22 @@ const finalizeList = state => {
 /* =========================
  * Initial State
  * ========================= */
-
 const initialChatRoomState = {
   chatRoomList: [],
   chatRoomUsers: [],
   loading: false,
   error: null,
-  activeChatRoomId: null,
-  listRevision: 0,
 
-  // ✅ “서버가 리스트를 다시 덮어써도” 특정 방은 맨 위 유지용
+  // ✅ “현재 보고 있는 방”만 추적
+  activeChatRoomId: null,
+
+  listRevision: 0,
   pendingTopRoomId: null,
 };
 
 /* =========================
  * Slice
  * ========================= */
-
 const chatRoomSlice = createSlice({
   name: 'chatRoom',
   initialState: initialChatRoomState,
@@ -90,16 +75,14 @@ const chatRoomSlice = createSlice({
       state.listRevision += 1;
     },
 
-    /** ✅ 특정 채팅방을 “최신”으로 올리기 + 유지 플래그 저장 */
     bumpChatRoomToTop(state, action) {
       const rid = toId(action.payload);
       if (!rid) return;
 
-      state.pendingTopRoomId = rid; // ✅ 유지용
+      state.pendingTopRoomId = rid;
 
       const idx = findRoomIndex(state, rid);
       if (idx === -1) {
-        // 방이 아직 리스트에 없으면 일단 pending만 걸어둠
         state.listRevision += 1;
         return;
       }
@@ -118,13 +101,11 @@ const chatRoomSlice = createSlice({
       finalizeList(state);
     },
 
-    /** (선택) 이제 유지가 필요 없을 때 끄기 */
     clearPendingTopRoom(state) {
       state.pendingTopRoomId = null;
       state.listRevision += 1;
     },
 
-    /** 서버에서 내려온 채팅방 리스트 설정 */
     setChatRoomList(state, action) {
       const src = Array.isArray(action.payload) ? action.payload : [];
 
@@ -150,7 +131,6 @@ const chatRoomSlice = createSlice({
         };
       });
 
-      // ✅ 서버가 덮어써도 “방 맨 위 유지”
       if (state.pendingTopRoomId) {
         const rid = state.pendingTopRoomId;
         const idx = mapped.findIndex(x => toId(x.chatRoomId) === rid);
@@ -180,6 +160,7 @@ const chatRoomSlice = createSlice({
       state.error = action.payload || null;
     },
 
+    // ✅ 들어갈 때 rid, 나갈 때 null 로 관리
     setActiveChatRoom(state, action) {
       state.activeChatRoomId = action.payload ? toId(action.payload) : null;
     },
@@ -201,6 +182,8 @@ const chatRoomSlice = createSlice({
     applyMessagePreview(state, action) {
       const {chatRoomId, message, isSelf} = action.payload || {};
       const rid = toId(chatRoomId);
+      if (!rid) return;
+
       const lastText = previewText(message);
       const lastTime = toIso(message?.createdAt);
 
@@ -225,10 +208,8 @@ const chatRoomSlice = createSlice({
         let unread = prev.unreadCount || 0;
 
         if (!isSelf) {
-          unread =
-            state.activeChatRoomId && state.activeChatRoomId === rid
-              ? 0
-              : unread + 1;
+          // ✅ “지금 보고있는 방”일 때만 0, 아니면 +1
+          unread = state.activeChatRoomId === rid ? 0 : unread + 1;
         }
 
         state.chatRoomList[idx] = {
@@ -242,6 +223,7 @@ const chatRoomSlice = createSlice({
       finalizeList(state);
     },
 
+    // ✅ unreadCount만 0으로. activeChatRoomId는 여기서 건드리지 말자.
     markRoomRead(state, action) {
       const rid = toId(action.payload);
       const idx = findRoomIndex(state, rid);
@@ -253,8 +235,6 @@ const chatRoomSlice = createSlice({
         };
         state.listRevision += 1;
       }
-
-      state.activeChatRoomId = rid;
     },
 
     updateChatRoomNameInList(state, action) {
@@ -282,7 +262,6 @@ const chatRoomSlice = createSlice({
         state.activeChatRoomId = null;
       }
 
-      // 삭제된 방이 pending이면 해제
       if (state.pendingTopRoomId === rid) {
         state.pendingTopRoomId = null;
       }
@@ -291,10 +270,6 @@ const chatRoomSlice = createSlice({
     },
   },
 });
-
-/* =========================
- * Exports
- * ========================= */
 
 export const {
   bumpListRevision,

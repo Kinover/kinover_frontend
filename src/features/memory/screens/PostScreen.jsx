@@ -1,6 +1,8 @@
 /* eslint-disable react-native/no-inline-styles */
 /* eslint-disable react/no-unstable-nested-components */
 
+// src/features/post/screens/PostPage.jsx
+
 import React, {useEffect, useRef, useMemo, useCallback, useState} from 'react';
 import {
   View,
@@ -11,6 +13,7 @@ import {
   Dimensions,
   ScrollView,
   Pressable,
+  Alert,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -36,6 +39,12 @@ import {
   getResponsiveWidth,
 } from '../../../utils/responsive';
 import {HEADER_STYLES} from 'styles/style';
+
+// ✅ 네가 올린 모달 컴포넌트 (CustomModal 래핑)
+import ImageDeleteModal from '../components/DeleteOptionModal';
+
+// ✅ 댓글 삭제 thunk (PostPage에서 직접 호출할 거라 import)
+import {deleteCommentThunk} from '../store/commentThunk';
 
 const {height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -66,10 +75,16 @@ export default function PostPage({route}) {
   );
 
   const vm = usePostPageViewModel(safeMemory);
-
   useHideTabBar();
 
   const [descExpanded, setDescExpanded] = useState(false);
+
+  // ✅ confirm 모달을 "하나"로 통합 (image/post/comment)
+  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [pendingDeleteType, setPendingDeleteType] = useState(null); // 'image' | 'post' | 'comment' | null
+  const [pendingCommentId, setPendingCommentId] = useState(null);
+
+  const [isConfirmDeleting, setIsConfirmDeleting] = useState(false);
 
   /** ---------------- fetch ---------------- */
   useEffect(() => {
@@ -85,6 +100,86 @@ export default function PostPage({route}) {
     }
     didInitIndexRef.current = true;
   }, [imageIndex, vm]);
+
+  /** ✅ 이미지/게시글 삭제 타입 선택 */
+  const openDeleteTypePicker = useCallback(() => {
+    if (vm.isImageFullScreen) return;
+
+    Alert.alert(
+      '삭제',
+      '무엇을 삭제할까요?',
+      [
+        {
+          text: '이 이미지 삭제',
+          style: 'destructive',
+          onPress: () => {
+            setPendingDeleteType('image');
+            setPendingCommentId(null);
+            setConfirmVisible(true);
+          },
+        },
+        {
+          text: '게시글 삭제',
+          style: 'destructive',
+          onPress: () => {
+            setPendingDeleteType('post');
+            setPendingCommentId(null);
+            setConfirmVisible(true);
+          },
+        },
+        {text: '취소', style: 'cancel'},
+      ],
+      {cancelable: true},
+    );
+  }, [vm.isImageFullScreen]);
+
+  /** ✅ 댓글 삭제 모달 열기 (BottomSheet에서 호출) */
+  const openDeleteCommentConfirm = useCallback(commentId => {
+    setPendingDeleteType('comment');
+    setPendingCommentId(commentId);
+    setConfirmVisible(true);
+  }, []);
+
+  /** ✅ confirm 모달 닫기 */
+  const closeConfirmModal = useCallback(() => {
+    if (isConfirmDeleting) return;
+    setConfirmVisible(false);
+    setPendingDeleteType(null);
+    setPendingCommentId(null);
+  }, [isConfirmDeleting]);
+
+  /** ✅ confirm 모달 확인 -> 실제 삭제 실행 */
+  const confirmDelete = useCallback(async () => {
+    if (!pendingDeleteType || isConfirmDeleting) return;
+
+    setIsConfirmDeleting(true);
+    try {
+      if (pendingDeleteType === 'image') {
+        await vm.handleDeleteImage?.();
+      } else if (pendingDeleteType === 'post') {
+        await vm.handleDeletePost?.();
+      } else if (pendingDeleteType === 'comment') {
+        if (pendingCommentId && postId) {
+          // ✅ 네 thunk 시그니처: (commentId, postId)
+          await dispatch(deleteCommentThunk(pendingCommentId, postId));
+          vm.setToastMessage?.('댓글을 삭제했어요');
+          vm.setToastVisible?.(true);
+        }
+      }
+    } finally {
+      setIsConfirmDeleting(false);
+      setConfirmVisible(false);
+      setPendingDeleteType(null);
+      setPendingCommentId(null);
+    }
+  }, [
+    pendingDeleteType,
+    isConfirmDeleting,
+    vm,
+    pendingCommentId,
+    dispatch,
+    postId,
+  ]);
 
   /** ---------------- header (✅ 투명 헤더) ---------------- */
   useEffect(() => {
@@ -123,11 +218,8 @@ export default function PostPage({route}) {
 
       headerRight: () => (
         <TouchableOpacity
-          onPress={() => {
-            if (!vm.isImageFullScreen) {
-              vm.setShowDeleteOptions(v => !v);
-            }
-          }}>
+          onPress={openDeleteTypePicker}
+          hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
           <Image
             source={require('../../../assets/images/trash.png')}
             style={styles.headerIcon}
@@ -135,7 +227,7 @@ export default function PostPage({route}) {
         </TouchableOpacity>
       ),
     });
-  }, [navigation, categoryList, safeMemory, vm]);
+  }, [navigation, categoryList, safeMemory, openDeleteTypePicker]);
 
   /** ---------------- description sheet ---------------- */
   const descSnapPoints = useMemo(() => ['20%', '30%'], []);
@@ -179,17 +271,39 @@ export default function PostPage({route}) {
     setTimeout(() => commentSheetRef.current?.present?.(), 120);
   }, [collapseDesc]);
 
-  // ✅ “첫 번째 이미지에서 오른쪽 스와이프” 콜백
   const handleSwipeFromFirstToRight = useCallback(() => {
     if (vm.isImageFullScreen) return;
-    dispatch(setMemorySelectedTab('post')); // ✅ 추억화면 기본탭
-    navigation.goBack(); // ✅ 추억화면으로 복귀
+    dispatch(setMemorySelectedTab('post'));
+    navigation.goBack();
   }, [dispatch, navigation, vm.isImageFullScreen]);
 
   if (!postFromStore) return <SafeAreaView style={{flex: 1}} />;
 
+  const confirmTitle =
+    pendingDeleteType === 'image'
+      ? '이미지를 삭제할까요?'
+      : pendingDeleteType === 'post'
+      ? '게시글을 삭제할까요?'
+      : '댓글을 삭제할까요?';
+
+  const confirmMessage =
+    pendingDeleteType === 'image'
+      ? '삭제한 이미지는 복구할 수 없어요.'
+      : pendingDeleteType === 'post'
+      ? '게시글과 이미지가 모두 삭제되며 복구할 수 없어요.'
+      : '삭제한 댓글은 복구할 수 없어요.';
+
   return (
     <SafeAreaView edges={[]} style={styles.container}>
+      {/* ✅ 통합 삭제 확인 모달(이미지/게시글/댓글) */}
+      <ImageDeleteModal
+        visible={confirmVisible}
+        onClose={closeConfirmModal}
+        onConfirm={confirmDelete}
+        title={confirmTitle}
+        subText={confirmMessage}
+      />
+
       <View style={{flex: 1}}>
         <ImageCarousel
           localImages={vm.localImages}
@@ -197,7 +311,7 @@ export default function PostPage({route}) {
           setCurrentIndex={vm.setCurrentImageIndex}
           isFullScreen={vm.isImageFullScreen}
           setIsFullScreen={vm.setIsImageFullScreen}
-          onSwipeFromFirstToRight={handleSwipeFromFirstToRight} // ✅ 추가
+          onSwipeFromFirstToRight={handleSwipeFromFirstToRight}
         />
 
         <LinearGradient
@@ -228,7 +342,6 @@ export default function PostPage({route}) {
         handleIndicatorStyle={{backgroundColor: 'transparent'}}
         enableContentPanningGesture={false}
         enableHandlePanningGesture={false}
-        
         enablePanDownToClose={false}
         onDismiss={() => {
           presentDescSheet();
@@ -275,8 +388,8 @@ export default function PostPage({route}) {
                 activeOpacity={0.85}
                 style={styles.commentBtn}>
                 <Image
-                  source={require('../../../assets/icons/chatCircleDots.png')}
-                  style={{width: '100%', height: '100%'}}
+                  source={require('../../../assets/icons/chat.png')}
+                  style={{tintColor: 'white', width: '100%', height: '100%'}}
                 />
               </TouchableOpacity>
             </View>
@@ -301,11 +414,26 @@ export default function PostPage({route}) {
           memory={safeMemory}
           commentList={vm.commentList}
           user={vm.user}
+          familyUsers={vm.familyUsers}
           commentText={vm.commentText}
           onChangeComment={vm.setCommentText}
+
+          /**
+           * ✅ (중요) BottomSheet에서 onSubmitComment({content, mentionUserIds})로 호출함
+           * vm.handleSendComment가 payload를 받게 맞춰야 함
+           */
           onSubmitComment={vm.handleSendComment}
-          onDeleteComment={id => vm.openDeleteCommentModal(id)}
+
+          // ✅ 여기서 "댓글 삭제 confirm"을 열어줌
+          onDeleteComment={openDeleteCommentConfirm}
           snapPoints={['75%']}
+
+          /**
+           * ✅ (중요) 본인 제외 필터를 확실히 하기 위해 myUserId 전달
+           * - 없으면 BottomSheet가 user.userId를 쓰지만,
+           *   vm.user 로딩 타이밍 이슈나 타입 꼬임 방지용으로 명시 권장
+           */
+          myUserId={vm.user?.userId}
         />
       )}
 
@@ -365,8 +493,8 @@ const styles = StyleSheet.create({
   },
 
   commentBtn: {
-    width: getResponsiveIconSize(26),
-    height: getResponsiveIconSize(26),
+    width: getResponsiveIconSize(22),
+    height: getResponsiveIconSize(22),
   },
 
   descContent: {
@@ -374,5 +502,14 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(14),
     lineHeight: getResponsiveHeight(22),
     fontFamily: 'Pretendard-Medium',
+  },
+});
+
+const modalTextStyles = StyleSheet.create({
+  loading: {
+    marginTop: getResponsiveHeight(10),
+    fontSize: getResponsiveFontSize(12),
+    fontFamily: 'Pretendard-Medium',
+    color: 'rgba(255,255,255,0.7)',
   },
 });

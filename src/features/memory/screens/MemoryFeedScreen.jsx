@@ -85,6 +85,44 @@ export default function MemoryFeed({
   // ✅ 새로고침(2번 방식)
   const [refreshing, setRefreshing] = useState(false);
 
+  // ✅ FlatList ref (탭셀렉터/헤더 상태 꼬임 방지용)
+  const listRef = useRef(null);
+
+  // ✅ 부모의 onScroll(보통 Animated.event)에도 "0으로 복귀"를 강제로 알려주기
+  const emitScrollZeroToParent = useCallback(() => {
+    if (!onScroll) return;
+
+    // Animated.event가 받는 형태 흉내 (최소한의 shape)
+    const fakeEvent = {
+      nativeEvent: {
+        contentOffset: {y: 0},
+      },
+    };
+
+    try {
+      onScroll(fakeEvent);
+    } catch (e) {
+      // onScroll이 Animated.event일 때 예외 뜨는 케이스 방어용
+      // (그래도 scrollToOffset만으로 대부분 해결됨)
+    }
+  }, [onScroll]);
+
+  const resetScrollToTop = useCallback(
+    (animated = false) => {
+      // ✅ 현재 리스트가 "숨김 상태(y>0)"로 고정돼 있으면
+      // 카테고리/기간 변경 후에도 탭셀렉터가 다시 안 올라올 수 있어서
+      // 여기서 강제로 0으로 올려서 상태 초기화
+      listRef.current?.scrollToOffset?.({offset: 0, animated});
+
+      // scrollToOffset만으로는 부모 Animated.Value가 리셋 안 되는 경우가 있어서
+      // 다음 프레임에 y=0 이벤트를 한 번 더 쏴줌
+      requestAnimationFrame(() => {
+        emitScrollZeroToParent();
+      });
+    },
+    [emitScrollZeroToParent],
+  );
+
   const normalizeMediaUrl = useCallback(uri => {
     const u = toCdnUrl(uri);
     return u || null;
@@ -142,8 +180,10 @@ export default function MemoryFeed({
     // fetch는 다음 프레임으로 미룸 (현재 프레임 덜 버벅)
     requestAnimationFrame(() => {
       doFetch();
+      // ✅ 새로고침은 보통 "맨 위부터 다시" 보는 흐름이라 탑으로 올려줌
+      resetScrollToTop(false);
     });
-  }, [doFetch, familyId]);
+  }, [doFetch, familyId, resetScrollToTop]);
 
   const isLoading = memoryLoading && !refreshing;
 
@@ -234,6 +274,13 @@ export default function MemoryFeed({
     const totalMargin = ITEM_MARGIN * (columns + 1);
     return (WINDOW_WIDTH - totalMargin) / columns;
   }, [gridColumns]);
+
+  // ✅ 핵심: 카테고리/기간/탭 변경 시 "스크롤/헤더 상태"를 확실히 초기화
+  useEffect(() => {
+    // 새로고침 중에는 건드리면 튐
+    if (refreshing) return;
+    resetScrollToTop(false);
+  }, [selectedCategoryTitle, startDate, endDate, selectedTab, refreshing, resetScrollToTop]);
 
   // ✅ 제스처
   const pinch = Gesture.Pinch()
@@ -535,6 +582,7 @@ export default function MemoryFeed({
       </View>
     );
   }
+
   const refreshControl = (
     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
   );
@@ -544,6 +592,7 @@ export default function MemoryFeed({
       {isAllPhotos ? (
         <GestureDetector gesture={albumGesture}>
           <FlatList
+            ref={listRef}
             key={`album-${gridColumns}`}
             data={data}
             onScroll={onScroll}
@@ -574,6 +623,7 @@ export default function MemoryFeed({
       ) : (
         <GestureDetector gesture={tabSwipe}>
           <FlatList
+            ref={listRef}
             key="post"
             data={data}
             onScroll={onScroll}

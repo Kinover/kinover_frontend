@@ -1,11 +1,11 @@
 /* eslint-disable react-native/no-inline-styles */
-// Schedule.jsx
-import React from 'react';
+// Schedule.jsx (생일 카드 눌렀을 때 모달 오픈 추가)
+
+import React, {useMemo, useState, useCallback} from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
-  Image,
   StyleSheet,
   Platform,
 } from 'react-native';
@@ -23,12 +23,10 @@ import {EMPTY_STYLE} from 'styles/style';
 
 import DropShadow from 'react-native-drop-shadow';
 
-function Schedule({
-  selectedDate,
-  onOpenSheet,
-  refreshTrigger,
-  birthdayNames = [],
-}) {
+// ✅ 추가
+import BirthdayConfettiModal from './BirthdayConfettiModal';
+
+function Schedule({selectedDate, onOpenSheet, refreshTrigger, birthdayNames = []}) {
   const {scheduleList} = useScheduleListByDate(selectedDate, refreshTrigger);
   const formattedDate = useFormattedScheduleDate(selectedDate);
 
@@ -36,23 +34,38 @@ function Schedule({
 
   const displayNames =
     birthdayNames.length > 2
-      ? `${birthdayNames.slice(0, 2).join(', ')} 외 ${
-          birthdayNames.length - 2
-        }명`
+      ? `${birthdayNames.slice(0, 2).join(', ')} 외 ${birthdayNames.length - 2}명`
       : birthdayNames.join(', ');
+
+  // ✅ 모달 상태
+  const [birthdayModalVisible, setBirthdayModalVisible] = useState(false);
+
+  const openBirthdayModal = useCallback(() => {
+    if (!hasBirthday) return;
+    setBirthdayModalVisible(true);
+  }, [hasBirthday]);
+
+  const closeBirthdayModal = useCallback(() => {
+    setBirthdayModalVisible(false);
+  }, []);
+
+  // ✅ 모달에 보여줄 텍스트(길면 줄이기)
+  const namesText = useMemo(() => {
+    if (!hasBirthday) return '';
+    return `${displayNames} 🎉`;
+  }, [hasBirthday, displayNames]);
 
   return (
     <View style={styles.container}>
       <Text style={styles.dateText}>{formattedDate}</Text>
 
-      {/* ✅ 생일 배너 */}
+      {/* ✅ 생일 배너: 누르면 컨페티 모달 */}
       {hasBirthday && (
-        <DropShadow
-          style={[
-            styles.cardShadowBox, // ✅ 스케줄 카드랑 동일 스타일
-            styles.roundPillShadow,
-          ]}>
-          <View style={[styles.cardWrap, styles.roundPillWrap]}>
+        <DropShadow style={[styles.cardShadowBox, styles.roundPillShadow]}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={openBirthdayModal}
+            style={[styles.cardWrap, styles.roundPillWrap]}>
             <View style={styles.cardHeaderRow}>
               <View style={styles.cardLeft}>
                 <View style={styles.iconCircle}>
@@ -71,9 +84,18 @@ function Schedule({
                 <Text style={styles.pillText}>HBD</Text>
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
         </DropShadow>
       )}
+
+      {/* ✅ 생일 컨페티 모달 */}
+      <BirthdayConfettiModal
+        visible={birthdayModalVisible}
+        onClose={closeBirthdayModal}
+        title="생일 축하해요! 🎂"
+        subText="오늘은 축하를 듬뿍 받아야 하는 날이에요"
+        namesText={namesText}
+      />
 
       <View style={styles.timelineWrapper}>
         <View style={styles.scheduleCards}>
@@ -85,15 +107,8 @@ function Schedule({
                 onPress={() => onOpenSheet(schedule)}
                 activeOpacity={0.9}
                 style={[styles.cardWrap, styles.roundPillWrap]}>
-                {/* ✅ 배경 이미지(텍스처) */}
-                {/* <Image
-                  style={styles.cardBg}
-                  source={require('../../../assets/images/schedule1.png')}
-                /> */}
-
                 <View style={styles.cardHeaderRow}>
                   <View style={styles.cardLeft}>
-                    {/* ✅ 생일 카드처럼 왼쪽 동그라미(아이콘 대신 첫 글자) */}
                     <View style={styles.iconCircle}>
                       <Text style={styles.initialText} numberOfLines={1}>
                         {String(schedule.userName || '가족').slice(0, 1)}
@@ -110,7 +125,6 @@ function Schedule({
                     </View>
                   </View>
 
-                  {/* ✅ 우측 칩(상태/고정 포인트) */}
                   <View style={styles.pill}>
                     <Text style={styles.pillText}>일정</Text>
                   </View>
@@ -132,6 +146,7 @@ function Schedule({
 
 export default React.memo(Schedule);
 
+// ✅ styles는 네 기존 그대로 두고 재사용
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -159,9 +174,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
 
-  /* =========================
-   * ✅ 공통: 생일/스케줄 "완전 동일" 카드 스타일
-   * ========================= */
   cardShadowBox: {
     width: '100%',
     borderRadius: 0,
@@ -184,22 +196,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(17,24,39,0.08)',
     paddingVertical: getResponsiveHeight(12),
     paddingHorizontal: getResponsiveWidth(14),
-    overflow: 'hidden', // ✅ 배경 이미지 잘리게
+    overflow: 'hidden',
   },
 
   roundPillWrap: {
     minHeight: getResponsiveHeight(58),
     justifyContent: 'center',
-  },
-
-  cardBg: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: '100%',
-    height: '100%',
-    resizeMode: 'stretch',
-    opacity: 0.35, // ✅ 텍스트 안 먹게 은은하게
   },
 
   cardHeaderRow: {
