@@ -1,5 +1,12 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, {forwardRef, useImperativeHandle, useMemo, useState} from 'react';
+import React, {
+  forwardRef,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+  useEffect,
+} from 'react';
 import {
   Text,
   View,
@@ -8,8 +15,14 @@ import {
   Image,
   ScrollView,
   TouchableOpacity,
+  Keyboard,
+  Animated,
+  Dimensions,
 } from 'react-native';
-import {BottomSheetTextInput} from '@gorhom/bottom-sheet';
+import {
+  BottomSheetTextInput,
+  useBottomSheetDynamicSnapPoints,
+} from '@gorhom/bottom-sheet';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -21,6 +34,9 @@ import {useScheduleBottomSheetModal} from '../hooks/useScheduleBottomSheetModal'
 import {useIsAllSelected} from '../hooks/useIsAllSelected';
 import ToastModal from '../../../components/ToastModal';
 import BottomSheetLayout from 'components/BottomSheetLayout';
+
+const {height: WINDOW_H} = Dimensions.get('window');
+const SAFE_GAP = 12;
 
 const ScheduleEditorBottomSheetModal = forwardRef(
   (
@@ -50,25 +66,40 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const isSelectedAll = useIsAllSelected(selectedUserId);
 
     const [scrollContainerWidth, setScrollContainerWidth] = useState(0);
-    const [canScroll, setCanScroll] = useState(false);
-
-    const snapPoints = useMemo(() => ['56%'], []);
-
     const [toastVisible, setToastVisible] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
+    const [isClosing, setIsClosing] = useState(false);
 
-    const [isClosing, setIsClosing] = useState(false); // 🔥 추가
+    // ✅ 1) “콘텐츠 양만큼 높이” (CONTENT_HEIGHT는 훅과 같이 써야 유효)
+    const initialSnapPoints = useMemo(() => ['CONTENT_HEIGHT'], []);
+    const {
+      animatedSnapPoints,
+      animatedHandleHeight,
+      animatedContentHeight,
+      handleContentLayout,
+    } = useBottomSheetDynamicSnapPoints(initialSnapPoints);
+
+    // ✅ 2) 키보드 떠도 시트/버튼이 밀리지 않게(=시트는 고정)
+    // ✅ 3) 대신 입력만 가리면 콘텐츠만 위로 올리기
+    const shiftAnim = useRef(new Animated.Value(0)).current;
+    const keyboardHeightRef = useRef(0);
+    const inputRef = useRef(null);
 
     const showToast = msg => {
       setToastMessage(msg);
       setToastVisible(true);
     };
-
     const hideToast = () => setToastVisible(false);
 
     useImperativeHandle(ref, () => ({
       present: () => {
         setIsClosing(false);
+        // 열릴 때 보정 초기화
+        Animated.timing(shiftAnim, {
+          toValue: 0,
+          duration: 120,
+          useNativeDriver: true,
+        }).start();
         modalRef.current?.present();
       },
       dismiss: () => {
@@ -77,6 +108,69 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       },
     }));
 
+    // ✅ 키보드 높이 추적 + 내려가면 복구
+    useEffect(() => {
+      const onShow = e => {
+        keyboardHeightRef.current = e?.endCoordinates?.height || 0;
+      };
+      const onHide = () => {
+        keyboardHeightRef.current = 0;
+        Animated.timing(shiftAnim, {
+          toValue: 0,
+          duration: 160,
+          useNativeDriver: true,
+        }).start();
+      };
+
+      const subShow = Keyboard.addListener(
+        Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+        onShow,
+      );
+      const subHide = Keyboard.addListener(
+        Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+        onHide,
+      );
+
+      return () => {
+        subShow.remove();
+        subHide.remove();
+      };
+    }, [shiftAnim]);
+
+    const ensureVisible = refNode => {
+      const kbH = keyboardHeightRef.current || 0;
+      if (!kbH) return;
+
+      const keyboardTopY = WINDOW_H - kbH;
+
+      requestAnimationFrame(() => {
+        const node = refNode?.current;
+        if (!node || typeof node.measureInWindow !== 'function') return;
+
+        node.measureInWindow((x, y, w, h) => {
+          const inputBottomY = y + h;
+          const limitY = keyboardTopY - SAFE_GAP;
+
+          if (inputBottomY <= limitY) {
+            Animated.timing(shiftAnim, {
+              toValue: 0,
+              duration: 140,
+              useNativeDriver: true,
+            }).start();
+            return;
+          }
+
+          const diff = inputBottomY - limitY;
+
+          Animated.timing(shiftAnim, {
+            toValue: -diff, // ✅ 콘텐츠만 위로
+            duration: 180,
+            useNativeDriver: true,
+          }).start();
+        });
+      });
+    };
+
     const handlePressSave = async () => {
       const text = scheduleRef.current || '';
       if (!text.trim()) {
@@ -84,12 +178,12 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         return;
       }
 
-      setIsClosing(true); // 🔥 저장 직후 재오픈 방지
+      setIsClosing(true);
       await handleSave();
     };
 
     const handlePressDelete = async () => {
-      setIsClosing(true); // 🔥 삭제도 동일
+      setIsClosing(true);
       await handleDelete();
     };
 
@@ -97,12 +191,17 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       <>
         <BottomSheetLayout
           modalRef={modalRef}
-          snapPoints={snapPoints}
-          keyboardBehavior="interactive"
+          // ✅ 콘텐츠 기반 높이
+          snapPoints={animatedSnapPoints}
+          handleHeight={animatedHandleHeight}
+          contentHeight={animatedContentHeight}
+          onContentLayout={handleContentLayout}
+          // ✅ 키보드가 시트/버튼을 밀지 않게
+          keyboardBehavior={Platform.OS === 'ios' ? 'interactive' : 'none'}
+          androidKeyboardInputMode="adjustNothing"
           title={editingSchedule ? '일정 수정' : '일정 추가'}
           subtitle="가족과 일정을 공유해요"
-          innerContentStyle={{flex: 1}}
-          contentStyle={{flex: 1}}
+          // ✅ 버튼 고정 X (BottomSheetLayout 내부에서 마지막 요소로 렌더)
           useFixedFooter={false}
           footerProps={
             editingSchedule
@@ -117,8 +216,10 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                   saveLabel: '저장',
                   showCancel: false,
                 }
-          }>
-          <View style={{flex: 1}}>
+          }
+          // ✅ 입력 가리면 콘텐츠만 올리기
+          contentTranslateY={shiftAnim}>
+          <View>
             {/* 구성원 선택 */}
             <Text style={styles.subTitle}>구성원 선택</Text>
             <View
@@ -135,7 +236,8 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                 }}
                 style={styles.userScroll}
                 onContentSizeChange={(contentWidth, _h) => {
-                  setCanScroll(contentWidth > scrollContainerWidth + 8);
+                  // canScroll state 지우고 싶으면 지워도 됨 (현재 코드에서는 사용 안함)
+                  // contentWidth > scrollContainerWidth + 8
                 }}>
                 {/* ALL */}
                 <View style={styles.avatarColumn}>
@@ -203,11 +305,13 @@ const ScheduleEditorBottomSheetModal = forwardRef(
             {/* 일정 내용 입력 */}
             <Text style={styles.subTitle}>일정 내용</Text>
             <BottomSheetTextInput
+              ref={inputRef}
               key={`input-${inputKey}`}
               defaultValue={scheduleRef.current}
               onChangeText={text => {
                 if (!isClosing) scheduleRef.current = text;
               }}
+              onFocus={() => ensureVisible(inputRef)}
               placeholder="예) 병원 예약, 가족 모임"
               placeholderTextColor="#B0B0B0"
               style={[styles.input, {marginBottom: getResponsiveHeight(12.5)}]}
@@ -216,7 +320,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
           </View>
         </BottomSheetLayout>
 
-        {/* Toast */}
         <ToastModal
           visible={toastVisible}
           onClose={hideToast}
@@ -229,30 +332,8 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
 ScheduleEditorBottomSheetModal.displayName = 'ScheduleEditorBottomSheetModal';
 export default ScheduleEditorBottomSheetModal;
+
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: getResponsiveWidth(22),
-    paddingTop: getResponsiveHeight(15),
-    paddingBottom: getResponsiveHeight(20),
-  },
-  titleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginBottom: getResponsiveHeight(8),
-  },
-  sheetTitle: {
-    fontSize: getResponsiveFontSize(16.5),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#111827',
-  },
-  sheetSubtitle: {
-    marginTop: getResponsiveHeight(4),
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-Regular',
-    color: '#6B7280',
-    marginBottom: getResponsiveHeight(10),
-  },
   subTitle: {
     fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-Medium',
@@ -271,13 +352,7 @@ const styles = StyleSheet.create({
   userScroll: {
     borderRadius: 12,
   },
-  rightFade: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    right: 0,
-    width: getResponsiveWidth(36),
-  },
+
   avatarColumn: {
     width: getResponsiveWidth(68),
     height: getResponsiveHeight(95),
@@ -348,38 +423,12 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
 
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: getResponsiveWidth(10),
-    marginTop: getResponsiveHeight(10),
-  },
-  button: {
-    flex: 1,
-    paddingVertical: getResponsiveHeight(11),
-    borderRadius: 9,
-    alignItems: 'center',
-  },
-  deleteButton: {
-    backgroundColor: '#F9FAFB',
-  },
-  saveButton: {
-    backgroundColor: '#111827',
-  },
-  buttonText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(14.5),
-    color: 'white',
-  },
-  deleteButtonText: {
-    color: '#6B7280',
-  },
   avatarOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.22)', // ✅ 어두워지는 느낌
+    backgroundColor: 'rgba(0, 0, 0, 0.22)',
   },
 });

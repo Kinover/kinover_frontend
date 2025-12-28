@@ -12,8 +12,7 @@ import {
 import {BUTTON_STYLES, HEADER_STYLES} from 'styles/style';
 
 // ✅ 햅틱 유틸 (네가 만든 파일 기준으로 경로만 맞춰줘!)
-import { hapticLight } from 'utils/haptic';
-
+import {hapticLight} from 'utils/haptic';
 
 /** ---------------------------------------------------
  *  ✅ 공통: 아이콘 위에 빨간 점(뱃지) 얹는 컴포넌트
@@ -150,13 +149,17 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
 
   const bellIcon =
     currentScreen === '홈'
-      ? require('@/assets/icons/bell-white.png')
-      : require('@/assets/icons/bell.png');
+      ? require('@/assets/icons/header/bell_filled.png')
+      : require('@/assets/icons/header/bell_filled_dark.png');
+  // ? require('@/assets/icons/bell-white.png')
+  // : require('@/assets/icons/bell.png');
 
   const settingIcon =
     currentScreen === '홈'
-      ? require('@/assets/icons/setting-white.png')
-      : require('@/assets/icons/setting.png');
+      ? require('@/assets/icons/header/setting_filled.png')
+      : require('@/assets/icons/header/setting_filled_dark.png');
+  // ? require('@/assets/icons/setting-white.png')
+  // : require('@/assets/icons/setting.png');
 
   const goAlarm = () =>
     navigation.navigate('Tabs', {
@@ -225,8 +228,8 @@ export const RenderHeaderRightSetting = ({navigation}) =>
 export const RenderHeaderRightChatSetting = ({setIsSettingsOpen}) =>
   createIconButton(
     () => setIsSettingsOpen(true),
-    require('@/assets/images/dots2.png'),
-    HEADER_STYLES.headerRightIconWidth - 2,
+    require('@/assets/icons/List.png'),
+    HEADER_STYLES.headerRightIconWidth,
     {marginRight: HEADER_STYLES.headerRightIconRightPadding},
   );
 
@@ -292,26 +295,24 @@ export const RenderHeaderLogo = ({navigation}) => (
 
 const styles = StyleSheet.create({
   iconWrap: {position: 'relative'},
-
   dot: {
     position: 'absolute',
-    width: 9,
-    height: 9,
+    width: 6,
+    height: 6,
     borderRadius: 999,
     backgroundColor: '#FF3B30',
-    borderWidth: 2,
-    borderColor: '#fff',
+    // borderWidth: 2,
+    // borderColor: '#fff',
   },
-
   // ✅ 헤더 종 빨간점 (조금 더 눈에 띄게)
   headerDot: {
-    top: -3,
-    right: -3,
+    top: -2.5,
+    right: -2.5,
   },
 
   // ✅ 탭바 빨간점
   tabDot: {
-    top: -2,
-    right: -2,
+    top: -2.5,
+    right: -2.5,
   },
 });

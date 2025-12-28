@@ -225,11 +225,11 @@ const styles = StyleSheet.create({
     // paddingTop:'25%',
     flex: 1,
     backgroundColor: '#FFC84D',
-    overflow:'visible',
+    overflow: 'visible',
   },
   scrollContent: {
     width: '100%',
-    paddingTop:'25%',
+    paddingTop: Platform.OS === 'ios' ? '22%' : '13%',
     // ✅ height 고정은 비추 (빈 상태 문구가 아래로 밀리거나 잘릴 수 있음)
     // height: getResponsiveHeight(200),
     paddingBottom: getResponsiveHeight(30),

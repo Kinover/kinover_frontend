@@ -1,17 +1,12 @@
 // src/components/KinoBottomSheet.js
 
 import React from 'react';
-import {Keyboard} from 'react-native';
+import {Keyboard, Dimensions} from 'react-native';
 import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
 import {getResponsiveWidth} from 'utils/responsive';
-const SOFT_ANIM = {
-  damping: 26,
-  stiffness: 140,
-  mass: 1.05,
-  overshootClamping: true, // ✅ 튕김 방지
-  restDisplacementThreshold: 0.5,
-  restSpeedThreshold: 0.5,
-};
+
+const {height: WINDOW_H} = Dimensions.get('window');
+
 export function KinoBottomSheet({
   modalRef,
   snapPoints,
@@ -21,19 +16,28 @@ export function KinoBottomSheet({
     damping: 22,
     stiffness: 190,
     mass: 0.95,
-    overshootClamping:false,
+    overshootClamping: false,
     restDisplacementThreshold: 0.5,
     restSpeedThreshold: 0.5,
   },
-  keyboardBehavior = 'extend',
-  androidKeyboardInputMode = 'adjustResize',
-  footerComponent,
+
+  // ✅ 키보드가 시트/버튼을 밀지 않게
+  keyboardBehavior = 'none',
+  androidKeyboardInputMode = 'adjustNothing',
+
+  // ✅ Dynamic snap points용 (useBottomSheetDynamicSnapPoints에서 받아옴)
+  handleHeight,
+  contentHeight,
 }) {
   return (
     <BottomSheetModal
       ref={modalRef}
       index={0}
       snapPoints={snapPoints}
+      enableDynamicSizing
+      maxDynamicContentSize={Math.floor(WINDOW_H * 0.85)}
+      handleHeight={handleHeight}
+      contentHeight={contentHeight}
       animationConfigs={animationConfigs}
       enableContentPanningGesture={enableContentPanningGesture}
       backgroundStyle={{
@@ -54,13 +58,10 @@ export function KinoBottomSheet({
           {...props}
           appearsOnIndex={0}
           disappearsOnIndex={-1}
-          pressBehavior="close" // ✅ 배경 탭 → 시트 닫힘
-          onPress={() => {
-            Keyboard.dismiss(); // ✅ 추가로 키보드만 내리기
-          }}
+          pressBehavior="close"
+          onPress={() => Keyboard.dismiss()}
         />
-      )}
-      footerComponent={footerComponent}>
+      )}>
       {children}
     </BottomSheetModal>
   );

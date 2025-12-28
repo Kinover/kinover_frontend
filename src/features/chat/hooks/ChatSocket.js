@@ -1,7 +1,10 @@
 // src/features/chat/socket/chatSocket.js
 import {AppState} from 'react-native';
 import {getToken} from 'utils/storage';
-import {addMessageAndUpdateRoom} from '../utils/messageActions';
+import {
+  receiveMessageThunk,
+  receiveReadPointerThunk,
+} from '../store/messageThunk';
 
 let ws = null;
 let reconnectTimer = null;
@@ -10,6 +13,7 @@ let connectedToken = null;
 let isManuallyClosed = false;
 
 let dispatchRef = null;
+let getStateRef = null;
 
 function clearReconnectTimer() {
   if (reconnectTimer) {
@@ -28,7 +32,9 @@ function cleanupWsOnly() {
       ws.onerror = null;
       ws.onclose = null;
       ws.close();
-    } catch (e) {null;}
+    } catch (e) {
+      null;
+    }
     ws = null;
   }
 }
@@ -56,16 +62,29 @@ async function openSocket() {
 
   ws.onmessage = e => {
     try {
-      const msg = JSON.parse(e.data);
-      const incomingRoomId = String(msg?.chatRoomId ?? '');
+      const data = JSON.parse(e.data);
+
+      const type = data?.type ?? 'message:new';
+
+      // =========================
+      // A) 읽음 브로드캐스트 처리
+      // =========================
+      if (type === 'room:read') {
+        // payload: { type:'room:read', chatRoomId, userId, lastReadAt }
+        dispatchRef(receiveReadPointerThunk(data));
+        return;
+      }
+
+      // =========================
+      // B) 일반 메시지 처리
+      // =========================
+      const incomingRoomId = String(data?.chatRoomId ?? '');
       if (!incomingRoomId) return;
 
-      dispatchRef(
-        addMessageAndUpdateRoom({
-          chatRoomId: incomingRoomId,
-          message: msg,
-        }),
-      );
+      const state = getStateRef ? getStateRef() : null;
+      const myId = state?.user?.userId ?? state?.auth?.userId ?? null;
+
+      dispatchRef(receiveMessageThunk(data, myId));
     } catch (err) {
       console.log('❌ [GLOBAL WS] parse fail', err);
     }
@@ -78,7 +97,6 @@ async function openSocket() {
   ws.onclose = e => {
     ws = null;
 
-    // ✅ 원인 파악 로그 (이게 진짜 중요)
     console.log('🔌 [GLOBAL WS] close', e?.code, e?.reason);
 
     if (isManuallyClosed) return;
@@ -93,8 +111,13 @@ async function openSocket() {
   };
 }
 
-export function startChatSocket(dispatch) {
+/**
+ * dispatch + getState 같이 넣어두면,
+ * 소켓 수신 시 "내 userId"를 안전하게 꺼내서 isSelf 판별 가능
+ */
+export function startChatSocket(dispatch, getState) {
   dispatchRef = dispatch;
+  getStateRef = getState;
 
   openSocket();
 
@@ -113,24 +136,35 @@ export function stopChatSocket() {
   isManuallyClosed = true;
   connectedToken = null;
   dispatchRef = null;
+  getStateRef = null;
   cleanupWsOnly();
 }
 
-// src/features/chat/socket/chatSocket.js
-// (기존 코드 유지 + 아래 함수들만 추가)
-
 export function isChatSocketOpen() {
-    return ws && ws.readyState === WebSocket.OPEN;
+  return ws && ws.readyState === WebSocket.OPEN;
+}
+
+export function sendChat(payload) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+
+  try {
+    ws.send(JSON.stringify(payload));
+    return true;
+  } catch (e) {
+    return false;
   }
-  
-  export function sendChat(payload) {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return false;
-  
-    try {
-      ws.send(JSON.stringify(payload));
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-  
+}
+
+/**
+ * ✅ 백엔드 WebSocketMessageHandler의 read 이벤트 스펙에 맞춘 전송
+ * type: "room:read"
+ * chatRoomId: UUID
+ * lastReadAt: ISO string or LocalDateTime string
+ */
+export function sendRead(chatRoomId, lastReadAt) {
+  return sendChat({
+    type: 'room:read',
+    chatRoomId,
+    lastReadAt,
+  });
+}

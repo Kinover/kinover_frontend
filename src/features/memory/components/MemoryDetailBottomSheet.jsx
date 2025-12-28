@@ -20,9 +20,10 @@ import {
   BottomSheetFlatList,
   BottomSheetFooter,
   BottomSheetTextInput,
+  BottomSheetView,
 } from '@gorhom/bottom-sheet';
 
-import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import FastImage from '@d11/react-native-fast-image';
 import {Swipeable} from 'react-native-gesture-handler';
 import LinearGradient from 'react-native-linear-gradient';
@@ -39,7 +40,7 @@ const INPUT_H = getResponsiveHeight(46);
 const INPUT_SIDE_PAD = getResponsiveWidth(16);
 
 /* =========================
- * ✅ Mention Utils (파일 안에 같이 둠)
+ * ✅ Mention Utils
  * ========================= */
 function escapeRegExp(str) {
   return String(str || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -82,8 +83,7 @@ function applyMention(text, atIndex, cursor, name) {
 }
 
 /* =========================
- * ✅ MentionText (댓글 렌더에서 멘션 하이라이트)
- * - familyUsers 기준으로만 하이라이트
+ * ✅ MentionText
  * ========================= */
 function MentionText({text, familyUsers, textStyle, mentionStyle}) {
   const nameMap = useMemo(() => {
@@ -96,7 +96,6 @@ function MentionText({text, familyUsers, textStyle, mentionStyle}) {
 
   const parts = useMemo(() => {
     if (!text) return [''];
-    // @토큰만 분리 (공백 전까지)
     return String(text).split(/(@[^\s@]{1,20})/g);
   }, [text]);
 
@@ -123,27 +122,23 @@ function MentionText({text, familyUsers, textStyle, mentionStyle}) {
 }
 
 /* =========================
- * ✅ Footer: BottomSheetTextInput + 멘션 추천 드롭다운
- * - 드롭다운은 "입력창 위"로 absolute 배치
- * - onSubmitComment에 {content, mentionUserIds} 같이 넘김
- * - ✅ 멘션 후보에서 "본인" 제외
+ * ✅ Footer (불투명 배경 바)
+ * - 핵심: onLayout으로 footerHeight를 부모로 올려줌
  * ========================= */
 function CommentFooter({
   footerProps,
-  bottomInset,
   initialText,
   onSubmitComment,
   onChangeComment,
-
   familyUsers = [],
-
-  // ✅ 추가: 본인 userId (후보 제외 + 제출 안전장치)
   myUserId,
+  onFooterLayoutHeight, // ✅ 추가
 }) {
+  const insets = useSafeAreaInsets();
+
   const draftRef = useRef(initialText || '');
   const inputRef = useRef(null);
 
-  // 멘션용 상태들
   const [cursor, setCursor] = useState(0);
   const [draftText, setDraftText] = useState(initialText || '');
 
@@ -152,7 +147,10 @@ function CommentFooter({
     draftRef.current = next;
     setDraftText(next);
     setCursor(next.length);
-    inputRef.current?.setNativeProps?.({text: next});
+
+    requestAnimationFrame(() => {
+      inputRef.current?.setNativeProps?.({text: next});
+    });
   }, [initialText]);
 
   const activeMention = useMemo(
@@ -163,12 +161,10 @@ function CommentFooter({
   const mentionCandidates = useMemo(() => {
     if (!activeMention) return [];
     const q = (activeMention.query || '').toLowerCase().trim();
-
     const me = myUserId == null ? null : String(myUserId);
 
     const list = (familyUsers || [])
       .filter(u => !!u?.name && u?.userId != null)
-      // ✅ 본인 제외
       .filter(u => (me ? String(u.userId) !== me : true));
 
     if (!q) return list.slice(0, 6);
@@ -194,10 +190,12 @@ function CommentFooter({
       setCursor(nextCursor);
 
       requestAnimationFrame(() => {
-        inputRef.current?.setNativeProps?.({
-          text: next,
-          selection: {start: nextCursor, end: nextCursor},
-        });
+        if (inputRef.current?.setNativeProps) {
+          inputRef.current.setNativeProps({
+            text: next,
+            selection: {start: nextCursor, end: nextCursor},
+          });
+        }
       });
     },
     [activeMention, cursor],
@@ -207,7 +205,6 @@ function CommentFooter({
     const next = String(draftRef.current || '').trim();
     if (!next) return;
 
-    // ✅ 멘션 추출 + 본인 제거(안전장치)
     const me = myUserId == null ? null : String(myUserId);
     const mentionUserIds = extractMentionUserIds(next, familyUsers).filter(id =>
       me ? String(id) !== me : true,
@@ -216,7 +213,6 @@ function CommentFooter({
     onChangeComment?.(next);
     onSubmitComment?.({content: next, mentionUserIds});
 
-    // 입력 초기화
     draftRef.current = '';
     setDraftText('');
     setCursor(0);
@@ -224,77 +220,83 @@ function CommentFooter({
   }, [familyUsers, myUserId, onChangeComment, onSubmitComment]);
 
   return (
-    <BottomSheetFooter {...footerProps} bottomInset={0}>
-      <SafeAreaView edges={['bottom']} style={styles.footerSafe}>
-        <View style={[styles.footerInner, {paddingBottom: bottomInset}]}>
-          {/* ✅ 멘션 드롭다운: 입력창 위로 뜨게 */}
-          {!!activeMention && mentionCandidates.length > 0 && (
-            <View
-              style={[
-                styles.mentionDropdown,
-                {bottom: INPUT_H + getResponsiveHeight(10)},
-              ]}
-              pointerEvents="box-none">
-              <View style={styles.mentionDropdownBox}>
-                <FlatList
-                  keyboardShouldPersistTaps="always"
-                  data={mentionCandidates}
-                  keyExtractor={item => String(item.userId)}
-                  renderItem={({item}) => (
-                    <Pressable
-                      onPress={() => handlePickMention(item)}
-                      style={({pressed}) => [
-                        styles.mentionItem,
-                        pressed && {opacity: 0.86},
-                      ]}>
-                      <Image
-                        source={
-                          item.image
-                            ? {uri: item.image}
-                            : require('../../../assets/images/default.png')
-                        }
-                        style={styles.mentionAvatar}
-                      />
-                      <Text style={styles.mentionName} numberOfLines={1}>
-                        {item.name}
-                      </Text>
-                      <Text style={styles.mentionHint}>@{item.name}</Text>
-                    </Pressable>
-                  )}
-                />
-              </View>
-            </View>
-          )}
-
-          <View style={styles.commentInputContainer}>
-            <BottomSheetTextInput
-              ref={inputRef}
-              style={styles.commentInput}
-              placeholder="댓글을 달아보세요 ( @가족이름 멘션 가능 )"
-              placeholderTextColor="#999"
-              defaultValue={initialText || ''}
-              onChangeText={t => {
-                draftRef.current = t;
-                setDraftText(t);
-              }}
-              onSelectionChange={e => {
-                const nextCursor = e?.nativeEvent?.selection?.start ?? 0;
-                setCursor(nextCursor);
-              }}
-              returnKeyType="send"
-              onSubmitEditing={handleSubmit}
-              blurOnSubmit={false}
-            />
-
-            <TouchableOpacity onPress={handleSubmit} activeOpacity={0.9}>
-              <FastImage
-                style={styles.commentSendBt}
-                source={require('../../../assets/icons/sendBt-dark.png')}
+    <BottomSheetFooter
+      {...footerProps}
+      // ✅ safe-area만. 키보드는 enableFooterMarginAdjustment가 처리
+      bottomInset={Math.max(insets.bottom, 0)}>
+      {/* ✅ 불투명 배경 바 */}
+      <View
+        style={styles.footerBar}
+        onLayout={e => {
+          const h = e?.nativeEvent?.layout?.height ?? 0;
+          if (h > 0) onFooterLayoutHeight?.(h);
+        }}>
+        {!!activeMention && mentionCandidates.length > 0 && (
+          <View
+            style={[
+              styles.mentionDropdown,
+              {bottom: INPUT_H + getResponsiveHeight(10)},
+            ]}
+            pointerEvents="box-none">
+            <View style={styles.mentionDropdownBox}>
+              <FlatList
+                keyboardShouldPersistTaps="always"
+                data={mentionCandidates}
+                keyExtractor={item => String(item.userId)}
+                renderItem={({item}) => (
+                  <Pressable
+                    onPress={() => handlePickMention(item)}
+                    style={({pressed}) => [
+                      styles.mentionItem,
+                      pressed && {opacity: 0.86},
+                    ]}>
+                    <Image
+                      source={
+                        item.image
+                          ? {uri: item.image}
+                          : require('../../../assets/images/default.png')
+                      }
+                      style={styles.mentionAvatar}
+                    />
+                    <Text style={styles.mentionName} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    <Text style={styles.mentionHint}>@{item.name}</Text>
+                  </Pressable>
+                )}
               />
-            </TouchableOpacity>
+            </View>
           </View>
+        )}
+
+        <View style={styles.commentInputContainer}>
+          <BottomSheetTextInput
+            ref={inputRef}
+            style={styles.commentInput}
+            placeholder="댓글을 달아보세요 ( @가족이름 멘션 가능 )"
+            placeholderTextColor="#999"
+            defaultValue={initialText || ''}
+            onChangeText={t => {
+              draftRef.current = t;
+              setDraftText(t);
+            }}
+            onSelectionChange={e => {
+              const nextCursor = e?.nativeEvent?.selection?.start ?? 0;
+              setCursor(nextCursor);
+            }}
+            returnKeyType="send"
+            onSubmitEditing={handleSubmit}
+            blurOnSubmit={false}
+          />
+
+          <TouchableOpacity onPress={handleSubmit} activeOpacity={0.9}>
+            <FastImage
+              style={styles.commentSendBt}
+              source={require('../../../assets/icons/sendBt-dark.png')}
+            />
+          </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     </BottomSheetFooter>
   );
 }
@@ -310,15 +312,9 @@ export default function MemoryDetailBottomSheet({
   onDeleteComment,
   snapPoints: snapPointsProp,
   backgroundColor = '#F9F9F9',
-
-  // ✅ 멘션 후보(가족 유저 리스트)
-  // 형태 예: [{ userId: 1, name: '은재', image: 'https://...' }, ...]
   familyUsers = [],
-
-  // ✅ 추가: 화면 밖에서 따로 전달하고 싶으면 사용 (없으면 user.userId 사용)
   myUserId,
 }) {
-  const insets = useSafeAreaInsets();
   const snapPoints = useMemo(() => snapPointsProp || ['80%'], [snapPointsProp]);
 
   const listRef = useRef(null);
@@ -328,6 +324,11 @@ export default function MemoryDetailBottomSheet({
 
   const lastFadeRef = useRef({top: false, bottom: false});
   const scrollThrottleRef = useRef(0);
+
+  // ✅ Footer 실측 높이(숫자)로 paddingBottom 처리
+  const [footerLayoutH, setFooterLayoutH] = useState(
+    INPUT_H + getResponsiveHeight(20),
+  );
 
   const handleListScroll = useCallback(e => {
     const now = Date.now();
@@ -442,7 +443,6 @@ export default function MemoryDetailBottomSheet({
                   </Text>
                 </View>
 
-                {/* ✅ 멘션 하이라이트 */}
                 <MentionText
                   text={item.content}
                   familyUsers={familyUsers}
@@ -457,9 +457,6 @@ export default function MemoryDetailBottomSheet({
     [familyUsers, isMyComment, renderRightActions],
   );
 
-  const bottomInset = getResponsiveHeight(6);
-  const listPaddingBottom = bottomInset + INPUT_H + getResponsiveHeight(18);
-
   return (
     <BottomSheetModal
       ref={sheetRef}
@@ -469,19 +466,25 @@ export default function MemoryDetailBottomSheet({
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"
+      enableFooterMarginAdjustment
       backgroundStyle={[styles.sheetBackground, {backgroundColor}]}
-      footerComponent={props => (
-        <CommentFooter
-          footerProps={props}
-          bottomInset={bottomInset}
-          initialText={commentText}
-          onChangeComment={onChangeComment}
-          onSubmitComment={onSubmitComment}
-          familyUsers={familyUsers}
-          myUserId={myUserId ?? user?.userId}
-        />
-      )}>
-      <View style={styles.sheetInner}>
+      footerComponent={props => {
+        return (
+          <CommentFooter
+            footerProps={props}
+            initialText={commentText}
+            onChangeComment={onChangeComment}
+            onSubmitComment={onSubmitComment}
+            familyUsers={familyUsers}
+            myUserId={myUserId ?? user?.userId}
+            onFooterLayoutHeight={h => {
+              // ✅ 너무 잦은 setState 방지(미세 변화 무시)
+              setFooterLayoutH(prev => (Math.abs(prev - h) > 1 ? h : prev));
+            }}
+          />
+        );
+      }}>
+      <BottomSheetView style={{flex: 1, width: '100%'}}>
         <BottomSheetFlatList
           ref={listRef}
           data={commentList}
@@ -490,7 +493,6 @@ export default function MemoryDetailBottomSheet({
           onScroll={handleListScroll}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{paddingBottom: listPaddingBottom}}
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
@@ -500,6 +502,10 @@ export default function MemoryDetailBottomSheet({
               </Text>
             </View>
           }
+          // ✅ RN Animated / reanimated 섞지 말고 숫자로 처리
+          contentContainerStyle={{
+            paddingBottom: footerLayoutH + getResponsiveHeight(12),
+          }}
         />
 
         {showTopFade && (
@@ -517,7 +523,7 @@ export default function MemoryDetailBottomSheet({
             style={styles.bottomFade}
           />
         )}
-      </View>
+      </BottomSheetView>
     </BottomSheetModal>
   );
 }
@@ -545,7 +551,7 @@ function formatPreviewTime(time) {
 }
 
 const styles = StyleSheet.create({
-  sheetInner: {flex: 1},
+  sheetInner: {},
   sheetBackground: {
     borderTopLeftRadius: getResponsiveWidth(18),
     borderTopRightRadius: getResponsiveWidth(18),
@@ -586,7 +592,6 @@ const styles = StyleSheet.create({
     color: '#000',
   },
 
-  // ✅ 멘션 부분만 “태그 느낌”으로 확실히 다르게
   mentionText: {
     color: '#111827',
     fontFamily: 'Pretendard-SemiBold',
@@ -637,10 +642,16 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(26),
   },
 
-  footerSafe: {backgroundColor: 'transparent'},
-  footerInner: {
-    paddingTop: getResponsiveHeight(6),
+  /* =========================
+   * ✅ 불투명 footer bar
+   * ========================= */
+  footerBar: {
+    backgroundColor: '#F9F9F9',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(17,24,39,0.08)',
+    paddingTop: getResponsiveHeight(8),
     paddingHorizontal: getResponsiveWidth(14),
+    paddingBottom: getResponsiveHeight(10),
   },
 
   commentInputContainer: {
@@ -650,11 +661,11 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'center',
     borderWidth: 1,
-    backgroundColor: 'rgba(80, 100, 100, 0.1)',
     borderColor: 'rgba(55, 65, 81,0.45)',
     borderRadius: getResponsiveWidth(10),
     paddingHorizontal: INPUT_SIDE_PAD,
     height: INPUT_H,
+    backgroundColor: 'rgba(80, 100, 100, 0.1)',
   },
   commentInput: {
     flex: 1,
@@ -670,7 +681,6 @@ const styles = StyleSheet.create({
     height: getResponsiveWidth(24),
   },
 
-  /* ===== 멘션 드롭다운 ===== */
   mentionDropdown: {
     position: 'absolute',
     left: 0,

@@ -1,4 +1,5 @@
-import React, {useEffect, useRef, useState} from 'react';
+// SendKinoChat.jsx
+import React, {useEffect, useRef, useState, useMemo} from 'react';
 import {
   View,
   Text,
@@ -33,6 +34,7 @@ export default function SendKinoChat({
   message,
   isGrouped = false,
   isSameSender = false,
+  kinoType = 'YELLOW_KINO',
 }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -56,8 +58,30 @@ export default function SendKinoChat({
     setModalVisible(true);
   };
 
+  // ✅ 키노 타입별 "보내는 말풍선" 팔레트
+  // 조건: ReceiveKinoChat의 bubble(진한 말풍선)보다 "연한" 톤
+  const KINO_SEND_BUBBLE_PALETTE = useMemo(
+    () => ({
+      // Receive: #FFC84D
+      YELLOW_KINO: {bubble: '#FFECC3', text: 'black'},
+      // Receive: #334EA7
+      BLUE_KINO: {bubble: '#D7E9FF', text: '#0F172A'},
+      // Receive: #FFC3DE
+      PINK_KINO: {bubble: '#FFEAF2', text: '#111827'},
+    }),
+    [],
+  );
+
+  const bubbleColors =
+    KINO_SEND_BUBBLE_PALETTE[kinoType] ?? KINO_SEND_BUBBLE_PALETTE.YELLOW_KINO;
+
   const renderImages = () => (
-    <View style={[styles.sendBubble, styles.imagePadding]}>
+    <View
+      style={[
+        styles.sendBubble,
+        styles.imagePadding,
+        {backgroundColor: bubbleColors.bubble},
+      ]}>
       <FlatList
         data={imageUrls}
         keyExtractor={(item, index) => item + index}
@@ -90,8 +114,15 @@ export default function SendKinoChat({
           renderImages()
         )
       ) : (
-        <View style={[styles.sendBubble, styles.textPadding]}>
-          <Text style={styles.sendText}>{message}</Text>
+        <View
+          style={[
+            styles.sendBubble,
+            styles.textPadding,
+            {backgroundColor: bubbleColors.bubble},
+          ]}>
+          <Text style={[styles.sendText, {color: bubbleColors.text}]}>
+            {message}
+          </Text>
         </View>
       )}
 
@@ -113,7 +144,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sendBubble: {
-    backgroundColor: '#FFECC3',
+    backgroundColor: '#FFECC3', // ✅ 기본값(동적으로 override 됨)
     borderRadius: getResponsiveIconSize(20),
     maxWidth: getResponsiveWidth(260),
     flexShrink: 1,
@@ -130,7 +161,7 @@ const styles = StyleSheet.create({
   sendText: {
     fontFamily: CHATROOM_STYLE.messageFontFamily,
     fontSize: CHATROOM_STYLE.KinoMessageFontSize,
-    color: 'black',
+    color: 'black', // ✅ 기본값(동적으로 override 됨)
     flexWrap: 'wrap',
     lineHeight: getResponsiveFontSize(18),
   },

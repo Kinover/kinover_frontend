@@ -1,8 +1,8 @@
 // src/components/BottomSheetLayout.js
 
 import React from 'react';
-import {View, Text, StyleSheet} from 'react-native';
-import {BottomSheetScrollView, BottomSheetFooter} from '@gorhom/bottom-sheet';
+import {View, Text, StyleSheet, Animated} from 'react-native';
+import {BottomSheetView} from '@gorhom/bottom-sheet';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {KinoBottomSheet} from './KinoBottomSheet';
 import {BottomSheetButtons} from 'components/BottomSheetButtons';
@@ -12,57 +12,44 @@ import {
   getResponsiveFontSize,
 } from 'utils/responsive';
 
-const FOOTER_HEIGHT = 64;
-
 export default function BottomSheetLayout({
   modalRef,
   snapPoints,
   enableContentPanningGesture = false,
   animationConfigs,
-  keyboardBehavior = 'extend',
-  androidKeyboardInputMode = 'adjustResize',
+  keyboardBehavior = 'none',
+  androidKeyboardInputMode = 'adjustNothing',
+  // ✅ dynamic snap points용 (useBottomSheetDynamicSnapPoints에서 받아옴)
+  handleHeight,
+  contentHeight,
+  onContentLayout, // ✅ 여기 중요
+
   title,
   subtitle,
   children,
+
   footerProps,
-  useFixedFooter = true,
   containerStyle,
   headerStyle,
-  scrollContentStyle,
   innerContentStyle,
   footerStyle,
+  contentStyle,
+
+  // ✅ children만 올릴 translateY
+  contentTranslateY,
 }) {
   const insets = useSafeAreaInsets();
 
-  const hasFixedFooter = useFixedFooter && !!footerProps;
-  const hasInlineFooter = !useFixedFooter && !!footerProps;
-
-  // ✅ 여기서 modalRef를 버튼 쪽에 주입
   const injectedFooterProps = footerProps
     ? {
         ...footerProps,
         bottomSheetRef: modalRef,
-        // 필요하면 화면에서 autoCloseOnSave를 false로 override 가능
         autoCloseOnSave:
           footerProps.autoCloseOnSave !== undefined
             ? footerProps.autoCloseOnSave
             : true,
       }
     : undefined;
-
-  const footerComponent =
-    hasFixedFooter &&
-    (footerPropsArg => (
-      <BottomSheetFooter {...footerPropsArg} bottomInset={insets.bottom}>
-        <View style={[styles.footer, footerStyle]}>
-          <BottomSheetButtons {...injectedFooterProps} />
-        </View>
-      </BottomSheetFooter>
-    ));
-
-  const contentPaddingBottom = hasFixedFooter
-    ? FOOTER_HEIGHT + getResponsiveHeight(12)
-    : getResponsiveHeight(12);
 
   return (
     <KinoBottomSheet
@@ -72,17 +59,17 @@ export default function BottomSheetLayout({
       animationConfigs={animationConfigs}
       keyboardBehavior={keyboardBehavior}
       androidKeyboardInputMode={androidKeyboardInputMode}
-      footerComponent={footerComponent}>
-      <BottomSheetScrollView
-        style={styles.scroll}
-        contentContainerStyle={[
-          styles.scrollContent,
-          {paddingBottom: contentPaddingBottom},
-          scrollContentStyle,
-        ]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
-        <View style={[styles.container, containerStyle]}>
+      handleHeight={handleHeight}
+      contentHeight={contentHeight}>
+      <BottomSheetView style={contentStyle}>
+        {/* ✅ 여기 onLayout로 “콘텐츠 높이(버튼 포함)” 측정 */}
+        <View
+          onLayout={onContentLayout}
+          style={[
+            styles.container,
+            {paddingBottom: insets.bottom + getResponsiveHeight(14)},
+            containerStyle,
+          ]}>
           {(title || subtitle) && (
             <View style={[styles.header, headerStyle]}>
               {title && <Text style={styles.title}>{title}</Text>}
@@ -90,30 +77,34 @@ export default function BottomSheetLayout({
             </View>
           )}
 
-          <View style={[styles.innerContent, innerContentStyle]}>
+          {/* ✅ children만 움직이게 */}
+          <Animated.View
+            style={[
+              styles.innerContent,
+              innerContentStyle,
+              contentTranslateY != null
+                ? {transform: [{translateY: contentTranslateY}]}
+                : null,
+            ]}>
             {children}
-          </View>
+          </Animated.View>
 
-          {/* 인라인 footer 버전도 동일하게 ref 주입 */}
-          {hasInlineFooter && (
+          {/* ✅ 버튼은 고정 X, 그냥 마지막 요소 */}
+          {!!injectedFooterProps && (
             <View style={[styles.inlineFooter, footerStyle]}>
               <BottomSheetButtons {...injectedFooterProps} />
             </View>
           )}
         </View>
-      </BottomSheetScrollView>
+      </BottomSheetView>
     </KinoBottomSheet>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: {},
-  scrollContent: {
+  container: {
     paddingHorizontal: getResponsiveWidth(22),
     paddingTop: getResponsiveHeight(14),
-  },
-  container: {
-    flex: 1,
   },
   header: {
     marginBottom: getResponsiveHeight(15),
@@ -130,13 +121,8 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   innerContent: {},
-  footer: {
-    paddingHorizontal: getResponsiveWidth(22),
-    paddingTop: getResponsiveHeight(2),
-    paddingBottom: getResponsiveHeight(4),
-    backgroundColor: 'white',
-  },
   inlineFooter: {
+    marginTop: getResponsiveHeight(10),
     backgroundColor: 'white',
   },
 });

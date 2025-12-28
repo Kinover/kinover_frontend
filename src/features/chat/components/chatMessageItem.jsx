@@ -112,6 +112,7 @@ export default function ChatMessageItem({
         messageType={messageType}
         imageUrls={imageUrls}
         mentionUsers={mentionUsers}
+          kinoType={kinoType}
       />
     ) : (
       <SendChat

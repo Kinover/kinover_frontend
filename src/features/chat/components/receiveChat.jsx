@@ -299,7 +299,7 @@ export default function ReceiveChat({
   );
 }
 
-const AVATAR_W = getResponsiveWidth(40);
+const AVATAR_W = getResponsiveWidth(38);
 
 const styles = StyleSheet.create({
   receivedContainer: {flexDirection: 'row', alignItems: 'flex-start'},
@@ -323,7 +323,7 @@ const styles = StyleSheet.create({
     fontSize:
       Platform.OS === 'android'
         ? getResponsiveFontSize(14)
-        : getResponsiveFontSize(15),
+        : getResponsiveFontSize(14),
     color: '#444',
     marginBottom: getResponsiveHeight(7),
   },
