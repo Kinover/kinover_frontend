@@ -1,6 +1,8 @@
-import React, {useState, useEffect} from 'react';
+// ChatRoomScreenTemplate.jsx
+import React, {useState, useEffect, useMemo, useRef, useCallback} from 'react';
 import {StyleSheet, KeyboardAvoidingView, Platform, View} from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
+
 import MessageFlatList from '../components/messageFlatList';
 import ChatInput from '../components/ChatInput';
 import ChatSettings from './chatSetting';
@@ -14,6 +16,7 @@ import {setActiveChatRoom} from '../store/chatRoomSlice';
 
 import {selectRoomMeta} from '../store/messageSlice';
 import useGuide from 'hooks/useGuide';
+import {markReadThunk, fetchChatRoomUsersThunk} from '../store/chatRoomThunk';
 
 const CHAT_GUIDE_STEPS = [
   {
@@ -50,6 +53,30 @@ const KINO_CHAT_GUIDE_STEPS = [
   },
 ];
 
+// ✅ LocalDateTime 문자열 생성 (Z 없음)
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+function pad3(n) {
+  return String(n).padStart(3, '0');
+}
+function toLocalDateTimeString(dateLike) {
+  if (!dateLike) return null;
+  const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
+  if (Number.isNaN(d.getTime())) return null;
+
+  const yyyy = d.getFullYear();
+  const MM = pad2(d.getMonth() + 1);
+  const dd = pad2(d.getDate());
+  const HH = pad2(d.getHours());
+  const mm = pad2(d.getMinutes());
+  const ss = pad2(d.getSeconds());
+  const SSS = pad3(d.getMilliseconds());
+
+  // Spring LocalDateTime 기본 파싱: 2025-12-28T18:30:12.123
+  return `${yyyy}-${MM}-${dd}T${HH}:${mm}:${ss}.${SSS}`;
+}
+
 export default function ChatRoomScreenTemplate({
   chatRoom,
   title,
@@ -62,10 +89,10 @@ export default function ChatRoomScreenTemplate({
 
   const chatRoomId = chatRoom?.chatRoomId;
 
-  // ✅ 방별 캐시
-  const room = useSelector(state => selectRoomMeta(state, chatRoomId));
-  const isMessageFetched = !!room?.isFetched;
-  const messageList = room?.messageList ?? [];
+  const roomMeta = useSelector(state => selectRoomMeta(state, chatRoomId));
+  const isMessageFetched = !!roomMeta?.isFetched;
+  const messageList = roomMeta?.messageList ?? [];
+
   const roomUsers = useSelector(state => state.chatRoom.chatRoomUsers) || [];
 
   const {
@@ -76,28 +103,20 @@ export default function ChatRoomScreenTemplate({
     handleScroll,
     scrollToBottom,
     setNoMoreMessages,
-    socketRef,
     isUserScrolling,
+    isAtBottomRef,
   } = useChatRoomScreen(chatRoom, userId, isKino);
 
   const chatRoomList = useSelector(state => state.chatRoom.chatRoomList);
   const currentChatRoom =
-    chatRoomList.find(roomItem => roomItem.chatRoomId === chatRoomId) ||
-    chatRoom;
-
-  /**
-   * ✅ 멘션용 유저 리스트 만들기
-   * - ChatInput / 말풍선 하이라이트 둘 다 이걸 쓴다
-   *
-   * ⚠️ 주의: 네 room 구조에 따라 키 이름이 달라질 수 있으니까
-   * 아래에서 가능한 후보들을 넓게 커버했어.
-   */
- 
+    chatRoomList.find(
+      roomItem => String(roomItem.chatRoomId) === String(chatRoomId),
+    ) || chatRoom;
 
   useHideTabBar();
   useHeaderSetting(navigation, setIsSettingsOpen, title, isKino);
 
-  // ✅ fetch는 “여기서만” 한다 (훅에서는 제거)
+  // ✅ 방 메시지 fetch (여기서만)
   useEffect(() => {
     if (!chatRoomId) return;
 
@@ -108,14 +127,78 @@ export default function ChatRoomScreenTemplate({
     }
   }, [chatRoomId, isMessageFetched, dispatch, setNoMoreMessages]);
 
+  // ✅ activeChatRoomId는 화면에서만
   useEffect(() => {
     if (!chatRoomId) return;
-
     dispatch(setActiveChatRoom(chatRoomId));
-    return () => {
-      dispatch(setActiveChatRoom(null));
-    };
+    return () => dispatch(setActiveChatRoom(null));
   }, [chatRoomId, dispatch]);
+
+  // ✅ roomUsers fetch (멘션 후보)
+  useEffect(() => {
+    if (!chatRoomId) return;
+    dispatch(fetchChatRoomUsersThunk(chatRoomId));
+  }, [chatRoomId, dispatch]);
+
+  // ✅ 최신 메시지 createdAt (정렬이 깨져도 안전하게 max로)
+  const latestCreatedAtLocal = useMemo(() => {
+    if (!Array.isArray(messageList) || messageList.length === 0) return null;
+
+    let maxMs = null;
+    let maxDate = null;
+
+    for (const m of messageList) {
+      const t = m?.createdAt;
+      if (!t) continue;
+
+      const d = new Date(t);
+      const ms = d.getTime();
+      if (Number.isNaN(ms)) continue;
+
+      if (maxMs == null || ms > maxMs) {
+        maxMs = ms;
+        maxDate = d;
+      }
+    }
+
+    return maxDate ? toLocalDateTimeString(maxDate) : null;
+  }, [messageList]);
+
+  // ✅ 중복 read 전송 방지
+  const lastSentReadAtRef = useRef(null);
+
+  const sendReadIfNeeded = useCallback(() => {
+    if (!chatRoomId) return;
+    if (!latestCreatedAtLocal) return;
+
+    if (lastSentReadAtRef.current === latestCreatedAtLocal) return;
+
+    lastSentReadAtRef.current = latestCreatedAtLocal;
+    dispatch(markReadThunk({chatRoomId, lastReadAt: latestCreatedAtLocal}));
+  }, [chatRoomId, latestCreatedAtLocal, dispatch]);
+
+  // ✅ 방 들어오면 1회
+  useEffect(() => {
+    if (!chatRoomId) return;
+    lastSentReadAtRef.current = null;
+    sendReadIfNeeded();
+  }, [chatRoomId, sendReadIfNeeded]);
+
+  // ✅ 바닥에 붙어있을 때 새 메시지 오면 read 갱신
+  useEffect(() => {
+    if (!chatRoomId) return;
+    if (!latestCreatedAtLocal) return;
+
+    if (isAtBottomRef?.current) {
+      sendReadIfNeeded();
+    }
+  }, [
+    chatRoomId,
+    latestCreatedAtLocal,
+    messageList?.length,
+    isAtBottomRef,
+    sendReadIfNeeded,
+  ]);
 
   useEffect(() => {
     if (!isUserScrolling && messageList.length > 0) {
@@ -127,10 +210,7 @@ export default function ChatRoomScreenTemplate({
   const guideStorageKey = isKino
     ? 'KINO_CHAT_GUIDE_SHOWN_V1'
     : 'CHAT_GUIDE_SHOWN_V1';
-
-  const guideEnabled = !!chatRoomId;
-
-  useGuide(guideStorageKey, guideSteps, guideEnabled);
+  useGuide(guideStorageKey, guideSteps, !!chatRoomId);
 
   return (
     <KeyboardAvoidingView
@@ -150,18 +230,13 @@ export default function ChatRoomScreenTemplate({
           handleScroll={handleScroll}
           scrollToBottom={scrollToBottom}
           isMessageFetched={isMessageFetched}
-
-          // ✅ 추가: 말풍선에서 @ 하이라이트하려면 필요
           mentionUsers={roomUsers}
         />
 
         <ChatInput
           chatRoom={currentChatRoom}
           userId={userId}
-          socketRef={socketRef}
           enableMediaPicker={!isKino}
-
-          // ✅ 핵심: ChatInput 멘션 후보
           mentionUsers={roomUsers}
         />
 

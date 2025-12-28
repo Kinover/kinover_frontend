@@ -99,7 +99,7 @@ android {
         applicationId "com.kinover_frontend"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 16
+        versionCode 18
         versionName "1.0"
          ndk {
         abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
@@ -157,4 +157,7 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+}
+configurations.all {
+  exclude group: "com.caverock", module: "androidsvg"
 }

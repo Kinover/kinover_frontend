@@ -69,7 +69,7 @@ const styles = {
     backgroundColor: '#FFFFFF',
     position: 'absolute',
     left: 3,
-    elevation: 2, // Android 살짝 떠 보이게
+    elevation: 7, // Android 살짝 떠 보이게
     shadowColor: '#000', // iOS
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.15,

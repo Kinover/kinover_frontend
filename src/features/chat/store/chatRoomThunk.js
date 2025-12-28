@@ -1,21 +1,24 @@
-// fetchChatRoomListThunk.js
+// src/features/chat/store/chatRoomThunk.js
 import axios from 'axios';
 import {createAsyncThunk} from '@reduxjs/toolkit';
 import {getToken} from '../../../utils/storage';
+
 import {
   setChatRoomList,
   setChatRoomUsers,
   setChatRoomLoading,
   setChatRoomError,
-  setChatRoomNotificationState, // ✅ 추가
+  setChatRoomNotificationState,
+  markRoomRead,
 } from './chatRoomSlice';
+
+const API_BASE = 'https://kinover.shop/api/chatRoom';
 
 export const fetchChatRoomListThunk = (familyId, userId) => {
   return async dispatch => {
     dispatch(setChatRoomLoading(true));
     try {
-      const apiUrl = `https://kinover.shop/api/chatRoom/${familyId}/${userId}`;
-
+      const apiUrl = `${API_BASE}/${familyId}/${userId}`;
       const token = await getToken();
 
       const response = await axios.post(
@@ -30,9 +33,7 @@ export const fetchChatRoomListThunk = (familyId, userId) => {
       );
 
       dispatch(setChatRoomList(response.data));
-      console.log('✅ 채팅방 목록 불러오기 성공:', response.data);
     } catch (error) {
-      console.error('❌ 채팅방 목록 불러오기 실패:', error);
       dispatch(setChatRoomError(error.message));
     } finally {
       dispatch(setChatRoomLoading(false));
@@ -43,25 +44,18 @@ export const fetchChatRoomListThunk = (familyId, userId) => {
 export const fetchChatRoomUsersThunk = chatRoomId => {
   return async dispatch => {
     dispatch(setChatRoomLoading(true));
-
     try {
       const token = await getToken();
-      const apiUrl = `https://kinover.shop/api/chatRoom/${chatRoomId}/users/get`;
+      const apiUrl = `${API_BASE}/${chatRoomId}/users/get`;
 
       const response = await axios.post(
         apiUrl,
         {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+        {headers: {Authorization: `Bearer ${token}`}},
       );
 
       dispatch(setChatRoomUsers(response.data));
-      console.log('✅ 채팅방 내 유저 조회 성공:', response.data);
     } catch (error) {
-      console.error('❌ 채팅방 내 유저 조회 실패:', error);
       dispatch(setChatRoomError(error.message));
     } finally {
       dispatch(setChatRoomLoading(false));
@@ -69,28 +63,57 @@ export const fetchChatRoomUsersThunk = chatRoomId => {
   };
 };
 
+/**
+ * ✅ 서버 읽음 처리
+ * POST /api/chatRoom/{chatRoomId}/read
+ * body: { lastReadAt: "YYYY-MM-DDTHH:mm:ss.SSS" }  // LocalDateTime
+ */
+export const markReadThunk = createAsyncThunk(
+  'chatRoom/markRead',
+  async ({chatRoomId, lastReadAt}, {rejectWithValue, dispatch}) => {
+    try {
+      const token = await getToken();
+      const url = `${API_BASE}/${chatRoomId}/read`;
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({lastReadAt}),
+      });
+
+      if (!res.ok) {
+        const t = await res.text().catch(() => '');
+        return rejectWithValue(`읽음 처리 실패: ${res.status} ${t}`);
+      }
+
+      // ✅ 로컬 뱃지 즉시 0
+      dispatch(markRoomRead(chatRoomId));
+
+      return {chatRoomId, lastReadAt};
+    } catch (err) {
+      return rejectWithValue(err.message || '알 수 없는 에러');
+    }
+  },
+);
+
 export const leaveChatRoomThunk = createAsyncThunk(
   'chatRoom/leaveChatRoom',
   async (chatRoomId, {rejectWithValue}) => {
     try {
       const token = await getToken();
 
-      const res = await fetch(
-        `https://kinover.shop/api/chatRoom/${chatRoomId}/leave`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      const res = await fetch(`${API_BASE}/${chatRoomId}/leave`, {
+        method: 'DELETE',
+        headers: {Authorization: `Bearer ${token}`},
+      });
 
       if (!res.ok) {
-        // ❌ 에러 응답일 때만 간단히 reject
         return rejectWithValue(`서버 오류: ${res.status}`);
       }
 
-      // ✅ 성공하면 그냥 chatRoomId 반환 (또는 true, 'success' 등)
       return chatRoomId;
     } catch (error) {
       return rejectWithValue(error.message || '알 수 없는 에러');
@@ -107,14 +130,10 @@ export const renameChatRoomThunk = createAsyncThunk(
     try {
       const token = await getToken();
       const response = await fetch(
-        `https://kinover.shop/api/chatRoom/${chatRoomId}/rename?roomName=${encodeURIComponent(
-          roomName,
-        )}`,
+        `${API_BASE}/${chatRoomId}/rename?roomName=${encodeURIComponent(roomName)}`,
         {
           method: 'PATCH',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: {Authorization: `Bearer ${token}`},
         },
       );
 
@@ -122,60 +141,39 @@ export const renameChatRoomThunk = createAsyncThunk(
         return rejectWithValue(`이름 변경 실패: ${response.status}`);
       }
 
-      const data = await response.text();
-      console.log('✅ 채팅방 이름 변경 성공:', data);
-
-      // ✅ thunkAPI에서 dispatch 가져와서 사용
+      await response.text().catch(() => '');
       dispatch(fetchChatRoomListThunk(familyId, userId));
-      return data;
+      return true;
     } catch (err) {
-      console.error('❌ 채팅방 이름 변경 중 에러:', err);
       return rejectWithValue(err.message || '알 수 없는 오류');
     }
   },
 );
 
-// 채팅방 생성 Thunk
 export const createChatRoomThunk = createAsyncThunk(
   'chatRoom/create',
   async ({roomName, userIds, familyId}, {rejectWithValue}) => {
     try {
-      console.log(
-        `🟡 채팅방 생성 요청: roomName="${roomName}", userIds=${userIds}`,
-      );
       const token = await getToken();
       const response = await axios.post(
-        `https://kinover.shop/api/chatRoom/create/${encodeURIComponent(
-          roomName,
-        )}/${userIds}/${familyId}`,
+        `${API_BASE}/create/${encodeURIComponent(roomName)}/${userIds}/${familyId}`,
         null,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
+        {headers: {Authorization: `Bearer ${token}`}},
       );
-      console.log('🟢 채팅방 생성 성공:', response.data);
       return response.data;
     } catch (error) {
-      console.error(
-        '🔴 채팅방 생성 실패:',
-        error.response?.data || error.message,
-      );
       return rejectWithValue(error.response?.data || '채팅방 생성 실패');
     }
   },
 );
 
-// ✅ 채팅방 성격(personality) 변경 Thunk
 export const updateKinoPersonalityThunk = createAsyncThunk(
   'chatRoom/updatePersonality',
   async ({chatRoomId, personality}, {rejectWithValue}) => {
     try {
       const token = await getToken();
-
       const response = await axios.patch(
-        `https://kinover.shop/api/chatRoom/${chatRoomId}/personality`,
+        `${API_BASE}/${chatRoomId}/personality`,
         {personality},
         {
           headers: {
@@ -184,22 +182,9 @@ export const updateKinoPersonalityThunk = createAsyncThunk(
           },
         },
       );
-
-      console.log('✅ [키노 성격 변경 성공]');
-      console.log('📌 요청 채팅방 ID:', chatRoomId);
-      console.log('🧠 변경된 성격:', personality);
-      console.log('📦 응답 데이터:', response.data);
-
       return response.data;
     } catch (err) {
-      const msg = err.response?.data || err.message || '알 수 없는 오류';
-
-      console.error('❌ [키노 성격 변경 실패]');
-      console.error('📌 요청 채팅방 ID:', chatRoomId);
-      console.error('🧠 시도한 성격:', personality);
-      console.error('⚠️ 에러 내용:', msg);
-
-      return rejectWithValue(msg);
+      return rejectWithValue(err.response?.data || err.message || '알 수 없는 오류');
     }
   },
 );
@@ -210,7 +195,7 @@ export const toggleChatRoomNotificationThunk = createAsyncThunk(
     try {
       const token = await getToken();
 
-      const url = `https://kinover.shop/api/chatRoom/notification/chatroom?userId=${userId}&chatRoomId=${chatRoomId}&isOn=${isOn}`;
+      const url = `${API_BASE}/notification/chatroom?userId=${userId}&chatRoomId=${chatRoomId}&isOn=${isOn}`;
 
       const res = await fetch(url, {
         method: 'PATCH',
@@ -224,10 +209,7 @@ export const toggleChatRoomNotificationThunk = createAsyncThunk(
         return rejectWithValue(`알림 설정 실패: ${res.status}`);
       }
 
-      console.log(`✅ 알림 ${isOn ? 'ON' : 'OFF'} 설정 완료 for ${chatRoomId}`);
-
       dispatch(setChatRoomNotificationState({chatRoomId, isOn}));
-
       return {chatRoomId, isOn};
     } catch (err) {
       return rejectWithValue(err.message || '알 수 없는 에러');
@@ -235,28 +217,24 @@ export const toggleChatRoomNotificationThunk = createAsyncThunk(
   },
 );
 
-// 🔄 유저 전체 채팅방 알림 ON/OFF 설정
 export const toggleAllChatRoomNotificationThunk = createAsyncThunk(
   'chatRoom/toggleAllNotification',
   async ({userId, isOn}, {rejectWithValue}) => {
     try {
       const token = await getToken();
-      const url = `https://kinover.shop/api/chatRoom/notification/user?userId=${userId}&isOn=${isOn}`;
+      const url = `${API_BASE}/notification/user?userId=${userId}&isOn=${isOn}`;
 
       const res = await fetch(url, {
         method: 'PATCH',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: {Authorization: `Bearer ${token}`},
       });
 
       if (!res.ok) {
         return rejectWithValue(`전체 채팅방 알림 설정 실패: ${res.status}`);
       }
 
-      const result = await res.text(); // 서버 응답은 단순 문자열일 수도 있어!
-      console.log(`✅ 전체 알림 ${isOn ? 'ON' : 'OFF'} 설정 완료`);
-      return {userId, isOn};
+      const result = await res.text();
+      return {userId, isOn, result};
     } catch (err) {
       return rejectWithValue(err.message || '알 수 없는 에러');
     }

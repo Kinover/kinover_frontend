@@ -1,5 +1,5 @@
 import React from 'react';
-import {TextInput, StyleSheet, Platform} from 'react-native';
+import {TextInput, StyleSheet, Platform, Text, View} from 'react-native';
 import CustomModal from '../../../components/CustomModal';
 import {
   getResponsiveHeight,
@@ -13,7 +13,7 @@ export default function RenameChatRoomModal({
   onConfirm,
   newRoomName,
   setNewRoomName,
-  currentRoomName, // ⭐ 현재 채팅방 이름 props 추가
+  currentRoomName,
 }) {
   return (
     <CustomModal
@@ -22,14 +22,15 @@ export default function RenameChatRoomModal({
       onConfirm={() => {
         onClose(); // 먼저 모달 닫기
         setTimeout(() => {
-          onConfirm(); // 그 다음 로직 실행
+          onConfirm(); // 그 다음 변경 로직
         }, 100);
       }}
       confirmText="변경"
       closeText="취소"
-      title="채팅방 이름 변경">
+      title="채팅방 이름 변경"
+      subText={'채팅방 이름은 모든 참여자에게 동일하게 보여요'}>
       <TextInput
-        placeholder={currentRoomName || '채팅방 이름'} // ⭐ 여기서 사용
+        placeholder={currentRoomName || '채팅방 이름'}
         value={newRoomName}
         onChangeText={setNewRoomName}
         style={styles.textInput}
@@ -40,43 +41,23 @@ export default function RenameChatRoomModal({
 }
 
 const styles = StyleSheet.create({
-  modalTitle: {
-    color: 'black',
-    fontSize:
-      Platform.OS === 'android'
-        ? getResponsiveFontSize(20)
-        : getResponsiveFontSize(22),
-    textAlign: 'center',
-    fontFamily: 'Pretendard-Semibold',
-    fontWeight: Platform.OS === 'ios' ? undefined : '700',
-    marginBottom: getResponsiveHeight(20),
-  },
-  modalText: {
-    fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(14),
-  },
-
-  confirmButton: {
-    flex: 1,
-    backgroundColor: '#FFC84D',
-    paddingVertical: getResponsiveHeight(10),
-    borderRadius: getResponsiveWidth(8),
-  },
-  closeButton: {
-    flex: 1,
-    backgroundColor: '#E0E0E0',
-    paddingVertical: getResponsiveHeight(10),
-    borderRadius: getResponsiveWidth(8),
-  },
   textInput: {
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#DADADA',
     borderRadius: getResponsiveWidth(6),
     paddingVertical: getResponsiveHeight(12),
     paddingHorizontal: getResponsiveWidth(12),
     fontSize: getResponsiveFontSize(15),
     backgroundColor: '#fff',
     fontFamily: 'Pretendard-Regular',
-    marginVertical: getResponsiveHeight(12),
+    marginBottom: getResponsiveHeight(12),
+  },
+
+  noticeText: {
+    marginTop: getResponsiveHeight(8),
+    fontSize: getResponsiveFontSize(12),
+    color: '#9B9B9B',
+    fontFamily: 'Pretendard-Regular',
+    lineHeight: getResponsiveHeight(16),
   },
 });

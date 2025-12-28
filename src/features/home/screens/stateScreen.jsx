@@ -36,42 +36,42 @@ const EMOTIONS = [
   {
     id: 'ANNOYED',
     label: '짜증나요',
-    url: require('../../../assets/icons/state/annoyed.png'),
+    url: require('../../../assets/icons/state_v2/annoyed.png'),
   },
   {
     id: 'WORRIED',
     label: '걱정돼요',
-    url: require('../../../assets/icons/state/anxious.png'),
+    url: require('../../../assets/icons/state_v2/anxious.png'),
   },
   {
     id: 'DEPRESSED',
     label: '우울해요',
-    url: require('../../../assets/icons/state/depressed.png'),
+    url: require('../../../assets/icons/state_v2/depressed.png'),
   },
   {
     id: 'SORRY',
     label: '미안해요',
-    url: require('../../../assets/icons/state/sorry.png'),
+    url: require('../../../assets/icons/state_v2/sorry.png'),
   },
   {
     id: 'TIRED',
     label: '힘들어요',
-    url: require('../../../assets/icons/state/exhausted.png'),
+    url: require('../../../assets/icons/state_v2/exhausted.png'),
   },
   {
     id: 'EXCITED',
     label: '신나요',
-    url: require('../../../assets/icons/state/excited.png'),
+    url: require('../../../assets/icons/state_v2/excited.png'),
   },
   {
     id: 'NEUTRAL',
     label: '평범해요',
-    url: require('../../../assets/icons/state/neutral.png'),
+    url: require('../../../assets/icons/state_v2/neutral.png'),
   },
   {
     id: 'HAPPY',
     label: '행복해요',
-    url: require('../../../assets/icons/state/happy.png'),
+    url: require('../../../assets/icons/state_v2/happy.png'),
   },
 ];
 

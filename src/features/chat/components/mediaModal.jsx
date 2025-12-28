@@ -1,23 +1,30 @@
+// src/features/post/components/MediaModal.jsx
 
 /* eslint-disable react-native/no-inline-styles */
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
 import {
   Modal,
   StyleSheet,
-  TouchableWithoutFeedback,
+  TouchableOpacity,
   Dimensions,
   View,
   FlatList,
   Text,
   Platform,
   Image,
+  PermissionsAndroid,
+  ActivityIndicator,
 } from 'react-native';
 import Video from 'react-native-video';
 import FastImage from '@d11/react-native-fast-image';
+
+import RNFS from 'react-native-fs';
+import {CameraRoll} from '@react-native-camera-roll/camera-roll';
+
 import {
+  getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-  getResponsiveFontSize,
 } from '../../../utils/responsive';
 
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
@@ -30,149 +37,91 @@ import Animated, {
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
+/* ================= utils ================= */
+
 const CLOUDFRONT_DOMAIN = 'https://dzqa9jgkeds0b.cloudfront.net';
-const trimSlash = s => String(s || '').replace(/\/+$/, '');
-const trimLeadingSlash = s => String(s || '').replace(/^\/+/, '');
+const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
 const toCdnUrl = keyOrUrl => {
   if (!keyOrUrl) return null;
   const raw = String(keyOrUrl).split('?')[0];
-  if (raw.startsWith('http://') || raw.startsWith('https://')) return raw;
-  return `${trimSlash(CLOUDFRONT_DOMAIN)}/${trimLeadingSlash(raw)}`;
+  if (raw.startsWith('http')) return raw;
+  return `${CLOUDFRONT_DOMAIN.replace(/\/$/, '')}/${raw.replace(/^\/+/, '')}`;
 };
 
-const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+const ensureAndroidPermission = async () => {
+  if (Platform.OS !== 'android') return true;
+  if (Platform.Version >= 29) return true;
 
-/** =========================
- *  ZoomableImage
- *  ✅ 핀치 줌 / 드래그 이동 / 더블탭 확대↔원복
- *  ✅ 확대 중에는 FlatList 스와이프(넘김) 막기 위해 onTogglePaging 사용
- * ========================= */
-function ZoomableImage({
-  uri,
-  isActive,
-  onTogglePaging,
-  doubleTapScale = 2,
-  maxScale = 4,
-}) {
-  const scale = useSharedValue(1);
-  const tx = useSharedValue(0);
-  const ty = useSharedValue(0);
-
-  const lastScale = useSharedValue(1);
-  const lastTx = useSharedValue(0);
-  const lastTy = useSharedValue(0);
-
-  const setPaging = useCallback(
-    enabled => {
-      onTogglePaging?.(enabled);
-    },
-    [onTogglePaging],
+  const granted = await PermissionsAndroid.request(
+    PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
   );
+  return granted === PermissionsAndroid.RESULTS.GRANTED;
+};
 
-  const reset = useCallback(() => {
+const saveUrlToGallery = async ({url, type, album = 'Kinover'}) => {
+  const ext = type === 'video' ? 'mp4' : 'jpg';
+  const path = `${RNFS.CachesDirectoryPath}/kinover_${Date.now()}_${Math.random()
+    .toString(16)
+    .slice(2)}.${ext}`;
+
+  await RNFS.downloadFile({fromUrl: url, toFile: path}).promise;
+
+  await CameraRoll.save(`file://${path}`, {
+    type: type === 'video' ? 'video' : 'photo',
+    album,
+  });
+};
+
+/* ================= ZoomableImage ================= */
+
+function ZoomableImage({uri, isActive}) {
+  const scale = useSharedValue(1);
+  const lastScale = useSharedValue(1);
+
+  const reset = () => {
     scale.value = withTiming(1);
-    tx.value = withTiming(0);
-    ty.value = withTiming(0);
     lastScale.value = 1;
-    lastTx.value = 0;
-    lastTy.value = 0;
-    setPaging(true);
-  }, [scale, tx, ty, lastScale, lastTx, lastTy, setPaging]);
+  };
 
-  // ✅ 페이지가 바뀌면(비활성) 자동 리셋
   useEffect(() => {
     if (!isActive) reset();
-  }, [isActive, reset]);
+  }, [isActive]);
 
-  const pinch = useMemo(() => {
-    return Gesture.Pinch()
-      .runOnJS(true)
-      .onBegin(() => {
-        setPaging(false);
-      })
-      .onUpdate(e => {
-        const next = clamp(lastScale.value * e.scale, 1, maxScale);
-        scale.value = next;
-      })
-      .onEnd(() => {
-        lastScale.value = scale.value;
+  const pinch = Gesture.Pinch()
+    .onUpdate(e => {
+      scale.value = clamp(lastScale.value * e.scale, 1, 4);
+    })
+    .onEnd(() => {
+      lastScale.value = scale.value;
+      if (scale.value <= 1.01) runOnJS(reset)();
+    });
 
-        if (scale.value <= 1.01) {
-          runOnJS(reset)();
-        }
-      });
-  }, [maxScale, reset, scale, lastScale, setPaging]);
+  const doubleTap = Gesture.Tap()
+    .numberOfTaps(2)
+    .onEnd(() => {
+      if (scale.value > 1.01) {
+        runOnJS(reset)();
+      } else {
+        scale.value = withTiming(2);
+        lastScale.value = 2;
+      }
+    });
 
-  const pan = useMemo(() => {
-    return Gesture.Pan()
-      .runOnJS(true)
-      .onBegin(() => {
-        if (scale.value > 1.01) setPaging(false);
-      })
-      .onUpdate(e => {
-        if (scale.value <= 1.01) return;
+  const composed = Gesture.Simultaneous(pinch, doubleTap);
 
-        const limitX = (screenWidth * (scale.value - 1)) / 2;
-        const limitY = (screenHeight * (scale.value - 1)) / 2;
-
-        const nextX = clamp(lastTx.value + e.translationX, -limitX, limitX);
-        const nextY = clamp(lastTy.value + e.translationY, -limitY, limitY);
-
-        tx.value = nextX;
-        ty.value = nextY;
-      })
-      .onEnd(() => {
-        lastTx.value = tx.value;
-        lastTy.value = ty.value;
-
-        if (scale.value <= 1.01) {
-          runOnJS(reset)();
-        }
-      });
-  }, [reset, scale, setPaging, tx, ty, lastTx, lastTy]);
-
-  const doubleTap = useMemo(() => {
-    return Gesture.Tap()
-      .numberOfTaps(2)
-      .runOnJS(true)
-      .onEnd(() => {
-        if (scale.value > 1.01) {
-          reset();
-          return;
-        }
-        setPaging(false);
-        scale.value = withTiming(doubleTapScale);
-        lastScale.value = doubleTapScale;
-      });
-  }, [doubleTapScale, reset, scale, setPaging, lastScale]);
-
-  const composed = useMemo(() => {
-    // 동시에 동작 (핀치/팬/더블탭)
-    return Gesture.Simultaneous(pinch, pan, doubleTap);
-  }, [pinch, pan, doubleTap]);
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{translateX: tx.value}, {translateY: ty.value}, {scale: scale.value}],
-    };
-  });
+  const style = useAnimatedStyle(() => ({
+    transform: [{scale: scale.value}],
+  }));
 
   return (
     <View style={styles.zoomContainer}>
       <GestureDetector gesture={composed}>
-        <Animated.View style={[styles.zoomImageWrap, animatedStyle]}>
+        <Animated.View style={[styles.zoomImageWrap, style]}>
           <FastImage
-            source={{
-              uri,
-              priority: FastImage.priority.high,
-              cache: FastImage.cacheControl.immutable,
-            }}
+            source={{uri}}
             style={styles.zoomImage}
             resizeMode={FastImage.resizeMode.contain}
-            onError={e =>
-              console.log('❌ MediaModal image error:', uri, e?.nativeEvent)
-            }
           />
         </Animated.View>
       </GestureDetector>
@@ -180,206 +129,130 @@ function ZoomableImage({
   );
 }
 
+/* ================= MediaModal ================= */
+
 export default function MediaModal({
   visible,
   mediaUrls = [],
-  mediaType = 'image', // 'image' | 'video'
+  mediaType = 'image',
   initialIndex = 0,
   onClose,
 }) {
-  const listRef = useRef(null);
-  const rafRef = useRef(null);
+  const cancelRequestedRef = useRef(false);
 
-  const safeKeys = useMemo(() => {
-    if (!Array.isArray(mediaUrls)) return [];
-    return mediaUrls.filter(Boolean);
-  }, [mediaUrls]);
-
-  const resolvedUrls = useMemo(() => {
-    return safeKeys.map(toCdnUrl).filter(Boolean);
-  }, [safeKeys]);
-
-  const hasData = resolvedUrls.length > 0;
-  const isVideo = String(mediaType || 'image').toLowerCase() === 'video';
-
-  const safeInitialIndex = useMemo(() => {
-    if (!resolvedUrls.length) return 0;
-    return clamp(initialIndex, 0, resolvedUrls.length - 1);
-  }, [resolvedUrls.length, initialIndex]);
-
-  const [currentIndex, setCurrentIndex] = useState(safeInitialIndex);
-
-  // ✅ 확대 중이면 FlatList 넘김 막기
-  const pagingEnabledRef = useRef(true);
-  const [pagingEnabled, setPagingEnabled] = useState(true);
-
-  const togglePaging = useCallback(enabled => {
-    if (pagingEnabledRef.current === enabled) return;
-    pagingEnabledRef.current = enabled;
-    setPagingEnabled(enabled);
-  }, []);
-
-  useEffect(() => {
-    if (!visible) return;
-    setCurrentIndex(safeInitialIndex);
-    // 모달 다시 열면 스와이프는 기본 허용
-    setPagingEnabled(true);
-    pagingEnabledRef.current = true;
-  }, [visible, safeInitialIndex]);
-
-  useEffect(() => {
-    if (!visible) return;
-    if (!hasData) return;
-
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-
-    rafRef.current = requestAnimationFrame(() => {
-      if (!listRef.current) return;
-      try {
-        listRef.current.scrollToOffset({
-          offset: safeInitialIndex * screenWidth,
-          animated: false,
-        });
-      } catch {
-        null;
-      }
-    });
-
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    };
-  }, [visible, hasData, safeInitialIndex]);
-
-  useEffect(() => {
-    if (!visible) return;
-    if (!hasData) return;
-    if (isVideo) return;
-
-    const cur = clamp(safeInitialIndex, 0, resolvedUrls.length - 1);
-    const candidates = [cur, cur - 1, cur + 1]
-      .filter(i => i >= 0 && i < resolvedUrls.length)
-      .map(i => resolvedUrls[i]);
-
-    FastImage.preload(
-      candidates.map(uri => ({
-        uri,
-        priority: FastImage.priority.high,
-      })),
-    );
-  }, [visible, hasData, isVideo, resolvedUrls, safeInitialIndex]);
-
-  const renderItem = useCallback(
-    ({item, index}) => {
-      const isActive = currentIndex === index;
-
-      return (
-        <View style={styles.page}>
-          {isVideo ? (
-            <View style={styles.videoWrap}>
-              <Video
-                source={{uri: item}}
-                style={styles.video}
-                resizeMode="contain"
-                controls
-                paused={!isActive}
-                repeat={false}
-                playInBackground={false}
-                playWhenInactive={false}
-                disableFocus={true}
-                ignoreSilentSwitch="ignore"
-                onError={e =>
-                  console.log('❌ MediaModal video error:', item, e)
-                }
-              />
-            </View>
-          ) : (
-            <ZoomableImage
-              uri={item}
-              isActive={isActive}
-              onTogglePaging={togglePaging}
-            />
-          )}
-        </View>
-      );
-    },
-    [isVideo, currentIndex, togglePaging],
+  const resolvedUrls = useMemo(
+    () => mediaUrls.map(toCdnUrl).filter(Boolean),
+    [mediaUrls],
   );
+
+  const isVideo = mediaType === 'video';
+
+  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  const [saving, setSaving] = useState(false);
+  const [progress, setProgress] = useState({current: 0, total: 0});
+
+  /* ===== 닫기 ===== */
+  const handleClose = () => {
+    if (saving) {
+      cancelRequestedRef.current = true;
+      setSaving(false);
+      setTimeout(onClose, 300);
+      return;
+    }
+    onClose();
+  };
+
+  /* ===== 전체 저장 ===== */
+  const handleSaveAll = useCallback(async () => {
+    if (saving || !resolvedUrls.length) return;
+
+    setSaving(true);
+    cancelRequestedRef.current = false;
+    setProgress({current: 0, total: resolvedUrls.length});
+
+    try {
+      const ok = await ensureAndroidPermission();
+      if (!ok) throw new Error('permission');
+
+      for (let i = 0; i < resolvedUrls.length; i++) {
+        if (cancelRequestedRef.current) throw new Error('cancel');
+
+        setProgress({current: i + 1, total: resolvedUrls.length});
+        await saveUrlToGallery({
+          url: resolvedUrls[i],
+          type: isVideo ? 'video' : 'photo',
+        });
+      }
+    } catch (e) {
+      // 취소 / 실패는 여기서 그냥 종료
+    } finally {
+      setTimeout(() => {
+        setSaving(false);
+        setProgress({current: 0, total: 0});
+      }, 600);
+    }
+  }, [resolvedUrls, isVideo, saving]);
 
   return (
     <Modal transparent visible={visible} animationType="fade">
       <View style={styles.overlay} />
 
-      {hasData && resolvedUrls.length > 1 && (
-        <View style={styles.indicatorContainer}>
-          <Text style={styles.indicatorText}>
-            {currentIndex + 1} / {resolvedUrls.length}
-          </Text>
-        </View>
-      )}
+      {/* 닫기 */}
+      <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
+        <Image
+          source={require('../../../assets/images/clearBt1.png')}
+          style={{width: 22, height: 22}}
+        />
+      </TouchableOpacity>
 
-      <View style={styles.closeButtonContainer}>
-        <TouchableWithoutFeedback onPress={onClose}>
-          <Image
-            source={require('../../../assets/images/clearBt1.png')}
-            style={{
-              width: getResponsiveWidth(22.5),
-              height: getResponsiveHeight(22.5),
-            }}
-            resizeMode={FastImage.resizeMode.contain}
-          />
-        </TouchableWithoutFeedback>
+      {/* 저장 버튼 */}
+      <View style={styles.saveButtonContainer}>
+        <TouchableOpacity
+          onPress={handleSaveAll}
+          disabled={saving}
+          style={[styles.saveBtn, saving && {opacity: 0.5}]}>
+          <Text style={styles.saveBtnText}>전체저장</Text>
+        </TouchableOpacity>
       </View>
 
-      {hasData ? (
-        <FlatList
-          ref={listRef}
-          data={resolvedUrls}
-          keyExtractor={(item, index) => String(item) + index}
-          horizontal
-          pagingEnabled={pagingEnabled}
-          scrollEnabled={pagingEnabled}
-          showsHorizontalScrollIndicator={false}
-          getItemLayout={(_, index) => ({
-            length: screenWidth,
-            offset: screenWidth * index,
-            index,
-          })}
-          removeClippedSubviews={false}
-          initialNumToRender={3}
-          windowSize={5}
-          maxToRenderPerBatch={3}
-          onMomentumScrollEnd={e => {
-            const idx = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
-            const safeIdx = clamp(idx, 0, resolvedUrls.length - 1);
-            setCurrentIndex(safeIdx);
+      <FlatList
+        data={resolvedUrls}
+        horizontal
+        pagingEnabled
+        keyExtractor={(v, i) => v + i}
+        renderItem={({item, index}) =>
+          isVideo ? (
+            <Video source={{uri: item}} style={styles.video} controls />
+          ) : (
+            <ZoomableImage uri={item} isActive={index === currentIndex} />
+          )
+        }
+        onMomentumScrollEnd={e =>
+          setCurrentIndex(
+            Math.round(e.nativeEvent.contentOffset.x / screenWidth),
+          )
+        }
+      />
 
-            // ✅ 페이지 바뀌면 스와이프 기본 복귀 (각 페이지 ZoomableImage가 비활성되며 reset됨)
-            togglePaging(true);
-
-            if (!isVideo && resolvedUrls.length) {
-              const candidates = [safeIdx, safeIdx - 1, safeIdx + 1]
-                .filter(i => i >= 0 && i < resolvedUrls.length)
-                .map(i => resolvedUrls[i]);
-
-              FastImage.preload(
-                candidates.map(uri => ({
-                  uri,
-                  priority: FastImage.priority.high,
-                })),
-              );
-            }
-          }}
-          renderItem={renderItem}
-        />
-      ) : (
-        <View style={styles.emptyPage}>
-          <Text style={styles.emptyText}>표시할 미디어가 없어요</Text>
+      {/* ===== 저장 중 인디케이터 ===== */}
+      {saving && (
+        <View style={styles.progressOverlay}>
+          <View style={styles.progressBox}>
+            <ActivityIndicator size="large" color="#fff" />
+            <Text style={styles.progressText}>
+              {progress.current} / {progress.total}
+            </Text>
+            <Text style={styles.progressSub}>
+              화면을 나가면 저장이 취소돼요
+            </Text>
+          </View>
         </View>
       )}
     </Modal>
   );
 }
+
+/* ================= styles ================= */
 
 const styles = StyleSheet.create({
   overlay: {
@@ -387,23 +260,31 @@ const styles = StyleSheet.create({
     backgroundColor: 'black',
   },
 
-  page: {
-    width: screenWidth,
-    height: screenHeight,
-    justifyContent: 'center',
-    alignItems: 'center',
+  closeBtn: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 50 : 20,
+    right: 16,
+    zIndex: 50,
   },
 
-  emptyPage: {
-    width: screenWidth,
-    height: screenHeight,
-    justifyContent: 'center',
-    alignItems: 'center',
+  saveButtonContainer: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 46 : 16,
+    left: 16,
+    zIndex: 50,
   },
-  emptyText: {
+
+  saveBtn: {
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+
+  saveBtnText: {
     color: '#fff',
-    fontSize: getResponsiveFontSize(14),
-    opacity: 0.8,
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(12.5),
   },
 
   zoomContainer: {
@@ -411,51 +292,44 @@ const styles = StyleSheet.create({
     height: screenHeight,
     justifyContent: 'center',
     alignItems: 'center',
-    overflow: 'hidden',
   },
   zoomImageWrap: {
     width: screenWidth,
     height: screenHeight,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   zoomImage: {
-    width: screenWidth,
-    height: screenHeight,
+    width: '100%',
+    height: '100%',
   },
 
-  videoWrap: {
-    width: screenWidth,
-    height: screenHeight,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   video: {
     width: screenWidth,
     height: screenHeight * 0.75,
   },
 
-  closeButtonContainer: {
-    position: 'absolute',
-    top:
-      Platform.OS === 'ios' ? getResponsiveHeight(50) : getResponsiveHeight(20),
-    right: getResponsiveWidth(15),
-    zIndex: 10,
+  progressOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
   },
-  indicatorContainer: {
-    position: 'absolute',
-    top:
-      Platform.OS === 'ios' ? getResponsiveHeight(50) : getResponsiveHeight(20),
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    zIndex: 10,
+  progressBox: {
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    borderRadius: 18,
+    paddingVertical: 22,
+    paddingHorizontal: 26,
+    alignItems: 'center',
   },
-  indicatorText: {
+  progressText: {
     color: '#fff',
-    fontSize: getResponsiveFontSize(14),
-    fontWeight: '600',
+    fontSize: 16,
+    marginTop: 12,
+    fontFamily: 'Pretendard-SemiBold',
+  },
+  progressSub: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 12,
+    marginTop: 8,
   },
 });

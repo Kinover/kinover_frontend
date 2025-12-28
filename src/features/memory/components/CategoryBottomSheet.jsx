@@ -17,7 +17,6 @@ import {
   SafeAreaView,
   Platform,
   ScrollView,
-  Dimensions,
 } from 'react-native';
 import {
   getResponsiveHeight,
@@ -26,15 +25,10 @@ import {
   getResponsiveIconSize,
 } from '../../../utils/responsive';
 import BottomSheetLayout from 'components/BottomSheetLayout';
-import {Shadow} from 'react-native-shadow-2';
-
-const {height: SCREEN_HEIGHT} = Dimensions.get('window');
+import {useBottomSheetDynamicSnapPoints} from '@gorhom/bottom-sheet';
 
 // 아이템 1개당 대략적인 높이 (padding 포함)
 const ITEM_HEIGHT = getResponsiveHeight(52);
-// 바텀시트가 가질 수 있는 최소/최대 비율
-const MIN_SNAP_RATIO = 0.25; // 25%
-const MAX_SNAP_RATIO = 0.75; // 75%
 // 스크롤 없이 보여줄 최대 개수
 const MAX_VISIBLE_ITEMS = 6;
 
@@ -63,39 +57,40 @@ const CategoryBottomSheetModal = forwardRef(
       [categoryList],
     );
 
-    // ✅ 카테고리 개수에 따라 바텀시트 높이 동적 계산
-    const snapPoints = useMemo(() => {
-      // 실제 화면에 보이는 개수(스크롤 없이)
-      const visibleCount = Math.min(data.length, MAX_VISIBLE_ITEMS);
+    // ✅ 바텀시트 높이 = 콘텐츠 양만큼
+    // (CONTENT_HEIGHT 문자열을 "그냥" 쓰면 에러 나서, 이 훅이 필수)
+    const initialSnapPoints = useMemo(() => ['CONTENT_HEIGHT'], []);
+    const {
+      animatedSnapPoints,
+      animatedHandleHeight,
+      animatedContentHeight,
+      handleContentLayout,
+    } = useBottomSheetDynamicSnapPoints(initialSnapPoints);
 
-      // 내용 높이 대략 계산
-      const contentHeight =
-        visibleCount * ITEM_HEIGHT + getResponsiveHeight(150); // 헤더 + 여유분
-
-      // 화면 비율로 변환
-      const ratio = Math.min(
-        MAX_SNAP_RATIO,
-        Math.max(MIN_SNAP_RATIO, contentHeight / SCREEN_HEIGHT),
-      );
-
-      return [`${ratio * 100}%`]; // 예: "35%"
-    }, [data.length]);
-
-    // ✅ 스크롤 영역의 최대 높이 (이 이상이면 스크롤)
-    const maxListHeight = useMemo(() => MAX_VISIBLE_ITEMS * ITEM_HEIGHT, []);
+    // ✅ 리스트는 MAX_VISIBLE_ITEMS까지만 높이를 허용하고, 넘치면 내부 스크롤
+    const maxListHeight = useMemo(
+      () => MAX_VISIBLE_ITEMS * ITEM_HEIGHT,
+      [],
+    );
 
     return (
       <BottomSheetLayout
         modalRef={modalRef}
-        snapPoints={snapPoints}
+        // ✅ dynamic snap points
+        snapPoints={animatedSnapPoints}
+        handleHeight={animatedHandleHeight}
+        contentHeight={animatedContentHeight}
+        onContentLayout={handleContentLayout}
         enableContentPanningGesture={false}
+        // 키보드가 있다 해도 시트 자체가 밀리지 않게(통일)
+        keyboardBehavior="none"
+        androidKeyboardInputMode="adjustNothing"
         title="카테고리 선택"
         subtitle="보고 싶은 게시글의 카테고리를 선택해 주세요."
         innerContentStyle={styles.innerContent}
         useFixedFooter={false}>
         <SafeAreaView style={{flex: 1}}>
           <View style={styles.listWrapper}>
-            {/* ✅ 카테고리가 많으면 이 영역 내부에서 스크롤 */}
             <ScrollView
               style={[styles.scrollArea, {maxHeight: maxListHeight}]}
               bounces={false}
@@ -104,60 +99,34 @@ const CategoryBottomSheetModal = forwardRef(
                 const isSelected = cat.title === tempSelected?.title;
                 const key = cat.id ? String(cat.id) : `${cat.title}-${index}`;
 
-                const itemComponent = (
-                  <TouchableOpacity
-                    style={[
-                      styles.categoryItem,
-                      isSelected && styles.selectedItem,
-                    ]}
-                    activeOpacity={0.85}
-                    onPress={() => handleSelect(cat)}>
-                    <Text
-                      style={[
-                        styles.categoryText,
-                        isSelected && styles.selectedText,
-                      ]}>
-                      {cat.title}
-                    </Text>
-                    {isSelected && (
-                      <Image
-                        source={require('../../../assets/icons/check-yellow.png')}
-                        style={styles.checkIcon}
-                      />
-                    )}
-                  </TouchableOpacity>
-                );
-
                 return (
                   <View
                     key={key}
                     style={{marginBottom: getResponsiveHeight(8)}}>
-                    {itemComponent}
+                    <TouchableOpacity
+                      style={[
+                        styles.categoryItem,
+                        isSelected && styles.selectedItem,
+                      ]}
+                      activeOpacity={0.85}
+                      onPress={() => handleSelect(cat)}>
+                      <Text
+                        style={[
+                          styles.categoryText,
+                          isSelected && styles.selectedText,
+                        ]}>
+                        {cat.title}
+                      </Text>
+
+                      {isSelected && (
+                        <Image
+                          source={require('../../../assets/icons/check-yellow.png')}
+                          style={styles.checkIcon}
+                        />
+                      )}
+                    </TouchableOpacity>
                   </View>
                 );
-
-                // ✅ 선택된 아이템만 Shadow 적용
-                // return isSelected ? (
-                //   <Shadow
-                //     key={key}
-                //     distance={2} // 🔹 퍼지는 정도 (짧게)
-                //     offset={[0, 0]} // 🔹 위/아래 대칭으로
-                //     startColor="rgba(0,0,0,0.12)" // 🔹 진하기
-                //     endColor="rgba(0,0,0,0.0)"
-                //     radius={11}
-                //     style={{
-                //       borderRadius: 11,
-                //       marginBottom: getResponsiveHeight(8),
-                //     }}>
-                //     {itemComponent}
-                //   </Shadow>
-                // ) : (
-                //   <View
-                //     key={key}
-                //     style={{marginBottom: getResponsiveHeight(8)}}>
-                //     {itemComponent}
-                //   </View>
-                // );
               })}
             </ScrollView>
           </View>
@@ -168,7 +137,6 @@ const CategoryBottomSheetModal = forwardRef(
 );
 
 CategoryBottomSheetModal.displayName = 'CategoryBottomSheetModal';
-
 export default CategoryBottomSheetModal;
 
 const styles = StyleSheet.create({
@@ -181,7 +149,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   scrollArea: {
-    flexGrow: 0, // 내용 높이에 맞추되 maxHeight까지만
+    flexGrow: 0,
     paddingBottom: getResponsiveHeight(10),
   },
   categoryItem: {

@@ -1,20 +1,12 @@
 // src/features/chat/hooks/useChatRoomScreen.js
-// ✅ 소켓 제거 버전 (화면은 Redux 구독 + 스크롤/페이징만)
-
 import {useEffect, useRef, useState, useCallback, useMemo} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchMoreMessagesThunk} from '../store/messageThunk';
 import {initRoom, selectRoomMessages, selectRoomMeta} from '../store/messageSlice';
-import { useFocusEffect } from '@react-navigation/native';
-import { setActiveChatRoom } from '../store/chatRoomSlice';
-import { fetchChatRoomUsersThunk } from '../store/chatRoomThunk';
 
 export default function useChatRoomScreen(chatRoom, userId, isKino) {
   const dispatch = useDispatch();
 
-  /** =====================
-   * Room ID
-   * ===================== */
   const roomId = useMemo(() => {
     const id = chatRoom?.chatRoomId;
     return id == null ? null : String(id);
@@ -23,9 +15,6 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
   const messageList = useSelector(state => selectRoomMessages(state, roomId));
   const roomMeta = useSelector(state => selectRoomMeta(state, roomId));
 
-  /** =====================
-   * Refs / State
-   * ===================== */
   const flatListRef = useRef(null);
   const isAtBottomRef = useRef(true);
 
@@ -33,29 +22,9 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
-
-  useFocusEffect(
-    useCallback(() => {
-      dispatch(setActiveChatRoom(chatRoom.chatRoomId)); // 들어올 때
-
-      return () => {
-        dispatch(setActiveChatRoom(null)); // ✅ 나갈 때
-      };
-    }, [dispatch, chatRoom.chatRoomId]),
-  );
-
-  useEffect(() => {
-    if (!roomId) return;
-    dispatch(fetchChatRoomUsersThunk(roomId)); // ✅ 이게 있어야 roomUsers가 생김
-  }, [roomId, dispatch]);
-
-  /** =====================
-   * Scroll helpers
-   * ===================== */
   const scrollToBottom = useCallback(() => {
     if (!flatListRef.current) return;
-    // inverted FlatList 기준이면 offset 0이 바닥
-    flatListRef.current.scrollToOffset({offset: 0, animated: true});
+    flatListRef.current.scrollToOffset({offset: 0, animated: true}); // inverted 기준
   }, []);
 
   const handleScroll = useCallback(event => {
@@ -64,9 +33,6 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
     setIsUserScrolling(!isAtBottomRef.current);
   }, []);
 
-  /** =====================
-   * Load older messages (pagination)
-   * ===================== */
   const loadOlderMessages = useCallback(async () => {
     if (!roomId) return;
     if (isFetchingMore || noMoreMessages || !messageList || messageList.length === 0)
@@ -74,7 +40,8 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
 
     setIsFetchingMore(true);
 
-    const before = roomMeta?.cursor ?? messageList[messageList.length - 1]?.createdAt;
+    const before =
+      roomMeta?.cursor ?? messageList[messageList.length - 1]?.createdAt;
 
     const {payload} = await dispatch(fetchMoreMessagesThunk(roomId, before));
 
@@ -92,9 +59,6 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
     roomMeta?.cursor,
   ]);
 
-  /** =====================
-   * Init room (중요)
-   * ===================== */
   useEffect(() => {
     if (!roomId) return;
 
@@ -104,27 +68,18 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
     setIsUserScrolling(false);
     setNoMoreMessages(false);
 
-    // 방 진입 직후 맨 아래로
     if (!roomMeta?.isFetched) {
       setTimeout(scrollToBottom, 0);
     }
   }, [roomId, dispatch, roomMeta?.isFetched, scrollToBottom]);
 
-  /** =====================
-   * 메시지 변화 시 자동 스크롤
-   * ===================== */
   useEffect(() => {
     if (!messageList || messageList.length === 0) return;
-
-    // ✅ 맨 아래 붙어있을 때는 상대/내 메시지 상관없이 내려주기
     if (isAtBottomRef.current) {
       setTimeout(scrollToBottom, 0);
     }
   }, [messageList?.length, scrollToBottom]);
 
-  /** =====================
-   * Return
-   * ===================== */
   return {
     flatListRef,
     messageList,
@@ -139,5 +94,6 @@ export default function useChatRoomScreen(chatRoom, userId, isKino) {
     scrollToBottom,
 
     isUserScrolling,
+    isAtBottomRef,
   };
 }

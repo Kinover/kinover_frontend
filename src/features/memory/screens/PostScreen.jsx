@@ -13,14 +13,18 @@ import {
   Dimensions,
   ScrollView,
   Pressable,
-  Alert,
+  Platform,
+  PermissionsAndroid,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
 
 import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
 import LinearGradient from 'react-native-linear-gradient';
+
+import RNBlobUtil from 'react-native-blob-util';
+import {CameraRoll} from '@react-native-camera-roll/camera-roll';
 
 import {fetchPostByIdThunk} from '../store/memoryThunk';
 import {setMemorySelectedTab} from '../store/memorySlice';
@@ -40,23 +44,29 @@ import {
 } from '../../../utils/responsive';
 import {HEADER_STYLES} from 'styles/style';
 
-// ✅ 네가 올린 모달 컴포넌트 (CustomModal 래핑)
 import ImageDeleteModal from '../components/DeleteOptionModal';
-
-// ✅ 댓글 삭제 thunk (PostPage에서 직접 호출할 거라 import)
 import {deleteCommentThunk} from '../store/commentThunk';
 
-const {height: SCREEN_HEIGHT} = Dimensions.get('window');
+// ✅ 분리한 옵션 바텀시트 컴포넌트
+import PostOptionBottomSheet from '../components/PostOptionBottomSheet';
+
+const {width: SCREEN_W} = Dimensions.get('window');
 
 export default function PostPage({route}) {
   const dispatch = useDispatch();
   const navigation = useNavigation();
 
+  const optionSheetRef = useRef(null);
   const descSheetRef = useRef(null);
   const commentSheetRef = useRef(null);
   const didInitIndexRef = useRef(false);
 
-  const {postId, imageIndex = 0} = route.params || {};
+  // ✅ descSheet 중복 present 방지
+  const didPresentDescRef = useRef(false);
+  // ✅ 화면 나가는 중 가드
+  const isLeavingRef = useRef(false);
+
+  const {postId, imageIndex = 0} = route?.params || {};
 
   const postFromStore = useSelector(state =>
     postId ? state.memory?.postsById?.[postId] : null,
@@ -78,13 +88,44 @@ export default function PostPage({route}) {
   useHideTabBar();
 
   const [descExpanded, setDescExpanded] = useState(false);
+  const [isChromeHidden, setIsChromeHidden] = useState(false);
 
-  // ✅ confirm 모달을 "하나"로 통합 (image/post/comment)
+  // ✅ confirm 모달 상태
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [pendingDeleteType, setPendingDeleteType] = useState(null); // 'image' | 'post' | 'comment' | null
   const [pendingCommentId, setPendingCommentId] = useState(null);
-
   const [isConfirmDeleting, setIsConfirmDeleting] = useState(false);
+
+  // ✅ 옵션(우상단) 로딩/중복 클릭 방지
+  const [isOptionBusy, setIsOptionBusy] = useState(false);
+
+  /** ---------------- 모든 시트 닫기 (유령 모달 방지) ---------------- */
+  const dismissAllSheets = useCallback(() => {
+    try {
+      optionSheetRef.current?.dismiss?.();
+    } catch {}
+    try {
+      commentSheetRef.current?.dismiss?.();
+    } catch {}
+    try {
+      descSheetRef.current?.dismiss?.();
+    } catch {}
+
+    didPresentDescRef.current = false;
+  }, []);
+
+  /** ---------------- focus/blur 시점에 정리 ---------------- */
+  useFocusEffect(
+    useCallback(() => {
+      isLeavingRef.current = false;
+
+      return () => {
+        // 화면이 blur/unmount 되는 순간: 남아있는 모달 싹 정리
+        isLeavingRef.current = true;
+        dismissAllSheets();
+      };
+    }, [dismissAllSheets]),
+  );
 
   /** ---------------- fetch ---------------- */
   useEffect(() => {
@@ -101,46 +142,59 @@ export default function PostPage({route}) {
     didInitIndexRef.current = true;
   }, [imageIndex, vm]);
 
-  /** ✅ 이미지/게시글 삭제 타입 선택 */
-  const openDeleteTypePicker = useCallback(() => {
-    if (vm.isImageFullScreen) return;
+  /** ---------------- 토스트 helper ---------------- */
+  const toast = useCallback(
+    msg => {
+      vm.setToastMessage?.(msg);
+      vm.setToastVisible?.(true);
+    },
+    [vm],
+  );
 
-    Alert.alert(
-      '삭제',
-      '무엇을 삭제할까요?',
-      [
-        {
-          text: '이 이미지 삭제',
-          style: 'destructive',
-          onPress: () => {
-            setPendingDeleteType('image');
-            setPendingCommentId(null);
-            setConfirmVisible(true);
-          },
-        },
-        {
-          text: '게시글 삭제',
-          style: 'destructive',
-          onPress: () => {
-            setPendingDeleteType('post');
-            setPendingCommentId(null);
-            setConfirmVisible(true);
-          },
-        },
-        {text: '취소', style: 'cancel'},
-      ],
-      {cancelable: true},
-    );
-  }, [vm.isImageFullScreen]);
+  /** ---------------- 현재 미디어 helper ---------------- */
+  const currentMediaUri = useMemo(() => {
+    const list = Array.isArray(vm.localImages) ? vm.localImages : [];
+    const idx = Number.isInteger(vm.currentImageIndex)
+      ? vm.currentImageIndex
+      : 0;
+    return list[idx] || null;
+  }, [vm.localImages, vm.currentImageIndex]);
 
-  /** ✅ 댓글 삭제 모달 열기 (BottomSheet에서 호출) */
+  const allMediaUris = useMemo(() => {
+    const list = Array.isArray(vm.localImages) ? vm.localImages : [];
+    return list.filter(Boolean);
+  }, [vm.localImages]);
+
+  const mediaCount = allMediaUris.length;
+
+  const currentLabel = useMemo(() => {
+    const i = Number.isInteger(vm.currentImageIndex) ? vm.currentImageIndex : 0;
+    const total = Math.max(mediaCount, 1);
+    return `${Math.min(i + 1, total)}/${total}`;
+  }, [vm.currentImageIndex, mediaCount]);
+
+  const isVideo = useMemo(() => {
+    const u = String(currentMediaUri || '');
+    return /\.mp4(\?|$)/i.test(u) || /\.mov(\?|$)/i.test(u);
+  }, [currentMediaUri]);
+
+  /** ---------------- 옵션 시트 ---------------- */
+  const openOptionSheet = useCallback(() => {
+    if (isChromeHidden) return;
+    optionSheetRef.current?.present?.();
+  }, [isChromeHidden]);
+
+  const closeOptionSheet = useCallback(() => {
+    optionSheetRef.current?.dismiss?.();
+  }, []);
+
+  /** ---------------- 댓글 삭제 모달 열기 ---------------- */
   const openDeleteCommentConfirm = useCallback(commentId => {
     setPendingDeleteType('comment');
     setPendingCommentId(commentId);
     setConfirmVisible(true);
   }, []);
 
-  /** ✅ confirm 모달 닫기 */
   const closeConfirmModal = useCallback(() => {
     if (isConfirmDeleting) return;
     setConfirmVisible(false);
@@ -148,7 +202,6 @@ export default function PostPage({route}) {
     setPendingCommentId(null);
   }, [isConfirmDeleting]);
 
-  /** ✅ confirm 모달 확인 -> 실제 삭제 실행 */
   const confirmDelete = useCallback(async () => {
     if (!pendingDeleteType || isConfirmDeleting) return;
 
@@ -160,10 +213,8 @@ export default function PostPage({route}) {
         await vm.handleDeletePost?.();
       } else if (pendingDeleteType === 'comment') {
         if (pendingCommentId && postId) {
-          // ✅ 네 thunk 시그니처: (commentId, postId)
           await dispatch(deleteCommentThunk(pendingCommentId, postId));
-          vm.setToastMessage?.('댓글을 삭제했어요');
-          vm.setToastVisible?.(true);
+          toast('댓글을 삭제했어요');
         }
       }
     } finally {
@@ -179,15 +230,211 @@ export default function PostPage({route}) {
     pendingCommentId,
     dispatch,
     postId,
+    toast,
   ]);
 
-  /** ---------------- header (✅ 투명 헤더) ---------------- */
+  /** ---------------- 저장 로직 ---------------- */
+  const ensureAndroidSavePermission = useCallback(async () => {
+    if (Platform.OS !== 'android') return true;
+
+    try {
+      if (Platform.Version >= 33) {
+        const r1 = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES,
+        );
+
+        let r2 = PermissionsAndroid.RESULTS.GRANTED;
+        try {
+          r2 = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.READ_MEDIA_VIDEO,
+          );
+        } catch {
+          r2 = PermissionsAndroid.RESULTS.GRANTED;
+        }
+
+        return (
+          r1 === PermissionsAndroid.RESULTS.GRANTED &&
+          r2 === PermissionsAndroid.RESULTS.GRANTED
+        );
+      }
+
+      const r = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+      );
+      return r === PermissionsAndroid.RESULTS.GRANTED;
+    } catch {
+      return true;
+    }
+  }, []);
+
+  const inferExt = useCallback(uri => {
+    try {
+      const clean = String(uri || '').split('?')[0];
+      const ext = clean.split('.').pop()?.toLowerCase();
+      if (!ext || ext.includes('/') || ext.length > 6) return 'jpg';
+      if (ext === 'jpeg') return 'jpg';
+      return ext;
+    } catch {
+      return 'jpg';
+    }
+  }, []);
+
+  const downloadToLocalFile = useCallback(
+    async (urlOrUri, extGuess = 'jpg') => {
+      const src = String(urlOrUri || '');
+      if (!src) throw new Error('empty uri');
+
+      if (src.startsWith('file://')) {
+        return src.replace('file://', '');
+      }
+
+      const safeExt = extGuess || 'jpg';
+      const dest = `${
+        RNBlobUtil.fs.dirs.CacheDir
+      }/kino_save_${Date.now()}_${Math.random()
+        .toString(16)
+        .slice(2)}.${safeExt}`;
+
+      const res = await RNBlobUtil.config({path: dest, fileCache: true}).fetch(
+        'GET',
+        src,
+      );
+
+      const p = res?.path?.() || dest;
+      const exists = await RNBlobUtil.fs.exists(p);
+      if (!exists) throw new Error('download failed');
+      return p;
+    },
+    [],
+  );
+
+  const saveOneToGallery = useCallback(
+    async uri => {
+      if (!uri) {
+        toast('저장할 미디어가 없어요.');
+        return;
+      }
+      if (!CameraRoll) {
+        toast('저장 기능을 쓰려면 CameraRoll 패키지가 필요해요.');
+        return;
+      }
+
+      const okPerm = await ensureAndroidSavePermission();
+      if (!okPerm) {
+        toast('갤러리 저장 권한이 필요해요.');
+        return;
+      }
+
+      setIsOptionBusy(true);
+      try {
+        const ext = inferExt(uri);
+        const localPath = await downloadToLocalFile(uri, ext);
+        const saved = await CameraRoll.save(`file://${localPath}`, {
+          type: ext === 'mp4' || ext === 'mov' ? 'video' : 'photo',
+        });
+
+        if (saved) toast('갤러리에 저장했어요.');
+        else toast('저장에 실패했어요.');
+      } catch (e) {
+        console.error('saveOneToGallery error:', e);
+        toast('저장 중 오류가 발생했어요.');
+      } finally {
+        setIsOptionBusy(false);
+      }
+    },
+    [toast, ensureAndroidSavePermission, downloadToLocalFile, inferExt],
+  );
+
+  const saveAllToGallery = useCallback(async () => {
+    if (!CameraRoll) {
+      toast('저장 기능을 쓰려면 CameraRoll 패키지가 필요해요.');
+      return;
+    }
+    if (!allMediaUris.length) {
+      toast('저장할 미디어가 없어요.');
+      return;
+    }
+
+    const okPerm = await ensureAndroidSavePermission();
+    if (!okPerm) {
+      toast('갤러리 저장 권한이 필요해요.');
+      return;
+    }
+
+    setIsOptionBusy(true);
+    try {
+      let okCount = 0;
+      for (let i = 0; i < allMediaUris.length; i++) {
+        const uri = allMediaUris[i];
+        try {
+          const ext = inferExt(uri);
+          const localPath = await downloadToLocalFile(uri, ext);
+          // eslint-disable-next-line no-await-in-loop
+          const saved = await CameraRoll.save(`file://${localPath}`, {
+            type: ext === 'mp4' || ext === 'mov' ? 'video' : 'photo',
+          });
+          if (saved) okCount += 1;
+        } catch (e) {
+          console.error('saveAll item error:', e);
+        }
+      }
+      toast(`${okCount}개를 저장했어요`);
+    } catch (e) {
+      console.error('saveAllToGallery error:', e);
+      toast('전체 저장 중 오류가 발생했어요.');
+    } finally {
+      setIsOptionBusy(false);
+    }
+  }, [
+    toast,
+    allMediaUris,
+    ensureAndroidSavePermission,
+    downloadToLocalFile,
+    inferExt,
+  ]);
+
+  /** ---------------- 옵션 액션 ---------------- */
+  const actionSaveCurrent = useCallback(async () => {
+    closeOptionSheet();
+    await saveOneToGallery(currentMediaUri);
+  }, [closeOptionSheet, saveOneToGallery, currentMediaUri]);
+
+  const actionSaveAll = useCallback(async () => {
+    closeOptionSheet();
+    await saveAllToGallery();
+  }, [closeOptionSheet, saveAllToGallery]);
+
+  const actionDeleteCurrentImage = useCallback(() => {
+    closeOptionSheet();
+    if (vm.isImageFullScreen) return;
+
+    if (!currentMediaUri) {
+      toast('삭제할 미디어가 없어요.');
+      return;
+    }
+
+    setPendingDeleteType('image');
+    setPendingCommentId(null);
+    setConfirmVisible(true);
+  }, [closeOptionSheet, vm.isImageFullScreen, currentMediaUri, toast]);
+
+  const actionDeletePost = useCallback(() => {
+    closeOptionSheet();
+    if (vm.isImageFullScreen) return;
+
+    setPendingDeleteType('post');
+    setPendingCommentId(null);
+    setConfirmVisible(true);
+  }, [closeOptionSheet, vm.isImageFullScreen]);
+
+  /** ---------------- header (투명 헤더) ---------------- */
   useEffect(() => {
     const matched = categoryList.find(
       c => c.categoryId === safeMemory?.categoryId,
     );
 
     navigation.setOptions({
+      headerShown: !isChromeHidden,
       headerTransparent: true,
       headerTitle: () => (
         <Text style={styles.headerTitle}>{matched?.title || '게시물'}</Text>
@@ -218,48 +465,77 @@ export default function PostPage({route}) {
 
       headerRight: () => (
         <TouchableOpacity
-          onPress={openDeleteTypePicker}
-          hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
+          onPress={openOptionSheet}
+          disabled={isOptionBusy}
+          hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+          style={{opacity: isOptionBusy ? 0.5 : 1}}>
           <Image
-            source={require('../../../assets/images/trash.png')}
+            source={require('../../../assets/icons/List.png')}
             style={styles.headerIcon}
           />
         </TouchableOpacity>
       ),
     });
-  }, [navigation, categoryList, safeMemory, openDeleteTypePicker]);
+  }, [
+    navigation,
+    categoryList,
+    safeMemory,
+    isChromeHidden,
+    openOptionSheet,
+    isOptionBusy,
+  ]);
 
   /** ---------------- description sheet ---------------- */
   const descSnapPoints = useMemo(() => ['20%', '30%'], []);
 
   const presentDescSheet = useCallback(() => {
-    descSheetRef.current?.present?.();
-  }, []);
+    if (isChromeHidden) return;
+    if (isLeavingRef.current) return;
 
-  const applyDescIndex = useCallback(nextExpanded => {
-    const nextIndex = nextExpanded ? 1 : 0;
+    // ✅ 이미 떠 있으면 또 present 하지 않기
+    if (didPresentDescRef.current) return;
+
     descSheetRef.current?.present?.();
-    descSheetRef.current?.snapToIndex?.(nextIndex);
-  }, []);
+    didPresentDescRef.current = true;
+  }, [isChromeHidden]);
+
+  const applyDescIndex = useCallback(
+    nextExpanded => {
+      if (isChromeHidden) return;
+      if (isLeavingRef.current) return;
+
+      const nextIndex = nextExpanded ? 1 : 0;
+
+      // ✅ present는 1번만
+      presentDescSheet();
+      descSheetRef.current?.snapToIndex?.(nextIndex);
+    },
+    [isChromeHidden, presentDescSheet],
+  );
 
   const toggleDescByClick = useCallback(() => {
     if (vm.isImageFullScreen) return;
+    if (isChromeHidden) return;
+    if (isLeavingRef.current) return;
+
     setDescExpanded(prev => {
       const next = !prev;
       applyDescIndex(next);
       return next;
     });
-  }, [applyDescIndex, vm.isImageFullScreen]);
+  }, [applyDescIndex, vm.isImageFullScreen, isChromeHidden]);
 
   const collapseDesc = useCallback(() => {
     setDescExpanded(false);
     applyDescIndex(false);
   }, [applyDescIndex]);
 
+  // ✅ 초기 1회만 띄우기
   useEffect(() => {
+    if (isChromeHidden) return;
     presentDescSheet();
     requestAnimationFrame(() => applyDescIndex(false));
-  }, [presentDescSheet, applyDescIndex]);
+  }, [presentDescSheet, applyDescIndex, isChromeHidden]);
 
   useEffect(() => {
     if (vm.isImageFullScreen) collapseDesc();
@@ -267,9 +543,12 @@ export default function PostPage({route}) {
 
   /** ---------------- comment sheet ---------------- */
   const openCommentSheet = useCallback(() => {
+    if (isChromeHidden) return;
+    if (isLeavingRef.current) return;
+
     collapseDesc();
     setTimeout(() => commentSheetRef.current?.present?.(), 120);
-  }, [collapseDesc]);
+  }, [collapseDesc, isChromeHidden]);
 
   const handleSwipeFromFirstToRight = useCallback(() => {
     if (vm.isImageFullScreen) return;
@@ -277,31 +556,67 @@ export default function PostPage({route}) {
     navigation.goBack();
   }, [dispatch, navigation, vm.isImageFullScreen]);
 
+  /** “한 번 탭” 토글 */
+  const toggleChrome = useCallback(() => {
+    setIsChromeHidden(prev => {
+      const next = !prev;
+
+      if (next) {
+        // ✅ 숨길 때: 전부 닫고 presented 플래그 리셋
+        dismissAllSheets();
+      } else {
+        // ✅ 다시 보여줄 때: desc만 1번 present
+        requestAnimationFrame(() => {
+          didPresentDescRef.current = false;
+          presentDescSheet();
+          descSheetRef.current?.snapToIndex?.(0);
+        });
+      }
+
+      return next;
+    });
+  }, [dismissAllSheets, presentDescSheet]);
+
   if (!postFromStore) return <SafeAreaView style={{flex: 1}} />;
 
   const confirmTitle =
     pendingDeleteType === 'image'
-      ? '이미지를 삭제할까요?'
+      ? '현재 미디어를 삭제할까요?'
       : pendingDeleteType === 'post'
       ? '게시글을 삭제할까요?'
       : '댓글을 삭제할까요?';
 
   const confirmMessage =
     pendingDeleteType === 'image'
-      ? '삭제한 이미지는 복구할 수 없어요.'
+      ? '삭제한 미디어는 복구할 수 없어요.'
       : pendingDeleteType === 'post'
-      ? '게시글과 이미지가 모두 삭제되며 복구할 수 없어요.'
+      ? '게시글과 미디어가 모두 삭제되며 복구할 수 없어요.'
       : '삭제한 댓글은 복구할 수 없어요.';
 
   return (
     <SafeAreaView edges={[]} style={styles.container}>
-      {/* ✅ 통합 삭제 확인 모달(이미지/게시글/댓글) */}
+      {/* ✅ 통합 삭제 확인 모달 */}
       <ImageDeleteModal
         visible={confirmVisible}
         onClose={closeConfirmModal}
         onConfirm={confirmDelete}
         title={confirmTitle}
         subText={confirmMessage}
+      />
+
+      {/* ✅ 우상단 옵션 바텀시트 (분리 컴포넌트 적용) */}
+      <PostOptionBottomSheet
+        sheetRef={optionSheetRef}
+        currentMediaUri={currentMediaUri}
+        currentLabel={currentLabel}
+        isVideo={isVideo}
+        mediaCount={mediaCount}
+        isBusy={isOptionBusy}
+        onSaveCurrent={actionSaveCurrent}
+        onSaveAll={actionSaveAll}
+        onDeleteCurrentImage={actionDeleteCurrentImage}
+        onDeletePost={actionDeletePost}
+        CameraRollAvailable={!!CameraRoll}
       />
 
       <View style={{flex: 1}}>
@@ -312,103 +627,113 @@ export default function PostPage({route}) {
           isFullScreen={vm.isImageFullScreen}
           setIsFullScreen={vm.setIsImageFullScreen}
           onSwipeFromFirstToRight={handleSwipeFromFirstToRight}
+          onSingleTap={toggleChrome}
+          isChromeHidden={isChromeHidden}
         />
 
-        <LinearGradient
-          pointerEvents="none"
-          colors={[
-            'rgba(18,18,18,0.6)',
-            'rgba(18,18,18,0.45)',
-            'rgba(18,18,18,0.25)',
-            'rgba(18,18,18,0.15)',
-            'rgba(18,18,18,0)',
-          ]}
-          locations={[0, 0.2, 0.4, 0.55, 1]}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: getResponsiveHeight(120),
-            zIndex: 5,
-          }}
-        />
-      </View>
-
-      {/* ---------------- 설명 BottomSheet ---------------- */}
-      <BottomSheetModal
-        ref={descSheetRef}
-        snapPoints={descSnapPoints}
-        handleIndicatorStyle={{backgroundColor: 'transparent'}}
-        enableContentPanningGesture={false}
-        enableHandlePanningGesture={false}
-        enablePanDownToClose={false}
-        onDismiss={() => {
-          presentDescSheet();
-          applyDescIndex(descExpanded);
-        }}
-        backdropComponent={props => (
-          <BottomSheetBackdrop
-            {...props}
-            appearsOnIndex={1}
-            disappearsOnIndex={0}
-            opacity={0.25}
-            pressBehavior="none"
+        {/* ✅ 위 그라데이션 */}
+        {!isChromeHidden && (
+          <LinearGradient
+            pointerEvents="none"
+            colors={[
+              'rgba(18,18,18,0.6)',
+              'rgba(18,18,18,0.45)',
+              'rgba(18,18,18,0.25)',
+              'rgba(18,18,18,0.15)',
+              'rgba(18,18,18,0)',
+            ]}
+            locations={[0, 0.2, 0.4, 0.55, 1]}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: getResponsiveHeight(120),
+              zIndex: 5,
+            }}
           />
         )}
-        backgroundStyle={{backgroundColor: 'transparent'}}>
-        <Pressable onPress={toggleDescByClick} style={{flex: 1}}>
-          <LinearGradient
-            colors={[
-              'rgba(18,18,18,0)',
-              'rgba(18,18,18,0.2)',
-              'rgba(18,18,18,0.42)',
-              'rgba(18,18,18,0.6)',
-              'rgba(18,18,18,0.76)',
-            ]}
-            locations={[0, 0.3, 0.5, 0.7, 1]}
-            style={styles.descSheet}>
-            <View style={styles.descHeader}>
-              <Image
-                style={styles.avatar}
-                source={
-                  safeMemory.authorImage
-                    ? {uri: safeMemory.authorImage}
-                    : require('../../../assets/images/default.png')
-                }
-              />
-              <Text style={styles.author} numberOfLines={1}>
-                {safeMemory.authorName}
-              </Text>
+      </View>
 
-              <View style={{flex: 1}} />
-
-              <TouchableOpacity
-                onPress={openCommentSheet}
-                activeOpacity={0.85}
-                style={styles.commentBtn}>
+      {/* ✅ 아래 설명창 */}
+      {!isChromeHidden && (
+        <BottomSheetModal
+          ref={descSheetRef}
+          snapPoints={descSnapPoints}
+          handleIndicatorStyle={{backgroundColor: 'transparent'}}
+          enableContentPanningGesture={false}
+          enableHandlePanningGesture={false}
+          enablePanDownToClose={false}
+          // ✅ 여기서 다시 present 하지 말기 (유령 모달 방지)
+          onDismiss={() => {
+            didPresentDescRef.current = false;
+          }}
+          backdropComponent={props => (
+            <BottomSheetBackdrop
+              {...props}
+              appearsOnIndex={1}
+              disappearsOnIndex={0}
+              opacity={0.25}
+              pressBehavior="none"
+            />
+          )}
+          backgroundStyle={{backgroundColor: 'transparent'}}>
+          <Pressable
+            onPress={toggleDescByClick}
+            hitSlop={{top: 16, bottom: 16, left: 16, right: 16}}
+            style={styles.descTapArea}>
+            <LinearGradient
+              colors={[
+                'rgba(18,18,18,0)',
+                'rgba(18,18,18,0.2)',
+                'rgba(18,18,18,0.42)',
+                'rgba(18,18,18,0.6)',
+                'rgba(18,18,18,0.76)',
+              ]}
+              locations={[0, 0.3, 0.5, 0.7, 1]}
+              style={styles.descSheet}>
+              <View style={styles.descHeader}>
                 <Image
-                  source={require('../../../assets/icons/chat.png')}
-                  style={{tintColor: 'white', width: '100%', height: '100%'}}
+                  style={styles.avatar}
+                  source={
+                    safeMemory.authorImage
+                      ? {uri: safeMemory.authorImage}
+                      : require('../../../assets/images/default.png')
+                  }
                 />
-              </TouchableOpacity>
-            </View>
+                <Text style={styles.author} numberOfLines={1}>
+                  {safeMemory.authorName}
+                </Text>
 
-            <ScrollView
-              scrollEnabled={descExpanded}
-              showsVerticalScrollIndicator={false}>
-              <Text
-                style={styles.descContent}
-                numberOfLines={descExpanded ? undefined : 2}>
-                {safeMemory.content}
-              </Text>
-            </ScrollView>
-          </LinearGradient>
-        </Pressable>
-      </BottomSheetModal>
+                <View style={{flex: 1}} />
 
-      {/* ---------------- 댓글 BottomSheet ---------------- */}
-      {!vm.isImageFullScreen && (
+                <TouchableOpacity
+                  onPress={openCommentSheet}
+                  activeOpacity={0.85}
+                  style={styles.commentBtn}>
+                  <Image
+                    source={require('../../../assets/icons/chat.png')}
+                    style={{tintColor: 'white', width: '100%', height: '100%'}}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView
+                scrollEnabled={descExpanded}
+                showsVerticalScrollIndicator={false}>
+                <Text
+                  style={styles.descContent}
+                  numberOfLines={descExpanded ? undefined : 2}>
+                  {safeMemory.content}
+                </Text>
+              </ScrollView>
+            </LinearGradient>
+          </Pressable>
+        </BottomSheetModal>
+      )}
+
+      {/* ✅ 댓글 BottomSheet */}
+      {!vm.isImageFullScreen && !isChromeHidden && (
         <MemoryDetailBottomSheet
           sheetRef={commentSheetRef}
           memory={safeMemory}
@@ -417,22 +742,9 @@ export default function PostPage({route}) {
           familyUsers={vm.familyUsers}
           commentText={vm.commentText}
           onChangeComment={vm.setCommentText}
-
-          /**
-           * ✅ (중요) BottomSheet에서 onSubmitComment({content, mentionUserIds})로 호출함
-           * vm.handleSendComment가 payload를 받게 맞춰야 함
-           */
           onSubmitComment={vm.handleSendComment}
-
-          // ✅ 여기서 "댓글 삭제 confirm"을 열어줌
           onDeleteComment={openDeleteCommentConfirm}
           snapPoints={['75%']}
-
-          /**
-           * ✅ (중요) 본인 제외 필터를 확실히 하기 위해 myUserId 전달
-           * - 없으면 BottomSheet가 user.userId를 쓰지만,
-           *   vm.user 로딩 타이밍 이슈나 타입 꼬임 방지용으로 명시 권장
-           */
           myUserId={vm.user?.userId}
         />
       )}
@@ -449,6 +761,7 @@ export default function PostPage({route}) {
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#000'},
 
+  /** header */
   headerTitle: {
     fontSize: HEADER_STYLES.defaultTitleFontSize,
     fontFamily: HEADER_STYLES.defaultTitleFontFamily,
@@ -456,7 +769,6 @@ const styles = StyleSheet.create({
     lineHeight: getResponsiveHeight(26),
     textAlign: 'center',
   },
-
   headerIcon: {
     width: HEADER_STYLES.headerRightIconWidth,
     height: HEADER_STYLES.headerRightIconHeight,
@@ -465,6 +777,11 @@ const styles = StyleSheet.create({
     tintColor: '#fff',
   },
 
+  /** desc sheet */
+  descTapArea: {
+    flex: 1,
+    // paddingBottom: getResponsiveHeight(10),
+  },
   descSheet: {
     flex: 1,
     paddingHorizontal: getResponsiveWidth(16),
@@ -472,44 +789,30 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: getResponsiveWidth(22),
     borderTopRightRadius: getResponsiveWidth(22),
   },
-
   descHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: getResponsiveHeight(10),
   },
-
   avatar: {
     width: getResponsiveWidth(28),
     height: getResponsiveWidth(28),
     borderRadius: getResponsiveWidth(14),
   },
-
   author: {
     marginLeft: getResponsiveWidth(8),
     color: 'white',
     fontSize: getResponsiveFontSize(15),
     fontFamily: 'Pretendard-SemiBold',
   },
-
   commentBtn: {
     width: getResponsiveIconSize(22),
     height: getResponsiveIconSize(22),
   },
-
   descContent: {
     color: 'rgba(255,255,255,0.92)',
     fontSize: getResponsiveFontSize(14),
     lineHeight: getResponsiveHeight(22),
     fontFamily: 'Pretendard-Medium',
-  },
-});
-
-const modalTextStyles = StyleSheet.create({
-  loading: {
-    marginTop: getResponsiveHeight(10),
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-Medium',
-    color: 'rgba(255,255,255,0.7)',
   },
 });

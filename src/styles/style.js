@@ -10,8 +10,8 @@ import {
 export const BACKGROUND_COLORS = {
   primaryBg: '#FFC84D',
   secondaryBg: '#F9F9F9',
-  overlayBg: 'rgba(17,24,39,0.45)',
-
+  overlayBg:
+    Platform.OS === 'android' ? 'rgba(17,24,39,0.55)' : 'rgba(17,24,39,0.45)',
   // overlayBg: Platform.OS === 'android' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(0, 0, 0, 0.22)',
 };
 

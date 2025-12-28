@@ -365,7 +365,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: H_PADDING,
     paddingTop: getResponsiveHeight(10),
   },
-
   headerTitle: {
     fontSize: HEADER_STYLES.defaultTitleFontSize,
     fontFamily: HEADER_STYLES.defaultTitleFontFamily,
@@ -374,9 +373,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textAlignVertical: 'center',
   },
-
   headerRightBtn: {
-    paddingHorizontal: getResponsiveWidth(10),
+    // paddingHorizontal: getResponsiveWidth(6),
     paddingVertical: getResponsiveHeight(6),
   },
   checkIcon: {
@@ -385,11 +383,9 @@ const styles = StyleSheet.create({
     marginRight: HEADER_STYLES.headerRightIconRightPadding,
     resizeMode: 'contain',
   },
-
   listWrap: {
     alignSelf: 'stretch',
   },
-
   grid: {
     paddingBottom: GRID_GAP,
   },
@@ -398,7 +394,6 @@ const styles = StyleSheet.create({
     gap: GRID_GAP,
     marginBottom: GRID_GAP,
   },
-
   tile: {
     width: ITEM_SIZE,
     height: ITEM_SIZE,
@@ -414,13 +409,11 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-
   placeholder: {
     width: ITEM_SIZE,
     height: ITEM_SIZE,
     opacity: 0, // ✅ 자리를 비워서 “움직임”이 더 잘 보이게
   },
-
   orderChip: {
     position: 'absolute',
     top: getResponsiveHeight(6),
@@ -435,7 +428,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFF',
   },
-
   videoPill: {
     position: 'absolute',
     bottom: getResponsiveHeight(6),

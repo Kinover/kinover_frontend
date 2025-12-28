@@ -343,10 +343,11 @@ export default function CreatePostPage({navigation, route}) {
         <TouchableOpacity
           onPress={handleUpload}
           disabled={isUploading}
-          style={{marginRight: getResponsiveWidth(10)}}>
+          style={styles.headerRightBtn}
+          activeOpacity={0.85}>
           <Image
             source={require('../../../assets/icons/check.png')}
-            style={[styles.headerCheckIcon, isUploading && {opacity: 0.4}]}
+            style={styles.checkIcon}
           />
         </TouchableOpacity>
       ),
@@ -570,13 +571,19 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: SIDE_PADDING,
   },
+
   headerText: {
     fontSize: HEADER_STYLES.defaultTitleFontSize,
     fontFamily: HEADER_STYLES.defaultTitleFontFamily,
+    color: HEADER_STYLES.defaultTitleFontColor,
+    lineHeight: getResponsiveHeight(26),
+    textAlign: 'center',
+    textAlignVertical: 'center',
   },
-  headerCheckIcon: {
+  checkIcon: {
     width: HEADER_STYLES.headerRightIconWidth,
     height: HEADER_STYLES.headerRightIconHeight,
+    marginRight: HEADER_STYLES.headerRightIconRightPadding,
     resizeMode: 'contain',
   },
 
@@ -616,6 +623,10 @@ const styles = StyleSheet.create({
     borderTopColor: 'transparent',
     borderBottomColor: 'transparent',
     marginLeft: 4,
+  },
+  headerRightBtn: {
+    // paddingHorizontal: getResponsiveWidth(6),
+    paddingVertical: getResponsiveHeight(6),
   },
 
   videoBadge: {

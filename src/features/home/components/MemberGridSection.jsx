@@ -111,7 +111,7 @@ export default function MemberGridSection({
       const shellSize = Math.min(shellMax, itemWidth);
 
       const ringSize = shellSize * 0.985;
-      const imageSizeWithEmotion = shellSize * 0.74;
+      const imageSizeWithEmotion = shellSize * 0.73;
       const imageSizeNoEmotion = shellSize * 0.88;
 
       const dot = Math.max(8, Math.round(shellSize * 0.22));
@@ -169,6 +169,9 @@ export default function MemberGridSection({
                   height: emotionImage
                     ? imageSizeWithEmotion
                     : imageSizeNoEmotion,
+                  top: emotionImage ? 11.5 : null,
+                  borderWidth: emotionImage ? 2 : null,
+                  borderColor: emotionImage ? 'white' : null,
                 },
               ]}
             />
@@ -193,7 +196,7 @@ export default function MemberGridSection({
                   width: dot,
                   height: dot,
                   borderRadius: dot / 2,
-                  top: dotTop,
+                  top: emotionImage ? dotTop : dotTop,
                   right: dotRight,
                 },
               ]}
@@ -268,7 +271,8 @@ export default function MemberGridSection({
               activeOpacity={0.85}
               style={[styles.iconButton, isRefreshing && {opacity: 0.6}]}>
               <Image
-                source={require('../../../assets/icons/add-contact.png')}
+                // source={require('../../../assets/icons/add-contact.png')}
+                source={require('../../../assets/icons/userPlus.png')}
                 style={styles.iconButtonIcon}
               />
             </TouchableOpacity>
@@ -370,8 +374,8 @@ const styles = StyleSheet.create({
     borderColor: '#ECEFF3',
   },
   iconButtonIcon: {
-    width: '50%',
-    height: '50%',
+    width: '60%',
+    height: '60%',
     tintColor: '#6B7280',
     resizeMode: 'contain',
   },
@@ -418,6 +422,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     resizeMode: 'contain',
     zIndex: 1,
+    bottom: getResponsiveHeight(0),
   },
 
   dotBase: {

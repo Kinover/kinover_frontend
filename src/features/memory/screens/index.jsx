@@ -1,13 +1,8 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/screens/memory/MemoryScreen.js
+
 import React, {useMemo, useState, useRef, useCallback, useEffect} from 'react';
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  Animated,
-} from 'react-native';
+import {View, StyleSheet, TouchableOpacity, Image, Animated} from 'react-native';
 
 import MemoryFeed from './MemoryFeedScreen';
 import AnimatedAlbumTabSelector from '../components/AlbumTabSelector';
@@ -23,23 +18,19 @@ import {
 import {useMemoryScreen} from '../hooks/useMemoryScreen';
 import PeriodFilterModal from '../components/PeriodFilterModal';
 
-// ✅ 탭바 숨김 제어 훅
 import {useTabBarVisibility} from 'app/navigation/animatedTabBar';
 
-// ✅ Redux 탭을 단일 소스로
 import {useDispatch, useSelector} from 'react-redux';
 import {setMemorySelectedTab} from '../store/memorySlice';
 
-// ✅ HAPTIC
 import {hapticLight} from '../../../utils/haptic';
 import {useFocusEffect} from '@react-navigation/native';
 
-useFocusEffect;
+import AnimatedRe, {useAnimatedStyle, withTiming} from 'react-native-reanimated';
 
 export default function MemoryScreen() {
   const dispatch = useDispatch();
 
-  // ✅ 탭: Redux에서 가져오기 (단일 소스)
   const selectedTab = useSelector(state => state.memory.ui.selectedTab);
 
   const {
@@ -51,74 +42,67 @@ export default function MemoryScreen() {
     navigateToImageSelect,
   } = useMemoryScreen();
 
-  // 🔹 기간 필터 상태
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
-  // ✅ 탭바 숨김 sharedValue
   const {tabBarTranslateY} = useTabBarVisibility();
 
-  useFocusEffect(
-    useCallback(() => {
-      // ✅ 게시글 화면 갔다가 돌아올 때도 무조건 복구
-      requestAnimationFrame(() => {
-        forceShowHeaderAndTabBar();
-        // 혹시 progress가 꼬였을 때 대비로 showHeader도 한 번 더
-        showHeader();
-        showTabBar();
-      });
-
-      return () => {};
-    }, [forceShowHeaderAndTabBar, showHeader, showTabBar]),
-  );
-
-  // ✅ 스크롤 방향 감지용 ref
+  // =========================
+  // ✅ 상단 탭셀렉터 숨김 애니메이션 (RN Animated)
+  // =========================
   const lastYRef = useRef(0);
   const lastToggleTsRef = useRef(0);
 
-  // =========================
-  // ✅ 상단 탭셀렉터 숨김 애니메이션
-  // =========================
-  const headerHeightRef = useRef(0);
+  // ✅ “실제 헤더 높이”는 애니메이션 래퍼가 아니라 "내용물"에서 측정해야 함
+  const [headerHeight, setHeaderHeight] = useState(getResponsiveHeight(70));
+  const headerHeightRef = useRef(headerHeight);
+  useEffect(() => {
+    headerHeightRef.current = headerHeight;
+  }, [headerHeight]);
+
   const headerProgress = useRef(new Animated.Value(0)).current; // 0: 보임, 1: 숨김
-  const headerHiddenRef = useRef(false);
 
   const showHeader = useCallback(() => {
-    if (!headerHiddenRef.current) return;
-    headerHiddenRef.current = false;
-
-    Animated.timing(headerProgress, {
-      toValue: 0,
-      duration: 180,
-      useNativeDriver: false, // height 때문에 false
-    }).start();
+    headerProgress.stopAnimation(cur => {
+      if (cur <= 0.001) return;
+      Animated.timing(headerProgress, {
+        toValue: 0,
+        duration: 180,
+        useNativeDriver: false,
+      }).start();
+    });
   }, [headerProgress]);
 
   const hideHeader = useCallback(() => {
-    if (headerHiddenRef.current) return;
-    headerHiddenRef.current = true;
-
-    Animated.timing(headerProgress, {
-      toValue: 1,
-      duration: 180,
-      useNativeDriver: false, // height 때문에 false
-    }).start();
+    headerProgress.stopAnimation(cur => {
+      if (cur >= 0.999) return;
+      Animated.timing(headerProgress, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: false,
+      }).start();
+    });
   }, [headerProgress]);
 
-  const onHeaderLayout = useCallback(e => {
+  // ✅ 측정은 “내용물 View”에 붙이기 + 0/작은 값 무시 + 최대값 유지
+  const onHeaderContentLayout = useCallback(e => {
     const h = e?.nativeEvent?.layout?.height ?? 0;
-    if (h > 0) headerHeightRef.current = h;
+    if (h <= 0) return;
+
+    // 애니메이션 과정에서 찌그러진 값이 들어오면 무시하고, 최대값만 유지
+    setHeaderHeight(prev => {
+      const next = Math.max(prev || 0, h);
+      return Math.abs(next - prev) > 0.5 ? next : prev;
+    });
   }, []);
 
-  // ✅ period label
   const periodLabel = useMemo(() => {
     if (!startDate || !endDate) return null;
     const formatDot = s => s.replace(/-/g, '.');
     return `${formatDot(startDate)} ~ ${formatDot(endDate)}`;
   }, [startDate, endDate]);
 
-  // ✅ 탭바 보이기/숨기기 함수
   const showTabBar = useCallback(() => {
     tabBarTranslateY.value = 0;
   }, [tabBarTranslateY]);
@@ -127,33 +111,58 @@ export default function MemoryScreen() {
     tabBarTranslateY.value = 1;
   }, [tabBarTranslateY]);
 
-  // ✅ ✅ ✅ 핵심: "컨텍스트 변경" 시 헤더/탭바/스크롤 기준값을 강제로 정상화
-  const forceShowHeaderAndTabBar = useCallback(() => {
-    // 1) 탭바/헤더 무조건 보여주기
-    showTabBar();
+  // =========================
+  // ✅ FAB도 탭바랑 "동시에" 숨김/등장
+  // =========================
+  const FAB_SIZE = getResponsiveIconSize(60);
+  const FAB_RIGHT = getResponsiveWidth(18);
+  const FAB_BOTTOM = getResponsiveHeight(110);
 
-    headerHiddenRef.current = false;
+  const TABBAR_H = getResponsiveHeight(92);
+  const FAB_HIDE_EXTRA = getResponsiveHeight(14);
+  const FAB_HIDE_DISTANCE = TABBAR_H + FAB_HIDE_EXTRA;
+
+  const [fabHidden, setFabHidden] = useState(false);
+
+  const showTabBarWithFab = useCallback(() => {
+    setFabHidden(false);
+    showTabBar();
+  }, [showTabBar]);
+
+  const hideTabBarWithFab = useCallback(() => {
+    setFabHidden(true);
+    hideTabBar();
+  }, [hideTabBar]);
+
+  const forceShowHeaderAndTabBar = useCallback(() => {
+    showTabBarWithFab();
+
     headerProgress.stopAnimation?.();
     headerProgress.setValue(0);
 
-    // 2) 스크롤 기준값/쿨타임 초기화
     lastYRef.current = 0;
-
-    // 쿨타임 걸려서 showHeader가 무시되는 케이스 방지
     lastToggleTsRef.current = 0;
-  }, [showTabBar, headerProgress]);
+  }, [showTabBarWithFab, headerProgress]);
 
-  // ✅ MemoryFeed에서 올라오는 스크롤 이벤트로 탭바 + 상단 탭셀렉터 제어
+  useFocusEffect(
+    useCallback(() => {
+      requestAnimationFrame(() => {
+        forceShowHeaderAndTabBar();
+        showHeader();
+        showTabBarWithFab();
+      });
+      return () => {};
+    }, [forceShowHeaderAndTabBar, showHeader, showTabBarWithFab]),
+  );
+
   const handleFeedScroll = useCallback(
     e => {
       const y = e?.nativeEvent?.contentOffset?.y ?? 0;
 
-      // ✅ 맨 위 도달하면 탭바/헤더 무조건 보이기
-      const TOP_Y = 0;
-      if (y <= TOP_Y) {
+      if (y <= 0) {
         lastYRef.current = y;
         lastToggleTsRef.current = Date.now();
-        showTabBar();
+        showTabBarWithFab();
         showHeader();
         return;
       }
@@ -167,49 +176,41 @@ export default function MemoryScreen() {
 
       const THRESHOLD = 8;
 
-      // 아래로 스크롤: 탭바 숨김 + 헤더 숨김
       if (dy > THRESHOLD) {
         lastToggleTsRef.current = now;
-        hideTabBar();
+        hideTabBarWithFab();
         hideHeader();
         return;
       }
 
-      // 위로 스크롤: 탭바 보이기 + 헤더 보이기
       if (dy < -THRESHOLD) {
         lastToggleTsRef.current = now;
-        showTabBar();
+        showTabBarWithFab();
         showHeader();
       }
     },
-    [hideTabBar, showTabBar, hideHeader, showHeader],
+    [hideHeader, showHeader, hideTabBarWithFab, showTabBarWithFab],
   );
 
-  // ✅ 기간 적용
   const handleApplyPeriod = useCallback(
     ({startDate: s, endDate: e}) => {
       setStartDate(s || '');
       setEndDate(e || '');
       setIsFilterVisible(false);
 
-      // ✅ 기간 바뀌면 무조건 헤더/탭바 복구(탭셀렉터 “영영 안 나옴” 방지)
       requestAnimationFrame(() => forceShowHeaderAndTabBar());
     },
     [forceShowHeaderAndTabBar],
   );
 
-  // ✅ 탭 변경 (버튼/스와이프 포함)
   const onSelectTab = useCallback(
     tab => {
       dispatch(setMemorySelectedTab(tab));
-
-      // ✅ 탭 바뀌는 순간에도 헤더/탭바 복구
       requestAnimationFrame(() => forceShowHeaderAndTabBar());
     },
     [dispatch, forceShowHeaderAndTabBar],
   );
 
-  // ✅ 카테고리 선택도 여기서 감싸서 복구까지 같이
   const handleSelectCategoryWithReset = useCallback(
     cat => {
       handleSelectCategory?.(cat);
@@ -218,25 +219,24 @@ export default function MemoryScreen() {
     [handleSelectCategory, forceShowHeaderAndTabBar],
   );
 
-  // ✅ 화면 나갈 때 탭바/헤더 복구
   useEffect(() => {
     return () => {
       tabBarTranslateY.value = 0;
-      headerHiddenRef.current = false;
       headerProgress.setValue(0);
+
       lastYRef.current = 0;
       lastToggleTsRef.current = 0;
+
+      setFabHidden(false);
     };
   }, [tabBarTranslateY, headerProgress]);
 
-  // ✅ 하단 플로팅 버튼 핸들러 (햅틱 포함)
   const handleFabPress = useCallback(() => {
     hapticLight();
     navigateToImageSelect?.();
   }, [navigateToImageSelect]);
 
-  // ✅ 헤더 애니메이션 스타일(공간까지 접기)
-  const headerHeight = headerHeightRef.current || getResponsiveHeight(70);
+  // ✅ 헤더 애니메이션 스타일
   const headerAnimatedStyle = {
     height: headerProgress.interpolate({
       inputRange: [0, 1],
@@ -257,16 +257,30 @@ export default function MemoryScreen() {
     overflow: 'hidden',
   };
 
+  const fabAnimatedStyle = useAnimatedStyle(() => {
+    const v = tabBarTranslateY.value;
+    return {
+      transform: [
+        {translateY: withTiming(v * FAB_HIDE_DISTANCE, {duration: 180})},
+        {scale: withTiming(v ? 0.92 : 1, {duration: 180})},
+      ],
+      opacity: withTiming(v ? 0 : 1, {duration: 180}),
+    };
+  }, [FAB_HIDE_DISTANCE, tabBarTranslateY]);
+
   return (
     <View style={styles.container}>
-      {/* ✅ 스크롤 내리면 같이 접히는 상단 탭셀렉터 */}
-      <Animated.View onLayout={onHeaderLayout} style={headerAnimatedStyle}>
-        <AnimatedAlbumTabSelector
-          selected={selectedTab}
-          onSelect={onSelectTab}
-          onPressDateFilter={() => setIsFilterVisible(true)}
-          periodLabel={periodLabel}
-        />
+      {/* ✅ 애니메이션 래퍼(여기에 onLayout 달면 안 됨!) */}
+      <Animated.View style={headerAnimatedStyle}>
+        {/* ✅ 내용물에서 높이 측정 */}
+        <View onLayout={onHeaderContentLayout}>
+          <AnimatedAlbumTabSelector
+            selected={selectedTab}
+            onSelect={onSelectTab}
+            onPressDateFilter={() => setIsFilterVisible(true)}
+            periodLabel={periodLabel}
+          />
+        </View>
       </Animated.View>
 
       <MemoryFeed
@@ -284,15 +298,23 @@ export default function MemoryScreen() {
         onCancel={() => {}}
       />
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={handleFabPress}
-        activeOpacity={0.85}>
-        <Image
-          source={require('../../../assets/icons/posting-floating-bt.png')}
-          style={{width: '100%', height: '100%', objectFit: 'contain'}}
-        />
-      </TouchableOpacity>
+      <AnimatedRe.View
+        pointerEvents={fabHidden ? 'none' : 'auto'}
+        style={[
+          styles.fabWrap,
+          {right: FAB_RIGHT, bottom: FAB_BOTTOM, width: FAB_SIZE, height: FAB_SIZE},
+          fabAnimatedStyle,
+        ]}>
+        <TouchableOpacity
+          style={{width: '100%', height: '100%'}}
+          onPress={handleFabPress}
+          activeOpacity={0.85}>
+          <Image
+            source={require('../../../assets/icons/posting-floating-bt.png')}
+            style={{width: '100%', height: '100%', objectFit: 'contain'}}
+          />
+        </TouchableOpacity>
+      </AnimatedRe.View>
 
       <PeriodFilterModal
         visible={isFilterVisible}
@@ -312,12 +334,8 @@ const styles = StyleSheet.create({
     paddingBottom: getResponsiveHeight(4),
   },
   rangeText: {fontSize: getResponsiveFontSize(12), color: '#777'},
-
-  fab: {
+  fabWrap: {
     position: 'absolute',
-    bottom: getResponsiveHeight(110),
-    right: getResponsiveWidth(18),
-    width: getResponsiveIconSize(60),
-    height: getResponsiveIconSize(60),
+    zIndex: 99,
   },
 });

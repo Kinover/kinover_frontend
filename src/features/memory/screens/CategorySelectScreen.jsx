@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center',
   },
   headerRight: {
-    marginRight: getResponsiveWidth(10),
+    // marginRight: getResponsiveWidth(10),
   },
   checkImage: {
     width: HEADER_STYLES.headerRightIconWidth,

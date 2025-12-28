@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     fontSize:
       Platform.OS === 'android'
         ? getResponsiveFontSize(14)
-        : getResponsiveFontSize(15),
+        : getResponsiveFontSize(14),
     color: '#444',
     marginBottom: getResponsiveHeight(7),
   },

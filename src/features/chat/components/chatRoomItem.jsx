@@ -1,3 +1,4 @@
+// ChatRoomItem.jsx
 import React from 'react';
 import {Pressable, Text, View, StyleSheet} from 'react-native';
 import {
@@ -8,7 +9,7 @@ import {
 } from '../../../utils/responsive';
 import GroupAvatar from './groupAvatar';
 import {useDispatch, useSelector} from 'react-redux';
-import {markRoomRead, setActiveChatRoom} from '../store/chatRoomSlice';
+import {markRoomRead} from '../store/chatRoomSlice';
 import {getChatRoomTitle} from '../utils/chatRoomTitleHelper';
 
 function ChatRoomItem({chatRoom, userId, navigation}) {
@@ -40,8 +41,9 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
     latestMessageContent || '지금 첫 메시지를 보내 대화를 시작해보세요!';
 
   const onPress = () => {
+    // ✅ UX: 눌렀을 때 즉시 뱃지 0 (서버 read는 "채팅방 화면"에서 확실히 처리)
     dispatch(markRoomRead(chatRoomId));
-    dispatch(setActiveChatRoom(chatRoomId)); // ✅ “지금 보고있는 방” 설정
+
     navigation.navigate(screen, {chatRoom, title, userId});
   };
 

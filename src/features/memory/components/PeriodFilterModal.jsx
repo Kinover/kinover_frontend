@@ -38,7 +38,7 @@ export default function PeriodFilterModal({
   const [month, setMonth] = useState(today.getMonth());
 
   // =========================
-  // ✅ 1) 카드 슬라이드 전환 (이미 하던 것)
+  // ✅ 1) 카드 슬라이드 전환
   // =========================
   const cardOpacity = useRef(new Animated.Value(1)).current;
   const cardTranslateX = useRef(new Animated.Value(0)).current;
@@ -60,7 +60,7 @@ export default function PeriodFilterModal({
       const w = segmentW.current;
       if (!w) return;
 
-      const padding = getResponsiveHeight(4); // segment padding이랑 동일
+      const padding = getResponsiveHeight(4);
       const innerW = w - padding * 2;
       const tabW = innerW / 3;
 
@@ -87,8 +87,6 @@ export default function PeriodFilterModal({
     cardOpacity.setValue(1);
     cardTranslateX.setValue(0);
     isAnimatingRef.current = false;
-
-    // thumb 초기화는 layout 잡힌 뒤에 onLayout에서 처리
   }, [visible, initialWeeks, today, cardOpacity, cardTranslateX]);
 
   const {startDate, endDate} = useMemo(() => {
@@ -111,7 +109,6 @@ export default function PeriodFilterModal({
     nextMode => {
       if (isAnimatingRef.current) return;
       if (nextMode === mode) {
-        // mode랑 같아도 thumb는 안전하게 맞춰줌(레이아웃 후 재동기화용)
         animateThumbTo(nextMode);
         setPendingMode(nextMode);
         return;
@@ -119,11 +116,9 @@ export default function PeriodFilterModal({
 
       isAnimatingRef.current = true;
 
-      // ✅ 0) 세그먼트 알약 먼저 슥 이동(즉시)
       setPendingMode(nextMode);
       animateThumbTo(nextMode);
 
-      // ✅ 1) 카드 페이드아웃 + 살짝 왼쪽
       Animated.parallel([
         Animated.timing(cardOpacity, {
           toValue: 0,
@@ -136,10 +131,8 @@ export default function PeriodFilterModal({
           useNativeDriver: true,
         }),
       ]).start(() => {
-        // ✅ 2) 내용 교체
         setMode(nextMode);
 
-        // ✅ 3) 새 카드 오른쪽에서 들어오기
         cardTranslateX.setValue(getResponsiveWidth(10));
         Animated.parallel([
           Animated.timing(cardOpacity, {
@@ -162,7 +155,6 @@ export default function PeriodFilterModal({
 
   const handleChangeMonth = useCallback(
     diff => {
-      // 월별 모드로 전환(애니메이션)
       animateToMode('MONTH');
 
       let newYear = year;
@@ -197,8 +189,6 @@ export default function PeriodFilterModal({
       if (!w) return;
       segmentW.current = w;
 
-      // ✅ 레이아웃 잡히면 현재 pendingMode 기준으로 thumb 위치 맞추기
-      // (모달 첫 오픈 시 0에 붙어있는 문제 방지)
       requestAnimationFrame(() => {
         animateThumbTo(pendingMode);
       });
@@ -220,7 +210,7 @@ export default function PeriodFilterModal({
         transform: [{translateX: thumbX}],
       },
     ];
-  }, [thumbX, padding, modeIndex]); // modeIndex 넣어야 리렌더 때 width 계산 갱신
+  }, [thumbX, padding, modeIndex]);
 
   return (
     <CustomModal
@@ -231,9 +221,8 @@ export default function PeriodFilterModal({
       confirmText="적용하기"
       closeText="취소">
       <View style={styles.container}>
-        {/* ✅ 세그먼트 탭 (알약 슬라이드) */}
+        {/* ✅ 세그먼트 탭 */}
         <View style={styles.segment} onLayout={onSegmentLayout}>
-          {/* 흰색 알약(thumb) */}
           <Animated.View pointerEvents="none" style={thumbStyle} />
 
           <SegmentTab
@@ -253,7 +242,7 @@ export default function PeriodFilterModal({
           />
         </View>
 
-        {/* ✅ 내용 카드(슬라이드 전환) */}
+        {/* ✅ 내용 카드 */}
         <Animated.View style={cardAnimatedStyle}>
           {mode === 'RECENT' && (
             <View style={styles.card}>
@@ -280,12 +269,17 @@ export default function PeriodFilterModal({
               <Text style={styles.cardHint}>
                 최근 N주 동안의 추억을 모아볼 수 있어요.
               </Text>
+
+              {/* ✅ 날짜 범위도 가운데로 */}
+              <Text style={styles.rangeText}>
+                {startDate} {startDate && endDate ? '~' : ''} {endDate}
+              </Text>
             </View>
           )}
 
           {mode === 'MONTH' && (
             <View style={styles.card}>
-              <Text style={styles.cardTitleCenter}>월별 선택</Text>
+              <Text style={styles.cardTitle}>월별 선택</Text>
 
               <View style={styles.monthPicker}>
                 <TouchableOpacity
@@ -361,6 +355,9 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingTop: getResponsiveHeight(2),
     marginBottom: getResponsiveHeight(7),
+
+    // ✅ 전체 가운데 정렬(내용 전반)
+    alignItems: 'center',
   },
 
   // ===== Segment =====
@@ -373,8 +370,10 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(12),
     position: 'relative',
     overflow: 'hidden',
+
+    // ✅ 자체는 full width 유지하면서 내부 요소는 가운데 느낌
+    width: '100%',
   },
-  // ✅ 슬라이드되는 알약
   segmentThumb: {
     position: 'absolute',
     top: getResponsiveHeight(4),
@@ -391,12 +390,13 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 2, // thumb 위에 텍스트가 보이게
+    zIndex: 2,
   },
   segmentText: {
-    fontSize: getResponsiveFontSize(12),
+    fontSize: getResponsiveFontSize(13),
     color: '#6B7280',
     fontFamily: 'Pretendard-Medium',
+    textAlign: 'center',
   },
   segmentTextActive: {
     color: '#111827',
@@ -413,16 +413,15 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(12),
     paddingHorizontal: getResponsiveWidth(12),
     gap: getResponsiveHeight(8),
+
+    // ✅ 카드 내부 전부 가운데 정렬
+    alignItems: 'center',
   },
   cardTitle: {
     fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-SemiBold',
     color: '#111827',
-  },
-  cardTitleCenter: {
-    fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#111827',
+    textAlign: 'center',
     alignSelf: 'center',
   },
   cardHint: {
@@ -430,12 +429,25 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     fontFamily: 'Pretendard-Regular',
     lineHeight: getResponsiveHeight(16),
+    textAlign: 'center',
+  },
+
+  // ✅ (선택) 범위 텍스트도 가운데
+  rangeText: {
+    fontSize: getResponsiveFontSize(11.5),
+    color: '#6B7280',
+    fontFamily: 'Pretendard-Regular',
+    textAlign: 'center',
   },
 
   // ===== Chips =====
   chipRow: {
     flexDirection: 'row',
     gap: getResponsiveWidth(8),
+    width: '100%',
+
+    // ✅ row 자체도 가운데로
+    justifyContent: 'center',
   },
   chip: {
     flex: 1,
@@ -455,6 +467,7 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(12.5),
     color: '#4B5563',
     fontFamily: 'Pretendard-Medium',
+    textAlign: 'center',
   },
   chipTextActive: {
     color: '#fff',
@@ -472,6 +485,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.015)',
     paddingVertical: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(10),
+    width: '100%',
   },
   monthBtn: {
     width: getResponsiveWidth(36),
@@ -487,19 +501,23 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(22),
     color: '#111827',
     includeFontPadding: false,
+    textAlign: 'center',
   },
   monthCenter: {
     alignItems: 'center',
     gap: getResponsiveHeight(2),
+    flex: 1, // ✅ 가운데 영역 넓게 잡아서 진짜 중앙 느낌
   },
   monthMain: {
     fontSize: getResponsiveFontSize(14),
     color: '#111827',
     fontFamily: 'Pretendard-SemiBold',
+    textAlign: 'center',
   },
   monthRange: {
     fontSize: getResponsiveFontSize(11),
     color: '#6B7280',
     fontFamily: 'Pretendard-Regular',
+    textAlign: 'center',
   },
 });

@@ -9,7 +9,6 @@ import {
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchChatRoomListThunk} from '../store/chatRoomThunk';
-// import ChatRoomItem from '../components/ChatRoomItem';
 import ChatRoomItem from '../components/ChatRoomItem';
 import {
   getResponsiveHeight,
@@ -19,10 +18,7 @@ import {
 } from '../../../utils/responsive';
 import FastImage from '@d11/react-native-fast-image';
 import YellowSpinner from '../../../components/YellowSpinner';
-// import SwipeNavigator from 'components/SwipeNavigator';
 import {EMPTY_STYLE} from 'styles/style';
-
-// ✅ HAPTIC (경로는 네 프로젝트에 맞게 유지/조정)
 import {hapticLight} from '../../../utils/haptic';
 
 export default function CommunicationScreen({navigation}) {
@@ -32,17 +28,19 @@ export default function CommunicationScreen({navigation}) {
   const {chatRoomList, loading, listRevision} = useSelector(s => s.chatRoom);
   const [refreshing, setRefreshing] = useState(false);
 
-  const load = useCallback(() => {
+  // ✅ async로 만들어서 RefreshControl이 "진짜로" 기다리게
+  const load = useCallback(async () => {
     console.log('[CommunicationScreen] load 호출', {familyId, userId});
 
     if (familyId != null && userId != null) {
       console.log('[CommunicationScreen] fetchChatRoomListThunk 디스패치');
-      dispatch(fetchChatRoomListThunk(familyId, userId));
+      return dispatch(fetchChatRoomListThunk(familyId, userId));
     } else {
       console.log('[CommunicationScreen] 조건 불만족으로 fetch 생략', {
         familyId,
         userId,
       });
+      return null;
     }
   }, [dispatch, familyId, userId]);
 
@@ -52,8 +50,11 @@ export default function CommunicationScreen({navigation}) {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await load();
-    setRefreshing(false);
+    try {
+      await load();
+    } finally {
+      setRefreshing(false);
+    }
   }, [load]);
 
   const renderItem = useCallback(
@@ -63,17 +64,12 @@ export default function CommunicationScreen({navigation}) {
     [navigation, userId],
   );
 
-  // ✅ FAB 클릭 핸들러 (햅틱 포함)
   const handleFabPress = useCallback(() => {
     hapticLight();
     navigation.navigate('채팅방생성화면');
   }, [navigation]);
 
   return (
-    // <SwipeNavigator
-    //   rightTo="일정" // 오른쪽→왼쪽 스와이프
-    //   leftTo="홈" // 필요하면 다른 화면 넣기
-    // >
     <View style={styles.container}>
       {loading && chatRoomList.length === 0 ? (
         <View style={styles.loaderWrapper}>
@@ -82,7 +78,7 @@ export default function CommunicationScreen({navigation}) {
       ) : (
         <FlatList
           data={chatRoomList}
-          key={`chatlist-${listRevision}`}
+          // ✅ key로 리마운트하지 말고 extraData만
           renderItem={renderItem}
           extraData={listRevision}
           contentContainerStyle={styles.listContent}
@@ -95,6 +91,7 @@ export default function CommunicationScreen({navigation}) {
               {'아직 채팅방이 없어요.\n가족과의 첫 대화를 시작해볼까요?'}
             </Text>
           }
+          keyExtractor={item => String(item?.chatRoomId)}
         />
       )}
 
@@ -105,7 +102,6 @@ export default function CommunicationScreen({navigation}) {
         />
       </TouchableOpacity>
     </View>
-    // </SwipeNavigator>
   );
 }
 
@@ -116,16 +112,16 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingTop: getResponsiveHeight(4),
-    paddingBottom: getResponsiveHeight(150), // 🔽 여백 살짝 줄임
-    gap: getResponsiveHeight(6), // 🔽 카드 사이 간격 줄임
+    paddingBottom: getResponsiveHeight(150),
+    gap: getResponsiveHeight(6),
   },
   noChatMessage: {
     fontSize: EMPTY_STYLE.emptyFontSize,
     fontFamily: EMPTY_STYLE.emptyFontFamily,
     color: EMPTY_STYLE.emptyColor,
     textAlign: 'center',
-    marginTop: getResponsiveHeight(80), // 🔽 살짝 위로
-    lineHeight: getResponsiveFontSize(20), // 🔽 24 → 20
+    marginTop: getResponsiveHeight(80),
+    lineHeight: getResponsiveFontSize(20),
     paddingHorizontal: getResponsiveWidth(10),
   },
   loaderWrapper: {
@@ -137,7 +133,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: getResponsiveHeight(110),
     right: getResponsiveWidth(18),
-    width: getResponsiveIconSize(60), // 🔽 75 → 60
+    width: getResponsiveIconSize(60),
     height: getResponsiveIconSize(60),
   },
 });
