@@ -60,6 +60,10 @@ const API_BASE = 'https://kinover.shop/api/chatRoom';
  * ✅ markReadThunk
  * - 서버에 lastReadAt 저장 (POST /{chatRoomId}/read)
  * - 성공 시: (1) 내 포인터 저장 (2) 목록 unreadCount 0
+ *
+ * ⚠️ userId가 화면에서 undefined로 올 수 있어서:
+ * - userId가 없으면 slice에서 포인터 저장은 스킵(에러 X)
+ * - 그래도 unreadCount 0 / 서버 저장은 정상
  */
 export const markReadThunk = createAsyncThunk(
   'chatRoom/markRead',
@@ -69,7 +73,24 @@ export const markReadThunk = createAsyncThunk(
       const rid = toId(chatRoomId);
       if (!rid) return rejectWithValue('chatRoomId가 없습니다.');
 
-      const body = {lastReadAt: toIso(lastReadAt)};
+      // ✅ 여기 중요: 서버가 LocalDateTime(= Z 없음) 기대하면 그대로 보낸다
+      // lastReadAt이 Date/ISO 등으로 들어오면, 최종적으로 "Z 없는 LocalDateTime"으로 맞춰서 보냄
+      const normalized =
+        typeof lastReadAt === 'string'
+          ? lastReadAt
+          : (() => {
+              const d = lastReadAt instanceof Date ? lastReadAt : new Date(lastReadAt);
+              if (Number.isNaN(d.getTime())) return null;
+              const pad2 = n => String(n).padStart(2, '0');
+              const pad3 = n => String(n).padStart(3, '0');
+              return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}T${pad2(
+                d.getHours(),
+              )}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}.${pad3(d.getMilliseconds())}`;
+            })();
+
+      if (!normalized) return rejectWithValue('lastReadAt이 올바르지 않습니다.');
+
+      const body = {lastReadAt: normalized};
 
       await axios.post(`${API_BASE}/${rid}/read`, body, {
         headers: {Authorization: `Bearer ${token}`},
@@ -207,7 +228,8 @@ const chatRoomSlice = createSlice({
 
           unreadCount: Number.isFinite(r.unreadCount) ? r.unreadCount : 0,
 
-          notificationOn: typeof r.notificationOn === 'boolean' ? r.notificationOn : true,
+          notificationOn:
+            typeof r.notificationOn === 'boolean' ? r.notificationOn : true,
           userChatRooms: Array.isArray(r.userChatRooms) ? r.userChatRooms : [],
         };
       });
@@ -228,7 +250,9 @@ const chatRoomSlice = createSlice({
     },
 
     setChatRoomUsers(state, action) {
-      state.chatRoomUsers = Array.isArray(action.payload) ? [...action.payload] : [];
+      state.chatRoomUsers = Array.isArray(action.payload)
+        ? [...action.payload]
+        : [];
     },
 
     setChatRoomLoading(state, action) {
@@ -330,13 +354,16 @@ const chatRoomSlice = createSlice({
     removeChatRoomFromList(state, action) {
       const rid = toId(action.payload);
 
-      state.chatRoomList = state.chatRoomList.filter(room => toId(room.chatRoomId) !== rid);
+      state.chatRoomList = state.chatRoomList.filter(
+        room => toId(room.chatRoomId) !== rid,
+      );
 
       if (state.activeChatRoomId === rid) state.activeChatRoomId = null;
       if (state.pendingTopRoomId === rid) state.pendingTopRoomId = null;
 
       if (state.readPointersByRoom?.[rid]) delete state.readPointersByRoom[rid];
-      if (state.markReadStatusByRoom?.[rid]) delete state.markReadStatusByRoom[rid];
+      if (state.markReadStatusByRoom?.[rid])
+        delete state.markReadStatusByRoom[rid];
 
       state.listRevision += 1;
     },
@@ -389,7 +416,7 @@ const chatRoomSlice = createSlice({
 
         state.markReadStatusByRoom[rid] = 'fulfilled';
 
-        // ✅ 내 포인터 즉시 반영
+        // ✅ 내 포인터 즉시 반영 (userId 없으면 스킵)
         if (userId != null && lastReadAt) {
           if (!state.readPointersByRoom[rid]) state.readPointersByRoom[rid] = {};
           state.readPointersByRoom[rid][String(userId)] = toIso(lastReadAt);
@@ -429,6 +456,26 @@ const chatRoomSlice = createSlice({
       });
   },
 });
+
+/* =========================
+ * ✅ Selectors (여기가 에러 주범 1순위)
+ * ========================= */
+
+// ✅ 방별 readPointers map
+export const selectReadPointers = (state, chatRoomId) => {
+  const rid = toId(chatRoomId);
+  if (!rid) return {};
+  return state?.chatRoom?.readPointersByRoom?.[rid] || {};
+};
+
+// ✅ 채팅 unread 총합 (앱 뱃지 합산용)
+export const selectChatUnreadTotal = state => {
+  const list = state?.chatRoom?.chatRoomList || [];
+  return list.reduce((sum, r) => {
+    const n = Number(r?.unreadCount);
+    return sum + (Number.isFinite(n) ? Math.max(0, n) : 0);
+  }, 0);
+};
 
 export const {
   bumpListRevision,

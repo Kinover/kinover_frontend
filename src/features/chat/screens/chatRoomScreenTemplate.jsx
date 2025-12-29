@@ -12,7 +12,13 @@ import useHeaderSetting from '../../../hooks/useHeaderSetting';
 import {onLeaveChat} from '../hooks/onLeaveChat';
 import {fetchMessageThunk} from '../store/messageThunk';
 import useHideTabBar from '../../../hooks/useHideTabBar';
-import {setActiveChatRoom, selectReadPointers, fetchReadPointersThunk, markReadThunk} from '../store/chatRoomSlice';
+
+import {
+  setActiveChatRoom,
+  selectReadPointers,
+  fetchReadPointersThunk,
+  markReadThunk,
+} from '../store/chatRoomSlice';
 
 import {selectRoomMeta} from '../store/messageSlice';
 import useGuide from 'hooks/useGuide';
@@ -88,6 +94,17 @@ export default function ChatRoomScreenTemplate({
 
   const chatRoomId = chatRoom?.chatRoomId;
 
+  // ✅ props userId가 undefined일 수 있음(푸시 진입에서 userId 안 넘기는 구조)
+  // 아래는 너희 프로젝트 auth/user slice에 맞춰 "내 userId" 경로를 하나로 고정해줘야 함.
+  // 일단 가장 흔한 케이스들 fallback으로 잡아둠.
+  const myUserIdFromStore =
+    useSelector(s => s?.user?.userId) ??
+    useSelector(s => s?.auth?.user?.userId) ??
+    useSelector(s => s?.userSlice?.userId) ??
+    null;
+
+  const myUserId = userId ?? myUserIdFromStore;
+
   const roomMeta = useSelector(state => selectRoomMeta(state, chatRoomId));
   const isMessageFetched = !!roomMeta?.isFetched;
   const messageList = roomMeta?.messageList ?? [];
@@ -95,7 +112,9 @@ export default function ChatRoomScreenTemplate({
   const roomUsers = useSelector(state => state.chatRoom.chatRoomUsers) || [];
 
   // ✅ readPointers: { [userId]: lastReadAt }
-  const readPointersMap = useSelector(state => selectReadPointers(state, chatRoomId));
+  const readPointersMap = useSelector(state =>
+    selectReadPointers(state, chatRoomId),
+  );
 
   const {
     flatListRef,
@@ -107,7 +126,7 @@ export default function ChatRoomScreenTemplate({
     setNoMoreMessages,
     isUserScrolling,
     isAtBottomRef,
-  } = useChatRoomScreen(chatRoom, userId, isKino);
+  } = useChatRoomScreen(chatRoom, myUserId, isKino);
 
   const chatRoomList = useSelector(state => state.chatRoom.chatRoomList);
   const currentChatRoom =
@@ -179,19 +198,22 @@ export default function ChatRoomScreenTemplate({
     if (!chatRoomId) return;
     if (!latestCreatedAtLocal) return;
 
+    // ✅ myUserId가 아직 없으면(스토어 로딩 전) 일단 서버 저장은 가능하지만,
+    // slice에서 내 포인터 즉시 반영을 못하니까 "다음번"에 다시 보내게 두는 게 안정적.
+    if (myUserId == null) return;
+
     if (lastSentReadAtRef.current === latestCreatedAtLocal) return;
 
     lastSentReadAtRef.current = latestCreatedAtLocal;
 
-    // ✅ 서버 저장 + (성공 시 slice에서 내 포인터 저장됨)
     dispatch(
       markReadThunk({
         chatRoomId,
         lastReadAt: latestCreatedAtLocal,
-        userId,
+        userId: myUserId,
       }),
     );
-  }, [chatRoomId, latestCreatedAtLocal, dispatch, userId]);
+  }, [chatRoomId, latestCreatedAtLocal, dispatch, myUserId]);
 
   // ✅ 방 들어오면 1회
   useEffect(() => {
@@ -238,7 +260,7 @@ export default function ChatRoomScreenTemplate({
           flatListRef={flatListRef}
           messageList={messageList}
           chatRoom={currentChatRoom}
-          userId={userId}
+          userId={myUserId}              // ✅ 여기 꼭 myUserId로
           isKino={isKino}
           noMoreMessages={noMoreMessages}
           isFetchingMore={isFetchingMore}
@@ -247,12 +269,12 @@ export default function ChatRoomScreenTemplate({
           scrollToBottom={scrollToBottom}
           isMessageFetched={isMessageFetched}
           mentionUsers={roomUsers}
-          readPointersMap={readPointersMap} // ✅ 추가(실시간 반영 핵심)
+          readPointersMap={readPointersMap}
         />
 
         <ChatInput
           chatRoom={currentChatRoom}
-          userId={userId}
+          userId={myUserId}              // ✅ 여기 꼭 myUserId로
           enableMediaPicker={!isKino}
           mentionUsers={roomUsers}
         />
