@@ -11,6 +11,9 @@ import {
   setChatRoomNotificationState,
 } from './chatRoomSlice';
 
+import {markReadThunk} from './chatRoomSlice';
+import {syncAppBadgeThunk} from '../../notification/store/notificationThunk'; // 경로 맞춰줘!
+
 const API_BASE = 'https://kinover.shop/api/chatRoom';
 
 export const fetchChatRoomListThunk = (familyId, userId) => {
@@ -33,7 +36,7 @@ export const fetchChatRoomListThunk = (familyId, userId) => {
 
       dispatch(setChatRoomList(response.data));
     } catch (error) {
-      dispatch(setChatRoomError(error.message));
+      dispatch(setChatRoomError(error?.message || '채팅방 목록 조회 실패'));
     } finally {
       dispatch(setChatRoomLoading(false));
     }
@@ -55,7 +58,7 @@ export const fetchChatRoomUsersThunk = chatRoomId => {
 
       dispatch(setChatRoomUsers(response.data));
     } catch (error) {
-      dispatch(setChatRoomError(error.message));
+      dispatch(setChatRoomError(error?.message || '채팅방 유저 조회 실패'));
     } finally {
       dispatch(setChatRoomLoading(false));
     }
@@ -79,7 +82,7 @@ export const leaveChatRoomThunk = createAsyncThunk(
 
       return chatRoomId;
     } catch (error) {
-      return rejectWithValue(error.message || '알 수 없는 에러');
+      return rejectWithValue(error?.message || '알 수 없는 에러');
     }
   },
 );
@@ -108,7 +111,7 @@ export const renameChatRoomThunk = createAsyncThunk(
       dispatch(fetchChatRoomListThunk(familyId, userId));
       return true;
     } catch (err) {
-      return rejectWithValue(err.message || '알 수 없는 오류');
+      return rejectWithValue(err?.message || '알 수 없는 오류');
     }
   },
 );
@@ -125,7 +128,7 @@ export const createChatRoomThunk = createAsyncThunk(
       );
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || '채팅방 생성 실패');
+      return rejectWithValue(error?.response?.data || '채팅방 생성 실패');
     }
   },
 );
@@ -147,7 +150,7 @@ export const updateKinoPersonalityThunk = createAsyncThunk(
       );
       return response.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data || err.message || '알 수 없는 오류');
+      return rejectWithValue(err?.response?.data || err?.message || '알 수 없는 오류');
     }
   },
 );
@@ -175,7 +178,7 @@ export const toggleChatRoomNotificationThunk = createAsyncThunk(
       dispatch(setChatRoomNotificationState({chatRoomId, isOn}));
       return {chatRoomId, isOn};
     } catch (err) {
-      return rejectWithValue(err.message || '알 수 없는 에러');
+      return rejectWithValue(err?.message || '알 수 없는 에러');
     }
   },
 );
@@ -199,7 +202,42 @@ export const toggleAllChatRoomNotificationThunk = createAsyncThunk(
       const result = await res.text();
       return {userId, isOn, result};
     } catch (err) {
-      return rejectWithValue(err.message || '알 수 없는 에러');
+      return rejectWithValue(err?.message || '알 수 없는 에러');
     }
   },
 );
+
+/* =========================
+ * ✅ 채팅방 단건 조회 (푸시/딥링크 진입용) - GET으로 통일
+ * ========================= */
+export const fetchChatRoomThunk = createAsyncThunk(
+  'chatRoom/fetchChatRoom',
+  async (chatRoomId, {rejectWithValue}) => {
+    try {
+      const token = await getToken();
+      if (!token) return rejectWithValue('토큰이 없습니다.');
+
+      const res = await axios.get(`${API_BASE}/${chatRoomId}`, {
+        headers: {Authorization: `Bearer ${token}`},
+      });
+
+      return res?.data;
+    } catch (error) {
+      const msg =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        error?.message ||
+        '채팅방 단건 조회 실패';
+
+      return rejectWithValue(msg);
+    }
+  },
+);
+
+// ✅ 채팅 읽음 처리 후 앱 뱃지 동기화까지 같이
+export const markReadAndSyncBadgeThunk =
+  ({chatRoomId, lastReadAt, userId}) =>
+  async dispatch => {
+    await dispatch(markReadThunk({chatRoomId, lastReadAt, userId}));
+    await dispatch(syncAppBadgeThunk());
+  };

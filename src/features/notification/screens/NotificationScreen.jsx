@@ -1,23 +1,28 @@
-// NotificationScreen.js
+// src/features/notification/screens/NotificationScreen.js
 import React, {useCallback, useMemo} from 'react';
 import {View, Text, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {
   getResponsiveFontSize,
-  getResponsiveHeight,
   getResponsiveWidth,
+  getResponsiveHeight,
 } from '../../../utils/responsive';
 import useHideTabBar from '../../../hooks/useHideTabBar';
 import YellowSpinner from '../../../components/YellowSpinner';
 import {useNotificationList} from '../hooks/useNotificationList';
 import {EMPTY_STYLE} from 'styles/style';
 import {useFocusEffect} from '@react-navigation/native';
-import {fetchNotificationsThunk} from '../store/notificationThunk';
 import {useDispatch} from 'react-redux';
 
-const AVATAR = getResponsiveWidth(46);
+import {
+  fetchNotificationsThunk,
+  fetchHasUnreadThunk,
+  syncAppBadgeThunk,
+} from '../store/notificationThunk';
 
 export default function NotificationScreen() {
+  const AVATAR = getResponsiveWidth(46);
+
   const dispatch = useDispatch();
   useHideTabBar();
 
@@ -29,10 +34,29 @@ export default function NotificationScreen() {
     [safeRows],
   );
 
-  // ✅ 알림화면 들어올 때마다 fetch (=백에서 lastNotificationCheckedAt 갱신 -> 읽음 확정)
   useFocusEffect(
     useCallback(() => {
-      dispatch(fetchNotificationsThunk());
+      let alive = true;
+
+      (async () => {
+        try {
+          // 1) 알림 목록 갱신(=서버 lastCheckedAt 갱신/읽음 확정)
+          await dispatch(fetchNotificationsThunk());
+
+          // 2) bell 점도 같이 갱신
+          await dispatch(fetchHasUnreadThunk());
+
+          // 3) ✅ 앱 아이콘 뱃지 = 채팅 + 알림 합산으로 재동기화
+          if (!alive) return;
+          await dispatch(syncAppBadgeThunk());
+        } catch (e) {
+          null;
+        }
+      })();
+
+      return () => {
+        alive = false;
+      };
     }, [dispatch]),
   );
 
@@ -78,13 +102,17 @@ export default function NotificationScreen() {
                     ? {uri: row.leftImageUrl}
                     : require('../../../assets/images/default.png')
                 }
-                style={styles.profileImage}
+                style={[styles.profileImage, {width: AVATAR, height: AVATAR}]}
               />
             </View>
 
             <View style={styles.center}>
               <View style={styles.rowTop}>
-                <Text style={[styles.typeBadgeText, {color: row.typeColor || 'black'}]}>
+                <Text
+                  style={[
+                    styles.typeBadgeText,
+                    {color: row.typeColor || 'black'},
+                  ]}>
                   {row.title}
                 </Text>
                 <Text style={styles.when}>{row.when}</Text>
@@ -140,8 +168,6 @@ const styles = StyleSheet.create({
   cardNew: {backgroundColor: '#FFF9EC'},
   avatarWrap: {position: 'relative'},
   profileImage: {
-    width: AVATAR,
-    height: AVATAR,
     borderRadius: getResponsiveWidth(5),
     backgroundColor: '#EAEAEA',
   },
