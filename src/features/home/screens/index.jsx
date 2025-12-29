@@ -17,9 +17,6 @@ import {fetchFamilyThunk, fetchFamilyStatusThunk} from '../store/familyThunk';
 import {fetchFamilyUserListThunk} from '../store/familyUserThunk';
 import {modifyUserThunk} from '../store/userThunk';
 
-// ✅ 알림 빨간점(안읽음 여부) 갱신 thunk
-import {fetchHasUnreadThunk} from '../../notification/store/notificationThunk';
-
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -121,9 +118,6 @@ export default function HomeScreen() {
     await dispatch(fetchFamilyUserListThunk(family.familyId));
     await dispatch(fetchFamilyStatusThunk(family.familyId));
     await dispatch(fetchFamilyThunk(family.familyId));
-
-    // ✅ 여기서만 알림 안읽음 여부 갱신
-    await dispatch(fetchHasUnreadThunk());
   }, [dispatch, family?.familyId]);
 
   const onPullRefresh = useCallback(() => {
@@ -161,7 +155,6 @@ export default function HomeScreen() {
     if (family?.familyId) {
       dispatch(fetchFamilyUserListThunk(family.familyId));
       dispatch(fetchFamilyStatusThunk(family.familyId));
-      dispatch(fetchHasUnreadThunk()); // ✅ 저장 후 갱신 타이밍에만
     }
 
     userSheetRef.current?.dismiss();

@@ -1,10 +1,17 @@
 // notification/requestNotificationPermission.js
 import store from 'store/store';
-import {PermissionsAndroid, Platform, AppState} from 'react-native';
+import {
+  PermissionsAndroid,
+  Platform,
+  AppState,
+  InteractionManager,
+} from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import axios from 'axios';
 import {getToken as getJWT} from '../../../utils/storage';
-import {navigate} from '../../../app/navigation/navigationRef';
+import {navigate, navigationRef} from '../../../app/navigation/navigationRef';
+
+import {CommonActions} from '@react-navigation/native';
 
 import {
   fetchUnreadCountThunk,
@@ -23,12 +30,168 @@ const showToast = msg => {
 const BASE = 'https://kinover.shop/api';
 const REGISTER_URL = `${BASE}/fcm/register`;
 
-// ✅ 리스너 중복 방지 (중복 토스트/중복 동기화 방지)
+// ✅ 리스너 중복 방지
 let listenersAttached = false;
+
+/**
+ * ✅ 네비 준비 전 이동 방지용
+ */
+async function safeNavigate(fn, maxTry = 20, delayMs = 120) {
+  await new Promise(resolve => {
+    InteractionManager.runAfterInteractions(resolve);
+  });
+
+  for (let i = 0; i < maxTry; i++) {
+    try {
+      const ready = navigationRef?.isReady?.() === true;
+      if (!ready) {
+        await new Promise(r => setTimeout(r, delayMs));
+        continue;
+      }
+
+      fn?.();
+      return;
+    } catch {
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+  }
+
+  try {
+    navigate('알림화면');
+  } catch {
+    null;
+  }
+}
+
+/**
+ * ✅ Tabs 안의 중첩 스택 이동 강제 디스패치
+ */
+function dispatchTabsNavigate(params) {
+  const action = CommonActions.navigate({
+    name: 'Tabs',
+    params,
+  });
+  navigationRef.dispatch(action);
+}
+
+/**
+ * ✅ 타입 통일(중요!)
+ */
+const toStr = v => (v == null ? null : String(v));
+
+/**
+ * ✅ 서버 기준 "종(bell)" 뱃지/빨간점만 동기화
+ * - ⚠️ 채팅 푸시(CHAT / MENTION_CHAT)로는 절대 호출하면 안 됨
+ */
+async function syncBellUnreadFromServer() {
+  try {
+    await store.dispatch(fetchUnreadCountThunk()); // bell unreadCount
+    store.dispatch(fetchHasUnreadThunk()); // bell hasUnread
+  } catch {
+    null;
+  }
+}
+
+/**
+ * ✅ 푸시 타입 정규화
+ */
+function normalizeRemoteMessage(remoteMessage) {
+  const data = remoteMessage?.data || {};
+  const rawType = data.notificationType || data.type;
+  const notificationType = rawType ? String(rawType).toUpperCase() : null;
+
+  return {
+    notificationType,
+    postId: toStr(data.postId),
+    commentId: toStr(data.commentId),
+    chatRoomId: toStr(data.chatRoomId),
+    scheduleId: toStr(data.scheduleId),
+  };
+}
+
+function isChatType(type) {
+  return type === 'CHAT' || type === 'MENTION_CHAT';
+}
+
+function isBellType(type) {
+  return type === 'POST' || type === 'COMMENT' || type === 'MENTION_COMMENT';
+}
+
+function openFromRemoteMessage(remoteMessage) {
+  const n = normalizeRemoteMessage(remoteMessage);
+
+  console.log('[PUSH OPENED data]', remoteMessage?.data);
+  console.log('[PUSH normalized]', n);
+
+  // ✅ notificationType 없으면 알림화면
+  if (!n?.notificationType) {
+    safeNavigate(() => navigate('알림화면'));
+    return;
+  }
+
+  switch (n.notificationType) {
+    case 'POST':
+    case 'COMMENT':
+    case 'MENTION_COMMENT': {
+      if (!n.postId) {
+        safeNavigate(() => navigate('알림화면'));
+        return;
+      }
+
+      safeNavigate(() =>
+        dispatchTabsNavigate({
+          screen: '추억',
+          params: {
+            screen: '게시글화면',
+            params: {
+              postId: n.postId,
+              highlightCommentId: n.commentId || null,
+            },
+          },
+        }),
+      );
+      return;
+    }
+
+    case 'CHAT':
+    case 'MENTION_CHAT': {
+      if (!n.chatRoomId) {
+        safeNavigate(() =>
+          dispatchTabsNavigate({
+            screen: '소통',
+          }),
+        );
+        return;
+      }
+
+      safeNavigate(() =>
+        dispatchTabsNavigate({
+          screen: '소통',
+          params: {
+            screen: '채팅방화면',
+            params: {chatRoomId: n.chatRoomId},
+          },
+        }),
+      );
+      return;
+    }
+
+    case 'SCHEDULE': {
+      safeNavigate(() =>
+        dispatchTabsNavigate({
+          screen: '일정',
+        }),
+      );
+      return;
+    }
+
+    default:
+      safeNavigate(() => navigate('알림화면'));
+  }
+}
 
 export async function requestNotificationPermission() {
   if (Platform.OS === 'android') {
-    // ✅ Android 13(API 33) 미만은 런타임 알림 권한이 없음
     const apiLevel = Number(Platform.Version) || 0;
     if (apiLevel < 33) return true;
 
@@ -75,10 +238,8 @@ async function getFcmTokenWithRetry(maxTry = 5, delayMs = 1000) {
   return null;
 }
 
-// ✅ FCM 토큰 → 서버 전송 (백 컨트롤러에 맞게 fcmToken만)
 export async function getFcmTokenAndSend() {
   try {
-    // ✅ RNFB 권장: 토큰 얻기 전에 등록 보장(특히 iOS)
     try {
       await messaging().registerDeviceForRemoteMessages();
     } catch {
@@ -114,130 +275,59 @@ export async function getFcmTokenAndSend() {
   }
 }
 
-// remoteMessage -> open용 객체로 정규화
-function normalizeRemoteMessage(remoteMessage) {
-  const data = remoteMessage?.data || {};
-  const notificationType = data.notificationType || data.type;
-
-  return {
-    notificationType,
-    postId: data.postId || null,
-    commentId: data.commentId || null,
-    chatRoomId: data.chatRoomId || null,
-    scheduleId: data.scheduleId || null,
-  };
-}
-
-// ✅ 원래 구조 유지 + 안전성만 보강
-function openFromRemoteMessage(remoteMessage) {
-  const n = normalizeRemoteMessage(remoteMessage);
-
-  if (!n?.notificationType) {
-    navigate('알림화면');
-    return;
-  }
-
-  switch (n.notificationType) {
-    case 'POST':
-    case 'COMMENT':
-    case 'MENTION_COMMENT': {
-      if (!n.postId) {
-        navigate('알림화면');
-        return;
-      }
-      navigate('Tabs', {
-        screen: '추억',
-        params: {
-          screen: '게시글화면',
-          params: {
-            postId: n.postId,
-            highlightCommentId: n.commentId || null,
-          },
-        },
-      });
-      return;
-    }
-
-    case 'CHAT':
-    case 'MENTION_CHAT': {
-      if (!n.chatRoomId) {
-        navigate('Tabs', {screen: '소통'});
-        return;
-      }
-      navigate('Tabs', {
-        screen: '소통',
-        params: {
-          screen: '채팅방화면',
-          params: {chatRoomId: n.chatRoomId},
-        },
-      });
-      return;
-    }
-
-    case 'SCHEDULE': {
-      // 프로젝트 라우트가 따로 있으면 여기만 맞춰주면 됨
-      navigate('Tabs', {screen: '일정'});
-      return;
-    }
-
-    default:
-      navigate('알림화면');
-  }
-}
-
-// ✅ 서버 기준으로 빨간점/뱃지 동기화
-async function syncUnreadFromServer() {
-  try {
-    // unreadCount 기준으로 hasUnread도 맞춰지긴 하지만,
-    // 서버 기준이 미묘하게 다를 수 있어서 둘 다 동기화(안전)
-    store.dispatch(fetchUnreadCountThunk());
-    store.dispatch(fetchHasUnreadThunk());
-  } catch {
-    null;
-  }
-}
-
-// 🔔 포그라운드/클릭/갱신 리스너
 export function handleNotificationListeners() {
-  // ✅ 중복 등록 방지
   if (listenersAttached) return () => {};
   listenersAttached = true;
 
-  // ✅ 앱 시작 시 1회 동기화
-  syncUnreadFromServer();
+  // ✅ 앱 시작 시: bell(종)만 동기화
+  syncBellUnreadFromServer();
 
-  // ✅ 포그라운드 전환 시에도 동기화
   const appStateSub = AppState.addEventListener('change', nextState => {
     if (nextState === 'active') {
-      syncUnreadFromServer();
+      // ✅ 포그라운드 복귀 시에도 bell만 동기화
+      syncBellUnreadFromServer();
     }
   });
 
-  // 앱 열려있는 상태에서 알림 받음
+  // 앱 열려있는 상태(포그라운드)에서 푸시 수신
   const unsubOnMessage = messaging().onMessage(async m => {
-    await syncUnreadFromServer();
+    const n = normalizeRemoteMessage(m);
 
-    // ✅ data-only 메시지까지 커버
+    // ✅ 채팅 푸시로는 bell 동기화 절대 금지
+    if (isBellType(n.notificationType)) {
+      await syncBellUnreadFromServer();
+    }
+
     const title = m.notification?.title ?? m.data?.title ?? '알림';
     const body =
       m.notification?.body ?? m.data?.body ?? '새로운 알림이 도착했어요';
     showToast(`${title}: ${body}`);
   });
 
-  // 알림 클릭 → 앱 열림 (읽음 확정 X, 이동만)
-  const unsubOpened = messaging().onNotificationOpenedApp(
-    async remoteMessage => {
-      await syncUnreadFromServer();
-      openFromRemoteMessage(remoteMessage);
-    },
-  );
+  // 알림 클릭 -> 앱 열림(백그라운드 -> 포그라운드)
+  const unsubOpened = messaging().onNotificationOpenedApp(async remoteMessage => {
+    const n = normalizeRemoteMessage(remoteMessage);
+
+    // ✅ POST/COMMENT 계열만 bell 동기화 (채팅은 제외)
+    if (isBellType(n.notificationType)) {
+      await syncBellUnreadFromServer();
+    }
+
+    openFromRemoteMessage(remoteMessage);
+  });
 
   // 앱 종료 상태에서 알림 클릭
   messaging()
     .getInitialNotification()
     .then(async remoteMessage => {
       if (remoteMessage) {
-        await syncUnreadFromServer();
+        const n = normalizeRemoteMessage(remoteMessage);
+
+        // ✅ POST/COMMENT 계열만 bell 동기화 (채팅은 제외)
+        if (isBellType(n.notificationType)) {
+          await syncBellUnreadFromServer();
+        }
+
         openFromRemoteMessage(remoteMessage);
       }
     });
@@ -285,13 +375,10 @@ export function handleNotificationListeners() {
     } catch {
       null;
     }
-
-    // ✅ cleanup 시 다시 attach 가능하게
     listenersAttached = false;
   };
 }
 
-// 백그라운드 메시지 처리
 export function registerBackgroundMessageHandler() {
   messaging().setBackgroundMessageHandler(async remoteMessage => {
     try {

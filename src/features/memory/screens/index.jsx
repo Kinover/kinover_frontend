@@ -37,9 +37,6 @@ import AnimatedRe, {
   withTiming,
 } from 'react-native-reanimated';
 
-// ✅ 알림 빨간점(안읽음 여부) 갱신 thunk
-import {fetchHasUnreadThunk} from '../../notification/store/notificationThunk';
-
 export default function MemoryScreen() {
   const dispatch = useDispatch();
 
@@ -157,10 +154,7 @@ export default function MemoryScreen() {
       lastYRef.current = 0;
       lastToggleTsRef.current = 0;
 
-      // ✅ "갱신 타이밍"에서만 빨간점 체크
-      if (withUnreadFetch) {
-        dispatch(fetchHasUnreadThunk());
-      }
+
     },
     [showTabBarWithFab, headerProgress, dispatch],
   );

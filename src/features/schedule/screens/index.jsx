@@ -39,9 +39,6 @@ import useGuide from 'hooks/useGuide';
 // ✅ HAPTIC
 import {hapticLight} from '../../../utils/haptic';
 
-// ✅ 알림 빨간점(안읽음 여부) 갱신 thunk
-import {fetchHasUnreadThunk} from '../../notification/store/notificationThunk';
-
 const SCHEDULE_GUIDE_STEPS = [
   {
     title: '날짜별 일정 한눈에 보기',
@@ -131,9 +128,6 @@ export default function ScheduleScreen() {
     // 🔄 강제 갱신 트리거
     setRefreshTrigger(Date.now());
 
-    // ✅ 일정 갱신할 때 알림 빨간점도 같이 갱신
-    dispatch(fetchHasUnreadThunk());
-
     // UX용 최소 딜레이
     setTimeout(() => {
       setRefreshing(false);
@@ -197,7 +191,6 @@ export default function ScheduleScreen() {
   const onSubmitWithUnreadRefresh = useCallback(
     async (...args) => {
       const res = await onSubmit(...args);
-      dispatch(fetchHasUnreadThunk());
       return res;
     },
     [onSubmit, dispatch],
@@ -206,7 +199,6 @@ export default function ScheduleScreen() {
   const onDeleteWithUnreadRefresh = useCallback(
     async (...args) => {
       const res = await handleDeleteSchedule(...args);
-      dispatch(fetchHasUnreadThunk());
       return res;
     },
     [handleDeleteSchedule, dispatch],

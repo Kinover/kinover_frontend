@@ -8,13 +8,15 @@ import SettingScreen from '../../../features/setting/screens/SettingScreen';
 import NotificationSettingScreen from '../../../features/setting/screens/NotificationSettingScreen';
 import {
   RenderHeaderHome,
-  RenderHeaderTitleLogo,
   RenderGoBackButton,
 } from '../helpers/tabHeaderHelpers';
 import {getResponsiveHeight} from '../../../utils/responsive';
 import StateScreen from '../../../features/home/screens/stateScreen';
 
-import {fetchHasUnreadThunk} from 'features/notification/store/notificationThunk';
+import {
+  fetchHasUnreadThunk,
+  fetchUnreadCountThunk,
+} from 'features/notification/store/notificationThunk';
 import {useDispatch, useSelector} from 'react-redux';
 import {useIsFocused} from '@react-navigation/native';
 
@@ -49,6 +51,7 @@ const HomeStack = ({route}) => {
     // 여기서 hasUnread 조회는 하지 않음(중복 호출/깜빡임 방지)
     if (currentRouteName === '알림화면') return;
 
+    dispatch(fetchUnreadCountThunk());
     dispatch(fetchHasUnreadThunk());
   }, [dispatch, userId, isFocused, currentRouteName]);
 

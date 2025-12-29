@@ -40,9 +40,9 @@ export const fetchHasUnreadThunk = createAsyncThunk(
 );
 
 /**
- * ✅ 숫자 뱃지용 unreadCount
- * 백엔드 추가 API: GET /api/user/notifications/unread-count
- * 응답 예시: { unreadCount: 3 }
+ * ✅ bell 숫자 뱃지용 unreadCount
+ * GET /api/user/notifications/unread-count
+ * 응답: { unreadCount: 3 }
  */
 export const fetchUnreadCountThunk = createAsyncThunk(
   'notification/fetchUnreadCount',
