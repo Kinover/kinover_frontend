@@ -26,7 +26,6 @@ import FastImage from '@d11/react-native-fast-image';
 
 // ✅ 추가
 import {useDispatch, useSelector} from 'react-redux';
-import {fetchHasUnreadThunk} from 'features/notification/store/notificationThunk';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -171,7 +170,6 @@ export default function OnboardingScreen() {
     if (didFetchUnreadOnceRef.current) return;
 
     didFetchUnreadOnceRef.current = true;
-    dispatch(fetchHasUnreadThunk());
   }, [dispatch, userId]);
 
   const {login} = useKakaoLogin();

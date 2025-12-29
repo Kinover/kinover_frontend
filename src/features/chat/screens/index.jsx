@@ -21,8 +21,6 @@ import YellowSpinner from '../../../components/YellowSpinner';
 import {EMPTY_STYLE} from 'styles/style';
 import {hapticLight} from '../../../utils/haptic';
 
-// ✅ 추가: 알림 빨간점(안읽음 여부) 갱신 thunk
-import {fetchHasUnreadThunk} from '../../notification/store/notificationThunk';
 
 export default function CommunicationScreen({navigation}) {
   const dispatch = useDispatch();
@@ -40,9 +38,6 @@ export default function CommunicationScreen({navigation}) {
 
       // 1) 채팅방 리스트 갱신
       const result = await dispatch(fetchChatRoomListThunk(familyId, userId));
-
-      // 2) ✅ 알림 빨간점 갱신 (안읽음 여부만)
-      await dispatch(fetchHasUnreadThunk());
 
       return result;
     } else {

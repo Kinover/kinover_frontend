@@ -11,6 +11,7 @@ import {
 } from '../../../utils/responsive';
 import {BUTTON_STYLES, HEADER_STYLES} from 'styles/style';
 import {hapticLight} from 'utils/haptic';
+import {CommonActions} from '@react-navigation/native';
 
 /** ---------------------------------------------------
  * ✅ 공통: 아이콘 위에 빨간 점/숫자 뱃지 얹는 컴포넌트
@@ -56,7 +57,8 @@ const IconWithBadge = memo(function IconWithBadge({
 });
 
 /** ---------------------------------------------------
- * ✅ 탭바 아이콘 (알림 탭일 때 unreadCount 표시)
+ * ✅ 탭바 아이콘 (알림 탭일 때: "bell 전용" unreadCount 표시)
+ * - 채팅 알림/채팅 unread는 여기로 들어오면 안 됨
  * --------------------------------------------------- */
 export const TabBarIcon = memo(function TabBarIcon({
   focused,
@@ -69,7 +71,6 @@ export const TabBarIcon = memo(function TabBarIcon({
 
   const size = Platform.OS === 'ios' ? 22 : 24;
 
-  // ✅ 알림 탭이면 숫자 뱃지 우선, 없으면 빨간 점
   const isAlarmTab = tabName === '알림';
   const badgeCount = isAlarmTab ? unreadCount : 0;
   const showDot = isAlarmTab ? !!hasUnread : false;
@@ -156,10 +157,38 @@ export const RenderHeaderTitleLogo = () => (
   </View>
 );
 
+/**
+ * ✅ Tabs 강제 이동 (알림탭으로 확실히 보내기)
+ */
+function goToAlarmTab(navigation) {
+  // 1) Tabs -> 알림 탭으로 강제
+  try {
+    navigation.dispatch(
+      CommonActions.navigate({
+        name: 'Tabs',
+        params: {screen: '알림'},
+      }),
+    );
+    return;
+  } catch {
+    null;
+  }
+
+  // 2) fallback (구조가 다를 때)
+  try {
+    navigation.navigate('Tabs', {
+      screen: '홈',
+      params: {screen: '알림화면'},
+    });
+  } catch {
+    null;
+  }
+}
+
 /** ---------------------------------------------------
  * ✅ 헤더: 홈(종 + 설정)
- * - 종: unreadCount(숫자) 우선, 없으면 빨간 점
- * - ✅ 이동: "알림 탭" 있으면 그쪽으로, 없으면 현재 탭 안 알림화면으로 fallback
+ * - 종: bell 전용 unreadCount(숫자) 우선, 없으면 빨간 점
+ * - ✅ 채팅 푸시로 bell 상태가 변하면 안 됨(그건 listener에서 이미 차단)
  * --------------------------------------------------- */
 export const RenderHeaderHome = ({navigation, currentScreen}) => {
   const hasUnread = useSelector(state => state.notification.hasUnread);
@@ -175,24 +204,6 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
       ? require('@/assets/icons/header/setting_filled.png')
       : require('@/assets/icons/header/setting_filled_dark.png');
 
-  // ✅ 1순위: 알림 탭이 존재하면 그 탭으로 이동
-  // ✅ 2순위: 없으면(앱 구조상 알림 탭이 없다면) 현재 탭 스택 내 알림화면으로 이동
-  const goAlarm = () => {
-    // 알림탭이 있는 구조를 먼저 시도
-    try {
-      navigation.navigate('Tabs', {screen: '알림'});
-      return;
-    } catch (e) {
-      // 무시하고 fallback
-    }
-
-    // fallback: 기존 방식(현재 탭 스택 내부 알림화면)
-    navigation.navigate('Tabs', {
-      screen: currentScreen,
-      params: {screen: '알림화면'},
-    });
-  };
-
   const goSetting = () =>
     navigation.navigate('Tabs', {
       screen: currentScreen,
@@ -205,7 +216,7 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
       <TouchableOpacity
         onPress={() => {
           hapticLight();
-          goAlarm();
+          goToAlarmTab(navigation);
         }}
         activeOpacity={0.8}>
         <IconWithBadge
@@ -293,15 +304,7 @@ export const RenderHeaderLogo = ({navigation}) => (
   <TouchableOpacity
     onPress={() => {
       hapticLight();
-      // ✅ 로고 눌러도 알림으로 보내는건 유지하되, 알림탭 우선 시도
-      try {
-        navigation.navigate('Tabs', {screen: '알림'});
-      } catch (e) {
-        navigation.navigate('Tabs', {
-          screen: '홈',
-          params: {screen: '알림화면'},
-        });
-      }
+      goToAlarmTab(navigation);
     }}
     style={{flexDirection: 'row', alignItems: 'flex-end'}}>
     <FastImage
