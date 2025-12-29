@@ -1,10 +1,9 @@
 // src/features/chat/socket/chatSocket.js
 import {AppState} from 'react-native';
 import {getToken} from 'utils/storage';
-import {
-  receiveMessageThunk,
-  receiveReadPointerThunk,
-} from '../store/messageThunk';
+
+import {receiveMessageThunk} from '../store/messageThunk';
+import {applyReadPointer} from '../store/chatRoomSlice';
 
 let ws = null;
 let reconnectTimer = null;
@@ -63,15 +62,26 @@ async function openSocket() {
   ws.onmessage = e => {
     try {
       const data = JSON.parse(e.data);
-
       const type = data?.type ?? 'message:new';
 
       // =========================
-      // A) 읽음 브로드캐스트 처리
+      // A) 읽음 브로드캐스트 처리 (실시간 unreadCount 갱신용)
       // =========================
       if (type === 'room:read') {
         // payload: { type:'room:read', chatRoomId, userId, lastReadAt }
-        dispatchRef(receiveReadPointerThunk(data));
+        const chatRoomId = data?.chatRoomId;
+        const userId = data?.userId;
+        const lastReadAt = data?.lastReadAt;
+
+        if (chatRoomId && userId != null && lastReadAt) {
+          dispatchRef(
+            applyReadPointer({
+              chatRoomId,
+              userId,
+              lastReadAt,
+            }),
+          );
+        }
         return;
       }
 

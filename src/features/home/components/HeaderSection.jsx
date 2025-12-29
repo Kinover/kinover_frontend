@@ -18,6 +18,7 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import DropShadow from 'react-native-drop-shadow';
 import {hapticLight} from '../../../utils/haptic';
+import {getEmotionImage} from '../utils/emotionUtils';
 
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 
@@ -35,35 +36,12 @@ function isEmotionValid(emotion, emotionUpdatedAt) {
   return Date.now() - updatedAt <= EMOTION_EXPIRE_MS;
 }
 
-const getEmotionImage = emotion => {
-  switch (emotion) {
-    case 'ANNOYED':
-      return require('../../../assets/state2/1.png');
-    case 'WORRIED':
-      return require('../../../assets/state2/2.png');
-    case 'DEPRESSED':
-      return require('../../../assets/state2/3.png');
-    case 'SORRY':
-      return require('../../../assets/state2/4.png');
-    case 'TIRED':
-      return require('../../../assets/state2/5.png');
-    case 'NEUTRAL':
-      return require('../../../assets/state2/6.png');
-    case 'HAPPY':
-      return require('../../../assets/state2/7.png');
-    case 'EXCITED':
-      return require('../../../assets/state2/8.png');
-    default:
-      return null;
-  }
-};
-
 const AVATAR = getResponsiveIconSize(92);
 const CARD_RADIUS = getResponsiveIconSize(16);
 
 // ===== 기존(레이아웃 고정용) =====
 const BASE_DISPLAY = AVATAR * 1.3;
-const BASE_RING = BASE_DISPLAY * 0.82; // 이모션 있을 때 링(작게 유지)
+const BASE_RING = BASE_DISPLAY * 0.85; // 이모션 있을 때 링(작게 유지)
 const BASE_AREA = BASE_DISPLAY * 1.05;
 const BASE_OVERLAP = -BASE_DISPLAY * 0.299;
 
@@ -174,6 +152,8 @@ export default function HeaderSection({user, onUserPress}) {
                   width: ringSize,
                   height: ringSize,
                   borderRadius: ringSize / 2,
+                  borderColor: 'white',
+                  borderWidth: 2,
                 },
               ]}
             />

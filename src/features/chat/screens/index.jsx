@@ -21,6 +21,9 @@ import YellowSpinner from '../../../components/YellowSpinner';
 import {EMPTY_STYLE} from 'styles/style';
 import {hapticLight} from '../../../utils/haptic';
 
+// ✅ 추가: 알림 빨간점(안읽음 여부) 갱신 thunk
+import {fetchHasUnreadThunk} from '../../notification/store/notificationThunk';
+
 export default function CommunicationScreen({navigation}) {
   const dispatch = useDispatch();
   const {userId, login} = useSelector(s => s.user);
@@ -28,13 +31,20 @@ export default function CommunicationScreen({navigation}) {
   const {chatRoomList, loading, listRevision} = useSelector(s => s.chatRoom);
   const [refreshing, setRefreshing] = useState(false);
 
-  // ✅ async로 만들어서 RefreshControl이 "진짜로" 기다리게
+  // ✅ 갱신(load)할 때 채팅방 리스트 + 알림 unread 같이 갱신
   const load = useCallback(async () => {
     console.log('[CommunicationScreen] load 호출', {familyId, userId});
 
     if (familyId != null && userId != null) {
       console.log('[CommunicationScreen] fetchChatRoomListThunk 디스패치');
-      return dispatch(fetchChatRoomListThunk(familyId, userId));
+
+      // 1) 채팅방 리스트 갱신
+      const result = await dispatch(fetchChatRoomListThunk(familyId, userId));
+
+      // 2) ✅ 알림 빨간점 갱신 (안읽음 여부만)
+      await dispatch(fetchHasUnreadThunk());
+
+      return result;
     } else {
       console.log('[CommunicationScreen] 조건 불만족으로 fetch 생략', {
         familyId,
@@ -78,7 +88,6 @@ export default function CommunicationScreen({navigation}) {
       ) : (
         <FlatList
           data={chatRoomList}
-          // ✅ key로 리마운트하지 말고 extraData만
           renderItem={renderItem}
           extraData={listRevision}
           contentContainerStyle={styles.listContent}

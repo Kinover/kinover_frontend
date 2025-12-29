@@ -1,14 +1,18 @@
 // NotificationScreen.js
-import React, {useCallback} from 'react';
+import React, {useCallback, useMemo} from 'react';
 import {View, Text, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
-import {getResponsiveFontSize, getResponsiveHeight, getResponsiveWidth} from '../../../utils/responsive';
+import {
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveWidth,
+} from '../../../utils/responsive';
 import useHideTabBar from '../../../hooks/useHideTabBar';
 import YellowSpinner from '../../../components/YellowSpinner';
 import {useNotificationList} from '../hooks/useNotificationList';
 import {EMPTY_STYLE} from 'styles/style';
 import {useFocusEffect} from '@react-navigation/native';
-import {fetchHasUnreadThunk, fetchNotificationsThunk} from '../store/notificationThunk';
+import {fetchNotificationsThunk} from '../store/notificationThunk';
 import {useDispatch} from 'react-redux';
 
 const AVATAR = getResponsiveWidth(46);
@@ -16,17 +20,19 @@ const AVATAR = getResponsiveWidth(46);
 export default function NotificationScreen() {
   const dispatch = useDispatch();
   useHideTabBar();
+
   const {isLoading, error, rows, handlePress} = useNotificationList();
 
+  const safeRows = useMemo(() => (Array.isArray(rows) ? rows : []), [rows]);
+  const hasNotifications = useMemo(
+    () => safeRows.some(r => r?.type === 'item'),
+    [safeRows],
+  );
+
+  // ✅ 알림화면 들어올 때마다 fetch (=백에서 lastNotificationCheckedAt 갱신 -> 읽음 확정)
   useFocusEffect(
     useCallback(() => {
-      // ✅ 여기서만 1번 호출
       dispatch(fetchNotificationsThunk());
-
-      return () => {
-        // ✅ 나갈 때 벨 빨간점 동기화
-        dispatch(fetchHasUnreadThunk());
-      };
     }, [dispatch]),
   );
 
@@ -46,18 +52,18 @@ export default function NotificationScreen() {
     );
   }
 
-  const hasNotifications = rows.some(r => r.type === 'item');
-
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {rows.map((row, index) => {
-        if (row.type === 'section') {
+      {safeRows.map((row, index) => {
+        if (row?.type === 'section') {
           return (
             <Text key={`sec-${row.key}-${index}`} style={styles.sectionTitle}>
               {row.title}
             </Text>
           );
         }
+
+        if (row?.type !== 'item') return null;
 
         return (
           <TouchableOpacity

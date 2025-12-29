@@ -2,7 +2,13 @@
 // src/screens/memory/MemoryScreen.js
 
 import React, {useMemo, useState, useRef, useCallback, useEffect} from 'react';
-import {View, StyleSheet, TouchableOpacity, Image, Animated} from 'react-native';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Animated,
+} from 'react-native';
 
 import MemoryFeed from './MemoryFeedScreen';
 import AnimatedAlbumTabSelector from '../components/AlbumTabSelector';
@@ -26,7 +32,13 @@ import {setMemorySelectedTab} from '../store/memorySlice';
 import {hapticLight} from '../../../utils/haptic';
 import {useFocusEffect} from '@react-navigation/native';
 
-import AnimatedRe, {useAnimatedStyle, withTiming} from 'react-native-reanimated';
+import AnimatedRe, {
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
+
+// ✅ 알림 빨간점(안읽음 여부) 갱신 thunk
+import {fetchHasUnreadThunk} from '../../notification/store/notificationThunk';
 
 export default function MemoryScreen() {
   const dispatch = useDispatch();
@@ -134,20 +146,30 @@ export default function MemoryScreen() {
     hideTabBar();
   }, [hideTabBar]);
 
-  const forceShowHeaderAndTabBar = useCallback(() => {
-    showTabBarWithFab();
+  // ✅ 공통: 화면 상태 리셋 + (선택) 알림 빨간점 갱신
+  const forceShowHeaderAndTabBar = useCallback(
+    (withUnreadFetch = false) => {
+      showTabBarWithFab();
 
-    headerProgress.stopAnimation?.();
-    headerProgress.setValue(0);
+      headerProgress.stopAnimation?.();
+      headerProgress.setValue(0);
 
-    lastYRef.current = 0;
-    lastToggleTsRef.current = 0;
-  }, [showTabBarWithFab, headerProgress]);
+      lastYRef.current = 0;
+      lastToggleTsRef.current = 0;
+
+      // ✅ "갱신 타이밍"에서만 빨간점 체크
+      if (withUnreadFetch) {
+        dispatch(fetchHasUnreadThunk());
+      }
+    },
+    [showTabBarWithFab, headerProgress, dispatch],
+  );
 
   useFocusEffect(
     useCallback(() => {
       requestAnimationFrame(() => {
-        forceShowHeaderAndTabBar();
+        // ❌ 여기서는 호출하지 않음 (요청: 진입 시 말고 "갱신 때만")
+        forceShowHeaderAndTabBar(false);
         showHeader();
         showTabBarWithFab();
       });
@@ -192,29 +214,32 @@ export default function MemoryScreen() {
     [hideHeader, showHeader, hideTabBarWithFab, showTabBarWithFab],
   );
 
+  // ✅ 기간 필터 적용 = "데이터 갱신" 성격 → unread 체크 같이
   const handleApplyPeriod = useCallback(
     ({startDate: s, endDate: e}) => {
       setStartDate(s || '');
       setEndDate(e || '');
       setIsFilterVisible(false);
 
-      requestAnimationFrame(() => forceShowHeaderAndTabBar());
+      requestAnimationFrame(() => forceShowHeaderAndTabBar(true));
     },
     [forceShowHeaderAndTabBar],
   );
 
+  // ✅ 탭 변경 = "데이터 갱신" 성격 → unread 체크 같이
   const onSelectTab = useCallback(
     tab => {
       dispatch(setMemorySelectedTab(tab));
-      requestAnimationFrame(() => forceShowHeaderAndTabBar());
+      requestAnimationFrame(() => forceShowHeaderAndTabBar(true));
     },
     [dispatch, forceShowHeaderAndTabBar],
   );
 
+  // ✅ 카테고리 선택 = "데이터 갱신" 성격 → unread 체크 같이
   const handleSelectCategoryWithReset = useCallback(
     cat => {
       handleSelectCategory?.(cat);
-      requestAnimationFrame(() => forceShowHeaderAndTabBar());
+      requestAnimationFrame(() => forceShowHeaderAndTabBar(true));
     },
     [handleSelectCategory, forceShowHeaderAndTabBar],
   );
@@ -302,7 +327,12 @@ export default function MemoryScreen() {
         pointerEvents={fabHidden ? 'none' : 'auto'}
         style={[
           styles.fabWrap,
-          {right: FAB_RIGHT, bottom: FAB_BOTTOM, width: FAB_SIZE, height: FAB_SIZE},
+          {
+            right: FAB_RIGHT,
+            bottom: FAB_BOTTOM,
+            width: FAB_SIZE,
+            height: FAB_SIZE,
+          },
           fabAnimatedStyle,
         ]}>
         <TouchableOpacity

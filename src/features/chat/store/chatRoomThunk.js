@@ -9,7 +9,6 @@ import {
   setChatRoomLoading,
   setChatRoomError,
   setChatRoomNotificationState,
-  markRoomRead,
 } from './chatRoomSlice';
 
 const API_BASE = 'https://kinover.shop/api/chatRoom';
@@ -62,42 +61,6 @@ export const fetchChatRoomUsersThunk = chatRoomId => {
     }
   };
 };
-
-/**
- * ✅ 서버 읽음 처리
- * POST /api/chatRoom/{chatRoomId}/read
- * body: { lastReadAt: "YYYY-MM-DDTHH:mm:ss.SSS" }  // LocalDateTime
- */
-export const markReadThunk = createAsyncThunk(
-  'chatRoom/markRead',
-  async ({chatRoomId, lastReadAt}, {rejectWithValue, dispatch}) => {
-    try {
-      const token = await getToken();
-      const url = `${API_BASE}/${chatRoomId}/read`;
-
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({lastReadAt}),
-      });
-
-      if (!res.ok) {
-        const t = await res.text().catch(() => '');
-        return rejectWithValue(`읽음 처리 실패: ${res.status} ${t}`);
-      }
-
-      // ✅ 로컬 뱃지 즉시 0
-      dispatch(markRoomRead(chatRoomId));
-
-      return {chatRoomId, lastReadAt};
-    } catch (err) {
-      return rejectWithValue(err.message || '알 수 없는 에러');
-    }
-  },
-);
 
 export const leaveChatRoomThunk = createAsyncThunk(
   'chatRoom/leaveChatRoom',
