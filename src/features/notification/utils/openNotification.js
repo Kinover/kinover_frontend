@@ -1,6 +1,7 @@
 // utils/openNotification.js
 export async function openNotification(n, navigation, deps) {
-  const type = n && n.notificationType;
+  // ✅ pushType 우선, 없으면 레거시 notificationType fallback
+  const type = (n && (n.pushType || n.notificationType) || '').toUpperCase();
   if (!type) return;
 
   const ROUTES = {

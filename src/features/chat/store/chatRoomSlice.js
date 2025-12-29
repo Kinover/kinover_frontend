@@ -81,7 +81,7 @@ export const markReadThunk = createAsyncThunk(
         lastReadAt: body.lastReadAt,
       };
     } catch (err) {
-      const msg = err.response?.data || err.message || '알 수 없는 오류';
+      const msg = err?.response?.data || err?.message || '알 수 없는 오류';
       return rejectWithValue(msg);
     }
   },
@@ -112,7 +112,7 @@ export const fetchReadPointersThunk = createAsyncThunk(
 
       return {chatRoomId: rid, pointers: Array.isArray(pointers) ? pointers : []};
     } catch (err) {
-      const msg = err.response?.data || err.message || '알 수 없는 오류';
+      const msg = err?.response?.data || err?.message || '알 수 없는 오류';
       return rejectWithValue(msg);
     }
   },
@@ -193,7 +193,10 @@ const chatRoomSlice = createSlice({
         const rid = toId(r.chatRoomId);
 
         const latestRaw =
-          r.latestMessageTime ?? r.updatedAt ?? r.createdAt ?? new Date().toISOString();
+          r.latestMessageTime ??
+          r.updatedAt ??
+          r.createdAt ??
+          new Date().toISOString();
 
         return {
           ...r,
@@ -386,13 +389,13 @@ const chatRoomSlice = createSlice({
 
         state.markReadStatusByRoom[rid] = 'fulfilled';
 
-        // ✅ 내 포인터 즉시 반영 (내 화면 unreadCount 바로 갱신)
+        // ✅ 내 포인터 즉시 반영
         if (userId != null && lastReadAt) {
           if (!state.readPointersByRoom[rid]) state.readPointersByRoom[rid] = {};
           state.readPointersByRoom[rid][String(userId)] = toIso(lastReadAt);
         }
 
-        // ✅ 목록 뱃지는 0
+        // ✅ 목록 unreadCount 0
         const idx = findRoomIndex(state, rid);
         if (idx !== -1) {
           state.chatRoomList[idx] = {
@@ -446,12 +449,3 @@ export const {
 } = chatRoomSlice.actions;
 
 export default chatRoomSlice.reducer;
-
-/* =========================
- * Selectors
- * ========================= */
-export const selectReadPointers = (state, chatRoomId) =>
-  state.chatRoom.readPointersByRoom?.[String(chatRoomId)] || {};
-
-export const selectMarkReadStatus = (state, chatRoomId) =>
-  state.chatRoom.markReadStatusByRoom?.[String(chatRoomId)] || 'idle';

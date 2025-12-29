@@ -1,7 +1,12 @@
-// redux/thunk/notificationThunk.js
+// src/features/notification/store/notificationThunk.js
 import {createAsyncThunk} from '@reduxjs/toolkit';
 import axios from 'axios';
 import {getToken} from '../../../utils/storage';
+import {applyAppBadgeCount} from '../../../utils/appBadge';
+
+// ✅ 채팅 unread 총합 selector import
+// 경로가 다르면 여기만 맞춰줘!
+import {selectChatUnreadTotal} from '../../chat/store/chatRoomSelector';
 
 const BASE = 'https://kinover.shop/api';
 
@@ -59,5 +64,29 @@ export const fetchUnreadCountThunk = createAsyncThunk(
         error.response?.data || '안읽은 알림 개수 조회 실패',
       );
     }
+  },
+);
+
+/**
+ * ✅ 앱 아이콘 뱃지 동기화 (핵심)
+ * - 앱 뱃지 = 채팅 unread 총합 + 알림 unreadCount
+ * - 어디서든 이 thunk 한번 호출하면 뱃지 정확히 맞춰짐
+ */
+export const syncAppBadgeThunk = createAsyncThunk(
+  'notification/syncAppBadge',
+  async (_, {dispatch, getState}) => {
+    // 1) 알림 unreadCount는 서버 기준으로
+    const action = await dispatch(fetchUnreadCountThunk());
+    const notiCount = Number(action?.payload ?? 0) || 0;
+
+    // 2) 채팅 unread 총합은 store(chatRoomList) 기준으로
+    const state = getState();
+    const chatTotal = Number(selectChatUnreadTotal(state) ?? 0) || 0;
+
+    const total = chatTotal + notiCount;
+
+    await applyAppBadgeCount(total);
+
+    return {total, chatTotal, notiCount};
   },
 );
