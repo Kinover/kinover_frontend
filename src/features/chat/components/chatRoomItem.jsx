@@ -166,8 +166,8 @@ const styles = StyleSheet.create({
   },
   time: {fontSize: getResponsiveFontSize(12), color: '#8B8B8B'},
   badge: {
-    marginTop: getResponsiveHeight(4),
-    padding: getResponsiveHeight(4.5),
+    marginTop: getResponsiveHeight(3.5),
+    padding: getResponsiveHeight(4),
     minWidth: getResponsiveWidth(23),
     borderRadius: 999,
     backgroundColor: '#FFC84D',
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     color: '#FFFFFF',
-    fontSize: getResponsiveFontSize(11),
+    fontSize: getResponsiveFontSize(11.5),
     fontFamily: 'Pretendard-SemiBold',
   },
 });
