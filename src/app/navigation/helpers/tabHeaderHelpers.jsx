@@ -11,7 +11,6 @@ import {
 } from '../../../utils/responsive';
 import {BUTTON_STYLES, HEADER_STYLES} from 'styles/style';
 import {hapticLight} from 'utils/haptic';
-import {CommonActions} from '@react-navigation/native';
 
 /** ---------------------------------------------------
  * ✅ 공통: 아이콘 위에 빨간 점/숫자 뱃지 얹는 컴포넌트
@@ -58,7 +57,6 @@ const IconWithBadge = memo(function IconWithBadge({
 
 /** ---------------------------------------------------
  * ✅ 탭바 아이콘 (알림 탭일 때: "bell 전용" unreadCount 표시)
- * - 채팅 알림/채팅 unread는 여기로 들어오면 안 됨
  * --------------------------------------------------- */
 export const TabBarIcon = memo(function TabBarIcon({
   focused,
@@ -140,7 +138,7 @@ const createIconButton = (
 );
 
 /** ---------------------------------------------------
- * ✅ 헤더: 로고
+ * ✅ 헤더: 로고(좌측 작은 로고)
  * --------------------------------------------------- */
 export const RenderHeaderTitleLogo = () => (
   <View style={{paddingBottom: getResponsiveHeight(14)}}>
@@ -157,38 +155,10 @@ export const RenderHeaderTitleLogo = () => (
   </View>
 );
 
-/**
- * ✅ Tabs 강제 이동 (알림탭으로 확실히 보내기)
- */
-function goToAlarmTab(navigation) {
-  // 1) Tabs -> 알림 탭으로 강제
-  try {
-    navigation.dispatch(
-      CommonActions.navigate({
-        name: 'Tabs',
-        params: {screen: '알림'},
-      }),
-    );
-    return;
-  } catch {
-    null;
-  }
-
-  // 2) fallback (구조가 다를 때)
-  try {
-    navigation.navigate('Tabs', {
-      screen: '홈',
-      params: {screen: '알림화면'},
-    });
-  } catch {
-    null;
-  }
-}
-
 /** ---------------------------------------------------
  * ✅ 헤더: 홈(종 + 설정)
- * - 종: bell 전용 unreadCount(숫자) 우선, 없으면 빨간 점
- * - ✅ 채팅 푸시로 bell 상태가 변하면 안 됨(그건 listener에서 이미 차단)
+ * - ✅ 설정 눌렀을 때와 "완전히 동일한 방식"으로 종도 이동:
+ *   navigation.navigate('Tabs', { screen: currentScreen, params: { screen: '알림화면' } })
  * --------------------------------------------------- */
 export const RenderHeaderHome = ({navigation, currentScreen}) => {
   const hasUnread = useSelector(state => state.notification.hasUnread);
@@ -204,6 +174,13 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
       ? require('@/assets/icons/header/setting_filled.png')
       : require('@/assets/icons/header/setting_filled_dark.png');
 
+  // ✅ 설정이랑 같은 패턴: "현재 탭(currentScreen) 스택 안"으로 이동
+  const goAlarm = () =>
+    navigation.navigate('Tabs', {
+      screen: currentScreen,
+      params: {screen: '알림화면'},
+    });
+
   const goSetting = () =>
     navigation.navigate('Tabs', {
       screen: currentScreen,
@@ -216,7 +193,7 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
       <TouchableOpacity
         onPress={() => {
           hapticLight();
-          goToAlarmTab(navigation);
+          goAlarm();
         }}
         activeOpacity={0.8}>
         <IconWithBadge
@@ -300,11 +277,19 @@ export const RenderGoBackButtonGallery = ({navigation}) =>
     {zIndex: 999},
   );
 
-export const RenderHeaderLogo = ({navigation}) => (
+/** ---------------------------------------------------
+ * ✅ 헤더: 로고(상단 Kinover 로고)
+ * - ✅ 종이랑 "동일한 이동 방식" 적용
+ * - currentScreen 안 주면 기본 '홈' 기준으로 알림화면 이동
+ * --------------------------------------------------- */
+export const RenderHeaderLogo = ({navigation, currentScreen = '홈'}) => (
   <TouchableOpacity
     onPress={() => {
       hapticLight();
-      goToAlarmTab(navigation);
+      navigation.navigate('Tabs', {
+        screen: currentScreen,
+        params: {screen: '알림화면'},
+      });
     }}
     style={{flexDirection: 'row', alignItems: 'flex-end'}}>
     <FastImage

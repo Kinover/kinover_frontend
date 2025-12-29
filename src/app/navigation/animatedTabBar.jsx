@@ -42,7 +42,14 @@ function getFocusedRouteName(state) {
  * Tab Button (with motion)
  * ========================= */
 
-function AnimatedTabButton({route, focused, descriptor, navigation, onHaptic}) {
+function AnimatedTabButton({
+  route,
+  focused,
+  descriptor,
+  navigation,
+  onHaptic,
+  rootScreenName,
+}) {
   const options = descriptor?.options || {};
   const renderIcon = options.tabBarIcon;
   const renderLabel = options.tabBarLabel;
@@ -66,13 +73,11 @@ function AnimatedTabButton({route, focused, descriptor, navigation, onHaptic}) {
   });
 
   const onPressIn = () => {
-    // 살짝 눌림
     pressScale.value = withTiming(0.94, {duration: 90});
     pressOpacity.value = withTiming(0.85, {duration: 90});
   };
 
   const onPressOut = () => {
-    // 살짝 튕김 + 복귀
     pressScale.value = withSequence(
       withTiming(1.06, {duration: 110}),
       withSpring(1, {damping: 10, stiffness: 220}),
@@ -89,9 +94,34 @@ function AnimatedTabButton({route, focused, descriptor, navigation, onHaptic}) {
       canPreventDefault: true,
     });
 
-    if (!focused && !event.defaultPrevented) {
-      navigation.navigate(route.name);
+    if (event.defaultPrevented) return;
+
+    // ✅ 핵심: 이미 그 탭에 있는 상태에서 탭 아이콘을 다시 누르면 "해당 탭의 기본 화면"으로 이동
+    // - 각 탭이 Stack을 품고 있다는 전제
+    // - rootScreenName(예: '홈', '소통', '일정', '추억')으로 스택의 initial screen으로 보내기
+    if (focused) {
+      const root = rootScreenName || route.name;
+
+      // (1) 보통 케이스: "탭 route + 내부 stack screen" 지정
+      // => navigation.navigate('홈', { screen: '홈' }) 같은 형태
+      try {
+        navigation.navigate(route.name, {screen: root});
+        return;
+      } catch {
+        // ignore
+      }
+
+      // (2) fallback: 그래도 안 되면 탭만 다시 네비게이트 (구조가 다를 때)
+      try {
+        navigation.navigate(route.name);
+      } catch {
+        null;
+      }
+      return;
     }
+
+    // ✅ 다른 탭으로 이동
+    navigation.navigate(route.name);
   };
 
   const onLongPress = () => {
@@ -105,7 +135,7 @@ function AnimatedTabButton({route, focused, descriptor, navigation, onHaptic}) {
       onPressOut={onPressOut}
       onPress={onPress}
       onLongPress={onLongPress}
-      activeOpacity={1} // ✅ opacity는 우리가 애니메이션으로 제어
+      activeOpacity={1}
       style={styles.item}>
       <Animated.View style={[styles.itemInner, animStyle]}>
         {typeof renderIcon === 'function'
@@ -132,11 +162,14 @@ export function AnimatedTabBar(props) {
   const activeTabState = props?.state?.routes?.[props.state.index]?.state;
   const focusedScreenName = getFocusedRouteName(activeTabState);
 
+  // ✅ "각 탭의 기본(루트) 스크린 이름"
+  // - 여기 값은 "각 탭 Stack.Navigator의 initialRouteName" 과 같아야 함
   const ROOT_SCREENS = {
     홈: '홈',
     소통: '소통',
     일정: '일정',
     추억: '추억',
+    // 만약 탭 이름/스택 initialRouteName이 다르면 여기만 맞춰주면 됨
   };
 
   const root = ROOT_SCREENS[activeTabName];
@@ -180,6 +213,7 @@ export function AnimatedTabBar(props) {
               descriptor={descriptor}
               navigation={props.navigation}
               onHaptic={onHaptic}
+              rootScreenName={ROOT_SCREENS[route.name]} // ✅ 여기!
             />
           );
         })}
