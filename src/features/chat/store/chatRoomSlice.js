@@ -52,18 +52,18 @@ const finalizeList = state => {
 };
 
 /* =========================
- * ✅ API (백엔드 컨트롤러 기준)
+ * ✅ API
  * ========================= */
 const API_BASE = 'https://kinover.shop/api/chatRoom';
 
 /**
  * ✅ markReadThunk
  * - 서버에 lastReadAt 저장 (POST /{chatRoomId}/read)
- * - 성공 시 포인터 저장 + 목록 unreadCount 0 처리(옵션)
+ * - 성공 시: (1) 내 포인터 저장 (2) 목록 unreadCount 0
  */
 export const markReadThunk = createAsyncThunk(
   'chatRoom/markRead',
-  async ({chatRoomId, lastReadAt}, {rejectWithValue}) => {
+  async ({chatRoomId, lastReadAt, userId}, {rejectWithValue}) => {
     try {
       const token = await getToken();
       const rid = toId(chatRoomId);
@@ -75,7 +75,11 @@ export const markReadThunk = createAsyncThunk(
         headers: {Authorization: `Bearer ${token}`},
       });
 
-      return {chatRoomId: rid, lastReadAt: body.lastReadAt};
+      return {
+        chatRoomId: rid,
+        userId: userId == null ? null : String(userId),
+        lastReadAt: body.lastReadAt,
+      };
     } catch (err) {
       const msg = err.response?.data || err.message || '알 수 없는 오류';
       return rejectWithValue(msg);
@@ -86,9 +90,6 @@ export const markReadThunk = createAsyncThunk(
 /**
  * ✅ fetchReadPointersThunk
  * - 채팅방 참여자별 포인터 조회 (GET /{chatRoomId}/readPointers)
- * - response는 ReadPointersResponseDTO 형태로 올 확률 큼:
- *   { pointers: [{userId, lastReadAt}, ...] } 또는 { readPointers: [...] } 등
- * - 그래서 안전하게 파싱함
  */
 export const fetchReadPointersThunk = createAsyncThunk(
   'chatRoom/fetchReadPointers',
@@ -201,7 +202,6 @@ const chatRoomSlice = createSlice({
           latestMessageContent: r.latestMessageContent ?? '',
           latestMessageTime: toIso(latestRaw),
 
-          // ✅ 서버가 unreadCount를 내려주는 전제 (컨트롤러 주석에 그 얘기 있음)
           unreadCount: Number.isFinite(r.unreadCount) ? r.unreadCount : 0,
 
           notificationOn: typeof r.notificationOn === 'boolean' ? r.notificationOn : true,
@@ -254,12 +254,6 @@ const chatRoomSlice = createSlice({
       }
     },
 
-    /**
-     * ✅ 새 메시지 프리뷰 반영
-     * - “목록 뱃지”는 서버 unreadCount가 베이스가 가장 정확
-     * - 그래도 실시간 소켓에서 뱃지 증가를 하려면 여기서 +1은 유효함
-     * - 단, activeChatRoom이면 0 유지
-     */
     applyMessagePreview(state, action) {
       const {chatRoomId, message, isSelf} = action.payload || {};
       const rid = toId(chatRoomId);
@@ -303,10 +297,6 @@ const chatRoomSlice = createSlice({
       finalizeList(state);
     },
 
-    /**
-     * ✅ UI 레벨 "읽음" 처리(뱃지만 0)
-     * - 서버 업데이트는 markReadThunk가 담당
-     */
     markRoomRead(state, action) {
       const rid = toId(action.payload);
       const idx = findRoomIndex(state, rid);
@@ -390,25 +380,28 @@ const chatRoomSlice = createSlice({
         state.markReadStatusByRoom[rid] = 'pending';
       })
       .addCase(markReadThunk.fulfilled, (state, action) => {
-        const {chatRoomId, lastReadAt} = action.payload || {};
+        const {chatRoomId, userId, lastReadAt} = action.payload || {};
         const rid = toId(chatRoomId);
         if (!rid) return;
 
         state.markReadStatusByRoom[rid] = 'fulfilled';
 
-        // ✅ “내가 읽었다” 포인터 저장은 여기서 확실히
-        // (내 userId는 thunk arg로 안 받았으니, 호출부에서 applyReadPointer를 같이 쓰는 방식도 가능)
-        // 여기서는 포인터 '자기 것' 저장을 slice가 못 하니(내 userId 모름),
-        // 대신 readPointers는 fetchReadPointersThunk로 맞춰오는 것을 권장.
-        // 하지만 최소한 목록 뱃지는 0으로 내려줌:
+        // ✅ 내 포인터 즉시 반영 (내 화면 unreadCount 바로 갱신)
+        if (userId != null && lastReadAt) {
+          if (!state.readPointersByRoom[rid]) state.readPointersByRoom[rid] = {};
+          state.readPointersByRoom[rid][String(userId)] = toIso(lastReadAt);
+        }
+
+        // ✅ 목록 뱃지는 0
         const idx = findRoomIndex(state, rid);
         if (idx !== -1) {
           state.chatRoomList[idx] = {
             ...state.chatRoomList[idx],
             unreadCount: 0,
           };
-          state.listRevision += 1;
         }
+
+        state.listRevision += 1;
       })
       .addCase(markReadThunk.rejected, (state, action) => {
         const rid = toId(action.meta.arg?.chatRoomId);

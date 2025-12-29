@@ -10,7 +10,7 @@ import {
   RefreshControl,
 } from 'react-native';
 
-import {useSelector} from 'react-redux';
+import {useSelector, useDispatch} from 'react-redux';
 
 import ScheduleEditorBottomSheetModal from '../components/ScheduleEditorBottomSheet';
 import CalendarToggle from '../components/Calendar';
@@ -36,8 +36,11 @@ import {useLocalDateKey} from '../hooks/useLocalDateKey';
 import useGuide from 'hooks/useGuide';
 // import GuideModal from 'components/GuideModal';
 
-// ✅ HAPTIC (경로는 네 프로젝트에 맞게 유지/조정)
+// ✅ HAPTIC
 import {hapticLight} from '../../../utils/haptic';
+
+// ✅ 알림 빨간점(안읽음 여부) 갱신 thunk
+import {fetchHasUnreadThunk} from '../../notification/store/notificationThunk';
 
 const SCHEDULE_GUIDE_STEPS = [
   {
@@ -60,6 +63,8 @@ const SCHEDULE_GUIDE_STEPS = [
 ];
 
 export default function ScheduleScreen() {
+  const dispatch = useDispatch();
+
   const {familyId} = useSelector(state => state.family);
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
   const currentUserId = useSelector(state => state.user.userId);
@@ -126,11 +131,14 @@ export default function ScheduleScreen() {
     // 🔄 강제 갱신 트리거
     setRefreshTrigger(Date.now());
 
+    // ✅ 일정 갱신할 때 알림 빨간점도 같이 갱신
+    dispatch(fetchHasUnreadThunk());
+
     // UX용 최소 딜레이
     setTimeout(() => {
       setRefreshing(false);
     }, 500);
-  }, [isLoading, setRefreshTrigger]);
+  }, [isLoading, setRefreshTrigger, dispatch]);
 
   /** =========================
    * 바텀시트 / 편집 상태
@@ -185,6 +193,25 @@ export default function ScheduleScreen() {
     openSheet(null);
   }, [isLoading, openSheet]);
 
+  // ✅ 일정 CRUD 이후에도 점 갱신하고 싶으면 여기에서 감싸서 넘기면 됨
+  const onSubmitWithUnreadRefresh = useCallback(
+    async (...args) => {
+      const res = await onSubmit(...args);
+      dispatch(fetchHasUnreadThunk());
+      return res;
+    },
+    [onSubmit, dispatch],
+  );
+
+  const onDeleteWithUnreadRefresh = useCallback(
+    async (...args) => {
+      const res = await handleDeleteSchedule(...args);
+      dispatch(fetchHasUnreadThunk());
+      return res;
+    },
+    [handleDeleteSchedule, dispatch],
+  );
+
   return (
     <View style={styles.container}>
       {/* 메인 콘텐츠 */}
@@ -222,8 +249,8 @@ export default function ScheduleScreen() {
         setSelectedUserId={setSelectedUserId}
         title={title}
         setTitle={setTitle}
-        onSubmit={onSubmit}
-        onDelete={handleDeleteSchedule}
+        onSubmit={onSubmitWithUnreadRefresh} // ✅ 저장 후도 갱신
+        onDelete={onDeleteWithUnreadRefresh} // ✅ 삭제 후도 갱신
         onCancelEdit={handleCancelEdit}
       />
 

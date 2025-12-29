@@ -17,6 +17,9 @@ import {fetchFamilyThunk, fetchFamilyStatusThunk} from '../store/familyThunk';
 import {fetchFamilyUserListThunk} from '../store/familyUserThunk';
 import {modifyUserThunk} from '../store/userThunk';
 
+// ✅ 알림 빨간점(안읽음 여부) 갱신 thunk
+import {fetchHasUnreadThunk} from '../../notification/store/notificationThunk';
+
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -33,9 +36,6 @@ import {
 } from '../../notification/utils/requestNotificationPermission';
 import useWebSocketStatus from '../../../hooks/useWebSocketStatus';
 import useFamilyStatusSocket from '../../../hooks/useFamilyStatusSocket';
-
-// import useGuide from 'hooks/useGuide';
-// import GuideModal from 'components/GuideModal';
 
 export default function HomeScreen() {
   const dispatch = useDispatch();
@@ -93,7 +93,7 @@ export default function HomeScreen() {
   useWebSocketStatus(user.userId);
   useFamilyStatusSocket(family.familyId);
 
-  // ✅ 패밀리/멤버 데이터 로드
+  // ✅ 패밀리/멤버 데이터 로드 (여기서는 알림 unread 체크 안 함)
   useEffect(() => {
     let mounted = true;
 
@@ -114,13 +114,16 @@ export default function HomeScreen() {
     };
   }, [dispatch, user.userId, family.familyId]);
 
-  // ✅ 멤버/상태 갱신
+  // ✅ (갱신할 때만) 멤버/상태 갱신 + 알림 빨간점도 같이 갱신
   const doRefreshMembers = useCallback(async () => {
     if (!family?.familyId) return;
 
     await dispatch(fetchFamilyUserListThunk(family.familyId));
     await dispatch(fetchFamilyStatusThunk(family.familyId));
     await dispatch(fetchFamilyThunk(family.familyId));
+
+    // ✅ 여기서만 알림 안읽음 여부 갱신
+    await dispatch(fetchHasUnreadThunk());
   }, [dispatch, family?.familyId]);
 
   const onPullRefresh = useCallback(() => {
@@ -140,6 +143,7 @@ export default function HomeScreen() {
     setTimeout(() => userSheetRef.current?.present(), 100);
   };
 
+  // ✅ 유저 정보 저장 이후에도(=갱신 이벤트로 간주) 알림 빨간점 갱신
   const handleSave = async (name, trait, imageUrl) => {
     if (!selectedUser) return;
 
@@ -157,13 +161,13 @@ export default function HomeScreen() {
     if (family?.familyId) {
       dispatch(fetchFamilyUserListThunk(family.familyId));
       dispatch(fetchFamilyStatusThunk(family.familyId));
+      dispatch(fetchHasUnreadThunk()); // ✅ 저장 후 갱신 타이밍에만
     }
 
     userSheetRef.current?.dismiss();
     setSelectedUser(null);
   };
 
-  // ✅ 여기 핵심: “멤버가 0명”이어도 로딩 끝나면 화면을 보여줘야 함
   const isLoading = !familyLoaded || !didInitialLoad;
 
   if (isLoading) {
@@ -193,7 +197,7 @@ export default function HomeScreen() {
         <HeaderSection user={user} onUserPress={handleUserPress} />
 
         <MemberGridSection
-          members={familyMembers} // ✅ 0명이면 MemberGridSection emptyState가 떠야 정상
+          members={familyMembers}
           onlineUserIds={onlineUserIds}
           lastActiveMap={lastActiveMap}
           onUserPress={handleUserPress}
@@ -222,7 +226,6 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    // paddingTop:'25%',
     flex: 1,
     backgroundColor: '#FFC84D',
     overflow: 'visible',
@@ -230,17 +233,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     width: '100%',
     paddingTop: Platform.OS === 'ios' ? '22%' : '13%',
-    // ✅ height 고정은 비추 (빈 상태 문구가 아래로 밀리거나 잘릴 수 있음)
-    // height: getResponsiveHeight(200),
     paddingBottom: getResponsiveHeight(30),
     alignItems: 'center',
   },
   backgroundCurve: {
     position: 'absolute',
-    // paddingTop:'25%',
     bottom: '-28%',
-
-    // bottom: -getResponsiveHeight(130),
     width: '220%',
     left: '-60%',
     height: '100%',

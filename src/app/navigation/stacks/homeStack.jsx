@@ -1,6 +1,7 @@
 import React, {useEffect} from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
-import {Platform, View} from 'react-native';
+import {Platform} from 'react-native';
+
 import HomeScreen from '../../../features/home/screens';
 import NotificationScreen from '../../../features/notification/screens/NotificationScreen';
 import SettingScreen from '../../../features/setting/screens/SettingScreen';
@@ -12,6 +13,7 @@ import {
 } from '../helpers/tabHeaderHelpers';
 import {getResponsiveHeight} from '../../../utils/responsive';
 import StateScreen from '../../../features/home/screens/stateScreen';
+
 import {fetchHasUnreadThunk} from 'features/notification/store/notificationThunk';
 import {useDispatch, useSelector} from 'react-redux';
 import {useIsFocused} from '@react-navigation/native';
@@ -28,37 +30,46 @@ const defaultHeaderStyle = {
   borderBottomWidth: 0,
 };
 
-const HomeStack = () => {
+const HomeStack = ({route}) => {
   const dispatch = useDispatch();
 
   const isFocused = useIsFocused();
   const userId = useSelector(state => state.user.userId);
 
+  // ✅ 현재 HomeStack 안에서 "활성화된 화면 이름" 구하기
+  // (알림화면일 때는 hasUnread 체크를 스킵하려고)
+  const currentRouteName =
+    route?.state?.routes?.[route.state.index]?.name ?? '홈';
+
   useEffect(() => {
     if (!userId) return;
     if (!isFocused) return;
 
+    // ✅ 알림화면에서는 목록 조회(fetchNotificationsThunk)로 읽음 처리할 거라서
+    // 여기서 hasUnread 조회는 하지 않음(중복 호출/깜빡임 방지)
+    if (currentRouteName === '알림화면') return;
+
     dispatch(fetchHasUnreadThunk());
-  }, [dispatch, userId, isFocused]);
+  }, [dispatch, userId, isFocused, currentRouteName]);
+
   return (
     <Stack.Navigator
       initialRouteName="홈"
       screenOptions={{
-        gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
+        gestureEnabled: true,
         headerStyle: defaultHeaderStyle,
         headerTitleAlign: 'bottom',
         headerShown: true,
         // headerLeft: () => <RenderHeaderTitleLogo />,
         headerLeft: null,
-
         headerTitle: '',
       }}>
       <Stack.Screen
         name="홈"
         component={HomeScreen}
         options={({navigation}) => ({
-          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
-          headerTransparent: true, // ✅ 핵심
+          gestureEnabled: true,
+          headerTransparent: true,
           headerRight: () => (
             <RenderHeaderHome navigation={navigation} currentScreen="홈" />
           ),
@@ -70,8 +81,7 @@ const HomeStack = () => {
         name="알림화면"
         component={NotificationScreen}
         options={({navigation}) => ({
-          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
-
+          gestureEnabled: true,
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}
@@ -81,8 +91,7 @@ const HomeStack = () => {
         name="설정화면"
         component={SettingScreen}
         options={({navigation}) => ({
-          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
-
+          gestureEnabled: true,
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}
@@ -92,8 +101,7 @@ const HomeStack = () => {
         name="알림설정화면"
         component={NotificationSettingScreen}
         options={({navigation}) => ({
-          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
-
+          gestureEnabled: true,
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}
@@ -103,8 +111,7 @@ const HomeStack = () => {
         name="감정상태화면"
         component={StateScreen}
         options={({navigation}) => ({
-          gestureEnabled: true, // ← ✅ 이거 true로 되어 있어야 슬라이드 백 가능!
-
+          gestureEnabled: true,
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: '',
         })}

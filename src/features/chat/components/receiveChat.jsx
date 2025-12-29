@@ -24,7 +24,6 @@ import {CHATROOM_STYLE} from 'styles/style';
 import {getVideoThumbnail} from '../../../utils/videoThumbnail';
 import {toCdnUrl} from '../../../utils/mediaUrl';
 import MentionText from 'components/MentionText';
-// ✅ 추가
 
 export default function ReceiveChat({
   userProfileImage,
@@ -37,8 +36,10 @@ export default function ReceiveChat({
   isGrouped = false,
   isSameSender = false,
 
-  // ✅ 추가: 채팅방 유저 리스트 (멘션 하이라이트용)
   mentionUsers = [],
+
+  // ✅ 이 메시지를 아직 안읽은 사람 수(보낸사람 제외 기준)
+  unreadCount = 0,
 }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -206,9 +207,7 @@ export default function ReceiveChat({
               source={thumbSource}
               style={styles.singleImage}
               resizeMode={FastImage.resizeMode.cover}
-              onError={e =>
-                console.log('❌ ReceiveChat single thumb error:', uri, e?.nativeEvent)
-              }
+              onError={e => console.log('❌ ReceiveChat single thumb error:', uri, e?.nativeEvent)}
             />
           ) : (
             <View style={[styles.singleImage, styles.thumbFallback]} />
@@ -265,7 +264,6 @@ export default function ReceiveChat({
               {isMedia ? (
                 renderMediaGrid()
               ) : hasText ? (
-                // ✅ 멘션 하이라이트
                 <MentionText
                   text={message}
                   users={mentionUsers}
@@ -276,7 +274,17 @@ export default function ReceiveChat({
             </View>
           )}
 
-          {showTime && <Text style={styles.receivedTime}>{formatTime(chatTime)}</Text>}
+          {/* ✅ 안읽은 수 + 시간 */}
+          {(showTime || unreadCount > 0) && (
+            <View style={styles.metaLine}>
+              {unreadCount > 0 && (
+                <Text style={styles.unreadCountText}>{unreadCount}</Text>
+              )}
+              {showTime && (
+                <Text style={styles.receivedTime}>{formatTime(chatTime)}</Text>
+              )}
+            </View>
+          )}
         </View>
       </View>
 
@@ -320,10 +328,7 @@ const styles = StyleSheet.create({
 
   userName: {
     fontFamily: 'Pretendard-Medium',
-    fontSize:
-      Platform.OS === 'android'
-        ? getResponsiveFontSize(14)
-        : getResponsiveFontSize(14),
+    fontSize: Platform.OS === 'android' ? getResponsiveFontSize(14) : getResponsiveFontSize(14),
     color: '#444',
     marginBottom: getResponsiveHeight(7),
   },
@@ -354,16 +359,27 @@ const styles = StyleSheet.create({
     lineHeight: getResponsiveFontSize(17),
   },
 
-  // ✅ 추가: 멘션 스타일
   mentionText: {
     color: '#FFC84D',
     fontFamily: 'Pretendard-SemiBold',
   },
 
+  metaLine: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-end',
+    marginLeft: getResponsiveWidth(5),
+  },
+  unreadCountText: {
+    fontSize: getResponsiveFontSize(11),
+    color: '#FFC84D',
+    fontFamily: 'Pretendard-SemiBold',
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+
   receivedTime: {
     fontSize: CHATROOM_STYLE.messageTimeFontSize,
     color: '#666',
-    marginLeft: getResponsiveWidth(5),
     lineHeight: getResponsiveFontSize(11),
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },

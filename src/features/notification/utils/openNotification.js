@@ -39,24 +39,8 @@ export async function openNotification(n, navigation, deps) {
     });
 
   switch (type) {
-    case 'POST': {
-      if (!n.postId) return;
-
-      let memory = null;
-      if (deps && typeof deps.ensurePostLoaded === 'function') {
-        try {
-          memory = await deps.ensurePostLoaded(n.postId);
-        } catch (e) {
-          // 필요하면 에러 로깅 가능
-        }
-      }
-
-      goPost(
-        memory ? {postId: n.postId, memory} : {postId: n.postId},
-      );
-      return;
-    }
-
+    case 'POST':
+    case 'MENTION_COMMENT': // ✅ 멘션댓글도 결국 post로 이동
     case 'COMMENT': {
       if (!n.postId) return;
 
@@ -64,8 +48,8 @@ export async function openNotification(n, navigation, deps) {
       if (deps && typeof deps.ensurePostLoaded === 'function') {
         try {
           memory = await deps.ensurePostLoaded(n.postId);
-        } catch (e) {
-          // 필요하면 에러 로깅 가능
+        } catch {
+          null;
         }
       }
 
@@ -74,17 +58,24 @@ export async function openNotification(n, navigation, deps) {
           ? {
               postId: n.postId,
               memory,
-              highlightCommentId: n.commentId || null,
+              highlightCommentId:
+                type === 'COMMENT' || type === 'MENTION_COMMENT'
+                  ? n.commentId || null
+                  : null,
             }
           : {
               postId: n.postId,
-              highlightCommentId: n.commentId || null,
+              highlightCommentId:
+                type === 'COMMENT' || type === 'MENTION_COMMENT'
+                  ? n.commentId || null
+                  : null,
             },
       );
       return;
     }
 
-    case 'CHAT': {
+    case 'CHAT':
+    case 'MENTION_CHAT': {
       if (n.chatRoomId) {
         goChatRoom({chatRoomId: n.chatRoomId});
       } else {

@@ -1,7 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 // 기존 파일에서 훅 사용하도록 변경
 
-import React from 'react';
+import React, {useEffect, useRef} from 'react';
 import {
   TouchableOpacity,
   View,
@@ -23,6 +23,10 @@ import {useKakaoLogin} from 'features/auth/hooks/useKakaoLogin';
 import {useOnboardingPager} from '../hooks/useOnboardingPager';
 import {useAutoLogin} from 'features/auth/hooks/useAutoLogin';
 import FastImage from '@d11/react-native-fast-image';
+
+// ✅ 추가
+import {useDispatch, useSelector} from 'react-redux';
+import {fetchHasUnreadThunk} from 'features/notification/store/notificationThunk';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -156,6 +160,19 @@ const slides = [
 
 export default function OnboardingScreen() {
   useAutoLogin();
+
+  const dispatch = useDispatch();
+  const userId = useSelector(state => state.user?.userId);
+
+  // ✅ userId 잡힌 이후 "1번만" unread 체크
+  const didFetchUnreadOnceRef = useRef(false);
+  useEffect(() => {
+    if (!userId) return;
+    if (didFetchUnreadOnceRef.current) return;
+
+    didFetchUnreadOnceRef.current = true;
+    dispatch(fetchHasUnreadThunk());
+  }, [dispatch, userId]);
 
   const {login} = useKakaoLogin();
   const {currentPage, handleScroll} = useOnboardingPager(SCREEN_WIDTH);

@@ -33,7 +33,6 @@ import {getVideoThumbnail} from '../../../utils/videoThumbnail';
 import {toCdnUrl} from '../../../utils/mediaUrl';
 
 import MentionText from 'components/MentionText';
-// ✅ 추가
 
 export default function SendChat({
   chatTime,
@@ -45,8 +44,10 @@ export default function SendChat({
   isGrouped = false,
   isSameSender = false,
 
-  // ✅ 추가: 채팅방 유저 리스트 (멘션 하이라이트용)
   mentionUsers = [],
+
+  // ✅ 이 메시지를 안 읽은 사람 수
+  unreadCount = 0,
 }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -292,9 +293,17 @@ export default function SendChat({
 
   return (
     <View style={[styles.sendContainer, spacingStyle, style]}>
-      {showTime && !!chatTime && (
-        <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>
-      )}
+      {/* ✅ 안읽은 수 + 시간 */}
+      {(showTime && !!chatTime) || unreadCount > 0 ? (
+        <View style={styles.metaLine}>
+          {unreadCount > 0 && (
+            <Text style={styles.unreadCountText}>{unreadCount}</Text>
+          )}
+          {showTime && !!chatTime && (
+            <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>
+          )}
+        </View>
+      ) : null}
 
       {isMedia ? (
         safeMediaUrls.length === 1 ? (
@@ -304,7 +313,6 @@ export default function SendChat({
         )
       ) : hasText ? (
         <View style={[styles.sendBubble, styles.textPadding]}>
-          {/* ✅ 멘션 하이라이트 */}
           <MentionText
             text={message}
             users={mentionUsers}
@@ -331,6 +339,21 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'flex-end',
   },
+
+  metaLine: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+    marginRight: getResponsiveWidth(5),
+    marginBottom: getResponsiveHeight(2),
+  },
+  unreadCountText: {
+    fontSize: getResponsiveFontSize(11),
+    color: '#FFC84D',
+    fontFamily: 'Pretendard-SemiBold',
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+
   sendBubble: {
     backgroundColor: '#FFECC3',
     borderRadius: getResponsiveIconSize(20),
@@ -352,8 +375,6 @@ const styles = StyleSheet.create({
     color: 'black',
     lineHeight: getResponsiveFontSize(17),
   },
-
-  // ✅ 추가: 멘션 스타일
   mentionText: {
     color: '#FFC84D',
     fontFamily: 'Pretendard-SemiBold',
@@ -362,8 +383,6 @@ const styles = StyleSheet.create({
   sendTime: {
     fontSize: CHATROOM_STYLE.messageTimeFontSize,
     color: '#666',
-    marginRight: getResponsiveWidth(5),
-    marginBottom: getResponsiveHeight(2),
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
 

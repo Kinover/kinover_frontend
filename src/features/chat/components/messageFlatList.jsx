@@ -18,8 +18,10 @@ export default function MessageFlatList({
   scrollToBottom,
   isMessageFetched,
 
-  // ✅ 추가: 멘션 후보들
   mentionUsers,
+
+  // ✅ 추가: { [userId]: lastReadAt }
+  readPointersMap,
 }) {
   const [showKinoTyping, setShowKinoTyping] = useState(false);
   const [introSequenceRunning, setIntroSequenceRunning] = useState(false);
@@ -45,7 +47,61 @@ export default function MessageFlatList({
     if (isMessageFetched) setIsInitialLoaded(true);
   }, [chatRoom?.chatRoomId, isMessageFetched]);
 
+  // "YYYY-MM-DD HH:mm:ss" / "YYYY-MM-DDTHH:mm:ss" / ISO 전부 최대한 로컬로 파싱
+  const toMsLocal = v => {
+    if (!v) return 0;
+    const s = String(v).trim().replace(' ', 'T');
+    const d = new Date(s);
+    const t = d.getTime();
+    return Number.isNaN(t) ? 0 : t;
+  };
+
+  // ✅ 메시지별 “안읽은 사람 수”
+  const calcUnreadCount = message => {
+    if (!message) return 0;
+
+    const createdAtMs = toMsLocal(message.createdAt);
+    if (!createdAtMs) return 0;
+
+    const senderId =
+      message?.sender?.userId ??
+      message?.senderId ??
+      message?.userId ??
+      null;
+
+    const users = Array.isArray(mentionUsers) ? mentionUsers : [];
+    if (users.length === 0) return 0;
+
+    const map = readPointersMap || {};
+
+    let count = 0;
+
+    for (const u of users) {
+      const uid = u?.userId ?? u?.id ?? null;
+      if (uid == null) continue;
+
+      // ✅ 보낸 사람 제외
+      if (senderId != null && String(uid) === String(senderId)) continue;
+
+      const lastReadAt = map?.[String(uid)] ?? null;
+
+      // lastReadAt이 없으면 = 안읽음
+      if (!lastReadAt) {
+        count += 1;
+        continue;
+      }
+
+      const lastReadMs = toMsLocal(lastReadAt);
+      if (lastReadMs < createdAtMs) count += 1;
+    }
+
+    if (!Number.isFinite(count) || count < 0) return 0;
+    return count;
+  };
+
+  // =========================
   // 1) 키노 인트로
+  // =========================
   useEffect(() => {
     if (!isKino || !chatRoom?.chatRoomId) return;
     if (!isInitialLoaded) return;
@@ -86,7 +142,9 @@ export default function MessageFlatList({
     };
   }, [isKino, chatRoom?.chatRoomId, isInitialLoaded]);
 
+  // =========================
   // 2) 유저 메시지 이후 키노 타이핑
+  // =========================
   useEffect(() => {
     if (!isKino) return;
     if (!isInitialLoaded) return;
@@ -156,8 +214,7 @@ export default function MessageFlatList({
       keyExtractor={(item, index) => {
         if (item?.clientMessageId) return `cid-${String(item.clientMessageId)}`;
         if (item?.messageId) return String(item.messageId);
-        if (item?.localType)
-          return `${item.localType}_${item.createdAt ?? index}`;
+        if (item?.localType) return `${item.localType}_${item.createdAt ?? index}`;
         return `${item?.senderId ?? 'x'}_${item?.createdAt ?? 't'}_${index}`;
       }}
       renderItem={({item, index}) => {
@@ -174,6 +231,12 @@ export default function MessageFlatList({
         const shouldShowDate = curDate !== prevDate;
         const isGrouped = String(prev?.senderId) === String(item?.senderId);
 
+        // ✅ 키노 인트로/타이핑은 읽음 숫자 붙이지 않기
+        const isLocalKino =
+          item?.localType === 'kinoTyping' || item?.localType === 'kinoIntro';
+
+        const unreadCount = isLocalKino ? 0 : calcUnreadCount(item);
+
         return (
           <ChatMessageItem
             chatRoom={chatRoom}
@@ -183,9 +246,8 @@ export default function MessageFlatList({
             kinoType={chatRoom?.kinoType}
             shouldShowDate={shouldShowDate}
             isGrouped={isGrouped}
-
-            // ✅ 핵심: 말풍선에서 @ 하이라이트/탭 처리용
             mentionUsers={mentionUsers}
+            unreadCount={unreadCount}
           />
         );
       }}

@@ -12,11 +12,11 @@ import useHeaderSetting from '../../../hooks/useHeaderSetting';
 import {onLeaveChat} from '../hooks/onLeaveChat';
 import {fetchMessageThunk} from '../store/messageThunk';
 import useHideTabBar from '../../../hooks/useHideTabBar';
-import {setActiveChatRoom} from '../store/chatRoomSlice';
+import {setActiveChatRoom, selectReadPointers, fetchReadPointersThunk, markReadThunk} from '../store/chatRoomSlice';
 
 import {selectRoomMeta} from '../store/messageSlice';
 import useGuide from 'hooks/useGuide';
-import {markReadThunk, fetchChatRoomUsersThunk} from '../store/chatRoomThunk';
+import {fetchChatRoomUsersThunk} from '../store/chatRoomThunk';
 
 const CHAT_GUIDE_STEPS = [
   {
@@ -73,7 +73,6 @@ function toLocalDateTimeString(dateLike) {
   const ss = pad2(d.getSeconds());
   const SSS = pad3(d.getMilliseconds());
 
-  // Spring LocalDateTime 기본 파싱: 2025-12-28T18:30:12.123
   return `${yyyy}-${MM}-${dd}T${HH}:${mm}:${ss}.${SSS}`;
 }
 
@@ -94,6 +93,9 @@ export default function ChatRoomScreenTemplate({
   const messageList = roomMeta?.messageList ?? [];
 
   const roomUsers = useSelector(state => state.chatRoom.chatRoomUsers) || [];
+
+  // ✅ readPointers: { [userId]: lastReadAt }
+  const readPointersMap = useSelector(state => selectReadPointers(state, chatRoomId));
 
   const {
     flatListRef,
@@ -140,6 +142,12 @@ export default function ChatRoomScreenTemplate({
     dispatch(fetchChatRoomUsersThunk(chatRoomId));
   }, [chatRoomId, dispatch]);
 
+  // ✅ readPointers 초기 로드 (입장 시 1회)
+  useEffect(() => {
+    if (!chatRoomId) return;
+    dispatch(fetchReadPointersThunk({chatRoomId}));
+  }, [chatRoomId, dispatch]);
+
   // ✅ 최신 메시지 createdAt (정렬이 깨져도 안전하게 max로)
   const latestCreatedAtLocal = useMemo(() => {
     if (!Array.isArray(messageList) || messageList.length === 0) return null;
@@ -174,8 +182,16 @@ export default function ChatRoomScreenTemplate({
     if (lastSentReadAtRef.current === latestCreatedAtLocal) return;
 
     lastSentReadAtRef.current = latestCreatedAtLocal;
-    dispatch(markReadThunk({chatRoomId, lastReadAt: latestCreatedAtLocal}));
-  }, [chatRoomId, latestCreatedAtLocal, dispatch]);
+
+    // ✅ 서버 저장 + (성공 시 slice에서 내 포인터 저장됨)
+    dispatch(
+      markReadThunk({
+        chatRoomId,
+        lastReadAt: latestCreatedAtLocal,
+        userId,
+      }),
+    );
+  }, [chatRoomId, latestCreatedAtLocal, dispatch, userId]);
 
   // ✅ 방 들어오면 1회
   useEffect(() => {
@@ -231,6 +247,7 @@ export default function ChatRoomScreenTemplate({
           scrollToBottom={scrollToBottom}
           isMessageFetched={isMessageFetched}
           mentionUsers={roomUsers}
+          readPointersMap={readPointersMap} // ✅ 추가(실시간 반영 핵심)
         />
 
         <ChatInput

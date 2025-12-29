@@ -54,9 +54,11 @@ export default function ChatMessageItem({
   isGrouped,
   kinoType,
 
-  // ✅ 추가: 채팅방 유저 목록(멘션 하이라이트용)
-  // 형태: [{ userId, name, image }]
+  // ✅ 멘션 하이라이트용
   mentionUsers = [],
+
+  // ✅ 추가: 이 메시지를 안읽은 사람 수(보낸사람 제외 기준)
+  unreadCount = 0,
 }) {
   const navigation = useNavigation();
 
@@ -112,7 +114,9 @@ export default function ChatMessageItem({
         messageType={messageType}
         imageUrls={imageUrls}
         mentionUsers={mentionUsers}
-          kinoType={kinoType}
+        kinoType={kinoType}
+        // (원하면 키노에도 unreadCount 달 수 있음)
+        // unreadCount={unreadCount}
       />
     ) : (
       <SendChat
@@ -123,6 +127,7 @@ export default function ChatMessageItem({
         uploadStatus={message?.uploadStatus}
         isGrouped={isGrouped}
         mentionUsers={mentionUsers}
+        unreadCount={unreadCount}
       />
     );
   } else {
@@ -135,6 +140,7 @@ export default function ChatMessageItem({
         messageType={messageType}
         imageUrls={imageUrls}
         mentionUsers={mentionUsers}
+        // unreadCount={unreadCount}
       />
     ) : (
       <ReceiveChat
@@ -146,6 +152,7 @@ export default function ChatMessageItem({
         messageType={messageType}
         isGrouped={isGrouped}
         mentionUsers={mentionUsers}
+        unreadCount={unreadCount}
       />
     );
   }

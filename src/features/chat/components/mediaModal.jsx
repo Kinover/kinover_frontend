@@ -11,7 +11,6 @@ import {
   FlatList,
   Text,
   Platform,
-  Image,
   PermissionsAndroid,
   ActivityIndicator,
 } from 'react-native';
@@ -21,11 +20,8 @@ import FastImage from '@d11/react-native-fast-image';
 import RNFS from 'react-native-fs';
 import {CameraRoll} from '@react-native-camera-roll/camera-roll';
 
-import {
-  getResponsiveFontSize,
-  getResponsiveHeight,
-  getResponsiveWidth,
-} from '../../../utils/responsive';
+import {getResponsiveFontSize, getResponsiveWidth} from '../../../utils/responsive';
+import ToastModal from '../../../components/ToastModal';
 
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 import Animated, {
@@ -61,9 +57,9 @@ const ensureAndroidPermission = async () => {
 
 const saveUrlToGallery = async ({url, type, album = 'Kinover'}) => {
   const ext = type === 'video' ? 'mp4' : 'jpg';
-  const path = `${RNFS.CachesDirectoryPath}/kinover_${Date.now()}_${Math.random()
-    .toString(16)
-    .slice(2)}.${ext}`;
+  const path = `${
+    RNFS.CachesDirectoryPath
+  }/kinover_${Date.now()}_${Math.random().toString(16).slice(2)}.${ext}`;
 
   await RNFS.downloadFile({fromUrl: url, toFile: path}).promise;
 
@@ -79,14 +75,14 @@ function ZoomableImage({uri, isActive}) {
   const scale = useSharedValue(1);
   const lastScale = useSharedValue(1);
 
-  const reset = () => {
+  const reset = useCallback(() => {
     scale.value = withTiming(1);
     lastScale.value = 1;
-  };
+  }, [scale, lastScale]);
 
   useEffect(() => {
     if (!isActive) reset();
-  }, [isActive]);
+  }, [isActive, reset]);
 
   const pinch = Gesture.Pinch()
     .onUpdate(e => {
@@ -138,6 +134,7 @@ export default function MediaModal({
   initialIndex = 0,
   onClose,
 }) {
+  // ✅ hooks는 무조건 최상단에서 동일하게 실행
   const cancelRequestedRef = useRef(false);
 
   const resolvedUrls = useMemo(
@@ -151,8 +148,41 @@ export default function MediaModal({
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState({current: 0, total: 0});
 
-  /* ===== 닫기 ===== */
-  const handleClose = () => {
+  const [menuVisible, setMenuVisible] = useState(false);
+  const menuAnim = useSharedValue(0);
+
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const showToast = useCallback(msg => {
+    setToastMessage(msg);
+    setToastVisible(true);
+  }, []);
+
+  const openMenu = useCallback(() => {
+    if (saving || !resolvedUrls.length) return;
+    setMenuVisible(true);
+    menuAnim.value = withTiming(1, {duration: 140});
+  }, [saving, resolvedUrls.length, menuAnim]);
+
+  const closeMenu = useCallback(() => {
+    menuAnim.value = withTiming(0, {duration: 120}, finished => {
+      if (finished) runOnJS(setMenuVisible)(false);
+    });
+  }, [menuAnim]);
+
+  const menuOverlayStyle = useAnimatedStyle(() => ({
+    opacity: menuAnim.value,
+  }));
+  const menuBoxStyle = useAnimatedStyle(() => ({
+    opacity: menuAnim.value,
+    transform: [{translateY: (1 - menuAnim.value) * -6}],
+  }));
+
+  const handleClose = useCallback(() => {
+    // 닫을 때 메뉴도 같이 정리
+    if (menuVisible) closeMenu();
+
     if (saving) {
       cancelRequestedRef.current = true;
       setSaving(false);
@@ -160,81 +190,163 @@ export default function MediaModal({
       return;
     }
     onClose();
-  };
+  }, [saving, onClose, menuVisible, closeMenu]);
 
-  /* ===== 전체 저장 ===== */
-  const handleSaveAll = useCallback(async () => {
-    if (saving || !resolvedUrls.length) return;
+  const runSave = useCallback(
+    async mode => {
+      if (saving || !resolvedUrls.length) return;
 
-    setSaving(true);
-    cancelRequestedRef.current = false;
-    setProgress({current: 0, total: resolvedUrls.length});
+      setSaving(true);
+      cancelRequestedRef.current = false;
 
-    try {
-      const ok = await ensureAndroidPermission();
-      if (!ok) throw new Error('permission');
+      const total = mode === 'all' ? resolvedUrls.length : 1;
+      setProgress({current: 0, total});
 
-      for (let i = 0; i < resolvedUrls.length; i++) {
-        if (cancelRequestedRef.current) throw new Error('cancel');
+      try {
+        const ok = await ensureAndroidPermission();
+        if (!ok) throw new Error('permission');
 
-        setProgress({current: i + 1, total: resolvedUrls.length});
-        await saveUrlToGallery({
-          url: resolvedUrls[i],
-          type: isVideo ? 'video' : 'photo',
-        });
+        if (mode === 'single') {
+          const target = resolvedUrls[currentIndex];
+          if (!target) throw new Error('no_target');
+
+          setProgress({current: 1, total: 1});
+          await saveUrlToGallery({
+            url: target,
+            type: isVideo ? 'video' : 'photo',
+          });
+
+          showToast(isVideo ? '영상이 저장됐어요' : '사진이 저장됐어요');
+        } else {
+          for (let i = 0; i < resolvedUrls.length; i++) {
+            if (cancelRequestedRef.current) throw new Error('cancel');
+
+            setProgress({current: i + 1, total: resolvedUrls.length});
+            await saveUrlToGallery({
+              url: resolvedUrls[i],
+              type: isVideo ? 'video' : 'photo',
+            });
+          }
+
+          showToast(isVideo ? '영상이 모두 저장됐어요' : '사진이 모두 저장됐어요');
+        }
+      } catch (e) {
+        // 실패/취소는 토스트 생략
+      } finally {
+        setTimeout(() => {
+          setSaving(false);
+          setProgress({current: 0, total: 0});
+        }, 600);
       }
-    } catch (e) {
-      // 취소 / 실패는 여기서 그냥 종료
-    } finally {
-      setTimeout(() => {
-        setSaving(false);
-        setProgress({current: 0, total: 0});
-      }, 600);
+    },
+    [saving, resolvedUrls, currentIndex, isVideo, showToast],
+  );
+
+  // visible false 될 때 정리
+  useEffect(() => {
+    if (!visible) {
+      setMenuVisible(false);
+      menuAnim.value = 0;
     }
-  }, [resolvedUrls, isVideo, saving]);
+  }, [visible, menuAnim]);
+
+  // initialIndex가 바뀌어서 다시 열리는 케이스 대비
+  useEffect(() => {
+    setCurrentIndex(initialIndex || 0);
+  }, [initialIndex]);
+
+  const isMenuDisabled = saving || !resolvedUrls.length;
+
+  const renderItem = useCallback(
+    ({item, index}) =>
+      isVideo ? (
+        <Video source={{uri: item}} style={styles.video} controls />
+      ) : (
+        <ZoomableImage uri={item} isActive={index === currentIndex} />
+      ),
+    [isVideo, currentIndex],
+  );
 
   return (
     <Modal transparent visible={visible} animationType="fade">
       <View style={styles.overlay} />
 
-      {/* 닫기 */}
-      <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
-        <Image
-          source={require('../../../assets/images/clearBt1.png')}
-          style={{width: 22, height: 22}}
-        />
-      </TouchableOpacity>
+      {/* 상단 버튼 */}
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={handleClose} style={styles.circleIconBtn}>
+          <Text style={styles.xText}>✕</Text>
+        </TouchableOpacity>
 
-      {/* 저장 버튼 */}
-      <View style={styles.saveButtonContainer}>
         <TouchableOpacity
-          onPress={handleSaveAll}
-          disabled={saving}
-          style={[styles.saveBtn, saving && {opacity: 0.5}]}>
-          <Text style={styles.saveBtnText}>전체저장</Text>
+          onPress={openMenu}
+          disabled={isMenuDisabled}
+          style={[styles.circleIconBtn, isMenuDisabled && {opacity: 0.5}]}>
+          <FastImage
+            source={require('../../../assets/images/dots_white.png')}
+            style={styles.dotsIcon}
+            resizeMode={FastImage.resizeMode.contain}
+          />
         </TouchableOpacity>
       </View>
 
+      {/* 미디어 */}
       <FlatList
         data={resolvedUrls}
         horizontal
         pagingEnabled
-        keyExtractor={(v, i) => v + i}
-        renderItem={({item, index}) =>
-          isVideo ? (
-            <Video source={{uri: item}} style={styles.video} controls />
-          ) : (
-            <ZoomableImage uri={item} isActive={index === currentIndex} />
-          )
-        }
-        onMomentumScrollEnd={e =>
-          setCurrentIndex(
-            Math.round(e.nativeEvent.contentOffset.x / screenWidth),
-          )
-        }
+        extraData={currentIndex} // ✅ 안정화
+        keyExtractor={(v, i) => `${v}_${i}`}
+        renderItem={renderItem}
+        onMomentumScrollEnd={e => {
+          const next = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+          setCurrentIndex(next);
+        }}
       />
 
-      {/* ===== 저장 중 인디케이터 ===== */}
+      {/* 메뉴 */}
+      <Animated.View
+        pointerEvents={menuVisible ? 'auto' : 'none'}
+        style={[styles.menuOverlay, menuOverlayStyle]}>
+        <TouchableOpacity
+          style={StyleSheet.absoluteFillObject}
+          activeOpacity={1}
+          onPress={closeMenu}
+        />
+
+        <Animated.View style={[styles.menuBox, menuBoxStyle]}>
+          <TouchableOpacity
+            onPress={() => {
+              closeMenu();
+              runSave('single');
+            }}
+            disabled={saving || !resolvedUrls[currentIndex]}
+            activeOpacity={0.85}
+            style={[
+              styles.menuItem,
+              (saving || !resolvedUrls[currentIndex]) && {opacity: 0.5},
+            ]}>
+            <Text style={styles.menuText}>사진 개별저장</Text>
+          </TouchableOpacity>
+
+          <View style={styles.menuDivider} />
+
+          <TouchableOpacity
+            onPress={() => {
+              closeMenu();
+              runSave('all');
+            }}
+            disabled={saving || !resolvedUrls.length}
+            activeOpacity={0.85}
+            style={[
+              styles.menuItem,
+              (saving || !resolvedUrls.length) && {opacity: 0.5},
+            ]}>
+            <Text style={styles.menuText}>전체저장</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </Animated.View>
+
+      {/* 저장 중 */}
       {saving && (
         <View style={styles.progressOverlay}>
           <View style={styles.progressBox}>
@@ -242,17 +354,25 @@ export default function MediaModal({
             <Text style={styles.progressText}>
               {progress.current} / {progress.total}
             </Text>
-            <Text style={styles.progressSub}>
-              화면을 나가면 저장이 취소돼요
-            </Text>
+            <Text style={styles.progressSub}>화면을 나가면 저장이 취소돼요</Text>
           </View>
         </View>
       )}
+
+      {/* 토스트 */}
+      <ToastModal
+        visible={toastVisible}
+        message={toastMessage}
+        onClose={() => setToastVisible(false)}
+        useNativeModal={false}
+      />
     </Modal>
   );
 }
 
 /* ================= styles ================= */
+
+const CIRCLE_SIZE = getResponsiveWidth(38);
 
 const styles = StyleSheet.create({
   overlay: {
@@ -260,31 +380,36 @@ const styles = StyleSheet.create({
     backgroundColor: 'black',
   },
 
-  closeBtn: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 20,
-    right: 16,
-    zIndex: 50,
-  },
-
-  saveButtonContainer: {
+  topBar: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 46 : 16,
     left: 16,
+    right: 16,
     zIndex: 50,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
 
-  saveBtn: {
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+  circleIconBtn: {
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
     borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
-  saveBtnText: {
+  xText: {
     color: '#fff',
+    fontSize: getResponsiveFontSize(16),
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(12.5),
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
+
+  dotsIcon: {
+    width: getResponsiveWidth(16),
+    height: getResponsiveWidth(16),
   },
 
   zoomContainer: {
@@ -305,6 +430,47 @@ const styles = StyleSheet.create({
   video: {
     width: screenWidth,
     height: screenHeight * 0.75,
+  },
+
+  menuOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 80,
+    backgroundColor: 'rgba(0,0,0,0.12)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingTop:
+      Platform.OS === 'ios' ? 46 + CIRCLE_SIZE + 10 : 16 + CIRCLE_SIZE + 10,
+    paddingRight: 16,
+  },
+
+  menuBox: {
+    width: getResponsiveWidth(170),
+    backgroundColor: 'rgba(20,20,20,0.96)',
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.12)',
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    shadowOffset: {width: 0, height: 6},
+    elevation: 12,
+  },
+
+  menuItem: {
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+  },
+
+  menuText: {
+    color: '#fff',
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(13),
+  },
+
+  menuDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.18)',
   },
 
   progressOverlay: {
@@ -331,5 +497,6 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.8)',
     fontSize: 12,
     marginTop: 8,
+    fontFamily: 'Pretendard-Medium',
   },
 });
