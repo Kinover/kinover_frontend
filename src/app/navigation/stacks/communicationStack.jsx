@@ -61,7 +61,7 @@ export default function CommunicationStack() {
                 lineHeight: HEADER_STYLES.mainTitleLineHeight, // 살짝만
                 textAlignVertical: 'center',
               }}>
-              채팅
+              소통
             </Text>
           ),
           headerTitleAlign: 'bottom',

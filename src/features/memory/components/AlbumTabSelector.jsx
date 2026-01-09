@@ -1,91 +1,59 @@
+/* eslint-disable react-native/no-inline-styles */
 // src/screens/memory/components/AlbumTabSelector.js
-import React, {useEffect, useRef, useState, useMemo} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-  Animated,
-  Image,
-} from 'react-native';
+// ✅ "기간선택" 버튼 제거 버전 (탭만 남김)
+
+import React, {useEffect, useRef, useState, useCallback} from 'react';
+import {View, Text, TouchableOpacity, StyleSheet, Animated} from 'react-native';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../../utils/responsive';
-import {BUTTON_STYLES} from 'styles/style';
 
 const TABS = [
-  {key: 'post', title: '게시글'},
+  {key: 'feed', title: '피드'},
   {key: 'album', title: '앨범'},
 ];
 
 const BASE_UNDERLINE_WIDTH = 40;
 
-const formatPeriodLabel = raw => {
-  if (!raw) return '';
-
-  const formatDate = d => {
-    const parts = (d || '').split('.');
-    if (parts.length !== 3) return d;
-    const [year, month, day] = parts;
-    const yy = (year || '').slice(-2);
-    return `${yy}.${month}.${day}`;
-  };
-
-  const segments = raw.split('~').map(s => s.trim());
-
-  if (segments.length === 2) {
-    return `${formatDate(segments[0])} ~ ${formatDate(segments[1])}`;
-  }
-  return formatDate(segments[0]);
-};
-
-export default function AnimatedAlbumTabSelector({
-  selected,
-  onSelect,
-  onPressDateFilter,
-  periodLabel,
-}) {
+export default function AnimatedAlbumTabSelector({selected, onSelect}) {
   const translateX = useRef(new Animated.Value(0)).current;
   const scaleX = useRef(new Animated.Value(1)).current;
   const [positions, setPositions] = useState({});
 
-  const handleLayout = (key, event) => {
+  const handleLayout = useCallback((key, event) => {
     const {x, width} = event.nativeEvent.layout;
     setPositions(prev => ({
       ...prev,
       [key]: {x, width},
     }));
-  };
+  }, []);
 
   useEffect(() => {
-    if (positions[selected]) {
-      const {x, width} = positions[selected];
-      const targetTranslateX = x + width / 2 - BASE_UNDERLINE_WIDTH / 2;
-      const targetScaleX = width / BASE_UNDERLINE_WIDTH;
+    if (!positions?.[selected]) return;
 
-      Animated.parallel([
-        Animated.timing(translateX, {
-          toValue: targetTranslateX,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleX, {
-          toValue: targetScaleX,
-          duration: 200,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
+    const {x, width} = positions[selected];
+
+    // width가 0이면 애니메이션 계산이 깨질 수 있어서 가드
+    if (!width || width <= 0) return;
+
+    const targetTranslateX = x + width / 2 - BASE_UNDERLINE_WIDTH / 2;
+    const targetScaleX = Math.max(width / BASE_UNDERLINE_WIDTH, 0.01);
+
+    Animated.parallel([
+      Animated.timing(translateX, {
+        toValue: targetTranslateX,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleX, {
+        toValue: targetScaleX,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, [selected, positions, translateX, scaleX]);
-
-  const displayLabel = useMemo(
-    () => (periodLabel ? formatPeriodLabel(periodLabel) : '기간 선택'),
-    [periodLabel],
-  );
-  const isActive = !!periodLabel;
 
   return (
     <View style={styles.container}>
@@ -95,7 +63,7 @@ export default function AnimatedAlbumTabSelector({
             {TABS.map(tab => (
               <TouchableOpacity
                 key={tab.key}
-                onPress={() => onSelect(tab.key)}
+                onPress={() => onSelect?.(tab.key)}
                 style={styles.tab}
                 activeOpacity={0.7}
                 onLayout={e => handleLayout(tab.key, e)}>
@@ -110,6 +78,7 @@ export default function AnimatedAlbumTabSelector({
             ))}
 
             <Animated.View
+              pointerEvents="none"
               style={[
                 styles.underline,
                 {
@@ -119,31 +88,6 @@ export default function AnimatedAlbumTabSelector({
             />
           </View>
         </View>
-
-        {onPressDateFilter && (
-          <TouchableOpacity
-            style={[styles.filterButton, isActive && styles.filterButtonActive]}
-            activeOpacity={0.7}
-            onPress={onPressDateFilter}>
-            <Image
-              resizeMode="contain"
-              style={[
-                styles.calendarIcon,
-                isActive && styles.calendarIconActive,
-              ]}
-              source={require('../../../assets/icons/calendar.png')}
-            />
-            <Text
-              style={[
-                styles.filterButtonText,
-                isActive && styles.filterButtonTextActive,
-              ]}
-              numberOfLines={1}
-              ellipsizeMode="tail">
-              {displayLabel}
-            </Text>
-          </TouchableOpacity>
-        )}
       </View>
     </View>
   );
@@ -153,12 +97,10 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: 'white',
     paddingBottom: getResponsiveHeight(15),
-    paddingVertical:
-      Platform.OS === 'android'
-        ? getResponsiveHeight(5)
-        : getResponsiveHeight(5),
+    paddingVertical: getResponsiveHeight(5),
     paddingHorizontal: getResponsiveWidth(21),
     paddingRight: getResponsiveWidth(18),
+    height: getResponsiveHeight(50),
   },
 
   headerRow: {
@@ -168,9 +110,13 @@ const styles = StyleSheet.create({
   },
 
   tabRowContainer: {position: 'relative', flexShrink: 1},
-  tabRow: {flexDirection: 'row', justifyContent: 'flex-start', position: 'relative'},
+  tabRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    position: 'relative',
+  },
 
-  tab: {marginRight: getResponsiveWidth(25)},
+  tab: {marginRight: getResponsiveWidth(25), flexDirection: 'row'},
   tabText: {
     textAlign: 'center',
     fontSize: getResponsiveFontSize(18),
@@ -181,52 +127,16 @@ const styles = StyleSheet.create({
   },
   selectedText: {
     color: '#111827',
-    fontWeight: 'bold',
+    fontWeight: '700',
     fontFamily: 'Pretendard-Bold',
   },
 
   underline: {
     height: 2,
-    width: BASE_UNDERLINE_WIDTH + 5,
+    width: BASE_UNDERLINE_WIDTH + 6,
     backgroundColor: '#111827',
     position: 'absolute',
     bottom: -10,
+    left: -3,
   },
-
-  filterButton: {
-    maxWidth: getResponsiveWidth(220),
-    paddingHorizontal: getResponsiveWidth(12),
-    paddingVertical: getResponsiveHeight(6),
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
-    gap: getResponsiveWidth(6),
-    flexDirection: 'row',
-  },
-
-  filterButtonActive: {
-    borderColor: BUTTON_STYLES.backgroundColor,
-    backgroundColor: '#FFFFFF',
-  },
-
-  filterButtonText: {
-    fontSize: getResponsiveFontSize(14),
-    fontFamily: 'Pretendard-Medium',
-    color: '#9CA3AF',
-  },
-
-  filterButtonTextActive: {
-    fontSize: getResponsiveFontSize(14),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#111827',
-  },
-
-  calendarIcon: {
-    width: getResponsiveWidth(16),
-    height: getResponsiveWidth(16),
-    tintColor: '#9CA3AF',
-  },
-
-  calendarIconActive: {tintColor: '#111827'},
 });

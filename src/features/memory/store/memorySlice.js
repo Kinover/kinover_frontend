@@ -13,7 +13,7 @@ const initialMemoryState = {
 
   // ✅ UI 상태 (탭)
   ui: {
-    selectedTab: 'post', // 'post' | 'album'
+    selectedTab: 'feed', // 'post' | 'album'
   },
 
   error: null,
@@ -53,7 +53,7 @@ const memorySlice = createSlice({
     // ✅ 탭 변경 액션
     setMemorySelectedTab(state, action) {
       const tab = action.payload;
-      if (tab === 'post' || tab === 'album') {
+      if (tab === 'feed' || tab === 'album') {
         state.ui.selectedTab = tab;
       }
     },

@@ -11,7 +11,9 @@ export const useFormattedScheduleDate = selectedDate => {
     const day = selectedDate.getDate();
     const dayOfWeek = dayMap[selectedDate.getDay()];
 
-    return `${year}년 ${month}월 ${day}일 (${dayOfWeek})`;
+    // return `${year}년 ${month}월 ${day}일 (${dayOfWeek})`;
+    return `${year}.${month}.${day} (${dayOfWeek})`;
+
   }, [selectedDate]);
 
   return formatted;

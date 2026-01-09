@@ -20,7 +20,7 @@ import FastImage from '@d11/react-native-fast-image';
 import YellowSpinner from '../../../components/YellowSpinner';
 import {EMPTY_STYLE} from 'styles/style';
 import {hapticLight} from '../../../utils/haptic';
-
+import DropShadow from 'react-native-drop-shadow';
 
 export default function CommunicationScreen({navigation}) {
   const dispatch = useDispatch();
@@ -99,11 +99,22 @@ export default function CommunicationScreen({navigation}) {
         />
       )}
 
-      <TouchableOpacity onPress={handleFabPress} style={styles.fab}>
-        <FastImage
-          source={require('../../../assets/icons/chat-floating-bt.png')}
-          style={{width: '100%', height: '100%', resizeMode: 'contain'}}
-        />
+      <TouchableOpacity
+        onPress={handleFabPress}
+        style={styles.fab}
+        activeOpacity={0.8}>
+        <DropShadow
+          style={{
+            shadowColor: '#000',
+            shadowOffset: {width: 0, height: 5},
+            shadowOpacity: 0.3,
+            shadowRadius: 2,
+          }}>
+          <FastImage
+            source={require('../../../assets/icons/chat-floating-bt.png')}
+            style={{width: '100%', height: '100%', resizeMode: 'contain'}}
+          />
+        </DropShadow>
       </TouchableOpacity>
     </View>
   );
@@ -136,8 +147,8 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     bottom: getResponsiveHeight(110),
-    right: getResponsiveWidth(18),
-    width: getResponsiveIconSize(60),
-    height: getResponsiveIconSize(60),
+    right: getResponsiveWidth(14),
+    width: getResponsiveIconSize(65),
+    height: getResponsiveIconSize(65),
   },
 });

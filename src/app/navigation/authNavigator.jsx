@@ -2,7 +2,8 @@ import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 
 // 인증 관련 스크린 import
-import OnboardingScreen from '../../features/onboarding/screens/OnboardingScreen';
+// import OnboardingScreen from '../../features/onboarding/screens/OnboardingScreen';
+import OnboardingScreen from 'features/onboarding/screens/OnboardingScreen';
 import FamilySetupScreen from '../../features/auth/screens/FamilySetupScreen';
 import CreateFamilyScreen from 'features/family/CreateFamilyScreen';
 import UserSetupScreen from 'features/auth/screens/UserSetupScreen';
