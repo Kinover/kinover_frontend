@@ -74,11 +74,18 @@ export const deletePostThunk = (postId, familyId) => {
 };
 
 // 📁 memoryThunk.js
+// ✅ memoryThunk.js 안의 deletePostImageThunk만 이걸로 교체
 
-export const deletePostImageThunk = (postId, imageUrlToDelete, familyId) => {
+export const deletePostImageThunk = (
+  postId,
+  imageUrlToDelete,
+  familyId,
+  options = {refresh: true},
+) => {
   return async dispatch => {
     dispatch(setMemoryLoading(true));
     console.log('🗑️ 게시글 이미지 삭제 요청 시작:', {postId, imageUrlToDelete});
+
     try {
       const token = await getToken();
       console.log('🔐 토큰 획득 성공:', token);
@@ -92,23 +99,30 @@ export const deletePostImageThunk = (postId, imageUrlToDelete, familyId) => {
           Authorization: `Bearer ${token}`,
         },
         data: {
-          imageUrl: imageUrlToDelete, // ✅ 실제 삭제할 이미지 URL 또는 파일명
+          imageUrl: imageUrlToDelete, // ✅ 서버가 URL/파일명 둘 다 받는다고 했으니 fileName 넣어도 됨
         },
       });
 
       console.log('✅ 이미지 삭제 성공:', response.status);
 
-      // 삭제 후 다시 게시글 목록 요청
-      dispatch(fetchMemoryThunk(familyId));
+      // ✅ 필요할 때만 리프레시
+      if (options?.refresh && familyId) {
+        dispatch(fetchMemoryThunk(familyId));
+      }
+
+      // ✅ CreatePostScreen에서 await할 수 있게 return
+      return response.data;
     } catch (error) {
-      console.error('❌ 게시글 이미지 삭제 실패:', error);
+      console.error('❌ 게시글 이미지 삭제 실패:', error?.response?.data || error);
       dispatch(setMemoryError(error.message));
+      throw error;
     } finally {
       dispatch(setMemoryLoading(false));
       console.log('📤 이미지 삭제 요청 종료');
     }
   };
 };
+
 
 // 게시글 알림 ON/OFF
 export const togglePostNotificationThunk = ({userId, isOn}) => {

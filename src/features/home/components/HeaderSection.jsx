@@ -19,6 +19,7 @@ import {useNavigation} from '@react-navigation/native';
 import DropShadow from 'react-native-drop-shadow';
 import {hapticLight} from '../../../utils/haptic';
 import {getEmotionImage} from '../utils/emotionUtils';
+import { DEFAULT_STYLE } from 'styles/style';
 
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 
@@ -244,16 +245,16 @@ const styles = StyleSheet.create({
   userNameHeader: {
     fontFamily: 'Pretendard-SemiBold',
     fontWeight: Platform.OS === 'ios' ? undefined : '700',
-    fontSize: getResponsiveFontSize(20),
+    fontSize: DEFAULT_STYLE.sectionTitle.fontSize,
     color: '#111827',
     letterSpacing: -0.2,
   },
   trait: {
     fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(14),
-    marginTop: getResponsiveHeight(8),
+    fontSize: DEFAULT_STYLE.sectionSubtitle,
+    marginTop: getResponsiveHeight(4),
     color: '#6B7280',
     textAlign: 'center',
-    lineHeight: getResponsiveHeight(20),
+    lineHeight: DEFAULT_STYLE.sectionSubtitle+1,
   },
 });

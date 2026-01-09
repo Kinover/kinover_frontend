@@ -260,6 +260,7 @@ export default function MemoryFeed({
     return list;
   }, [memoryList, categoryList, selectedCategoryTitle, startDate, endDate]);
 
+  // ✅ 피드(게시글) 정렬
   const sortedMemoryList = useMemo(() => {
     const list = [...filteredMemoryList];
 
@@ -272,8 +273,15 @@ export default function MemoryFeed({
     return list;
   }, [filteredMemoryList, sortKey]);
 
+  // ✅ ✅ 앨범(미디어)도 정렬되게: "게시글을 먼저 sortKey로 정렬"한 뒤 flatMap
   const allMedia = useMemo(() => {
-    return filteredMemoryList.flatMap(memory => {
+    const postsSorted = [...filteredMemoryList].sort((a, b) => {
+      const at = new Date(a?.createdAt).getTime();
+      const bt = new Date(b?.createdAt).getTime();
+      return sortKey === 'latest' ? bt - at : at - bt;
+    });
+
+    return postsSorted.flatMap(memory => {
       const urls = memory?.imageUrls || [];
       return urls
         .map((rawUri, idx) => {
@@ -285,12 +293,12 @@ export default function MemoryFeed({
             isVideo: inferIsVideo(memory, idx, uri),
             duration: memory?.durations?.[idx] ?? 0,
             postId: memory?.postId,
-            memory,
+            memory, // 필요하면 여기서 createdAt 접근 가능
           };
         })
         .filter(Boolean);
     });
-  }, [filteredMemoryList, inferIsVideo, normalizeMediaUrl]);
+  }, [filteredMemoryList, sortKey, inferIsVideo, normalizeMediaUrl]);
 
   const isAllPhotos = selectedTab === 'album';
   const data = isAllPhotos ? allMedia : sortedMemoryList;
@@ -425,16 +433,17 @@ export default function MemoryFeed({
                   </View>
                 </View>
               )}
+              <Chip text={categoryLabel} />
             </View>
 
-            {/* ✅ 정보 영역: 카테고리는 "작은 태그" / 본문이 중심 */}
             <View style={styles.infoArea}>
               <View style={styles.topRow}>
-                <Chip text={categoryLabel} />
                 <View style={styles.metaRow}>
                   <Text style={styles.metaText}>{dateLabel}</Text>
                   <Bullet />
-                  <Text style={styles.metaText}>댓글 {memory.commentCount}</Text>
+                  <Text style={styles.metaText}>
+                    댓글 {memory.commentCount}
+                  </Text>
                   <Bullet />
                   <Text style={styles.metaText}>{mediaLabel}</Text>
                 </View>
@@ -464,9 +473,9 @@ export default function MemoryFeed({
           key={memory.postId}
           style={{
             shadowColor: '#000',
-            shadowOffset: {width: 0, height: 10},
+            shadowOffset: {width: 0, height: 8},
             shadowOpacity: 0.08,
-            shadowRadius: 18,
+            shadowRadius: 3,
           }}>
           {Card}
         </DropShadow>
@@ -785,7 +794,9 @@ const styles = StyleSheet.create({
 
   /* ✅ 카테고리 태그: 제목처럼 안 보이게 “진짜 태그”로 */
   chip: {
-    alignSelf: 'flex-start',
+    position: 'absolute',
+    top: getResponsiveHeight(12),
+    right: getResponsiveWidth(12),
     borderRadius: 999,
     paddingHorizontal: getResponsiveWidth(9),
     paddingVertical: getResponsiveHeight(4),
@@ -794,11 +805,12 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(229,231,235,1)',
     marginBottom: getResponsiveHeight(6),
     maxWidth: '92%',
+    zIndex: 999,
   },
   chipText: {
     fontSize: getResponsiveFontSize(11.3),
     fontFamily: 'Pretendard-Medium',
-    color: MUTED,
+    color: 'black',
     letterSpacing: 0.2,
   },
 

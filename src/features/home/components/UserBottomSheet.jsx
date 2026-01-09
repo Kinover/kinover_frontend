@@ -27,7 +27,6 @@ import {
 import {launchImageLibrary} from 'react-native-image-picker';
 import {
   getResponsiveFontSize,
-  getResponsiveWidth,
   getResponsiveHeight,
 } from '../../../utils/responsive';
 import FastImage from '@d11/react-native-fast-image';
@@ -39,6 +38,7 @@ import ToastModal from '../../../components/ToastModal';
 import {getPresignedUrls, uploadFileToS3} from 'api/imageUrlApi';
 import BottomSheetLayout from 'components/BottomSheetLayout';
 import {normalizeImageForSave} from 'utils/normalizeImageforSave';
+import {BOTTOMSHEET_STYLE} from 'styles/style';
 
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 const {height: WINDOW_H} = Dimensions.get('window');
@@ -450,10 +450,11 @@ const styles = StyleSheet.create({
   },
   fieldBlock: {marginBottom: getResponsiveHeight(12)},
   label: {
-    fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-Medium',
-    color: '#4B5563',
-    marginBottom: getResponsiveHeight(4),
+    fontSize: BOTTOMSHEET_STYLE.sectionLabel.fontSize,
+    fontFamily: BOTTOMSHEET_STYLE.sectionLabel.fontFamily,
+    color: BOTTOMSHEET_STYLE.sectionLabel.color,
+    marginBottom: BOTTOMSHEET_STYLE.sectionLabel.marginBottom,
+    marginTop: BOTTOMSHEET_STYLE.sectionLabel.marginTop,
   },
   input: {
     backgroundColor: '#F9FAFB',

@@ -69,3 +69,40 @@ export const EMPTY_STYLE = {
   emptyFontFamily: 'Pretendard-Regular',
   emptyColor: '#9CA3AF',
 };
+
+export const BOTTOMSHEET_STYLE = {
+  title: {
+    fontSize: getResponsiveFontSize(18),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#111827',
+  },
+  subtitle: {
+    marginTop: getResponsiveHeight(4),
+    fontSize: getResponsiveFontSize(12),
+    fontFamily: 'Pretendard-Regular',
+    color: '#6B7280',
+  },
+  sectionLabel: {
+    fontSize: getResponsiveFontSize(14),
+    fontFamily: 'Pretendard-SemiBold',
+    color: 'black',
+    marginBottom: getResponsiveHeight(6),
+    marginTop: getResponsiveHeight(10),
+  },
+};
+
+export const DEFAULT_STYLE = {
+  sectionTitle: {
+    fontSize: getResponsiveFontSize(18),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#111827',
+    letterSpacing: -0.2,
+  },
+  sectionSubtitle: {
+    marginTop: getResponsiveHeight(3),
+    fontSize: getResponsiveFontSize(12),
+    fontFamily: 'Pretendard-Regular',
+    color: '#6B7280',
+  },
+  
+};

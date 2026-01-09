@@ -47,12 +47,8 @@ import {HEADER_STYLES} from 'styles/style';
 import ImageDeleteModal from '../components/DeleteOptionModal';
 import {deleteCommentThunk} from '../store/commentThunk';
 
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  runOnJS,
-} from 'react-native-reanimated';
+// ✅ 옵션 메뉴 컴포넌트로 분리
+import PostOptionsMenu from '../components/PostOptionMenu';
 
 const {width: SCREEN_W} = Dimensions.get('window');
 
@@ -133,43 +129,24 @@ export default function PostPage({route}) {
     return `${Math.min(i + 1, total)}/${total}`;
   }, [vm.currentImageIndex, mediaCount]);
 
-  const isVideo = useMemo(() => {
-    const u = String(currentMediaUri || '');
-    return /\.mp4(\?|$)/i.test(u) || /\.mov(\?|$)/i.test(u);
-  }, [currentMediaUri]);
-
-  /** ---------------- “상단 우측 옵션 메뉴(모달/팝오버)” ---------------- */
+  /** ---------------- “상단 우측 옵션 메뉴(팝오버)” ---------------- */
   const [menuVisible, setMenuVisible] = useState(false);
-  const menuAnim = useSharedValue(0);
 
   const closeMenu = useCallback(() => {
-    menuAnim.value = withTiming(0, {duration: 120}, finished => {
-      if (finished) runOnJS(setMenuVisible)(false);
-    });
-  }, [menuAnim]);
+    setMenuVisible(false);
+  }, []);
 
   const openMenu = useCallback(() => {
     if (isChromeHidden) return;
     if (isLeavingRef.current) return;
     if (isOptionBusy) return;
-
     setMenuVisible(true);
-    menuAnim.value = withTiming(1, {duration: 140});
-  }, [isChromeHidden, isOptionBusy, menuAnim]);
+  }, [isChromeHidden, isOptionBusy]);
 
   const toggleMenu = useCallback(() => {
     if (menuVisible) closeMenu();
     else openMenu();
   }, [menuVisible, closeMenu, openMenu]);
-
-  const menuOverlayStyle = useAnimatedStyle(() => ({
-    opacity: menuAnim.value,
-  }));
-
-  const menuBoxStyle = useAnimatedStyle(() => ({
-    opacity: menuAnim.value,
-    transform: [{translateY: (1 - menuAnim.value) * -6}],
-  }));
 
   /** ---------------- 모든 시트 닫기 (유령 모달 방지) ---------------- */
   const dismissAllSheets = useCallback(() => {
@@ -425,19 +402,16 @@ export default function PostPage({route}) {
     inferExt,
   ]);
 
-  /** ---------------- 옵션 액션 (메뉴에서 호출) ---------------- */
+  /** ---------------- 옵션 액션 ---------------- */
   const actionSaveCurrent = useCallback(async () => {
-    closeMenu();
     await saveOneToGallery(currentMediaUri);
-  }, [closeMenu, saveOneToGallery, currentMediaUri]);
+  }, [saveOneToGallery, currentMediaUri]);
 
   const actionSaveAll = useCallback(async () => {
-    closeMenu();
     await saveAllToGallery();
-  }, [closeMenu, saveAllToGallery]);
+  }, [saveAllToGallery]);
 
   const actionDeleteCurrentImage = useCallback(() => {
-    closeMenu();
     if (vm.isImageFullScreen) return;
 
     if (!currentMediaUri) {
@@ -448,16 +422,25 @@ export default function PostPage({route}) {
     setPendingDeleteType('image');
     setPendingCommentId(null);
     setConfirmVisible(true);
-  }, [closeMenu, vm.isImageFullScreen, currentMediaUri, toast]);
+  }, [vm.isImageFullScreen, currentMediaUri, toast]);
 
   const actionDeletePost = useCallback(() => {
-    closeMenu();
     if (vm.isImageFullScreen) return;
 
     setPendingDeleteType('post');
     setPendingCommentId(null);
     setConfirmVisible(true);
-  }, [closeMenu, vm.isImageFullScreen]);
+  }, [vm.isImageFullScreen]);
+
+  // ✅ 게시글 수정 옵션 추가
+  const actionEditPost = useCallback(() => {
+    if (vm.isImageFullScreen) return;
+    if (!postId) return;
+
+    // ✅ 라우트 이름은 프로젝트에 맞게 바꿔줘!
+    // 예) navigation.navigate('EditPostPage', {postId})
+    navigation.navigate('이미지선택화면', {postId: postId, mode: '수정'});
+  }, [navigation, postId, vm.isImageFullScreen]);
 
   /** ---------------- header (투명 헤더) ---------------- */
   useEffect(() => {
@@ -630,6 +613,11 @@ export default function PostPage({route}) {
 
   const disableMenu = isOptionBusy || isConfirmDeleting;
 
+  // ✅ 메뉴 아이템 활성 조건
+  const canSaveCurrent = Boolean(currentMediaUri && CameraRoll);
+  const canSaveAll = Boolean(mediaCount && CameraRoll);
+  const canDeleteCurrent = Boolean(!vm.isImageFullScreen && currentMediaUri);
+
   return (
     <SafeAreaView edges={[]} style={styles.container}>
       {/* ✅ 통합 삭제 확인 모달 */}
@@ -641,86 +629,24 @@ export default function PostPage({route}) {
         subText={confirmMessage}
       />
 
-      {/* ✅ 상단 우측 옵션 “팝오버 메뉴” */}
-      <Animated.View
-        pointerEvents={menuVisible ? 'auto' : 'none'}
-        style={[
-          styles.menuOverlay,
-          menuOverlayStyle,
-          // 헤더 숨김 상태면 메뉴도 안 보이게
-          isChromeHidden && {opacity: 0},
-        ]}>
-        {/* 바깥 클릭하면 닫힘 */}
-        <TouchableOpacity
-          style={StyleSheet.absoluteFillObject}
-          activeOpacity={1}
-          onPress={closeMenu}
-        />
-
-        <Animated.View style={[styles.menuBox, menuBoxStyle]}>
-          <TouchableOpacity
-            onPress={actionSaveCurrent}
-            disabled={disableMenu || !currentMediaUri || !CameraRoll}
-            activeOpacity={0.85}
-            style={[
-              styles.menuItem,
-              (disableMenu || !currentMediaUri || !CameraRoll) && {
-                opacity: 0.5,
-              },
-            ]}>
-            <Text style={styles.menuText}>
-              현재 미디어 저장{currentLabel ? ` (${currentLabel})` : ''}
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.menuDivider} />
-
-          <TouchableOpacity
-            onPress={actionSaveAll}
-            disabled={disableMenu || !mediaCount || !CameraRoll}
-            activeOpacity={0.85}
-            style={[
-              styles.menuItem,
-              (disableMenu || !mediaCount || !CameraRoll) && {opacity: 0.5},
-            ]}>
-            <Text style={styles.menuText}>
-              전체 미디어 저장 ({mediaCount || 0})
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.menuDivider} />
-
-          <TouchableOpacity
-            onPress={actionDeleteCurrentImage}
-            disabled={disableMenu || vm.isImageFullScreen || !currentMediaUri}
-            activeOpacity={0.85}
-            style={[
-              styles.menuItem,
-              (disableMenu || vm.isImageFullScreen || !currentMediaUri) && {
-                opacity: 0.5,
-              },
-            ]}>
-            <Text style={[styles.menuText, {color: '#FF5A5F'}]}>
-              현재 미디어 삭제
-            </Text>
-          </TouchableOpacity>
-
-          <View style={styles.menuDivider} />
-
-          <TouchableOpacity
-            onPress={actionDeletePost}
-            disabled={disableMenu || vm.isImageFullScreen}
-            activeOpacity={0.85}
-            style={[
-              styles.menuItem,
-              (disableMenu || vm.isImageFullScreen) && {opacity: 0.5},
-            ]}>
-            <Text style={[styles.menuText, {color: '#FF5A5F'}]}>
-              게시글 삭제
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </Animated.View>
+      {/* ✅ 상단 우측 옵션 메뉴(컴포넌트 분리) */}
+      <PostOptionsMenu
+        visible={menuVisible}
+        setVisible={setMenuVisible}
+        isChromeHidden={isChromeHidden}
+        disableMenu={disableMenu}
+        canSaveCurrent={canSaveCurrent}
+        canSaveAll={canSaveAll}
+        canDeleteCurrent={canDeleteCurrent}
+        currentLabel={currentLabel}
+        mediaCount={mediaCount}
+        onClose={closeMenu}
+        onSaveCurrent={actionSaveCurrent}
+        onSaveAll={actionSaveAll}
+        onEditPost={actionEditPost} // ✅ 추가
+        onDeleteCurrentImage={actionDeleteCurrentImage}
+        onDeletePost={actionDeletePost}
+      />
 
       <View style={{flex: 1}}>
         <ImageCarousel
@@ -877,44 +803,6 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     marginRight: HEADER_STYLES.headerRightIconRightPadding,
     tintColor: '#fff',
-  },
-
-  /** 옵션 팝오버 메뉴 */
-  menuOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 999, // ✅ 제일 위
-    backgroundColor: 'rgba(0,0,0,0.10)',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-end',
-    paddingTop: Platform.OS === 'ios' ? 52 : 16,
-    paddingRight: 14,
-  },
-  menuBox: {
-    width: getResponsiveWidth(190),
-    backgroundColor: 'rgba(20,20,20,0.96)',
-    borderRadius: 14,
-    overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.12)',
-    shadowColor: '#000',
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    shadowOffset: {width: 0, height: 6},
-    elevation: 12,
-    marginTop: getResponsiveHeight(40), // 헤더 아래로 살짝
-  },
-  menuItem: {
-    paddingVertical: 13,
-    paddingHorizontal: 14,
-  },
-  menuText: {
-    color: '#fff',
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(13),
-  },
-  menuDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.18)',
   },
 
   /** desc sheet */

@@ -11,6 +11,7 @@ import {
   getResponsiveWidth,
   getResponsiveFontSize,
 } from 'utils/responsive';
+import {BOTTOMSHEET_STYLE} from 'styles/style';
 
 export default function BottomSheetLayout({
   modalRef,
@@ -72,8 +73,10 @@ export default function BottomSheetLayout({
           ]}>
           {(title || subtitle) && (
             <View style={[styles.header, headerStyle]}>
-              {title && <Text style={styles.title}>{title}</Text>}
-              {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+              {title && <Text style={BOTTOMSHEET_STYLE.title}>{title}</Text>}
+              {subtitle && (
+                <Text style={BOTTOMSHEET_STYLE.subtitle}>{subtitle}</Text>
+              )}
             </View>
           )}
 
@@ -109,17 +112,7 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: getResponsiveHeight(15),
   },
-  title: {
-    fontSize: getResponsiveFontSize(18),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#111827',
-  },
-  subtitle: {
-    marginTop: getResponsiveHeight(4),
-    fontSize: getResponsiveFontSize(13.5),
-    fontFamily: 'Pretendard-Regular',
-    color: '#6B7280',
-  },
+
   innerContent: {},
   inlineFooter: {
     marginTop: getResponsiveHeight(10),

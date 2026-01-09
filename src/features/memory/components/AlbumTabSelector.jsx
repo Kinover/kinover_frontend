@@ -9,6 +9,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../../utils/responsive';
+import { DEFAULT_STYLE } from 'styles/style';
 
 const TABS = [
   {key: 'feed', title: '피드'},
@@ -119,8 +120,8 @@ const styles = StyleSheet.create({
   tab: {marginRight: getResponsiveWidth(25), flexDirection: 'row'},
   tabText: {
     textAlign: 'center',
-    fontSize: getResponsiveFontSize(18),
-    fontFamily: 'Pretendard-SemiBold',
+    fontSize: DEFAULT_STYLE.sectionTitle.fontSize,
+    fontFamily: DEFAULT_STYLE.sectionTitle.fontFamily,
     fontWeight: '600',
     color: '#4A4A4A',
     textAlignVertical: 'bottom',

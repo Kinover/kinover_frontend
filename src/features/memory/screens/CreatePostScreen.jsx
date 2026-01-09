@@ -48,20 +48,169 @@ import ToastModal from '../../../components/ToastModal';
 import {HEADER_STYLES} from 'styles/style';
 
 import {uploadPostApi} from 'api/uploadPostApi';
+import updatePostApi from 'api/updatePostApi';
+
 import {useDispatch, useSelector} from 'react-redux';
 import {createCategoryThunk} from '../store/categoryThunk';
 import formatDuration from '../../../utils/formatDuration';
-
 import {getVideoThumbnail} from '../../../utils/videoThumbnail';
 
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
+// ✅ post 단건 조회 thunk
+import {fetchPostByIdThunk, deletePostImageThunk} from '../store/memoryThunk';
+
+const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
+
+const isHttpUrl = u => /^https?:\/\//i.test(String(u || ''));
+
+const extractFileNameFromUrl = url => {
+  try {
+    const s = String(url || '');
+    const noQuery = s.split('?')[0];
+    const last = noQuery.split('/').pop();
+    return last || '';
+  } catch {
+    return '';
+  }
+};
+
+const logAxiosError = (tag, e) => {
+  const status = e?.response?.status;
+  const data = e?.response?.data;
+
+  const method = e?.config?.method;
+  const url = e?.config?.url;
+  const baseURL = e?.config?.baseURL;
+
+  let reqData = e?.config?.data;
+  try {
+    if (typeof reqData === 'string') reqData = JSON.parse(reqData);
+  } catch {}
+
+  console.log(`\n❌ [${tag}] AxiosError`);
+  console.log('status:', status);
+  console.log('url:', baseURL ? `${baseURL}${url}` : url);
+  console.log('method:', method);
+  console.log('request data:', reqData);
+  console.log('response data:', data);
+  console.log('raw message:', e?.message);
+  console.log('raw:', e, '\n');
+};
 
 export default function CreatePostPage({navigation, route}) {
-  const [text, setText] = useState('');
+  const dispatch = useDispatch();
+  const {userId} = useSelector(s => s.user);
+  const {familyId} = useSelector(s => s.family);
+
+  useHideTabBar({stayHidden: true});
+
+  /** ✅ route params */
+  const {
+    selectedImages: initImages = [],
+    selectedCategory: routeSelectedCategory = null,
+
+    mode = '등록', // '등록' | '수정'
+    postId = null,
+    removedUrls: removedUrlsFromRoute = [],
+
+    // (선택) 수정모드에서 내용 미리 채우고 싶으면 넘겨줘
+    initialContent = '',
+  } = route?.params ?? {};
+
+  const isEditMode = mode === '수정';
+
+  /** ✅ 수정모드: 게시글 원본 데이터(스토어) */
+  const postFromStore = useSelector(state =>
+    postId ? state.memory?.postsById?.[postId] : null,
+  );
+
+  /** -----------------------------
+   * ✅ 수정모드면 post fetch
+   * ---------------------------- */
+  useEffect(() => {
+    if (!isEditMode) return;
+    if (!postId) return;
+    if (!postFromStore) dispatch(fetchPostByIdThunk(postId));
+  }, [dispatch, isEditMode, postId, postFromStore]);
+
+  /** -----------------------------
+   * ✅ 초기값(글/미디어) 세팅
+   * - 사용자가 이미 입력/수정 시작했으면 덮어쓰지 않기
+   * ---------------------------- */
+  const didInitTextRef = useRef(false);
+  const didInitMediaRef = useRef(false);
+
+  /** state */
+  const [text, setText] = useState(initialContent || '');
   const [isUploading, setIsUploading] = useState(false);
 
-  const {selectedImages: initImages} = route.params ?? {};
-  const [selectedImages] = useState(initImages ?? []);
+  // ✅ selectedImages는 수정모드에서 store 기반으로도 채워야 해서 state로 관리
+  const [selectedImages, setSelectedImages] = useState(initImages ?? []);
+
+  // ✅ CategorySelectScreen에서 넘어온 category가 최우선
+  const selectedCategory = routeSelectedCategory;
+
+  // ✅ removedUrls는 filename 기준 비교가 안전해서 미리 정규화
+  const removedFileNameSet = useMemo(() => {
+    return new Set(
+      (removedUrlsFromRoute || [])
+        .map(u => extractFileNameFromUrl(u))
+        .filter(Boolean),
+    );
+  }, [removedUrlsFromRoute]);
+
+  // ✅ 글 내용 초기 세팅(수정모드)
+  useEffect(() => {
+    if (!isEditMode) return;
+    if (didInitTextRef.current) return;
+
+    const fallback = postFromStore?.content ?? '';
+    if (!initialContent && fallback) {
+      setText(fallback);
+    }
+
+    didInitTextRef.current = true;
+  }, [isEditMode, postFromStore, initialContent]);
+
+  // ✅ 미디어 초기 세팅(수정모드)
+  useEffect(() => {
+    if (!isEditMode) return;
+    if (didInitMediaRef.current) return;
+
+    // route로 넘어온 initImages가 있으면 그걸 우선 사용
+    if (Array.isArray(initImages) && initImages.length > 0) {
+      setSelectedImages(initImages);
+      didInitMediaRef.current = true;
+      return;
+    }
+
+    // initImages가 없으면 postFromStore에서 기존 미디어로 채움
+    const urls = postFromStore?.imageUrls || postFromStore?.mediaUrls || [];
+    const types = postFromStore?.postTypes || postFromStore?.mediaTypes || [];
+
+    if (Array.isArray(urls) && urls.length > 0) {
+      const merged = urls
+        .map((u, idx) => {
+          const raw = String(u || '');
+          if (!raw) return null;
+
+          // removedUrls 제외(파일명 기준)
+          const fileName = extractFileNameFromUrl(raw) || raw;
+          if (removedFileNameSet.has(fileName)) return null;
+
+          const hintType = types?.[idx];
+          if (hintType === 'video' || hintType === 'VIDEO') {
+            return {uri: raw, isRemote: true, isVideo: true};
+          }
+
+          return raw;
+        })
+        .filter(Boolean);
+
+      setSelectedImages(merged);
+    }
+
+    didInitMediaRef.current = true;
+  }, [isEditMode, initImages, postFromStore, removedFileNameSet]);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -70,20 +219,14 @@ export default function CreatePostPage({navigation, route}) {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  const {userId} = useSelector(s => s.user);
-  const {familyId} = useSelector(s => s.family);
-  const dispatch = useDispatch();
-
-  useHideTabBar({stayHidden: true});
-
-  /* =========================
-   * helpers
-   * ========================= */
-
   const showToast = useCallback(msg => {
     setToastMessage(msg);
     setToastVisible(true);
   }, []);
+
+  /* =========================
+   * helpers
+   * ========================= */
 
   const getItemUri = useCallback(item => {
     return typeof item === 'string' ? item : item?.uri || item?.path;
@@ -94,22 +237,24 @@ export default function CreatePostPage({navigation, route}) {
       typeof uriOrObj === 'string'
         ? uriOrObj
         : uriOrObj?.uri || uriOrObj?.path || '';
-    const raw = uri.split('?')[0];
+    const raw = String(uri).split('?')[0];
     const ext = raw.split('.').pop()?.toLowerCase();
     return ext || 'jpg';
   }, []);
 
   const inferContentTypeByExt = useCallback(ext => {
-    if (ext === 'jpg' || ext === 'jpeg') return 'image/jpeg';
-    if (ext === 'png') return 'image/png';
-    if (ext === 'webp') return 'image/webp';
-    if (ext === 'mp4') return 'video/mp4';
-    if (ext === 'mov') return 'video/quicktime';
+    const e = (ext || '').toLowerCase();
+    if (e === 'jpg' || e === 'jpeg') return 'image/jpeg';
+    if (e === 'png') return 'image/png';
+    if (e === 'webp') return 'image/webp';
+    if (e === 'mp4') return 'video/mp4';
+    if (e === 'mov') return 'video/quicktime';
     return 'application/octet-stream';
   }, []);
 
   const inferPostType = useCallback(ext => {
-    if (ext === 'mp4' || ext === 'mov') return 'video';
+    const e = (ext || '').toLowerCase();
+    if (e === 'mp4' || e === 'mov') return 'video';
     return 'image';
   }, []);
 
@@ -128,6 +273,16 @@ export default function CreatePostPage({navigation, route}) {
   const getDuration = useCallback(item => {
     return typeof item === 'string' ? 0 : item?.duration ?? 0;
   }, []);
+
+  const isRemoteItem = useCallback(
+    item => {
+      if (typeof item === 'string') return isHttpUrl(item);
+      if (item?.isRemote === true) return true;
+      const uri = getItemUri(item);
+      return isHttpUrl(uri);
+    },
+    [getItemUri],
+  );
 
   /* =========================
    * ✅ video thumbnail cache
@@ -188,50 +343,71 @@ export default function CreatePostPage({navigation, route}) {
       const uri = getItemUri(item);
       if (!uri) return {uri, ext: getExtFromUri(item)};
 
+      // ✅ 원격은 압축/업로드 대상 아님(수정모드에서 기존 미디어)
+      if (isRemoteItem(item)) {
+        const ext = getExtFromUri(uri) || (isVideoItem(item) ? 'mp4' : 'jpg');
+        return {uri, ext, skipUpload: true};
+      }
+
       // ✅ 영상 압축
       if (isVideoItem(item)) {
         const compressedUri = await VideoCompressor.compress(uri, {
           compressionMethod: 'auto',
-          // minimumFileSizeForCompress 옵션이 버전에 따라 없으면 빼도 됨
           minimumFileSizeForCompress: 5,
         });
 
         const ext = getExtFromUri(compressedUri) || 'mp4';
-        return {uri: compressedUri, ext};
+        return {uri: compressedUri, ext, skipUpload: false};
       }
 
-      // ✅ 이미지 압축(원치 않으면 이 블록 통째로 지워도 됨)
+      // ✅ 이미지 압축
       const compressedUri = await ImageCompressor.compress(uri, {
         compressionMethod: 'auto',
         quality: 0.8,
       });
       const ext = getExtFromUri(compressedUri) || 'jpg';
-      return {uri: compressedUri, ext};
+      return {uri: compressedUri, ext, skipUpload: false};
     },
-    [getItemUri, getExtFromUri, isVideoItem],
+    [getItemUri, getExtFromUri, isVideoItem, isRemoteItem],
   );
 
   /* =========================
-   * upload
+   * upload / update
    * ========================= */
 
   const handleUpload = useCallback(async () => {
     if (isUploading) return;
 
-    const {selectedCategory} = route.params ?? {};
+    const authorId = userId;
+
+    console.log('[STEP 0] start', {
+      isEditMode,
+      postId,
+      familyId,
+      authorId,
+      selectedCount: selectedImages.length,
+      removedCount: removedUrlsFromRoute?.length || 0,
+    });
 
     if (!selectedCategory) {
       showToast('카테고리를 먼저 선택해 주세요.');
       return;
     }
-    if (!familyId || !userId) {
+    if (!familyId || !authorId) {
       showToast('로그인 정보를 확인해 주세요.');
+      return;
+    }
+    if (isEditMode && !postId) {
+      showToast('수정할 게시글 정보를 찾지 못했어요.');
       return;
     }
 
     try {
       setIsUploading(true);
 
+      console.log('✅ [STEP 1] category 준비');
+
+      /** 1) 카테고리(임시면 생성) */
       let finalCategoryId = selectedCategory.categoryId;
 
       if (selectedCategory.isTemporary) {
@@ -251,76 +427,199 @@ export default function CreatePostPage({navigation, route}) {
           action.payload?.categoryId ?? selectedCategory.categoryId;
       }
 
-      let imageUrls = [];
-      let postTypes = [];
+      console.log('✅ [STEP 1 DONE] finalCategoryId:', finalCategoryId);
+      console.log('✅ [STEP 2] media 준비');
 
-      if (selectedImages.length > 0) {
-        const now = Date.now();
+      /** 2) selectedImages 순서를 그대로 유지하면서
+       * - 기존(remote): 업로드 X, 파일명만 추출
+       * - 신규(local): presigned -> upload -> fileName 생성
+       */
+      const now = Date.now();
 
-        // ✅ 1) 압축 먼저 하고, 압축 결과 기준으로 presigned 요청
-        const filesForUpload = [];
-        for (let i = 0; i < selectedImages.length; i++) {
-          const item = selectedImages[i];
+      const localUploadJobs = [];
+      const finalMedia = []; // {fileName, postType}
 
-          const {uri: compressedUri, ext} = await compressIfNeeded(item);
+      for (let i = 0; i < selectedImages.length; i++) {
+        const item = selectedImages[i];
+        const rawUri = getItemUri(item);
 
-          if (!compressedUri) {
-            showToast('파일 경로를 불러오지 못했어요.');
-            return;
-          }
-
-          const fileName = `media_${now}_${i}.${ext}`;
-          const contentType = inferContentTypeByExt(ext);
-          const postType = inferPostType(ext);
-
-          filesForUpload.push({
-            uri: compressedUri,
-            fileName,
-            contentType,
-            postType,
-          });
+        if (!rawUri) {
+          showToast('파일 경로를 불러오지 못했어요.');
+          return;
         }
 
+        // ✅ 기존(remote) 처리
+        if (isRemoteItem(item)) {
+          const fileName = extractFileNameFromUrl(rawUri);
+          if (!fileName) {
+            showToast('기존 미디어 정보를 읽지 못했어요.');
+            return;
+          }
+          const ext = getExtFromUri(fileName) || getExtFromUri(rawUri);
+          finalMedia.push({fileName, postType: inferPostType(ext)});
+          continue;
+        }
+
+        // ✅ 신규(local) 처리 (압축 후 업로드)
+        const {
+          uri: compressedUri,
+          ext,
+          skipUpload,
+        } = await compressIfNeeded(item);
+
+        if (!compressedUri || skipUpload) {
+          showToast('파일 준비 중 오류가 발생했어요.');
+          return;
+        }
+
+        const fileName = `media_${now}_${i}.${ext}`;
+        const contentType = inferContentTypeByExt(ext);
+        const postType = inferPostType(ext);
+
+        localUploadJobs.push({
+          orderIndex: i,
+          uri: compressedUri,
+          fileName,
+          contentType,
+          postType,
+        });
+
+        finalMedia.push(null);
+      }
+
+      console.log('✅ [STEP 2 DONE] localUploadJobs:', localUploadJobs.length);
+      console.log('✅ [STEP 3] presigned 요청');
+
+      // ✅ presigned + upload (로컬만)
+      if (localUploadJobs.length > 0) {
         const presignedUrls = await getPresignedUrls(
-          filesForUpload.map(f => ({
+          localUploadJobs.map(f => ({
             fileName: f.fileName,
             contentType: f.contentType,
           })),
         );
 
-        // ✅ 2) 압축된 uri로 PUT
-        for (let i = 0; i < filesForUpload.length; i++) {
+        console.log('✅ [STEP 3 DONE] presignedUrls:', presignedUrls.length);
+        console.log('✅ [STEP 4] S3 upload');
+
+        for (let i = 0; i < localUploadJobs.length; i++) {
+          const job = localUploadJobs[i];
           await uploadFileToS3(
             presignedUrls[i],
-            filesForUpload[i].uri,
-            filesForUpload[i].contentType,
-            filesForUpload[i].fileName,
+            job.uri,
+            job.contentType,
+            job.fileName,
           );
+
+          finalMedia[job.orderIndex] = {
+            fileName: job.fileName,
+            postType: job.postType,
+          };
         }
 
-        imageUrls = filesForUpload.map(f => f.fileName);
-        postTypes = filesForUpload.map(f => f.postType);
+        console.log('✅ [STEP 4 DONE] S3 upload 완료');
       }
 
-      const newPost = {
-        authorId: userId,
-        content: text || '',
-        familyId,
-        categoryId: finalCategoryId,
-        imageUrls,
-        postTypes,
-      };
+      const normalizedFinalMedia = finalMedia.filter(Boolean);
+      const imageUrls = normalizedFinalMedia.map(m => m.fileName);
+      const postTypes = normalizedFinalMedia.map(m => m.postType);
 
-      await uploadPostApi(newPost);
+      console.log('✅ [STEP 4.5] final payload media', {
+        imageUrlsLen: imageUrls.length,
+        postTypesLen: postTypes.length,
+        postTypes,
+      });
+
+      /** 3) removedUrls fileName 정규화 */
+      const removedFileNames = (removedUrlsFromRoute || [])
+        .map(u => extractFileNameFromUrl(u))
+        .filter(Boolean);
+
+      /** ✅ 3.5) 수정모드면 삭제된 이미지를 서버에서 먼저 삭제 */
+      if (isEditMode && removedFileNames.length > 0) {
+        console.log('✅ [STEP 5] removed 삭제 시작:', removedFileNames);
+
+        for (const fileName of removedFileNames) {
+          try {
+            const action = await dispatch(
+              deletePostImageThunk({
+                postId,
+                imageUrl: fileName,
+                familyId,
+                refresh: false,
+              }),
+            );
+
+            if (action?.meta?.requestStatus === 'rejected') {
+              console.log('❌ deletePostImageThunk rejected:', action);
+              showToast('삭제 처리 중 오류가 발생했어요.');
+              return;
+            }
+          } catch (e) {
+            logAxiosError('STEP 5 deletePostImageThunk', e);
+            showToast('삭제 처리 중 오류가 발생했어요.');
+            return;
+          }
+        }
+
+        console.log('✅ [STEP 5 DONE] removed 삭제 완료');
+      }
+
+      /** 4) API 호출 */
+      console.log('✅ [STEP 6] API 호출');
+
+      if (isEditMode) {
+        // ✅ 핵심 수정: update에도 familyId 포함 (서버가 이 값으로 검증/조회하는 경우 500 방지)
+        const payload = {
+          authorId,
+          content: text || '',
+          familyId, // ✅ 추가
+          categoryId: finalCategoryId,
+          imageUrls,
+          postTypes,
+        };
+
+        console.log('✅ [STEP 6-EDIT] update payload', payload);
+
+        try {
+          await updatePostApi(postId, payload);
+        } catch (e) {
+          logAxiosError('STEP 6 updatePostApi', e);
+          showToast('수정 요청 중 서버 오류가 발생했어요.');
+          return;
+        }
+      } else {
+        const payload = {
+          authorId,
+          content: text || '',
+          familyId,
+          categoryId: finalCategoryId,
+          imageUrls,
+          postTypes,
+        };
+
+        console.log('✅ [STEP 6-CREATE] upload payload', payload);
+
+        try {
+          await uploadPostApi(payload);
+        } catch (e) {
+          logAxiosError('STEP 6 uploadPostApi', e);
+          showToast('업로드 요청 중 서버 오류가 발생했어요.');
+          return;
+        }
+      }
+
       setSuccessModalVisible(true);
     } catch (e) {
+      // 여기로 오는 건 예상 못한 케이스
+      logAxiosError('handleUpload OUTER', e);
       showToast('업로드 중 오류가 발생했어요.');
     } finally {
       setIsUploading(false);
     }
   }, [
     isUploading,
-    route?.params,
+    selectedCategory,
     selectedImages,
     text,
     familyId,
@@ -330,6 +629,12 @@ export default function CreatePostPage({navigation, route}) {
     inferContentTypeByExt,
     inferPostType,
     compressIfNeeded,
+    getItemUri,
+    getExtFromUri,
+    isRemoteItem,
+    isEditMode,
+    postId,
+    removedUrlsFromRoute,
   ]);
 
   /* =========================
@@ -338,12 +643,16 @@ export default function CreatePostPage({navigation, route}) {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitle: () => <Text style={styles.headerText}>글쓰기</Text>,
+      headerTitle: () => (
+        <Text style={styles.headerText}>
+          {isEditMode ? '게시글 수정' : '글쓰기'}
+        </Text>
+      ),
       headerRight: () => (
         <TouchableOpacity
           onPress={handleUpload}
           disabled={isUploading}
-          style={styles.headerRightBtn}
+          style={[styles.headerRightBtn, isUploading && {opacity: 0.4}]}
           activeOpacity={0.85}>
           <Image
             source={require('../../../assets/icons/check.png')}
@@ -352,7 +661,7 @@ export default function CreatePostPage({navigation, route}) {
         </TouchableOpacity>
       ),
     });
-  }, [navigation, handleUpload, isUploading]);
+  }, [navigation, handleUpload, isUploading, isEditMode]);
 
   /* =========================
    * modal pan
@@ -387,6 +696,8 @@ export default function CreatePostPage({navigation, route}) {
     }),
   ).current;
 
+  const previewListRef = useRef(null);
+
   /* =========================
    * UI
    * ========================= */
@@ -410,7 +721,6 @@ export default function CreatePostPage({navigation, route}) {
               const isVideo = isVideoItem(item);
               const thumbUri = isVideo && uri ? videoThumbMap[uri] : null;
 
-              // ✅ 렌더 중 호출은 과호출될 수 있어서 requestAnimationFrame으로 한 번 감쌈
               if (isVideo && uri && !thumbUri) {
                 requestAnimationFrame(() => ensureVideoThumb(item));
               }
@@ -422,6 +732,13 @@ export default function CreatePostPage({navigation, route}) {
                   onPress={() => {
                     setCurrentIndex(index);
                     setModalVisible(true);
+
+                    requestAnimationFrame(() => {
+                      previewListRef.current?.scrollToIndex?.({
+                        index,
+                        animated: false,
+                      });
+                    });
                   }}>
                   {isVideo ? (
                     thumbUri ? (
@@ -472,7 +789,10 @@ export default function CreatePostPage({navigation, route}) {
           style={styles.input}
           multiline
           value={text}
-          onChangeText={setText}
+          onChangeText={v => {
+            didInitTextRef.current = true;
+            setText(v);
+          }}
           placeholder="글로 남긴 추억은 더 생생해요"
           placeholderTextColor="#999"
         />
@@ -483,7 +803,6 @@ export default function CreatePostPage({navigation, route}) {
           transparent
           onRequestClose={() => setModalVisible(false)}>
           <View style={styles.modalOverlay}>
-            {/* ✅ 닫기 버튼: FlatList보다 위 + pointerEvents + zIndex/elevation */}
             <Pressable
               style={styles.modalClose}
               onPress={() => setModalVisible(false)}
@@ -491,8 +810,8 @@ export default function CreatePostPage({navigation, route}) {
               <Text style={{color: '#fff'}}>닫기</Text>
             </Pressable>
 
-            {/* ✅ FlatList가 터치 다 먹는 경우가 있어서 contentContainerStyle로 여백 */}
             <FlatList
+              ref={previewListRef}
               data={selectedImages}
               horizontal
               pagingEnabled
@@ -504,13 +823,11 @@ export default function CreatePostPage({navigation, route}) {
                 index: i,
               })}
               onScrollToIndexFailed={info => {
-                // iOS/Android 둘 다 안전하게
                 requestAnimationFrame(() => {
-                  // 대충 근처로 이동
-                  const offset = info.averageItemLength * info.index;
-                  info?.highestMeasuredFrameIndex;
-                  // eslint-disable-next-line no-unused-expressions
-                  info;
+                  previewListRef.current?.scrollToOffset?.({
+                    offset: info.averageItemLength * info.index,
+                    animated: false,
+                  });
                 });
               }}
               renderItem={({item}) => (
@@ -541,7 +858,7 @@ export default function CreatePostPage({navigation, route}) {
 
         <ToastModal
           visible={successModalVisible}
-          message="게시글을 업로드했어요"
+          message={isEditMode ? '게시글을 수정했어요' : '게시글을 업로드했어요'}
           onClose={() => {
             setSuccessModalVisible(false);
             navigation.navigate('추억');
@@ -586,6 +903,9 @@ const styles = StyleSheet.create({
     marginRight: HEADER_STYLES.headerRightIconRightPadding,
     resizeMode: 'contain',
   },
+  headerRightBtn: {
+    paddingVertical: getResponsiveHeight(6),
+  },
 
   gridContainer: {
     flexDirection: 'row',
@@ -623,10 +943,6 @@ const styles = StyleSheet.create({
     borderTopColor: 'transparent',
     borderBottomColor: 'transparent',
     marginLeft: 4,
-  },
-  headerRightBtn: {
-    // paddingHorizontal: getResponsiveWidth(6),
-    paddingVertical: getResponsiveHeight(6),
   },
 
   videoBadge: {
@@ -680,6 +996,7 @@ const styles = StyleSheet.create({
   },
   fullImageWrapper: {
     width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -689,13 +1006,12 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
 
-  // ✅ 여기 핵심: FlatList 위에 "확실히" 뜨게 + 터치도 먹게
   modalClose: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 60 : 30,
     right: 20,
     zIndex: 999999,
-    elevation: 999999, // android
+    elevation: 999999,
     paddingHorizontal: 12,
     paddingVertical: 8,
     backgroundColor: 'rgba(0,0,0,0.25)',

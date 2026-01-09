@@ -17,7 +17,7 @@ import {
 } from '../../../utils/responsive';
 import {formatRelativeKorean} from '../utils/dateUtils';
 import {getEmotionImage} from '../utils/emotionUtils';
-import {EMPTY_STYLE} from 'styles/style';
+import {DEFAULT_STYLE, EMPTY_STYLE} from 'styles/style';
 import DropShadow from 'react-native-drop-shadow';
 
 // ✅ HAPTIC
@@ -259,8 +259,8 @@ export default function MemberGridSection({
         ]}>
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>우리 가족</Text>
-            <Text style={styles.sectionSubtitle}>실시간 접속 상태</Text>
+            <Text style={DEFAULT_STYLE.sectionTitle}>우리 가족</Text>
+            <Text style={DEFAULT_STYLE.sectionSubtitle}>실시간 접속 상태</Text>
           </View>
 
           <View style={styles.headerButtons}>
