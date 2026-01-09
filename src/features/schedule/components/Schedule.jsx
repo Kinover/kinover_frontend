@@ -13,7 +13,7 @@ import {
 
 import {useScheduleListByDate} from '../hooks/useScheduleListByDate';
 import {useFormattedScheduleDate} from '../hooks/useFormattedScheduleDate';
-import {EMPTY_STYLE} from 'styles/style';
+import {DEFAULT_STYLE, EMPTY_STYLE} from 'styles/style';
 
 import DropShadow from 'react-native-drop-shadow';
 import BirthdayConfettiModal from './BirthdayConfettiModal';
@@ -294,8 +294,8 @@ const styles = StyleSheet.create({
   },
   dateText: {
     color: 'black',
-    fontSize: getResponsiveFontSize(20),
-    fontFamily: 'Pretendard-SemiBold',
+    fontSize: DEFAULT_STYLE.sectionTitle.fontSize,
+    fontFamily: DEFAULT_STYLE.sectionTitle.fontFamily,
     marginTop: getResponsiveHeight(15),
     marginBottom: getResponsiveHeight(16),
     alignSelf: 'flex-start',

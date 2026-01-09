@@ -36,7 +36,7 @@ import {
 import {useScheduleBottomSheetModal} from '../hooks/useScheduleBottomSheetModal';
 import ToastModal from '../../../components/ToastModal';
 import BottomSheetLayout from 'components/BottomSheetLayout';
-import {BACKGROUND_COLORS} from 'styles/style';
+import {BACKGROUND_COLORS, BOTTOMSHEET_STYLE} from 'styles/style';
 
 const {height: WINDOW_H} = Dimensions.get('window');
 const SAFE_GAP = 12;
@@ -507,7 +507,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                 </Text>
               </TouchableOpacity>
             </View>
-            {/* ✅ 여기 구성원 선택 UI를 "진짜 앱"처럼 업그레이드 */}
+
             {(currentKind == KIND.FAMILY || currentKind == KIND.INDIVIDUAL) && (
               <>
                 <Text style={styles.sectionLabel}>구성원</Text>
@@ -613,6 +613,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                 </View>
               </>
             )}
+
             <Text style={styles.sectionLabel}>일정 내용</Text>
             <View style={styles.inputPanel}>
               <BottomSheetTextInput
@@ -665,12 +666,11 @@ const COLORS = {
 
 const styles = StyleSheet.create({
   sectionLabel: {
-    fontSize: getResponsiveFontSize(13.5),
-    fontFamily: 'Pretendard-SemiBold',
-    // color: COLORS.SUB,
-    color: 'black',
-    marginBottom: getResponsiveHeight(6),
-    marginTop: getResponsiveHeight(10),
+    fontSize: BOTTOMSHEET_STYLE.sectionLabel.fontSize,
+    fontFamily: BOTTOMSHEET_STYLE.sectionLabel.fontFamily,
+    color: BOTTOMSHEET_STYLE.sectionLabel.color,
+    marginBottom: BOTTOMSHEET_STYLE.sectionLabel.marginBottom,
+    marginTop: BOTTOMSHEET_STYLE.sectionLabel.marginTop,
   },
 
   kindRow: {
@@ -709,7 +709,6 @@ const styles = StyleSheet.create({
     paddingTop: getResponsiveHeight(12),
     marginBottom: getResponsiveHeight(16),
 
-    // ✅ "실제 앱 카드" 느낌
     shadowColor: '#000',
     shadowOpacity: 0.06,
     shadowRadius: 10,
@@ -718,7 +717,6 @@ const styles = StyleSheet.create({
   },
 
   memberCardTopRow: {
-    // paddingHorizontal: getResponsiveWidth(14),
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -746,7 +744,6 @@ const styles = StyleSheet.create({
   },
 
   memberScrollContent: {
-    // paddingHorizontal: getResponsiveWidth(12),
     paddingVertical: getResponsiveHeight(4),
   },
 
@@ -779,13 +776,13 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
 
-  // ✅ 선택 오버레이 (좀 더 고급 톤)
+  // ✅ 선택 오버레이
   avatarOverlay2: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: COLORS.OVERLAY,
   },
 
-  // ✅ 선택 링 + 살짝 글로우
+  // ✅ 선택 링
   avatarRing2: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 999,
@@ -793,6 +790,7 @@ const styles = StyleSheet.create({
     borderColor: COLORS.BRAND,
   },
 
+  // ✅ ✅ 체크 뒤 "흰 원" 제거: 배경/테두리 없음, 체크만 띄움
   checkCenterWrap: {
     position: 'absolute',
     left: '50%',
@@ -803,13 +801,25 @@ const styles = StyleSheet.create({
     ],
     width: getResponsiveWidth(24),
     height: getResponsiveWidth(24),
-    borderRadius: 999,
-    backgroundColor: 'rgba(255, 255, 255, 0.92)',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(229, 231, 235, 0.9)',
+
+    // backgroundColor: 'rgba(255, 255, 255, 0.92)',  // ❌ 제거
+    // borderWidth: 1,                                 // ❌ 제거
+    // borderColor: 'rgba(229, 231, 235, 0.9)',         // ❌ 제거
+
+    // (선택) 체크가 어두운 오버레이 위에서 잘 보이게 살짝만
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.18,
+        shadowRadius: 6,
+        shadowOffset: {width: 0, height: 2},
+      },
+      android: {elevation: 3},
+    }),
   },
+
   checkCenterIcon: {
     width: getResponsiveWidth(16),
     height: getResponsiveWidth(16),
@@ -825,7 +835,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // ✅ 안내 문구도 카드 톤에 맞게
   helperText2: {
     marginTop: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(14),
@@ -927,7 +936,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     borderColor: COLORS.BORDER,
-    // backgroundColor: '#FFFFFF',
     overflow: 'hidden',
   },
   avatarBtnSelected: {
@@ -957,7 +965,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
-    // backgroundColor: '#FFFFFF',
   },
   allCircleSelected: {backgroundColor: COLORS.BRAND_SOFT},
   allText: {

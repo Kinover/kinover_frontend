@@ -24,4 +24,26 @@ buildscript {
         // 🔹 4.4.0 대신 4.4.1 쓰는 걸 추천 (4.4.0 이슈 있었음)
         classpath("com.google.gms:google-services:4.4.1")
     }
+    subprojects { sub ->
+  if (sub.name == "react-native-create-thumbnail") {
+    sub.tasks.matching { it.name == "androidJavadoc" }.configureEach {
+      enabled = false
+    }
+    sub.tasks.withType(Javadoc).configureEach {
+      enabled = false
+    }
+  }
+  if (sub.name == "react-native-drop-shadow" || sub.name == "react-native-video") {
+    sub.afterEvaluate {
+      if (sub.extensions.findByName("android") != null) {
+        sub.android {
+          lint {
+            abortOnError false
+            checkReleaseBuilds false
+          }
+        }
+      }
+    }
+  }
+}
 }

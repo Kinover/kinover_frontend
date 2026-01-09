@@ -24,160 +24,190 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {EMPTY_STYLE, HEADER_STYLES} from 'styles/style';
 import uuid from 'react-native-uuid';
 
+// ✅ 추가: post 단건 조회 thunk
+import {fetchPostByIdThunk} from '../store/memoryThunk';
+
 export default function CategorySelectPage({route}) {
   const navigation = useNavigation();
   const dispatch = useDispatch();
+
   const familyId = useSelector(state => state.family.familyId);
   const {categoryList} = useSelector(state => state.category);
-  const [selectedCategory, setSelectedCategory] = useState(null);
-  const [selectedIndex, setSelectedIndex] = useState(0);
-  const [addModalVisible, setAddModalVisible] = useState(false);
-  const [newCategory, setNewCategory] = useState('');
-  // ✅ 전달받은 selectedImages (string[] or object[] 모두 가능)
+
+  const mode = route?.params?.mode ?? '등록'; // '수정' | '등록'
+  const postId = route?.params?.postId ?? null;
+  const removedUrls = route?.params?.removedUrls ?? [];
+  const isEditMode = mode === '수정';
+
+  /** ✅ ImageSelectPage에서 넘어오는 값들 */
   const selectedImagesFromRoute = useMemo(
     () => route?.params?.selectedImages ?? [],
     [route?.params?.selectedImages],
   );
-  // 디버깅용
+
+  /** ✅ 수정모드: 게시글 원본 데이터(스토어) */
+  const postFromStore = useSelector(state =>
+    postId ? state.memory?.postsById?.[postId] : null,
+  );
+
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  const [addModalVisible, setAddModalVisible] = useState(false);
+  const [newCategory, setNewCategory] = useState('');
+
+  /** -----------------------
+   * ✅ 수정모드면 post fetch
+   * ---------------------- */
   useEffect(() => {
-    console.log('📂 CategorySelectPage 진입');
-    console.log('📂 route.params:', route?.params);
-  }, [route]);
+    if (!isEditMode) return;
+    if (!postId) return;
+    if (!postFromStore) dispatch(fetchPostByIdThunk(postId));
+  }, [dispatch, isEditMode, postId, postFromStore]);
+
+  /** -----------------------
+   * 카테고리 목록 조회
+   * ---------------------- */
+  useEffect(() => {
+    if (!familyId) return;
+    dispatch(fetchCategoryThunk(familyId));
+  }, [dispatch, familyId]);
+
+  /** -----------------------
+   * ✅ 기본 선택 세팅
+   * - 수정모드면 "게시글의 카테고리"를 우선으로 선택
+   * - 없으면 첫번째 선택
+   * ---------------------- */
+  const didInitRef = React.useRef(false);
 
   useEffect(() => {
-    console.log('👨‍👩‍👧‍👦 familyId 변경:', familyId);
-  }, [familyId]);
+    if (!categoryList || categoryList.length === 0) return;
 
+    // 이미 한번 초기화 했으면(사용자가 눌러서 바꿨을 수도) 더 안 건드림
+    if (didInitRef.current) return;
+
+    // ✅ 수정모드: 게시글의 categoryId로 맞추기
+    if (isEditMode && postFromStore?.categoryId) {
+      const idx = categoryList.findIndex(
+        c => c.categoryId === postFromStore.categoryId,
+      );
+      if (idx >= 0) {
+        setSelectedCategory(categoryList[idx]);
+        setSelectedIndex(idx);
+        didInitRef.current = true;
+        return;
+      }
+    }
+
+    // ✅ 그 외: 첫번째로
+    setSelectedCategory(categoryList[0]);
+    setSelectedIndex(0);
+    didInitRef.current = true;
+  }, [categoryList, isEditMode, postFromStore]);
+
+  // postId 바뀌면 초기화 다시
   useEffect(() => {
-    console.log('📋 categoryList 변경감지:', categoryList);
-  }, [categoryList]);
+    didInitRef.current = false;
+  }, [postId]);
 
-  useEffect(() => {
-    console.log('✅ 현재 선택된 카테고리(selectedCategory):', selectedCategory);
-    console.log('✅ 현재 선택 인덱스(selectedIndex):', selectedIndex);
-  }, [selectedCategory, selectedIndex]);
+  /** -----------------------
+   * 임시 카테고리 추가
+   * ---------------------- */
+  const handleAddCategory = () => {
+    const title = newCategory.trim();
+    if (!title) return;
 
-  // 헤더 설정
+    const generatedId = String(uuid.v4());
+
+    const tempCategory = {
+      categoryId: generatedId,
+      title,
+      isTemporary: true,
+    };
+
+    const updated = [...categoryList, tempCategory];
+
+    setNewCategory('');
+    setAddModalVisible(false);
+
+    setSelectedCategory(tempCategory);
+    setSelectedIndex(updated.length - 1);
+
+    dispatch({type: 'category/setTempCategoryList', payload: updated});
+  };
+
+  /** -----------------------
+   * 헤더 설정
+   * ---------------------- */
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitle: () => <Text style={styles.headerTitle}>카테고리 지정</Text>,
+      headerTitle: () => (
+        <Text style={styles.headerTitle}>
+          {isEditMode ? '카테고리 수정' : '카테고리 지정'}
+        </Text>
+      ),
       headerRight: () => (
         <TouchableOpacity
           onPress={() => {
-            console.log('✅ 헤더 확인 버튼 클릭');
-            console.log(
-              '➡️ 게시글작성화면으로 이동, selectedCategory:',
-              selectedCategory,
-            );
-            console.log('➡️ 전달할 selectedImages:', selectedImagesFromRoute);
+            if (!selectedCategory) return;
 
-            if (selectedCategory) {
-              navigation.navigate('게시글작성화면', {
-                selectedCategory,
-                selectedImages: selectedImagesFromRoute,
-              });
-            } else {
-              console.log('❌ selectedCategory 없음, 이동 안 함');
-            }
+            navigation.navigate('게시글작성화면', {
+              selectedCategory,
+              selectedImages: selectedImagesFromRoute,
+
+              mode,
+              postId,
+              removedUrls,
+
+              // ✅ 핵심: 수정모드면 원래 글내용을 미리 채우기 위해 전달
+              initialContent: isEditMode ? postFromStore?.content ?? '' : '',
+            });
           }}
-          style={styles.headerRight}>
+          disabled={!selectedCategory}
+          style={[styles.headerRight, !selectedCategory && {opacity: 0.35}]}
+          activeOpacity={0.85}>
           <Image
             source={require('../../../assets/icons/check.png')}
             style={styles.checkImage}
           />
         </TouchableOpacity>
       ),
-      // headerLeft: () => (
-      //   <TouchableOpacity
-      //     onPress={() => {
-      //       console.log('⬅️ 카테고리 선택 화면 뒤로가기');
-      //       navigation.goBack();
-      //     }}
-      //     style={{marginLeft: getResponsiveWidth(20)}}>
-      //     <Image
-      //       source={require('../../../assets/icons/caretDown.png')}
-      //       style={{
-      //         width: getResponsiveWidth(26),
-      //         height: getResponsiveHeight(26),
-      //         resizeMode: 'contain',
-      //       }}
-      //     />
-      //   </TouchableOpacity>
-      // ),
     });
-  }, [navigation, selectedCategory, selectedImagesFromRoute]);
+  }, [
+    navigation,
+    selectedCategory,
+    selectedImagesFromRoute,
+    isEditMode,
+    mode,
+    postId,
+    removedUrls,
+    postFromStore,
+  ]);
 
-  // 카테고리 목록 조회
-  useEffect(() => {
-    if (familyId) {
-      console.log('📥 카테고리 목록 조회 요청, familyId:', familyId);
-      dispatch(fetchCategoryThunk(familyId));
-    } else {
-      console.log('❌ familyId 없음, 카테고리 조회 스킵');
-    }
-  }, [dispatch, familyId]);
-
-  // 첫 진입 시 기본 선택
-  useEffect(() => {
-    if (categoryList.length > 0) {
-      console.log('✨ categoryList 첫 로딩/변경, 기본 첫 번째 카테고리 선택');
-      console.log('✨ categoryList[0]:', categoryList[0]);
-      setSelectedCategory(categoryList[0]);
-      setSelectedIndex(0);
-    } else {
-      console.log('ℹ️ categoryList 비어 있음');
-    }
-  }, [categoryList]);
-
-  const handleAddCategory = () => {
-    console.log('➕ 새 카테고리 추가 버튼 클릭, 입력값:', newCategory);
-
-    if (newCategory.trim()) {
-      const generatedId = String(uuid.v4());
-
-      const tempCategory = {
-        categoryId: generatedId, // ✅ 여기서 미리 UUID 부여
-        title: newCategory.trim(),
-        isTemporary: true,
-      };
-      const updated = [...categoryList, tempCategory];
-
-      console.log('🆕 생성된 임시 카테고리(tempCategory):', tempCategory);
-      console.log('🆕 업데이트된 카테고리 목록(updated):', updated);
-
-      setNewCategory('');
-      setAddModalVisible(false);
-      setSelectedCategory(tempCategory);
-      setSelectedIndex(updated.length - 1);
-
-      dispatch({type: 'category/setTempCategoryList', payload: updated});
-      console.log('📤 dispatch(category/setTempCategoryList) 완료');
-    } else {
-      console.log('❌ newCategory 공백, 생성 안 함');
-    }
-  };
-
+  /** -----------------------
+   * 리스트 아이템
+   * ---------------------- */
   const renderItem = ({item, index}) => {
     const isSelected = selectedIndex === index;
+
     return (
       <TouchableOpacity
         onPress={() => {
-          console.log('✅ 카테고리 셀 클릭:', {item, index});
           setSelectedIndex(index);
           setSelectedCategory(item);
         }}
+        activeOpacity={0.85}
         style={[styles.itemContainer, isSelected && styles.selectedItem]}>
         <Text style={styles.itemText}>{item.title}</Text>
-        <TouchableOpacity>
-          <Image
-            source={
-              isSelected
-                ? require('../../../assets/images/selected-bt.png')
-                : require('../../../assets/images/unselected-bt.png')
-            }
-            style={styles.radioIcon}
-          />
-        </TouchableOpacity>
+
+        <Image
+          source={
+            isSelected
+              ? require('../../../assets/images/selected-bt.png')
+              : require('../../../assets/images/unselected-bt.png')
+          }
+          style={styles.radioIcon}
+        />
       </TouchableOpacity>
     );
   };
@@ -195,10 +225,8 @@ export default function CategorySelectPage({route}) {
           <>
             <TouchableOpacity
               style={styles.addButton}
-              onPress={() => {
-                console.log('📥 카테고리 추가 모달 오픈');
-                setAddModalVisible(true);
-              }}>
+              onPress={() => setAddModalVisible(true)}
+              activeOpacity={0.85}>
               <Text style={styles.addText}>카테고리 추가</Text>
             </TouchableOpacity>
             <View style={styles.separator} />
@@ -209,7 +237,6 @@ export default function CategorySelectPage({route}) {
       <CategoryModal
         visible={addModalVisible}
         onClose={() => {
-          console.log('🧹 카테고리 추가 모달 닫기');
           setNewCategory('');
           setAddModalVisible(false);
         }}
@@ -223,9 +250,7 @@ export default function CategorySelectPage({route}) {
                 placeholderTextColor={EMPTY_STYLE.emptyColor}
                 style={styles.input}
                 value={newCategory}
-                onChangeText={text => {
-                  setNewCategory(text);
-                }}
+                onChangeText={setNewCategory}
               />
             </View>
           </View>
@@ -242,11 +267,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 2,
     borderColor: '#E5E5E5',
   },
-  headerCenter: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+
   headerTitle: {
     fontSize: HEADER_STYLES.defaultTitleFontSize,
     fontFamily: HEADER_STYLES.defaultTitleFontFamily,
@@ -255,15 +276,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textAlignVertical: 'center',
   },
-  headerRight: {
-    // marginRight: getResponsiveWidth(10),
-  },
+  headerRight: {},
   checkImage: {
     width: HEADER_STYLES.headerRightIconWidth,
     height: HEADER_STYLES.headerRightIconHeight,
     marginRight: HEADER_STYLES.headerRightIconRightPadding,
     resizeMode: 'contain',
   },
+
   itemContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -285,6 +305,7 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(14),
     resizeMode: 'contain',
   },
+
   separator: {
     height: 1,
     backgroundColor: '#eee',
@@ -299,6 +320,7 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(14.5),
     fontFamily: 'Pretendard-Medium',
   },
+
   modalContent: {
     paddingHorizontal: getResponsiveWidth(10),
   },

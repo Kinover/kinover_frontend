@@ -1,7 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/screens/memory/components/PostFilterBar.jsx
 
-import React, {useMemo, useState, useCallback} from 'react';
+import React, {useMemo, useState, useCallback, useRef} from 'react';
 import {
   View,
   Text,
@@ -56,6 +56,15 @@ export default function PostFilterBar({
 }) {
   const [sortModalOpen, setSortModalOpen] = useState(false);
 
+  // ✅ 정렬 버튼 위치/크기 저장해서 "버튼 바로 아래"에 드롭다운 띄우기
+  const sortBtnRef = useRef(null);
+  const [sortAnchor, setSortAnchor] = useState({
+    x: 0,
+    y: 0,
+    w: 0,
+    h: 0,
+  });
+
   const sortTitle = useMemo(() => {
     const found = (sortOptions || []).find(v => v.key === sortKey);
     return found?.title || '최신순';
@@ -72,7 +81,6 @@ export default function PostFilterBar({
   // - 기본값이 아니면 활성(진한 톤 + pillActive)
   const isSortActive = sortKey !== 'latest';
 
-  const openSort = useCallback(() => setSortModalOpen(true), []);
   const closeSort = useCallback(() => setSortModalOpen(false), []);
 
   const pickSort = useCallback(
@@ -82,6 +90,27 @@ export default function PostFilterBar({
     },
     [onChangeSort],
   );
+
+  const openSort = useCallback(() => {
+    // ✅ 버튼 위치 측정 -> 드롭다운 위치 계산
+    const node = sortBtnRef.current;
+    if (!node?.measureInWindow) {
+      setSortModalOpen(true);
+      return;
+    }
+
+    node.measureInWindow((x, y, w, h) => {
+      setSortAnchor({x, y, w, h});
+      setSortModalOpen(true);
+    });
+  }, []);
+
+  // ✅ 드롭다운 폭: 버튼 폭과 동일(최소 폭 확보)
+  const dropdownWidth = sortAnchor.w;
+
+  // ✅ 드롭다운 위치: 버튼 아래로 살짝 내려서
+  const dropdownTop = sortAnchor.y + sortAnchor.h + getResponsiveHeight(6);
+  const dropdownLeft = sortAnchor.x;
 
   return (
     <>
@@ -122,6 +151,7 @@ export default function PostFilterBar({
           </TouchableOpacity>
 
           <TouchableOpacity
+            ref={sortBtnRef}
             style={[
               styles.pillButton,
               styles.sortButton,
@@ -144,37 +174,46 @@ export default function PostFilterBar({
         </View>
       </View>
 
+      {/* ✅ 바텀시트 대신: 버튼 아래 드롭다운 */}
       <Modal
         visible={sortModalOpen}
         transparent
         animationType="fade"
         onRequestClose={closeSort}>
-        <Pressable style={styles.modalBackdrop} onPress={closeSort} />
-        <View style={styles.modalSheetWrap}>
-          <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>정렬</Text>
+        {/* 바깥 누르면 닫히게 */}
+        <Pressable
+          style={styles.modalBackdropTransparent}
+          onPress={closeSort}
+        />
 
+        <View
+          style={[
+            styles.dropdownWrap,
+            {
+              top: dropdownTop,
+              left: dropdownLeft,
+              width: dropdownWidth,
+            },
+          ]}>
+          <View style={styles.dropdown}>
             {(sortOptions || []).map(opt => {
               const active = opt.key === sortKey;
               return (
                 <TouchableOpacity
                   key={opt.key}
-                  style={[styles.optionRow, active && styles.optionRowActive]}
+                  style={[
+                    styles.dropdownItem,
+                    active && styles.dropdownItemActive,
+                  ]}
                   activeOpacity={0.7}
                   onPress={() => pickSort(opt.key)}>
                   <Text
                     style={[
-                      styles.optionText,
-                      active && styles.optionTextActive,
+                      styles.dropdownItemText,
+                      active && styles.dropdownItemTextActive,
                     ]}>
                     {opt.title}
                   </Text>
-
-                  {active ? (
-                    <View style={styles.dot} />
-                  ) : (
-                    <View style={[styles.dot, styles.dotInactive]} />
-                  )}
                 </TouchableOpacity>
               );
             })}
@@ -205,10 +244,9 @@ const styles = StyleSheet.create({
   },
   categoryText: {
     fontFamily: 'Pretendard-SemiBold',
-    fontWeight: '600', // ❌ 'semibold'는 RN에서 invalid라서 숫자로 고정
+    fontWeight: '600',
     fontSize: getResponsiveFontSize(13),
     lineHeight: getResponsiveHeight(17),
-    // color: '#111827',
     color: '#525252',
   },
   downIcon: {
@@ -244,7 +282,6 @@ const styles = StyleSheet.create({
 
   pillActive: {
     borderColor: BUTTON_STYLES?.backgroundColor ?? '#525252',
-
     backgroundColor: '#FFFFFF',
   },
 
@@ -265,7 +302,6 @@ const styles = StyleSheet.create({
   },
   calendarIconActive: {tintColor: '#525252'},
 
-  // ✅ 정렬 아이콘도 기간 버튼 톤과 동일 규칙(기본 회색 → 활성 검정)
   sortDownIcon: {
     resizeMode: 'contain',
     width: getResponsiveWidth(14),
@@ -274,56 +310,64 @@ const styles = StyleSheet.create({
   },
   sortDownIconActive: {tintColor: '#525252'},
 
-  modalBackdrop: {
+  // ✅ 여기부터 드롭다운 전용 스타일
+  modalBackdropTransparent: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: 'transparent',
   },
 
-  modalSheetWrap: {
+  dropdownWrap: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: getResponsiveWidth(16),
-    paddingBottom: getResponsiveHeight(18),
+    // top/left/width는 런타임에서 주입
+    zIndex: 999,
   },
 
-  modalSheet: {
+  dropdown: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    paddingVertical: getResponsiveHeight(14),
-    paddingHorizontal: getResponsiveWidth(14),
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingVertical: getResponsiveHeight(6),
+
+    // 그림자
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.08,
+        shadowRadius: 10,
+        shadowOffset: {width: 0, height: 6},
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
 
-  modalTitle: {
-    fontSize: getResponsiveFontSize(16),
-    fontFamily: 'Pretendard-Bold',
-    color: '#525252',
-    marginBottom: getResponsiveHeight(8),
-  },
-
-  optionRow: {
+  dropdownItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: getResponsiveHeight(12),
-    paddingHorizontal: getResponsiveWidth(8),
-    borderRadius: 12,
+    paddingVertical: getResponsiveHeight(10),
+    paddingHorizontal: getResponsiveWidth(12),
   },
 
-  optionRowActive: {backgroundColor: 'rgba(17,24,39,0.04)'},
+  dropdownItemActive: {
+    backgroundColor: 'rgba(17,24,39,0.04)',
+  },
 
-  optionText: {
-    fontSize: getResponsiveFontSize(15),
+  dropdownItemText: {
+    fontSize: getResponsiveFontSize(12),
     fontFamily: 'Pretendard-Medium',
     color: '#525252',
   },
 
-  optionTextActive: {fontFamily: 'Pretendard-Bold'},
+  dropdownItemTextActive: {
+    fontFamily: 'Pretendard-Bold',
+  },
 
   dot: {
-    width: getResponsiveWidth(10),
-    height: getResponsiveWidth(10),
+    width: getResponsiveWidth(6),
+    height: getResponsiveWidth(6),
     borderRadius: 999,
     backgroundColor: '#525252',
   },

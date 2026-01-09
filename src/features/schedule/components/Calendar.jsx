@@ -2,11 +2,26 @@
 // src/features/schedule/components/Calendar.jsx (CalendarToggle)
 
 import React, {useRef, useMemo, useEffect, useCallback} from 'react';
-import {View, Text, TouchableOpacity, Image, StyleSheet, PanResponder} from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  PanResponder,
+} from 'react-native';
 
-import Animated, {useSharedValue, useAnimatedStyle, withTiming} from 'react-native-reanimated';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
 
-import {getResponsiveFontSize, getResponsiveHeight, getResponsiveWidth} from '../../../utils/responsive';
+import {
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveWidth,
+} from '../../../utils/responsive';
 import {useCalendarLayout} from '../hooks/useCalendarLayout';
 
 import {useCalendarMode} from '../hooks/useCalendarMode';
@@ -20,6 +35,7 @@ import DropShadow from 'react-native-drop-shadow';
 
 // ✅ NEW (A안): 모달 전용 미니 캘린더 피커
 import MiniCalendarPickerModal from './MiniCalendarPickerModal';
+import {DEFAULT_STYLE} from 'styles/style';
 
 const RADIUS = 14;
 
@@ -240,7 +256,9 @@ export default function CalendarToggle({
   const EST_MONTH_H = cellSize * 6 + GAP * 5;
   const EST_WEEK_H = cellSize;
 
-  const containerH = useSharedValue(mode === 'month' ? EST_MONTH_H : EST_WEEK_H);
+  const containerH = useSharedValue(
+    mode === 'month' ? EST_MONTH_H : EST_WEEK_H,
+  );
   const monthOpacity = useSharedValue(mode === 'month' ? 1 : 0);
   const weekOpacity = useSharedValue(mode === 'week' ? 1 : 0);
 
@@ -266,7 +284,9 @@ export default function CalendarToggle({
 
   useEffect(() => {
     const toHeight =
-      mode === 'month' ? monthH.value || EST_MONTH_H : weekH.value || EST_WEEK_H;
+      mode === 'month'
+        ? monthH.value || EST_MONTH_H
+        : weekH.value || EST_WEEK_H;
 
     containerH.value = withTiming(toHeight || 0, {duration: 260});
 
@@ -312,8 +332,12 @@ export default function CalendarToggle({
 
     return (
       <View style={styles.dotRow}>
-        {showAnnivDot ? <View style={[styles.dotBase, styles.dotAnniv]} /> : null}
-        {showFamilyDot ? <View style={[styles.dotBase, styles.dotFamily]} /> : null}
+        {showAnnivDot ? (
+          <View style={[styles.dotBase, styles.dotAnniv]} />
+        ) : null}
+        {showFamilyDot ? (
+          <View style={[styles.dotBase, styles.dotFamily]} />
+        ) : null}
       </View>
     );
   };
@@ -330,7 +354,6 @@ export default function CalendarToggle({
             shadowOffset: {width: 0, height: 3},
             shadowOpacity: 0.12,
             shadowRadius: 5,
-
           },
         ]}>
         <View style={styles.cardInnerHeader}>
@@ -350,19 +373,27 @@ export default function CalendarToggle({
           <View style={styles.headerRight}>
             <View style={styles.navButtons}>
               <TouchableOpacity
-                onPress={() => (mode === 'month' ? changeMonth(-1) : changeWeek(-1))}
+                onPress={() =>
+                  mode === 'month' ? changeMonth(-1) : changeWeek(-1)
+                }
                 hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
                 <Image
-                  source={{uri: 'https://i.postimg.cc/4xGvZv46/Group-440-5.png'}}
+                  source={{
+                    uri: 'https://i.postimg.cc/4xGvZv46/Group-440-5.png',
+                  }}
                   style={styles.navIcon}
                 />
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() => (mode === 'month' ? changeMonth(1) : changeWeek(1))}
+                onPress={() =>
+                  mode === 'month' ? changeMonth(1) : changeWeek(1)
+                }
                 hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
                 <Image
-                  source={{uri: 'https://i.postimg.cc/WbLg6mkB/Group-441-2.png'}}
+                  source={{
+                    uri: 'https://i.postimg.cc/WbLg6mkB/Group-441-2.png',
+                  }}
                   style={styles.navIcon}
                 />
               </TouchableOpacity>
@@ -401,7 +432,8 @@ export default function CalendarToggle({
                 const isRestDow = d === '일';
                 return (
                   <View key={d} style={[styles.weekCell, {width: cellSize}]}>
-                    <Text style={[styles.dayText, isRestDow && styles.sundayText]}>
+                    <Text
+                      style={[styles.dayText, isRestDow && styles.sundayText]}>
                       {d}
                     </Text>
                   </View>
@@ -427,8 +459,13 @@ export default function CalendarToggle({
                     const birthNames = birthdayMap?.[item.key];
                     const hasBirthday = !!birthNames?.length;
 
-                    const baseCounts = normalizeCount(scheduleCountPerDay[item.key]);
-                    const counts = mergeBirthdayIntoCounts(baseCounts, hasBirthday);
+                    const baseCounts = normalizeCount(
+                      scheduleCountPerDay[item.key],
+                    );
+                    const counts = mergeBirthdayIntoCounts(
+                      baseCounts,
+                      hasBirthday,
+                    );
 
                     const total = counts.total;
                     const CIRCLE_SIZE = cellSize * 0.78;
@@ -437,7 +474,10 @@ export default function CalendarToggle({
                     return (
                       <TouchableOpacity
                         key={idx}
-                        style={[styles.dayCell, {width: cellSize, height: cellSize}]}
+                        style={[
+                          styles.dayCell,
+                          {width: cellSize, height: cellSize},
+                        ]}
                         onPress={() => setSelectedDate(item.date)}
                         hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
                         <View
@@ -481,8 +521,13 @@ export default function CalendarToggle({
                     const birthNames = birthdayMap?.[item.key];
                     const hasBirthday = !!birthNames?.length;
 
-                    const baseCounts = normalizeCount(scheduleCountPerDay[item.key]);
-                    const counts = mergeBirthdayIntoCounts(baseCounts, hasBirthday);
+                    const baseCounts = normalizeCount(
+                      scheduleCountPerDay[item.key],
+                    );
+                    const counts = mergeBirthdayIntoCounts(
+                      baseCounts,
+                      hasBirthday,
+                    );
 
                     const total = counts.total;
                     const CIRCLE_SIZE = cellSize * 0.78;
@@ -491,7 +536,10 @@ export default function CalendarToggle({
                     return (
                       <TouchableOpacity
                         key={idx}
-                        style={[styles.dayCell, {width: cellSize, height: cellSize}]}
+                        style={[
+                          styles.dayCell,
+                          {width: cellSize, height: cellSize},
+                        ]}
                         onPress={() => setSelectedDate(item.date)}
                         hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
                         <View
@@ -595,8 +643,8 @@ const styles = StyleSheet.create({
     gap: getResponsiveWidth(10),
   },
   monthText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(20),
+    fontFamily: DEFAULT_STYLE.sectionTitle.fontFamily,
+    fontSize: DEFAULT_STYLE.sectionTitle.fontSize,
     color: '#111827',
     letterSpacing: -0.2,
   },
@@ -614,7 +662,6 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     // tintColor: '#111827',
     tintColor: '#525252',
-
   },
   navButtons: {
     flexDirection: 'row',
@@ -639,8 +686,7 @@ const styles = StyleSheet.create({
   },
   toggleActive: {},
   toggleText: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(13.5),
+    fontSize: getResponsiveFontSize(12.5),
     color: '#6B7280',
   },
   toggleTextActive: {
