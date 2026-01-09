@@ -15,8 +15,7 @@ export default function ImageDeleteModal({
   title,
   subText,
 }) {
-
-  if(!visible) return null;
+  if (!visible) return null;
   return (
     <CustomModal
       visible={visible}

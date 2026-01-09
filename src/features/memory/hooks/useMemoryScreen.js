@@ -1,16 +1,17 @@
 // src/hooks/memory/useMemoryScreen.js
-import React,{useState, useRef, useLayoutEffect, useMemo} from 'react';
+
+import {useState, useRef, useMemo, useCallback} from 'react';
 import {useSelector} from 'react-redux';
 import {useNavigation} from '@react-navigation/native';
 
-import CategoryDropdownButton from '../components/CategoryDropdownButton';
 export const useMemoryScreen = () => {
   const navigation = useNavigation();
   const categorySheetRef = useRef(null);
 
-  const categoryList = useSelector(state => state.category.categoryList);
+  // ✅ null-safe
+  const categoryList = useSelector(state => state.category?.categoryList || []);
 
-  const [selectedTab, setSelectedTab] = useState('post');
+  const [selectedTab, setSelectedTab] = useState('feed');
   const [selectedCategory, setSelectedCategory] = useState(null);
 
   const selectedCategoryTitle = useMemo(
@@ -18,29 +19,17 @@ export const useMemoryScreen = () => {
     [selectedCategory],
   );
 
-  const openCategorySheet = () => {
-    categorySheetRef.current?.present();
-  };
+  const openCategorySheet = useCallback(() => {
+    categorySheetRef.current?.present?.();
+  }, []);
 
-  // 헤더 셋팅
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerLeft: () => (
-        <CategoryDropdownButton
-          selectedTitle={selectedCategoryTitle}
-          onPress={openCategorySheet}
-        />
-      ),
-    });
-  }, [navigation, selectedCategoryTitle]);
-
-  const handleSelectCategory = category => {
+  const handleSelectCategory = useCallback(category => {
     setSelectedCategory(category);
-  };
+  }, []);
 
-  const navigateToImageSelect = () => {
+  const navigateToImageSelect = useCallback(() => {
     navigation.navigate('이미지선택화면');
-  };
+  }, [navigation]);
 
   return {
     // 상태

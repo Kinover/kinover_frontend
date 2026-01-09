@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState, useCallback} from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,13 @@ import {
   ScrollView,
   Image,
   Linking,
+  Switch,
+  Alert,
 } from 'react-native';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
+
 import LogoutModal from '../../home/components/LogoutModal';
 import DeleteAccountModal from '../../home/components/DeleteAccountModal';
 
@@ -23,6 +27,14 @@ import {useLogout} from '../../auth/hooks/useLogout';
 import useHideTabBar from '../../../hooks/useHideTabBar';
 import {SETTING_STYLES} from 'styles/style';
 
+// ✅ 추가
+import {
+  checkAndAuthBiometric,
+  getBiometricAvailability,
+} from '../../../utils/biometrics';
+
+const BIOMETRIC_ON_KEY = '@kinover/biometric_on_v1';
+
 export default function SettingScreen() {
   const navigation = useNavigation();
   const logout = useLogout();
@@ -30,9 +42,69 @@ export default function SettingScreen() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
+  // ✅ 생체인식 설정 상태
+  const [bioSupported, setBioSupported] = useState(false);
+  const [bioType, setBioType] = useState(null);
+  const [bioOn, setBioOn] = useState(false);
+  const [bioLoading, setBioLoading] = useState(true);
+
   useHideTabBar();
 
   const openLink = url => Linking.openURL(url).catch(err => console.error(err));
+
+  const loadBiometricSetting = useCallback(async () => {
+    setBioLoading(true);
+    try {
+      const avail = await getBiometricAvailability();
+      setBioSupported(avail.available);
+      setBioType(avail.biometryType);
+
+      const raw = await AsyncStorage.getItem(BIOMETRIC_ON_KEY);
+      setBioOn(raw === '1');
+    } finally {
+      setBioLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadBiometricSetting();
+  }, [loadBiometricSetting]);
+
+  const onToggleBiometric = useCallback(
+    async next => {
+      // OFF로 끄는 건 바로 허용
+      if (!next) {
+        await AsyncStorage.setItem(BIOMETRIC_ON_KEY, '0');
+        setBioOn(false);
+        return;
+      }
+
+      // ON으로 켜려면: 지원 여부 확인
+      if (!bioSupported) {
+        Alert.alert('사용 불가', '이 기기에서는 생체인식을 사용할 수 없어요.');
+        return;
+      }
+
+      // ON으로 켜려면: 한번 인증 성공해야 함
+      const res = await checkAndAuthBiometric();
+      if (!res?.success) {
+        Alert.alert('실패', '인증에 실패했어요. 다시 시도해줘요.');
+        return;
+      }
+
+      await AsyncStorage.setItem(BIOMETRIC_ON_KEY, '1');
+      setBioOn(true);
+    },
+    [bioSupported],
+  );
+
+  const bioLabel = bioType
+    ? bioType === 'FaceID'
+      ? 'Face ID로 앱 잠금'
+      : bioType === 'TouchID'
+      ? '지문으로 앱 잠금'
+      : '생체인식으로 앱 잠금'
+    : '생체인식으로 앱 잠금';
 
   return (
     <ScrollView style={styles.container}>
@@ -49,6 +121,25 @@ export default function SettingScreen() {
             source={require('../../../assets/images/rightArrow-gray.png')}
           />
         </TouchableOpacity>
+      </View>
+
+      {/* ✅ 앱 잠금(생체인식) */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>보안</Text>
+        <View style={styles.row}>
+          <View style={{flex: 1, paddingRight: getResponsiveWidth(10)}}>
+            <Text style={styles.label}>{bioLabel}</Text>
+            {!bioSupported && !bioLoading ? (
+              <Text style={styles.hint}>이 기기에서는 사용할 수 없어요</Text>
+            ) : null}
+          </View>
+
+          <Switch
+            value={bioOn}
+            onValueChange={onToggleBiometric}
+            disabled={bioLoading}
+          />
+        </View>
       </View>
 
       {/* 버전 정보 */}
@@ -140,29 +231,35 @@ export default function SettingScreen() {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
-    paddingHorizontal: getResponsiveWidth(18), // 🔽 20 → 18
-    paddingTop: getResponsiveHeight(16), // 🔽 20 → 16
+    paddingHorizontal: getResponsiveWidth(18),
+    paddingTop: getResponsiveHeight(16),
     flex: 1,
   },
   header: {
     fontSize: SETTING_STYLES.titleFontSize,
     fontWeight: SETTING_STYLES.titleFontWeight,
-    marginBottom: getResponsiveHeight(20), // 🔽 30 → 20
+    marginBottom: getResponsiveHeight(20),
     color: SETTING_STYLES.titleFontColor,
     fontFamily: SETTING_STYLES.titleFontFamily,
   },
   sectionTitle: {
-    fontSize: getResponsiveFontSize(12.5), // 🔽 14 → 12.5
+    fontSize: getResponsiveFontSize(12.5),
     color: '#888',
     marginTop: getResponsiveHeight(6),
     marginBottom: getResponsiveHeight(6),
     fontFamily: 'Pretendard-Medium',
   },
+  hint: {
+    marginTop: getResponsiveHeight(3),
+    fontSize: getResponsiveFontSize(11.5),
+    color: '#A0A0A0',
+    fontFamily: 'Pretendard-Regular',
+  },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: getResponsiveHeight(10), // 🔽 12 → 10
+    paddingVertical: getResponsiveHeight(10),
   },
   label: {
     fontSize: SETTING_STYLES.labelFontSize,
@@ -170,18 +267,19 @@ const styles = StyleSheet.create({
     fontFamily: SETTING_STYLES.labelFontFamily,
   },
   value: {
-    fontSize: getResponsiveFontSize(14), // 🔽 17 → 14
+    fontSize: getResponsiveFontSize(14),
     color: '#555',
     fontFamily: 'Pretendard-Regular',
   },
   arrow: {
-    width: getResponsiveIconSize(11), // 🔽 12.5 → 11
+    width: getResponsiveIconSize(11),
     height: getResponsiveIconSize(11),
     resizeMode: 'contain',
   },
   section: {
     borderBottomWidth: 0.5,
     borderColor: '#E5E5E5',
-    paddingVertical: getResponsiveHeight(6), // 🔽 8 → 6
+    paddingVertical: getResponsiveHeight(6),
   },
 });
+

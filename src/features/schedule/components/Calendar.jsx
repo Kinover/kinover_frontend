@@ -1,26 +1,12 @@
+/* eslint-disable react-native/no-inline-styles */
 // src/features/schedule/components/Calendar.jsx (CalendarToggle)
+
 import React, {useRef, useMemo, useEffect, useCallback} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-  PanResponder,
-} from 'react-native';
+import {View, Text, TouchableOpacity, Image, StyleSheet, PanResponder} from 'react-native';
 
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-} from 'react-native-reanimated';
+import Animated, {useSharedValue, useAnimatedStyle, withTiming} from 'react-native-reanimated';
 
-import {
-  getResponsiveFontSize,
-  getResponsiveHeight,
-  getResponsiveWidth,
-} from '../../../utils/responsive';
-import YMDPickerModal from './YMDPickerModal';
+import {getResponsiveFontSize, getResponsiveHeight, getResponsiveWidth} from '../../../utils/responsive';
 import {useCalendarLayout} from '../hooks/useCalendarLayout';
 
 import {useCalendarMode} from '../hooks/useCalendarMode';
@@ -32,7 +18,29 @@ import {useYMDPicker} from '../hooks/useYMDPicker';
 
 import DropShadow from 'react-native-drop-shadow';
 
+// ✅ NEW (A안): 모달 전용 미니 캘린더 피커
+import MiniCalendarPickerModal from './MiniCalendarPickerModal';
+
 const RADIUS = 14;
+
+const TYPE = {
+  INDIVIDUAL: 'INDIVIDUAL',
+  FAMILY: 'FAMILY',
+  ANNIVERSARY: 'ANNIVERSARY',
+};
+
+// ✅ 의미 컬러
+// - 기념일/생일: 노랑 점
+// - FAMILY 일정: 파랑 점
+// - INDIVIDUAL: 점 없음
+const COLOR = {
+  ANNIV: '#F59E0B', // 노랑
+  FAMILY: '#3B82F6', // 파랑
+
+  FOCUS_BG: 'rgba(17, 24, 39, 0.06)',
+  FOCUS_BORDER: 'rgba(17, 24, 39, 0.18)',
+  FOCUS_TEXT: '#111827',
+};
 
 const normalizeBirthToKey = birth => {
   if (!birth) return null;
@@ -55,6 +63,77 @@ const buildBirthdayMap = members => {
     map[key] = map[key] ? [...map[key], name] : [name];
   });
   return map;
+};
+
+// ✅ scheduleCountPerDay가 number/obj/string(type) 섞여 와도 흡수
+const normalizeCount = v => {
+  if (v == null)
+    return {
+      total: 0,
+      individual: 0,
+      family: 0,
+      anniversary: 0,
+      type: null,
+    };
+
+  // ✅ type만 내려오는 경우 (예: "FAMILY")
+  if (typeof v === 'string') {
+    const type = String(v).toUpperCase();
+    return {
+      total: 1,
+      individual: type === TYPE.INDIVIDUAL ? 1 : 0,
+      family: type === TYPE.FAMILY ? 1 : 0,
+      anniversary: type === TYPE.ANNIVERSARY ? 1 : 0,
+      type,
+    };
+  }
+
+  if (typeof v === 'number') {
+    // legacy: 숫자만 오면 개별 일정으로만 간주(점은 안 찍힘)
+    return {
+      total: v,
+      individual: v,
+      family: 0,
+      anniversary: 0,
+      type: null,
+    };
+  }
+
+  // object
+  const total = Number(v.total ?? v.count ?? 0) || 0;
+  const individual = Number(v.individual ?? v.personal ?? 0) || 0;
+  const family = Number(v.family ?? v.shared ?? 0) || 0;
+  const anniversary = Number(v.anniversary ?? 0) || 0;
+
+  const typeRaw =
+    v.type ?? v.scheduleType ?? v.kind ?? v.scheduleKind ?? v.category ?? null;
+  const type = typeRaw ? String(typeRaw).toUpperCase() : null;
+
+  const safeTotal = total || individual + family + anniversary;
+
+  return {total: safeTotal, individual, family, anniversary, type};
+};
+
+// ✅ 생일을 "기념일(ANNIVERSARY)"과 동일한 카운트로 합치기
+const mergeBirthdayIntoCounts = (counts, hasBirthday) => {
+  if (!hasBirthday) return counts;
+
+  const next = {
+    ...counts,
+    anniversary: (counts?.anniversary || 0) + 1,
+  };
+
+  const baseTotal = Number(next?.total || 0);
+  const safeTotal =
+    baseTotal ||
+    Number(next.individual || 0) +
+      Number(next.family || 0) +
+      Number(next.anniversary || 0);
+
+  return {
+    ...next,
+    total: safeTotal + (baseTotal ? 1 : 0),
+  };
 };
 
 export default function CalendarToggle({
@@ -158,14 +237,10 @@ export default function CalendarToggle({
   const monthH = useSharedValue(0);
   const weekH = useSharedValue(0);
 
-  // ✅ 첫 렌더부터 안 숨겨지게 "추정 높이"로 초기값 세팅
-  // month는 보통 6줄(최대)로 깔리니까 대략값: cellSize*6 + GAP*5
   const EST_MONTH_H = cellSize * 6 + GAP * 5;
   const EST_WEEK_H = cellSize;
 
-  const containerH = useSharedValue(
-    mode === 'month' ? EST_MONTH_H : EST_WEEK_H,
-  );
+  const containerH = useSharedValue(mode === 'month' ? EST_MONTH_H : EST_WEEK_H);
   const monthOpacity = useSharedValue(mode === 'month' ? 1 : 0);
   const weekOpacity = useSharedValue(mode === 'week' ? 1 : 0);
 
@@ -173,13 +248,8 @@ export default function CalendarToggle({
     e => {
       const h = e?.nativeEvent?.layout?.height ?? 0;
       if (!h) return;
-
       monthH.value = h;
-
-      // ✅ 현재 모드가 month면 컨테이너도 즉시 반영(첫 렌더 공백 방지)
-      if (mode === 'month') {
-        containerH.value = h;
-      }
+      if (mode === 'month') containerH.value = h;
     },
     [mode, monthH, containerH],
   );
@@ -188,22 +258,15 @@ export default function CalendarToggle({
     e => {
       const h = e?.nativeEvent?.layout?.height ?? 0;
       if (!h) return;
-
       weekH.value = h;
-
-      if (mode === 'week') {
-        containerH.value = h;
-      }
+      if (mode === 'week') containerH.value = h;
     },
     [mode, weekH, containerH],
   );
 
-  // 모드 변경 시: 컨테이너 height를 목표 높이로 애니메이션 + opacity 교체
   useEffect(() => {
     const toHeight =
-      mode === 'month'
-        ? monthH.value || EST_MONTH_H
-        : weekH.value || EST_WEEK_H;
+      mode === 'month' ? monthH.value || EST_MONTH_H : weekH.value || EST_WEEK_H;
 
     containerH.value = withTiming(toHeight || 0, {duration: 260});
 
@@ -225,37 +288,49 @@ export default function CalendarToggle({
     weekOpacity,
   ]);
 
-  const gridClipStyle = useAnimatedStyle(() => {
-    return {
-      height: containerH.value,
-      overflow: 'hidden',
-    };
-  });
+  const gridClipStyle = useAnimatedStyle(() => ({
+    height: containerH.value,
+    overflow: 'hidden',
+  }));
 
-  const monthLayerStyle = useAnimatedStyle(() => {
-    return {
-      opacity: monthOpacity.value,
-    };
-  });
+  const monthLayerStyle = useAnimatedStyle(() => ({
+    opacity: monthOpacity.value,
+  }));
 
-  const weekLayerStyle = useAnimatedStyle(() => {
-    return {
-      opacity: weekOpacity.value,
-    };
-  });
+  const weekLayerStyle = useAnimatedStyle(() => ({
+    opacity: weekOpacity.value,
+  }));
+
+  // ✅ 점 표시 규칙 (type 3종 반영)
+  const renderDots = counts => {
+    const typeFamily = counts?.type === TYPE.FAMILY;
+
+    const showAnnivDot = (counts.anniversary || 0) > 0;
+    const showFamilyDot = (counts.family || 0) > 0 || typeFamily;
+
+    if (!showAnnivDot && !showFamilyDot) return null;
+
+    return (
+      <View style={styles.dotRow}>
+        {showAnnivDot ? <View style={[styles.dotBase, styles.dotAnniv]} /> : null}
+        {showFamilyDot ? <View style={[styles.dotBase, styles.dotFamily]} /> : null}
+      </View>
+    );
+  };
 
   return (
     <View style={[styles.container, {paddingHorizontal: OUTER_HPAD}]}>
-      {/* ✅ Header Card - DropShadow */}
+      {/* Header */}
       <DropShadow
         style={[
           styles.shadowBox,
           {
             width: cardWidth,
             shadowColor: '#000',
-            shadowOffset: {width: 0, height: 4},
-            shadowOpacity: 0.05,
+            shadowOffset: {width: 0, height: 3},
+            shadowOpacity: 0.12,
             shadowRadius: 5,
+
           },
         ]}>
         <View style={styles.cardInnerHeader}>
@@ -275,27 +350,19 @@ export default function CalendarToggle({
           <View style={styles.headerRight}>
             <View style={styles.navButtons}>
               <TouchableOpacity
-                onPress={() =>
-                  mode === 'month' ? changeMonth(-1) : changeWeek(-1)
-                }
+                onPress={() => (mode === 'month' ? changeMonth(-1) : changeWeek(-1))}
                 hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
                 <Image
-                  source={{
-                    uri: 'https://i.postimg.cc/4xGvZv46/Group-440-5.png',
-                  }}
+                  source={{uri: 'https://i.postimg.cc/4xGvZv46/Group-440-5.png'}}
                   style={styles.navIcon}
                 />
               </TouchableOpacity>
 
               <TouchableOpacity
-                onPress={() =>
-                  mode === 'month' ? changeMonth(1) : changeWeek(1)
-                }
+                onPress={() => (mode === 'month' ? changeMonth(1) : changeWeek(1))}
                 hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
                 <Image
-                  source={{
-                    uri: 'https://i.postimg.cc/WbLg6mkB/Group-441-2.png',
-                  }}
+                  source={{uri: 'https://i.postimg.cc/WbLg6mkB/Group-441-2.png'}}
                   style={styles.navIcon}
                 />
               </TouchableOpacity>
@@ -315,7 +382,7 @@ export default function CalendarToggle({
         </View>
       </DropShadow>
 
-      {/* ✅ Calendar Card - DropShadow + swipe handlers */}
+      {/* Calendar */}
       <DropShadow
         style={[
           styles.shadowBox,
@@ -334,8 +401,7 @@ export default function CalendarToggle({
                 const isRestDow = d === '일';
                 return (
                   <View key={d} style={[styles.weekCell, {width: cellSize}]}>
-                    <Text
-                      style={[styles.dayText, isRestDow && styles.sundayText]}>
+                    <Text style={[styles.dayText, isRestDow && styles.sundayText]}>
                       {d}
                     </Text>
                   </View>
@@ -345,9 +411,8 @@ export default function CalendarToggle({
 
             <View style={styles.divider} />
 
-            {/* ✅ 여기만: 진짜 접힘/펼침(height clip) */}
             <Animated.View style={[{width: gridWidth}, gridClipStyle]}>
-              {/* 월/주 둘 다 렌더링해두고 opacity로 교체 */}
+              {/* Month */}
               <Animated.View
                 style={monthLayerStyle}
                 pointerEvents={mode === 'month' ? 'auto' : 'none'}>
@@ -359,32 +424,31 @@ export default function CalendarToggle({
                     {width: gridWidth, columnGap: GAP, rowGap: GAP},
                   ]}>
                   {monthDates.map((item, idx) => {
-                    const count = scheduleCountPerDay[item.key] || 0;
-                    const CIRCLE_SIZE = cellSize * 0.78;
-                    const holiday = isHoliday(item.date);
-
                     const birthNames = birthdayMap?.[item.key];
                     const hasBirthday = !!birthNames?.length;
+
+                    const baseCounts = normalizeCount(scheduleCountPerDay[item.key]);
+                    const counts = mergeBirthdayIntoCounts(baseCounts, hasBirthday);
+
+                    const total = counts.total;
+                    const CIRCLE_SIZE = cellSize * 0.78;
+                    const holiday = isHoliday(item.date);
 
                     return (
                       <TouchableOpacity
                         key={idx}
-                        style={[
-                          styles.dayCell,
-                          {width: cellSize, height: cellSize},
-                        ]}
+                        style={[styles.dayCell, {width: cellSize, height: cellSize}]}
                         onPress={() => setSelectedDate(item.date)}
                         hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
                         <View
                           style={[
                             styles.innerCircle,
-                            hasBirthday && styles.birthdayRing,
                             {
                               width: CIRCLE_SIZE,
                               height: CIRCLE_SIZE,
                               borderRadius: CIRCLE_SIZE / 2,
                             },
-                            getCountColorStyle(count),
+                            getCountColorStyle(total),
                             item.isSelected && styles.selectedBox,
                             !item.isCurrentMonth && {opacity: 0.35},
                           ]}>
@@ -396,6 +460,8 @@ export default function CalendarToggle({
                             ]}>
                             {item.date.getDate()}
                           </Text>
+
+                          {renderDots(counts)}
                         </View>
                       </TouchableOpacity>
                     );
@@ -403,6 +469,7 @@ export default function CalendarToggle({
                 </View>
               </Animated.View>
 
+              {/* Week */}
               <Animated.View
                 style={[styles.absoluteLayer, weekLayerStyle]}
                 pointerEvents={mode === 'week' ? 'auto' : 'none'}>
@@ -411,32 +478,31 @@ export default function CalendarToggle({
                   onLayout={onWeekLayout}
                   style={[styles.weekGrid, {width: gridWidth, columnGap: GAP}]}>
                   {weekDates.map((item, idx) => {
-                    const count = scheduleCountPerDay[item.key] || 0;
-                    const CIRCLE_SIZE = cellSize * 0.78;
-                    const holiday = isHoliday(item.date);
-
                     const birthNames = birthdayMap?.[item.key];
                     const hasBirthday = !!birthNames?.length;
+
+                    const baseCounts = normalizeCount(scheduleCountPerDay[item.key]);
+                    const counts = mergeBirthdayIntoCounts(baseCounts, hasBirthday);
+
+                    const total = counts.total;
+                    const CIRCLE_SIZE = cellSize * 0.78;
+                    const holiday = isHoliday(item.date);
 
                     return (
                       <TouchableOpacity
                         key={idx}
-                        style={[
-                          styles.dayCell,
-                          {width: cellSize, height: cellSize},
-                        ]}
+                        style={[styles.dayCell, {width: cellSize, height: cellSize}]}
                         onPress={() => setSelectedDate(item.date)}
                         hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
                         <View
                           style={[
                             styles.innerCircle,
-                            hasBirthday && styles.birthdayRing,
                             {
                               width: CIRCLE_SIZE,
                               height: CIRCLE_SIZE,
                               borderRadius: CIRCLE_SIZE / 2,
                             },
-                            getCountColorStyle(count),
+                            getCountColorStyle(total),
                             item.isSelected && styles.selectedBox,
                           ]}>
                           <Text
@@ -447,6 +513,8 @@ export default function CalendarToggle({
                             ]}>
                             {item.date.getDate()}
                           </Text>
+
+                          {renderDots(counts)}
                         </View>
                       </TouchableOpacity>
                     );
@@ -458,16 +526,17 @@ export default function CalendarToggle({
         </View>
       </DropShadow>
 
-      <YMDPickerModal
+      {/* ✅ A안: 모달 전용 미니 캘린더 피커 */}
+      <MiniCalendarPickerModal
         visible={showYMD}
         onClose={closeYMD}
+        initialDate={selectedDate}
+        minYear={1950}
+        maxYear={2025}
         onConfirm={date => {
           closeYMD();
           setSelectedDate(date);
         }}
-        initialDate={selectedDate}
-        minYear={1950}
-        maxYear={2025}
       />
     </View>
   );
@@ -543,7 +612,9 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(18),
     height: getResponsiveWidth(18),
     resizeMode: 'contain',
-    tintColor: '#111827',
+    // tintColor: '#111827',
+    tintColor: '#525252',
+
   },
   navButtons: {
     flexDirection: 'row',
@@ -615,9 +686,11 @@ const styles = StyleSheet.create({
     borderColor: 'white',
     backgroundColor: '#FFFFFF',
   },
+
   selectedBox: {
-    backgroundColor: '#FFF3D2',
-    borderColor: '#FFB000',
+    backgroundColor: COLOR.FOCUS_BG,
+    borderColor: COLOR.FOCUS_BORDER,
+    borderWidth: 1.5,
   },
 
   dateGrid: {
@@ -635,24 +708,37 @@ const styles = StyleSheet.create({
   },
   selectedText: {
     fontFamily: 'Pretendard-SemiBold',
-    color: '#111827',
+    color: COLOR.FOCUS_TEXT,
   },
   holidayText: {
     color: '#EF4444',
     fontFamily: 'Pretendard-SemiBold',
   },
 
-  birthdayRing: {
-    borderWidth: 1.5,
-    borderColor: '#FF7A7A',
-    borderStyle: 'dashed',
-  },
-
-  // ✅ 주 그리드를 월 그리드 위에 겹쳐놓기 위한 레이어
   absoluteLayer: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
+  },
+
+  dotRow: {
+    position: 'absolute',
+    bottom: getResponsiveHeight(6),
+    flexDirection: 'row',
+    gap: getResponsiveWidth(3),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dotBase: {
+    width: getResponsiveWidth(4.5),
+    height: getResponsiveWidth(4.5),
+    borderRadius: 999,
+  },
+  dotAnniv: {
+    backgroundColor: COLOR.ANNIV,
+  },
+  dotFamily: {
+    backgroundColor: COLOR.FAMILY,
   },
 });

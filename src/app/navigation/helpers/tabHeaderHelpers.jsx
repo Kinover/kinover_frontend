@@ -155,14 +155,52 @@ export const RenderHeaderTitleLogo = () => (
   </View>
 );
 
+/** --------------------------------------------------- * ✅ RenderHeaderBook (홈에서만 흰색 tint 원하면 여기에도 적용) * --------------------------------------------------- */
+export const RenderHeaderBook = ({navigation, currentScreen = '홈'}) => {
+  const bookIcon = require('@/assets/icons/book.png');
+  const tint = currentScreen === '홈' ? '#FFFFFF' : '#525252';
+  const goBook = () =>
+    navigation.navigate('Tabs', {
+      screen: '추억',
+      params: {screen: '매거진화면'},
+    });
+  return (
+    <View style={{flexDirection: 'row', alignItems: 'flex-end'}}>
+      <TouchableOpacity
+        onPress={() => {
+          hapticLight();
+          goBook();
+        }}
+        activeOpacity={0.8}>
+        <FastImage
+          source={bookIcon}
+          style={{
+            marginLeft: getResponsiveWidth(16),
+            width: getResponsiveIconSize(26),
+            height: getResponsiveIconSize(26),
+          }}
+          resizeMode={FastImage.resizeMode.contain}
+          tintColor={tint}
+        />
+      </TouchableOpacity>
+    </View>
+  );
+};
+
 /** ---------------------------------------------------
  * ✅ 헤더: 홈(종 + 설정)
  * - ✅ 설정 눌렀을 때와 "완전히 동일한 방식"으로 종도 이동:
  *   navigation.navigate('Tabs', { screen: currentScreen, params: { screen: '알림화면' } })
  * --------------------------------------------------- */
+
 export const RenderHeaderHome = ({navigation, currentScreen}) => {
   const hasUnread = useSelector(state => state.notification.hasUnread);
   const unreadCount = useSelector(state => state.notification.unreadCount || 0);
+
+  const isHome = currentScreen === '홈';
+  // const iconTint = isHome ? undefined : '#525252';
+  const iconTint = isHome ? undefined : 'black';
+
 
   const bellIcon =
     currentScreen === '홈'
@@ -206,11 +244,14 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
           badgeTextStyle={styles.headerBadgeText}
         />
       </TouchableOpacity>
-
       <View style={{width: getResponsiveWidth(12)}} />
-
-      {/* ✅ 설정 */}
-      {createIconButton(goSetting, settingIcon, 25, {})}
+      {/* ⚙️ 설정 */}
+      {createIconButton(
+        goSetting,
+        settingIcon,
+        25,
+        iconTint ? {tintColor: iconTint} : {},
+      )}
     </View>
   );
 };

@@ -98,7 +98,9 @@ function TabIcon({focused, uri}) {
   return (
     <ImageWithTint
       uri={uri}
-      tintColor={focused ? '#111827' : '#9CA3AF'}
+      // tintColor={focused ? '#111827' : '#9CA3AF'}
+      tintColor={focused ? '#525252' : '#9CA3AF'}
+
     />
   );
 }

@@ -47,8 +47,12 @@ import {HEADER_STYLES} from 'styles/style';
 import ImageDeleteModal from '../components/DeleteOptionModal';
 import {deleteCommentThunk} from '../store/commentThunk';
 
-// ✅ 분리한 옵션 바텀시트 컴포넌트
-import PostOptionBottomSheet from '../components/PostOptionBottomSheet';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  runOnJS,
+} from 'react-native-reanimated';
 
 const {width: SCREEN_W} = Dimensions.get('window');
 
@@ -56,7 +60,6 @@ export default function PostPage({route}) {
   const dispatch = useDispatch();
   const navigation = useNavigation();
 
-  const optionSheetRef = useRef(null);
   const descSheetRef = useRef(null);
   const commentSheetRef = useRef(null);
   const didInitIndexRef = useRef(false);
@@ -96,51 +99,8 @@ export default function PostPage({route}) {
   const [pendingCommentId, setPendingCommentId] = useState(null);
   const [isConfirmDeleting, setIsConfirmDeleting] = useState(false);
 
-  // ✅ 옵션(우상단) 로딩/중복 클릭 방지
+  // ✅ 옵션 로딩/중복 클릭 방지
   const [isOptionBusy, setIsOptionBusy] = useState(false);
-
-  /** ---------------- 모든 시트 닫기 (유령 모달 방지) ---------------- */
-  const dismissAllSheets = useCallback(() => {
-    try {
-      optionSheetRef.current?.dismiss?.();
-    } catch {}
-    try {
-      commentSheetRef.current?.dismiss?.();
-    } catch {}
-    try {
-      descSheetRef.current?.dismiss?.();
-    } catch {}
-
-    didPresentDescRef.current = false;
-  }, []);
-
-  /** ---------------- focus/blur 시점에 정리 ---------------- */
-  useFocusEffect(
-    useCallback(() => {
-      isLeavingRef.current = false;
-
-      return () => {
-        // 화면이 blur/unmount 되는 순간: 남아있는 모달 싹 정리
-        isLeavingRef.current = true;
-        dismissAllSheets();
-      };
-    }, [dismissAllSheets]),
-  );
-
-  /** ---------------- fetch ---------------- */
-  useEffect(() => {
-    if (postId && !postFromStore) {
-      dispatch(fetchPostByIdThunk(postId));
-    }
-  }, [postId, postFromStore, dispatch]);
-
-  useEffect(() => {
-    if (didInitIndexRef.current) return;
-    if (Number.isFinite(imageIndex)) {
-      vm.setCurrentImageIndex(imageIndex);
-    }
-    didInitIndexRef.current = true;
-  }, [imageIndex, vm]);
 
   /** ---------------- 토스트 helper ---------------- */
   const toast = useCallback(
@@ -178,15 +138,87 @@ export default function PostPage({route}) {
     return /\.mp4(\?|$)/i.test(u) || /\.mov(\?|$)/i.test(u);
   }, [currentMediaUri]);
 
-  /** ---------------- 옵션 시트 ---------------- */
-  const openOptionSheet = useCallback(() => {
-    if (isChromeHidden) return;
-    optionSheetRef.current?.present?.();
-  }, [isChromeHidden]);
+  /** ---------------- “상단 우측 옵션 메뉴(모달/팝오버)” ---------------- */
+  const [menuVisible, setMenuVisible] = useState(false);
+  const menuAnim = useSharedValue(0);
 
-  const closeOptionSheet = useCallback(() => {
-    optionSheetRef.current?.dismiss?.();
-  }, []);
+  const closeMenu = useCallback(() => {
+    menuAnim.value = withTiming(0, {duration: 120}, finished => {
+      if (finished) runOnJS(setMenuVisible)(false);
+    });
+  }, [menuAnim]);
+
+  const openMenu = useCallback(() => {
+    if (isChromeHidden) return;
+    if (isLeavingRef.current) return;
+    if (isOptionBusy) return;
+
+    setMenuVisible(true);
+    menuAnim.value = withTiming(1, {duration: 140});
+  }, [isChromeHidden, isOptionBusy, menuAnim]);
+
+  const toggleMenu = useCallback(() => {
+    if (menuVisible) closeMenu();
+    else openMenu();
+  }, [menuVisible, closeMenu, openMenu]);
+
+  const menuOverlayStyle = useAnimatedStyle(() => ({
+    opacity: menuAnim.value,
+  }));
+
+  const menuBoxStyle = useAnimatedStyle(() => ({
+    opacity: menuAnim.value,
+    transform: [{translateY: (1 - menuAnim.value) * -6}],
+  }));
+
+  /** ---------------- 모든 시트 닫기 (유령 모달 방지) ---------------- */
+  const dismissAllSheets = useCallback(() => {
+    try {
+      commentSheetRef.current?.dismiss?.();
+    } catch {
+      null;
+    }
+    try {
+      descSheetRef.current?.dismiss?.();
+    } catch {
+      null;
+    }
+    didPresentDescRef.current = false;
+
+    // ✅ 옵션 팝오버도 같이 닫기
+    try {
+      if (menuVisible) closeMenu();
+    } catch {
+      null;
+    }
+  }, [closeMenu, menuVisible]);
+
+  /** ---------------- focus/blur 시점에 정리 ---------------- */
+  useFocusEffect(
+    useCallback(() => {
+      isLeavingRef.current = false;
+
+      return () => {
+        isLeavingRef.current = true;
+        dismissAllSheets();
+      };
+    }, [dismissAllSheets]),
+  );
+
+  /** ---------------- fetch ---------------- */
+  useEffect(() => {
+    if (postId && !postFromStore) {
+      dispatch(fetchPostByIdThunk(postId));
+    }
+  }, [postId, postFromStore, dispatch]);
+
+  useEffect(() => {
+    if (didInitIndexRef.current) return;
+    if (Number.isFinite(imageIndex)) {
+      vm.setCurrentImageIndex(imageIndex);
+    }
+    didInitIndexRef.current = true;
+  }, [imageIndex, vm]);
 
   /** ---------------- 댓글 삭제 모달 열기 ---------------- */
   const openDeleteCommentConfirm = useCallback(commentId => {
@@ -393,19 +425,19 @@ export default function PostPage({route}) {
     inferExt,
   ]);
 
-  /** ---------------- 옵션 액션 ---------------- */
+  /** ---------------- 옵션 액션 (메뉴에서 호출) ---------------- */
   const actionSaveCurrent = useCallback(async () => {
-    closeOptionSheet();
+    closeMenu();
     await saveOneToGallery(currentMediaUri);
-  }, [closeOptionSheet, saveOneToGallery, currentMediaUri]);
+  }, [closeMenu, saveOneToGallery, currentMediaUri]);
 
   const actionSaveAll = useCallback(async () => {
-    closeOptionSheet();
+    closeMenu();
     await saveAllToGallery();
-  }, [closeOptionSheet, saveAllToGallery]);
+  }, [closeMenu, saveAllToGallery]);
 
   const actionDeleteCurrentImage = useCallback(() => {
-    closeOptionSheet();
+    closeMenu();
     if (vm.isImageFullScreen) return;
 
     if (!currentMediaUri) {
@@ -416,16 +448,16 @@ export default function PostPage({route}) {
     setPendingDeleteType('image');
     setPendingCommentId(null);
     setConfirmVisible(true);
-  }, [closeOptionSheet, vm.isImageFullScreen, currentMediaUri, toast]);
+  }, [closeMenu, vm.isImageFullScreen, currentMediaUri, toast]);
 
   const actionDeletePost = useCallback(() => {
-    closeOptionSheet();
+    closeMenu();
     if (vm.isImageFullScreen) return;
 
     setPendingDeleteType('post');
     setPendingCommentId(null);
     setConfirmVisible(true);
-  }, [closeOptionSheet, vm.isImageFullScreen]);
+  }, [closeMenu, vm.isImageFullScreen]);
 
   /** ---------------- header (투명 헤더) ---------------- */
   useEffect(() => {
@@ -465,7 +497,7 @@ export default function PostPage({route}) {
 
       headerRight: () => (
         <TouchableOpacity
-          onPress={openOptionSheet}
+          onPress={toggleMenu}
           disabled={isOptionBusy}
           hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
           style={{opacity: isOptionBusy ? 0.5 : 1}}>
@@ -481,7 +513,7 @@ export default function PostPage({route}) {
     categoryList,
     safeMemory,
     isChromeHidden,
-    openOptionSheet,
+    toggleMenu,
     isOptionBusy,
   ]);
 
@@ -546,9 +578,12 @@ export default function PostPage({route}) {
     if (isChromeHidden) return;
     if (isLeavingRef.current) return;
 
+    // ✅ 댓글 열 때 메뉴 닫기
+    if (menuVisible) closeMenu();
+
     collapseDesc();
     setTimeout(() => commentSheetRef.current?.present?.(), 120);
-  }, [collapseDesc, isChromeHidden]);
+  }, [collapseDesc, isChromeHidden, menuVisible, closeMenu]);
 
   const handleSwipeFromFirstToRight = useCallback(() => {
     if (vm.isImageFullScreen) return;
@@ -593,6 +628,8 @@ export default function PostPage({route}) {
       ? '게시글과 미디어가 모두 삭제되며 복구할 수 없어요.'
       : '삭제한 댓글은 복구할 수 없어요.';
 
+  const disableMenu = isOptionBusy || isConfirmDeleting;
+
   return (
     <SafeAreaView edges={[]} style={styles.container}>
       {/* ✅ 통합 삭제 확인 모달 */}
@@ -604,20 +641,86 @@ export default function PostPage({route}) {
         subText={confirmMessage}
       />
 
-      {/* ✅ 우상단 옵션 바텀시트 (분리 컴포넌트 적용) */}
-      <PostOptionBottomSheet
-        sheetRef={optionSheetRef}
-        currentMediaUri={currentMediaUri}
-        currentLabel={currentLabel}
-        isVideo={isVideo}
-        mediaCount={mediaCount}
-        isBusy={isOptionBusy}
-        onSaveCurrent={actionSaveCurrent}
-        onSaveAll={actionSaveAll}
-        onDeleteCurrentImage={actionDeleteCurrentImage}
-        onDeletePost={actionDeletePost}
-        CameraRollAvailable={!!CameraRoll}
-      />
+      {/* ✅ 상단 우측 옵션 “팝오버 메뉴” */}
+      <Animated.View
+        pointerEvents={menuVisible ? 'auto' : 'none'}
+        style={[
+          styles.menuOverlay,
+          menuOverlayStyle,
+          // 헤더 숨김 상태면 메뉴도 안 보이게
+          isChromeHidden && {opacity: 0},
+        ]}>
+        {/* 바깥 클릭하면 닫힘 */}
+        <TouchableOpacity
+          style={StyleSheet.absoluteFillObject}
+          activeOpacity={1}
+          onPress={closeMenu}
+        />
+
+        <Animated.View style={[styles.menuBox, menuBoxStyle]}>
+          <TouchableOpacity
+            onPress={actionSaveCurrent}
+            disabled={disableMenu || !currentMediaUri || !CameraRoll}
+            activeOpacity={0.85}
+            style={[
+              styles.menuItem,
+              (disableMenu || !currentMediaUri || !CameraRoll) && {
+                opacity: 0.5,
+              },
+            ]}>
+            <Text style={styles.menuText}>
+              현재 미디어 저장{currentLabel ? ` (${currentLabel})` : ''}
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.menuDivider} />
+
+          <TouchableOpacity
+            onPress={actionSaveAll}
+            disabled={disableMenu || !mediaCount || !CameraRoll}
+            activeOpacity={0.85}
+            style={[
+              styles.menuItem,
+              (disableMenu || !mediaCount || !CameraRoll) && {opacity: 0.5},
+            ]}>
+            <Text style={styles.menuText}>
+              전체 미디어 저장 ({mediaCount || 0})
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.menuDivider} />
+
+          <TouchableOpacity
+            onPress={actionDeleteCurrentImage}
+            disabled={disableMenu || vm.isImageFullScreen || !currentMediaUri}
+            activeOpacity={0.85}
+            style={[
+              styles.menuItem,
+              (disableMenu || vm.isImageFullScreen || !currentMediaUri) && {
+                opacity: 0.5,
+              },
+            ]}>
+            <Text style={[styles.menuText, {color: '#FF5A5F'}]}>
+              현재 미디어 삭제
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.menuDivider} />
+
+          <TouchableOpacity
+            onPress={actionDeletePost}
+            disabled={disableMenu || vm.isImageFullScreen}
+            activeOpacity={0.85}
+            style={[
+              styles.menuItem,
+              (disableMenu || vm.isImageFullScreen) && {opacity: 0.5},
+            ]}>
+            <Text style={[styles.menuText, {color: '#FF5A5F'}]}>
+              게시글 삭제
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </Animated.View>
 
       <View style={{flex: 1}}>
         <ImageCarousel
@@ -664,7 +767,6 @@ export default function PostPage({route}) {
           enableContentPanningGesture={false}
           enableHandlePanningGesture={false}
           enablePanDownToClose={false}
-          // ✅ 여기서 다시 present 하지 말기 (유령 모달 방지)
           onDismiss={() => {
             didPresentDescRef.current = false;
           }}
@@ -777,10 +879,47 @@ const styles = StyleSheet.create({
     tintColor: '#fff',
   },
 
+  /** 옵션 팝오버 메뉴 */
+  menuOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 999, // ✅ 제일 위
+    backgroundColor: 'rgba(0,0,0,0.10)',
+    justifyContent: 'flex-start',
+    alignItems: 'flex-end',
+    paddingTop: Platform.OS === 'ios' ? 52 : 16,
+    paddingRight: 14,
+  },
+  menuBox: {
+    width: getResponsiveWidth(190),
+    backgroundColor: 'rgba(20,20,20,0.96)',
+    borderRadius: 14,
+    overflow: 'hidden',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.12)',
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    shadowOffset: {width: 0, height: 6},
+    elevation: 12,
+    marginTop: getResponsiveHeight(40), // 헤더 아래로 살짝
+  },
+  menuItem: {
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+  },
+  menuText: {
+    color: '#fff',
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(13),
+  },
+  menuDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+
   /** desc sheet */
   descTapArea: {
     flex: 1,
-    // paddingBottom: getResponsiveHeight(10),
   },
   descSheet: {
     flex: 1,

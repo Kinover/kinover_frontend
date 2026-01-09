@@ -1,14 +1,8 @@
 /* eslint-disable react-native/no-inline-styles */
-// Schedule.jsx (생일 카드 눌렀을 때 모달 오픈 추가)
+// src/features/schedule/components/Schedule.jsx
 
 import React, {useMemo, useState, useCallback} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-} from 'react-native';
+import {View, Text, TouchableOpacity, StyleSheet, Platform} from 'react-native';
 
 import {
   getResponsiveFontSize,
@@ -22,22 +16,56 @@ import {useFormattedScheduleDate} from '../hooks/useFormattedScheduleDate';
 import {EMPTY_STYLE} from 'styles/style';
 
 import DropShadow from 'react-native-drop-shadow';
-
-// ✅ 추가
 import BirthdayConfettiModal from './BirthdayConfettiModal';
 
-function Schedule({selectedDate, onOpenSheet, refreshTrigger, birthdayNames = []}) {
-  const {scheduleList} = useScheduleListByDate(selectedDate, refreshTrigger);
+// ✅ Kinover 컬러 체계
+// - ANNIVERSARY: 노랑
+// - FAMILY: 파랑
+// - INDIVIDUAL: 그레이(기본)
+const COLOR = {
+  BLUE_BG: 'rgba(59, 130, 246, 0.14)',
+  BLUE_PILL: 'rgba(59, 130, 246, 0.10)',
+  BLUE_TEXT: '#1D4ED8',
+
+  YELLOW_BG: 'rgba(255, 200, 77, 0.25)',
+  YELLOW_PILL: 'rgba(255, 200, 77, 0.18)',
+  YELLOW_TEXT: '#8A5A00',
+
+  GRAY_BG: 'rgba(17, 24, 39, 0.08)',
+  GRAY_PILL: 'rgba(17, 24, 39, 0.05)',
+  GRAY_TEXT: '#374151',
+};
+
+const TYPE = {
+  INDIVIDUAL: 'INDIVIDUAL',
+  FAMILY: 'FAMILY',
+  ANNIVERSARY: 'ANNIVERSARY',
+};
+
+function Schedule({
+  selectedDate,
+  onOpenSheet,
+  refreshTrigger,
+  birthdayNames = [],
+}) {
+  // ✅ hook이 기존 personal/shared/anniversary를 주더라도 안전하게 흡수
+  const hookResult = useScheduleListByDate(selectedDate, refreshTrigger) || {};
+  const individual = hookResult.individual ?? hookResult.personal ?? [];
+  const family = hookResult.family ?? hookResult.shared ?? [];
+  const anniversary = hookResult.anniversary ?? [];
+  const scheduleList = hookResult.scheduleList ?? [];
+
   const formattedDate = useFormattedScheduleDate(selectedDate);
 
   const hasBirthday = Array.isArray(birthdayNames) && birthdayNames.length > 0;
 
   const displayNames =
     birthdayNames.length > 2
-      ? `${birthdayNames.slice(0, 2).join(', ')} 외 ${birthdayNames.length - 2}명`
+      ? `${birthdayNames.slice(0, 2).join(', ')} 외 ${
+          birthdayNames.length - 2
+        }명`
       : birthdayNames.join(', ');
 
-  // ✅ 모달 상태
   const [birthdayModalVisible, setBirthdayModalVisible] = useState(false);
 
   const openBirthdayModal = useCallback(() => {
@@ -49,17 +77,98 @@ function Schedule({selectedDate, onOpenSheet, refreshTrigger, birthdayNames = []
     setBirthdayModalVisible(false);
   }, []);
 
-  // ✅ 모달에 보여줄 텍스트(길면 줄이기)
   const namesText = useMemo(() => {
     if (!hasBirthday) return '';
     return `${displayNames} 🎉`;
   }, [hasBirthday, displayNames]);
 
+  // ----------------------------
+  // ✅ 타입별 카드 프리셋
+  // ----------------------------
+  const getCardPreset = item => {
+    const raw =
+      item?.type ??
+      item?.scheduleType ??
+      item?.kind ??
+      item?.category ??
+      item?.eventType ??
+      null;
+
+    const t = String(raw || '').toUpperCase();
+
+    const isAnniv =
+      item?.isAnniversary === true ||
+      t === TYPE.ANNIVERSARY ||
+      t.includes('ANNIV') ||
+      t.includes('ANNIVERSARY') ||
+      String(raw || '').toLowerCase().includes('기념');
+
+    const isFamily =
+      !isAnniv &&
+      (t === TYPE.FAMILY ||
+        t.includes('FAMILY') ||
+        item?.isShared === true ||
+        item?.shared === true ||
+        String(raw || '').toLowerCase().includes('공동'));
+
+    if (isAnniv) {
+      return {
+        type: TYPE.ANNIVERSARY,
+        pillText: '기념일',
+        icon: '🎈',
+        iconBg: COLOR.YELLOW_BG,
+        pillBg: COLOR.YELLOW_PILL,
+        pillTextColor: COLOR.YELLOW_TEXT,
+      };
+    }
+
+    if (isFamily) {
+      return {
+        type: TYPE.FAMILY,
+        pillText: '가족 일정',
+        icon: '🤝',
+        iconBg: COLOR.BLUE_BG,
+        pillBg: COLOR.BLUE_PILL,
+        pillTextColor: COLOR.BLUE_TEXT,
+      };
+    }
+
+    return {
+      type: TYPE.INDIVIDUAL,
+      pillText: '개별 일정',
+      icon: String(item?.userName || '가족').slice(0, 1),
+      iconBg: COLOR.GRAY_BG,
+      pillBg: COLOR.GRAY_PILL,
+      pillTextColor: COLOR.GRAY_TEXT,
+    };
+  };
+
+  // ✅ 라벨 만들기 (INDIVIDUAL/FAMILY 공통: participantNames 우선)
+  const getMemberLabel = useCallback(item => {
+    const names = Array.isArray(item?.participantNames)
+      ? item.participantNames.filter(Boolean)
+      : [];
+
+    if (names.length === 1) return names[0];
+    if (names.length > 1) return `${names[0]} 외 ${names.length - 1}명`;
+
+    // fallback
+    return item?.userName || '가족';
+  }, []);
+
+  // ✅ 렌더 순서: ANNIVERSARY → FAMILY → INDIVIDUAL
+  const mergedForRender = useMemo(() => {
+    const a = Array.isArray(anniversary) ? anniversary : [];
+    const f = Array.isArray(family) ? family : [];
+    const i = Array.isArray(individual) ? individual : [];
+    return [...a, ...f, ...i];
+  }, [anniversary, family, individual]);
+
   return (
     <View style={styles.container}>
       <Text style={styles.dateText}>{formattedDate}</Text>
 
-      {/* ✅ 생일 배너: 누르면 컨페티 모달 */}
+      {/* 생일 배너 (노랑 유지) */}
       {hasBirthday && (
         <DropShadow style={[styles.cardShadowBox, styles.roundPillShadow]}>
           <TouchableOpacity
@@ -68,7 +177,11 @@ function Schedule({selectedDate, onOpenSheet, refreshTrigger, birthdayNames = []
             style={[styles.cardWrap, styles.roundPillWrap]}>
             <View style={styles.cardHeaderRow}>
               <View style={styles.cardLeft}>
-                <View style={styles.iconCircle}>
+                <View
+                  style={[
+                    styles.iconCircle,
+                    {backgroundColor: COLOR.YELLOW_BG},
+                  ]}>
                   <Text style={styles.iconText}>🎂</Text>
                 </View>
 
@@ -80,15 +193,16 @@ function Schedule({selectedDate, onOpenSheet, refreshTrigger, birthdayNames = []
                 </View>
               </View>
 
-              <View style={styles.pill}>
-                <Text style={styles.pillText}>HBD</Text>
+              <View style={[styles.pill, {backgroundColor: COLOR.YELLOW_PILL}]}>
+                <Text style={[styles.pillText, {color: COLOR.YELLOW_TEXT}]}>
+                  기념일
+                </Text>
               </View>
             </View>
           </TouchableOpacity>
         </DropShadow>
       )}
 
-      {/* ✅ 생일 컨페티 모달 */}
       <BirthdayConfettiModal
         visible={birthdayModalVisible}
         onClose={closeBirthdayModal}
@@ -99,41 +213,66 @@ function Schedule({selectedDate, onOpenSheet, refreshTrigger, birthdayNames = []
 
       <View style={styles.timelineWrapper}>
         <View style={styles.scheduleCards}>
-          {scheduleList.map(schedule => (
-            <DropShadow
-              key={schedule.scheduleId}
-              style={[styles.cardShadowBox, styles.roundPillShadow]}>
-              <TouchableOpacity
-                onPress={() => onOpenSheet(schedule)}
-                activeOpacity={0.9}
-                style={[styles.cardWrap, styles.roundPillWrap]}>
-                <View style={styles.cardHeaderRow}>
-                  <View style={styles.cardLeft}>
-                    <View style={styles.iconCircle}>
-                      <Text style={styles.initialText} numberOfLines={1}>
-                        {String(schedule.userName || '가족').slice(0, 1)}
-                      </Text>
+          {mergedForRender.map(item => {
+            const preset = getCardPreset(item);
+
+            // ✅ 오너 라벨 규칙
+            // - ANNIVERSARY: '가족'
+            // - FAMILY: 참여자 수에 따라 멤버 표시 (participantNames 기반)
+            // - INDIVIDUAL: 참여자 표시(보통 1명)
+            const ownerLabel =
+              preset.type === TYPE.ANNIVERSARY ? '가족' : getMemberLabel(item);
+
+            return (
+              <DropShadow
+                key={
+                  item.scheduleId ??
+                  `${preset.type}-${ownerLabel}-${item.title}`
+                }
+                style={[styles.cardShadowBox, styles.roundPillShadow]}>
+                <TouchableOpacity
+                  onPress={() => onOpenSheet(item)}
+                  activeOpacity={0.9}
+                  style={[styles.cardWrap, styles.roundPillWrap]}>
+                  <View style={styles.cardHeaderRow}>
+                    <View style={styles.cardLeft}>
+                      <View
+                        style={[
+                          styles.iconCircle,
+                          {backgroundColor: preset.iconBg},
+                        ]}>
+                        <Text style={styles.iconText} numberOfLines={1}>
+                          {preset.icon}
+                        </Text>
+                      </View>
+
+                      <View style={styles.texts}>
+                        <Text style={styles.subtitle} numberOfLines={1}>
+                          {ownerLabel}
+                        </Text>
+                        <Text style={styles.title} numberOfLines={1}>
+                          {item.title || '제목 없음'}
+                        </Text>
+                      </View>
                     </View>
 
-                    <View style={styles.texts}>
-                      <Text style={styles.subtitle} numberOfLines={1}>
-                        {schedule.userName || '가족'}
-                      </Text>
-                      <Text style={styles.title} numberOfLines={1}>
-                        {schedule.title || '제목 없음'}
+                    <View
+                      style={[styles.pill, {backgroundColor: preset.pillBg}]}>
+                      <Text
+                        style={[
+                          styles.pillText,
+                          {color: preset.pillTextColor},
+                        ]}>
+                        {preset.pillText}
                       </Text>
                     </View>
                   </View>
+                </TouchableOpacity>
+              </DropShadow>
+            );
+          })}
 
-                  <View style={styles.pill}>
-                    <Text style={styles.pillText}>일정</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            </DropShadow>
-          ))}
-
-          {scheduleList.length === 0 ? (
+          {(Array.isArray(scheduleList) ? scheduleList.length : 0) === 0 ? (
             <Text style={styles.emptyText}>
               {'일정이 비어 있어요.\n새로운 일정을 추가해볼까요?'}
             </Text>
@@ -146,7 +285,7 @@ function Schedule({selectedDate, onOpenSheet, refreshTrigger, birthdayNames = []
 
 export default React.memo(Schedule);
 
-// ✅ styles는 네 기존 그대로 두고 재사용
+// styles 그대로 유지
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -155,39 +294,34 @@ const styles = StyleSheet.create({
   },
   dateText: {
     color: 'black',
-    fontSize: getResponsiveFontSize(17),
+    fontSize: getResponsiveFontSize(20),
     fontFamily: 'Pretendard-SemiBold',
     marginTop: getResponsiveHeight(15),
     marginBottom: getResponsiveHeight(16),
     alignSelf: 'flex-start',
     fontWeight: Platform.OS === 'ios' ? undefined : 'bold',
   },
-
   timelineWrapper: {
     position: 'relative',
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
-
   scheduleCards: {
     flex: 1,
     width: '100%',
   },
-
   cardShadowBox: {
     width: '100%',
     borderRadius: 0,
     backgroundColor: 'transparent',
     marginBottom: getResponsiveHeight(10),
   },
-
   roundPillShadow: {
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 3},
     shadowOpacity: 0.12,
     shadowRadius: 5,
   },
-
   cardWrap: {
     width: '100%',
     borderRadius: 14,
@@ -198,19 +332,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(14),
     overflow: 'hidden',
   },
-
   roundPillWrap: {
     minHeight: getResponsiveHeight(58),
     justifyContent: 'center',
   },
-
   cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: getResponsiveWidth(10),
   },
-
   cardLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -218,47 +349,35 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
-
   iconCircle: {
     width: getResponsiveWidth(36),
     height: getResponsiveWidth(36),
     borderRadius: 999,
-    backgroundColor: 'rgba(255, 200, 77, 0.25)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
   iconText: {
     fontSize: getResponsiveFontSize(16),
     lineHeight: getResponsiveFontSize(18),
-  },
-
-  initialText: {
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(14),
     color: '#111827',
-    letterSpacing: -0.2,
   },
-
   texts: {
     flexDirection: 'column',
     gap: getResponsiveHeight(2),
     flex: 1,
     minWidth: 0,
   },
-
   subtitle: {
     fontFamily: 'Pretendard-Medium',
     fontSize: getResponsiveFontSize(12),
     color: '#6B7280',
   },
-
   title: {
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(14.5),
     color: '#111827',
   },
-
   pill: {
     paddingVertical: getResponsiveHeight(5),
     paddingHorizontal: getResponsiveWidth(10),
@@ -266,14 +385,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(17,24,39,0.05)',
     flexShrink: 0,
   },
-
   pillText: {
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(11.5),
     color: '#111827',
     letterSpacing: 0.4,
   },
-
   emptyText: {
     marginTop: getResponsiveHeight(60),
     fontSize: EMPTY_STYLE.emptyFontSize,
@@ -283,7 +400,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textAlignVertical: 'center',
   },
-
   plus: {
     color: '#FFC84D',
     width: getResponsiveIconSize(20),

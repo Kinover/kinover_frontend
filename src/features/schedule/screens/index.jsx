@@ -27,10 +27,16 @@ import YellowSpinner from '../../../components/YellowSpinner';
 import {useScheduleDate} from '../hooks/useScheduleDate';
 import {useScheduleCounts} from '../hooks/useScheduleCounts';
 import {useScheduleEditor} from '../hooks/useScheduleEditor';
-import {useScheduleCrud} from '../hooks/useScheduleCRUD';
 
 import useHolidayMap from '../hooks/useHolidayMap';
 import {useLocalDateKey} from '../hooks/useLocalDateKey';
+
+// ✅ thunk 직접 사용 (useScheduleCrud 안 씀)
+import {
+  addScheduleThunk,
+  updateScheduleThunk,
+  deleteScheduleThunk,
+} from '../store/scheduleThunk';
 
 // 🔹 인앱 가이드
 import useGuide from 'hooks/useGuide';
@@ -38,6 +44,7 @@ import useGuide from 'hooks/useGuide';
 
 // ✅ HAPTIC
 import {hapticLight} from '../../../utils/haptic';
+import DropShadow from 'react-native-drop-shadow';
 
 const SCHEDULE_GUIDE_STEPS = [
   {
@@ -59,6 +66,25 @@ const SCHEDULE_GUIDE_STEPS = [
   },
 ];
 
+// ✅ id를 string으로 통일(화면 내부에서만)
+const toId = v => {
+  if (v == null) return null;
+  const s = String(v).trim();
+  return s.length ? s : null;
+};
+
+// ✅ participantIds를 서버 DTO(List<Long>)에 맞게 number[]로 강제 변환
+const toLongArray = raw => {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map(v => {
+      if (v == null) return null;
+      const n = Number(String(v).trim());
+      return Number.isFinite(n) ? n : null;
+    })
+    .filter(v => v != null);
+};
+
 export default function ScheduleScreen() {
   const dispatch = useDispatch();
 
@@ -67,6 +93,9 @@ export default function ScheduleScreen() {
   const currentUserId = useSelector(state => state.user.userId);
 
   const [calendarMode, setCalendarMode] = useState('month');
+
+  // ✅ 바텀시트(일정 편집) 전용: 다중 선택 배열(문자열로 관리해도 OK)
+  const [selectedUserIds, setSelectedUserIds] = useState([]);
 
   /** =========================
    * 날짜 관련
@@ -124,22 +153,19 @@ export default function ScheduleScreen() {
     if (isLoading) return;
 
     setRefreshing(true);
-
-    // 🔄 강제 갱신 트리거
     setRefreshTrigger(Date.now());
 
-    // UX용 최소 딜레이
     setTimeout(() => {
       setRefreshing(false);
     }, 500);
-  }, [isLoading, setRefreshTrigger, dispatch]);
+  }, [isLoading, setRefreshTrigger]);
 
   /** =========================
    * 바텀시트 / 편집 상태
    ========================= */
   const {
     editingSchedule,
-    selectedUserId,
+    selectedUserId, // ✅ 조회/필터용(단일)
     setSelectedUserId,
     title,
     setTitle,
@@ -148,22 +174,6 @@ export default function ScheduleScreen() {
     closeSheet,
     handleCancelEdit,
   } = useScheduleEditor(currentUserId);
-
-  /** =========================
-   * CRUD
-   ========================= */
-  const {onSubmit, handleDeleteSchedule} = useScheduleCrud({
-    familyId,
-    year,
-    month,
-    formattedDate,
-    selectedUserId,
-    editingSchedule,
-    bumpCount,
-    setRefreshTrigger,
-    closeSheet,
-    selectedDateKey,
-  });
 
   /** =========================
    * 가이드
@@ -180,29 +190,165 @@ export default function ScheduleScreen() {
 
   const birthdayNamesForSelectedDate = birthdayMap?.[selectedDateKey] ?? [];
 
+  /** =========================
+   * ✅ CRUD: thunk 직접 dispatch
+   * - payload.userId(작성자) 보내지 않음
+   * - participantIds는 number[]로 변환해서 보냄 (DTO List<Long>)
+   * - refreshAfterMutation은 thunk 내부에서 가족조회/카운트 갱신 처리
+   ========================= */
+  const onSubmit = useCallback(
+    async incoming => {
+      const rawTitle = incoming?.title;
+      const finalTitle = typeof rawTitle === 'string' ? rawTitle.trim() : '';
+      if (!finalTitle) return;
+
+      const finalFamilyId = incoming?.familyId ?? familyId;
+      const finalDate = incoming?.date ?? formattedDate;
+
+      const scheduleId =
+        incoming?.scheduleId ??
+        editingSchedule?.scheduleId ??
+        editingSchedule?.id ??
+        undefined;
+
+      const type = incoming?.type; // 'INDIVIDUAL' | 'FAMILY' | 'ANNIVERSARY'
+      const rawParticipantIds = incoming?.participantIds;
+
+      // ✅ 서버 DTO(List<Long>)에 맞춰 number[]로 강제 변환
+      const participantIds = toLongArray(rawParticipantIds);
+
+      const payload = {
+        ...(scheduleId != null ? {scheduleId} : {}),
+        familyId: finalFamilyId,
+        date: finalDate,
+        title: finalTitle,
+        ...(incoming?.memo != null ? {memo: incoming.memo} : {}),
+        ...(type != null ? {type} : {}),
+        // ✅ ANNIVERSARY는 비워서 보냄(혹은 아예 생략)
+        ...(type === 'ANNIVERSARY'
+          ? {participantIds: []}
+          : rawParticipantIds !== undefined
+          ? {participantIds}
+          : {}),
+      };
+
+      if (!payload.familyId || !payload.date || !payload.type) return;
+
+      // ✅ INDIVIDUAL/FAMILY는 1명 이상 필요
+      if (payload.type !== 'ANNIVERSARY') {
+        const ids = Array.isArray(payload.participantIds)
+          ? payload.participantIds
+          : [];
+        if (ids.length === 0) {
+          throw new Error('PARTICIPANTS_REQUIRED');
+        }
+      }
+
+      const refresh = {
+        familyId: payload.familyId,
+        date: payload.date,
+        year,
+        month,
+        userId: selectedUserId, // (선택) thunk 내부에서 mode==='USER'일 때만 사용됨
+        // mode: 'USER', // 필요할 때만 켜
+      };
+
+      try {
+        if (editingSchedule) {
+          await dispatch(updateScheduleThunk(payload, refresh));
+        } else {
+          bumpCount(selectedDateKey, 1);
+          try {
+            await dispatch(addScheduleThunk(payload, refresh));
+          } catch (e) {
+            bumpCount(selectedDateKey, -1);
+            throw e;
+          }
+        }
+      } catch (e) {
+        console.log('=== [Schedule submit error] ===');
+        console.log('status:', e?.response?.status);
+        console.log('data:', e?.response?.data);
+        console.log('url:', e?.config?.url);
+        console.log('method:', e?.config?.method);
+        console.log('request payload:', e?.config?.data);
+        console.log('request headers:', e?.config?.headers);
+        throw e;
+      } finally {
+        setRefreshTrigger(prev => prev + 1);
+        closeSheet();
+      }
+    },
+    [
+      dispatch,
+      familyId,
+      formattedDate,
+      year,
+      month,
+      selectedUserId,
+      editingSchedule,
+      bumpCount,
+      selectedDateKey,
+      setRefreshTrigger,
+      closeSheet,
+    ],
+  );
+
+  const onDelete = useCallback(async () => {
+    if (!editingSchedule?.scheduleId) return;
+
+    const refresh = {
+      familyId,
+      date: formattedDate,
+      year,
+      month,
+      userId: selectedUserId,
+      // mode: 'USER',
+    };
+
+    try {
+      const deleteKey =
+        editingSchedule?.date && String(editingSchedule.date).includes('-')
+          ? editingSchedule.date
+          : selectedDateKey;
+
+      bumpCount(deleteKey, -1);
+
+      await dispatch(deleteScheduleThunk(editingSchedule.scheduleId, refresh));
+    } catch (e) {
+      console.log('=== [Schedule delete error] ===');
+      console.log('status:', e?.response?.status);
+      console.log('data:', e?.response?.data);
+      throw e;
+    } finally {
+      setRefreshTrigger(prev => prev + 1);
+      closeSheet();
+    }
+  }, [
+    dispatch,
+    editingSchedule,
+    familyId,
+    formattedDate,
+    year,
+    month,
+    selectedUserId,
+    bumpCount,
+    selectedDateKey,
+    setRefreshTrigger,
+    closeSheet,
+  ]);
+
   // ✅ FAB 클릭 핸들러 (햅틱 포함)
+  // - "추가" 모드 기본 선택: 현재 유저 1명 선택(개별 일정 기본값이면 자연스러움)
   const handleFabPress = useCallback(() => {
     if (isLoading) return;
     hapticLight();
+
+    const me = toId(currentUserId);
+    setSelectedUserIds(me ? [me] : []);
+
     openSheet(null);
-  }, [isLoading, openSheet]);
-
-  // ✅ 일정 CRUD 이후에도 점 갱신하고 싶으면 여기에서 감싸서 넘기면 됨
-  const onSubmitWithUnreadRefresh = useCallback(
-    async (...args) => {
-      const res = await onSubmit(...args);
-      return res;
-    },
-    [onSubmit, dispatch],
-  );
-
-  const onDeleteWithUnreadRefresh = useCallback(
-    async (...args) => {
-      const res = await handleDeleteSchedule(...args);
-      return res;
-    },
-    [handleDeleteSchedule, dispatch],
-  );
+  }, [isLoading, openSheet, currentUserId]);
 
   return (
     <View style={styles.container}>
@@ -237,13 +383,15 @@ export default function ScheduleScreen() {
         ref={bottomSheetRef}
         editingSchedule={editingSchedule}
         familyUserList={familyUserList}
-        selectedUserId={selectedUserId}
-        setSelectedUserId={setSelectedUserId}
+        familyId={familyId}
+        date={formattedDate}
+        selectedUserIds={selectedUserIds}
+        setSelectedUserIds={setSelectedUserIds}
         title={title}
         setTitle={setTitle}
-        onSubmit={onSubmitWithUnreadRefresh} // ✅ 저장 후도 갱신
-        onDelete={onDeleteWithUnreadRefresh} // ✅ 삭제 후도 갱신
-        onCancelEdit={handleCancelEdit}
+        onSubmit={onSubmit}
+        onDelete={onDelete}
+        onRefresh={handleRefresh}
       />
 
       {/* 플로팅 버튼 */}
@@ -251,10 +399,18 @@ export default function ScheduleScreen() {
         style={[styles.fab, isLoading && {opacity: 0.4}]}
         onPress={handleFabPress}
         activeOpacity={0.8}>
-        <Image
-          source={require('../../../assets/icons/schedule-bt.png')}
-          style={styles.fabIcon}
-        />
+        <DropShadow
+          style={{
+            shadowColor: '#000',
+            shadowOffset: {width: 0, height: 5},
+            shadowOpacity: 0.3,
+            shadowRadius: 2,
+          }}>
+          <Image
+            source={require('../../../assets/icons/schedule-bt.png')}
+            style={styles.fabIcon}
+          />
+        </DropShadow>
       </TouchableOpacity>
 
       {/* 로딩 오버레이 */}
@@ -287,16 +443,16 @@ const styles = StyleSheet.create({
   },
   mainContainer: {
     flex: 1,
-    paddingHorizontal: getResponsiveWidth(15),
+    paddingHorizontal: getResponsiveWidth(14),
     paddingTop: getResponsiveHeight(5),
   },
 
   fab: {
     position: 'absolute',
     bottom: getResponsiveHeight(110),
-    right: getResponsiveWidth(18),
-    width: getResponsiveIconSize(60),
-    height: getResponsiveIconSize(60),
+    right: getResponsiveWidth(14),
+    width: getResponsiveIconSize(65),
+    height: getResponsiveIconSize(65),
   },
   fabIcon: {
     width: '100%',

@@ -10,9 +10,10 @@ import {
   Animated,
 } from 'react-native';
 
-import MemoryFeed from './MemoryFeedScreen';
+import MemoryFeed from './MemoryFeedScreen'; // ✅ 너 프로젝트 경로 그대로 유지
 import AnimatedAlbumTabSelector from '../components/AlbumTabSelector';
 import CategoryBottomSheetModal from '../components/CategoryBottomSheet';
+import PeriodFilterModal from '../components/PeriodFilterModal';
 
 import {
   getResponsiveHeight,
@@ -22,8 +23,6 @@ import {
 } from '../../../utils/responsive';
 
 import {useMemoryScreen} from '../hooks/useMemoryScreen';
-import PeriodFilterModal from '../components/PeriodFilterModal';
-
 import {useTabBarVisibility} from 'app/navigation/animatedTabBar';
 
 import {useDispatch, useSelector} from 'react-redux';
@@ -36,6 +35,8 @@ import AnimatedRe, {
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
+import DropShadow from 'react-native-drop-shadow';
+import MagazineBanner from '../components/MagazineBanner';
 
 export default function MemoryScreen() {
   const dispatch = useDispatch();
@@ -51,6 +52,7 @@ export default function MemoryScreen() {
     navigateToImageSelect,
   } = useMemoryScreen();
 
+  // ✅ 기간 필터(기존 그대로 유지: PostFilterBar에서 열게만 바꿈)
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -63,8 +65,7 @@ export default function MemoryScreen() {
   const lastYRef = useRef(0);
   const lastToggleTsRef = useRef(0);
 
-  // ✅ “실제 헤더 높이”는 애니메이션 래퍼가 아니라 "내용물"에서 측정해야 함
-  const [headerHeight, setHeaderHeight] = useState(getResponsiveHeight(70));
+  const [headerHeight, setHeaderHeight] = useState(getResponsiveHeight(50));
   const headerHeightRef = useRef(headerHeight);
   useEffect(() => {
     headerHeightRef.current = headerHeight;
@@ -94,18 +95,17 @@ export default function MemoryScreen() {
     });
   }, [headerProgress]);
 
-  // ✅ 측정은 “내용물 View”에 붙이기 + 0/작은 값 무시 + 최대값 유지
   const onHeaderContentLayout = useCallback(e => {
     const h = e?.nativeEvent?.layout?.height ?? 0;
     if (h <= 0) return;
 
-    // 애니메이션 과정에서 찌그러진 값이 들어오면 무시하고, 최대값만 유지
     setHeaderHeight(prev => {
       const next = Math.max(prev || 0, h);
       return Math.abs(next - prev) > 0.5 ? next : prev;
     });
   }, []);
 
+  // ✅ periodLabel은 PostFilterBar에서 쓸 거라 MemoryFeed로 내려주면 됨
   const periodLabel = useMemo(() => {
     if (!startDate || !endDate) return null;
     const formatDot = s => s.replace(/-/g, '.');
@@ -123,8 +123,8 @@ export default function MemoryScreen() {
   // =========================
   // ✅ FAB도 탭바랑 "동시에" 숨김/등장
   // =========================
-  const FAB_SIZE = getResponsiveIconSize(60);
-  const FAB_RIGHT = getResponsiveWidth(18);
+  const FAB_SIZE = getResponsiveIconSize(65);
+  const FAB_RIGHT = getResponsiveWidth(14);
   const FAB_BOTTOM = getResponsiveHeight(110);
 
   const TABBAR_H = getResponsiveHeight(92);
@@ -143,7 +143,6 @@ export default function MemoryScreen() {
     hideTabBar();
   }, [hideTabBar]);
 
-  // ✅ 공통: 화면 상태 리셋 + (선택) 알림 빨간점 갱신
   const forceShowHeaderAndTabBar = useCallback(
     (withUnreadFetch = false) => {
       showTabBarWithFab();
@@ -153,8 +152,6 @@ export default function MemoryScreen() {
 
       lastYRef.current = 0;
       lastToggleTsRef.current = 0;
-
-
     },
     [showTabBarWithFab, headerProgress, dispatch],
   );
@@ -162,7 +159,6 @@ export default function MemoryScreen() {
   useFocusEffect(
     useCallback(() => {
       requestAnimationFrame(() => {
-        // ❌ 여기서는 호출하지 않음 (요청: 진입 시 말고 "갱신 때만")
         forceShowHeaderAndTabBar(false);
         showHeader();
         showTabBarWithFab();
@@ -208,7 +204,7 @@ export default function MemoryScreen() {
     [hideHeader, showHeader, hideTabBarWithFab, showTabBarWithFab],
   );
 
-  // ✅ 기간 필터 적용 = "데이터 갱신" 성격 → unread 체크 같이
+  // ✅ 기간 필터 적용
   const handleApplyPeriod = useCallback(
     ({startDate: s, endDate: e}) => {
       setStartDate(s || '');
@@ -220,7 +216,7 @@ export default function MemoryScreen() {
     [forceShowHeaderAndTabBar],
   );
 
-  // ✅ 탭 변경 = "데이터 갱신" 성격 → unread 체크 같이
+  // ✅ 탭 변경
   const onSelectTab = useCallback(
     tab => {
       dispatch(setMemorySelectedTab(tab));
@@ -229,10 +225,15 @@ export default function MemoryScreen() {
     [dispatch, forceShowHeaderAndTabBar],
   );
 
-  // ✅ 카테고리 선택 = "데이터 갱신" 성격 → unread 체크 같이
+  // ✅ 카테고리 선택
   const handleSelectCategoryWithReset = useCallback(
     cat => {
       handleSelectCategory?.(cat);
+
+      // ✅ 카테고리 선택하면 기간도 초기화하고 싶으면 아래 주석 해제
+      // setStartDate('');
+      // setEndDate('');
+
       requestAnimationFrame(() => forceShowHeaderAndTabBar(true));
     },
     [handleSelectCategory, forceShowHeaderAndTabBar],
@@ -255,7 +256,6 @@ export default function MemoryScreen() {
     navigateToImageSelect?.();
   }, [navigateToImageSelect]);
 
-  // ✅ 헤더 애니메이션 스타일
   const headerAnimatedStyle = {
     height: headerProgress.interpolate({
       inputRange: [0, 1],
@@ -287,26 +287,43 @@ export default function MemoryScreen() {
     };
   }, [FAB_HIDE_DISTANCE, tabBarTranslateY]);
 
+  // ✅ PostFilterBar에서 카테고리/기간 버튼 누르면 여기서 열어줌
+  const openCategorySheet = useCallback(() => {
+    categorySheetRef?.current?.present?.();
+  }, [categorySheetRef]);
+
+  const openPeriodModal = useCallback(() => {
+    setIsFilterVisible(true);
+  }, []);
+
   return (
     <View style={styles.container}>
-      {/* ✅ 애니메이션 래퍼(여기에 onLayout 달면 안 됨!) */}
+      {/* ✅ 헤더에는 이제 "탭(게시글/앨범)"만 남김
+          - 기간선택 버튼 제거: AnimatedAlbumTabSelector 내부에서 onPressDateFilter 안 씀 */}
       <Animated.View style={headerAnimatedStyle}>
-        {/* ✅ 내용물에서 높이 측정 */}
         <View onLayout={onHeaderContentLayout}>
           <AnimatedAlbumTabSelector
             selected={selectedTab}
             onSelect={onSelectTab}
-            onPressDateFilter={() => setIsFilterVisible(true)}
-            periodLabel={periodLabel}
+            // ✅ 기간선택 UI를 헤더에서 제거할 거라서 전달 X(또는 noop)
+            // onPressDateFilter={() => {}}
+            // periodLabel={null}
           />
+          <MagazineBanner />
         </View>
       </Animated.View>
 
+      {/* ✅ PostFilterBar의 카테고리/기간 버튼을 활성화하려면
+          MemoryFeed로 핸들러와 기간값을 내려줘야 함 */}
       <MemoryFeed
         selectedCategoryTitle={selectedCategoryTitle}
         startDate={startDate}
         endDate={endDate}
         onScroll={handleFeedScroll}
+        onPressCategoryFilter={openCategorySheet}
+        onPressPeriodFilter={openPeriodModal}
+        // ✅ (선택) PostFilterBar가 periodLabel을 직접 쓰는 구조면 필요 없지만
+        // 지금 MemoryFeed가 headerPeriodLabel 만들 때 start/end를 쓰고 있어서 OK
       />
 
       <CategoryBottomSheetModal
@@ -329,15 +346,23 @@ export default function MemoryScreen() {
           },
           fabAnimatedStyle,
         ]}>
-        <TouchableOpacity
-          style={{width: '100%', height: '100%'}}
-          onPress={handleFabPress}
-          activeOpacity={0.85}>
-          <Image
-            source={require('../../../assets/icons/posting-floating-bt.png')}
-            style={{width: '100%', height: '100%', objectFit: 'contain'}}
-          />
-        </TouchableOpacity>
+        <DropShadow
+          style={{
+            shadowColor: '#000',
+            shadowOffset: {width: 0, height: 5},
+            shadowOpacity: 0.3,
+            shadowRadius: 2,
+          }}>
+          <TouchableOpacity
+            style={{width: '100%', height: '100%'}}
+            onPress={handleFabPress}
+            activeOpacity={0.85}>
+            <Image
+              source={require('../../../assets/icons/posting-floating-bt.png')}
+              style={{width: '100%', height: '100%', objectFit: 'contain'}}
+            />
+          </TouchableOpacity>
+        </DropShadow>
       </AnimatedRe.View>
 
       <PeriodFilterModal
