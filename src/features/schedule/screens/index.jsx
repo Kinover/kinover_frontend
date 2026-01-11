@@ -1,5 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
-// ScheduleScreen.jsx
+// src/features/schedule/screens/ScheduleScreen.jsx
 import React, {useMemo, useState, useCallback} from 'react';
 import {
   StyleSheet,
@@ -31,18 +31,13 @@ import {useScheduleEditor} from '../hooks/useScheduleEditor';
 import useHolidayMap from '../hooks/useHolidayMap';
 import {useLocalDateKey} from '../hooks/useLocalDateKey';
 
-// ✅ thunk 직접 사용 (useScheduleCrud 안 씀)
 import {
   addScheduleThunk,
   updateScheduleThunk,
   deleteScheduleThunk,
 } from '../store/scheduleThunk';
 
-// 🔹 인앱 가이드
 import useGuide from 'hooks/useGuide';
-// import GuideModal from 'components/GuideModal';
-
-// ✅ HAPTIC
 import {hapticLight} from '../../../utils/haptic';
 import DropShadow from 'react-native-drop-shadow';
 
@@ -66,7 +61,6 @@ const SCHEDULE_GUIDE_STEPS = [
   },
 ];
 
-// ✅ id를 string으로 통일(화면 내부에서만)
 const toId = v => {
   if (v == null) return null;
   const s = String(v).trim();
@@ -94,7 +88,7 @@ export default function ScheduleScreen() {
 
   const [calendarMode, setCalendarMode] = useState('month');
 
-  // ✅ 바텀시트(일정 편집) 전용: 다중 선택 배열(문자열로 관리해도 OK)
+  // ✅ 바텀시트(일정 편집) 전용: 다중 선택 배열
   const [selectedUserIds, setSelectedUserIds] = useState([]);
 
   /** =========================
@@ -192,9 +186,9 @@ export default function ScheduleScreen() {
 
   /** =========================
    * ✅ CRUD: thunk 직접 dispatch
-   * - payload.userId(작성자) 보내지 않음
-   * - participantIds는 number[]로 변환해서 보냄 (DTO List<Long>)
-   * - refreshAfterMutation은 thunk 내부에서 가족조회/카운트 갱신 처리
+   * ✅ 핵심 수정:
+   * 1) type이 없으면 scheduleType도 받아서 처리
+   * 2) FAMILY에서 participantIds가 빈 배열이면 "ALL"로 보고 가족 전체로 확장
    ========================= */
   const onSubmit = useCallback(
     async incoming => {
@@ -211,11 +205,21 @@ export default function ScheduleScreen() {
         editingSchedule?.id ??
         undefined;
 
-      const type = incoming?.type; // 'INDIVIDUAL' | 'FAMILY' | 'ANNIVERSARY'
+      // ✅ type 방어: useScheduleBottomSheetModal이 scheduleType으로 줄 수도 있어서
+      const typeRaw = incoming?.type ?? incoming?.scheduleType ?? incoming?.kind;
+      const type = typeRaw ? String(typeRaw).toUpperCase() : null;
+
       const rawParticipantIds = incoming?.participantIds;
 
-      // ✅ 서버 DTO(List<Long>)에 맞춰 number[]로 강제 변환
-      const participantIds = toLongArray(rawParticipantIds);
+      // ✅ number[]로 변환
+      let participantIds = toLongArray(rawParticipantIds);
+
+      // ✅ FAMILY + 빈 배열 => ALL 로 간주하고 가족 전체로 확장
+      if (type === 'FAMILY' && participantIds.length === 0) {
+        participantIds = (familyUserList || [])
+          .map(u => Number(u?.userId))
+          .filter(n => Number.isFinite(n));
+      }
 
       const payload = {
         ...(scheduleId != null ? {scheduleId} : {}),
@@ -224,7 +228,6 @@ export default function ScheduleScreen() {
         title: finalTitle,
         ...(incoming?.memo != null ? {memo: incoming.memo} : {}),
         ...(type != null ? {type} : {}),
-        // ✅ ANNIVERSARY는 비워서 보냄(혹은 아예 생략)
         ...(type === 'ANNIVERSARY'
           ? {participantIds: []}
           : rawParticipantIds !== undefined
@@ -232,9 +235,13 @@ export default function ScheduleScreen() {
           : {}),
       };
 
-      if (!payload.familyId || !payload.date || !payload.type) return;
+      // ✅ 여기서 조용히 return 되는 걸 막으려고 로그도 남김
+      if (!payload.familyId || !payload.date || !payload.type) {
+        console.log('❌ [Schedule onSubmit] 필수값 누락:', payload);
+        return;
+      }
 
-      // ✅ INDIVIDUAL/FAMILY는 1명 이상 필요
+      // ✅ INDIVIDUAL/FAMILY는 1명 이상 필요 (FAMILY ALL은 위에서 확장되므로 통과)
       if (payload.type !== 'ANNIVERSARY') {
         const ids = Array.isArray(payload.participantIds)
           ? payload.participantIds
@@ -249,8 +256,8 @@ export default function ScheduleScreen() {
         date: payload.date,
         year,
         month,
-        userId: selectedUserId, // (선택) thunk 내부에서 mode==='USER'일 때만 사용됨
-        // mode: 'USER', // 필요할 때만 켜
+        userId: selectedUserId,
+        // mode: 'USER',
       };
 
       try {
@@ -282,6 +289,7 @@ export default function ScheduleScreen() {
     [
       dispatch,
       familyId,
+      familyUserList,
       formattedDate,
       year,
       month,
@@ -338,8 +346,6 @@ export default function ScheduleScreen() {
     closeSheet,
   ]);
 
-  // ✅ FAB 클릭 핸들러 (햅틱 포함)
-  // - "추가" 모드 기본 선택: 현재 유저 1명 선택(개별 일정 기본값이면 자연스러움)
   const handleFabPress = useCallback(() => {
     if (isLoading) return;
     hapticLight();
@@ -352,7 +358,6 @@ export default function ScheduleScreen() {
 
   return (
     <View style={styles.container}>
-      {/* 메인 콘텐츠 */}
       <ScrollView
         style={styles.mainContainer}
         showsVerticalScrollIndicator={false}
@@ -378,7 +383,6 @@ export default function ScheduleScreen() {
         />
       </ScrollView>
 
-      {/* 바텀시트 */}
       <ScheduleEditorBottomSheetModal
         ref={bottomSheetRef}
         editingSchedule={editingSchedule}
@@ -394,7 +398,6 @@ export default function ScheduleScreen() {
         onRefresh={handleRefresh}
       />
 
-      {/* 플로팅 버튼 */}
       <TouchableOpacity
         style={[styles.fab, isLoading && {opacity: 0.4}]}
         onPress={handleFabPress}
@@ -413,40 +416,22 @@ export default function ScheduleScreen() {
         </DropShadow>
       </TouchableOpacity>
 
-      {/* 로딩 오버레이 */}
       {isLoading && (
         <View style={styles.loadingOverlay} pointerEvents="auto">
           <YellowSpinner />
         </View>
       )}
-
-      {/* 가이드 모달 */}
-      {/* {currentGuide && (
-        <GuideModal
-          visible={isGuideVisible}
-          step={guideStep}
-          totalSteps={totalSteps}
-          title={currentGuide.title}
-          description={currentGuide.description}
-          onNext={nextStep}
-          onSkip={skipGuide}
-        />
-      )} */}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9F9F9',
-  },
+  container: {flex: 1, backgroundColor: '#F9F9F9'},
   mainContainer: {
     flex: 1,
     paddingHorizontal: getResponsiveWidth(14),
     paddingTop: getResponsiveHeight(5),
   },
-
   fab: {
     position: 'absolute',
     bottom: getResponsiveHeight(110),
@@ -454,12 +439,7 @@ const styles = StyleSheet.create({
     width: getResponsiveIconSize(65),
     height: getResponsiveIconSize(65),
   },
-  fabIcon: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'contain',
-  },
-
+  fabIcon: {width: '100%', height: '100%', resizeMode: 'contain'},
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',

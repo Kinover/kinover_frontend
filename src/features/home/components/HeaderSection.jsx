@@ -250,11 +250,11 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   trait: {
-    fontFamily: 'Pretendard-Regular',
-    fontSize: DEFAULT_STYLE.sectionSubtitle,
+    fontFamily: DEFAULT_STYLE.sectionSubtitle.fontFamily,
+    fontSize: getResponsiveHeight(12),
     marginTop: getResponsiveHeight(4),
-    color: '#6B7280',
+    color: DEFAULT_STYLE.sectionSubtitle.color,
     textAlign: 'center',
-    lineHeight: DEFAULT_STYLE.sectionSubtitle+1,
+    lineHeight: DEFAULT_STYLE.sectionSubtitle.fontSize + 1,
   },
 });

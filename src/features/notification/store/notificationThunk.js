@@ -68,6 +68,33 @@ export const fetchUnreadCountThunk = createAsyncThunk(
 );
 
 /**
+ * ✅ 알림 읽음 처리(서버 lastNotificationCheckedAt 갱신)
+ * POST /api/user/notifications/mark-read
+ * 응답 예: { lastCheckedAt, hasUnread:false, unreadCount:0 }
+ */
+export const markNotificationsReadThunk = createAsyncThunk(
+  'notification/markRead',
+  async (_, {rejectWithValue}) => {
+    try {
+      const token = await getToken();
+      const res = await axios.post(
+        `${BASE}/user/notifications/mark-read`,
+        {},
+        {
+          headers: {Authorization: `Bearer ${token}`},
+        },
+      );
+      return res.data;
+    } catch (error) {
+      console.error('🔴 알림 읽음 처리 실패:', error);
+      return rejectWithValue(
+        error.response?.data || '알림 읽음 처리 실패',
+      );
+    }
+  },
+);
+
+/**
  * ✅ 앱 아이콘 뱃지 동기화 (핵심)
  * - 앱 뱃지 = 채팅 unread 총합 + 알림 unreadCount
  * - 어디서든 이 thunk 한번 호출하면 뱃지 정확히 맞춰짐

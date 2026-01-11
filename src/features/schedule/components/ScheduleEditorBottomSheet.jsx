@@ -76,12 +76,10 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       editingSchedule,
       familyUserList = [],
 
-      // ✅ 추가 모드에서 반드시 필요 (부모가 넘겨줘야 함)
       familyId: familyIdProp,
       date: dateProp,
       memo: memoProp,
 
-      // ✅ Controlled 가능
       selectedUserIds: selectedUserIdsProp,
       setSelectedUserIds: setSelectedUserIdsProp,
 
@@ -128,8 +126,11 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       return uniqNums((familyUserList || []).map(u => u?.userId));
     }, [familyUserList]);
 
+    // ✅ ALL 판단: "전체 선택" = 가족 전체 id 개수와 동일
     const isAllSelected =
-      currentKind === KIND.FAMILY && safeSelectedIds.length === 0;
+      currentKind === KIND.FAMILY &&
+      allFamilyUserIds.length > 0 &&
+      safeSelectedIds.length === allFamilyUserIds.length;
 
     const setKindSafe = v => {
       if (isClosing) return;
@@ -207,10 +208,20 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       [currentKind],
     );
 
+    // ✅ submit용 participantIds
+    // - ANNIVERSARY: undefined(혹은 [])
+    // - FAMILY: 전체선택이면 allFamilyUserIds를 넘김
+    // - INDIVIDUAL: 선택된 그대로
     const participantIdsForSubmit = useMemo(() => {
       if (currentKind === KIND.ANNIVERSARY) return undefined;
+
+      if (currentKind === KIND.FAMILY) {
+        if (isAllSelected) return allFamilyUserIds; // ✅ 전체 선택이면 확장된 배열
+        return safeSelectedIds;
+      }
+
       return safeSelectedIds;
-    }, [currentKind, safeSelectedIds]);
+    }, [currentKind, safeSelectedIds, isAllSelected, allFamilyUserIds]);
 
     const basePayload = useMemo(() => {
       const familyId = editingSchedule?.familyId ?? familyIdProp;
@@ -232,6 +243,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       };
     }, [editingSchedule, familyIdProp, dateProp, memoProp]);
 
+    // ✅ 핵심: hook이 payload를 객체로 만들어 onSubmit(payload) 하도록 파라미터 전달
     const {modalRef, scheduleRef, inputKey, handleSave, handleDelete} =
       useScheduleBottomSheetModal({
         editingSchedule,
@@ -347,11 +359,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       const id = toNumId(userId);
       if (id == null) return;
 
-      if (currentKind === KIND.FAMILY && safeSelectedIds.length === 0) {
-        setSelectedUserIds([id]);
-        return;
-      }
-
       if (safeSelectedIds.includes(id)) {
         setSelectedUserIds(safeSelectedIds.filter(x => x !== id));
       } else {
@@ -378,6 +385,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         return;
       }
 
+      // ✅ 전체 선택은 실제 전체 id 배열로 저장
       setSelectedUserIds(allFamilyUserIds);
     };
 
@@ -395,8 +403,9 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         return;
       }
 
+      // ✅ FAMILY는 selectAll로 전체 id 배열이 들어오기 때문에 count===0이면 진짜 미선택
       if (currentKind === KIND.FAMILY && count === 0) {
-        showToast('가족 일정은 ALL(전체) 또는 1명 이상 선택이 필요해요.');
+        showToast('가족 일정은 전체 또는 1명 이상 선택이 필요해요.');
         return;
       }
 
@@ -580,7 +589,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                               style={styles.avatarImage2}
                             />
 
-                            {/* ✅ 선택 오버레이 + 체크 */}
                             {isSel && <View style={styles.avatarOverlay2} />}
                             {isSel && (
                               <View style={styles.checkCenterWrap}>
@@ -591,7 +599,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                               </View>
                             )}
 
-                            {/* ✅ 선택 링 + 살짝 글로우 */}
                             {isSel && <View style={styles.avatarRing2} />}
                           </TouchableOpacity>
 
@@ -607,7 +614,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                     {currentKind === KIND.INDIVIDUAL
                       ? '개별: 구성원 1명 이상 선택'
                       : currentKind === KIND.FAMILY
-                      ? '가족: ALL 또는 여러 명 선택'
+                      ? '가족: 전체 또는 여러 명 선택'
                       : '기념일: 구성원 선택 없이 저장'}
                   </Text>
                 </View>
@@ -658,8 +665,6 @@ const COLORS = {
   MUTED: '#9CA3AF',
   BRAND: '#FFC84D',
   BRAND_SOFT: '#FFF8E1',
-
-  // ✅ 오버레이/그림자 톤
   OVERLAY: 'rgba(17, 24, 39, 0.35)',
   SHADOW: 'rgba(17, 24, 39, 0.08)',
 };
@@ -699,7 +704,6 @@ const styles = StyleSheet.create({
   },
   kindTextActive: {color: COLORS.TEXT},
 
-  /* ---------------------- ✅ Member Selector (NEW) ---------------------- */
   memberCard: {
     backgroundColor: BACKGROUND_COLORS.secondaryBg,
     borderRadius: 16,
@@ -716,36 +720,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
 
-  memberCardTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: getResponsiveHeight(10),
-  },
-  memberCardTitle: {
-    fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-SemiBold',
-    color: COLORS.TEXT,
-  },
-
-  memberBadge: {
-    paddingHorizontal: getResponsiveWidth(10),
-    paddingVertical: getResponsiveHeight(6),
-    borderRadius: 999,
-    backgroundColor: COLORS.PANEL,
-    borderWidth: 1,
-    borderColor: COLORS.BORDER,
-  },
-  memberBadgeDisabled: {opacity: 0.65},
-  memberBadgeText: {
-    fontSize: getResponsiveFontSize(11.5),
-    fontFamily: 'Pretendard-SemiBold',
-    color: COLORS.SUB,
-  },
-
-  memberScrollContent: {
-    paddingVertical: getResponsiveHeight(4),
-  },
+  memberScrollContent: {paddingVertical: getResponsiveHeight(4)},
 
   memberItem: {
     width: getResponsiveWidth(76),
@@ -770,19 +745,13 @@ const styles = StyleSheet.create({
   },
   avatarBtn2Disabled: {opacity: 0.55},
 
-  avatarImage2: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 999,
-  },
+  avatarImage2: {width: '100%', height: '100%', borderRadius: 999},
 
-  // ✅ 선택 오버레이
   avatarOverlay2: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: COLORS.OVERLAY,
   },
 
-  // ✅ 선택 링
   avatarRing2: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 999,
@@ -790,7 +759,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.BRAND,
   },
 
-  // ✅ ✅ 체크 뒤 "흰 원" 제거: 배경/테두리 없음, 체크만 띄움
   checkCenterWrap: {
     position: 'absolute',
     left: '50%',
@@ -803,12 +771,6 @@ const styles = StyleSheet.create({
     height: getResponsiveWidth(24),
     alignItems: 'center',
     justifyContent: 'center',
-
-    // backgroundColor: 'rgba(255, 255, 255, 0.92)',  // ❌ 제거
-    // borderWidth: 1,                                 // ❌ 제거
-    // borderColor: 'rgba(229, 231, 235, 0.9)',         // ❌ 제거
-
-    // (선택) 체크가 어두운 오버레이 위에서 잘 보이게 살짝만
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -843,7 +805,6 @@ const styles = StyleSheet.create({
     color: COLORS.SUB,
   },
 
-  /* ---------------------- existing: input ---------------------- */
   inputPanel: {
     backgroundColor: COLORS.PANEL,
     borderRadius: 14,
@@ -879,7 +840,6 @@ const styles = StyleSheet.create({
     color: COLORS.MUTED,
   },
 
-  /* ---------------------- ALL 내부 ---------------------- */
   allCircle2: {
     width: '100%',
     height: '100%',
@@ -896,101 +856,4 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   allText2Selected: {color: '#FFFFFF'},
-
-  /* (이전 helperText 유지용) */
-  helperText: {
-    marginTop: getResponsiveHeight(6),
-    marginLeft: getResponsiveWidth(12),
-    fontSize: getResponsiveFontSize(11.5),
-    fontFamily: 'Pretendard-Medium',
-    color: COLORS.SUB,
-  },
-
-  // (호환 위해 남겨둠 - 사용 안 해도 됨)
-  panel: {
-    backgroundColor: COLORS.PANEL,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.BORDER,
-    paddingVertical: getResponsiveHeight(10),
-    paddingBottom: getResponsiveHeight(12),
-    marginBottom: getResponsiveHeight(16),
-  },
-  userScroll: {borderRadius: 14},
-  userScrollContent: {
-    paddingHorizontal: getResponsiveWidth(10),
-    paddingVertical: getResponsiveHeight(6),
-  },
-  avatarColumn: {
-    width: getResponsiveWidth(70),
-    height: getResponsiveHeight(98),
-    marginRight: getResponsiveWidth(8),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarBtn: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: getResponsiveIconSize(62),
-    height: getResponsiveIconSize(62),
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: COLORS.BORDER,
-    overflow: 'hidden',
-  },
-  avatarBtnSelected: {
-    borderColor: COLORS.BRAND,
-    backgroundColor: COLORS.BRAND_SOFT,
-  },
-  avatarBtnDisabled: {opacity: 0.6},
-  avatarImage: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 999,
-  },
-  avatarOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.28)',
-  },
-  avatarLabel: {
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-Medium',
-    color: COLORS.TEXT,
-    textAlign: 'center',
-    marginTop: getResponsiveHeight(6),
-  },
-  allCircle: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  allCircleSelected: {backgroundColor: COLORS.BRAND_SOFT},
-  allText: {
-    fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-Bold',
-    color: COLORS.MUTED,
-    letterSpacing: 0.2,
-    zIndex: 2,
-  },
-  allTextSelected: {color: '#FFFFFF'},
-  checkBadgeWrap: {
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    transform: [
-      {translateX: -getResponsiveWidth(9)},
-      {translateY: -getResponsiveWidth(9)},
-    ],
-    width: getResponsiveWidth(18),
-    height: getResponsiveWidth(18),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkBadge: {
-    width: getResponsiveWidth(17),
-    height: getResponsiveWidth(17),
-    resizeMode: 'contain',
-  },
 });
