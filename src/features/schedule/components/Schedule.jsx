@@ -1,6 +1,5 @@
-/* eslint-disable react-native/no-inline-styles */
 // src/features/schedule/components/Schedule.jsx
-
+/* eslint-disable react-native/no-inline-styles */
 import React, {useMemo, useState, useCallback} from 'react';
 import {View, Text, TouchableOpacity, StyleSheet, Platform} from 'react-native';
 
@@ -8,7 +7,6 @@ import {
   getResponsiveFontSize,
   getResponsiveWidth,
   getResponsiveHeight,
-  getResponsiveIconSize,
 } from '../../../utils/responsive';
 
 import {useScheduleListByDate} from '../hooks/useScheduleListByDate';
@@ -18,10 +16,6 @@ import {DEFAULT_STYLE, EMPTY_STYLE} from 'styles/style';
 import DropShadow from 'react-native-drop-shadow';
 import BirthdayConfettiModal from './BirthdayConfettiModal';
 
-// ✅ Kinover 컬러 체계
-// - ANNIVERSARY: 노랑
-// - FAMILY: 파랑
-// - INDIVIDUAL: 그레이(기본)
 const COLOR = {
   BLUE_BG: 'rgba(59, 130, 246, 0.14)',
   BLUE_PILL: 'rgba(59, 130, 246, 0.10)',
@@ -42,13 +36,7 @@ const TYPE = {
   ANNIVERSARY: 'ANNIVERSARY',
 };
 
-function Schedule({
-  selectedDate,
-  onOpenSheet,
-  refreshTrigger,
-  birthdayNames = [],
-}) {
-  // ✅ hook이 기존 personal/shared/anniversary를 주더라도 안전하게 흡수
+function Schedule({selectedDate, onOpenSheet, refreshTrigger, birthdayNames = []}) {
   const hookResult = useScheduleListByDate(selectedDate, refreshTrigger) || {};
   const individual = hookResult.individual ?? hookResult.personal ?? [];
   const family = hookResult.family ?? hookResult.shared ?? [];
@@ -61,9 +49,7 @@ function Schedule({
 
   const displayNames =
     birthdayNames.length > 2
-      ? `${birthdayNames.slice(0, 2).join(', ')} 외 ${
-          birthdayNames.length - 2
-        }명`
+      ? `${birthdayNames.slice(0, 2).join(', ')} 외 ${birthdayNames.length - 2}명`
       : birthdayNames.join(', ');
 
   const [birthdayModalVisible, setBirthdayModalVisible] = useState(false);
@@ -82,9 +68,6 @@ function Schedule({
     return `${displayNames} 🎉`;
   }, [hasBirthday, displayNames]);
 
-  // ----------------------------
-  // ✅ 타입별 카드 프리셋
-  // ----------------------------
   const getCardPreset = item => {
     const raw =
       item?.type ??
@@ -143,7 +126,6 @@ function Schedule({
     };
   };
 
-  // ✅ 라벨 만들기 (INDIVIDUAL/FAMILY 공통: participantNames 우선)
   const getMemberLabel = useCallback(item => {
     const names = Array.isArray(item?.participantNames)
       ? item.participantNames.filter(Boolean)
@@ -152,11 +134,9 @@ function Schedule({
     if (names.length === 1) return names[0];
     if (names.length > 1) return `${names[0]} 외 ${names.length - 1}명`;
 
-    // fallback
     return item?.userName || '가족';
   }, []);
 
-  // ✅ 렌더 순서: ANNIVERSARY → FAMILY → INDIVIDUAL
   const mergedForRender = useMemo(() => {
     const a = Array.isArray(anniversary) ? anniversary : [];
     const f = Array.isArray(family) ? family : [];
@@ -168,7 +148,6 @@ function Schedule({
     <View style={styles.container}>
       <Text style={styles.dateText}>{formattedDate}</Text>
 
-      {/* 생일 배너 (노랑 유지) */}
       {hasBirthday && (
         <DropShadow style={[styles.cardShadowBox, styles.roundPillShadow]}>
           <TouchableOpacity
@@ -177,11 +156,7 @@ function Schedule({
             style={[styles.cardWrap, styles.roundPillWrap]}>
             <View style={styles.cardHeaderRow}>
               <View style={styles.cardLeft}>
-                <View
-                  style={[
-                    styles.iconCircle,
-                    {backgroundColor: COLOR.YELLOW_BG},
-                  ]}>
+                <View style={[styles.iconCircle, {backgroundColor: COLOR.YELLOW_BG}]}>
                   <Text style={styles.iconText}>🎂</Text>
                 </View>
 
@@ -216,19 +191,12 @@ function Schedule({
           {mergedForRender.map(item => {
             const preset = getCardPreset(item);
 
-            // ✅ 오너 라벨 규칙
-            // - ANNIVERSARY: '가족'
-            // - FAMILY: 참여자 수에 따라 멤버 표시 (participantNames 기반)
-            // - INDIVIDUAL: 참여자 표시(보통 1명)
             const ownerLabel =
               preset.type === TYPE.ANNIVERSARY ? '가족' : getMemberLabel(item);
 
             return (
               <DropShadow
-                key={
-                  item.scheduleId ??
-                  `${preset.type}-${ownerLabel}-${item.title}`
-                }
+                key={item.scheduleId ?? `${preset.type}-${ownerLabel}-${item.title}`}
                 style={[styles.cardShadowBox, styles.roundPillShadow]}>
                 <TouchableOpacity
                   onPress={() => onOpenSheet(item)}
@@ -236,11 +204,7 @@ function Schedule({
                   style={[styles.cardWrap, styles.roundPillWrap]}>
                   <View style={styles.cardHeaderRow}>
                     <View style={styles.cardLeft}>
-                      <View
-                        style={[
-                          styles.iconCircle,
-                          {backgroundColor: preset.iconBg},
-                        ]}>
+                      <View style={[styles.iconCircle, {backgroundColor: preset.iconBg}]}>
                         <Text style={styles.iconText} numberOfLines={1}>
                           {preset.icon}
                         </Text>
@@ -256,13 +220,8 @@ function Schedule({
                       </View>
                     </View>
 
-                    <View
-                      style={[styles.pill, {backgroundColor: preset.pillBg}]}>
-                      <Text
-                        style={[
-                          styles.pillText,
-                          {color: preset.pillTextColor},
-                        ]}>
+                    <View style={[styles.pill, {backgroundColor: preset.pillBg}]}>
+                      <Text style={[styles.pillText, {color: preset.pillTextColor}]}>
                         {preset.pillText}
                       </Text>
                     </View>
@@ -285,7 +244,6 @@ function Schedule({
 
 export default React.memo(Schedule);
 
-// styles 그대로 유지
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -399,11 +357,5 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     textAlign: 'center',
     textAlignVertical: 'center',
-  },
-  plus: {
-    color: '#FFC84D',
-    width: getResponsiveIconSize(20),
-    height: getResponsiveIconSize(20),
-    resizeMode: 'contain',
   },
 });

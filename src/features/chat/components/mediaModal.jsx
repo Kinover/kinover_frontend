@@ -38,6 +38,16 @@ const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 const CLOUDFRONT_DOMAIN = 'https://dzqa9jgkeds0b.cloudfront.net';
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
+const toNumberSafe = v => {
+  // number / numeric string만 허용, object는 0 처리
+  if (typeof v === 'number' && Number.isFinite(v)) return v;
+  if (typeof v === 'string') {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+  return 0;
+};
+
 const toCdnUrl = keyOrUrl => {
   if (!keyOrUrl) return null;
   const raw = String(keyOrUrl).split('?')[0];
@@ -134,17 +144,51 @@ export default function MediaModal({
   initialIndex = 0,
   onClose,
 }) {
-  // ✅ hooks는 무조건 최상단에서 동일하게 실행
   const cancelRequestedRef = useRef(false);
+  const listRef = useRef(null);
 
   const resolvedUrls = useMemo(
-    () => mediaUrls.map(toCdnUrl).filter(Boolean),
+    () => (Array.isArray(mediaUrls) ? mediaUrls : []).map(toCdnUrl).filter(Boolean),
     [mediaUrls],
   );
 
   const isVideo = mediaType === 'video';
 
-  const [currentIndex, setCurrentIndex] = useState(initialIndex);
+  // ✅ 안전한 initialIndex (객체/NaN 방지 + 범위 clamp)
+  const safeInitialIndex = useMemo(() => {
+    if (!resolvedUrls.length) return 0;
+    const n = Math.floor(toNumberSafe(initialIndex));
+    return clamp(n, 0, resolvedUrls.length - 1);
+  }, [initialIndex, resolvedUrls.length]);
+
+  const [currentIndex, setCurrentIndex] = useState(safeInitialIndex);
+
+  // ✅ resolvedUrls 길이가 바뀌거나 initialIndex로 다시 열릴 때도 안전하게 맞춤
+  useEffect(() => {
+    setCurrentIndex(prev => {
+      if (!resolvedUrls.length) return 0;
+      const next = clamp(safeInitialIndex, 0, resolvedUrls.length - 1);
+      return next;
+    });
+  }, [safeInitialIndex, resolvedUrls.length]);
+
+  // ✅ 모달 열릴 때 해당 인덱스로 스크롤 맞추기 (initialScrollIndex 대신)
+  useEffect(() => {
+    if (!visible) return;
+    if (!resolvedUrls.length) return;
+
+    requestAnimationFrame(() => {
+      try {
+        listRef.current?.scrollToOffset?.({
+          offset: currentIndex * screenWidth,
+          animated: false,
+        });
+      } catch {
+        null;
+      }
+    });
+  }, [visible, currentIndex, resolvedUrls.length]);
+
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState({current: 0, total: 0});
 
@@ -180,16 +224,15 @@ export default function MediaModal({
   }));
 
   const handleClose = useCallback(() => {
-    // 닫을 때 메뉴도 같이 정리
     if (menuVisible) closeMenu();
 
     if (saving) {
       cancelRequestedRef.current = true;
       setSaving(false);
-      setTimeout(onClose, 300);
+      setTimeout(() => onClose?.(), 300);
       return;
     }
-    onClose();
+    onClose?.();
   }, [saving, onClose, menuVisible, closeMenu]);
 
   const runSave = useCallback(
@@ -231,7 +274,7 @@ export default function MediaModal({
           showToast(isVideo ? '영상이 모두 저장됐어요' : '사진이 모두 저장됐어요');
         }
       } catch (e) {
-        // 실패/취소는 토스트 생략
+        // 실패/취소는 조용히 종료
       } finally {
         setTimeout(() => {
           setSaving(false);
@@ -242,18 +285,12 @@ export default function MediaModal({
     [saving, resolvedUrls, currentIndex, isVideo, showToast],
   );
 
-  // visible false 될 때 정리
   useEffect(() => {
     if (!visible) {
       setMenuVisible(false);
       menuAnim.value = 0;
     }
   }, [visible, menuAnim]);
-
-  // initialIndex가 바뀌어서 다시 열리는 케이스 대비
-  useEffect(() => {
-    setCurrentIndex(initialIndex || 0);
-  }, [initialIndex]);
 
   const isMenuDisabled = saving || !resolvedUrls.length;
 
@@ -268,7 +305,7 @@ export default function MediaModal({
   );
 
   return (
-    <Modal transparent visible={visible} animationType="fade">
+    <Modal transparent visible={visible} animationType="fade" onRequestClose={handleClose}>
       <View style={styles.overlay} />
 
       {/* 상단 버튼 */}
@@ -276,6 +313,13 @@ export default function MediaModal({
         <TouchableOpacity onPress={handleClose} style={styles.circleIconBtn}>
           <Text style={styles.xText}>✕</Text>
         </TouchableOpacity>
+
+        {/* ✅ 가운데 인덱스 (1 / N) */}
+        <View style={styles.indexPill}>
+          <Text style={styles.indexText}>
+            {resolvedUrls.length ? currentIndex + 1 : 0} / {resolvedUrls.length}
+          </Text>
+        </View>
 
         <TouchableOpacity
           onPress={openMenu}
@@ -291,14 +335,22 @@ export default function MediaModal({
 
       {/* 미디어 */}
       <FlatList
+        ref={listRef}
         data={resolvedUrls}
         horizontal
         pagingEnabled
-        extraData={currentIndex} // ✅ 안정화
+        showsHorizontalScrollIndicator={false}
+        extraData={currentIndex}
         keyExtractor={(v, i) => `${v}_${i}`}
+        getItemLayout={(_, i) => ({
+          length: screenWidth,
+          offset: screenWidth * i,
+          index: i,
+        })}
         renderItem={renderItem}
         onMomentumScrollEnd={e => {
-          const next = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+          const raw = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+          const next = resolvedUrls.length ? clamp(raw, 0, resolvedUrls.length - 1) : 0;
           setCurrentIndex(next);
         }}
       />
@@ -388,6 +440,7 @@ const styles = StyleSheet.create({
     zIndex: 50,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
 
   circleIconBtn: {
@@ -410,6 +463,22 @@ const styles = StyleSheet.create({
   dotsIcon: {
     width: getResponsiveWidth(16),
     height: getResponsiveWidth(16),
+  },
+
+  indexPill: {
+    paddingHorizontal: getResponsiveWidth(12),
+    height: CIRCLE_SIZE,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: getResponsiveWidth(92),
+  },
+  indexText: {
+    color: '#fff',
+    fontSize: getResponsiveFontSize(13),
+    fontFamily: 'Pretendard-SemiBold',
+    includeFontPadding: false,
   },
 
   zoomContainer: {

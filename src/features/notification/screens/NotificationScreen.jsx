@@ -1,6 +1,12 @@
 // src/features/notification/screens/NotificationScreen.js
 import React, {useCallback, useMemo} from 'react';
-import {View, Text, StyleSheet, ScrollView, TouchableOpacity} from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {
   getResponsiveFontSize,
@@ -18,6 +24,7 @@ import {
   fetchNotificationsThunk,
   fetchHasUnreadThunk,
   syncAppBadgeThunk,
+  markNotificationsReadThunk, // ✅ 추가
 } from '../store/notificationThunk';
 
 export default function NotificationScreen() {
@@ -40,13 +47,16 @@ export default function NotificationScreen() {
 
       (async () => {
         try {
-          // 1) 알림 목록 갱신(=서버 lastCheckedAt 갱신/읽음 확정)
+          // 1) 알림 목록 갱신(조회만)
           await dispatch(fetchNotificationsThunk());
 
-          // 2) bell 점도 같이 갱신
+          // 2) ✅ "읽음 확정"은 서버 mark-read로만
+          await dispatch(markNotificationsReadThunk());
+
+          // 3) bell 점/카운트 갱신
           await dispatch(fetchHasUnreadThunk());
 
-          // 3) ✅ 앱 아이콘 뱃지 = 채팅 + 알림 합산으로 재동기화
+          // 4) 앱 아이콘 뱃지 = 채팅 + 알림 합산으로 재동기화
           if (!alive) return;
           await dispatch(syncAppBadgeThunk());
         } catch (e) {
@@ -149,7 +159,7 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(12.5),
     color: '#8D8D8D',
     fontFamily: 'Pretendard-Medium',
-    paddingHorizontal: getResponsiveHeight(20),
+    paddingHorizontal: getResponsiveHeight(18),
   },
   error: {
     fontSize: getResponsiveFontSize(16),
@@ -160,7 +170,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: getResponsiveHeight(15),
-    paddingHorizontal: getResponsiveHeight(24.5),
+    paddingHorizontal: getResponsiveHeight(20),
     borderBottomWidth: 0.5,
     borderBottomColor: '#EFEFEF',
     gap: getResponsiveWidth(12),

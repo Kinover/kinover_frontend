@@ -1,5 +1,6 @@
-// scheduleSlice.js
-import { createSlice } from '@reduxjs/toolkit';
+// src/features/schedule/store/scheduleSlice.js
+import {createSlice} from '@reduxjs/toolkit';
+import {getScheduleCountPerDayThunk} from './scheduleThunk';
 
 const initialState = {
   scheduleId: '',
@@ -10,6 +11,9 @@ const initialState = {
   date: '',
   loading: false,
   error: null,
+
+  // ✅ (있으면 편함) 달력 count 저장용
+  scheduleCountPerDay: {},
 };
 
 const scheduleSlice = createSlice({
@@ -17,7 +21,7 @@ const scheduleSlice = createSlice({
   initialState,
   reducers: {
     setScheduleList(state, action) {
-      state.scheduleList = [...action.payload]; // 🔥 이렇게 레퍼런스 바꿔주면 리렌더 확실!
+      state.scheduleList = [...(action.payload || [])];
       state.error = null;
     },
     setScheduleLoading(state, action) {
@@ -27,12 +31,18 @@ const scheduleSlice = createSlice({
       state.error = action.payload;
     },
   },
+  extraReducers: builder => {
+    builder
+      .addCase(getScheduleCountPerDayThunk.fulfilled, (state, action) => {
+        state.scheduleCountPerDay = action.payload || {};
+      })
+      .addCase(getScheduleCountPerDayThunk.rejected, (state, action) => {
+        state.error = action.payload || action.error?.message || 'COUNT_FAILED';
+      });
+  },
 });
 
-export const {
-  setScheduleList,
-  setScheduleLoading,
-  setScheduleError,
-} = scheduleSlice.actions;
+export const {setScheduleList, setScheduleLoading, setScheduleError} =
+  scheduleSlice.actions;
 
 export default scheduleSlice.reducer;

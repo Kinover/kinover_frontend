@@ -47,7 +47,7 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
     navigation.navigate(screen, {chatRoom, title, userId});
   };
 
-  const AVATAR_SIZE = getResponsiveIconSize(55);
+  const AVATAR_SIZE = getResponsiveIconSize(50);
   const AI_BADGE_SIZE = getResponsiveIconSize(16);
 
   return (
@@ -120,7 +120,7 @@ const styles = StyleSheet.create({
     gap: getResponsiveWidth(10),
     paddingVertical: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(13),
-    height: getResponsiveHeight(80),
+    height: getResponsiveHeight(70),
     overflow: 'hidden',
     backgroundColor: 'transparent',
   },
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'flex-start',
   },
-  time: {fontSize: getResponsiveFontSize(12), color: '#8B8B8B'},
+  time: {fontFamily:'Pretendard-Regular', fontSize: getResponsiveFontSize(11), color: '#8B8B8B'},
   badge: {
     marginTop: getResponsiveHeight(3.5),
     padding: getResponsiveHeight(4),

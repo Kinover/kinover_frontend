@@ -1,19 +1,31 @@
 // src/features/memory/components/MediaViewer.jsx
-import React, {useEffect, useMemo, useRef, useCallback, useState} from 'react';
+
+/* eslint-disable react-native/no-inline-styles */
+import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
 import {
   Modal,
-  View,
-  FlatList,
-  Dimensions,
   StyleSheet,
   TouchableOpacity,
-  Platform,
+  Dimensions,
+  View,
+  FlatList,
   Text,
+  Platform,
   PermissionsAndroid,
   ActivityIndicator,
 } from 'react-native';
-import FastImage from '@d11/react-native-fast-image';
 import Video from 'react-native-video';
+import FastImage from '@d11/react-native-fast-image';
+
+import RNFS from 'react-native-fs';
+import {CameraRoll} from '@react-native-camera-roll/camera-roll';
+
+import {
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveWidth,
+} from '../../../utils/responsive';
+
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
@@ -21,21 +33,12 @@ import Animated, {
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
-import {
-  getResponsiveFontSize,
-  getResponsiveHeight,
-  getResponsiveWidth,
-} from '../../../utils/responsive';
 
-// ✅ 저장
-import RNFS from 'react-native-fs';
-import {CameraRoll} from '@react-native-camera-roll/camera-roll';
+const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
-const {width: W, height: H} = Dimensions.get('window');
+/* ================= utils ================= */
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
-
-/* ================= 저장 유틸 ================= */
 
 const ensureAndroidPermission = async () => {
   if (Platform.OS !== 'android') return true;
@@ -49,9 +52,9 @@ const ensureAndroidPermission = async () => {
 
 const saveUrlToGallery = async ({url, type, album = 'Kinover'}) => {
   const ext = type === 'video' ? 'mp4' : 'jpg';
-  const path = `${RNFS.CachesDirectoryPath}/kinover_${Date.now()}_${Math.random()
-    .toString(16)
-    .slice(2)}.${ext}`;
+  const path = `${
+    RNFS.CachesDirectoryPath
+  }/kinover_${Date.now()}_${Math.random().toString(16).slice(2)}.${ext}`;
 
   await RNFS.downloadFile({fromUrl: url, toFile: path}).promise;
 
@@ -92,9 +95,11 @@ function ZoomableImage({
     scale.value = withTiming(1);
     tx.value = withTiming(0);
     ty.value = withTiming(0);
+
     lastScale.value = 1;
     lastTx.value = 0;
     lastTy.value = 0;
+
     disabledPagingOnceRef.current = false;
     setPaging(true);
   }, [scale, tx, ty, lastScale, lastTx, lastTy, setPaging]);
@@ -103,7 +108,7 @@ function ZoomableImage({
     if (!isActive) reset();
   }, [isActive, reset]);
 
-  // ✅ 핵심 수정: pinch 시작에서 페이징을 끄지 않는다.
+  // ✅ pinch 시작에서 페이징을 끄지 않는다.
   //   "실제로 1.03 이상 확대될 때" 한 번만 페이징 off
   const pinch = Gesture.Pinch()
     .runOnJS(true)
@@ -117,7 +122,6 @@ function ZoomableImage({
           setPaging(false);
         }
       } else {
-        // 확대가 사실상 안 된 상태면 페이징 유지
         if (!disabledPagingOnceRef.current) {
           setPaging(true);
         }
@@ -139,8 +143,8 @@ function ZoomableImage({
     .onUpdate(e => {
       if (scale.value <= 1.01) return;
 
-      const limitX = (W * (scale.value - 1)) / 2;
-      const limitY = (H * (scale.value - 1)) / 2;
+      const limitX = (screenWidth * (scale.value - 1)) / 2;
+      const limitY = (screenHeight * (scale.value - 1)) / 2;
 
       const nextX = clamp(lastTx.value + e.translationX, -limitX, limitX);
       const nextY = clamp(lastTy.value + e.translationY, -limitY, limitY);
@@ -165,8 +169,10 @@ function ZoomableImage({
         reset();
         return;
       }
+
       disabledPagingOnceRef.current = true;
       setPaging(false);
+
       scale.value = withTiming(doubleTapScale);
       lastScale.value = doubleTapScale;
     });
@@ -181,7 +187,7 @@ function ZoomableImage({
   const taps = Gesture.Exclusive(doubleTap, singleTap);
   const composed = Gesture.Simultaneous(pinch, pan, taps);
 
-  const animatedStyle = useAnimatedStyle(() => ({
+  const style = useAnimatedStyle(() => ({
     transform: [
       {translateX: tx.value},
       {translateY: ty.value},
@@ -190,9 +196,9 @@ function ZoomableImage({
   }));
 
   return (
-    <GestureDetector gesture={composed}>
-      <Animated.View style={styles.zoomWrap}>
-        <Animated.View style={animatedStyle}>
+    <View style={styles.zoomContainer}>
+      <GestureDetector gesture={composed}>
+        <Animated.View style={[styles.zoomImageWrap, style]}>
           <FastImage
             pointerEvents="none"
             source={{
@@ -200,15 +206,15 @@ function ZoomableImage({
               priority: FastImage.priority.high,
               cache: FastImage.cacheControl.immutable,
             }}
-            style={styles.image}
+            style={styles.zoomImage}
             resizeMode={FastImage.resizeMode.contain}
             onError={e =>
               console.log('❌ MediaViewer image error:', uri, e?.nativeEvent)
             }
           />
         </Animated.View>
-      </Animated.View>
-    </GestureDetector>
+      </GestureDetector>
+    </View>
   );
 }
 
@@ -221,10 +227,16 @@ export default function MediaViewer({
   onIndexChange,
   onClose,
 }) {
+  // ✅ hooks는 무조건 최상단에서 동일하게 실행
   const listRef = useRef(null);
+
+  const cancelRequestedRef = useRef(false);
 
   const pagingEnabledRef = useRef(true);
   const [pagingEnabled, setPagingEnabled] = useState(true);
+
+  const [saving, setSaving] = useState(false);
+  const [progress, setProgress] = useState({current: 0, total: 0});
 
   const safeIndex = useMemo(() => {
     if (!media.length) return 0;
@@ -233,10 +245,11 @@ export default function MediaViewer({
 
   useEffect(() => {
     if (!visible) return;
+
     requestAnimationFrame(() => {
       try {
         listRef.current?.scrollToOffset({
-          offset: safeIndex * W,
+          offset: safeIndex * screenWidth,
           animated: false,
         });
       } catch {
@@ -250,12 +263,6 @@ export default function MediaViewer({
     pagingEnabledRef.current = enabled;
     setPagingEnabled(enabled);
   }, []);
-
-  /* ===== 전체저장 ===== */
-
-  const cancelRequestedRef = useRef(false);
-  const [saving, setSaving] = useState(false);
-  const [progress, setProgress] = useState({current: 0, total: 0});
 
   const handleClose = useCallback(() => {
     if (saving) {
@@ -302,32 +309,35 @@ export default function MediaViewer({
     }
   }, [media, saving]);
 
-  const renderItem = ({item, index: idx}) => {
-    const isVideo = String(item?.type) === 'video';
-    const uri = item?.uri;
-    const isActive = safeIndex === idx;
+  const renderItem = useCallback(
+    ({item, index: idx}) => {
+      const isVideo = String(item?.type) === 'video';
+      const uri = item?.uri;
+      const isActive = safeIndex === idx;
 
-    return (
-      <View style={styles.page}>
-        {isVideo ? (
-          <Video
-            source={{uri}}
-            style={styles.video}
-            resizeMode="contain"
-            controls
-            paused={!isActive}
-            onError={e => console.log('❌ MediaViewer video error:', uri, e)}
-          />
-        ) : (
-          <ZoomableImage
-            uri={uri}
-            isActive={isActive}
-            onTogglePaging={togglePaging}
-          />
-        )}
-      </View>
-    );
-  };
+      return (
+        <View style={styles.page}>
+          {isVideo ? (
+            <Video
+              source={{uri}}
+              style={styles.video}
+              resizeMode="contain"
+              controls
+              paused={!isActive}
+              onError={e => console.log('❌ MediaViewer video error:', uri, e)}
+            />
+          ) : (
+            <ZoomableImage
+              uri={uri}
+              isActive={isActive}
+              onTogglePaging={togglePaging}
+            />
+          )}
+        </View>
+      );
+    },
+    [safeIndex, togglePaging],
+  );
 
   if (!visible) return null;
 
@@ -335,58 +345,46 @@ export default function MediaViewer({
     <Modal transparent visible={visible} animationType="fade">
       <View style={styles.overlay} />
 
-      {/* ✅ 인덱스 pill */}
-      <View pointerEvents="none" style={styles.fixedTopBar}>
-        <View style={styles.indexPill}>
+      <View style={styles.topBar}>
+        <TouchableOpacity onPress={handleClose} style={styles.circleIconBtn}>
+          <Text style={styles.xText}>✕</Text>
+        </TouchableOpacity>
+
+        <View pointerEvents="none" style={styles.indexPill}>
           <Text style={styles.headerIndex}>
             <Text style={styles.headerIndexCurrent}>{safeIndex + 1}</Text>
             {' / '}
             {media.length}
           </Text>
         </View>
+
+        <View style={{width: CIRCLE_SIZE, height: CIRCLE_SIZE}} />
       </View>
 
-      {/* ✅ 저장 버튼 */}
-      <View style={styles.saveButtonContainer}>
-        <TouchableOpacity
-          onPress={handleSaveAll}
-          disabled={saving}
-          activeOpacity={0.9}
-          style={[styles.saveBtn, saving && {opacity: 0.5}]}>
-          <Text style={styles.saveBtnText}>전체저장</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* 닫기 */}
-      <TouchableOpacity
-        style={styles.closeBtn}
-        activeOpacity={0.8}
-        onPress={handleClose}>
-        <FastImage
-          pointerEvents="none"
-          source={require('../../../assets/images/clearBt1.png')}
-          style={styles.closeIcon}
-          resizeMode={FastImage.resizeMode.contain}
-        />
-      </TouchableOpacity>
-
+      {/* 미디어 */}
       <FlatList
         ref={listRef}
         data={media}
-        keyExtractor={(it, i) => `${it?.uri}_${i}`}
         horizontal
         pagingEnabled={pagingEnabled}
         scrollEnabled={pagingEnabled}
         showsHorizontalScrollIndicator={false}
-        getItemLayout={(_, i) => ({length: W, offset: W * i, index: i})}
+        extraData={safeIndex}
+        keyExtractor={(it, i) => `${it?.uri}_${i}`}
+        getItemLayout={(_, i) => ({
+          length: screenWidth,
+          offset: screenWidth * i,
+          index: i,
+        })}
+        renderItem={renderItem}
         onMomentumScrollEnd={e => {
-          const idx = Math.round(e.nativeEvent.contentOffset.x / W);
+          const idx = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
           const next = clamp(idx, 0, media.length - 1);
           onIndexChange?.(next);
         }}
-        renderItem={renderItem}
       />
 
+      {/* 저장 중 */}
       {saving && (
         <View style={styles.progressOverlay}>
           <View style={styles.progressBox}>
@@ -394,7 +392,9 @@ export default function MediaViewer({
             <Text style={styles.progressText}>
               {progress.current} / {progress.total}
             </Text>
-            <Text style={styles.progressSub}>화면을 나가면 저장이 취소돼요</Text>
+            <Text style={styles.progressSub}>
+              화면을 나가면 저장이 취소돼요
+            </Text>
           </View>
         </View>
       )}
@@ -402,91 +402,109 @@ export default function MediaViewer({
   );
 }
 
+/* ================= styles ================= */
+
+const CIRCLE_SIZE = getResponsiveWidth(38);
+
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'black',
   },
-  page: {
-    width: W,
-    height: H,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
 
-  zoomWrap: {
-    width: W,
-    height: H,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  image: {width: W, height: H},
-  video: {width: W, height: H},
-
-  fixedTopBar: {
+  topBar: {
     position: 'absolute',
-    top:
-      Platform.OS === 'ios'
-        ? getResponsiveHeight(50)
-        : getResponsiveHeight(22),
-    left: 0,
-    right: 0,
+    top: Platform.OS === 'ios' ? 46 : 16,
+    left: 16,
+    right: 16,
     zIndex: 60,
-    elevation: 60,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
+
+  circleIconBtn: {
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  circlePillBtn: {
+    minWidth: getResponsiveWidth(86),
+    height: CIRCLE_SIZE,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: getResponsiveWidth(14),
+  },
+
+  circlePillText: {
+    color: '#fff',
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(12.5),
+    includeFontPadding: false,
+  },
+
+  xText: {
+    color: '#fff',
+    fontSize: getResponsiveFontSize(16),
+    fontFamily: 'Pretendard-SemiBold',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
+
   indexPill: {
+    position: 'relative',
+    alignSelf: 'center',
     backgroundColor: 'rgba(0,0,0,0.28)',
     paddingHorizontal: getResponsiveWidth(10),
     paddingVertical: getResponsiveHeight(3),
     borderRadius: getResponsiveWidth(999),
   },
+
   headerIndex: {
     color: '#FFF',
     fontSize: getResponsiveFontSize(11),
     fontFamily: 'Pretendard-Medium',
   },
+
   headerIndexCurrent: {
     color: '#FFC84D',
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(13),
   },
 
-  saveButtonContainer: {
-    position: 'absolute',
-    top:
-      Platform.OS === 'ios'
-        ? getResponsiveHeight(46)
-        : getResponsiveHeight(16),
-    left: getResponsiveWidth(16),
-    zIndex: 70,
-    elevation: 70,
-  },
-  saveBtn: {
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    paddingHorizontal: getResponsiveWidth(14),
-    paddingVertical: getResponsiveHeight(8),
-    borderRadius: getResponsiveWidth(999),
-  },
-  saveBtnText: {
-    color: '#fff',
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(12.5),
+  page: {
+    width: screenWidth,
+    height: screenHeight,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
-  closeBtn: {
-    position: 'absolute',
-    top:
-      Platform.OS === 'ios'
-        ? getResponsiveHeight(50)
-        : getResponsiveHeight(20),
-    right: getResponsiveWidth(15),
-    zIndex: 80,
-    elevation: 80,
+  zoomContainer: {
+    width: screenWidth,
+    height: screenHeight,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  closeIcon: {
-    width: getResponsiveWidth(22.5),
-    height: getResponsiveHeight(22.5),
+
+  zoomImageWrap: {
+    width: screenWidth,
+    height: screenHeight,
+  },
+
+  zoomImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  video: {
+    width: screenWidth,
+    height: screenHeight,
   },
 
   progressOverlay: {
@@ -494,9 +512,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.35)',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 2000,
-    elevation: 2000,
+    zIndex: 100,
   },
+
   progressBox: {
     backgroundColor: 'rgba(0,0,0,0.75)',
     borderRadius: 18,
@@ -504,15 +522,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 26,
     alignItems: 'center',
   },
+
   progressText: {
     color: '#fff',
     fontSize: 16,
     marginTop: 12,
     fontFamily: 'Pretendard-SemiBold',
   },
+
   progressSub: {
     color: 'rgba(255,255,255,0.8)',
     fontSize: 12,
     marginTop: 8,
+    fontFamily: 'Pretendard-Medium',
   },
 });

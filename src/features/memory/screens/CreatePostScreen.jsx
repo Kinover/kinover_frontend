@@ -23,17 +23,12 @@ import {
   Image,
   TextInput,
   ActivityIndicator,
-  FlatList,
-  Modal,
   Pressable,
   Dimensions,
   KeyboardAvoidingView,
   Platform,
-  Animated,
-  PanResponder,
 } from 'react-native';
 
-import Video from 'react-native-video';
 import FastImage from '@d11/react-native-fast-image';
 
 import {
@@ -57,6 +52,9 @@ import {getVideoThumbnail} from '../../../utils/videoThumbnail';
 
 // ✅ post 단건 조회 thunk
 import {fetchPostByIdThunk, deletePostImageThunk} from '../store/memoryThunk';
+
+// ✅ MediaViewer 적용
+import MediaViewer from '../components/MediaViewer';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -212,9 +210,6 @@ export default function CreatePostPage({navigation, route}) {
     didInitMediaRef.current = true;
   }, [isEditMode, initImages, postFromStore, removedFileNameSet]);
 
-  const [modalVisible, setModalVisible] = useState(false);
-  const [currentIndex, setCurrentIndex] = useState(0);
-
   const [successModalVisible, setSuccessModalVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -223,6 +218,28 @@ export default function CreatePostPage({navigation, route}) {
     setToastMessage(msg);
     setToastVisible(true);
   }, []);
+
+  /* =========================
+   * ✅ MediaViewer state
+   * ========================= */
+
+  const [viewerIndex, setViewerIndex] = useState(null);
+
+  const viewerMedia = useMemo(() => {
+    return (selectedImages || []).map(it => ({
+      uri: typeof it === 'string' ? it : it?.uri || it?.path,
+      type:
+        (typeof it === 'string'
+          ? (() => {
+              const raw = String(it).split('?')[0];
+              const ext = raw.split('.').pop()?.toLowerCase();
+              return ext === 'mp4' || ext === 'mov' ? 'video' : 'photo';
+            })()
+          : it?.isVideo
+          ? 'video'
+          : 'photo') || 'photo',
+    }));
+  }, [selectedImages]);
 
   /* =========================
    * helpers
@@ -430,10 +447,7 @@ export default function CreatePostPage({navigation, route}) {
       console.log('✅ [STEP 1 DONE] finalCategoryId:', finalCategoryId);
       console.log('✅ [STEP 2] media 준비');
 
-      /** 2) selectedImages 순서를 그대로 유지하면서
-       * - 기존(remote): 업로드 X, 파일명만 추출
-       * - 신규(local): presigned -> upload -> fileName 생성
-       */
+      /** 2) selectedImages 순서를 그대로 유지하면서 */
       const now = Date.now();
 
       const localUploadJobs = [];
@@ -461,11 +475,8 @@ export default function CreatePostPage({navigation, route}) {
         }
 
         // ✅ 신규(local) 처리 (압축 후 업로드)
-        const {
-          uri: compressedUri,
-          ext,
-          skipUpload,
-        } = await compressIfNeeded(item);
+        const {uri: compressedUri, ext, skipUpload} =
+          await compressIfNeeded(item);
 
         if (!compressedUri || skipUpload) {
           showToast('파일 준비 중 오류가 발생했어요.');
@@ -569,11 +580,10 @@ export default function CreatePostPage({navigation, route}) {
       console.log('✅ [STEP 6] API 호출');
 
       if (isEditMode) {
-        // ✅ 핵심 수정: update에도 familyId 포함 (서버가 이 값으로 검증/조회하는 경우 500 방지)
         const payload = {
           authorId,
           content: text || '',
-          familyId, // ✅ 추가
+          familyId,
           categoryId: finalCategoryId,
           imageUrls,
           postTypes,
@@ -611,7 +621,6 @@ export default function CreatePostPage({navigation, route}) {
 
       setSuccessModalVisible(true);
     } catch (e) {
-      // 여기로 오는 건 예상 못한 케이스
       logAxiosError('handleUpload OUTER', e);
       showToast('업로드 중 오류가 발생했어요.');
     } finally {
@@ -664,41 +673,6 @@ export default function CreatePostPage({navigation, route}) {
   }, [navigation, handleUpload, isUploading, isEditMode]);
 
   /* =========================
-   * modal pan
-   * ========================= */
-
-  const translateY = useRef(new Animated.Value(0)).current;
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, g) =>
-        Math.abs(g.dy) > Math.abs(g.dx) && Math.abs(g.dy) > 5,
-      onPanResponderMove: (_, g) => {
-        if (g.dy < 0) translateY.setValue(g.dy);
-      },
-      onPanResponderRelease: (_, g) => {
-        if (Math.abs(g.dy) > 120 || g.vy < -1.2) {
-          Animated.timing(translateY, {
-            toValue: -300,
-            duration: 200,
-            useNativeDriver: true,
-          }).start(() => {
-            translateY.setValue(0);
-            setModalVisible(false);
-          });
-        } else {
-          Animated.spring(translateY, {
-            toValue: 0,
-            useNativeDriver: true,
-          }).start();
-        }
-      },
-    }),
-  ).current;
-
-  const previewListRef = useRef(null);
-
-  /* =========================
    * UI
    * ========================= */
 
@@ -730,15 +704,9 @@ export default function CreatePostPage({navigation, route}) {
                   key={(uri || 'unknown') + index}
                   style={styles.gridImageWrapper}
                   onPress={() => {
-                    setCurrentIndex(index);
-                    setModalVisible(true);
-
-                    requestAnimationFrame(() => {
-                      previewListRef.current?.scrollToIndex?.({
-                        index,
-                        animated: false,
-                      });
-                    });
+                    // ✅ gridImages index -> selectedImages 실제 index로 변환
+                    const realIndex = index; // gridImages는 앞에서 slice(0,3)라서 0~2는 동일
+                    setViewerIndex(realIndex);
                   }}>
                   {isVideo ? (
                     thumbUri ? (
@@ -797,64 +765,14 @@ export default function CreatePostPage({navigation, route}) {
           placeholderTextColor="#999"
         />
 
-        {/* 전체 미리보기 모달 */}
-        <Modal
-          visible={modalVisible}
-          transparent
-          onRequestClose={() => setModalVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <Pressable
-              style={styles.modalClose}
-              onPress={() => setModalVisible(false)}
-              hitSlop={12}>
-              <Text style={{color: '#fff'}}>닫기</Text>
-            </Pressable>
-
-            <FlatList
-              ref={previewListRef}
-              data={selectedImages}
-              horizontal
-              pagingEnabled
-              initialScrollIndex={currentIndex}
-              keyExtractor={(item, idx) => `${getItemUri(item)}-${idx}`}
-              getItemLayout={(_, i) => ({
-                length: SCREEN_WIDTH,
-                offset: SCREEN_WIDTH * i,
-                index: i,
-              })}
-              onScrollToIndexFailed={info => {
-                requestAnimationFrame(() => {
-                  previewListRef.current?.scrollToOffset?.({
-                    offset: info.averageItemLength * info.index,
-                    animated: false,
-                  });
-                });
-              }}
-              renderItem={({item}) => (
-                <Animated.View
-                  {...panResponder.panHandlers}
-                  style={[
-                    styles.fullImageWrapper,
-                    {transform: [{translateY}]},
-                  ]}>
-                  {isVideoItem(item) ? (
-                    <Video
-                      source={{uri: getItemUri(item)}}
-                      style={styles.fullImage}
-                      resizeMode="contain"
-                      controls
-                    />
-                  ) : (
-                    <Image
-                      source={{uri: getItemUri(item)}}
-                      style={styles.fullImage}
-                    />
-                  )}
-                </Animated.View>
-              )}
-            />
-          </View>
-        </Modal>
+        {/* ✅ MediaViewer (ImageSelectPage와 동일) */}
+        <MediaViewer
+          visible={viewerIndex !== null}
+          media={viewerMedia}
+          index={viewerIndex ?? 0}
+          onIndexChange={idx => setViewerIndex(idx)}
+          onClose={() => setViewerIndex(null)}
+        />
 
         <ToastModal
           visible={successModalVisible}
@@ -986,35 +904,5 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.6)',
-  },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: '#000',
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  fullImageWrapper: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_HEIGHT,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fullImage: {
-    width: '100%',
-    height: '80%',
-    resizeMode: 'contain',
-  },
-
-  modalClose: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 60 : 30,
-    right: 20,
-    zIndex: 999999,
-    elevation: 999999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    borderRadius: 10,
   },
 });

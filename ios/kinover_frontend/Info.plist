@@ -6,6 +6,8 @@
 	<string>bce05be0c0a25b65bbb43adf582ff2f8</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>앱 보안을 위해 Face ID를 사용합니다.</string>
 	<key>CFBundleDisplayName</key>
 	<string>Kinover</string>
 	<key>CFBundleExecutable</key>
