@@ -7,7 +7,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../../utils/responsive';
-import {BUTTON_STYLES} from 'styles/style';
+import {BUTTON_STYLES, COLORS} from 'styles/style';
 
 function formatYMD(date) {
   const y = date.getFullYear();
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
   },
   cardHint: {
     fontSize: getResponsiveFontSize(11.5),
-    color: '#9CA3AF',
+    color: COLORS.textTertiary,
     fontFamily: 'Pretendard-Regular',
     lineHeight: getResponsiveHeight(16),
     textAlign: 'center',

@@ -20,7 +20,7 @@ import {
 } from '../../../utils/responsive';
 import useHideTabBar from '../../../hooks/useHideTabBar';
 import ToastModal from '../../../components/ToastModal'; // ✅ 추가
-import {HEADER_STYLES} from 'styles/style';
+import {HEADER_STYLES, LAYOUT_STYLE} from 'styles/style';
 
 export default function CreateChatRoom({navigation}) {
   const dispatch = useDispatch();
@@ -166,9 +166,9 @@ const styles = StyleSheet.create({
   userItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: getResponsiveHeight(15),
+    paddingVertical: getResponsiveHeight(12),
     justifyContent: 'space-between',
-    paddingHorizontal: getResponsiveWidth(20),
+    paddingHorizontal: LAYOUT_STYLE.screenPaddingHorizontal,
   },
   userItemSelected: {
     backgroundColor: '#FFF2CC',
@@ -186,9 +186,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#eee',
   },
   userName: {
-    fontSize: getResponsiveFontSize(16),
-    fontFamily: 'Pretendard-Regular',
-    color: 'black',
+    fontSize: getResponsiveFontSize(15.5),
+    fontFamily: 'Pretendard-Medium',
+    color: '#101010',
     lineHeight: getResponsiveHeight(20),
     textAlignVertical: 'center',
   },

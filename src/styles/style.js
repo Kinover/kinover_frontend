@@ -6,6 +6,19 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 
+export const COLORS = {
+  /* ================= 브랜드 ================= */
+  brandPrimary: '#FFC84D', // 키노버 노랑
+  brandPrimaryStrong: '#F59E0B',
+  brandPrimarySoft: '#FEF3C7',
+
+  /* ================= 텍스트 ================= */
+  textPrimary: '#111827',
+  textSecondary: '#6B7280',
+  textTertiary: '#9CA3AF', //👉 힌트·보조·비활성 느낌 텍스트
+  textInverse: '#FFFFFF', //👉 어두운 배경 위에 올라가는 글자 색
+};
+
 // src/styles/colors.ts
 export const BACKGROUND_COLORS = {
   primaryBg: '#FFC84D',
@@ -36,13 +49,13 @@ export const HEADER_STYLES = {
   defaultTitleFontColor: '#333',
   defaultTitleFontFamily: 'Pretendard-Regular',
 
-  headerLeftIconWidth: getResponsiveIconSize(24),
-  headerLeftIconHeight: getResponsiveIconSize(24),
-  headerLeftIconLeftPadding: getResponsiveWidth(16),
+  headerLeftIconWidth: getResponsiveIconSize(26),
+  headerLeftIconHeight: getResponsiveIconSize(26),
+  headerLeftIconLeftPadding: getResponsiveWidth(14),
 
-  headerRightIconWidth: getResponsiveIconSize(23),
-  headerRightIconHeight: getResponsiveIconSize(23),
-  headerRightIconRightPadding: getResponsiveWidth(16),
+  headerRightIconWidth: getResponsiveIconSize(25),
+  headerRightIconHeight: getResponsiveIconSize(25),
+  headerRightIconRightPadding: getResponsiveWidth(14),
 };
 
 export const SETTING_STYLES = {
@@ -59,28 +72,28 @@ export const SETTING_STYLES = {
 export const CHATROOM_STYLE = {
   messageFontFamily:
     Platform.OS === 'android' ? 'Pretendard-Regular' : 'Pretendard-Light',
-  messageFontSize: getResponsiveFontSize(14), // 🔽 15 → 14
-  messageTimeFontSize: getResponsiveFontSize(11), // 🔽 10 → 9
-  KinoMessageFontSize: getResponsiveFontSize(14),
+  messageFontSize: getResponsiveFontSize(13), // 🔽 15 → 14
+  messageTimeFontSize: getResponsiveFontSize(10.5), // 🔽 10 → 9
+  KinoMessageFontSize: getResponsiveFontSize(13),
 };
 
 export const EMPTY_STYLE = {
   emptyFontSize: getResponsiveFontSize(13),
   emptyFontFamily: 'Pretendard-Regular',
-  emptyColor: '#9CA3AF',
+  emptyColor: COLORS.textTertiary,
 };
 
 export const BOTTOMSHEET_STYLE = {
   title: {
     fontSize: getResponsiveFontSize(18),
     fontFamily: 'Pretendard-SemiBold',
-    color: '#111827',
+    color: COLORS.textPrimary,
   },
   subtitle: {
     marginTop: getResponsiveHeight(4),
-    fontSize: getResponsiveFontSize(12),
+    fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-Regular',
-    color: '#6B7280',
+    color: COLORS.textSecondary,
   },
   sectionLabel: {
     fontSize: getResponsiveFontSize(14),
@@ -95,14 +108,17 @@ export const DEFAULT_STYLE = {
   sectionTitle: {
     fontSize: getResponsiveFontSize(18),
     fontFamily: 'Pretendard-SemiBold',
-    color: '#111827',
+    color: COLORS.textPrimary,
     letterSpacing: -0.2,
   },
   sectionSubtitle: {
     marginTop: getResponsiveHeight(3),
     fontSize: getResponsiveFontSize(12),
     fontFamily: 'Pretendard-Regular',
-    color: '#6B7280',
+    color: COLORS.textSecondary,
   },
-  
+};
+
+export const LAYOUT_STYLE = {
+  screenPaddingHorizontal: getResponsiveWidth(14),
 };

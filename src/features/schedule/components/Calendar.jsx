@@ -35,7 +35,8 @@ import DropShadow from 'react-native-drop-shadow';
 
 // ✅ NEW (A안): 모달 전용 미니 캘린더 피커
 import MiniCalendarPickerModal from './MiniCalendarPickerModal';
-import {DEFAULT_STYLE} from 'styles/style';
+import {BACKGROUND_COLORS, COLORS, DEFAULT_STYLE} from 'styles/style';
+import FastImage from '@d11/react-native-fast-image';
 
 const RADIUS = 14;
 
@@ -53,8 +54,10 @@ const COLOR = {
   ANNIV: '#F59E0B', // 노랑
   FAMILY: '#3B82F6', // 파랑
 
-  FOCUS_BG: 'rgba(17, 24, 39, 0.06)',
-  FOCUS_BORDER: 'rgba(17, 24, 39, 0.18)',
+
+  // ✅ 선택(FOCUS): 남색 꽉 채움
+  FOCUS_BG: 'rgba(17, 24, 39, 0.096)',   // 연한 남색(투명도 조절)
+  FOCUS_BORDER: '#111827',
   FOCUS_TEXT: '#111827',
 };
 
@@ -352,8 +355,8 @@ export default function CalendarToggle({
             width: cardWidth,
             shadowColor: '#000',
             shadowOffset: {width: 0, height: 3},
-            shadowOpacity: 0.12,
-            shadowRadius: 5,
+            shadowOpacity: 0.08,
+            shadowRadius: 3,
           },
         ]}>
         <View style={styles.cardInnerHeader}>
@@ -373,28 +376,28 @@ export default function CalendarToggle({
           <View style={styles.headerRight}>
             <View style={styles.navButtons}>
               <TouchableOpacity
+                style={styles.iconBtn}
                 onPress={() =>
                   mode === 'month' ? changeMonth(-1) : changeWeek(-1)
                 }
                 hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
-                <Image
-                  source={{
-                    uri: 'https://i.postimg.cc/4xGvZv46/Group-440-5.png',
-                  }}
+                <FastImage
+                  source={require('../../../assets/icons/leftArrow_gray_bold.png')}
                   style={styles.navIcon}
+                  resizeMode="contain"
                 />
               </TouchableOpacity>
 
               <TouchableOpacity
+                style={styles.iconBtn}
                 onPress={() =>
                   mode === 'month' ? changeMonth(1) : changeWeek(1)
                 }
                 hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
-                <Image
-                  source={{
-                    uri: 'https://i.postimg.cc/WbLg6mkB/Group-441-2.png',
-                  }}
+                <FastImage
+                  source={require('../../../assets/icons/rightArrow_gray_bold.png')}
                   style={styles.navIcon}
+                  resizeMode="contain"
                 />
               </TouchableOpacity>
             </View>
@@ -421,8 +424,8 @@ export default function CalendarToggle({
             width: cardWidth,
             shadowColor: '#000',
             shadowOffset: {width: 0, height: 3},
-            shadowOpacity: 0.12,
-            shadowRadius: 5,
+            shadowOpacity: 0.08,
+            shadowRadius: 3,
           },
         ]}>
         <View {...panResponder.panHandlers} style={styles.calendarTouchWrap}>
@@ -488,7 +491,8 @@ export default function CalendarToggle({
                               height: CIRCLE_SIZE,
                               borderRadius: CIRCLE_SIZE / 2,
                             },
-                            getCountColorStyle(total),
+                            // ✅ 선택일 아닐 때만 count 색
+                            !item.isSelected && getCountColorStyle(total),
                             item.isSelected && styles.selectedBox,
                             !item.isCurrentMonth && {opacity: 0.35},
                           ]}>
@@ -496,7 +500,7 @@ export default function CalendarToggle({
                             style={[
                               styles.dateText,
                               item.isSelected && styles.selectedText,
-                              holiday && styles.holidayText,
+                              !item.isSelected && holiday && styles.holidayText,
                             ]}>
                             {item.date.getDate()}
                           </Text>
@@ -550,14 +554,14 @@ export default function CalendarToggle({
                               height: CIRCLE_SIZE,
                               borderRadius: CIRCLE_SIZE / 2,
                             },
-                            getCountColorStyle(total),
+                            !item.isSelected && getCountColorStyle(total),
                             item.isSelected && styles.selectedBox,
                           ]}>
                           <Text
                             style={[
                               styles.dateText,
                               item.isSelected && styles.selectedText,
-                              holiday && styles.holidayText,
+                              !item.isSelected && holiday && styles.holidayText,
                             ]}>
                             {item.date.getDate()}
                           </Text>
@@ -598,7 +602,6 @@ const styles = StyleSheet.create({
 
   shadowBox: {
     alignSelf: 'center',
-    borderRadius: RADIUS,
     backgroundColor: 'transparent',
     marginBottom: getResponsiveHeight(10),
   },
@@ -617,8 +620,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.08)',
   },
   cardInnerCalendar: {
     borderRadius: RADIUS,
@@ -628,8 +629,6 @@ const styles = StyleSheet.create({
     paddingBottom: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(10),
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.08)',
   },
 
   headerLeft: {
@@ -645,7 +644,7 @@ const styles = StyleSheet.create({
   monthText: {
     fontFamily: DEFAULT_STYLE.sectionTitle.fontFamily,
     fontSize: DEFAULT_STYLE.sectionTitle.fontSize,
-    color: '#111827',
+    color: COLORS.textPrimary,
     letterSpacing: -0.2,
   },
   iconBtn: {
@@ -655,12 +654,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F3F4F6',
+    resizeMode: 'contain',
   },
   calendarIcon: {
     width: getResponsiveWidth(18),
     height: getResponsiveWidth(18),
     resizeMode: 'contain',
-    // tintColor: '#111827',
     tintColor: '#525252',
   },
   navButtons: {
@@ -669,8 +668,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   navIcon: {
-    width: getResponsiveWidth(16),
-    height: getResponsiveWidth(16),
+    width: getResponsiveWidth(15),
+    height: getResponsiveWidth(15),
     resizeMode: 'contain',
   },
   modeToggle: {
@@ -680,11 +679,10 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   toggleChip: {
-    paddingVertical: getResponsiveHeight(5),
-    paddingHorizontal: getResponsiveWidth(10),
+    paddingVertical: getResponsiveHeight(6.5),
+    paddingHorizontal: getResponsiveWidth(12),
     borderRadius: 999,
   },
-  toggleActive: {},
   toggleText: {
     fontSize: getResponsiveFontSize(12.5),
     color: '#6B7280',
@@ -733,10 +731,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
 
+  // ✅ 선택일: 남색 테두리 + 연한 남색 채움
   selectedBox: {
-    backgroundColor: COLOR.FOCUS_BG,
+    backgroundColor: COLOR.FOCUS_BG,   // 남색 꽉 채움
     borderColor: COLOR.FOCUS_BORDER,
-    borderWidth: 1.5,
+    borderWidth: 1,
   },
 
   dateGrid: {
@@ -754,7 +753,7 @@ const styles = StyleSheet.create({
   },
   selectedText: {
     fontFamily: 'Pretendard-SemiBold',
-    color: COLOR.FOCUS_TEXT,
+    color: COLOR.FOCUS_TEXT, // ✅ 남색
   },
   holidayText: {
     color: '#EF4444',

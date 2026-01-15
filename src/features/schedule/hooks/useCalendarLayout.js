@@ -2,11 +2,12 @@
 import {useWindowDimensions, PixelRatio} from 'react-native';
 import {useMemo} from 'react';
 import {getResponsiveWidth} from 'utils/responsive';
+import {LAYOUT_STYLE} from 'styles/style';
 
 export const useCalendarLayout = () => {
   const {width: screenWidth} = useWindowDimensions();
 
-  const OUTER_HPAD = getResponsiveWidth(14);
+  const OUTER_HPAD = LAYOUT_STYLE.screenPaddingHorizontal;
   const CARD_HPAD = getResponsiveWidth(10); // ✅ Calendar.jsx의 calendarCard paddingHorizontal과 반드시 동일
   const GAP = getResponsiveWidth(0);
 

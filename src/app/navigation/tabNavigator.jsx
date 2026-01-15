@@ -1,5 +1,6 @@
-// TabNavigator.jsx
+// TabNavigator.jsx 상단 imports에 Image가 아직 없으면 추가
 import React from 'react';
+import {Image} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import HomeStack from './stacks/homeStack';
 import CommunicationStack from './stacks/communicationStack';
@@ -14,6 +15,7 @@ import {
   getResponsiveWidth,
 } from '../../utils/responsive';
 import {useSharedValue} from 'react-native-reanimated';
+import { COLORS } from 'styles/style';
 
 const Tab = createBottomTabNavigator();
 
@@ -31,35 +33,27 @@ const TABS = [
   {
     name: '홈',
     component: HomeStack,
-    icon: {
-      default: 'https://i.postimg.cc/RFw0KNFS/Vector-20.png',
-    },
+    icon: require('../../assets/icons/tab/one.png'),
   },
   {
     name: '소통',
     component: CommunicationStack,
-    icon: {
-      default: 'https://i.postimg.cc/SN3tKTt9/Group-1171276556.png',
-    },
+    icon: require('../../assets/icons/tab/two.png'),
   },
   {
     name: '일정',
     component: ScheduleStack,
-    icon: {
-      default: 'https://i.postimg.cc/02K38wmc/Vector-10.png',
-    },
+    icon: require('../../assets/icons/tab/three.png'),
   },
   {
     name: '추억',
     component: MemoryStack,
-    icon: {
-      default: 'https://i.postimg.cc/63WZwKrn/Images.png',
-    },
+    icon: require('../../assets/icons/tab/four.png'),
   },
 ];
 
 export default function TabNavigator() {
-  const tabBarHiddenSV = useSharedValue(0); // 0: 보임, 1: 숨김
+  const tabBarHiddenSV = useSharedValue(0);
 
   return (
     <TabBarVisibilityProvider sharedValue={tabBarHiddenSV}>
@@ -74,14 +68,14 @@ export default function TabNavigator() {
             keyboardHidesTabBar: true,
             tabBarStyle: {
               ...tabBarBaseStyle,
-              backgroundColor: 'transparent', // ✅ wrapper가 배경/그림자 담당
-              elevation: 0, // ✅ Android 기본 그림자 제거
-              shadowOpacity: 0, // ✅ iOS 기본 그림자 제거
-              borderTopWidth: 0, // ✅ 경계선도 wrapper에서 처리
+              backgroundColor: 'transparent',
+              elevation: 0,
+              shadowOpacity: 0,
+              borderTopWidth: 0,
             },
             tabBarLabel: ({focused}) => renderTabBarLabel(route.name, focused),
             tabBarIcon: ({focused}) => (
-              <TabIcon focused={focused} uri={currentTab?.icon?.default} />
+              <TabIcon focused={focused} source={currentTab?.icon} />
             ),
           };
         }}>
@@ -93,29 +87,16 @@ export default function TabNavigator() {
   );
 }
 
-// ✅ default 이미지만 쓰고, focused일 때 tintColor만 변경
-function TabIcon({focused, uri}) {
-  return (
-    <ImageWithTint
-      uri={uri}
-      // tintColor={focused ? '#111827' : '#9CA3AF'}
-      tintColor={focused ? '#525252' : '#9CA3AF'}
-
-    />
-  );
-}
-
-// ✅ 아이콘 이미지 컴포넌트 (사이즈 통일)
-import {Image} from 'react-native';
-function ImageWithTint({uri, tintColor}) {
+// ✅ 로컬 require 이미지를 source로 받고 tintColor만 변경
+function TabIcon({focused, source}) {
   return (
     <Image
-      source={{uri}}
+      source={source}
       style={{
-        width: getResponsiveIconSize(22),
-        height: getResponsiveIconSize(22),
+        width: getResponsiveIconSize(30),
+        height: getResponsiveIconSize(30),
         resizeMode: 'contain',
-        tintColor,
+        tintColor: focused ? 'black' : COLORS.textTertiary ,
       }}
     />
   );

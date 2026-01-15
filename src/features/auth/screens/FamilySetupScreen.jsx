@@ -21,6 +21,7 @@ import {
 } from '../../home/store/familyThunk';
 import {setHasFamily} from 'utils/storage';
 import {useCreateFamily} from '../hooks/useCreateFamily';
+import { COLORS } from 'styles/style';
 
 export default function FamilySetupScreen() {
   const navigation = useNavigation();
@@ -259,7 +260,7 @@ const styles = StyleSheet.create({
   dividerText: {
     marginHorizontal: 8,
     fontSize: 11,
-    color: '#9CA3AF',
+    color: COLORS.textTertiary,
   },
 
   createCard: {
@@ -299,7 +300,7 @@ const styles = StyleSheet.create({
   },
   createCardArrow: {
     fontSize: 18,
-    color: '#9CA3AF',
+    color: COLORS.textTertiary,
     marginLeft: 8,
   },
 });

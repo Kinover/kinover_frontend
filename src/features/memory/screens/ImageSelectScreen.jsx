@@ -1,4 +1,8 @@
-// src/features/memory/screens/ImageSelectPage.jsx
+// ✅ 수정본: src/features/memory/screens/ImageSelectPage.jsx
+// 변경 포인트
+// 1) 순서칩(orderChip) : 투명 검정 알약 -> "글래스(반투명)+화이트 보더+살짝 블러 느낌" 스타일
+// 2) X 버튼(removeBtn) : 더 작고, 깔끔한 라운드+보더, "×" 위치/두께 정리
+// 3) 기존 태그(remoteTag) : 너무 투박한 흰 알약 -> "연한 배경+얇은 보더+텍스트 톤 다운"
 
 import React, {
   useCallback,
@@ -26,6 +30,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
+  getResponsiveIconSize,
 } from '../../../utils/responsive';
 
 import useHideTabBar from '../../../hooks/useHideTabBar';
@@ -39,25 +44,38 @@ import {
 
 import {requestMediaPermission} from 'utils/requestMediaPermission';
 
-// ✅ redux
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchPostByIdThunk} from '../store/memoryThunk';
 
-// ✅ MediaViewer로 미리보기
 import MediaViewer from '../components/MediaViewer';
 
 const MAX_SELECTION = 30;
 
 const GRID_COLS = 3;
-const GRID_GAP = getResponsiveWidth(2);
-const H_PADDING = getResponsiveWidth(2);
+const GRID_GAP = getResponsiveWidth(8);
+const H_PADDING = getResponsiveWidth(14);
 const {width: SCREEN_W} = Dimensions.get('window');
 
 const ITEM_SIZE =
   (SCREEN_W - H_PADDING * 2 - GRID_GAP * (GRID_COLS - 1)) / GRID_COLS;
 
-// ✅ 그리드에 들어갈 “+ 타일” 가짜 아이템
 const PLUS_TILE_ID = '__PLUS_TILE__';
+
+const COLORS = {
+  bg: '#F6F7FB',
+  surface: '#FFFFFF',
+  text: '#111827',
+  sub: '#6B7280',
+  line: 'rgba(17,24,39,0.08)',
+  lineStrong: 'rgba(17,24,39,0.12)',
+  chipGlass: 'rgba(17,24,39,0.38)',
+  chipGlass2: 'rgba(17,24,39,0.26)',
+  plusBg: '#FFFFFF',
+};
+
+const R = getResponsiveIconSize(14);
+const TILE_R = getResponsiveIconSize(14);
+const PILL_R = 999;
 
 export default function ImageSelectPage() {
   const navigation = useNavigation();
@@ -75,13 +93,8 @@ export default function ImageSelectPage() {
   const [toastMessage, setToastMessage] = useState('');
   const [hasOpenedOnce, setHasOpenedOnce] = useState(false);
 
-  // ✅ 실제 선택된 파일(원격 + 로컬)
   const [selectedFiles, setSelectedFiles] = useState([]);
-
-  // ✅ 수정 모드에서 “삭제된 기존 이미지 url”
   const [removedUrls, setRemovedUrls] = useState([]);
-
-  // ✅ MediaViewer 인덱스
   const [previewIndex, setPreviewIndex] = useState(null);
 
   const showToast = useCallback(msg => {
@@ -120,7 +133,9 @@ export default function ImageSelectPage() {
   const makeRemoteItem = useCallback((url, i) => {
     const lower = String(url || '').toLowerCase();
     const isVideo =
-      lower.includes('.mp4') || lower.includes('.mov') || lower.includes('.m4v');
+      lower.includes('.mp4') ||
+      lower.includes('.mov') ||
+      lower.includes('.m4v');
 
     return {
       id: `remote-${i}-${url}`,
@@ -133,14 +148,12 @@ export default function ImageSelectPage() {
     };
   }, []);
 
-  /** ---------------- 수정 모드: post fetch ---------------- */
   useEffect(() => {
     if (!isEditMode) return;
     if (!postId) return;
     if (!postFromStore) dispatch(fetchPostByIdThunk(postId));
   }, [dispatch, isEditMode, postId, postFromStore]);
 
-  /** ---------------- 수정 모드: 기존 이미지 세팅 ---------------- */
   const didInitRef = useRef(false);
   useEffect(() => {
     if (!isEditMode) return;
@@ -148,18 +161,15 @@ export default function ImageSelectPage() {
     if (!postFromStore) return;
     if (didInitRef.current) return;
 
-    const urls =
-      Array.isArray(postFromStore?.imageUrls)
-        ? postFromStore.imageUrls
-        : Array.isArray(postFromStore?.images)
-        ? postFromStore.images.map(x => x?.imageUrl).filter(Boolean)
-        : [];
+    const urls = Array.isArray(postFromStore?.imageUrls)
+      ? postFromStore.imageUrls
+      : Array.isArray(postFromStore?.images)
+      ? postFromStore.images.map(x => x?.imageUrl).filter(Boolean)
+      : [];
 
     setSelectedFiles(urls.map((u, i) => makeRemoteItem(u, i)));
     setRemovedUrls([]);
     didInitRef.current = true;
-
-    // ✅ 수정모드: 자동 갤러리 오픈 X
     setHasOpenedOnce(true);
   }, [isEditMode, postId, postFromStore, makeRemoteItem]);
 
@@ -167,7 +177,6 @@ export default function ImageSelectPage() {
     didInitRef.current = false;
   }, [postId]);
 
-  /** ---------------- 갤러리 열기 (+ 타일이 이걸 호출) ---------------- */
   const openSystemAlbum = useCallback(async () => {
     const hasPermission = await requestMediaPermission();
     if (!hasPermission) {
@@ -189,7 +198,6 @@ export default function ImageSelectPage() {
     });
 
     if (res.didCancel) {
-      // ✅ 등록모드 & 아무것도 선택 안 했으면 뒤로
       if (!isEditMode && (!selectedFiles || selectedFiles.length === 0)) {
         navigation.goBack();
       }
@@ -244,18 +252,11 @@ export default function ImageSelectPage() {
       });
     }
 
-    // ✅ 수정모드: 추가 / 등록모드: 교체(원래 로직 유지)
-    setSelectedFiles(prev => (isEditMode ? [...prev, ...converted] : converted));
-  }, [
-    extToMime,
-    getExt,
-    navigation,
-    selectedFiles,
-    showToast,
-    isEditMode,
-  ]);
+    setSelectedFiles(prev =>
+      isEditMode ? [...prev, ...converted] : converted,
+    );
+  }, [extToMime, getExt, navigation, selectedFiles, showToast, isEditMode]);
 
-  /** ---------------- 등록 모드만 첫 진입 자동 오픈 ---------------- */
   useEffect(() => {
     if (isEditMode) return;
     if (hasOpenedOnce) return;
@@ -263,7 +264,6 @@ export default function ImageSelectPage() {
     openSystemAlbum();
   }, [hasOpenedOnce, openSystemAlbum, isEditMode]);
 
-  /** ---------------- 체크 눌러 다음으로 ---------------- */
   const goNext = useCallback(() => {
     if (!selectedFiles || selectedFiles.length === 0) {
       showToast('먼저 사진/동영상을 선택해줘요!');
@@ -304,7 +304,6 @@ export default function ImageSelectPage() {
     });
   }, [goNext, hasSelection, navigation, selectedFiles.length, isEditMode]);
 
-  /** ---------------- + 타일 포함된 리스트 데이터 ---------------- */
   const canAddMore = selectedFiles.length < MAX_SELECTION;
 
   const listData = useMemo(() => {
@@ -320,7 +319,6 @@ export default function ImageSelectPage() {
     ];
   }, [selectedFiles, canAddMore]);
 
-  // ✅ 순서칩: + 타일은 빈값
   const getOrder = useCallback(
     item => {
       if (item?.isPlus) return '';
@@ -330,19 +328,6 @@ export default function ImageSelectPage() {
     [selectedFiles],
   );
 
-  // ✅ 높이 계산: + 타일까지 포함해서 rows 계산
-  const listWrapStyle = useMemo(() => {
-    const count = listData.length;
-    if (!count) return null;
-
-    const rows = Math.ceil(count / GRID_COLS);
-    const contentH = rows * ITEM_SIZE + (rows - 1) * GRID_GAP;
-
-    const maxH = getResponsiveHeight(620);
-    return {height: Math.min(contentH, maxH)};
-  }, [listData]);
-
-  /** ---------------- MediaViewer용 데이터 ---------------- */
   const viewerMedia = useMemo(() => {
     return (selectedFiles || []).map(it => ({
       uri: it?.uri,
@@ -350,25 +335,31 @@ export default function ImageSelectPage() {
     }));
   }, [selectedFiles]);
 
-  /** ---------------- renderItem ---------------- */
   const renderSelectedItem = useCallback(
     ({item, drag, isActive}) => {
-      // ✅ + 타일
       if (item?.isPlus) {
         return (
           <Pressable
             onPress={openSystemAlbum}
             style={({pressed}) => [
               styles.plusTile,
-              pressed && {opacity: 0.75},
+              (pressed || isActive) && styles.tileActive,
             ]}>
-            <Text style={styles.plusText}>+</Text>
-            <Text style={styles.plusSubText}>추가</Text>
+            <View style={styles.plusInner}>
+              <View style={styles.plusIconCircle}>
+                <Text style={styles.plusIcon}>＋</Text>
+              </View>
+              <Text style={styles.plusSubText}>추가하기</Text>
+              <Text style={styles.plusHint}>
+                {selectedFiles.length}/{MAX_SELECTION}
+              </Text>
+            </View>
           </Pressable>
         );
       }
 
       const order = getOrder(item);
+      const showRemote = isEditMode && item.isRemote;
 
       return (
         <Pressable
@@ -388,22 +379,19 @@ export default function ImageSelectPage() {
             resizeMode="cover"
           />
 
+          {/* ✅ 순서칩(예쁘게) */}
           <View style={styles.orderChip}>
             <Text style={styles.orderChipText}>{order}</Text>
           </View>
 
+          {/* ✅ 비디오 칩 */}
           {item.isVideo ? (
             <View style={styles.videoPill}>
               <Text style={styles.videoPillText}>VIDEO</Text>
             </View>
           ) : null}
 
-          {isEditMode && item.isRemote ? (
-            <View style={styles.remoteTag}>
-              <Text style={styles.remoteTagText}>기존</Text>
-            </View>
-          ) : null}
-
+          {/* ✅ X 버튼(예쁘게) */}
           <TouchableOpacity
             onPress={() => {
               setSelectedFiles(prev => prev.filter(x => x.id !== item.id));
@@ -415,7 +403,6 @@ export default function ImageSelectPage() {
                 });
               }
 
-              // ✅ 보고 있던 미디어가 삭제되면 뷰어 닫기(안전)
               setPreviewIndex(prev => {
                 if (prev == null) return null;
                 const nowIdx = selectedFiles.findIndex(f => f.id === item.id);
@@ -425,7 +412,7 @@ export default function ImageSelectPage() {
             }}
             activeOpacity={0.85}
             style={styles.removeBtn}>
-            <Text style={styles.removeBtnText}>×</Text>
+            <Text style={styles.removeBtnText}>✕</Text>
           </TouchableOpacity>
         </Pressable>
       );
@@ -435,32 +422,31 @@ export default function ImageSelectPage() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.listWrap, listWrapStyle]}>
-        <DraggableFlatList
-          data={listData}
-          keyExtractor={item => String(item.id)}
-          onDragEnd={({data}) => {
-            const real = (data || []).filter(x => !x?.isPlus);
-            setSelectedFiles(real);
-          }}
-          renderItem={renderSelectedItem}
-          numColumns={GRID_COLS}
-          columnWrapperStyle={styles.row}
-          contentContainerStyle={styles.grid}
-          showsVerticalScrollIndicator={false}
-          dragItemOverflow
-          autoscrollSpeed={80}
-          renderPlaceholder={() => <View style={styles.placeholder} />}
-        />
-      </View>
+      <DraggableFlatList
+        data={listData}
+        keyExtractor={item => String(item.id)}
+        onDragEnd={({data}) => {
+          const real = (data || []).filter(x => !x?.isPlus);
+          setSelectedFiles(real);
+        }}
+        renderItem={renderSelectedItem}
+        numColumns={GRID_COLS}
+        columnWrapperStyle={styles.row}
+        contentContainerStyle={styles.grid}
+        showsVerticalScrollIndicator={false}
+        dragItemOverflow
+        autoscrollSpeed={80}
+        renderPlaceholder={() => <View style={styles.placeholder} />}
+      />
 
       {!hasSelection && (
         <View style={styles.helperBox}>
-          <Text style={styles.helperText}>오른쪽 ‘+’ 칸 눌러서 추가해줘요</Text>
+          <Text style={styles.helperText}>
+            오른쪽 ‘추가하기’ 타일을 눌러 미디어를 선택해줘요
+          </Text>
         </View>
       )}
 
-      {/* ✅ 사진/영상 클릭 시 MediaViewer 오픈 */}
       <MediaViewer
         visible={previewIndex !== null}
         media={viewerMedia}
@@ -481,9 +467,9 @@ export default function ImageSelectPage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.bg,
     paddingHorizontal: H_PADDING,
-    paddingTop: getResponsiveHeight(10),
+    paddingTop: getResponsiveHeight(12),
   },
 
   headerTitle: {
@@ -504,123 +490,195 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
 
-  listWrap: {alignSelf: 'stretch'},
-  grid: {paddingBottom: GRID_GAP},
+  grid: {paddingBottom: GRID_GAP / 2},
   row: {
     justifyContent: 'flex-start',
-    gap: GRID_GAP,
+    columnGap: GRID_GAP,
     marginBottom: GRID_GAP,
   },
 
   tile: {
     width: ITEM_SIZE,
     height: ITEM_SIZE,
-    borderRadius: getResponsiveWidth(3),
+    borderRadius: TILE_R,
     overflow: 'hidden',
-    backgroundColor: '#EEE',
+    backgroundColor: '#EDEFF4',
+    borderWidth: 1,
+    borderColor: 'rgba(17,24,39,0.06)',
   },
   tileActive: {
-    opacity: 0.92,
+    opacity: 0.95,
     transform: [{scale: 0.99}],
   },
   tileImage: {width: '100%', height: '100%'},
   placeholder: {width: ITEM_SIZE, height: ITEM_SIZE, opacity: 0},
 
-  // ✅ + 타일 스타일
   plusTile: {
     width: ITEM_SIZE,
     height: ITEM_SIZE,
-    borderRadius: getResponsiveWidth(3),
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(0,0,0,0.18)',
-    backgroundColor: '#F6F6F6',
+    borderRadius: TILE_R,
+    borderWidth: 1,
+    borderColor: COLORS.lineStrong,
+    backgroundColor: COLORS.plusBg,
+    overflow: 'hidden',
+  },
+  plusInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: getResponsiveHeight(6),
+  },
+  plusIconCircle: {
+    width: getResponsiveWidth(44),
+    height: getResponsiveWidth(44),
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: COLORS.lineStrong,
+    backgroundColor: '#F9FAFB',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  plusText: {
-    fontSize: getResponsiveFontSize(34),
-    fontWeight: '900',
-    color: '#333',
-    lineHeight: getResponsiveFontSize(36),
+  plusIcon: {
+    fontSize: getResponsiveFontSize(22),
+    fontFamily: 'Pretendard-Bold',
+    color: COLORS.text,
+    lineHeight: getResponsiveFontSize(24),
   },
   plusSubText: {
-    marginTop: getResponsiveHeight(4),
-    fontSize: getResponsiveFontSize(12),
-    fontWeight: '800',
-    color: '#666',
+    fontSize: getResponsiveFontSize(12.8),
+    fontFamily: 'Pretendard-SemiBold',
+    color: COLORS.text,
+    letterSpacing: -0.1,
+  },
+  plusHint: {
+    marginTop: getResponsiveHeight(-2),
+    fontSize: getResponsiveFontSize(11),
+    fontFamily: 'Pretendard-Medium',
+    color: COLORS.sub,
   },
 
+  /* =================== 여기부터 “꾸민” 부분 =================== */
+
+  // ✅ 순서칩: 글래스 알약 + 얇은 화이트 보더
   orderChip: {
     position: 'absolute',
-    top: getResponsiveHeight(6),
-    right: getResponsiveWidth(6),
-    paddingHorizontal: getResponsiveWidth(6),
-    paddingVertical: getResponsiveHeight(3),
-    borderRadius: getResponsiveWidth(999),
-    backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-  orderChipText: {
-    fontSize: getResponsiveFontSize(10),
-    fontWeight: '800',
-    color: '#FFF',
-  },
-
-  videoPill: {
-    position: 'absolute',
-    bottom: getResponsiveHeight(6),
-    right: getResponsiveWidth(6),
-    paddingHorizontal: getResponsiveWidth(8),
-    paddingVertical: getResponsiveHeight(4),
-    borderRadius: getResponsiveWidth(999),
-    backgroundColor: 'rgba(0,0,0,0.55)',
-  },
-  videoPillText: {
-    fontSize: getResponsiveFontSize(10),
-    fontWeight: '900',
-    color: '#fff',
-  },
-
-  remoteTag: {
-    position: 'absolute',
-    left: getResponsiveWidth(6),
-    top: getResponsiveHeight(6),
-    paddingHorizontal: getResponsiveWidth(8),
-    paddingVertical: getResponsiveHeight(4),
-    borderRadius: getResponsiveWidth(999),
-    backgroundColor: 'rgba(255,255,255,0.75)',
-  },
-  remoteTagText: {
-    color: '#111',
-    fontSize: getResponsiveFontSize(10),
-    fontWeight: '900',
-  },
-
-  removeBtn: {
-    position: 'absolute',
-    left: getResponsiveWidth(6),
-    bottom: getResponsiveHeight(6),
-    width: getResponsiveWidth(24),
-    height: getResponsiveWidth(24),
-    borderRadius: getResponsiveWidth(999),
-    backgroundColor: 'rgba(0,0,0,0.55)',
+    top: getResponsiveHeight(7),
+    left: getResponsiveWidth(7),
+    minWidth: getResponsiveWidth(22),
+    height: getResponsiveWidth(22),
+    paddingHorizontal: getResponsiveWidth(7),
+    borderRadius: PILL_R,
+    backgroundColor: COLORS.chipGlass,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
     alignItems: 'center',
     justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.14,
+        shadowRadius: 8,
+        shadowOffset: {width: 0, height: 4},
+      },
+      android: {elevation: 2},
+    }),
+  },
+  orderChipText: {
+    fontSize: getResponsiveFontSize(12),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#FFF',
+    letterSpacing: -0.2,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
+
+  // ✅ 기존 태그: 너무 하얗지 않게, 살짝 톤 다운
+  remoteTag: {
+    position: 'absolute',
+    left: getResponsiveWidth(7),
+    top: getResponsiveHeight(7),
+    paddingHorizontal: getResponsiveWidth(9),
+    height: getResponsiveWidth(22),
+    borderRadius: PILL_R,
+    backgroundColor: 'rgba(255,255,255,0.78)',
+    borderWidth: 1,
+    borderColor: 'rgba(17,24,39,0.10)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  remoteTagText: {
+    color: 'rgba(17,24,39,0.78)',
+    fontSize: getResponsiveFontSize(10.5),
+    fontFamily: 'Pretendard-SemiBold',
+    letterSpacing: -0.2,
+    includeFontPadding: false,
+  },
+
+  // ✅ 비디오 pill도 같이 톤 맞춤 (너무 진하지 않게)
+  videoPill: {
+    position: 'absolute',
+    bottom: getResponsiveHeight(7),
+    right: getResponsiveWidth(7),
+    height: getResponsiveWidth(22),
+    paddingHorizontal: getResponsiveWidth(10),
+    borderRadius: PILL_R,
+    backgroundColor: COLORS.chipGlass2,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoPillText: {
+    fontSize: getResponsiveFontSize(10.2),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#fff',
+    letterSpacing: 0.4,
+    includeFontPadding: false,
+  },
+
+  // ✅ X 버튼: 크기/보더/텍스트 정렬 “깔끔”
+  removeBtn: {
+    position: 'absolute',
+    right: getResponsiveWidth(7),
+    top: getResponsiveHeight(7),
+    width: getResponsiveWidth(22),
+    height: getResponsiveWidth(22),
+    borderRadius: 999,
+    backgroundColor: 'rgba(17,24,39,0.44)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.18,
+        shadowRadius: 8,
+        shadowOffset: {width: 0, height: 4},
+      },
+      android: {elevation: 2},
+    }),
   },
   removeBtnText: {
     color: '#fff',
-    fontSize: getResponsiveFontSize(16),
-    fontWeight: '900',
-    lineHeight: getResponsiveFontSize(18),
+    fontSize: getResponsiveFontSize(12.8),
+    fontFamily: 'Pretendard-SemiBold',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    // ✅ 폰트 렌더링 때문에 살짝 위로 뜨는 경우가 있어서 보정
+    marginTop: Platform.OS === 'android' ? -1 : 0,
   },
 
+  /* =================== 여기까지 =================== */
+
   helperBox: {
-    marginTop: getResponsiveHeight(10),
+    marginTop: getResponsiveHeight(12),
     paddingVertical: getResponsiveHeight(10),
     alignItems: 'center',
   },
   helperText: {
     fontSize: getResponsiveFontSize(12.5),
-    fontWeight: '800',
-    color: '#666',
+    fontFamily: 'Pretendard-Medium',
+    color: COLORS.sub,
   },
 });

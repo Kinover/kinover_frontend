@@ -38,7 +38,7 @@ import ToastModal from '../../../components/ToastModal';
 import {getPresignedUrls, uploadFileToS3} from 'api/imageUrlApi';
 import BottomSheetLayout from 'components/BottomSheetLayout';
 import {normalizeImageForSave} from 'utils/normalizeImageforSave';
-import {BOTTOMSHEET_STYLE} from 'styles/style';
+import {BOTTOMSHEET_STYLE, COLORS} from 'styles/style';
 
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 const {height: WINDOW_H} = Dimensions.get('window');
@@ -350,7 +350,7 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
                 nameRef.current = text;
               }}
               placeholder="가족들이 부르는 이름을 적어주세요."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={COLORS.textTertiary}
               returnKeyType="next"
               onSubmitEditing={() => traitInputRef.current?.focus?.()}
             />
@@ -369,7 +369,7 @@ function UserBottomSheetModalBase({selectedUser, onSave}, ref) {
                 traitRef.current = text;
               }}
               placeholder="성격, 분위기, 기억에 남는 포인트를 가볍게 적어보세요."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={COLORS.textTertiary}
             />
           </View>
 

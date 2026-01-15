@@ -16,7 +16,7 @@ import {
 import useHideTabBar from '../../../hooks/useHideTabBar';
 import YellowSpinner from '../../../components/YellowSpinner';
 import {useNotificationList} from '../hooks/useNotificationList';
-import {EMPTY_STYLE} from 'styles/style';
+import {EMPTY_STYLE, LAYOUT_STYLE} from 'styles/style';
 import {useFocusEffect} from '@react-navigation/native';
 import {useDispatch} from 'react-redux';
 
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(12.5),
     color: '#8D8D8D',
     fontFamily: 'Pretendard-Medium',
-    paddingHorizontal: getResponsiveHeight(18),
+    paddingHorizontal: LAYOUT_STYLE.screenPaddingHorizontal,
   },
   error: {
     fontSize: getResponsiveFontSize(16),
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: getResponsiveHeight(15),
-    paddingHorizontal: getResponsiveHeight(20),
+    paddingHorizontal: LAYOUT_STYLE.screenPaddingHorizontal,
     borderBottomWidth: 0.5,
     borderBottomColor: '#EFEFEF',
     gap: getResponsiveWidth(12),

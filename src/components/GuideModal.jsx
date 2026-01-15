@@ -2,6 +2,7 @@
 
 import React from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Modal} from 'react-native';
+import { COLORS } from 'styles/style';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -64,7 +65,7 @@ const styles = StyleSheet.create({
   stepText: {
     fontSize: getResponsiveFontSize(11),
     fontFamily: 'Pretendard-Medium',
-    color: '#9CA3AF',
+    color: COLORS.textTertiary,
     marginBottom: getResponsiveHeight(4),
   },
   title: {
@@ -88,7 +89,7 @@ const styles = StyleSheet.create({
   skipText: {
     fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-Regular',
-    color: '#9CA3AF',
+    color: COLORS.textTertiary,
   },
   nextButton: {
     paddingHorizontal: getResponsiveWidth(16),

@@ -1,16 +1,19 @@
 // src/components/BottomSheetLayout.js
 
-import React from 'react';
-import {View, Text, StyleSheet, Animated} from 'react-native';
+import React, {useCallback, useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Animated,
+  Pressable,
+  Keyboard,
+} from 'react-native';
 import {BottomSheetView} from '@gorhom/bottom-sheet';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {KinoBottomSheet} from './KinoBottomSheet';
 import {BottomSheetButtons} from 'components/BottomSheetButtons';
-import {
-  getResponsiveHeight,
-  getResponsiveWidth,
-  getResponsiveFontSize,
-} from 'utils/responsive';
+import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
 import {BOTTOMSHEET_STYLE} from 'styles/style';
 
 export default function BottomSheetLayout({
@@ -41,6 +44,22 @@ export default function BottomSheetLayout({
 }) {
   const insets = useSafeAreaInsets();
 
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () =>
+      setKeyboardOpen(true),
+    );
+    const hideSub = Keyboard.addListener('keyboardDidHide', () =>
+      setKeyboardOpen(false),
+    );
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
   const injectedFooterProps = footerProps
     ? {
         ...footerProps,
@@ -51,6 +70,20 @@ export default function BottomSheetLayout({
             : true,
       }
     : undefined;
+
+  // ✅ A버전: 1) 키보드 열려있으면 키보드만 내림
+  //         2) 키보드 닫혀있으면 바텀시트 닫기
+  const onPressOutside = useCallback(() => {
+    if (keyboardOpen) {
+      Keyboard.dismiss();
+      return;
+    }
+
+    // BottomSheetModal이면 dismiss가 더 정확할 때가 많고,
+    // BottomSheet(ref close)면 close가 먹는 구조도 있어서 둘 다 안전하게 호출
+    modalRef?.current?.dismiss?.();
+    modalRef?.current?.close?.();
+  }, [keyboardOpen, modalRef]);
 
   return (
     <KinoBottomSheet
@@ -63,42 +96,45 @@ export default function BottomSheetLayout({
       handleHeight={handleHeight}
       contentHeight={contentHeight}>
       <BottomSheetView style={contentStyle}>
-        {/* ✅ 여기 onLayout로 “콘텐츠 높이(버튼 포함)” 측정 */}
-        <View
-          onLayout={onContentLayout}
-          style={[
-            styles.container,
-            {paddingBottom: insets.bottom + getResponsiveHeight(14)},
-            containerStyle,
-          ]}>
-          {(title || subtitle) && (
-            <View style={[styles.header, headerStyle]}>
-              {title && <Text style={BOTTOMSHEET_STYLE.title}>{title}</Text>}
-              {subtitle && (
-                <Text style={BOTTOMSHEET_STYLE.subtitle}>{subtitle}</Text>
-              )}
-            </View>
-          )}
-
-          {/* ✅ children만 움직이게 */}
-          <Animated.View
+        {/* ✅ “빈 공간” 터치 감지용 */}
+        <Pressable style={{flex: 1}} onPress={onPressOutside}>
+          {/* ✅ 여기 onLayout로 “콘텐츠 높이(버튼 포함)” 측정 */}
+          <View
+            onLayout={onContentLayout}
             style={[
-              styles.innerContent,
-              innerContentStyle,
-              contentTranslateY != null
-                ? {transform: [{translateY: contentTranslateY}]}
-                : null,
+              styles.container,
+              {paddingBottom: insets.bottom + getResponsiveHeight(14)},
+              containerStyle,
             ]}>
-            {children}
-          </Animated.View>
+            {(title || subtitle) && (
+              <View style={[styles.header, headerStyle]}>
+                {title && <Text style={BOTTOMSHEET_STYLE.title}>{title}</Text>}
+                {subtitle && (
+                  <Text style={BOTTOMSHEET_STYLE.subtitle}>{subtitle}</Text>
+                )}
+              </View>
+            )}
 
-          {/* ✅ 버튼은 고정 X, 그냥 마지막 요소 */}
-          {!!injectedFooterProps && (
-            <View style={[styles.inlineFooter, footerStyle]}>
-              <BottomSheetButtons {...injectedFooterProps} />
-            </View>
-          )}
-        </View>
+            {/* ✅ children만 움직이게 */}
+            <Animated.View
+              style={[
+                styles.innerContent,
+                innerContentStyle,
+                contentTranslateY != null
+                  ? {transform: [{translateY: contentTranslateY}]}
+                  : null,
+              ]}>
+              {children}
+            </Animated.View>
+
+            {/* ✅ 버튼은 고정 X, 그냥 마지막 요소 */}
+            {!!injectedFooterProps && (
+              <View style={[styles.inlineFooter, footerStyle]}>
+                <BottomSheetButtons {...injectedFooterProps} />
+              </View>
+            )}
+          </View>
+        </Pressable>
       </BottomSheetView>
     </KinoBottomSheet>
   );

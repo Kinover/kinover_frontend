@@ -9,7 +9,7 @@ import {
 import CustomModal from '../../../components/CustomModal';
 import Clipboard from '@react-native-clipboard/clipboard';
 import FastImage from '@d11/react-native-fast-image';
-import {BUTTON_STYLES} from 'styles/style';
+import {BUTTON_STYLES, COLORS} from 'styles/style';
 
 // ✅ HAPTIC (경로는 네 프로젝트에 맞게 유지/조정)
 import {hapticLight, hapticSuccess} from '../../../utils/haptic';
@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   codeLabel: {
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(10.5),
-    color: '#9CA3AF',
+    color: COLORS.textTertiary,
     letterSpacing: 1.4,
     marginBottom: getResponsiveHeight(4),
   },

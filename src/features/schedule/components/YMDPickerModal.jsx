@@ -18,7 +18,7 @@ import {
 } from '../../../utils/responsive';
 
 import {useYMDPickerState} from '../hooks/useYMDPickerState';
-import {BACKGROUND_COLORS, BUTTON_STYLES} from 'styles/style';
+import {BACKGROUND_COLORS, BUTTON_STYLES, COLORS} from 'styles/style';
 
 export default function YMDPickerModal({
   visible,
@@ -58,7 +58,7 @@ export default function YMDPickerModal({
     <Svg width={16} height={16} viewBox="0 0 24 24">
       <Path
         d="M6 9l6 6 6-6"
-        stroke="#9CA3AF"
+        stroke={COLORS.textTertiary}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   pickerPlaceholder: {
     fontFamily: 'Pretendard-Medium',
     fontSize: getResponsiveFontSize(14),
-    color: '#9CA3AF',
+    color: COLORS.textTertiary,
   },
 
   pickerIconContainer: {

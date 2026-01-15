@@ -15,8 +15,11 @@ import {BACKGROUND_COLORS} from 'styles/style';
 const MagazineBanner = ({
   onPress,
   durationText = '1월 1주차',
-  title = '이번 주 가족 매거진이 발행되었어요!',
-  subtitle = '키노와 함께 추억을 떠올려 볼까요?',
+
+  // title = '이번 주 가족 매거진이 발행되었어요!',
+  // subtitle = '키노와 함께 추억을 떠올려 볼까요?',
+  title = '새로운 일정이 추가됐어요!',
+  subtitle = '클릭시 새로운 일정으로 이동합니다.',
   style,
 }) => {
   return (
@@ -42,9 +45,9 @@ const MagazineBanner = ({
         <View style={styles.softOverlay} />
 
         {/* 우측 상단 시간 */}
-        <View style={styles.badge}>
+        {/* <View style={styles.badge}>
           <Text style={styles.badgeText}>{durationText}</Text>
-        </View>
+        </View> */}
 
         {/* 텍스트 */}
         <View style={styles.textWrap}>
@@ -75,7 +78,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   container: {
-    width: '93%',
+    width: '100%',
     height: '90%',
     borderRadius: getResponsiveWidth(10),
     overflow: 'hidden',

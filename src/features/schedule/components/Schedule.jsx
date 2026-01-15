@@ -11,7 +11,7 @@ import {
 
 import {useScheduleListByDate} from '../hooks/useScheduleListByDate';
 import {useFormattedScheduleDate} from '../hooks/useFormattedScheduleDate';
-import {DEFAULT_STYLE, EMPTY_STYLE} from 'styles/style';
+import {COLORS, DEFAULT_STYLE, EMPTY_STYLE} from 'styles/style';
 
 import DropShadow from 'react-native-drop-shadow';
 import BirthdayConfettiModal from './BirthdayConfettiModal';
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     paddingBottom: getResponsiveHeight(200),
   },
   dateText: {
-    color: 'black',
+    color: COLORS.textPrimary,
     fontSize: DEFAULT_STYLE.sectionTitle.fontSize,
     fontFamily: DEFAULT_STYLE.sectionTitle.fontFamily,
     marginTop: getResponsiveHeight(15),
@@ -277,15 +277,15 @@ const styles = StyleSheet.create({
   roundPillShadow: {
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 3},
-    shadowOpacity: 0.12,
-    shadowRadius: 5,
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
   },
   cardWrap: {
     width: '100%',
     borderRadius: 14,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.08)',
+    // borderWidth: 1,
+    // borderColor: 'rgba(17,24,39,0.08)',
     paddingVertical: getResponsiveHeight(12),
     paddingHorizontal: getResponsiveWidth(14),
     overflow: 'hidden',

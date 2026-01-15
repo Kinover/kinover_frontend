@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
 
   video: {
     width: screenWidth,
-    height: screenHeight * 0.75,
+    height: screenHeight,
   },
 
   menuOverlay: {

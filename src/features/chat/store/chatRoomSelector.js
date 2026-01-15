@@ -26,3 +26,30 @@ export const selectChatUnreadTotal = state => {
     : [];
   return list.reduce((sum, r) => sum + (Number(r?.unreadCount) || 0), 0);
 };
+
+// ✅ 채팅방 미디어 상태 selector
+export const selectChatRoomMediaState = (state, chatRoomId) => {
+  const rid = toId(chatRoomId);
+  if (!rid) {
+    return {
+      items: [],
+      nextBefore: null,
+      loading: false,
+      error: null,
+      type: 'ALL',
+      hasMore: true,
+    };
+  }
+
+  return (
+    state?.chatRoom?.mediaByRoom?.[rid] || {
+      items: [],
+      nextBefore: null,
+      loading: false,
+      error: null,
+      type: 'ALL',
+      hasMore: true,
+    }
+  );
+};
+

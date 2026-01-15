@@ -19,8 +19,7 @@ import {
   getResponsiveHeight,
 } from '../../../utils/responsive';
 
-// ✅ 여기! alias 쓰면 터질 수 있어서 상대경로로 고정
-import {BUTTON_STYLES} from '../../../styles/style';
+import {BUTTON_STYLES, COLORS} from '../../../styles/style';
 
 const DEFAULT_SORT_OPTIONS = [
   {key: 'latest', title: '최신순'},
@@ -56,14 +55,8 @@ export default function PostFilterBar({
 }) {
   const [sortModalOpen, setSortModalOpen] = useState(false);
 
-  // ✅ 정렬 버튼 위치/크기 저장해서 "버튼 바로 아래"에 드롭다운 띄우기
   const sortBtnRef = useRef(null);
-  const [sortAnchor, setSortAnchor] = useState({
-    x: 0,
-    y: 0,
-    w: 0,
-    h: 0,
-  });
+  const [sortAnchor, setSortAnchor] = useState({x: 0, y: 0, w: 0, h: 0});
 
   const sortTitle = useMemo(() => {
     const found = (sortOptions || []).find(v => v.key === sortKey);
@@ -75,10 +68,6 @@ export default function PostFilterBar({
   }, [periodLabel]);
 
   const isPeriodActive = !!periodLabel;
-
-  // ✅ 정렬도 기간 버튼처럼 "활성/비활성" 톤을 맞춰서 통일감 주기
-  // - 기본값(latest)이면 비활성(회색 톤)
-  // - 기본값이 아니면 활성(진한 톤 + pillActive)
   const isSortActive = sortKey !== 'latest';
 
   const closeSort = useCallback(() => setSortModalOpen(false), []);
@@ -92,7 +81,6 @@ export default function PostFilterBar({
   );
 
   const openSort = useCallback(() => {
-    // ✅ 버튼 위치 측정 -> 드롭다운 위치 계산
     const node = sortBtnRef.current;
     if (!node?.measureInWindow) {
       setSortModalOpen(true);
@@ -105,10 +93,7 @@ export default function PostFilterBar({
     });
   }, []);
 
-  // ✅ 드롭다운 폭: 버튼 폭과 동일(최소 폭 확보)
   const dropdownWidth = sortAnchor.w;
-
-  // ✅ 드롭다운 위치: 버튼 아래로 살짝 내려서
   const dropdownTop = sortAnchor.y + sortAnchor.h + getResponsiveHeight(6);
   const dropdownLeft = sortAnchor.x;
 
@@ -160,7 +145,9 @@ export default function PostFilterBar({
             activeOpacity={0.7}
             onPress={openSort}>
             <Text
-              style={[styles.pillText, isSortActive && styles.pillTextActive]}>
+              style={[styles.pillText, isSortActive && styles.pillTextActive]}
+              numberOfLines={1}
+              ellipsizeMode="tail">
               {sortTitle}
             </Text>
             <Image
@@ -174,13 +161,11 @@ export default function PostFilterBar({
         </View>
       </View>
 
-      {/* ✅ 바텀시트 대신: 버튼 아래 드롭다운 */}
       <Modal
         visible={sortModalOpen}
         transparent
         animationType="fade"
         onRequestClose={closeSort}>
-        {/* 바깥 누르면 닫히게 */}
         <Pressable
           style={styles.modalBackdropTransparent}
           onPress={closeSort}
@@ -211,7 +196,9 @@ export default function PostFilterBar({
                     style={[
                       styles.dropdownItemText,
                       active && styles.dropdownItemTextActive,
-                    ]}>
+                    ]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail">
                     {opt.title}
                   </Text>
                 </TouchableOpacity>
@@ -238,7 +225,7 @@ const styles = StyleSheet.create({
   categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: getResponsiveWidth(4),
+    gap: getResponsiveWidth(3),
     paddingVertical: getResponsiveHeight(6),
     paddingRight: getResponsiveWidth(6),
   },
@@ -251,8 +238,8 @@ const styles = StyleSheet.create({
   },
   downIcon: {
     resizeMode: 'contain',
-    width: getResponsiveWidth(16),
-    height: getResponsiveWidth(16),
+    width: getResponsiveWidth(14),
+    height: getResponsiveWidth(14),
   },
 
   rightControls: {
@@ -288,7 +275,7 @@ const styles = StyleSheet.create({
   pillText: {
     fontSize: getResponsiveFontSize(11.5),
     fontFamily: 'Pretendard-Medium',
-    color: '#9CA3AF',
+    color: COLORS.textTertiary,
   },
   pillTextActive: {
     fontFamily: 'Pretendard-SemiBold',
@@ -298,7 +285,7 @@ const styles = StyleSheet.create({
   calendarIcon: {
     width: getResponsiveWidth(13),
     height: getResponsiveWidth(13),
-    tintColor: '#9CA3AF',
+    tintColor: COLORS.textTertiary,
   },
   calendarIconActive: {tintColor: '#525252'},
 
@@ -306,11 +293,10 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
     width: getResponsiveWidth(14),
     height: getResponsiveWidth(14),
-    tintColor: '#9CA3AF',
+    tintColor: COLORS.textTertiary,
   },
   sortDownIconActive: {tintColor: '#525252'},
 
-  // ✅ 여기부터 드롭다운 전용 스타일
   modalBackdropTransparent: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
@@ -318,7 +304,6 @@ const styles = StyleSheet.create({
 
   dropdownWrap: {
     position: 'absolute',
-    // top/left/width는 런타임에서 주입
     zIndex: 999,
   },
 
@@ -329,7 +314,6 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
     paddingVertical: getResponsiveHeight(6),
 
-    // 그림자
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -356,6 +340,7 @@ const styles = StyleSheet.create({
   },
 
   dropdownItemText: {
+    flexShrink: 1,
     fontSize: getResponsiveFontSize(12),
     fontFamily: 'Pretendard-Medium',
     color: '#525252',
@@ -364,13 +349,4 @@ const styles = StyleSheet.create({
   dropdownItemTextActive: {
     fontFamily: 'Pretendard-Bold',
   },
-
-  dot: {
-    width: getResponsiveWidth(6),
-    height: getResponsiveWidth(6),
-    borderRadius: 999,
-    backgroundColor: '#525252',
-  },
-
-  dotInactive: {backgroundColor: '#E5E7EB'},
 });

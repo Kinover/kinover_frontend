@@ -2,10 +2,7 @@ import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import ScheduleScreen from '../../../features/schedule/screens';
 import {Text, Platform} from 'react-native';
-import {
-  getResponsiveWidth,
-  getResponsiveHeight,
-} from '../../../utils/responsive';
+import {getResponsiveHeight} from '../../../utils/responsive';
 import {
   RenderHeaderHome,
   RenderGoBackButton,
@@ -48,9 +45,9 @@ export default function ScheduleStack() {
             일정
           </Text>
         ),
-        headerTitleContainerStyle: {
-          paddingLeft: getResponsiveWidth(6),
-        },
+        // headerTitleContainerStyle: {
+        //   paddingLeft: getResponsiveWidth(6),
+        // },
         headerRight: () => (
           <RenderHeaderHome navigation={navigation} currentScreen="일정" />
         ),
