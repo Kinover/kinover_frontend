@@ -56,6 +56,18 @@ import {addMessageAndUpdateRoom} from '../utils/messageActions';
 
 import {hapticLight, hapticSelection, hapticError} from '../../../utils/haptic';
 
+const COLORS = {
+  bg: '#F6F7FB',
+  surface: '#FFFFFF',
+  text: '#111827',
+  sub: '#6B7280',
+  line: 'rgba(17,24,39,0.08)',
+  lineStrong: 'rgba(17,24,39,0.12)',
+  chipGlass: 'rgba(17,24,39,0.38)',
+  chipGlass2: 'rgba(17,24,39,0.26)',
+  plusBg: '#FFFFFF',
+};
+
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
 const BASE_NUM_COLUMNS = 3;
@@ -1019,7 +1031,7 @@ const styles = StyleSheet.create({
 
   sendBadge: {
     position: 'absolute',
-    top: -getResponsiveWidth(7),
+    bottom: getResponsiveWidth(4),
     right: -getResponsiveWidth(8),
 
     minWidth: getResponsiveWidth(18),
@@ -1034,7 +1046,7 @@ const styles = StyleSheet.create({
   },
   sendBadgeText: {
     color: '#fff',
-    fontSize: getResponsiveIconSize(11),
+    fontSize: getResponsiveIconSize(11.5),
     fontFamily: 'Pretendard-SemiBold',
     includeFontPadding: false,
   },
@@ -1075,22 +1087,33 @@ const styles = StyleSheet.create({
   },
   orderBadge: {
     position: 'absolute',
-    top: getResponsiveWidth(8),
-    right: getResponsiveWidth(8),
-    width: getResponsiveWidth(22),
+    top: getResponsiveHeight(7),
+    right: getResponsiveWidth(7),
+    minWidth: getResponsiveWidth(22),
     height: getResponsiveWidth(22),
-    borderRadius: getResponsiveWidth(11),
-    borderColor: '#FFC84D',
-    justifyContent: 'center',
+    paddingHorizontal: getResponsiveWidth(7),
+    borderRadius: 999,
+    backgroundColor: COLORS.chipGlass,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
     alignItems: 'center',
-    borderWidth: 1.5,
-    backgroundColor: '#fff',
-    zIndex: 2,
+    justifyContent: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.14,
+        shadowRadius: 8,
+        shadowOffset: {width: 0, height: 4},
+      },
+      android: {elevation: 2},
+    }),
+    zIndex: 10,
   },
   orderBadgeText: {
-    color: '#FFC84D',
-    fontSize: getResponsiveIconSize(16),
-    fontWeight: '700',
+    fontSize: getResponsiveFontSize(12),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#FFF',
+    letterSpacing: -0.2,
     includeFontPadding: false,
     textAlignVertical: 'center',
   },

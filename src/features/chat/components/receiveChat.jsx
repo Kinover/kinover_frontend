@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
 
   userName: {
     fontFamily: 'Pretendard-Medium',
-    fontSize: Platform.OS === 'android' ? getResponsiveFontSize(14) : getResponsiveFontSize(14),
+    fontSize: CHATROOM_STYLE.messageFontSize,
     color: '#444',
     marginBottom: getResponsiveHeight(7),
   },

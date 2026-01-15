@@ -33,7 +33,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../../utils/responsive';
-import {EMPTY_STYLE} from 'styles/style';
+import {COLORS, EMPTY_STYLE} from 'styles/style';
 
 const ACTION_W = getResponsiveWidth(70);
 const INPUT_H = getResponsiveHeight(46);
@@ -715,8 +715,9 @@ const styles = StyleSheet.create({
   mentionName: {
     flex: 1,
     minWidth: 0,
-    color: '#111827',
-    fontFamily: 'Pretendard-SemiBold',
+    color: COLORS.textPrimary,
+    fontWeight:600,
+    fontFamily: 'Pretendard-Medium',
     fontSize: getResponsiveFontSize(13.5),
   },
   mentionHint: {

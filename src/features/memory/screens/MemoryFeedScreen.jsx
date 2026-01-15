@@ -41,7 +41,7 @@ import SkeletonPhotoGridItem from '../components/SkeletonPhotoGridItem';
 import SkeletonMemoryItem from '../components/SkeletonMemoryItem';
 
 import {filterPostsByDateRange} from '../../../utils/postDateFilter';
-import {EMPTY_STYLE} from '../../../styles/style';
+import {COLORS, EMPTY_STYLE, LAYOUT_STYLE} from '../../../styles/style';
 
 import formatDuration from '../../../utils/formatDuration';
 import {getVideoThumbnail} from '../../../utils/videoThumbnail';
@@ -49,20 +49,24 @@ import {toCdnUrl} from '../../../utils/mediaUrl';
 
 import {setMemorySelectedTab} from '../store/memorySlice';
 import PostFilterBar from '../components/PostFilterBar';
+import MagazineBanner from '../components/MagazineBanner';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
+/* =========================
+ * Constants
+ * ========================= */
 const ITEM_MARGIN = getResponsiveWidth(2);
-const fallbackImage = null;
-
 const CARD_RADIUS = getResponsiveIconSize(18);
 
 const BG = '#F5F6F8';
 const SURFACE = '#FFFFFF';
-const TEXT = '#111827';
-const MUTED = '#6B7280';
-const SUBTLE = '#9CA3AF';
 
+const fallbackImage = null;
+
+/* =========================
+ * Android Layout Animation
+ * ========================= */
 if (
   Platform.OS === 'android' &&
   UIManager.setLayoutAnimationEnabledExperimental
@@ -70,7 +74,9 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-/* ------------------------ 작은 태그(카테고리) ------------------------ */
+/* =========================
+ * Small Components
+ * ========================= */
 const Chip = memo(function Chip({text}) {
   if (!text) return null;
   return (
@@ -86,6 +92,9 @@ const Bullet = memo(function Bullet() {
   return <View style={styles.bullet} />;
 });
 
+/* =========================
+ * Main
+ * ========================= */
 export default function MemoryFeed({
   selectedCategoryTitle,
   startDate,
@@ -97,6 +106,9 @@ export default function MemoryFeed({
   const dispatch = useDispatch();
   const navigation = useNavigation();
 
+  /* -------------------------
+   * Redux States
+   * ------------------------- */
   const familyId = useSelector(state => state.family?.familyId);
 
   const memoryState = useSelector(state => state.memory || {});
@@ -105,23 +117,29 @@ export default function MemoryFeed({
 
   const categoryList = useSelector(state => state.category?.categoryList || []);
 
-  // ✅ ui가 없거나 slice가 늦게 붙어도 터지지 않게 기본값 보장
   const selectedTab = useSelector(
     state => state.memory?.ui?.selectedTab ?? 'feed',
   );
 
+  /* -------------------------
+   * Local States
+   * ------------------------- */
+  const [gridColumns, setGridColumns] = useState(4);
+  const [videoThumbMap, setVideoThumbMap] = useState({});
+  const thumbLoadingRef = useRef(new Set());
+
+  const [refreshing, setRefreshing] = useState(false);
+  const [sortKey, setSortKey] = useState('latest');
+
+  const listRef = useRef(null);
+
+  /* -------------------------
+   * Helpers
+   * ------------------------- */
   const onChangeTab = useCallback(
     tab => dispatch(setMemorySelectedTab(tab)),
     [dispatch],
   );
-
-  const [gridColumns, setGridColumns] = useState(4);
-  const [videoThumbMap, setVideoThumbMap] = useState({});
-  const thumbLoadingRef = useRef(new Set());
-  const [refreshing, setRefreshing] = useState(false);
-  const listRef = useRef(null);
-
-  const [sortKey, setSortKey] = useState('latest');
 
   const emitScrollZeroToParent = useCallback(() => {
     if (!onScroll) return;
@@ -178,6 +196,9 @@ export default function MemoryFeed({
     dispatch(fetchCategoryThunk(familyId));
   }, [dispatch, familyId]);
 
+  /* -------------------------
+   * Effects
+   * ------------------------- */
   useFocusEffect(
     useCallback(() => {
       doFetch();
@@ -223,6 +244,7 @@ export default function MemoryFeed({
       .split('.')
       .pop()
       ?.toLowerCase();
+
     return ext === 'mp4' || ext === 'mov';
   }, []);
 
@@ -232,19 +254,24 @@ export default function MemoryFeed({
       const normalized = rawUrls.map(u => normalizeMediaUrl(u)).filter(Boolean);
 
       const mediaCount = normalized.length;
-      if (mediaCount === 0)
+      if (mediaCount === 0) {
         return {mediaCount: 0, videoCount: 0, imageCount: 0};
+      }
 
       let videoCount = 0;
       for (let i = 0; i < normalized.length; i++) {
         if (inferIsVideo(memory, i, normalized[i])) videoCount += 1;
       }
+
       const imageCount = Math.max(mediaCount - videoCount, 0);
       return {mediaCount, videoCount, imageCount};
     },
     [inferIsVideo, normalizeMediaUrl],
   );
 
+  /* -------------------------
+   * Filtering / Sorting
+   * ------------------------- */
   const filteredMemoryList = useMemo(() => {
     let list =
       selectedCategoryTitle === '전체'
@@ -260,7 +287,6 @@ export default function MemoryFeed({
     return list;
   }, [memoryList, categoryList, selectedCategoryTitle, startDate, endDate]);
 
-  // ✅ 피드(게시글) 정렬
   const sortedMemoryList = useMemo(() => {
     const list = [...filteredMemoryList];
 
@@ -273,7 +299,6 @@ export default function MemoryFeed({
     return list;
   }, [filteredMemoryList, sortKey]);
 
-  // ✅ ✅ 앨범(미디어)도 정렬되게: "게시글을 먼저 sortKey로 정렬"한 뒤 flatMap
   const allMedia = useMemo(() => {
     const postsSorted = [...filteredMemoryList].sort((a, b) => {
       const at = new Date(a?.createdAt).getTime();
@@ -287,13 +312,14 @@ export default function MemoryFeed({
         .map((rawUri, idx) => {
           const uri = normalizeMediaUrl(rawUri);
           if (!uri) return null;
+
           return {
             uri,
             indexInPost: idx,
             isVideo: inferIsVideo(memory, idx, uri),
             duration: memory?.durations?.[idx] ?? 0,
             postId: memory?.postId,
-            memory, // 필요하면 여기서 createdAt 접근 가능
+            memory,
           };
         })
         .filter(Boolean);
@@ -303,6 +329,9 @@ export default function MemoryFeed({
   const isAllPhotos = selectedTab === 'album';
   const data = isAllPhotos ? allMedia : sortedMemoryList;
 
+  /* -------------------------
+   * Tile Size
+   * ------------------------- */
   const tileWidth = useMemo(() => {
     const columns = gridColumns;
     const totalMargin = ITEM_MARGIN * (columns + 1);
@@ -322,6 +351,9 @@ export default function MemoryFeed({
     resetScrollToTop,
   ]);
 
+  /* -------------------------
+   * Gestures
+   * ------------------------- */
   const pinch = Gesture.Pinch()
     .runOnJS(true)
     .onEnd(event => {
@@ -331,6 +363,7 @@ export default function MemoryFeed({
 
       setGridColumns(prev => {
         let next = prev;
+
         if (scale > 1.07 && prev > 2) next = prev - 1;
         else if (scale < 0.93 && prev < 4) next = prev + 1;
 
@@ -379,7 +412,9 @@ export default function MemoryFeed({
     );
   }, [isAllPhotos, data, ensureVideoThumbByUri, refreshing]);
 
-  /* ------------------------ ✅ 피드 카드 렌더(심플/가독성) ------------------------ */
+  /* =========================
+   * Render: Feed Card
+   * ========================= */
   const renderListItem = useCallback(
     memory => {
       const {mediaCount, videoCount} = getMediaStats(memory);
@@ -433,6 +468,7 @@ export default function MemoryFeed({
                   </View>
                 </View>
               )}
+
               <Chip text={categoryLabel} />
             </View>
 
@@ -473,7 +509,7 @@ export default function MemoryFeed({
           key={memory.postId}
           style={{
             shadowColor: '#000',
-            shadowOffset: {width: 0, height: 8},
+            shadowOffset: {width: 0, height: 3},
             shadowOpacity: 0.08,
             shadowRadius: 3,
           }}>
@@ -494,6 +530,9 @@ export default function MemoryFeed({
     ],
   );
 
+  /* =========================
+   * Render: Album Tile
+   * ========================= */
   const renderMediaItem = useCallback(
     ({item, index}) => {
       const uri = item?.uri;
@@ -504,17 +543,23 @@ export default function MemoryFeed({
         requestAnimationFrame(() => ensureVideoThumbByUri(uri));
       }
 
+      const goPost = () => {
+        navigation.navigate('게시글화면', {
+          postId: item.postId,
+          imageIndex: item.indexInPost,
+        });
+      };
+
       return (
         <TouchableOpacity
           activeOpacity={0.85}
           key={`${uri}_${index}`}
-          onPress={() =>
-            navigation.navigate('게시글화면', {
-              postId: item.postId,
-              imageIndex: item.indexInPost,
-            })
-          }
-          style={{width: tileWidth, aspectRatio: 1, marginBottom: ITEM_MARGIN}}>
+          onPress={goPost}
+          style={{
+            width: tileWidth,
+            aspectRatio: 1,
+            marginBottom: ITEM_MARGIN,
+          }}>
           {isVideo ? (
             thumbUri ? (
               <FastImage
@@ -564,6 +609,9 @@ export default function MemoryFeed({
     [ensureVideoThumbByUri, navigation, refreshing, tileWidth, videoThumbMap],
   );
 
+  /* =========================
+   * Loading UI (Skeleton)
+   * ========================= */
   if (isLoading) {
     if (isAllPhotos) {
       const skeletonData = Array.from({length: 12}, (_, i) => i.toString());
@@ -618,6 +666,9 @@ export default function MemoryFeed({
     );
   }
 
+  /* =========================
+   * Header UI (FilterBar)
+   * ========================= */
   const refreshControl = (
     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
   );
@@ -632,24 +683,14 @@ export default function MemoryFeed({
       ? `${startDate.replace(/-/g, '.')} ~ ${endDate.replace(/-/g, '.')}`
       : null;
 
-  const postListHeader = (
-    <PostFilterBar
-      categoryTitle={headerCategoryTitle}
-      onPressCategory={onPressCategoryFilter}
-      periodLabel={headerPeriodLabel}
-      onPressDateFilter={onPressPeriodFilter}
-      sortKey={sortKey}
-      onChangeSort={setSortKey}
-    />
-  );
-
-  const albumListHeader = (
+  const listHeader = (
     <View
       style={{
-        paddingHorizontal: getResponsiveWidth(11.5),
-        paddingTop: getResponsiveHeight(4),
+        paddingHorizontal: LAYOUT_STYLE.screenPaddingHorizontal,
+        gap: getResponsiveHeight(4),
         paddingBottom: getResponsiveHeight(8),
       }}>
+      <MagazineBanner />
       <PostFilterBar
         categoryTitle={headerCategoryTitle}
         onPressCategory={onPressCategoryFilter}
@@ -661,6 +702,9 @@ export default function MemoryFeed({
     </View>
   );
 
+  /* =========================
+   * Render
+   * ========================= */
   return (
     <View style={[styles.container, !isAllPhotos && styles.postContainer]}>
       {isAllPhotos ? (
@@ -676,15 +720,11 @@ export default function MemoryFeed({
             numColumns={gridColumns}
             renderItem={renderMediaItem}
             refreshControl={refreshControl}
-            ListHeaderComponent={albumListHeader}
+            ListHeaderComponent={listHeader}
             columnWrapperStyle={{
               justifyContent: 'flex-start',
               gap: ITEM_MARGIN,
               paddingHorizontal: ITEM_MARGIN,
-            }}
-            contentContainerStyle={{
-              paddingTop: ITEM_MARGIN,
-              paddingBottom: getResponsiveHeight(24),
             }}
             ListEmptyComponent={
               <View style={styles.emptyWrapper}>
@@ -710,11 +750,11 @@ export default function MemoryFeed({
             numColumns={1}
             renderItem={({item}) => renderListItem(item)}
             refreshControl={refreshControl}
-            ListHeaderComponent={postListHeader}
-            contentContainerStyle={{
-              paddingTop: getResponsiveHeight(6),
-              paddingBottom: getResponsiveHeight(28),
-            }}
+            ListHeaderComponent={listHeader}
+            // contentContainerStyle={{
+            //   paddingTop: getResponsiveHeight(6),
+            //   paddingBottom: getResponsiveHeight(28),
+            // }}
             ListEmptyComponent={
               <View style={styles.emptyWrapper}>
                 <Text style={styles.emptyText}>
@@ -729,19 +769,29 @@ export default function MemoryFeed({
   );
 }
 
+/* =========================
+ * Styles
+ * ========================= */
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: BG},
-  postContainer: {paddingHorizontal: '3%'},
+  /* Layout */
+  container: {
+    flex: 1,
+    backgroundColor: BG,
+  },
 
-  /* ✅ 카드: 더 심플하게 (테두리 제거 + 부드러운 쉐도우만) */
+  /* Card */
   cardOuter: {
     backgroundColor: SURFACE,
     borderRadius: CARD_RADIUS,
-    marginVertical: getResponsiveHeight(10),
     overflow: 'hidden',
+    marginBottom: getResponsiveHeight(20),
+    marginHorizontal: '3%',
   },
-  cardPress: {width: '100%'},
+  cardPress: {
+    width: '100%',
+  },
 
+  /* Media */
   mediaWrap: {
     width: '100%',
     aspectRatio: 4 / 3,
@@ -751,8 +801,13 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
-  mediaImg: {width: '100%', height: '100%', backgroundColor: '#E5E7EB'},
+  mediaImg: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#E5E7EB',
+  },
 
+  /* Video Icon (Card) */
   playCenter: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
@@ -780,38 +835,36 @@ const styles = StyleSheet.create({
     marginLeft: 3,
   },
 
-  /* ✅ 정보 영역: 여백/텍스트 계층 정리 */
-  infoArea: {
-    paddingHorizontal: getResponsiveWidth(14),
-    paddingTop: getResponsiveHeight(12),
-    paddingBottom: getResponsiveHeight(14),
-    backgroundColor: SURFACE,
-  },
-
-  topRow: {
-    marginBottom: getResponsiveHeight(8),
-  },
-
-  /* ✅ 카테고리 태그: 제목처럼 안 보이게 “진짜 태그”로 */
+  /* Chip */
   chip: {
     position: 'absolute',
     top: getResponsiveHeight(12),
     right: getResponsiveWidth(12),
+    zIndex: 999,
+    maxWidth: '92%',
+
     borderRadius: 999,
     paddingHorizontal: getResponsiveWidth(9),
     paddingVertical: getResponsiveHeight(4),
+
     backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: 'rgba(229,231,235,1)',
-    marginBottom: getResponsiveHeight(6),
-    maxWidth: '92%',
-    zIndex: 999,
   },
   chipText: {
     fontSize: getResponsiveFontSize(11.3),
     fontFamily: 'Pretendard-Medium',
-    color: 'black',
+    color: '#525252',
     letterSpacing: 0.2,
+  },
+
+  /* Info */
+  infoArea: {
+    backgroundColor: SURFACE,
+    paddingHorizontal: getResponsiveWidth(14),
+    paddingTop: getResponsiveHeight(12),
+    paddingBottom: getResponsiveHeight(14),
+  },
+  topRow: {
+    marginBottom: getResponsiveHeight(8),
   },
 
   metaRow: {
@@ -822,7 +875,7 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: getResponsiveFontSize(12),
     fontFamily: 'Pretendard-Medium',
-    color: SUBTLE,
+    color: COLORS.textSecondary,
   },
   bullet: {
     width: getResponsiveWidth(3.5),
@@ -832,27 +885,27 @@ const styles = StyleSheet.create({
     marginHorizontal: getResponsiveWidth(6),
   },
 
-  /* ✅ 본문: 더 잘 읽히게 */
   contentText: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: 'Pretendard-Medium',
     fontSize: getResponsiveFontSize(14.6),
-    color: TEXT,
+    color: COLORS.textPrimary,
     lineHeight: getResponsiveHeight(20.5),
     letterSpacing: 0.1,
   },
   contentEmpty: {
     fontFamily: 'Pretendard-Regular',
     fontSize: getResponsiveFontSize(13.5),
-    color: SUBTLE,
+    color: COLORS.textPrimary,
   },
 
-  /* ------------------------ 앨범 그리드 ------------------------ */
+  /* Album */
   galleryImage: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
     backgroundColor: '#E5E7EB',
   },
+
   albumPlayOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
@@ -862,7 +915,7 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(36),
     height: getResponsiveWidth(36),
     borderRadius: 999,
-    backgroundColor: 'rgba(0,0,0,0.30)',
+    backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -882,11 +935,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: getResponsiveWidth(4),
     right: getResponsiveWidth(4),
+    zIndex: 2,
+
     backgroundColor: 'rgba(0,0,0,0.55)',
     paddingHorizontal: 6,
     paddingVertical: 3,
     borderRadius: 7,
-    zIndex: 2,
   },
   videoBadgeText: {
     color: '#fff',
@@ -894,7 +948,11 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  emptyWrapper: {paddingTop: getResponsiveHeight(60), alignItems: 'center'},
+  /* Empty */
+  emptyWrapper: {
+    paddingTop: getResponsiveHeight(60),
+    alignItems: 'center',
+  },
   emptyText: {
     fontSize: EMPTY_STYLE.emptyFontSize,
     fontFamily: EMPTY_STYLE.emptyFontFamily,

@@ -27,12 +27,7 @@ import {
 } from '../../../utils/responsive';
 
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  runOnJS,
-} from 'react-native-reanimated';
+import Animated, {useSharedValue, useAnimatedStyle, withTiming, runOnJS} from 'react-native-reanimated';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -84,6 +79,10 @@ function ZoomableImage({
   // ✅ “진짜 확대가 시작됐을 때만” 페이징 끄기 위한 플래그
   const disabledPagingOnceRef = useRef(false);
 
+  // ✅ 핵심: 확대 전(=scale 1)에는 Pan 제스처를 아예 비활성화해서
+  // FlatList 가로 스와이프를 막지 않게 함
+  const [zoomed, setZoomed] = useState(false);
+
   const setPaging = useCallback(
     enabled => {
       onTogglePaging?.(enabled);
@@ -101,6 +100,7 @@ function ZoomableImage({
     lastTy.value = 0;
 
     disabledPagingOnceRef.current = false;
+    setZoomed(false);
     setPaging(true);
   }, [scale, tx, ty, lastScale, lastTx, lastTy, setPaging]);
 
@@ -108,8 +108,6 @@ function ZoomableImage({
     if (!isActive) reset();
   }, [isActive, reset]);
 
-  // ✅ pinch 시작에서 페이징을 끄지 않는다.
-  //   "실제로 1.03 이상 확대될 때" 한 번만 페이징 off
   const pinch = Gesture.Pinch()
     .runOnJS(true)
     .onUpdate(e => {
@@ -117,11 +115,14 @@ function ZoomableImage({
       scale.value = next;
 
       if (next > 1.03) {
+        if (!zoomed) setZoomed(true);
+
         if (!disabledPagingOnceRef.current) {
           disabledPagingOnceRef.current = true;
           setPaging(false);
         }
       } else {
+        // 아직 확대가 아닌 상태면 스와이프 가능해야 함
         if (!disabledPagingOnceRef.current) {
           setPaging(true);
         }
@@ -135,7 +136,9 @@ function ZoomableImage({
       }
     });
 
+  // ✅ zoomed일 때만 pan이 켜짐 -> 기본 상태에서는 FlatList 스와이프가 자연스럽게 동작
   const pan = Gesture.Pan()
+    .enabled(zoomed)
     .runOnJS(true)
     .onBegin(() => {
       if (scale.value > 1.01) setPaging(false);
@@ -171,6 +174,7 @@ function ZoomableImage({
       }
 
       disabledPagingOnceRef.current = true;
+      setZoomed(true);
       setPaging(false);
 
       scale.value = withTiming(doubleTapScale);
@@ -185,6 +189,8 @@ function ZoomableImage({
     });
 
   const taps = Gesture.Exclusive(doubleTap, singleTap);
+
+  // ✅ pan은 zoomed일 때만 켜지므로, 기본 상태에서 가로 스와이프가 FlatList로 잘 넘어감
   const composed = Gesture.Simultaneous(pinch, pan, taps);
 
   const style = useAnimatedStyle(() => ({
@@ -227,7 +233,6 @@ export default function MediaViewer({
   onIndexChange,
   onClose,
 }) {
-  // ✅ hooks는 무조건 최상단에서 동일하게 실행
   const listRef = useRef(null);
 
   const cancelRequestedRef = useRef(false);
@@ -361,7 +366,6 @@ export default function MediaViewer({
         <View style={{width: CIRCLE_SIZE, height: CIRCLE_SIZE}} />
       </View>
 
-      {/* 미디어 */}
       <FlatList
         ref={listRef}
         data={media}
@@ -384,7 +388,6 @@ export default function MediaViewer({
         }}
       />
 
-      {/* 저장 중 */}
       {saving && (
         <View style={styles.progressOverlay}>
           <View style={styles.progressBox}>

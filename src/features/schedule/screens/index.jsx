@@ -40,6 +40,8 @@ import {
 import useGuide from 'hooks/useGuide';
 import {hapticLight} from '../../../utils/haptic';
 import DropShadow from 'react-native-drop-shadow';
+import {BACKGROUND_COLORS, LAYOUT_STYLE} from 'styles/style';
+import FastImage from '@d11/react-native-fast-image';
 
 const SCHEDULE_GUIDE_STEPS = [
   {
@@ -206,7 +208,8 @@ export default function ScheduleScreen() {
         undefined;
 
       // ✅ type 방어: useScheduleBottomSheetModal이 scheduleType으로 줄 수도 있어서
-      const typeRaw = incoming?.type ?? incoming?.scheduleType ?? incoming?.kind;
+      const typeRaw =
+        incoming?.type ?? incoming?.scheduleType ?? incoming?.kind;
       const type = typeRaw ? String(typeRaw).toUpperCase() : null;
 
       const rawParticipantIds = incoming?.participantIds;
@@ -397,24 +400,29 @@ export default function ScheduleScreen() {
         onDelete={onDelete}
         onRefresh={handleRefresh}
       />
-
-      <TouchableOpacity
-        style={[styles.fab, isLoading && {opacity: 0.4}]}
-        onPress={handleFabPress}
-        activeOpacity={0.8}>
-        <DropShadow
-          style={{
-            shadowColor: '#000',
-            shadowOffset: {width: 0, height: 5},
-            shadowOpacity: 0.3,
-            shadowRadius: 2,
-          }}>
-          <Image
-            source={require('../../../assets/icons/schedule-bt.png')}
-            style={styles.fabIcon}
+      <DropShadow
+        style={{
+          shadowColor: '#000',
+          shadowOffset: {width: 0, height: 3},
+          shadowOpacity: 0.08,
+          shadowRadius: 3,
+        }}>
+        <TouchableOpacity
+          style={[styles.fab, isLoading && {opacity: 0.4}]}
+          onPress={handleFabPress}
+          activeOpacity={0.8}>
+          <FastImage
+            source={require('../../../assets/icons/sub/three.png')}
+            style={{
+              alignSelf: 'center',
+              width: '45%',
+              height: '45%',
+              resizeMode: 'contain',
+            }}
+            tintColor={'white'}
           />
-        </DropShadow>
-      </TouchableOpacity>
+        </TouchableOpacity>
+      </DropShadow>
 
       {isLoading && (
         <View style={styles.loadingOverlay} pointerEvents="auto">
@@ -429,17 +437,25 @@ const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#F9F9F9'},
   mainContainer: {
     flex: 1,
-    paddingHorizontal: getResponsiveWidth(14),
+    paddingHorizontal: LAYOUT_STYLE.screenPaddingHorizontal,
     paddingTop: getResponsiveHeight(5),
   },
   fab: {
     position: 'absolute',
     bottom: getResponsiveHeight(110),
     right: getResponsiveWidth(14),
-    width: getResponsiveIconSize(65),
-    height: getResponsiveIconSize(65),
+    width: getResponsiveIconSize(60),
+    height: getResponsiveIconSize(60),
+    backgroundColor: BACKGROUND_COLORS.primaryBg,
+    borderRadius: 999,
+    justifyContent: 'center',
   },
-  fabIcon: {width: '100%', height: '100%', resizeMode: 'contain'},
+  fabIcon: {
+    alignSelf: 'center',
+    width: '40%',
+    height: '40%',
+    resizeMode: 'contain',
+  },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',

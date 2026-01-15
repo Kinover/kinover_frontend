@@ -5,11 +5,10 @@
 import React, {useEffect, useRef, useState, useCallback} from 'react';
 import {View, Text, TouchableOpacity, StyleSheet, Animated} from 'react-native';
 import {
-  getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../../utils/responsive';
-import { DEFAULT_STYLE } from 'styles/style';
+import {DEFAULT_STYLE, LAYOUT_STYLE} from 'styles/style';
 
 const TABS = [
   {key: 'feed', title: '피드'},
@@ -99,7 +98,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     paddingBottom: getResponsiveHeight(15),
     paddingVertical: getResponsiveHeight(5),
-    paddingHorizontal: getResponsiveWidth(21),
+    paddingHorizontal: LAYOUT_STYLE.screenPaddingHorizontal+3,
     paddingRight: getResponsiveWidth(18),
     height: getResponsiveHeight(50),
   },

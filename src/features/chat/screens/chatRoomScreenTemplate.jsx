@@ -260,7 +260,7 @@ export default function ChatRoomScreenTemplate({
           flatListRef={flatListRef}
           messageList={messageList}
           chatRoom={currentChatRoom}
-          userId={myUserId}              // ✅ 여기 꼭 myUserId로
+          userId={myUserId} // ✅ 여기 꼭 myUserId로
           isKino={isKino}
           noMoreMessages={noMoreMessages}
           isFetchingMore={isFetchingMore}
@@ -274,7 +274,7 @@ export default function ChatRoomScreenTemplate({
 
         <ChatInput
           chatRoom={currentChatRoom}
-          userId={myUserId}              // ✅ 여기 꼭 myUserId로
+          userId={myUserId} // ✅ 여기 꼭 myUserId로
           enableMediaPicker={!isKino}
           mentionUsers={roomUsers}
         />

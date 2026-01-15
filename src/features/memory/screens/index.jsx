@@ -6,11 +6,10 @@ import {
   View,
   StyleSheet,
   TouchableOpacity,
-  Image,
   Animated,
 } from 'react-native';
 
-import MemoryFeed from './MemoryFeedScreen'; // ✅ 너 프로젝트 경로 그대로 유지
+import MemoryFeed from './MemoryFeedScreen';
 import AnimatedAlbumTabSelector from '../components/AlbumTabSelector';
 import CategoryBottomSheetModal from '../components/CategoryBottomSheet';
 import PeriodFilterModal from '../components/PeriodFilterModal';
@@ -31,12 +30,10 @@ import {setMemorySelectedTab} from '../store/memorySlice';
 import {hapticLight} from '../../../utils/haptic';
 import {useFocusEffect} from '@react-navigation/native';
 
-import AnimatedRe, {
-  useAnimatedStyle,
-  withTiming,
-} from 'react-native-reanimated';
+import AnimatedRe, {useAnimatedStyle, withTiming} from 'react-native-reanimated';
 import DropShadow from 'react-native-drop-shadow';
-import MagazineBanner from '../components/MagazineBanner';
+import {BACKGROUND_COLORS} from 'styles/style';
+import FastImage from '@d11/react-native-fast-image'; // ✅ ScheduleScreen과 동일
 
 export default function MemoryScreen() {
   const dispatch = useDispatch();
@@ -52,7 +49,6 @@ export default function MemoryScreen() {
     navigateToImageSelect,
   } = useMemoryScreen();
 
-  // ✅ 기간 필터(기존 그대로 유지: PostFilterBar에서 열게만 바꿈)
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -105,7 +101,6 @@ export default function MemoryScreen() {
     });
   }, []);
 
-  // ✅ periodLabel은 PostFilterBar에서 쓸 거라 MemoryFeed로 내려주면 됨
   const periodLabel = useMemo(() => {
     if (!startDate || !endDate) return null;
     const formatDot = s => s.replace(/-/g, '.');
@@ -123,7 +118,6 @@ export default function MemoryScreen() {
   // =========================
   // ✅ FAB도 탭바랑 "동시에" 숨김/등장
   // =========================
-  const FAB_SIZE = getResponsiveIconSize(65);
   const FAB_RIGHT = getResponsiveWidth(14);
   const FAB_BOTTOM = getResponsiveHeight(110);
 
@@ -204,7 +198,6 @@ export default function MemoryScreen() {
     [hideHeader, showHeader, hideTabBarWithFab, showTabBarWithFab],
   );
 
-  // ✅ 기간 필터 적용
   const handleApplyPeriod = useCallback(
     ({startDate: s, endDate: e}) => {
       setStartDate(s || '');
@@ -216,7 +209,6 @@ export default function MemoryScreen() {
     [forceShowHeaderAndTabBar],
   );
 
-  // ✅ 탭 변경
   const onSelectTab = useCallback(
     tab => {
       dispatch(setMemorySelectedTab(tab));
@@ -225,15 +217,9 @@ export default function MemoryScreen() {
     [dispatch, forceShowHeaderAndTabBar],
   );
 
-  // ✅ 카테고리 선택
   const handleSelectCategoryWithReset = useCallback(
     cat => {
       handleSelectCategory?.(cat);
-
-      // ✅ 카테고리 선택하면 기간도 초기화하고 싶으면 아래 주석 해제
-      // setStartDate('');
-      // setEndDate('');
-
       requestAnimationFrame(() => forceShowHeaderAndTabBar(true));
     },
     [handleSelectCategory, forceShowHeaderAndTabBar],
@@ -287,7 +273,6 @@ export default function MemoryScreen() {
     };
   }, [FAB_HIDE_DISTANCE, tabBarTranslateY]);
 
-  // ✅ PostFilterBar에서 카테고리/기간 버튼 누르면 여기서 열어줌
   const openCategorySheet = useCallback(() => {
     categorySheetRef?.current?.present?.();
   }, [categorySheetRef]);
@@ -298,23 +283,12 @@ export default function MemoryScreen() {
 
   return (
     <View style={styles.container}>
-      {/* ✅ 헤더에는 이제 "탭(게시글/앨범)"만 남김
-          - 기간선택 버튼 제거: AnimatedAlbumTabSelector 내부에서 onPressDateFilter 안 씀 */}
       <Animated.View style={headerAnimatedStyle}>
         <View onLayout={onHeaderContentLayout}>
-          <AnimatedAlbumTabSelector
-            selected={selectedTab}
-            onSelect={onSelectTab}
-            // ✅ 기간선택 UI를 헤더에서 제거할 거라서 전달 X(또는 noop)
-            // onPressDateFilter={() => {}}
-            // periodLabel={null}
-          />
-          <MagazineBanner />
+          <AnimatedAlbumTabSelector selected={selectedTab} onSelect={onSelectTab} />
         </View>
       </Animated.View>
 
-      {/* ✅ PostFilterBar의 카테고리/기간 버튼을 활성화하려면
-          MemoryFeed로 핸들러와 기간값을 내려줘야 함 */}
       <MemoryFeed
         selectedCategoryTitle={selectedCategoryTitle}
         startDate={startDate}
@@ -322,8 +296,6 @@ export default function MemoryScreen() {
         onScroll={handleFeedScroll}
         onPressCategoryFilter={openCategorySheet}
         onPressPeriodFilter={openPeriodModal}
-        // ✅ (선택) PostFilterBar가 periodLabel을 직접 쓰는 구조면 필요 없지만
-        // 지금 MemoryFeed가 headerPeriodLabel 만들 때 start/end를 쓰고 있어서 OK
       />
 
       <CategoryBottomSheetModal
@@ -334,32 +306,23 @@ export default function MemoryScreen() {
         onCancel={() => {}}
       />
 
+      {/* ✅ FAB: ScheduleScreen과 동일한 DropShadow + TouchableOpacity + FastImage */}
       <AnimatedRe.View
         pointerEvents={fabHidden ? 'none' : 'auto'}
         style={[
-          styles.fabWrap,
-          {
-            right: FAB_RIGHT,
-            bottom: FAB_BOTTOM,
-            width: FAB_SIZE,
-            height: FAB_SIZE,
-          },
+          styles.fabWrap, // ✅ 위치/크기만 담당
+          {right: FAB_RIGHT, bottom: FAB_BOTTOM},
           fabAnimatedStyle,
         ]}>
-        <DropShadow
-          style={{
-            shadowColor: '#000',
-            shadowOffset: {width: 0, height: 5},
-            shadowOpacity: 0.3,
-            shadowRadius: 2,
-          }}>
+        <DropShadow style={styles.fabShadow}>
           <TouchableOpacity
-            style={{width: '100%', height: '100%'}}
+            style={styles.fab}
             onPress={handleFabPress}
-            activeOpacity={0.85}>
-            <Image
-              source={require('../../../assets/icons/posting-floating-bt.png')}
-              style={{width: '100%', height: '100%', objectFit: 'contain'}}
+            activeOpacity={0.8}>
+            <FastImage
+              source={require('../../../assets/icons/sub/four.png')}
+              style={styles.fabIcon}
+              tintColor={'white'}
             />
           </TouchableOpacity>
         </DropShadow>
@@ -383,8 +346,37 @@ const styles = StyleSheet.create({
     paddingBottom: getResponsiveHeight(4),
   },
   rangeText: {fontSize: getResponsiveFontSize(12), color: '#777'},
+
+  // ✅ FAB wrapper: 애니메이션/포인터 이벤트용 컨테이너
   fabWrap: {
     position: 'absolute',
     zIndex: 99,
+    width: getResponsiveIconSize(60),
+    height: getResponsiveIconSize(60),
+  },
+
+  // ✅ DropShadow: ScheduleScreen과 동일
+  fabShadow: {
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+  },
+
+  // ✅ 버튼: ScheduleScreen과 동일
+  fab: {
+    width: getResponsiveIconSize(60),
+    height: getResponsiveIconSize(60),
+    backgroundColor: BACKGROUND_COLORS.primaryBg,
+    borderRadius: 999,
+    justifyContent: 'center',
+  },
+
+  // ✅ 아이콘: ScheduleScreen과 동일 (50% + contain)
+  fabIcon: {
+    alignSelf: 'center',
+    width: '40%',
+    height: '40%',
+    resizeMode: 'contain',
   },
 });

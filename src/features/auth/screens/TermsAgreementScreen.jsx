@@ -13,6 +13,7 @@ import BottomActionButton from 'components/BottomActionButton';
 import {useNavigateToWhere} from 'hooks/useNatigateToWhere';
 import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
 import ToastModal from 'components/ToastModal'; // ✅ 토스트 컴포넌트
+import { COLORS } from 'styles/style';
 
 // ✅ 서비스 이용약관
 const TERMS_TEXT = `Kinover 서비스 이용약관
@@ -480,14 +481,14 @@ const styles = StyleSheet.create({
   checkboxChecked: {backgroundColor: '#FFC84D', borderColor: '#FFC84D'},
   checkIcon: {color: '#FFFFFF', fontSize: 12, fontWeight: '700'},
   allText: {fontSize: 15, fontWeight: '700', color: 'black'},
-  allRightText: {fontSize: 11, color: '#9CA3AF'},
+  allRightText: {fontSize: 11, color: COLORS.textTertiary},
   divider: {height: 1, backgroundColor: '#E5E7EB', marginVertical: 10},
   labelRow: {flexDirection: 'row', alignItems: 'center'},
   itemText: {fontSize: 14, fontWeight: '600', color: 'black'},
   requiredTag: {marginLeft: 6, fontSize: 11, color: '#DC2626'},
   optionalTag: {marginLeft: 6, fontSize: 11, color: '#6B7280'},
   descText: {marginTop: 2, fontSize: 11, color: '#6B7280'},
-  detailText: {fontSize: 12, color: '#9CA3AF', textDecorationLine: 'underline'},
+  detailText: {fontSize: 12, color: COLORS.textTertiary, textDecorationLine: 'underline'},
   sheetContainer: {
     flex: 1,
     paddingHorizontal: 20,

@@ -59,7 +59,7 @@ function AnimatedTabButton({
   const pressOpacity = useSharedValue(1);
 
   // ✅ focused 상태 애니메이션(항상 살짝 강조)
-  const focusedScale = useSharedValue(focused ? 1.04 : 1);
+  const focusedScale = useSharedValue(focused ? 1.025 : 1);
 
   useEffect(() => {
     focusedScale.value = withTiming(focused ? 1.04 : 1, {duration: 180});

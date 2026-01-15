@@ -632,7 +632,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                 }}
                 onFocus={() => ensureVisible(inputRef)}
                 placeholder="예) 병원 예약, 가족 모임"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={COLORS.textTertiary}
                 style={styles.input}
                 multiline
               />

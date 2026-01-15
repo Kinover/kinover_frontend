@@ -4,7 +4,6 @@ import CommunicationScreen from '../../../features/chat/screens';
 import KinoChatRoom from '../../../features/chat/screens/kinoChatRoomScreen';
 import ChatSettings from '../../../features/chat/screens/chatSetting';
 import {
-  getResponsiveWidth,
   getResponsiveHeight,
 } from '../../../utils/responsive';
 import {Text, Platform} from 'react-native';
@@ -65,9 +64,9 @@ export default function CommunicationStack() {
             </Text>
           ),
           headerTitleAlign: 'bottom',
-          headerTitleContainerStyle: {
-            paddingLeft: getResponsiveWidth(6),
-          },
+          // headerTitleContainerStyle: {
+          //   paddingLeft: getResponsiveWidth(6),
+          // },
           headerRight: () => (
             <RenderHeaderHome navigation={navigation} currentScreen="소통" />
           ),

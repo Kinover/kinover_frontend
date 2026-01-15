@@ -9,6 +9,7 @@ import NotificationSettingScreen from '../../../features/setting/screens/Notific
 import {
   RenderHeaderHome,
   RenderGoBackButton,
+  RenderHeaderTitleLogo,
 } from '../helpers/tabHeaderHelpers';
 import {getResponsiveHeight} from '../../../utils/responsive';
 import StateScreen from '../../../features/home/screens/stateScreen';
@@ -63,8 +64,8 @@ const HomeStack = ({route}) => {
         headerStyle: defaultHeaderStyle,
         headerTitleAlign: 'bottom',
         headerShown: true,
-        // headerLeft: () => <RenderHeaderTitleLogo />,
-        headerLeft: null,
+        headerLeft: () => <RenderHeaderTitleLogo />,
+        // headerLeft: null,
         headerTitle: '',
       }}>
       <Stack.Screen

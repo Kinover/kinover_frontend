@@ -9,7 +9,7 @@ import {
   getResponsiveFontSize,
   getResponsiveWidth,
 } from '../../../utils/responsive';
-import {BUTTON_STYLES, HEADER_STYLES} from 'styles/style';
+import {BUTTON_STYLES, HEADER_STYLES, LAYOUT_STYLE} from 'styles/style';
 import {hapticLight} from 'utils/haptic';
 
 /** ---------------------------------------------------
@@ -149,7 +149,7 @@ export const RenderHeaderTitleLogo = () => (
         width: getResponsiveWidth(40),
         height: getResponsiveHeight(40),
         resizeMode: 'contain',
-        marginLeft: getResponsiveWidth(16),
+        marginLeft: LAYOUT_STYLE.screenPaddingHorizontal - 3,
       }}
     />
   </View>
@@ -157,8 +157,8 @@ export const RenderHeaderTitleLogo = () => (
 
 /** --------------------------------------------------- * ✅ RenderHeaderBook (홈에서만 흰색 tint 원하면 여기에도 적용) * --------------------------------------------------- */
 export const RenderHeaderBook = ({navigation, currentScreen = '홈'}) => {
-  const bookIcon = require('@/assets/icons/book.png');
-  const tint = currentScreen === '홈' ? '#FFFFFF' : '#525252';
+  const bookIcon = require('@/assets/icons/header/magazine.png');
+  const tint = currentScreen === '홈' ? '#FFFFFF' : 'black';
   const goBook = () =>
     navigation.navigate('Tabs', {
       screen: '추억',
@@ -176,8 +176,8 @@ export const RenderHeaderBook = ({navigation, currentScreen = '홈'}) => {
           source={bookIcon}
           style={{
             marginLeft: getResponsiveWidth(16),
-            width: getResponsiveIconSize(26),
-            height: getResponsiveIconSize(26),
+            width: getResponsiveIconSize(30),
+            height: getResponsiveIconSize(30),
           }}
           resizeMode={FastImage.resizeMode.contain}
           tintColor={tint}
@@ -201,16 +201,15 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
   // const iconTint = isHome ? undefined : '#525252';
   const iconTint = isHome ? undefined : 'black';
 
-
   const bellIcon =
     currentScreen === '홈'
-      ? require('@/assets/icons/header/bell_filled.png')
-      : require('@/assets/icons/header/bell_filled_dark.png');
+      ? require('@/assets/icons/header/bell_white.png')
+      : require('@/assets/icons/header/bell_black.png');
 
   const settingIcon =
     currentScreen === '홈'
-      ? require('@/assets/icons/header/setting_filled.png')
-      : require('@/assets/icons/header/setting_filled_dark.png');
+      ? require('@/assets/icons/header/setting_white.png')
+      : require('@/assets/icons/header/setting_black.png');
 
   // ✅ 설정이랑 같은 패턴: "현재 탭(currentScreen) 스택 안"으로 이동
   const goAlarm = () =>
@@ -226,7 +225,11 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
     });
 
   return (
-    <View style={{flexDirection: 'row', marginRight: getResponsiveWidth(20)}}>
+    <View
+      style={{
+        flexDirection: 'row',
+        marginRight: LAYOUT_STYLE.screenPaddingHorizontal,
+      }}>
       {/* ✅ 종(뱃지/빨간점 포함) */}
       <TouchableOpacity
         onPress={() => {
@@ -236,7 +239,7 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
         activeOpacity={0.8}>
         <IconWithBadge
           source={bellIcon}
-          size={25}
+          size={30}
           badgeCount={unreadCount}
           showDot={!!hasUnread}
           dotStyle={styles.headerDot}
@@ -249,7 +252,7 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
       {createIconButton(
         goSetting,
         settingIcon,
-        25,
+        30,
         iconTint ? {tintColor: iconTint} : {},
       )}
     </View>
@@ -338,7 +341,7 @@ export const RenderHeaderLogo = ({navigation, currentScreen = '홈'}) => (
       style={{
         width: getResponsiveWidth(60),
         height: getResponsiveHeight(60),
-        marginLeft: getResponsiveWidth(8),
+        marginRight: LAYOUT_STYLE.screenPaddingHorizontal,
         resizeMode: 'contain',
       }}
     />

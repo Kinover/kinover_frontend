@@ -16,6 +16,9 @@ import {syncAppBadgeThunk} from '../../notification/store/notificationThunk'; //
 
 const API_BASE = 'https://kinover.shop/api/chatRoom';
 
+// ✅ 이 파일에서 toId를 쓰려면 여기서 선언해야 함 (slice에만 있던 헬퍼라서)
+const toId = v => (v == null ? null : String(v));
+
 export const fetchChatRoomListThunk = (familyId, userId) => {
   return async dispatch => {
     dispatch(setChatRoomLoading(true));
@@ -96,7 +99,9 @@ export const renameChatRoomThunk = createAsyncThunk(
     try {
       const token = await getToken();
       const response = await fetch(
-        `${API_BASE}/${chatRoomId}/rename?roomName=${encodeURIComponent(roomName)}`,
+        `${API_BASE}/${chatRoomId}/rename?roomName=${encodeURIComponent(
+          roomName,
+        )}`,
         {
           method: 'PATCH',
           headers: {Authorization: `Bearer ${token}`},
@@ -150,7 +155,9 @@ export const updateKinoPersonalityThunk = createAsyncThunk(
       );
       return response.data;
     } catch (err) {
-      return rejectWithValue(err?.response?.data || err?.message || '알 수 없는 오류');
+      return rejectWithValue(
+        err?.response?.data || err?.message || '알 수 없는 오류',
+      );
     }
   },
 );
@@ -179,6 +186,50 @@ export const toggleChatRoomNotificationThunk = createAsyncThunk(
       return {chatRoomId, isOn};
     } catch (err) {
       return rejectWithValue(err?.message || '알 수 없는 에러');
+    }
+  },
+);
+
+/**
+ * ✅ 채팅방 미디어 모아보기
+ * GET /api/chatRoom/{chatRoomId}/media?type=ALL|IMAGE|VIDEO&before=...&limit=...
+ *
+ * ✅ RN + ESLint no-undef 문제 회피:
+ * - URLSearchParams 대신 axios의 params 옵션 사용 (가장 안정적)
+ */
+export const fetchChatRoomMediaThunk = createAsyncThunk(
+  'chatRoom/fetchChatRoomMedia',
+  async (
+    {chatRoomId, type = 'ALL', before = null, limit = 30},
+    {rejectWithValue},
+  ) => {
+    try {
+      const token = await getToken();
+      const rid = toId(chatRoomId);
+      if (!rid) return rejectWithValue('chatRoomId가 없습니다.');
+
+      const res = await axios.get(`${API_BASE}/${rid}/media`, {
+        headers: {Authorization: `Bearer ${token}`},
+        params: {
+          type: String(type || 'ALL').toUpperCase(),
+          limit: limit ?? 30,
+          ...(before ? {before: String(before)} : {}),
+        },
+      });
+
+      const data = res?.data || {};
+      const items = Array.isArray(data.items) ? data.items : [];
+      const nextBefore = data.nextBefore ?? null;
+
+      return {
+        chatRoomId: rid,
+        type: String(type || 'ALL').toUpperCase(),
+        items,
+        nextBefore,
+      };
+    } catch (err) {
+      const msg = err?.response?.data || err?.message || '알 수 없는 오류';
+      return rejectWithValue(msg);
     }
   },
 );

@@ -179,6 +179,7 @@ const EmotionItem = ({item, index, isSelected, onPress, itemWidth}) => {
               width: itemWidth,
               height: CARD_H,
               borderRadius: RADIUS,
+              
             },
           ]}>
           <Animated.View
@@ -334,8 +335,8 @@ const styles = StyleSheet.create({
   shadow: {
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 3},
-    shadowOpacity: 0.12,
-    shadowRadius: 5,
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
     ...(Platform.OS === 'android' ? {elevation: 4} : null),
   },
 
@@ -346,7 +347,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#fff',
-    borderWidth: 1.2,
+    borderWidth: 1.1,
     overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
   },
 

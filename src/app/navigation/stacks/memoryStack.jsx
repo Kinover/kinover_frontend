@@ -1,6 +1,6 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
-import {Platform} from 'react-native';
+import {Platform, Text} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 
 import MemoryScreen from '../../../features/memory/screens';
@@ -15,7 +15,6 @@ import ImageSelectPage from '../../../features/memory/screens/ImageSelectScreen'
 
 import {
   RenderGoBackButton,
-  RenderHeaderBook,
   RenderHeaderDeletePost,
   RenderHeaderHome,
 } from '../helpers/tabHeaderHelpers';
@@ -23,6 +22,7 @@ import {
 import {getResponsiveHeight} from '../../../utils/responsive';
 import MagazineDetailScreen from 'features/magazine/screens/MagazineDetailScreen';
 import BookShelfScreen from 'features/magazine/screens';
+import { HEADER_STYLES } from 'styles/style';
 
 const Stack = createStackNavigator();
 
@@ -48,12 +48,25 @@ export default function MemoryStack() {
         headerShown: true,
         headerStyle: defaultHeaderStyle,
         headerTitleAlign: 'left',
-        headerTitle: '',
+        // headerTitle: '',
         headerRight: () => (
           <RenderHeaderHome navigation={navigation} currentScreen="추억" />
         ),
-        headerLeft: () => (
-          <RenderHeaderBook currentScreen="추억" navigation={navigation} />
+        // headerLeft: () => (
+        //   <RenderHeaderBook currentScreen="추억" navigation={navigation} />
+        // ),
+        headerTitle: () => (
+          <Text
+            style={{
+              fontFamily: HEADER_STYLES.mainTitleFontFamily,
+              fontWeight: HEADER_STYLES.mainTitleFontWeight,
+              fontSize: HEADER_STYLES.mainTitleFontSize, // ✅ 24 → 16 (다른 앱이랑 비슷한 크기)
+              color: 'black',
+              lineHeight: HEADER_STYLES.mainTitleLineHeight, // ✅ 너무 크지 않게 살짝만
+              textAlignVertical: 'center',
+            }}>
+            추억
+          </Text>
         ),
       }}>
       <Stack.Screen name="추억" component={MemoryScreen} />
