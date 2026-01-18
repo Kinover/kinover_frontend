@@ -260,7 +260,6 @@ const styles = StyleSheet.create({
   },
   commentWriter: {
     fontFamily: 'Pretendard-Regular',
-    fontWeight: '600',
     fontSize: getResponsiveFontSize(14),
     color: '#000',
     marginBottom: getResponsiveHeight(2),

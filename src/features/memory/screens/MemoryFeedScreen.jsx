@@ -41,7 +41,12 @@ import SkeletonPhotoGridItem from '../components/SkeletonPhotoGridItem';
 import SkeletonMemoryItem from '../components/SkeletonMemoryItem';
 
 import {filterPostsByDateRange} from '../../../utils/postDateFilter';
-import {COLORS, EMPTY_STYLE, LAYOUT_STYLE} from '../../../styles/style';
+import {
+  BACKGROUND_COLORS,
+  COLORS,
+  EMPTY_STYLE,
+  LAYOUT_STYLE,
+} from '../../../styles/style';
 
 import formatDuration from '../../../utils/formatDuration';
 import {getVideoThumbnail} from '../../../utils/videoThumbnail';
@@ -59,7 +64,7 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 const ITEM_MARGIN = getResponsiveWidth(2);
 const CARD_RADIUS = getResponsiveIconSize(18);
 
-const BG = '#F5F6F8';
+const BG = BACKGROUND_COLORS.secondaryBg;
 const SURFACE = '#FFFFFF';
 
 const fallbackImage = null;
@@ -492,11 +497,7 @@ export default function MemoryFeed({
                   ellipsizeMode="tail">
                   {memory.content}
                 </Text>
-              ) : (
-                <Text style={styles.contentEmpty} numberOfLines={1}>
-                  내용이 없어요
-                </Text>
-              )}
+              ) : null}
             </View>
           </TouchableOpacity>
         </View>
@@ -945,7 +946,6 @@ const styles = StyleSheet.create({
   videoBadgeText: {
     color: '#fff',
     fontSize: getResponsiveFontSize(10.5),
-    fontWeight: '600',
   },
 
   /* Empty */

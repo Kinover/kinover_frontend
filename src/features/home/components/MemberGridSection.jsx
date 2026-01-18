@@ -30,21 +30,43 @@ import DropShadow from 'react-native-drop-shadow';
 // ✅ HAPTIC
 import {hapticLight} from '../../../utils/haptic';
 
-// ✅ REANIMATED (감정 peek 애니메이션)
+// ✅ REANIMATED
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withSpring,
+  withSequence,
+  withDelay,
   cancelAnimation,
+  Easing,
 } from 'react-native-reanimated';
 
 const AVATAR = getResponsiveIconSize(60);
+const EMOTION_EXPIRE_MS = 24 * 60 * 60 * 1000;
 
-/** ---------------------------------------------------
- * ✅ 개별 멤버 아이템
- * - 프로필 사진은 항상 보임
- * - 감정 이미지만 아래에서 "반쯤 peek" 했다가 내려감
- * --------------------------------------------------- */
+function isEmotionValid(emotion, emotionUpdatedAt) {
+  if (!emotion || !emotionUpdatedAt) return false;
+  const t = new Date(emotionUpdatedAt).getTime();
+  if (Number.isNaN(t)) return false;
+  return Date.now() - t <= EMOTION_EXPIRE_MS;
+}
+
+// ✅ clamp 유틸
+const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+
+// ✅ 사이즈 가드 (핵심)
+// - 기기별 responsive 폭주/디스플레이 확대 방지용
+const SHELL_MIN = getResponsiveIconSize(54);
+const SHELL_MAX = getResponsiveIconSize(78);
+
+const PROFILE_MIN = getResponsiveIconSize(46);
+const PROFILE_MAX = getResponsiveIconSize(70);
+
+// dot은 너무 커지면 촌스러워져서 상한
+const DOT_MIN = 8;
+const DOT_MAX = 14;
+
 const MemberGridItem = memo(function MemberGridItem({
   member,
   index,
@@ -69,66 +91,208 @@ const MemberGridItem = memo(function MemberGridItem({
 
   // ✅ 감정: 24시간 지나면 null 처리
   let finalEmotion = safeMember.emotion;
-  if (!safeMember.emotionUpdatedAt) {
+  let finalEmotionUpdatedAt = safeMember.emotionUpdatedAt;
+
+  if (!isEmotionValid(finalEmotion, finalEmotionUpdatedAt)) {
     finalEmotion = null;
-  } else {
-    const updatedTime = new Date(safeMember.emotionUpdatedAt).getTime();
-    if (!Number.isNaN(updatedTime)) {
-      const diff = Date.now() - updatedTime;
-      if (diff > 24 * 60 * 60 * 1000) finalEmotion = null;
-    } else {
-      finalEmotion = null;
-    }
+    finalEmotionUpdatedAt = null;
   }
 
   const emotionImage = finalEmotion ? getEmotionImage(finalEmotion) : null;
+  const hasEmotion = !!emotionImage;
 
+  // =========================================================
+  // ✅ 사이즈 계산 (여기서 폭주 방지)
+  // =========================================================
   const shellMax = AVATAR * 1.36;
-  const shellSize = Math.min(shellMax, itemWidth);
+
+  // 원래: Math.min(shellMax, itemWidth)
+  // 수정: clamp로 하한/상한 걸고, itemWidth랑도 비교
+  const shellSizeRaw = Math.min(shellMax, itemWidth);
+  const shellSize = clamp(
+    shellSizeRaw,
+    SHELL_MIN,
+    Math.min(SHELL_MAX, itemWidth),
+  );
+
   const ringSize = shellSize * 1;
 
-  // ✅ 프로필 크기(감정 유무랑 상관없이 "항상 보이는 프로필" 기준)
-  const profileSize = shellSize * 0.88;
+  // 프로필/감정 사이즈도 안정화
+  const profileSizeRaw = shellSize * 0.88;
+  const profileSize = clamp(profileSizeRaw, PROFILE_MIN, PROFILE_MAX);
 
-  // ✅ 감정 이미지 크기 (프로필 안에서 올라왔다 내려갔다)
-  const emotionSize = shellSize * 0.98;
+  const emotionSize = clamp(shellSize * 0.98, PROFILE_MIN, PROFILE_MAX + 12);
 
-  // ✅ 온라인 dot
-  const dot = Math.max(8, Math.round(shellSize * 0.22));
+  // dot도 상한
+  const dot = clamp(Math.round(shellSize * 0.22), DOT_MIN, DOT_MAX);
   const dotTop = Math.max(2, Math.round(shellSize * 0.07));
   const dotRight = Math.max(2, Math.round(shellSize * 0.07));
 
-  // ✅ 프로필 소스
   const profileSource = safeMember.image
     ? {uri: safeMember.image}
     : require('../../../assets/images/kino-blue.png');
 
-  /** --------------------------------
-   * ✅ 감정 peek 애니메이션
-   * - emotionPeek.value: 0(숨김) ~ 1(반쯤 올라옴)
-   * -------------------------------- */
-  const emotionPeek = useSharedValue(0);
-  const pressedRef = useRef(false);
+  // =========================================================
+  // ✅ "고개 갸웃" Peek 애니메이션
+  // =========================================================
+  const popY = useSharedValue(0);
+  const tilt = useSharedValue(0);
+  const pivotX = useSharedValue(0);
+  const scale = useSharedValue(1);
 
-  const PEEK_IN = 140;
-  const PEEK_OUT = 180;
-
-  // ✅ "반만 보이기" 위한 이동 거리
-  const peekDistance = emotionSize * 0.72;
+  const peekDistance = profileSize * 0.74;
+  const tiltDeg = 12;
+  const pivotShift = profileSize * 0.18;
 
   const emotionPeekStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{translateY: -emotionPeek.value * peekDistance}],
-    };
-  }, [peekDistance]);
+    const px = pivotX.value * pivotShift;
+    const deg = `${tilt.value * tiltDeg}deg`;
 
-  // ✅ 랜덤 peek (감정이 있을 때만)
+    return {
+      transform: [
+        {translateY: -popY.value * peekDistance},
+        {translateX: px},
+        {rotate: deg},
+        {translateX: -px},
+        {scale: scale.value},
+      ],
+    };
+  }, [peekDistance, tiltDeg, pivotShift]);
+
+  const longPressedRef = useRef(false);
+  const tapPeekTimerRef = useRef(null);
+
+  const clearTapPeekTimer = useCallback(() => {
+    if (tapPeekTimerRef.current) {
+      clearTimeout(tapPeekTimerRef.current);
+      tapPeekTimerRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
-    if (!emotionImage) return;
+    return () => clearTapPeekTimer();
+  }, [clearTapPeekTimer]);
+
+  const resetAnim = useCallback(() => {
+    cancelAnimation(popY);
+    cancelAnimation(tilt);
+    cancelAnimation(pivotX);
+    cancelAnimation(scale);
+
+    popY.value = 0;
+    tilt.value = 0;
+    pivotX.value = 0;
+    scale.value = 1;
+  }, [popY, tilt, pivotX, scale]);
+
+  const runTiltPeekOnce = useCallback(() => {
+    if (isRefreshing) return;
+    if (!hasEmotion) return;
+
+    clearTapPeekTimer();
+
+    cancelAnimation(popY);
+    cancelAnimation(tilt);
+    cancelAnimation(pivotX);
+    cancelAnimation(scale);
+
+    const dir = Math.random() > 0.5 ? 1 : -1;
+
+    popY.value = withTiming(1, {
+      duration: 120,
+      easing: Easing.out(Easing.cubic),
+    });
+
+    pivotX.value = withTiming(dir, {duration: 110});
+
+    tilt.value = withSequence(
+      withTiming(dir, {duration: 120, easing: Easing.out(Easing.cubic)}),
+      withTiming(-dir * 0.22, {
+        duration: 140,
+        easing: Easing.out(Easing.cubic),
+      }),
+      withTiming(0, {duration: 120, easing: Easing.out(Easing.cubic)}),
+    );
+
+    scale.value = withSequence(
+      withTiming(1.08, {duration: 110}),
+      withTiming(1.0, {duration: 170}),
+    );
+
+    tapPeekTimerRef.current = setTimeout(() => {
+      cancelAnimation(popY);
+      popY.value = withSpring(0, {damping: 11, stiffness: 215, mass: 0.7});
+
+      cancelAnimation(pivotX);
+      pivotX.value = withTiming(0, {duration: 180});
+    }, 520);
+  }, [isRefreshing, hasEmotion, clearTapPeekTimer, popY, tilt, pivotX, scale]);
+
+  const handlePress = useCallback(() => {
+    if (longPressedRef.current) return;
+    runTiltPeekOnce();
+  }, [runTiltPeekOnce]);
+
+  const handleLongPress = useCallback(() => {
+    if (isRefreshing) return;
+
+    longPressedRef.current = true;
+    hapticLight();
+
+    clearTapPeekTimer();
+    resetAnim();
+
+    onUserPress?.(safeMember);
+  }, [isRefreshing, onUserPress, safeMember, clearTapPeekTimer, resetAnim]);
+
+  const handlePressOut = useCallback(() => {
+    longPressedRef.current = false;
+  }, []);
+
+  useEffect(() => {
+    if (!hasEmotion) return;
 
     let mounted = true;
     let timer1 = null;
-    let timer2 = null;
+
+    const runRandomTiltPeek = () => {
+      if (!mounted) return;
+      if (isRefreshing || longPressedRef.current) return;
+
+      const dir = Math.random() > 0.5 ? 1 : -1;
+
+      cancelAnimation(popY);
+      cancelAnimation(tilt);
+      cancelAnimation(pivotX);
+      cancelAnimation(scale);
+
+      popY.value = withTiming(1, {
+        duration: 130,
+        easing: Easing.out(Easing.cubic),
+      });
+
+      pivotX.value = withTiming(dir, {duration: 120});
+
+      tilt.value = withSequence(
+        withTiming(dir, {duration: 120, easing: Easing.out(Easing.cubic)}),
+        withTiming(-dir * 0.25, {
+          duration: 140,
+          easing: Easing.out(Easing.cubic),
+        }),
+        withTiming(0, {duration: 120, easing: Easing.out(Easing.cubic)}),
+      );
+
+      scale.value = withSequence(
+        withTiming(1.07, {duration: 110}),
+        withTiming(1.0, {duration: 160}),
+      );
+
+      popY.value = withDelay(
+        520,
+        withSpring(0, {damping: 11, stiffness: 220, mass: 0.65}),
+      );
+      pivotX.value = withDelay(520, withTiming(0, {duration: 180}));
+    };
 
     const scheduleNext = () => {
       if (!mounted) return;
@@ -137,7 +301,7 @@ const MemberGridItem = memo(function MemberGridItem({
       timer1 = setTimeout(() => {
         if (!mounted) return;
 
-        if (isRefreshing || pressedRef.current) {
+        if (isRefreshing || longPressedRef.current) {
           scheduleNext();
           return;
         }
@@ -148,15 +312,8 @@ const MemberGridItem = memo(function MemberGridItem({
           return;
         }
 
-        cancelAnimation(emotionPeek);
-        emotionPeek.value = withTiming(1, {duration: PEEK_IN});
-
-        timer2 = setTimeout(() => {
-          if (!mounted) return;
-          cancelAnimation(emotionPeek);
-          emotionPeek.value = withTiming(0, {duration: PEEK_OUT});
-          scheduleNext();
-        }, 700);
+        runRandomTiltPeek();
+        scheduleNext();
       }, delayMs);
     };
 
@@ -165,43 +322,23 @@ const MemberGridItem = memo(function MemberGridItem({
     return () => {
       mounted = false;
       if (timer1) clearTimeout(timer1);
-      if (timer2) clearTimeout(timer2);
-      cancelAnimation(emotionPeek);
+      cancelAnimation(popY);
+      cancelAnimation(tilt);
+      cancelAnimation(pivotX);
+      cancelAnimation(scale);
     };
-  }, [emotionImage, isRefreshing, emotionPeek]);
-
-  const handlePressIn = useCallback(() => {
-    if (isRefreshing) return;
-    if (!emotionImage) return;
-
-    pressedRef.current = true;
-    cancelAnimation(emotionPeek);
-    emotionPeek.value = withTiming(1, {duration: PEEK_IN});
-  }, [isRefreshing, emotionImage, emotionPeek]);
-
-  const handlePressOut = useCallback(() => {
-    pressedRef.current = false;
-    if (!emotionImage) return;
-
-    cancelAnimation(emotionPeek);
-    emotionPeek.value = withTiming(0, {duration: PEEK_OUT});
-  }, [emotionImage, emotionPeek]);
-
-  const handlePressUser = useCallback(() => {
-    hapticLight();
-    onUserPress?.(safeMember);
-  }, [onUserPress, safeMember]);
+  }, [hasEmotion, isRefreshing, popY, tilt, pivotX, scale]);
 
   return (
     <TouchableOpacity
       style={[styles.user, {width: itemWidth}]}
-      onPress={handlePressUser}
-      onPressIn={handlePressIn}
+      onPress={handlePress}
+      onLongPress={handleLongPress}
+      delayLongPress={320}
       onPressOut={handlePressOut}
       activeOpacity={0.85}
       disabled={isRefreshing}>
       <View style={[styles.avatarShell, {width: shellSize, height: shellSize}]}>
-        {/* ✅ 링 */}
         <View
           style={[
             styles.avatarRing,
@@ -214,7 +351,6 @@ const MemberGridItem = memo(function MemberGridItem({
           ]}
         />
 
-        {/* ✅ 프로필 사진은 "항상" 보이게 */}
         <Image
           source={profileSource}
           style={[
@@ -226,7 +362,6 @@ const MemberGridItem = memo(function MemberGridItem({
           ]}
         />
 
-        {/* ✅ 감정 이미지만 peek (감정이 있을 때만) */}
         {!!emotionImage && (
           <View
             style={[
@@ -241,9 +376,10 @@ const MemberGridItem = memo(function MemberGridItem({
               style={[
                 {
                   position: 'absolute',
-                  left: -10,
+                  left: -5,
                   right: 0,
-                  bottom: -profileSize-20, // ✅ 기준 통일
+                  // ✅ 폭주 방지: profileSize가 커져도 튀어나옴이 과해지지 않게 살짝 완화
+                  bottom: -(profileSize * 1.05),
                 },
                 emotionPeekStyle,
               ]}>
@@ -251,14 +387,13 @@ const MemberGridItem = memo(function MemberGridItem({
                 source={emotionImage}
                 style={[
                   styles.emotionImage,
-                  {width: profileSize+20, height: profileSize+20},
+                  {width: emotionSize, height: emotionSize},
                 ]}
               />
             </Animated.View>
           </View>
         )}
 
-        {/* ✅ online/offline dot */}
         <View
           style={[
             styles.dotBorder,
@@ -548,13 +683,11 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(34,197,94,0.20)',
   },
 
-  // ✅ 프로필 사진
   profileImage: {
     borderRadius: 999,
     zIndex: 1,
   },
 
-  // ✅ 감정 이미지 peek 마스크 (감정만 올라오게)
   emotionPeekMask: {
     position: 'absolute',
     overflow: 'hidden',

@@ -188,8 +188,8 @@ const styles = StyleSheet.create({
   dateSeparatorText: {
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontSize: getResponsiveFontSize(12),
-    fontWeight: '600',
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(10),
     color: 'white',
     lineHeight: getResponsiveHeight(17),
   },

@@ -41,21 +41,16 @@ export default function HomeScreen() {
   const user = useSelector(state => state.user);
   const family = useSelector(state => state.family);
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
-
   const {onlineUserIds, lastActiveMap} = useSelector(state => state.family);
 
   const [isVisible, setIsVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
-  // ✅ Pull-to-refresh 상태
   const [refreshing, setRefreshing] = useState(false);
-
-  // ✅ “최초 로딩 완료 여부” (0명이어도 완료로 봐야 함)
   const [didInitialLoad, setDidInitialLoad] = useState(false);
 
   const familyLoaded = !!family?.familyId;
 
-  // ✅ 홈에서 보여줄 멤버: 본인 제외
   const familyMembers = (familyUserList || []).filter(
     m => m.userId !== user.userId,
   );
@@ -76,9 +71,7 @@ export default function HomeScreen() {
     (async () => {
       const granted = await requestNotificationPermission();
       if (!mounted) return;
-      if (granted) {
-        await getFcmTokenAndSend(user.userId);
-      }
+      if (granted) await getFcmTokenAndSend(user.userId);
     })();
 
     return () => {
@@ -90,7 +83,7 @@ export default function HomeScreen() {
   useWebSocketStatus(user.userId);
   useFamilyStatusSocket(family.familyId);
 
-  // ✅ 패밀리/멤버 데이터 로드 (여기서는 알림 unread 체크 안 함)
+  // ✅ 데이터 로드
   useEffect(() => {
     let mounted = true;
 
@@ -111,7 +104,6 @@ export default function HomeScreen() {
     };
   }, [dispatch, user.userId, family.familyId]);
 
-  // ✅ (갱신할 때만) 멤버/상태 갱신 + 알림 빨간점도 같이 갱신
   const doRefreshMembers = useCallback(async () => {
     if (!family?.familyId) return;
 
@@ -132,12 +124,36 @@ export default function HomeScreen() {
     });
   }, [doRefreshMembers, family?.familyId, refreshing]);
 
+  // ✅ selectedUser가 세팅되면 그때 열기
+  useEffect(() => {
+    if (!selectedUser) return;
+    requestAnimationFrame(() => {
+      userSheetRef.current?.present?.();
+    });
+  }, [selectedUser]);
+
   const handleUserPress = member => {
-    setSelectedUser(member);
-    setTimeout(() => userSheetRef.current?.present(), 100);
+    // ✅ 같은 유저 연속 클릭 안전
+    setSelectedUser(null);
+    requestAnimationFrame(() => setSelectedUser(member));
   };
 
-  // ✅ 유저 정보 저장 이후에도(=갱신 이벤트로 간주) 알림 빨간점 갱신
+  /**
+   * ✅ “상태정리 전용”
+   * - 절대 dismiss 호출하지 말 것 (onDismiss에서 또 호출되어 루프 발생)
+   */
+  const clearSelectedUser = useCallback(() => {
+    setSelectedUser(null);
+  }, []);
+
+  /**
+   * ✅ “닫기 액션”
+   * - 버튼/저장/취소 등 “의도적으로 닫을 때”만 여기 호출
+   */
+  const dismissUserSheet = useCallback(() => {
+    userSheetRef.current?.dismiss?.();
+  }, []);
+
   const handleSave = async (name, trait, imageUrl) => {
     if (!selectedUser) return;
 
@@ -157,8 +173,8 @@ export default function HomeScreen() {
       dispatch(fetchFamilyStatusThunk(family.familyId));
     }
 
-    userSheetRef.current?.dismiss();
-    setSelectedUser(null);
+    // ✅ 저장 후 닫기(닫기만 호출) → 실제 닫힘 완료되면 onDismiss로 clearSelectedUser
+    dismissUserSheet();
   };
 
   const isLoading = !familyLoaded || !didInitialLoad;
@@ -180,7 +196,7 @@ export default function HomeScreen() {
   );
 
   return (
-    <View edges={['top']} style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.backgroundCurve} />
 
       <ScrollView
@@ -208,10 +224,10 @@ export default function HomeScreen() {
         ref={userSheetRef}
         selectedUser={selectedUser}
         onSave={handleSave}
-        onCancel={() => {
-          setSelectedUser(null);
-          userSheetRef.current?.dismiss();
-        }}
+        // ✅ 취소 버튼 눌렀을 때 “닫기”만 호출 (상태정리는 onDismiss에서)
+        onCancel={dismissUserSheet}
+        // ✅ 어떤 방식으로 닫혀도 상태 정리
+        onDismiss={clearSelectedUser}
       />
     </View>
   );

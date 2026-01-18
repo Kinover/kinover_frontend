@@ -1,45 +1,49 @@
 // src/features/notification/store/notificationThunk.js
 import {createAsyncThunk} from '@reduxjs/toolkit';
-import axios from 'axios';
-import {getToken} from '../../../utils/storage';
 import {applyAppBadgeCount} from '../../../utils/appBadge';
+import {apiClient} from '../../../utils/apiClient';
 
-// ✅ 채팅 unread 총합 selector import
-// 경로가 다르면 여기만 맞춰줘!
+// ✅ 채팅 unread 총합 selector
 import {selectChatUnreadTotal} from '../../chat/store/chatRoomSelector';
 
-const BASE = 'https://kinover.shop/api';
-
+/**
+ * ✅ 알림 목록 조회
+ * GET /api/user/notifications
+ * 응답: { lastCheckedAt, notifications }
+ */
 export const fetchNotificationsThunk = createAsyncThunk(
   'notification/fetchNotifications',
   async (_, {rejectWithValue}) => {
     try {
-      const token = await getToken();
-      const res = await axios.get(`${BASE}/user/notifications`, {
-        headers: {Authorization: `Bearer ${token}`},
-      });
-      return res.data; // { lastCheckedAt, notifications }
+      const res = await apiClient.get('/user/notifications');
+      return res.data;
     } catch (error) {
-      console.error('🔴 알림 조회 실패:', error);
-      return rejectWithValue(error.response?.data || '알림 조회 실패');
+      const status = error?.response?.status;
+      const data = error?.response?.data;
+
+      console.error('🔴 알림 조회 실패:', {status, data});
+      return rejectWithValue(data || '알림 조회 실패');
     }
   },
 );
 
+/**
+ * ✅ 안읽은 알림 존재 여부
+ * GET /api/user/notifications/unread
+ * 응답: { hasUnread: true/false }
+ */
 export const fetchHasUnreadThunk = createAsyncThunk(
   'notification/fetchHasUnread',
   async (_, {rejectWithValue}) => {
     try {
-      const token = await getToken();
-      const res = await axios.get(`${BASE}/user/notifications/unread`, {
-        headers: {Authorization: `Bearer ${token}`},
-      });
+      const res = await apiClient.get('/user/notifications/unread');
       return res.data?.hasUnread ?? false;
     } catch (error) {
-      console.error('🔴 안읽은 알림 여부 조회 실패:', error);
-      return rejectWithValue(
-        error.response?.data || '안읽은 알림 여부 조회 실패',
-      );
+      const status = error?.response?.status;
+      const data = error?.response?.data;
+
+      console.error('🔴 안읽은 알림 여부 조회 실패:', {status, data});
+      return rejectWithValue(data || '안읽은 알림 여부 조회 실패');
     }
   },
 );
@@ -53,22 +57,20 @@ export const fetchUnreadCountThunk = createAsyncThunk(
   'notification/fetchUnreadCount',
   async (_, {rejectWithValue}) => {
     try {
-      const token = await getToken();
-      const res = await axios.get(`${BASE}/user/notifications/unread-count`, {
-        headers: {Authorization: `Bearer ${token}`},
-      });
+      const res = await apiClient.get('/user/notifications/unread-count');
       return Number(res.data?.unreadCount ?? 0);
     } catch (error) {
-      console.error('🔴 안읽은 알림 개수 조회 실패:', error);
-      return rejectWithValue(
-        error.response?.data || '안읽은 알림 개수 조회 실패',
-      );
+      const status = error?.response?.status;
+      const data = error?.response?.data;
+
+      console.error('🔴 안읽은 알림 개수 조회 실패:', {status, data});
+      return rejectWithValue(data || '안읽은 알림 개수 조회 실패');
     }
   },
 );
 
 /**
- * ✅ 알림 읽음 처리(서버 lastNotificationCheckedAt 갱신)
+ * ✅ 알림 읽음 처리
  * POST /api/user/notifications/mark-read
  * 응답 예: { lastCheckedAt, hasUnread:false, unreadCount:0 }
  */
@@ -76,37 +78,31 @@ export const markNotificationsReadThunk = createAsyncThunk(
   'notification/markRead',
   async (_, {rejectWithValue}) => {
     try {
-      const token = await getToken();
-      const res = await axios.post(
-        `${BASE}/user/notifications/mark-read`,
-        {},
-        {
-          headers: {Authorization: `Bearer ${token}`},
-        },
-      );
+      const res = await apiClient.post('/user/notifications/mark-read', {});
       return res.data;
     } catch (error) {
-      console.error('🔴 알림 읽음 처리 실패:', error);
-      return rejectWithValue(
-        error.response?.data || '알림 읽음 처리 실패',
-      );
+      const status = error?.response?.status;
+      const data = error?.response?.data;
+
+      console.error('🔴 알림 읽음 처리 실패:', {status, data});
+      return rejectWithValue(data || '알림 읽음 처리 실패');
     }
   },
 );
 
 /**
- * ✅ 앱 아이콘 뱃지 동기화 (핵심)
- * - 앱 뱃지 = 채팅 unread 총합 + 알림 unreadCount
- * - 어디서든 이 thunk 한번 호출하면 뱃지 정확히 맞춰짐
+ * ✅ 앱 아이콘 뱃지 동기화
+ * - total = 채팅 unread 총합 + 알림 unreadCount
+ * - 알림 unreadCount는 서버 기준으로 다시 땡김
  */
 export const syncAppBadgeThunk = createAsyncThunk(
   'notification/syncAppBadge',
   async (_, {dispatch, getState}) => {
-    // 1) 알림 unreadCount는 서버 기준으로
+    // 1) 알림 unreadCount는 서버 기준
     const action = await dispatch(fetchUnreadCountThunk());
     const notiCount = Number(action?.payload ?? 0) || 0;
 
-    // 2) 채팅 unread 총합은 store(chatRoomList) 기준으로
+    // 2) 채팅 unread 총합은 store 기준
     const state = getState();
     const chatTotal = Number(selectChatUnreadTotal(state) ?? 0) || 0;
 

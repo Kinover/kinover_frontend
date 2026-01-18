@@ -153,9 +153,9 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     bottom: getResponsiveHeight(110),
-    right: getResponsiveWidth(14),
-    width: getResponsiveIconSize(60),
-    height: getResponsiveIconSize(60),
+    right: getResponsiveWidth(13),
+    width: getResponsiveIconSize(65),
+    height: getResponsiveIconSize(65),
     backgroundColor: BACKGROUND_COLORS.primaryBg,
     borderRadius: 999,
     justifyContent: 'center',

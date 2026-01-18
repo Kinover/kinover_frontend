@@ -8,38 +8,39 @@ import React, {
   useRef,
   useState,
   useEffect,
+  useCallback,
 } from 'react';
 import {
   Text,
   View,
   StyleSheet,
   Platform,
-  Image,
-  ScrollView,
   TouchableOpacity,
   Keyboard,
   Animated,
   Dimensions,
+  SafeAreaView,
 } from 'react-native';
-import {
-  BottomSheetTextInput,
-  useBottomSheetDynamicSnapPoints,
-} from '@gorhom/bottom-sheet';
+
+import {BottomSheetTextInput, BottomSheetView} from '@gorhom/bottom-sheet';
 
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
-  getResponsiveIconSize,
   getResponsiveWidth,
 } from '../../../utils/responsive';
 
 import {useScheduleBottomSheetModal} from '../hooks/useScheduleBottomSheetModal';
 import ToastModal from '../../../components/ToastModal';
 import BottomSheetLayout from 'components/BottomSheetLayout';
-import {BACKGROUND_COLORS, BOTTOMSHEET_STYLE} from 'styles/style';
+import {BOTTOMSHEET_STYLE} from 'styles/style';
+import {BottomSheetButtons} from 'components/BottomSheetButtons';
 
 const {height: WINDOW_H} = Dimensions.get('window');
 const SAFE_GAP = 12;
+
+// ✅ footer 높이만큼 본문 바닥 여유 (버튼 가림/측정 보정용)
+const FOOTER_SPACE = getResponsiveHeight(86);
 
 const KIND = {
   INDIVIDUAL: 'individual',
@@ -60,7 +61,6 @@ const kindToScheduleType = kind => {
   }
 };
 
-// ✅ 숫자 id로 통일 (백엔드 participantIds = List<Long>)
 const toNumId = v => {
   if (v == null) return null;
   const n = Number(String(v).trim());
@@ -69,6 +69,41 @@ const toNumId = v => {
 
 const uniqNums = arr =>
   Array.from(new Set((arr || []).map(toNumId).filter(v => v != null)));
+
+const COLORS = {
+  bg: '#FFFFFF',
+
+  text: '#0B1220',
+  sub: '#566073',
+  muted: '#98A2B3',
+
+  card: '#FFFFFF',
+  surface: '#F6F7FB',
+  line: 'rgba(15, 23, 42, 0.08)',
+
+  brand: '#FFC84D',
+  brandDeep: '#FFB020',
+
+  danger: '#EF4444',
+
+  pill: '#0B1220',
+  pillText: '#FFFFFF',
+};
+
+const shadow = Platform.select({
+
+});
+
+const shadowStrong = Platform.select({
+  ios: {
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+  },
+  android: {elevation: 4},
+  default: {},
+});
 
 const ScheduleEditorBottomSheetModal = forwardRef(
   (
@@ -102,6 +137,19 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const [toastMessage, setToastMessage] = useState('');
     const [isClosing, setIsClosing] = useState(false);
 
+    const closingRef = useRef(false);
+
+    // ✅ "내용만" 올리는 값(미세 보정용)
+    const shiftAnim = useRef(new Animated.Value(0)).current;
+    const keyboardHeightRef = useRef(0);
+    const inputRef = useRef(null);
+
+    const tapToResetRef = useRef(false);
+    const isPresentedRef = useRef(false);
+
+    // ✅ 키보드 상태(스냅 제어용)
+    const keyboardOpenRef = useRef(false);
+
     const showToast = msg => {
       setToastMessage(msg);
       setToastVisible(true);
@@ -109,8 +157,8 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const hideToast = () => setToastVisible(false);
 
     const currentKind = kindProp ?? localKind;
-
     const selectedUserIds = selectedUserIdsProp ?? localSelectedUserIds;
+    const isAnniversaryMode = currentKind === KIND.ANNIVERSARY;
 
     const setSelectedUserIds = next => {
       if (isClosing) return;
@@ -126,7 +174,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       return uniqNums((familyUserList || []).map(u => u?.userId));
     }, [familyUserList]);
 
-    // ✅ ALL 판단: "전체 선택" = 가족 전체 id 개수와 동일
     const isAllSelected =
       currentKind === KIND.FAMILY &&
       allFamilyUserIds.length > 0 &&
@@ -137,8 +184,9 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       const setter = setKindProp ?? setLocalKind;
       setter(v);
 
+      // ✅ 기념일이면 구성원 선택 비움
       if (v === KIND.ANNIVERSARY) {
-        setSelectedUserIds([]);
+        (setSelectedUserIdsProp ?? setLocalSelectedUserIds)([]);
       }
     };
 
@@ -208,18 +256,13 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       [currentKind],
     );
 
-    // ✅ submit용 participantIds
-    // - ANNIVERSARY: undefined(혹은 [])
-    // - FAMILY: 전체선택이면 allFamilyUserIds를 넘김
-    // - INDIVIDUAL: 선택된 그대로
     const participantIdsForSubmit = useMemo(() => {
       if (currentKind === KIND.ANNIVERSARY) return undefined;
 
       if (currentKind === KIND.FAMILY) {
-        if (isAllSelected) return allFamilyUserIds; // ✅ 전체 선택이면 확장된 배열
+        if (isAllSelected) return allFamilyUserIds;
         return safeSelectedIds;
       }
-
       return safeSelectedIds;
     }, [currentKind, safeSelectedIds, isAllSelected, allFamilyUserIds]);
 
@@ -243,7 +286,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       };
     }, [editingSchedule, familyIdProp, dateProp, memoProp]);
 
-    // ✅ 핵심: hook이 payload를 객체로 만들어 onSubmit(payload) 하도록 파라미터 전달
     const {modalRef, scheduleRef, inputKey, handleSave, handleDelete} =
       useScheduleBottomSheetModal({
         editingSchedule,
@@ -257,45 +299,76 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         basePayload,
       });
 
-    const initialSnapPoints = useMemo(() => ['CONTENT_HEIGHT'], []);
-    const {
-      animatedSnapPoints,
-      animatedHandleHeight,
-      animatedContentHeight,
-      handleContentLayout,
-    } = useBottomSheetDynamicSnapPoints(initialSnapPoints);
+    const closeSheet = useCallback(() => {
+      if (closingRef.current) return;
+      closingRef.current = true;
+      setIsClosing(true);
+      modalRef.current?.dismiss?.();
+      setTimeout(() => {
+        closingRef.current = false;
+      }, 320);
+    }, [modalRef]);
 
-    const shiftAnim = useRef(new Animated.Value(0)).current;
-    const keyboardHeightRef = useRef(0);
-    const inputRef = useRef(null);
+    const handleSheetDismiss = useCallback(() => {
+      setIsClosing(false);
+      closingRef.current = false;
+      isPresentedRef.current = false;
+
+      tapToResetRef.current = false;
+      keyboardHeightRef.current = 0;
+      keyboardOpenRef.current = false;
+
+      Animated.timing(shiftAnim, {
+        toValue: 0,
+        duration: 140,
+        useNativeDriver: true,
+      }).start();
+    }, [shiftAnim]);
 
     useImperativeHandle(ref, () => ({
       present: () => {
         setIsClosing(false);
+        closingRef.current = false;
+        isPresentedRef.current = true;
+
+        tapToResetRef.current = false;
+        keyboardOpenRef.current = false;
+
         Animated.timing(shiftAnim, {
           toValue: 0,
           duration: 120,
           useNativeDriver: true,
         }).start();
-        modalRef.current?.present();
+
+        modalRef.current?.present?.();
       },
-      dismiss: () => {
-        setIsClosing(true);
-        modalRef.current?.dismiss();
-      },
+      dismiss: () => closeSheet(),
     }));
 
+    // ✅ 키보드 show/hide 시: 시트 스냅으로 "인풋이 보이게"
     useEffect(() => {
       const onShow = e => {
+        keyboardOpenRef.current = true;
         keyboardHeightRef.current = e?.endCoordinates?.height || 0;
+
+        // ✅ 핵심: 키보드 뜨면 시트 자체를 크게 (90%)
+        modalRef.current?.snapToIndex?.(1);
       };
+
       const onHide = () => {
+        keyboardOpenRef.current = false;
         keyboardHeightRef.current = 0;
+
         Animated.timing(shiftAnim, {
           toValue: 0,
           duration: 160,
           useNativeDriver: true,
-        }).start();
+        }).start(() => {
+          tapToResetRef.current = false;
+        });
+
+        // ✅ 키보드 내려가면 기본 스냅 복귀
+        modalRef.current?.snapToIndex?.(0);
       };
 
       const subShow = Keyboard.addListener(
@@ -311,50 +384,75 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         subShow.remove();
         subHide.remove();
       };
-    }, [shiftAnim]);
+    }, [shiftAnim, modalRef]);
 
-    const ensureVisible = refNode => {
-      const kbH = keyboardHeightRef.current || 0;
-      if (!kbH) return;
+    /**
+     * ✅ input이 "아직도" 가려지면 내용만 추가로 올림(미세 보정)
+     * - UserBottomSheet 로직 그대로: limitY에 FOOTER_SPACE까지 고려
+     */
+    const ensureVisible = useCallback(
+      refNode => {
+        if (tapToResetRef.current) return;
 
-      const keyboardTopY = WINDOW_H - kbH;
+        const kbH = keyboardHeightRef.current || 0;
 
-      requestAnimationFrame(() => {
-        const node = refNode?.current;
-        if (!node || typeof node.measureInWindow !== 'function') return;
+        requestAnimationFrame(() => {
+          if (tapToResetRef.current) return;
 
-        node.measureInWindow((x, y, w, h) => {
-          const inputBottomY = y + h;
-          const limitY = keyboardTopY - SAFE_GAP;
+          const node = refNode?.current;
+          if (!node || typeof node.measureInWindow !== 'function') return;
 
-          if (inputBottomY <= limitY) {
+          node.measureInWindow((x, y, w, h) => {
+            if (tapToResetRef.current) return;
+
+            const inputBottomY = y + h;
+            const baseLimit = kbH ? WINDOW_H - kbH : WINDOW_H;
+
+            // ✅ footer는 키보드 위로 안 올라가니까,
+            // ✅ 입력이 footer 영역까지 고려해서 보이게 해야 함
+            const limitY = baseLimit - SAFE_GAP - FOOTER_SPACE;
+
+            if (inputBottomY <= limitY) {
+              Animated.timing(shiftAnim, {
+                toValue: 0,
+                duration: 140,
+                useNativeDriver: true,
+              }).start();
+              return;
+            }
+
+            const diff = inputBottomY - limitY;
+
             Animated.timing(shiftAnim, {
-              toValue: 0,
-              duration: 140,
+              toValue: -diff,
+              duration: 180,
               useNativeDriver: true,
             }).start();
-            return;
-          }
-
-          const diff = inputBottomY - limitY;
-
-          Animated.timing(shiftAnim, {
-            toValue: -diff,
-            duration: 180,
-            useNativeDriver: true,
-          }).start();
+          });
         });
+      },
+      [shiftAnim],
+    );
+
+    const dismissKeyboardAndReset = useCallback(() => {
+      tapToResetRef.current = true;
+
+      Keyboard.dismiss();
+
+      Animated.timing(shiftAnim, {
+        toValue: 0,
+        duration: 160,
+        useNativeDriver: true,
+      }).start(() => {
+        tapToResetRef.current = false;
       });
-    };
+
+      modalRef.current?.snapToIndex?.(0);
+    }, [shiftAnim, modalRef]);
 
     const toggleUser = userId => {
       if (isClosing) return;
-
-      if (currentKind === KIND.ANNIVERSARY) {
-        showToast('기념일은 구성원을 선택하지 않아도 돼요.');
-        setSelectedUserIds([]);
-        return;
-      }
+      if (isAnniversaryMode) return;
 
       const id = toNumId(userId);
       if (id == null) return;
@@ -368,15 +466,10 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
     const selectAll = () => {
       if (isClosing) return;
+      if (isAnniversaryMode) return;
 
       if (currentKind === KIND.INDIVIDUAL) {
-        showToast('개별 일정은 구성원을 1명 이상 선택해주세요.');
-        return;
-      }
-
-      if (currentKind === KIND.ANNIVERSARY) {
-        showToast('기념일은 구성원을 선택하지 않아도 돼요.');
-        setSelectedUserIds([]);
+        showToast('개별 일정은 “전체” 선택을 사용할 수 없어요.');
         return;
       }
 
@@ -385,11 +478,12 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         return;
       }
 
-      // ✅ 전체 선택은 실제 전체 id 배열로 저장
       setSelectedUserIds(allFamilyUserIds);
     };
 
     const handlePressSave = async () => {
+      if (isClosing) return;
+
       const text = scheduleRef.current || '';
       if (!text.trim()) {
         showToast('일정 내용을 입력해주세요.');
@@ -403,7 +497,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         return;
       }
 
-      // ✅ FAMILY는 selectAll로 전체 id 배열이 들어오기 때문에 count===0이면 진짜 미선택
       if (currentKind === KIND.FAMILY && count === 0) {
         showToast('가족 일정은 전체 또는 1명 이상 선택이 필요해요.');
         return;
@@ -419,6 +512,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       }
 
       setIsClosing(true);
+
       try {
         await handleSave();
       } catch (e) {
@@ -428,7 +522,10 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     };
 
     const handlePressDelete = async () => {
+      if (isClosing) return;
+
       setIsClosing(true);
+
       try {
         await handleDelete();
       } catch (e) {
@@ -437,210 +534,256 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       }
     };
 
+    const footerProps = useMemo(() => {
+      return editingSchedule
+        ? {
+            onCancel: handlePressDelete,
+            onSave: handlePressSave,
+            cancelLabel: '삭제하기',
+            saveLabel: '저장하기',
+            autoCloseOnSave: false,
+          }
+        : {
+            onSave: handlePressSave,
+            saveLabel: '저장하기',
+            showCancel: false,
+            autoCloseOnSave: false,
+          };
+    }, [editingSchedule, handlePressDelete, handlePressSave]);
+
+    // ✅ "칩" 데이터: 전체를 맨 앞에
+    const memberChipData = useMemo(() => {
+      const normalized = (familyUserList || [])
+        .map(u => ({
+          type: 'USER',
+          userId: toNumId(u?.userId),
+          name: u?.name ?? '',
+        }))
+        .filter(x => x.userId != null);
+
+      return [{type: 'ALL', userId: -1, name: '전체'}, ...normalized];
+    }, [familyUserList]);
+
+    const selectedCount = useMemo(() => {
+      if (isAnniversaryMode) return 0;
+      if (currentKind === KIND.FAMILY && isAllSelected)
+        return allFamilyUserIds.length || safeSelectedIds.length;
+      return safeSelectedIds.length;
+    }, [
+      isAnniversaryMode,
+      currentKind,
+      isAllSelected,
+      allFamilyUserIds.length,
+      safeSelectedIds.length,
+    ]);
+
+    const renderChip = useCallback(
+      item => {
+        const isAll = item.type === 'ALL';
+        const id = item.userId;
+
+        const selected = isAll ? isAllSelected : safeSelectedIds.includes(id);
+
+        const onPress = () => {
+          if (isAnniversaryMode) return;
+          if (isAll) return selectAll();
+          return toggleUser(id);
+        };
+
+        const disabledByMode = currentKind === KIND.INDIVIDUAL && isAll;
+
+        return (
+          <TouchableOpacity
+            key={`${item.type}-${item.userId}`}
+            activeOpacity={0.85}
+            onPress={onPress}
+            disabled={isAnniversaryMode || disabledByMode}
+            style={[
+              styles.chip,
+              selected && styles.chipSelected,
+              (isAnniversaryMode || disabledByMode) && styles.chipDisabled,
+            ]}>
+            <Text
+              style={[styles.chipText, selected && styles.chipTextSelected]}
+              numberOfLines={1}>
+              {item.name}
+            </Text>
+            {selected ? <View style={styles.chipDot} /> : null}
+          </TouchableOpacity>
+        );
+      },
+      [
+        currentKind,
+        isAnniversaryMode,
+        isAllSelected,
+        safeSelectedIds,
+        selectAll,
+        toggleUser,
+      ],
+    );
+
     return (
       <>
         <BottomSheetLayout
           modalRef={modalRef}
-          snapPoints={animatedSnapPoints}
-          handleHeight={animatedHandleHeight}
-          contentHeight={animatedContentHeight}
-          onContentLayout={handleContentLayout}
+          // ✅ 2단 스냅: 기본 78%, 키보드 시 90%
+          snapPoints={['78%', '98%']}
           keyboardBehavior={Platform.OS === 'ios' ? 'interactive' : 'none'}
           androidKeyboardInputMode="adjustNothing"
+          onDismiss={handleSheetDismiss}
           title={editingSchedule ? '일정 수정' : '일정 추가'}
-          subtitle="가족과 일정을 공유해요"
-          useFixedFooter={false}
-          footerProps={
-            editingSchedule
-              ? {
-                  onCancel: handlePressDelete,
-                  onSave: handlePressSave,
-                  cancelLabel: '삭제하기',
-                  saveLabel: '저장하기',
-                }
-              : {
-                  onSave: handlePressSave,
-                  saveLabel: '저장',
-                  showCancel: false,
-                }
-          }
-          contentTranslateY={shiftAnim}>
-          <View>
-            <Text style={styles.sectionLabel}>성격</Text>
-            <View style={styles.kindRow}>
-              <TouchableOpacity
-                activeOpacity={0.9}
-                onPress={() => setKindSafe(KIND.INDIVIDUAL)}
-                style={[
-                  styles.kindChip,
-                  currentKind === KIND.INDIVIDUAL && styles.kindChipActive,
-                ]}>
-                <Text
-                  style={[
-                    styles.kindText,
-                    currentKind === KIND.INDIVIDUAL && styles.kindTextActive,
-                  ]}>
-                  개별
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.9}
-                onPress={() => setKindSafe(KIND.FAMILY)}
-                style={[
-                  styles.kindChip,
-                  currentKind === KIND.FAMILY && styles.kindChipActive,
-                ]}>
-                <Text
-                  style={[
-                    styles.kindText,
-                    currentKind === KIND.FAMILY && styles.kindTextActive,
-                  ]}>
-                  가족
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                activeOpacity={0.9}
-                onPress={() => setKindSafe(KIND.ANNIVERSARY)}
-                style={[
-                  styles.kindChip,
-                  currentKind === KIND.ANNIVERSARY && styles.kindChipActive,
-                ]}>
-                <Text
-                  style={[
-                    styles.kindText,
-                    currentKind === KIND.ANNIVERSARY && styles.kindTextActive,
-                  ]}>
-                  기념일
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {(currentKind == KIND.FAMILY || currentKind == KIND.INDIVIDUAL) && (
-              <>
-                <Text style={styles.sectionLabel}>구성원</Text>
-
-                <View style={styles.memberCard}>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    keyboardShouldPersistTaps="always"
-                    contentContainerStyle={styles.memberScrollContent}>
-                    {/* ALL */}
-                    <View style={styles.memberItem}>
+          subtitle="가족과 일정을 공유해요."
+          useInternalScroll={false}>
+          <SafeAreaView style={{flex: 1, backgroundColor: COLORS.bg}}>
+            {/* ✅ 바텀시트 내부 아무 데나 탭하면 키보드 내림 + 원복 */}
+            <View
+              style={{flex: 1}}
+              onStartShouldSetResponder={() => true}
+              onResponderRelease={dismissKeyboardAndReset}>
+              <BottomSheetView style={{flex: 1}}>
+                <Animated.View
+                  style={{
+                    flex: 1,
+                    transform: [{translateY: shiftAnim}],
+                    // ✅ footer 공간 확보 (UserBottomSheet처럼)
+                    paddingBottom: FOOTER_SPACE + getResponsiveHeight(18),
+                  }}>
+                  <View style={styles.content}>
+                    {/* ----------------- 1) 구분 ----------------- */}
+                    <Text style={styles.sectionTitle}>구분</Text>
+                    <View style={styles.segmentWrap}>
                       <TouchableOpacity
                         activeOpacity={0.9}
-                        onPress={selectAll}
+                        onPress={() => setKindSafe(KIND.INDIVIDUAL)}
                         style={[
-                          styles.avatarBtn2,
-                          isAllSelected && styles.avatarBtn2Selected,
-                          (currentKind === KIND.INDIVIDUAL ||
-                            currentKind === KIND.ANNIVERSARY) &&
-                            styles.avatarBtn2Disabled,
+                          styles.segmentItem,
+                          currentKind === KIND.INDIVIDUAL &&
+                            styles.segmentItemActive,
                         ]}>
-                        <View style={styles.allCircle2}>
-                          {isAllSelected && (
-                            <View style={styles.avatarOverlay2} />
-                          )}
-                          <Text
-                            style={[
-                              styles.allText2,
-                              isAllSelected && styles.allText2Selected,
-                            ]}>
-                            ALL
-                          </Text>
-                        </View>
-
-                        {isAllSelected && (
-                          <View style={styles.checkCenterWrap}>
-                            <Image
-                              source={require('../../../assets/icons/check-yellow.png')}
-                              style={styles.checkCenterIcon}
-                            />
-                          </View>
-                        )}
+                        <Text
+                          style={[
+                            styles.segmentText,
+                            currentKind === KIND.INDIVIDUAL &&
+                              styles.segmentTextActive,
+                          ]}>
+                          개별
+                        </Text>
                       </TouchableOpacity>
-                      <Text style={styles.memberName} numberOfLines={1}>
-                        전체
-                      </Text>
+
+                      <TouchableOpacity
+                        activeOpacity={0.9}
+                        onPress={() => setKindSafe(KIND.FAMILY)}
+                        style={[
+                          styles.segmentItem,
+                          currentKind === KIND.FAMILY &&
+                            styles.segmentItemActive,
+                        ]}>
+                        <Text
+                          style={[
+                            styles.segmentText,
+                            currentKind === KIND.FAMILY &&
+                              styles.segmentTextActive,
+                          ]}>
+                          가족
+                        </Text>
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        activeOpacity={0.9}
+                        onPress={() => setKindSafe(KIND.ANNIVERSARY)}
+                        style={[
+                          styles.segmentItem,
+                          currentKind === KIND.ANNIVERSARY &&
+                            styles.segmentItemActive,
+                        ]}>
+                        <Text
+                          style={[
+                            styles.segmentText,
+                            currentKind === KIND.ANNIVERSARY &&
+                              styles.segmentTextActive,
+                          ]}>
+                          기념일
+                        </Text>
+                      </TouchableOpacity>
                     </View>
 
-                    {/* USERS */}
-                    {familyUserList.map(user => {
-                      const id = toNumId(user?.userId);
-                      if (id == null) return null;
+                    {/* ----------------- 2) 구성원 ----------------- */}
+                    <View style={{marginTop: getResponsiveHeight(18)}}>
+                      <View style={styles.sectionRow}>
+                        <Text style={styles.sectionTitle}>구성원</Text>
 
-                      const isSel = safeSelectedIds.includes(id);
-                      const isLocked = currentKind === KIND.ANNIVERSARY;
+                        {isAnniversaryMode ? (
+                          <View style={styles.badgeInfo}>
+                            <Text style={styles.badgeInfoText}>자동</Text>
+                          </View>
+                        ) : (
+                          <Text style={styles.countText}>
+                            {selectedCount}명 선택
+                          </Text>
+                        )}
+                      </View>
 
-                      return (
-                        <View key={String(id)} style={styles.memberItem}>
-                          <TouchableOpacity
-                            activeOpacity={0.9}
-                            onPress={() => toggleUser(id)}
-                            style={[
-                              styles.avatarBtn2,
-                              isSel && styles.avatarBtn2Selected,
-                              isLocked && styles.avatarBtn2Disabled,
-                            ]}>
-                            <Image
-                              source={{uri: user.image}}
-                              style={styles.avatarImage2}
-                            />
-
-                            {isSel && <View style={styles.avatarOverlay2} />}
-                            {isSel && (
-                              <View style={styles.checkCenterWrap}>
-                                <Image
-                                  source={require('../../../assets/icons/check-yellow.png')}
-                                  style={styles.checkCenterIcon}
-                                />
-                              </View>
-                            )}
-
-                            {isSel && <View style={styles.avatarRing2} />}
-                          </TouchableOpacity>
-
-                          <Text style={styles.memberName} numberOfLines={1}>
-                            {user.name}
+                      {isAnniversaryMode ? (
+                        <View style={styles.infoCard}>
+                          <Text style={styles.infoTitle}>
+                            기념일은 구성원 선택이 필요 없어요
+                          </Text>
+                          <Text style={styles.infoDesc}>
+                            저장하면 가족 공통 기념일로 등록돼요.
                           </Text>
                         </View>
-                      );
-                    })}
-                  </ScrollView>
+                      ) : (
+                        <View style={styles.memberCard}>
+                          <View style={styles.chipWrap}>
+                            {memberChipData.map(renderChip)}
+                          </View>
 
-                  <Text style={styles.helperText2}>
-                    {currentKind === KIND.INDIVIDUAL
-                      ? '개별: 구성원 1명 이상 선택'
-                      : currentKind === KIND.FAMILY
-                      ? '가족: 전체 또는 여러 명 선택'
-                      : '기념일: 구성원 선택 없이 저장'}
-                  </Text>
-                </View>
-              </>
-            )}
+                          <View style={styles.tipRow}>
+                            <View style={styles.tipDot} />
+                            <Text style={styles.tipText}>
+                              개별: 1명 이상 · 가족: 전체 또는 여러 명
+                            </Text>
+                          </View>
+                        </View>
+                      )}
+                    </View>
 
-            <Text style={styles.sectionLabel}>일정 내용</Text>
-            <View style={styles.inputPanel}>
-              <BottomSheetTextInput
-                ref={inputRef}
-                key={`input-${inputKey}`}
-                defaultValue={scheduleRef.current}
-                onChangeText={text => {
-                  if (!isClosing) scheduleRef.current = text;
-                }}
-                onFocus={() => ensureVisible(inputRef)}
-                placeholder="예) 병원 예약, 가족 모임"
-                placeholderTextColor={COLORS.textTertiary}
-                style={styles.input}
-                multiline
-              />
-              <Text style={styles.inputHint}>
-                최대 2~3줄로 간단히 적어도 좋아요
-              </Text>
+                    {/* ----------------- 3) 일정 내용 ----------------- */}
+                    <View style={{marginTop: getResponsiveHeight(18)}}>
+                      <Text style={[styles.sectionTitle, {marginBottom: 3}]}>
+                        내용
+                      </Text>
+                      <Text style={styles.inputHelp}>
+                        핵심만 짧게 적어도 충분해요.
+                      </Text>
+
+                      <BottomSheetTextInput
+                        ref={inputRef}
+                        key={`input-${inputKey}`}
+                        defaultValue={scheduleRef.current}
+                        onChangeText={text => {
+                          if (!isClosing) scheduleRef.current = text;
+                        }}
+                        onFocus={() => {
+                          tapToResetRef.current = false;
+                          ensureVisible(inputRef);
+                        }}
+                        placeholder="예) 병원 예약, 가족 모임"
+                        placeholderTextColor={COLORS.muted}
+                        style={styles.input}
+                        multiline
+                      />
+                    </View>
+
+                    {/* ----------------- Footer Buttons ----------------- */}
+                    <View style={styles.footerFixed}>
+                      <BottomSheetButtons {...footerProps} />
+                    </View>
+                  </View>
+                </Animated.View>
+              </BottomSheetView>
             </View>
-          </View>
+          </SafeAreaView>
         </BottomSheetLayout>
 
         <ToastModal
@@ -656,204 +799,194 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 ScheduleEditorBottomSheetModal.displayName = 'ScheduleEditorBottomSheetModal';
 export default ScheduleEditorBottomSheetModal;
 
-const COLORS = {
-  BG: '#FFFFFF',
-  PANEL: '#F9FAFB',
-  BORDER: '#E5E7EB',
-  TEXT: '#111827',
-  SUB: '#6B7280',
-  MUTED: '#9CA3AF',
-  BRAND: '#FFC84D',
-  BRAND_SOFT: '#FFF8E1',
-  OVERLAY: 'rgba(17, 24, 39, 0.35)',
-  SHADOW: 'rgba(17, 24, 39, 0.08)',
-};
-
 const styles = StyleSheet.create({
-  sectionLabel: {
+  content: {
+    flex: 1,
+    paddingTop: getResponsiveHeight(6),
+    // ✅ 여기 paddingBottom은 Animated.View에서 footer 공간 확보하니까 과하게 안 줘도 됨
+    paddingBottom: getResponsiveHeight(18),
+  },
+
+  footerFixed: {
+    paddingTop: getResponsiveHeight(12),
+    paddingBottom: getResponsiveHeight(2),
+  },
+
+  sectionTitle: {
     fontSize: BOTTOMSHEET_STYLE.sectionLabel.fontSize,
     fontFamily: BOTTOMSHEET_STYLE.sectionLabel.fontFamily,
-    color: BOTTOMSHEET_STYLE.sectionLabel.color,
-    marginBottom: BOTTOMSHEET_STYLE.sectionLabel.marginBottom,
-    marginTop: BOTTOMSHEET_STYLE.sectionLabel.marginTop,
+    color: COLORS.text,
+    marginBottom: getResponsiveHeight(10),
+    marginTop: getResponsiveHeight(6),
   },
 
-  kindRow: {
+  /* ----------------- Segment Control ----------------- */
+  segmentWrap: {
     flexDirection: 'row',
-    gap: getResponsiveWidth(8),
-    marginBottom: getResponsiveHeight(16),
+    backgroundColor: COLORS.surface,
+    borderRadius: 999,
+    padding: getResponsiveWidth(6),
+    borderWidth: 1,
+    borderColor: COLORS.line,
   },
-  kindChip: {
+  segmentItem: {
     flex: 1,
-    paddingVertical: getResponsiveHeight(10),
-    borderRadius: 14,
-    backgroundColor: COLORS.PANEL,
-    borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    height: getResponsiveHeight(38),
+    borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  kindChipActive: {
-    backgroundColor: COLORS.BRAND_SOFT,
-    borderColor: COLORS.BRAND,
+  segmentItemActive: {
+    backgroundColor: COLORS.pill,
+    ...shadowStrong,
   },
-  kindText: {
-    fontSize: getResponsiveFontSize(12.5),
+  segmentText: {
+    fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-SemiBold',
-    color: COLORS.SUB,
+    color: COLORS.sub,
+    letterSpacing: -0.2,
   },
-  kindTextActive: {color: COLORS.TEXT},
+  segmentTextActive: {color: COLORS.pillText},
 
-  memberCard: {
-    backgroundColor: BACKGROUND_COLORS.secondaryBg,
+  /* ----------------- Section Row ----------------- */
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  badgeInfo: {
+    paddingHorizontal: getResponsiveWidth(10),
+    paddingVertical: getResponsiveHeight(5),
+    borderRadius: 999,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+  },
+  badgeInfoText: {
+    fontSize: getResponsiveFontSize(11.5),
+    fontFamily: 'Pretendard-SemiBold',
+    color: COLORS.sub,
+  },
+  countText: {
+    fontSize: getResponsiveFontSize(12),
+    fontFamily: 'Pretendard-SemiBold',
+    color: COLORS.sub,
+  },
+
+  /* ----------------- Info Card ----------------- */
+  infoCard: {
+    backgroundColor: COLORS.surface,
     borderRadius: 16,
+    paddingHorizontal: getResponsiveWidth(14),
+    paddingVertical: getResponsiveHeight(14),
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
-    paddingVertical: getResponsiveHeight(12),
-    paddingTop: getResponsiveHeight(12),
-    marginBottom: getResponsiveHeight(16),
-
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: {width: 0, height: 6},
-    elevation: 2,
+    borderColor: COLORS.line,
   },
-
-  memberScrollContent: {paddingVertical: getResponsiveHeight(4)},
-
-  memberItem: {
-    width: getResponsiveWidth(76),
-    alignItems: 'center',
-    marginRight: getResponsiveWidth(10),
+  infoTitle: {
+    fontSize: getResponsiveFontSize(13.5),
+    fontFamily: 'Pretendard-SemiBold',
+    color: COLORS.text,
+    marginBottom: getResponsiveHeight(6),
   },
-
-  avatarBtn2: {
-    width: getResponsiveIconSize(66),
-    height: getResponsiveIconSize(66),
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: COLORS.BORDER,
-    backgroundColor: '#FFFFFF',
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarBtn2Selected: {
-    borderColor: COLORS.BRAND,
-    backgroundColor: COLORS.BRAND_SOFT,
-  },
-  avatarBtn2Disabled: {opacity: 0.55},
-
-  avatarImage2: {width: '100%', height: '100%', borderRadius: 999},
-
-  avatarOverlay2: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: COLORS.OVERLAY,
-  },
-
-  avatarRing2: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: COLORS.BRAND,
-  },
-
-  checkCenterWrap: {
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    transform: [
-      {translateX: -getResponsiveWidth(12)},
-      {translateY: -getResponsiveWidth(12)},
-    ],
-    width: getResponsiveWidth(24),
-    height: getResponsiveWidth(24),
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOpacity: 0.18,
-        shadowRadius: 6,
-        shadowOffset: {width: 0, height: 2},
-      },
-      android: {elevation: 3},
-    }),
-  },
-
-  checkCenterIcon: {
-    width: getResponsiveWidth(16),
-    height: getResponsiveWidth(16),
-    resizeMode: 'contain',
-  },
-
-  memberName: {
-    marginTop: getResponsiveHeight(7),
+  infoDesc: {
     fontSize: getResponsiveFontSize(12),
     fontFamily: 'Pretendard-Medium',
-    color: COLORS.TEXT,
-    maxWidth: getResponsiveWidth(74),
-    textAlign: 'center',
+    color: COLORS.sub,
+    lineHeight: getResponsiveFontSize(17),
   },
 
-  helperText2: {
-    marginTop: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(14),
+  /* ----------------- Member (Chip) Card ----------------- */
+  memberCard: {
+    backgroundColor: COLORS.card,
+    borderRadius: 18,
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(12),
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    ...shadow,
+  },
+
+  chipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingTop: getResponsiveHeight(2),
+  },
+
+  chip: {
+    height: getResponsiveHeight(34),
+    paddingHorizontal: getResponsiveWidth(12),
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    backgroundColor: COLORS.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    marginRight: getResponsiveWidth(8),
+    marginBottom: getResponsiveHeight(8),
+    maxWidth: getResponsiveWidth(140),
+  },
+  chipSelected: {
+    backgroundColor: COLORS.pill,
+    borderColor: COLORS.pill,
+  },
+  chipDisabled: {opacity: 0.45},
+
+  chipText: {
+    fontSize: getResponsiveFontSize(12.5),
+    fontFamily: 'Pretendard-SemiBold',
+    color: COLORS.sub,
+    letterSpacing: -0.2,
+  },
+  chipTextSelected: {color: COLORS.pillText},
+
+  chipDot: {
+    marginLeft: getResponsiveWidth(6),
+    width: getResponsiveWidth(6),
+    height: getResponsiveWidth(6),
+    borderRadius: 999,
+    backgroundColor: COLORS.brand,
+  },
+
+  tipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(8),
+    marginTop: getResponsiveHeight(4),
+  },
+  tipDot: {
+    width: getResponsiveWidth(6),
+    height: getResponsiveWidth(6),
+    borderRadius: 999,
+    backgroundColor: COLORS.brandDeep,
+  },
+  tipText: {
     fontSize: getResponsiveFontSize(11.5),
     fontFamily: 'Pretendard-Medium',
-    color: COLORS.SUB,
+    color: COLORS.sub,
   },
 
-  inputPanel: {
-    backgroundColor: COLORS.PANEL,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: COLORS.BORDER,
-    paddingHorizontal: getResponsiveWidth(12),
-    paddingTop: getResponsiveHeight(10),
-    paddingBottom: getResponsiveHeight(10),
-    marginBottom: getResponsiveHeight(8),
-  },
-
+  /* ----------------- Input ----------------- */
   input: {
-    textAlignVertical: 'top',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    minHeight: getResponsiveHeight(120),
+    borderRadius: 14,
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: COLORS.BORDER,
+    borderColor: COLORS.line,
     paddingHorizontal: getResponsiveWidth(12),
     paddingVertical:
       Platform.OS === 'android'
         ? getResponsiveHeight(10)
         : getResponsiveHeight(12),
-    height: getResponsiveHeight(110),
     fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-Regular',
-    color: COLORS.TEXT,
+    color: COLORS.text,
+    textAlignVertical: 'top',
   },
-
-  inputHint: {
-    marginTop: getResponsiveHeight(8),
-    fontSize: getResponsiveFontSize(11.5),
-    fontFamily: 'Pretendard-Medium',
-    color: COLORS.MUTED,
+  inputHelp: {
+    marginBottom: getResponsiveHeight(10),
+    fontSize: getResponsiveFontSize(11),
+    fontFamily: 'Pretendard-Regular',
+    color: '#6B7280',
   },
-
-  allCircle2: {
-    width: '100%',
-    height: '100%',
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-  },
-  allText2: {
-    fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-Bold',
-    color: COLORS.MUTED,
-    letterSpacing: 0.2,
-    zIndex: 2,
-  },
-  allText2Selected: {color: '#FFFFFF'},
 });

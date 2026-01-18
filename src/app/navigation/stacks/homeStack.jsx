@@ -3,7 +3,6 @@ import {createStackNavigator} from '@react-navigation/stack';
 import {Platform} from 'react-native';
 
 import HomeScreen from '../../../features/home/screens';
-import NotificationScreen from '../../../features/notification/screens/NotificationScreen';
 import SettingScreen from '../../../features/setting/screens/SettingScreen';
 import NotificationSettingScreen from '../../../features/setting/screens/NotificationSettingScreen';
 import {
@@ -81,15 +80,7 @@ const HomeStack = ({route}) => {
         })}
       />
 
-      <Stack.Screen
-        name="알림화면"
-        component={NotificationScreen}
-        options={({navigation}) => ({
-          gestureEnabled: true,
-          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-          headerTitle: '',
-        })}
-      />
+
 
       <Stack.Screen
         name="설정화면"

@@ -1,6 +1,6 @@
 // src/features/chat/store/messageThunk.js
-import axios from 'axios';
-import {getToken} from '../../../utils/storage';
+
+import {apiClient} from '../../../utils/apiClient';
 import {sendChat, sendRead, isChatSocketOpen} from '../hooks/ChatSocket';
 import {
   setMessageList,
@@ -72,25 +72,35 @@ const genClientId = () => {
 /* =========================
  * 1) 메시지 fetch (REST)
  * ========================= */
+/**
+ * GET /api/chatRoom/{chatRoomId}/messages/fetch?limit=...&before=...
+ */
 export const fetchMessageThunk = (chatRoomId, before = null, limit = 20) => {
   return async dispatch => {
     dispatch(setMessageLoading({chatRoomId, isLoading: true}));
     dispatch(setMessageFetched({chatRoomId, isFetched: false}));
 
     try {
-      const token = await getToken();
+      const res = await apiClient.get(
+        `/chatRoom/${chatRoomId}/messages/fetch`,
+        {
+          params: {
+            limit,
+            ...(before ? {before: String(before)} : {}),
+          },
+        },
+      );
 
-      let apiUrl = `https://kinover.shop/api/chatRoom/${chatRoomId}/messages/fetch?limit=${limit}`;
-      if (before) apiUrl += `&before=${encodeURIComponent(before)}`;
-
-      const response = await axios.get(apiUrl, {
-        headers: {Authorization: `Bearer ${token}`},
-      });
-
-      dispatch(setMessageList({chatRoomId, messages: response.data}));
+      dispatch(setMessageList({chatRoomId, messages: res.data}));
       dispatch(bumpListRevision());
     } catch (error) {
-      dispatch(setMessageError({chatRoomId, error: error.message}));
+      dispatch(
+        setMessageError({
+          chatRoomId,
+          error:
+            error?.response?.data || error?.message || '메시지 조회 실패',
+        }),
+      );
     } finally {
       dispatch(setMessageFetched({chatRoomId, isFetched: true}));
       dispatch(setMessageLoading({chatRoomId, isLoading: false}));
@@ -98,25 +108,36 @@ export const fetchMessageThunk = (chatRoomId, before = null, limit = 20) => {
   };
 };
 
+/**
+ * 더보기(페이징)
+ * GET /api/chatRoom/{chatRoomId}/messages/fetch?limit=...&before=...
+ */
 export const fetchMoreMessagesThunk = (chatRoomId, beforeTime) => {
   return async dispatch => {
     try {
-      const token = await getToken();
       const limit = 20;
 
-      const apiUrl = `https://kinover.shop/api/chatRoom/${chatRoomId}/messages/fetch?limit=${limit}&before=${encodeURIComponent(
-        beforeTime,
-      )}`;
+      const res = await apiClient.get(
+        `/chatRoom/${chatRoomId}/messages/fetch`,
+        {
+          params: {
+            limit,
+            before: String(beforeTime),
+          },
+        },
+      );
 
-      const response = await axios.get(apiUrl, {
-        headers: {Authorization: `Bearer ${token}`},
-      });
+      dispatch(appendMessageList({chatRoomId, messages: res.data}));
 
-      dispatch(appendMessageList({chatRoomId, messages: response.data}));
-
-      return {payload: response.data};
+      return {payload: res.data};
     } catch (error) {
-      dispatch(setMessageError({chatRoomId, error: error.message}));
+      dispatch(
+        setMessageError({
+          chatRoomId,
+          error:
+            error?.response?.data || error?.message || '메시지 추가 조회 실패',
+        }),
+      );
       return {payload: []};
     }
   };
@@ -271,22 +292,14 @@ export const receiveReadPointerThunk = payload => {
  * 4) 읽음 처리 (REST + WS)
  * ========================= */
 /**
- * ✅ REST 저장 (백엔드: POST /api/chatRoom/{chatRoomId}/read)
+ * ✅ REST 저장
+ * POST /api/chatRoom/{chatRoomId}/read
  * body: { lastReadAt: LocalDateTime }
- * - 프론트에서는 ISO 문자열로 보내도 Jackson이 받게 설정돼 있으면 통과
- * - 혹시 문제나면 "2025-12-28T12:34:56" 형태로 맞춰서 보내면 됨
  */
 export const markReadRestThunk = (chatRoomId, lastReadAt) => {
   return async dispatch => {
     try {
-      const token = await getToken();
-      const apiUrl = `https://kinover.shop/api/chatRoom/${chatRoomId}/read`;
-
-      await axios.post(
-        apiUrl,
-        {lastReadAt},
-        {headers: {Authorization: `Bearer ${token}`}},
-      );
+      await apiClient.post(`/chatRoom/${chatRoomId}/read`, {lastReadAt});
 
       dispatch(markRoomRead(String(chatRoomId)));
       dispatch(
@@ -297,8 +310,12 @@ export const markReadRestThunk = (chatRoomId, lastReadAt) => {
         }),
       );
     } catch (e) {
-      // 실패해도 UI는 WS로 커버될 수 있어서 조용히 둠(원하면 로그)
-      dispatch(setMessageError({chatRoomId, error: e.message}));
+      dispatch(
+        setMessageError({
+          chatRoomId,
+          error: e?.response?.data || e?.message || '읽음 처리 실패',
+        }),
+      );
     }
   };
 };
@@ -342,12 +359,7 @@ export const markReadWsThunk = (chatRoomId, lastReadAt) => {
 export const fetchReadPointersThunk = chatRoomId => {
   return async dispatch => {
     try {
-      const token = await getToken();
-      const apiUrl = `https://kinover.shop/api/chatRoom/${chatRoomId}/readPointers`;
-
-      const res = await axios.get(apiUrl, {
-        headers: {Authorization: `Bearer ${token}`},
-      });
+      const res = await apiClient.get(`/chatRoom/${chatRoomId}/readPointers`);
 
       // res.data: { chatRoomId, pointers: [{userId,lastReadAt}, ...] }
       dispatch(
@@ -357,7 +369,12 @@ export const fetchReadPointersThunk = chatRoomId => {
         }),
       );
     } catch (e) {
-      dispatch(setMessageError({chatRoomId, error: e.message}));
+      dispatch(
+        setMessageError({
+          chatRoomId,
+          error: e?.response?.data || e?.message || '포인터 조회 실패',
+        }),
+      );
     }
   };
 };

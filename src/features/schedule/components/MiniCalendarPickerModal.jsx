@@ -1,28 +1,27 @@
 /* eslint-disable react-native/no-inline-styles */
-// src/features/schedule/components/MiniCalendarPickerModal.jsx
-import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
+// src/features/schedule/components/MiniCalendarPickerBottomSheet.jsx
+
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
-  Modal,
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  TouchableWithoutFeedback,
-  Animated,
+  FlatList,
+  SafeAreaView,
   Platform,
 } from 'react-native';
 
+import BottomSheetLayout from 'components/BottomSheetLayout';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
-
-import {BACKGROUND_COLORS, BUTTON_STYLES} from 'styles/style';
-
-const R = 18;
+} from 'utils/responsive';
+import {BottomSheetButtons} from 'components/BottomSheetButtons';
 
 const pad2 = n => String(n).padStart(2, '0');
+const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
 const toMidday = d => {
   const x = new Date(d);
@@ -30,533 +29,632 @@ const toMidday = d => {
   return x;
 };
 
-const sameYMD = (a, b) => {
-  if (!a || !b) return false;
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-};
+const daysInMonth = (year, month0) => new Date(year, month0 + 1, 0).getDate();
 
-const clampMonth = (y, m, minYear, maxYear) => {
-  const yy = Math.min(Math.max(y, minYear), maxYear);
-  let mm = m;
-
-  if (yy === minYear && mm < 0) mm = 0;
-  if (yy === maxYear && mm > 11) mm = 11;
-
-  return {y: yy, m: mm};
-};
-
-const addMonths = (y, m, delta, minYear, maxYear) => {
-  let ny = y;
-  let nm = m + delta;
-
-  while (nm < 0) {
-    nm += 12;
-    ny -= 1;
-  }
-  while (nm > 11) {
-    nm -= 12;
-    ny += 1;
-  }
-
-  const clamped = clampMonth(ny, nm, minYear, maxYear);
-  return clamped;
+const makeDateSafe = (y, m0, d) => {
+  const maxD = daysInMonth(y, m0);
+  const dd = clamp(d, 1, maxD);
+  return toMidday(new Date(y, m0, dd));
 };
 
 const getDowLabel = date => {
-  const d = date.getDay();
-  return ['일', '월', '화', '수', '목', '금', '토'][d] || '';
+  const dd = date.getDay();
+  return ['일', '월', '화', '수', '목', '금', '토'][dd] || '';
 };
 
-const buildMonthGrid = (year, month) => {
-  // 6주 * 7일 고정 그리드
-  const first = new Date(year, month, 1);
-  const startDow = first.getDay(); // 0=일
-  const start = new Date(year, month, 1 - startDow);
-
-  const cells = [];
-  for (let i = 0; i < 42; i += 1) {
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    cells.push({
-      date: d,
-      isCurrentMonth: d.getMonth() === month,
-    });
-  }
-  return cells;
+const STEP = {
+  YEAR: 'YEAR',
+  MONTH: 'MONTH',
+  DAY: 'DAY',
 };
 
-export default function MiniCalendarPickerModal({
-  visible,
-  onClose,
+const UI = {
+  bg: '#FFFFFF',
+
+  // surfaces
+  panel: '#F6F7FB',
+  card: '#FFFFFF',
+  surface: '#F9FAFB',
+
+  // text
+  text: '#0B1220',
+  sub: '#667085',
+  muted: '#98A2B3',
+
+  // lines
+  line: 'rgba(15, 23, 42, 0.08)',
+  lineSoft: 'rgba(15, 23, 42, 0.06)',
+
+  // brand
+  brand: '#FFC84D',
+  brandDeep: '#FFB020',
+
+  // action
+  primaryBg: '#111827',
+  primaryText: '#FFFFFF',
+};
+
+const shadow = Platform.select({
+
+});
+
+const shadowStrong = Platform.select({
+  ios: {
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    shadowOffset: {width: 0, height: 10},
+  },
+  android: {elevation: 3},
+});
+
+const DAY_COLS = 7;
+
+// ✅ footer 높이만큼 본문 바닥 여유 (버튼 가림 방지)
+const FOOTER_SPACE = getResponsiveHeight(88);
+
+export default function MiniCalendarPickerBottomSheet({
+  modalRef,
+  snapPoints, // optional
+
+  enableContentPanningGesture = false,
+  animationConfigs,
+  keyboardBehavior = 'none',
+  androidKeyboardInputMode = 'adjustNothing',
+
   onConfirm,
-  initialDate = new Date(),
-  minYear = 2000,
-  maxYear = 2100,
+  onClose,
+
+  initialDate,
+  minYear = 1950,
+  maxYear = 2025,
+
+  defaultYear = 2026,
+  forceDefaultYear = false,
+
+  closeOnPressOutside = true,
 }) {
-  const initialSafe = useMemo(
-    () => toMidday(initialDate || new Date()),
-    [initialDate],
-  );
+  const baseDate = useMemo(() => {
+    const safeDefaultYear = clamp(defaultYear, minYear, maxYear);
+    const hasInitial = !!initialDate;
 
-  const [tempSelected, setTempSelected] = useState(initialSafe);
-  const [viewYear, setViewYear] = useState(initialSafe.getFullYear());
-  const [viewMonth, setViewMonth] = useState(initialSafe.getMonth());
+    if (!hasInitial) return makeDateSafe(safeDefaultYear, 0, 1);
 
-  // open마다 초기화
-  useEffect(() => {
-    if (!visible) return;
-    const d = toMidday(initialDate || new Date());
-    setTempSelected(d);
-    setViewYear(d.getFullYear());
-    setViewMonth(d.getMonth());
-  }, [visible, initialDate]);
-
-  // slide-up 애니메이션
-  const translateY = useRef(new Animated.Value(40)).current;
-  const opacity = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (visible) {
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: 160,
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 220,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    } else {
-      // 닫힐 때는 Modal 자체가 내려가서 별도 처리 최소화
-      translateY.setValue(40);
-      opacity.setValue(0);
+    const dd = toMidday(initialDate);
+    if (forceDefaultYear) {
+      return makeDateSafe(safeDefaultYear, dd.getMonth(), dd.getDate());
     }
-  }, [visible, opacity, translateY]);
+    return dd;
+  }, [initialDate, defaultYear, minYear, maxYear, forceDefaultYear]);
 
-  const today = useMemo(() => toMidday(new Date()), []);
+  const [step, setStep] = useState(STEP.YEAR);
+  const [y, setY] = useState(baseDate.getFullYear());
+  const [m0, setM0] = useState(baseDate.getMonth());
+  const [d, setD] = useState(baseDate.getDate());
 
-  const monthLabel = useMemo(() => {
-    return `${viewYear}년 ${viewMonth + 1}월`;
-  }, [viewYear, viewMonth]);
+  useEffect(() => {
+    setStep(STEP.YEAR);
+    setY(baseDate.getFullYear());
+    setM0(baseDate.getMonth());
+    setD(baseDate.getDate());
+  }, [baseDate]);
 
-  const headerBig = useMemo(() => {
-    const d = tempSelected || initialSafe;
-    return `${d.getFullYear()}.${pad2(d.getMonth() + 1)}.${pad2(d.getDate())}`;
-  }, [tempSelected, initialSafe]);
+  useEffect(() => {
+    const md = daysInMonth(y, m0);
+    if (d > md) setD(md);
+  }, [y, m0, d]);
 
-  const headerSub = useMemo(() => {
-    const d = tempSelected || initialSafe;
-    return `${getDowLabel(d)}요일`;
-  }, [tempSelected, initialSafe]);
+  const selectedDate = useMemo(() => makeDateSafe(y, m0, d), [y, m0, d]);
 
-  const canPrev = useMemo(() => {
-    if (viewYear > minYear) return true;
-    return viewYear === minYear && viewMonth > 0;
-  }, [viewYear, viewMonth, minYear]);
+  const stepTitle = useMemo(() => {
+    if (step === STEP.YEAR) return '연도 선택';
+    if (step === STEP.MONTH) return '월 선택';
+    return '일 선택';
+  }, [step]);
 
-  const canNext = useMemo(() => {
-    if (viewYear < maxYear) return true;
-    return viewYear === maxYear && viewMonth < 11;
-  }, [viewYear, viewMonth, maxYear]);
+  const subtitle = useMemo(() => {
+    return `${y}.${pad2(m0 + 1)}.${pad2(d)}  ·  ${getDowLabel(
+      selectedDate,
+    )}요일`;
+  }, [y, m0, d, selectedDate]);
 
-  const goPrev = useCallback(() => {
-    if (!canPrev) return;
-    const next = addMonths(viewYear, viewMonth, -1, minYear, maxYear);
-    setViewYear(next.y);
-    setViewMonth(next.m);
-  }, [canPrev, viewYear, viewMonth, minYear, maxYear]);
-
-  const goNext = useCallback(() => {
-    if (!canNext) return;
-    const next = addMonths(viewYear, viewMonth, 1, minYear, maxYear);
-    setViewYear(next.y);
-    setViewMonth(next.m);
-  }, [canNext, viewYear, viewMonth, minYear, maxYear]);
-
-  const grid = useMemo(
-    () => buildMonthGrid(viewYear, viewMonth),
-    [viewYear, viewMonth],
-  );
-
-  const confirm = useCallback(() => {
-    const d = tempSelected || initialSafe;
-    onConfirm?.(toMidday(d));
-  }, [tempSelected, initialSafe, onConfirm]);
-
-  const pickToday = useCallback(() => {
-    const d = toMidday(new Date());
-    // 범위 밖이면 무시
-    const y = d.getFullYear();
-    if (y < minYear || y > maxYear) return;
-
-    setTempSelected(d);
-    setViewYear(d.getFullYear());
-    setViewMonth(d.getMonth());
+  const years = useMemo(() => {
+    const arr = [];
+    for (let i = minYear; i <= maxYear; i += 1) arr.push(i);
+    return arr;
   }, [minYear, maxYear]);
 
+  const months = useMemo(() => Array.from({length: 12}, (_, i) => i), []);
+  const maxDay = useMemo(() => daysInMonth(y, m0), [y, m0]);
+  const days = useMemo(
+    () => Array.from({length: maxDay}, (_, i) => i + 1),
+    [maxDay],
+  );
+
+  const closeSheet = useCallback(() => {
+    onClose?.();
+    modalRef?.current?.dismiss?.();
+    modalRef?.current?.close?.();
+  }, [onClose, modalRef]);
+
+  const goBackStep = useCallback(() => {
+    if (step === STEP.DAY) setStep(STEP.MONTH);
+    else if (step === STEP.MONTH) setStep(STEP.YEAR);
+    else closeSheet();
+  }, [step, closeSheet]);
+
+  const pickToday = useCallback(() => {
+    const t = toMidday(new Date());
+    const ty = t.getFullYear();
+    if (ty < minYear || ty > maxYear) return;
+    setY(ty);
+    setM0(t.getMonth());
+    setD(t.getDate());
+    setStep(STEP.DAY);
+  }, [minYear, maxYear]);
+
+  const isDayStep = step === STEP.DAY;
+
+  const handleSave = useCallback(() => {
+    if (step !== STEP.DAY) return;
+    const next = makeDateSafe(y, m0, d);
+    onConfirm?.(next);
+    closeSheet();
+  }, [step, y, m0, d, onConfirm, closeSheet]);
+
+  const handleCancel = useCallback(() => {
+    closeSheet();
+  }, [closeSheet]);
+
+  // YEAR list scroll sync
+  const yearListRef = useRef(null);
+  useEffect(() => {
+    if (step !== STEP.YEAR) return;
+    const idx = clamp(y - minYear, 0, years.length - 1);
+    requestAnimationFrame(() => {
+      yearListRef.current?.scrollToIndex?.({index: idx, animated: false});
+    });
+  }, [step, y, minYear, years.length]);
+
+  // ✅ 공통 row height
+  const YEAR_ROW_H = useMemo(() => getResponsiveHeight(50), []);
+
+  const renderYearItem = useCallback(
+    ({item}) => {
+      const isSelected = item === y;
+      return (
+        <TouchableOpacity
+          activeOpacity={0.88}
+          onPress={() => {
+            setY(item);
+            setStep(STEP.MONTH);
+          }}
+          style={[styles.yearRow, isSelected && styles.yearRowSelected]}>
+          <Text
+            style={[styles.yearText, isSelected && styles.yearTextSelected]}>
+            {item}년
+          </Text>
+
+          {isSelected ? (
+            <View style={styles.selectedPill}>
+              <Text style={styles.selectedPillText}>선택</Text>
+            </View>
+          ) : (
+            <View style={{width: getResponsiveWidth(46)}} />
+          )}
+        </TouchableOpacity>
+      );
+    },
+    [y],
+  );
+
+  // DAY layout
+  const [dayGridWidth, setDayGridWidth] = useState(0);
+  const DAY_GAP = useMemo(() => Math.round(getResponsiveWidth(8)), []);
+
+  const dayLayout = useMemo(() => {
+    if (!dayGridWidth) return {cell: 0, remainder: 0};
+
+    const w = Math.round(dayGridWidth);
+    const usable = Math.max(0, w - DAY_GAP * (DAY_COLS - 1));
+    const cell = Math.floor(usable / DAY_COLS);
+    const remainder = usable - cell * DAY_COLS;
+
+    return {cell, remainder};
+  }, [dayGridWidth, DAY_GAP]);
+
+  const renderDayItem = useCallback(
+    ({item, index}) => {
+      const day = item;
+      const isSelected = day === d;
+
+      const col = index % DAY_COLS;
+      const isEnd = col === DAY_COLS - 1;
+
+      const base = dayLayout.cell;
+      const extra = col < dayLayout.remainder ? 1 : 0;
+      const size = base ? base + extra : 0;
+
+      return (
+        <TouchableOpacity
+          activeOpacity={0.88}
+          onPress={() => setD(day)}
+          style={[
+            styles.dayBtn,
+            size ? {width: size, height: size} : null,
+            !isEnd && {marginRight: DAY_GAP},
+            {marginBottom: DAY_GAP},
+            isSelected && styles.dayBtnSelected,
+          ]}>
+          <Text style={[styles.dayText, isSelected && styles.dayTextSelected]}>
+            {day}
+          </Text>
+        </TouchableOpacity>
+      );
+    },
+    [d, dayLayout.cell, dayLayout.remainder, DAY_GAP],
+  );
+
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="none"
-      onRequestClose={onClose}>
-      <TouchableWithoutFeedback onPress={onClose}>
-        <Animated.View style={[styles.backdrop, {opacity}]}>
-          <TouchableWithoutFeedback>
-            <Animated.View
-              style={[
-                styles.sheet,
-                {
-                  transform: [{translateY}],
-                },
-              ]}>
-              {/* drag handle */}
-              <View style={styles.handleWrap}>
-                <View style={styles.handle} />
-              </View>
+    <BottomSheetLayout
+      modalRef={modalRef}
+      snapPoints={snapPoints ?? ['80%']}
+      enableContentPanningGesture={enableContentPanningGesture}
+      animationConfigs={animationConfigs}
+      keyboardBehavior={keyboardBehavior}
+      androidKeyboardInputMode={androidKeyboardInputMode}
+      closeOnPressOutside={closeOnPressOutside}
+      onDismiss={onClose}
+      title={stepTitle}
+      subtitle={subtitle}
+      useInternalScroll={false}>
+      <SafeAreaView style={{flex: 1, backgroundColor: UI.bg}}>
+        <View style={{flex: 1}}>
+          {/* ✅ 본문 */}
+          <View style={[styles.bodyWrap, {paddingBottom: FOOTER_SPACE}]}>
+            {/* ✅ 상단 퀵 액션 */}
+            <View style={styles.quickRow}>
+              <TouchableOpacity
+                onPress={goBackStep}
+                activeOpacity={0.88}
+                style={[styles.quickBtn, styles.quickBtnGhost]}>
+                <Text style={styles.quickTextGhost}>이전</Text>
+              </TouchableOpacity>
 
-              {/* Selected header */}
-              <View style={styles.topHeader}>
-                <View style={{flex: 1}}>
-                  <Text style={styles.bigDate}>{headerBig}</Text>
-                  <Text style={styles.subDate}>{headerSub}</Text>
-                </View>
+              <TouchableOpacity
+                onPress={pickToday}
+                activeOpacity={0.88}
+                style={[styles.quickBtn, styles.quickBtnPrimary]}>
+                <Text style={styles.quickTextPrimary}>오늘</Text>
+              </TouchableOpacity>
+            </View>
 
-                <TouchableOpacity
-                  onPress={pickToday}
-                  activeOpacity={0.9}
-                  style={styles.todayBtn}>
-                  <Text style={styles.todayText}>오늘</Text>
-                </TouchableOpacity>
-              </View>
+            {/* ✅ 메인 카드 */}
+            <View style={styles.card}>
+              {step === STEP.YEAR && (
+                <>
+                  <Text style={styles.hint}>
+                    연도를 고르면 다음 단계로 넘어가요
+                  </Text>
 
-              {/* Month nav */}
-              <View style={styles.monthRow}>
-                <TouchableOpacity
-                  onPress={goPrev}
-                  disabled={!canPrev}
-                  style={[styles.navBtn, !canPrev && styles.navDisabled]}
-                  hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
-                  <Text style={styles.navText}>‹</Text>
-                </TouchableOpacity>
+                  <View style={styles.yearListWrap}>
+                    <FlatList
+                      ref={yearListRef}
+                      data={years}
+                      keyExtractor={item => String(item)}
+                      renderItem={renderYearItem}
+                      showsVerticalScrollIndicator={false}
+                      getItemLayout={(_, index) => ({
+                        length: YEAR_ROW_H,
+                        offset: YEAR_ROW_H * index,
+                        index,
+                      })}
+                      onScrollToIndexFailed={() => {}}
+                    />
+                  </View>
+                </>
+              )}
 
-                <Text style={styles.monthLabel}>{monthLabel}</Text>
+              {step === STEP.MONTH && (
+                <>
+                  <Text style={styles.hint}>{y}년의 월을 골라줘요</Text>
 
-                <TouchableOpacity
-                  onPress={goNext}
-                  disabled={!canNext}
-                  style={[styles.navBtn, !canNext && styles.navDisabled]}
-                  hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
-                  <Text style={styles.navText}>›</Text>
-                </TouchableOpacity>
-              </View>
+                  <View style={styles.monthGrid}>
+                    {months.map(month0 => {
+                      const isSelected = month0 === m0;
+                      return (
+                        <TouchableOpacity
+                          key={month0}
+                          activeOpacity={0.88}
+                          onPress={() => {
+                            setM0(month0);
+                            setStep(STEP.DAY);
+                          }}
+                          style={[
+                            styles.monthChip,
+                            isSelected && styles.monthChipSelected,
+                          ]}>
+                          <Text
+                            style={[
+                              styles.monthChipText,
+                              isSelected && styles.monthChipTextSelected,
+                            ]}>
+                            {month0 + 1}월
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
 
-              {/* DOW */}
-              <View style={styles.dowRow}>
-                {['일', '월', '화', '수', '목', '금', '토'].map((d, idx) => (
-                  <View key={d} style={styles.dowCell}>
-                    <Text
-                      style={[styles.dowText, idx === 0 && styles.dowSunday]}>
-                      {d}
+              {step === STEP.DAY && (
+                <>
+                  <Text style={styles.hint}>
+                    {y}년 {m0 + 1}월은 {maxDay}일까지 있어요
+                  </Text>
+
+                  <View
+                    style={styles.dayGridWrap}
+                    onLayout={e => {
+                      const w = e?.nativeEvent?.layout?.width || 0;
+                      if (w && Math.abs(w - dayGridWidth) > 0.5) {
+                        setDayGridWidth(w);
+                      }
+                    }}>
+                    <FlatList
+                      data={days}
+                      keyExtractor={item => String(item)}
+                      renderItem={renderDayItem}
+                      numColumns={DAY_COLS}
+                      scrollEnabled={false}
+                      showsVerticalScrollIndicator={false}
+                      columnWrapperStyle={styles.dayColumnWrap}
+                      onScrollToIndexFailed={() => {}}
+                    />
+                  </View>
+
+                  {/* ✅ 선택된 날짜 강조 카드 */}
+                  <View style={styles.selectedCard}>
+                    <Text style={styles.selectedCardLabel}>선택한 날짜</Text>
+                    <Text style={styles.selectedCardValue}>
+                      {y}.{pad2(m0 + 1)}.{pad2(d)} ({getDowLabel(selectedDate)})
                     </Text>
                   </View>
-                ))}
+                </>
+              )}
+            </View>
+
+            {!isDayStep && (
+              <View style={styles.footerHintWrap}>
+                <Text style={styles.footerHint}>
+                  날짜(일)까지 선택해야 ‘선택하기’가 가능해요
+                </Text>
               </View>
+            )}
+          </View>
 
-              {/* Grid */}
-              <View style={styles.grid}>
-                {grid.map((c, idx) => {
-                  const d = toMidday(c.date);
-                  const isToday = sameYMD(d, today);
-                  const isSelected = sameYMD(d, tempSelected);
-                  const isOutside = !c.isCurrentMonth;
-
-                  return (
-                    <TouchableOpacity
-                      key={idx}
-                      activeOpacity={0.9}
-                      onPress={() => {
-                        // 범위 밖 연도면 막기
-                        const y = d.getFullYear();
-                        if (y < minYear || y > maxYear) return;
-                        setTempSelected(d);
-
-                        // 다른 달 클릭하면 그 달로 자동 이동 (요즘 UX)
-                        if (
-                          d.getMonth() !== viewMonth ||
-                          d.getFullYear() !== viewYear
-                        ) {
-                          const clamped = clampMonth(
-                            d.getFullYear(),
-                            d.getMonth(),
-                            minYear,
-                            maxYear,
-                          );
-                          setViewYear(clamped.y);
-                          setViewMonth(clamped.m);
-                        }
-                      }}
-                      style={styles.cell}>
-                      <View
-                        style={[
-                          styles.cellInner,
-                          isSelected && styles.cellSelected,
-                          isToday && !isSelected && styles.cellToday,
-                          isOutside && styles.cellOutside,
-                        ]}>
-                        <Text
-                          style={[
-                            styles.cellText,
-                            isOutside && styles.cellTextOutside,
-                            isSelected && styles.cellTextSelected,
-                            isToday && !isSelected && styles.cellTextToday,
-                          ]}>
-                          {d.getDate()}
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </View>
-
-              {/* Actions (bottom fixed-ish) */}
-              <View style={styles.actions}>
-                <TouchableOpacity
-                  style={[styles.btn, styles.cancel]}
-                  onPress={onClose}>
-                  <Text style={styles.cancelText}>취소</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.btn, styles.confirm]}
-                  onPress={confirm}>
-                  <Text style={styles.confirmText}>선택하기</Text>
-                </TouchableOpacity>
-              </View>
-
-              {/* safe bottom padding */}
-              <View style={{height: getResponsiveHeight(8)}} />
-            </Animated.View>
-          </TouchableWithoutFeedback>
-        </Animated.View>
-      </TouchableWithoutFeedback>
-    </Modal>
+          {/* ✅ footer 고정 */}
+          <View style={styles.footerFixed}>
+            <BottomSheetButtons
+              onCancel={handleCancel}
+              onSave={handleSave}
+              saveLabel="선택하기"
+              autoCloseOnSave={true}
+            />
+          </View>
+        </View>
+      </SafeAreaView>
+    </BottomSheetLayout>
   );
 }
 
-const CELL = getResponsiveWidth(44); // 모달은 캘린더랑 분리된 느낌이 있어야 해서 셀 크기 고정
-
 const styles = StyleSheet.create({
-  backdrop: {
+  bodyWrap: {
     flex: 1,
-    backgroundColor: BACKGROUND_COLORS.overlayBg,
-    justifyContent: 'flex-end',
-  },
-
-  sheet: {
-    backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: R,
-    borderTopRightRadius: R,
-    paddingHorizontal: getResponsiveWidth(18),
-    paddingTop: getResponsiveHeight(8),
-    paddingBottom: getResponsiveHeight(10),
-    borderTopWidth: 1,
-    borderColor: 'rgba(17,24,39,0.08)',
-
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: -8},
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    elevation: 18,
-  },
-
-  handleWrap: {
-    alignItems: 'center',
     paddingTop: getResponsiveHeight(6),
-    paddingBottom: getResponsiveHeight(8),
-  },
-  handle: {
-    width: getResponsiveWidth(44),
-    height: getResponsiveHeight(5),
-    borderRadius: 999,
-    backgroundColor: '#E5E7EB',
   },
 
-  topHeader: {
+  /* ----------------- Quick Actions ----------------- */
+  quickRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(10),
-    paddingBottom: getResponsiveHeight(12),
-  },
-  bigDate: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(22),
-    color: '#111827',
-    letterSpacing: -0.4,
-  },
-  subDate: {
-    marginTop: getResponsiveHeight(4),
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(13),
-    color: '#6B7280',
-  },
-  todayBtn: {
-    paddingVertical: getResponsiveHeight(8),
-    paddingHorizontal: getResponsiveWidth(12),
-    borderRadius: 999,
-    backgroundColor: '#F3F4F6',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  todayText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(13),
-    color: '#111827',
-  },
-
-  monthRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: getResponsiveHeight(10),
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#EEF2F7',
+    marginBottom: getResponsiveHeight(12),
   },
-  monthLabel: {
+  quickBtn: {
+    paddingVertical: getResponsiveHeight(9),
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: getResponsiveWidth(74),
+  },
+  quickBtnGhost: {
+    backgroundColor: UI.card,
+    borderColor: UI.line,
+  },
+  quickTextGhost: {
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(16),
-    color: '#111827',
+    fontSize: getResponsiveFontSize(13),
+    color: UI.sub,
     letterSpacing: -0.2,
   },
-  navBtn: {
-    width: getResponsiveWidth(36),
-    height: getResponsiveWidth(36),
-    borderRadius: 12,
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#EEF2F7',
-    alignItems: 'center',
-    justifyContent: 'center',
+  quickBtnPrimary: {
+    backgroundColor: UI.primaryBg,
+    borderColor: UI.primaryBg,
+    ...shadowStrong,
   },
-  navDisabled: {
-    opacity: 0.35,
-  },
-  navText: {
-    fontFamily:
-      Platform.OS === 'android' ? 'Pretendard-SemiBold' : 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(18),
-    color: '#111827',
-    marginTop: -1,
-  },
-
-  dowRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: getResponsiveHeight(10),
-    paddingBottom: getResponsiveHeight(6),
-  },
-  dowCell: {
-    width: CELL,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dowText: {
+  quickTextPrimary: {
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(12.5),
-    color: '#6B7280',
-  },
-  dowSunday: {
-    color: '#EF4444',
+    fontSize: getResponsiveFontSize(13),
+    color: UI.primaryText,
+    letterSpacing: -0.2,
   },
 
-  grid: {
+  /* ----------------- Main Card ----------------- */
+  card: {
+    backgroundColor: UI.panel,
+    borderWidth: 1,
+    borderColor: UI.lineSoft,
+    borderRadius: 18,
+    padding: getResponsiveWidth(14),
+    ...shadow,
+  },
+
+  hint: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(12.8),
+    color: UI.sub,
+    marginBottom: getResponsiveHeight(10),
+    letterSpacing: -0.2,
+  },
+
+  /* ----------------- Year List ----------------- */
+  yearListWrap: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: UI.lineSoft,
+    backgroundColor: UI.card,
+    overflow: 'hidden',
+    maxHeight: getResponsiveHeight(320),
+  },
+  yearRow: {
+    height: getResponsiveHeight(50),
+    paddingHorizontal: getResponsiveWidth(14),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: UI.card,
+    borderBottomWidth: 1,
+    borderColor: 'rgba(15, 23, 42, 0.06)',
+  },
+  yearRowSelected: {
+    backgroundColor: 'rgba(255, 200, 77, 0.22)',
+  },
+  yearText: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(15),
+    color: UI.text,
+    letterSpacing: -0.2,
+  },
+  yearTextSelected: {
+    color: UI.text,
+  },
+  selectedPill: {
+    paddingVertical: getResponsiveHeight(5),
+    paddingHorizontal: getResponsiveWidth(10),
+    borderRadius: 999,
+    backgroundColor: UI.primaryBg,
+  },
+  selectedPillText: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(11.5),
+    color: UI.primaryText,
+    letterSpacing: -0.2,
+  },
+
+  /* ----------------- Month Grid ----------------- */
+  monthGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
-    paddingTop: getResponsiveHeight(6),
-    paddingBottom: getResponsiveHeight(10),
+    rowGap: getResponsiveHeight(10),
   },
-  cell: {
-    width: CELL,
-    height: CELL,
-    marginBottom: getResponsiveHeight(6),
+  monthChip: {
+    width: '31.6%',
+    paddingVertical: getResponsiveHeight(14),
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: UI.line,
+    backgroundColor: UI.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cellInner: {
-    width: CELL * 0.86,
-    height: CELL * 0.86,
-    borderRadius: 999,
+  monthChipSelected: {
+    backgroundColor: UI.primaryBg,
+    borderColor: UI.primaryBg,
+    ...shadowStrong,
+  },
+  monthChipText: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(14),
+    color: UI.text,
+    letterSpacing: -0.2,
+  },
+  monthChipTextSelected: {
+    color: UI.primaryText,
+  },
+
+  /* ----------------- Day Grid ----------------- */
+  dayGridWrap: {
+    width: '100%',
+    alignSelf: 'stretch',
+  },
+  dayColumnWrap: {
+    justifyContent: 'flex-start',
+  },
+  dayBtn: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: UI.lineSoft,
+    backgroundColor: UI.card,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cellText: {
+  dayBtnSelected: {
+    backgroundColor: UI.primaryBg,
+    borderColor: UI.primaryBg,
+    ...shadowStrong,
+  },
+  dayText: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(13),
+    color: UI.text,
+    letterSpacing: -0.2,
+  },
+  dayTextSelected: {
+    color: UI.primaryText,
+  },
+
+  /* ----------------- Selected Date Card ----------------- */
+  selectedCard: {
+    marginTop: getResponsiveHeight(12),
+    backgroundColor: UI.card,
+    borderWidth: 1,
+    borderColor: UI.lineSoft,
+    borderRadius: 16,
+    paddingVertical: getResponsiveHeight(12),
+    paddingHorizontal: getResponsiveWidth(14),
+  },
+  selectedCardLabel: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(12),
+    color: UI.sub,
+    letterSpacing: -0.2,
+  },
+  selectedCardValue: {
+    marginTop: getResponsiveHeight(6),
+    fontFamily: 'Pretendard-Bold',
+    fontSize: getResponsiveFontSize(15),
+    color: UI.text,
+    letterSpacing: -0.2,
+  },
+
+  /* ----------------- Footer Hint ----------------- */
+  footerHintWrap: {
+    marginTop: getResponsiveHeight(10),
+    alignItems: 'center',
+  },
+  footerHint: {
     fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(14),
-    color: '#111827',
+    fontSize: getResponsiveFontSize(12.5),
+    color: UI.muted,
+    letterSpacing: -0.2,
   },
 
-  cellOutside: {
-    opacity: 0.35,
-  },
-  cellTextOutside: {
-    color: '#6B7280',
-  },
-
-  cellSelected: {
-    backgroundColor: BUTTON_STYLES.saveBg,
-  },
-  cellTextSelected: {
-    color: '#FFFFFF',
-    fontFamily: 'Pretendard-SemiBold',
-  },
-
-  cellToday: {
-    backgroundColor: 'rgba(17,24,39,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.18)',
-  },
-  cellTextToday: {
-    fontFamily: 'Pretendard-SemiBold',
-  },
-
-  actions: {
-    flexDirection: 'row',
-    gap: getResponsiveWidth(10),
-    paddingTop: getResponsiveHeight(6),
-  },
-  btn: {
-    flex: 1,
-    height: getResponsiveHeight(48),
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-  },
-  cancel: {
-    backgroundColor: '#F3F4F6',
-    borderColor: '#E5E7EB',
-  },
-  confirm: {
-    backgroundColor: BUTTON_STYLES.saveBg,
-    borderColor: BUTTON_STYLES.saveBg,
-  },
-  cancelText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(14),
-    color: '#6B7280',
-  },
-  confirmText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(14),
-    color: '#FFFFFF',
+  /* ----------------- Footer ----------------- */
+  footerFixed: {
+    paddingTop: getResponsiveHeight(10),
+    paddingBottom: getResponsiveHeight(2),
   },
 });

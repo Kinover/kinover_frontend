@@ -9,7 +9,6 @@ import CategoryPage from '../../../features/memory/screens/CategoryPage';
 import CategorySelectPage from '../../../features/memory/screens/CategorySelectScreen';
 import SettingScreen from '../../../features/setting/screens/SettingScreen';
 import CreatePostPage from '../../../features/memory/screens/CreatePostScreen';
-import NotificationScreen from '../../../features/notification/screens/NotificationScreen';
 import NotificationSettingScreen from '../../../features/setting/screens/NotificationSettingScreen';
 import ImageSelectPage from '../../../features/memory/screens/ImageSelectScreen';
 
@@ -101,16 +100,6 @@ export default function MemoryStack() {
         })}
       />
 
-      <Stack.Screen
-        name="알림화면"
-        component={NotificationScreen}
-        options={({navigation: nav}) => ({
-          gestureEnabled: true,
-          headerRight: () => null,
-          headerLeft: () => <RenderGoBackButton navigation={nav} />,
-          headerTitle: '',
-        })}
-      />
 
       <Stack.Screen
         name="설정화면"

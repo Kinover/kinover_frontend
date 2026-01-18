@@ -1,74 +1,62 @@
 // src/features/memory/store/categoryThunk.js
 
 import {createAsyncThunk} from '@reduxjs/toolkit';
-import axios from 'axios';
-import {getToken} from '../../../utils/storage';
-
-const BASE_URL = 'https://kinover.shop/api';
+import {apiClient} from '../../../utils/apiClient';
 
 /* ------------------ 1) 카테고리 목록 조회 API ------------------ */
+/**
+ * GET /api/categories/{familyId}
+ */
 const getCategoryApi = async familyId => {
   try {
-    const token = await getToken();
-    console.log('🔐 [GET] 토큰:', token);
-
-    if (!token) {
-      throw new Error('로그인이 필요합니다.');
-    }
-
-    const url = `${BASE_URL}/categories/${familyId}`;
+    const url = `/categories/${familyId}`;
     console.log('🌐 [GET] URL:', url);
 
-    const res = await axios.get(url, {
-      headers: {Authorization: `Bearer ${token}`},
-    });
+    const res = await apiClient.get(url);
 
     console.log('✅ [GET] 카테고리 응답:', res.data);
     return res.data;
   } catch (e) {
-    console.error(
-      '❌ [GET] 카테고리 불러오기 실패:',
-      e.response?.data || e.message,
-    );
+    const msg =
+      e?.response?.data?.message ||
+      e?.response?.data ||
+      e?.message ||
+      '카테고리 불러오기 실패';
+
+    console.error('❌ [GET] 카테고리 불러오기 실패:', msg);
     throw e;
   }
 };
 
 /* ------------------ 2) 카테고리 생성 API ------------------ */
+/**
+ * POST /api/categories
+ * body: { title, familyId }
+ */
 const createCategoryApi = async (title, familyId) => {
   try {
-    const token = await getToken();
-    console.log('🔐 [POST] 토큰:', token);
-    console.log('📝 [POST] 카테고리 생성 요청 데이터:', {
-      title,
-      familyId,
-    });
+    console.log('📝 [POST] 카테고리 생성 요청 데이터:', {title, familyId});
 
-    if (!token) {
-      throw new Error('로그인이 필요합니다.');
-    }
-
-    const url = `${BASE_URL}/categories`;
-    const body = { title, familyId: familyId};
+    const url = '/categories';
+    const body = {title, familyId};
 
     console.log('🌐 [POST] URL:', url);
     console.log('📦 [POST] BODY:', body);
 
-    const res = await axios.post(url, body, {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+    const res = await apiClient.post(url, body, {
+      headers: {'Content-Type': 'application/json'},
     });
 
     console.log('✅ [POST] 카테고리 생성 성공:', res.data);
-    // 예: { categoryId: '...', title: '...', familyId: '...' }
-    return res.data;
+    return res.data; // 예: { categoryId: '...', title: '...', familyId: '...' }
   } catch (e) {
-    console.error(
-      '❌ [POST] 카테고리 생성 실패:',
-      e.response?.data || e.message,
-    );
+    const msg =
+      e?.response?.data?.message ||
+      e?.response?.data ||
+      e?.message ||
+      '카테고리 생성 실패';
+
+    console.error('❌ [POST] 카테고리 생성 실패:', msg);
     throw e;
   }
 };
@@ -82,7 +70,9 @@ export const fetchCategoryThunk = createAsyncThunk(
       const data = await getCategoryApi(familyId);
       return data;
     } catch (e) {
-      return rejectWithValue(e.response?.data || e.message);
+      return rejectWithValue(
+        e?.response?.data?.message || e?.response?.data || e?.message,
+      );
     }
   },
 );
@@ -92,18 +82,22 @@ export const createCategoryThunk = createAsyncThunk(
   'category/create',
   async ({title, familyId}, {rejectWithValue}) => {
     try {
-      console.log('📥 [createCategoryThunk] 요청:', {
-        title,
-        familyId,
-      });
+      console.log('📥 [createCategoryThunk] 요청:', {title, familyId});
+
       const newCategory = await createCategoryApi(title, familyId);
+
       console.log('📥 [createCategoryThunk] 응답 newCategory:', newCategory);
-      return newCategory; // { categoryId, title, ... } 형태
+      return newCategory;
     } catch (e) {
       const payload = {
-        status: e.response?.status || 500,
-        message: e.response?.data?.message || e.message,
+        status: e?.response?.status || 500,
+        message:
+          e?.response?.data?.message ||
+          e?.response?.data ||
+          e?.message ||
+          '카테고리 생성 실패',
       };
+
       console.log('❌ [createCategoryThunk] 에러:', payload);
       return rejectWithValue(payload);
     }

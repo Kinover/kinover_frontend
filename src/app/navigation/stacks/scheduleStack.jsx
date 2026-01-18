@@ -8,7 +8,6 @@ import {
   RenderGoBackButton,
 } from '../helpers/tabHeaderHelpers';
 import SettingScreen from '../../../features/setting/screens/SettingScreen';
-import NotificationScreen from '../../../features/notification/screens/NotificationScreen';
 import NotificationSettingScreen from '../../../features/setting/screens/NotificationSettingScreen';
 import {HEADER_STYLES} from 'styles/style';
 
@@ -54,16 +53,6 @@ export default function ScheduleStack() {
       })}>
       <Stack.Screen name="일정" component={ScheduleScreen} />
 
-      <Stack.Screen
-        name="알림화면"
-        component={NotificationScreen}
-        options={({navigation}) => ({
-          gestureEnabled: true,
-          headerRight: () => null,
-          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-          headerTitle: '',
-        })}
-      />
 
       <Stack.Screen
         name="설정화면"

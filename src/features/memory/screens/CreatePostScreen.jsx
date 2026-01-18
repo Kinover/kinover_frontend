@@ -875,7 +875,7 @@ const styles = StyleSheet.create({
   videoBadgeText: {
     color: '#fff',
     fontSize: getResponsiveFontSize(11),
-    fontWeight: '600',
+    fontFamily:'Pretendard-Medium',
   },
 
   moreOverlay: {

@@ -149,13 +149,13 @@ const styles = StyleSheet.create({
   textArea: {flex: 1, gap: getResponsiveHeight(4)},
   name: {
     fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(15.5),
+    fontSize: getResponsiveFontSize(15),
     color: '#101010',
   },
   nameUnread: {fontFamily: 'Pretendard-SemiBold'},
   description: {
-    fontFamily: 'Pretendard-Light',
-    fontSize: getResponsiveFontSize(12.5),
+    fontFamily: 'Pretendard-Regular',
+    fontSize: getResponsiveFontSize(12),
     color: '#5A5A5A',
   },
   descriptionUnread: {fontFamily: 'Pretendard-Medium', color: '#2A2A2A'},
@@ -164,7 +164,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'flex-start',
   },
-  time: {fontFamily:'Pretendard-Regular', fontSize: getResponsiveFontSize(11), color: '#8B8B8B'},
+  time: {
+    fontFamily: 'Pretendard-Regular',
+    fontSize: getResponsiveFontSize(11),
+    color: '#8B8B8B',
+  },
   badge: {
     marginTop: getResponsiveHeight(3.5),
     padding: getResponsiveHeight(4),

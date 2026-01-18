@@ -1,5 +1,4 @@
 // src/app/App.jsx
-
 import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import React, {useState} from 'react';
 import {View, StyleSheet, Image} from 'react-native';
@@ -10,15 +9,16 @@ import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {BottomSheetModalProvider} from '@gorhom/bottom-sheet';
 import LottieView from 'lottie-react-native';
 
-// ⬇️ 지윤 alias 쓰고 싶으면 이걸로
-// import store from '@/store/store';
-
-// ⬇️ alias 못 쓰면 이걸로 (확실하게 동작함)
 import store from '../store/store';
 
 import ChatSettings from '../features/chat/screens/chatSetting';
-import {navigationRef} from './navigation/navigationRef';
-import AppNavigator from './navigation/appNavigator';
+import {AppNavigator} from './navigation';
+
+// ✅ 여기로 통일 (중요!)
+import {
+  navigationRef,
+  flushPendingNavigation,
+} from './navigation/navigationService';
 
 export default function App() {
   const [isSplashFinished, setIsSplashFinished] = useState(false);
@@ -31,7 +31,12 @@ export default function App() {
           <Provider store={store}>
             <MenuProvider>
               {isSplashFinished ? (
-                <NavigationContainer ref={navigationRef}>
+                <NavigationContainer
+                  ref={navigationRef}
+                  onReady={() => {
+                    // ✅ 네비 준비 완료 후, 알림 이동 큐 flush
+                    flushPendingNavigation();
+                  }}>
                   <ChatSettings
                     isOpen={isSettingsOpen}
                     onClose={() => setIsSettingsOpen(false)}

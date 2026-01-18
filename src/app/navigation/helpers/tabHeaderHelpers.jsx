@@ -12,9 +12,14 @@ import {
 import {BUTTON_STYLES, HEADER_STYLES, LAYOUT_STYLE} from 'styles/style';
 import {hapticLight} from 'utils/haptic';
 
-/** ---------------------------------------------------
- * ✅ 공통: 아이콘 위에 빨간 점/숫자 뱃지 얹는 컴포넌트
- * --------------------------------------------------- */
+// ✅ 추가: 전역 네비게이션 서비스 사용
+import {safeNavigate} from '../navigationService';
+// 경로는 프로젝트 구조에 맞게 조정!
+// 만약 현재 파일이 src/utils 밑이라면 보통:
+// import {safeNavigate} from '../app/navigation/navigationService';
+// 또는
+// import {safeNavigate} from '@/app/navigation/navigationService';
+
 const IconWithBadge = memo(function IconWithBadge({
   source,
   size = 24,
@@ -41,7 +46,6 @@ const IconWithBadge = memo(function IconWithBadge({
         resizeMode={FastImage.resizeMode.contain}
       />
 
-      {/* ✅ 숫자 뱃지 우선 */}
       {showBadge ? (
         <View style={[styles.badge, badgeStyle]}>
           <Text style={[styles.badgeText, badgeTextStyle]} numberOfLines={1}>
@@ -55,9 +59,6 @@ const IconWithBadge = memo(function IconWithBadge({
   );
 });
 
-/** ---------------------------------------------------
- * ✅ 탭바 아이콘 (알림 탭일 때: "bell 전용" unreadCount 표시)
- * --------------------------------------------------- */
 export const TabBarIcon = memo(function TabBarIcon({
   focused,
   focusedUri,
@@ -86,9 +87,6 @@ export const TabBarIcon = memo(function TabBarIcon({
   );
 });
 
-/** ---------------------------------------------------
- * ✅ 탭바 라벨
- * --------------------------------------------------- */
 export const renderTabBarLabel = (label, focused) => (
   <Text
     style={
@@ -108,9 +106,6 @@ export const renderTabBarLabel = (label, focused) => (
   </Text>
 );
 
-/** ---------------------------------------------------
- * ✅ 공통 아이콘 버튼 생성기 (햅틱 포함)
- * --------------------------------------------------- */
 const createIconButton = (
   onPress,
   imageSource,
@@ -137,9 +132,6 @@ const createIconButton = (
   </TouchableOpacity>
 );
 
-/** ---------------------------------------------------
- * ✅ 헤더: 로고(좌측 작은 로고)
- * --------------------------------------------------- */
 export const RenderHeaderTitleLogo = () => (
   <View style={{paddingBottom: getResponsiveHeight(14)}}>
     <FastImage
@@ -155,15 +147,16 @@ export const RenderHeaderTitleLogo = () => (
   </View>
 );
 
-/** --------------------------------------------------- * ✅ RenderHeaderBook (홈에서만 흰색 tint 원하면 여기에도 적용) * --------------------------------------------------- */
 export const RenderHeaderBook = ({navigation, currentScreen = '홈'}) => {
   const bookIcon = require('@/assets/icons/header/magazine.png');
   const tint = currentScreen === '홈' ? '#FFFFFF' : 'black';
+
   const goBook = () =>
     navigation.navigate('Tabs', {
       screen: '추억',
       params: {screen: '매거진화면'},
     });
+
   return (
     <View style={{flexDirection: 'row', alignItems: 'flex-end'}}>
       <TouchableOpacity
@@ -189,16 +182,14 @@ export const RenderHeaderBook = ({navigation, currentScreen = '홈'}) => {
 
 /** ---------------------------------------------------
  * ✅ 헤더: 홈(종 + 설정)
- * - ✅ 설정 눌렀을 때와 "완전히 동일한 방식"으로 종도 이동:
- *   navigation.navigate('Tabs', { screen: currentScreen, params: { screen: '알림화면' } })
+ * - 🚫 기존: "현재 탭 스택 안으로 알림화면 push" (문제 원인)
+ * - ✅ 변경: Tabs 밖 전역 스크린(NotificationModal)로 열기
  * --------------------------------------------------- */
-
 export const RenderHeaderHome = ({navigation, currentScreen}) => {
   const hasUnread = useSelector(state => state.notification.hasUnread);
   const unreadCount = useSelector(state => state.notification.unreadCount || 0);
 
   const isHome = currentScreen === '홈';
-  // const iconTint = isHome ? undefined : '#525252';
   const iconTint = isHome ? undefined : 'black';
 
   const bellIcon =
@@ -211,13 +202,12 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
       ? require('@/assets/icons/header/setting_white.png')
       : require('@/assets/icons/header/setting_black.png');
 
-  // ✅ 설정이랑 같은 패턴: "현재 탭(currentScreen) 스택 안"으로 이동
+  // ✅ 알림: 전역 모달(탭에 안 보임, 홈스택 안 망가짐)
   const goAlarm = () =>
-    navigation.navigate('Tabs', {
-      screen: currentScreen,
-      params: {screen: '알림화면'},
+    safeNavigate('알림화면', {
+      fromTab: currentScreen, // ✅ 핵심
     });
-
+  // 설정은 기존대로 "현재 탭 스택 안"으로 이동 (원하면 이것도 전역으로 분리 가능)
   const goSetting = () =>
     navigation.navigate('Tabs', {
       screen: currentScreen,
@@ -230,7 +220,6 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
         flexDirection: 'row',
         marginRight: LAYOUT_STYLE.screenPaddingHorizontal,
       }}>
-      {/* ✅ 종(뱃지/빨간점 포함) */}
       <TouchableOpacity
         onPress={() => {
           hapticLight();
@@ -239,7 +228,7 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
         activeOpacity={0.8}>
         <IconWithBadge
           source={bellIcon}
-          size={30}
+          size={28}
           badgeCount={unreadCount}
           showDot={!!hasUnread}
           dotStyle={styles.headerDot}
@@ -247,12 +236,13 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
           badgeTextStyle={styles.headerBadgeText}
         />
       </TouchableOpacity>
+
       <View style={{width: getResponsiveWidth(12)}} />
-      {/* ⚙️ 설정 */}
+
       {createIconButton(
         goSetting,
         settingIcon,
-        30,
+        28,
         iconTint ? {tintColor: iconTint} : {},
       )}
     </View>
@@ -264,11 +254,9 @@ export const RenderHeaderHome = ({navigation, currentScreen}) => {
  * --------------------------------------------------- */
 export const RenderHeaderLeft1 = ({navigation}) =>
   createIconButton(
-    () =>
-      navigation.navigate('Tabs', {
-        screen: '감정',
-        params: {screen: '알림화면'},
-      }),
+    // 🚫 기존: Tabs 안의 감정탭/알림화면으로 보내는 패턴은 홈스택 오염 가능
+    // ✅ 변경: 전역 알림 모달로 통일
+    () => safeNavigate('알림화면'),
     require('@/assets/images/navigator_alarm-button.png'),
     HEADER_STYLES.headerLeftIconWidth,
     {marginLeft: HEADER_STYLES.headerLeftIconLeftPadding},
@@ -321,19 +309,52 @@ export const RenderGoBackButtonGallery = ({navigation}) =>
     {zIndex: 999},
   );
 
+export const RenderNotificationBackButton = ({navigation, route}) => {
+  const fromTab = route?.params?.fromTab;
+  const fromScreen = route?.params?.fromScreen;
+  const fromParams = route?.params?.fromParams;
+
+  const onPress = () => {
+    hapticLight();
+
+    if (fromTab) {
+      navigation.navigate('Tabs', {
+        screen: fromTab,
+        params: fromScreen
+          ? {screen: fromScreen, params: fromParams}
+          : undefined,
+      });
+      return;
+    }
+
+    navigation.goBack();
+  };
+
+  return (
+    <TouchableOpacity onPress={onPress} activeOpacity={0.8}>
+      <FastImage
+        source={require('@/assets/icons/caretDown.png')}
+        style={{
+          width: getResponsiveIconSize(24),
+          height: getResponsiveIconSize(24),
+          marginLeft: HEADER_STYLES.headerLeftIconLeftPadding,
+        }}
+        resizeMode={FastImage.resizeMode.contain}
+      />
+    </TouchableOpacity>
+  );
+};
+
 /** ---------------------------------------------------
  * ✅ 헤더: 로고(상단 Kinover 로고)
- * - ✅ 종이랑 "동일한 이동 방식" 적용
- * - currentScreen 안 주면 기본 '홈' 기준으로 알림화면 이동
+ * - 기존엔 "알림화면 이동"으로 연결돼 있었는데, 이 역시 홈스택 오염 원인 가능
+ * - ✅ 변경: 전역 알림 모달로 통일
  * --------------------------------------------------- */
 export const RenderHeaderLogo = ({navigation, currentScreen = '홈'}) => (
   <TouchableOpacity
     onPress={() => {
       hapticLight();
-      navigation.navigate('Tabs', {
-        screen: currentScreen,
-        params: {screen: '알림화면'},
-      });
+      safeNavigate('알림화면');
     }}
     style={{flexDirection: 'row', alignItems: 'flex-end'}}>
     <FastImage
@@ -362,7 +383,6 @@ export const RenderHeaderLogo = ({navigation, currentScreen = '홈'}) => (
 const styles = StyleSheet.create({
   iconWrap: {position: 'relative'},
 
-  // ✅ 빨간 점
   dot: {
     position: 'absolute',
     width: 6,
@@ -371,7 +391,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF3B30',
   },
 
-  // ✅ 숫자 뱃지(공통)
   badge: {
     position: 'absolute',
     minWidth: getResponsiveWidth(16),
@@ -390,33 +409,12 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center',
   },
 
-  // ✅ 헤더 종 빨간점 위치
-  headerDot: {
-    top: -2.5,
-    right: -2.5,
-  },
+  headerDot: {top: -2.5, right: -2.5},
+  tabDot: {top: -2.5, right: -2.5},
 
-  // ✅ 탭바 빨간점 위치
-  tabDot: {
-    top: -2.5,
-    right: -2.5,
-  },
+  headerBadge: {top: -6, right: -8},
+  headerBadgeText: {fontSize: getResponsiveFontSize(10)},
 
-  // ✅ 헤더 뱃지 위치/크기
-  headerBadge: {
-    top: -6,
-    right: -8,
-  },
-  headerBadgeText: {
-    fontSize: getResponsiveFontSize(10),
-  },
-
-  // ✅ 탭 뱃지 위치/크기
-  tabBadge: {
-    top: -6,
-    right: -10,
-  },
-  tabBadgeText: {
-    fontSize: getResponsiveFontSize(10),
-  },
+  tabBadge: {top: -6, right: -10},
+  tabBadgeText: {fontSize: getResponsiveFontSize(10)},
 });
