@@ -36,7 +36,12 @@ const TYPE = {
   ANNIVERSARY: 'ANNIVERSARY',
 };
 
-function Schedule({selectedDate, onOpenSheet, refreshTrigger, birthdayNames = []}) {
+function Schedule({
+  selectedDate,
+  onOpenSheet,
+  refreshTrigger,
+  birthdayNames = [],
+}) {
   const hookResult = useScheduleListByDate(selectedDate, refreshTrigger) || {};
   const individual = hookResult.individual ?? hookResult.personal ?? [];
   const family = hookResult.family ?? hookResult.shared ?? [];
@@ -49,7 +54,9 @@ function Schedule({selectedDate, onOpenSheet, refreshTrigger, birthdayNames = []
 
   const displayNames =
     birthdayNames.length > 2
-      ? `${birthdayNames.slice(0, 2).join(', ')} 외 ${birthdayNames.length - 2}명`
+      ? `${birthdayNames.slice(0, 2).join(', ')} 외 ${
+          birthdayNames.length - 2
+        }명`
       : birthdayNames.join(', ');
 
   const [birthdayModalVisible, setBirthdayModalVisible] = useState(false);
@@ -84,7 +91,9 @@ function Schedule({selectedDate, onOpenSheet, refreshTrigger, birthdayNames = []
       t === TYPE.ANNIVERSARY ||
       t.includes('ANNIV') ||
       t.includes('ANNIVERSARY') ||
-      String(raw || '').toLowerCase().includes('기념');
+      String(raw || '')
+        .toLowerCase()
+        .includes('기념');
 
     const isFamily =
       !isAnniv &&
@@ -92,7 +101,9 @@ function Schedule({selectedDate, onOpenSheet, refreshTrigger, birthdayNames = []
         t.includes('FAMILY') ||
         item?.isShared === true ||
         item?.shared === true ||
-        String(raw || '').toLowerCase().includes('공동'));
+        String(raw || '')
+          .toLowerCase()
+          .includes('공동'));
 
     if (isAnniv) {
       return {
@@ -156,7 +167,11 @@ function Schedule({selectedDate, onOpenSheet, refreshTrigger, birthdayNames = []
             style={[styles.cardWrap, styles.roundPillWrap]}>
             <View style={styles.cardHeaderRow}>
               <View style={styles.cardLeft}>
-                <View style={[styles.iconCircle, {backgroundColor: COLOR.YELLOW_BG}]}>
+                <View
+                  style={[
+                    styles.iconCircle,
+                    {backgroundColor: COLOR.YELLOW_BG},
+                  ]}>
                   <Text style={styles.iconText}>🎂</Text>
                 </View>
 
@@ -196,7 +211,10 @@ function Schedule({selectedDate, onOpenSheet, refreshTrigger, birthdayNames = []
 
             return (
               <DropShadow
-                key={item.scheduleId ?? `${preset.type}-${ownerLabel}-${item.title}`}
+                key={
+                  item.scheduleId ??
+                  `${preset.type}-${ownerLabel}-${item.title}`
+                }
                 style={[styles.cardShadowBox, styles.roundPillShadow]}>
                 <TouchableOpacity
                   onPress={() => onOpenSheet(item)}
@@ -204,7 +222,11 @@ function Schedule({selectedDate, onOpenSheet, refreshTrigger, birthdayNames = []
                   style={[styles.cardWrap, styles.roundPillWrap]}>
                   <View style={styles.cardHeaderRow}>
                     <View style={styles.cardLeft}>
-                      <View style={[styles.iconCircle, {backgroundColor: preset.iconBg}]}>
+                      <View
+                        style={[
+                          styles.iconCircle,
+                          {backgroundColor: preset.iconBg},
+                        ]}>
                         <Text style={styles.iconText} numberOfLines={1}>
                           {preset.icon}
                         </Text>
@@ -220,8 +242,13 @@ function Schedule({selectedDate, onOpenSheet, refreshTrigger, birthdayNames = []
                       </View>
                     </View>
 
-                    <View style={[styles.pill, {backgroundColor: preset.pillBg}]}>
-                      <Text style={[styles.pillText, {color: preset.pillTextColor}]}>
+                    <View
+                      style={[styles.pill, {backgroundColor: preset.pillBg}]}>
+                      <Text
+                        style={[
+                          styles.pillText,
+                          {color: preset.pillTextColor},
+                        ]}>
                         {preset.pillText}
                       </Text>
                     </View>
@@ -252,12 +279,11 @@ const styles = StyleSheet.create({
   },
   dateText: {
     color: COLORS.textPrimary,
-    fontSize: DEFAULT_STYLE.sectionTitle.fontSize,
+    fontSize: DEFAULT_STYLE.sectionTitle.fontSize - 1.5,
     fontFamily: DEFAULT_STYLE.sectionTitle.fontFamily,
     marginTop: getResponsiveHeight(15),
     marginBottom: getResponsiveHeight(16),
     alignSelf: 'flex-start',
-    fontWeight: Platform.OS === 'ios' ? undefined : 'bold',
   },
   timelineWrapper: {
     position: 'relative',
@@ -345,7 +371,7 @@ const styles = StyleSheet.create({
   },
   pillText: {
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(11.5),
+    fontSize: getResponsiveFontSize(10),
     color: '#111827',
     letterSpacing: 0.4,
   },

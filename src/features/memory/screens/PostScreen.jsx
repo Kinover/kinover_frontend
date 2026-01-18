@@ -50,6 +50,9 @@ import {deleteCommentThunk} from '../store/commentThunk';
 // ✅ 옵션 메뉴 컴포넌트로 분리
 import PostOptionsMenu from '../components/PostOptionMenu';
 
+// ✅ category fetch thunk (너가 넣은 경로 유지)
+import {fetchCategoryThunk} from '../store/categoryThunk';
+
 const {width: SCREEN_W} = Dimensions.get('window');
 
 export default function PostPage({route}) {
@@ -66,11 +69,17 @@ export default function PostPage({route}) {
   const isLeavingRef = useRef(false);
 
   const {postId, imageIndex = 0} = route?.params || {};
+  const familyId = useSelector(s => s.family?.familyId);
 
   const postFromStore = useSelector(state =>
-    postId ? state.memory?.postsById?.[postId] : null,
+    postId ? state.memory?.postsById?.[String(postId)] : null,
   );
-  const categoryList = useSelector(state => state.category.categoryList || []);
+
+  // ✅ null-safe
+  const categoryList = useSelector(state => state.category?.categoryList || []);
+
+  // ✅ 알림 reset 진입 플래그(있으면 백버튼 숨김)
+  const fromNotificationReset = Boolean(route?.params?._fromNotificationReset);
 
   const safeMemory = useMemo(
     () => ({
@@ -196,6 +205,14 @@ export default function PostPage({route}) {
     }
     didInitIndexRef.current = true;
   }, [imageIndex, vm]);
+
+  // ✅ 알림 진입에서 특히 잘 터지는 부분:
+  // categoryList가 비어있으면 PostPage에서 fetch 보장
+  useEffect(() => {
+    if (!categoryList?.length && familyId) {
+      dispatch(fetchCategoryThunk(familyId));
+    }
+  }, [categoryList?.length, familyId, dispatch]);
 
   /** ---------------- 댓글 삭제 모달 열기 ---------------- */
   const openDeleteCommentConfirm = useCallback(commentId => {
@@ -437,22 +454,26 @@ export default function PostPage({route}) {
     if (vm.isImageFullScreen) return;
     if (!postId) return;
 
-    // ✅ 라우트 이름은 프로젝트에 맞게 바꿔줘!
-    // 예) navigation.navigate('EditPostPage', {postId})
     navigation.navigate('이미지선택화면', {postId: postId, mode: '수정'});
   }, [navigation, postId, vm.isImageFullScreen]);
 
+  /** ---------------- header title 계산을 안정화 (categoryList 늦게 와도 갱신) ---------------- */
+  const headerCategoryTitle = useMemo(() => {
+    const cid = safeMemory?.categoryId;
+    if (!cid) return '게시물';
+
+    const list = Array.isArray(categoryList) ? categoryList : [];
+    const matched = list.find(c => String(c?.categoryId) === String(cid));
+    return matched?.title || matched?.name || '게시물';
+  }, [categoryList, safeMemory?.categoryId]);
+
   /** ---------------- header (투명 헤더) ---------------- */
   useEffect(() => {
-    const matched = categoryList.find(
-      c => c.categoryId === safeMemory?.categoryId,
-    );
-
     navigation.setOptions({
       headerShown: !isChromeHidden,
       headerTransparent: true,
       headerTitle: () => (
-        <Text style={styles.headerTitle}>{matched?.title || '게시물'}</Text>
+        <Text style={styles.headerTitle}>{headerCategoryTitle}</Text>
       ),
       headerTitleAlign: 'center',
       headerStyle: {backgroundColor: 'transparent'},
@@ -462,21 +483,25 @@ export default function PostPage({route}) {
         <View style={{flex: 1, backgroundColor: 'transparent'}} />
       ),
 
-      headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{paddingHorizontal: getResponsiveWidth(13)}}>
-          <Image
-            source={require('../../../assets/images/leftArrow.png')}
-            style={{
-              width: getResponsiveIconSize(20),
-              height: getResponsiveIconSize(20),
-              tintColor: '#fff',
-              resizeMode: 'contain',
-            }}
-          />
-        </TouchableOpacity>
-      ),
+      // ✅ 알림 reset 진입이면 백버튼 숨김 (히스토리/뒤로 UX 차단)
+      headerLeft: () => {
+
+        return (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{paddingHorizontal: getResponsiveWidth(13)}}>
+            <Image
+              source={require('../../../assets/images/leftArrow.png')}
+              style={{
+                width: getResponsiveIconSize(20),
+                height: getResponsiveIconSize(20),
+                tintColor: '#fff',
+                resizeMode: 'contain',
+              }}
+            />
+          </TouchableOpacity>
+        );
+      },
 
       headerRight: () => (
         <TouchableOpacity
@@ -493,11 +518,11 @@ export default function PostPage({route}) {
     });
   }, [
     navigation,
-    categoryList,
-    safeMemory,
     isChromeHidden,
+    headerCategoryTitle, // ✅ 타이틀 바뀌면 헤더 재세팅
     toggleMenu,
     isOptionBusy,
+    fromNotificationReset,
   ]);
 
   /** ---------------- description sheet ---------------- */
@@ -547,10 +572,16 @@ export default function PostPage({route}) {
 
   // ✅ 초기 1회만 띄우기
   useEffect(() => {
+    if (!postFromStore) return;
     if (isChromeHidden) return;
     presentDescSheet();
     requestAnimationFrame(() => applyDescIndex(false));
-  }, [presentDescSheet, applyDescIndex, isChromeHidden]);
+  }, [postFromStore, presentDescSheet, applyDescIndex, isChromeHidden]);
+
+  useEffect(() => {
+    if (!postFromStore) return;
+    didPresentDescRef.current = false;
+  }, [postFromStore]);
 
   useEffect(() => {
     if (vm.isImageFullScreen) collapseDesc();

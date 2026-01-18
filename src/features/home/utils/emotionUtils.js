@@ -6,17 +6,17 @@ export function getEmotionImage(emotion) {
     case 'WORRIED':
       return require('../../../assets/state4/2.png');
     case 'DEPRESSED':
-      return require('../../../assets/state4/3.png');
-    case 'SORRY':
-      return require('../../../assets/state4/4.png');
-    case 'TIRED':
       return require('../../../assets/state4/5.png');
-    case 'NEUTRAL':
+    case 'SORRY':
       return require('../../../assets/state4/6.png');
+    case 'TIRED':
+      return require('../../../assets/state4/3.png');
+    case 'NEUTRAL':
+      return require('../../../assets/state4/8.png');
     case 'HAPPY':
       return require('../../../assets/state4/7.png');
     case 'EXCITED':
-      return require('../../../assets/state4/8.png');
+      return require('../../../assets/state4/4.png');
     default:
       return require('../../../assets/state4/6.png');
   }

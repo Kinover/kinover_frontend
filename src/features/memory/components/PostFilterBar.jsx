@@ -230,8 +230,7 @@ const styles = StyleSheet.create({
     paddingRight: getResponsiveWidth(6),
   },
   categoryText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontWeight: '600',
+    fontFamily: 'Pretendard-Medium',
     fontSize: getResponsiveFontSize(13),
     lineHeight: getResponsiveHeight(17),
     color: '#525252',

@@ -1,4 +1,5 @@
 // src/screens/xxx/CategoryBottomSheetModal.js
+/* eslint-disable react-native/no-inline-styles */
 
 import React, {
   useRef,
@@ -7,6 +8,7 @@ import React, {
   forwardRef,
   useImperativeHandle,
   useMemo,
+  useCallback,
 } from 'react';
 import {
   View,
@@ -18,117 +20,218 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+
 import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-import BottomSheetLayout from 'components/BottomSheetLayout';
-import {useBottomSheetDynamicSnapPoints} from '@gorhom/bottom-sheet';
 
-// 아이템 1개당 대략적인 높이 (padding 포함)
-const ITEM_HEIGHT = getResponsiveHeight(52);
-// 스크롤 없이 보여줄 최대 개수
-const MAX_VISIBLE_ITEMS = 6;
+import BottomSheetLayout from 'components/BottomSheetLayout';
+import {BottomSheetButtons} from 'components/BottomSheetButtons';
+import {
+  BACKGROUND_COLORS,
+  BOTTOMSHEET_STYLE,
+  BUTTON_STYLES,
+} from 'styles/style';
+
+const ITEM_HEIGHT = getResponsiveHeight(48);
+const GAP = getResponsiveHeight(8);
+const MAX_VISIBLE_ITEMS = 7;
+
+const ALL_CATEGORY = {id: 'ALL', title: '전체'};
+
+const UI = {
+  bg: '#FFFFFF',
+  panel: '#F6F7FB',
+  card: '#FFFFFF',
+
+  text: '#0B1220',
+  sub: '#667085',
+  muted: '#98A2B3',
+
+  line: 'rgba(15, 23, 42, 0.08)',
+  lineSoft: 'rgba(15, 23, 42, 0.06)',
+
+  brand: '#FFC84D',
+  brandDeep: '#FFB020',
+
+  selectedBg: BUTTON_STYLES.saveBg,
+  selectedText: '#FFFFFF',
+};
+
+const shadow = Platform.select({});
 
 const CategoryBottomSheetModal = forwardRef(
   ({categoryList = [], selectedCategory, onSelectCategory}, ref) => {
     const modalRef = useRef(null);
-    const [tempSelected, setTempSelected] = useState(selectedCategory);
 
-    useImperativeHandle(ref, () => ({
-      present: () => modalRef.current?.present(),
-      dismiss: () => modalRef.current?.dismiss(),
-    }));
+    const [tempSelected, setTempSelected] = useState(selectedCategory);
+    const isClosingRef = useRef(false);
+
+    const data = useMemo(
+      () => [ALL_CATEGORY, ...(categoryList || [])],
+      [categoryList],
+    );
+
+    const maxListHeight = useMemo(() => {
+      // ✅ row height + gap을 고려해서 "정확히" maxHeight 계산
+      const visible = Math.min(MAX_VISIBLE_ITEMS, Math.max(1, data.length));
+      // 마지막 아이템은 gap 없음 → (ITEM_HEIGHT * n) + (GAP * (n-1))
+      return ITEM_HEIGHT * visible + GAP * Math.max(0, visible - 1);
+    }, [data.length]);
 
     useEffect(() => {
       setTempSelected(selectedCategory);
     }, [selectedCategory]);
 
-    const handleSelect = cat => {
-      setTempSelected(cat); // 로컬 하이라이트용
-      onSelectCategory?.(cat); // 부모에 바로 반영
-      modalRef.current?.dismiss(); // 바텀시트 닫기
-    };
+    useImperativeHandle(ref, () => ({
+      present: () => {
+        isClosingRef.current = false;
+        setTempSelected(selectedCategory);
+        modalRef.current?.present?.();
+      },
+      dismiss: () => {
+        isClosingRef.current = true;
+        modalRef.current?.dismiss?.();
+      },
+    }));
 
-    const data = useMemo(
-      () => [{title: '전체'}, ...categoryList],
-      [categoryList],
-    );
+    const closeSheet = useCallback(() => {
+      if (isClosingRef.current) return;
+      isClosingRef.current = true;
+      modalRef.current?.dismiss?.();
+      setTimeout(() => {
+        isClosingRef.current = false;
+      }, 280);
+    }, []);
 
-    // ✅ 바텀시트 높이 = 콘텐츠 양만큼
-    // (CONTENT_HEIGHT 문자열을 "그냥" 쓰면 에러 나서, 이 훅이 필수)
-    const initialSnapPoints = useMemo(() => ['CONTENT_HEIGHT'], []);
-    const {
-      animatedSnapPoints,
-      animatedHandleHeight,
-      animatedContentHeight,
-      handleContentLayout,
-    } = useBottomSheetDynamicSnapPoints(initialSnapPoints);
+    const isSameCategory = useCallback((a, b) => {
+      if (!a && !b) return true;
+      if (!a || !b) return false;
+      if (a.id != null && b.id != null) return String(a.id) === String(b.id);
+      return a.title === b.title;
+    }, []);
 
-    // ✅ 리스트는 MAX_VISIBLE_ITEMS까지만 높이를 허용하고, 넘치면 내부 스크롤
-    const maxListHeight = useMemo(
-      () => MAX_VISIBLE_ITEMS * ITEM_HEIGHT,
-      [],
-    );
+    const handlePressItem = useCallback(cat => {
+      setTempSelected(cat);
+    }, []);
+
+    const handleCancel = useCallback(() => {
+      setTempSelected(selectedCategory);
+      closeSheet();
+    }, [closeSheet, selectedCategory]);
+
+    const handleApply = useCallback(() => {
+      onSelectCategory?.(tempSelected || ALL_CATEGORY);
+      closeSheet();
+    }, [closeSheet, onSelectCategory, tempSelected]);
+
+    const handleDismiss = useCallback(() => {
+      setTempSelected(selectedCategory);
+    }, [selectedCategory]);
+
+    const isOnlyAll = data.length <= 1;
 
     return (
       <BottomSheetLayout
         modalRef={modalRef}
-        // ✅ dynamic snap points
-        snapPoints={animatedSnapPoints}
-        handleHeight={animatedHandleHeight}
-        contentHeight={animatedContentHeight}
-        onContentLayout={handleContentLayout}
+        snapPoints={['78%']}
         enableContentPanningGesture={false}
-        // 키보드가 있다 해도 시트 자체가 밀리지 않게(통일)
         keyboardBehavior="none"
         androidKeyboardInputMode="adjustNothing"
-        title="카테고리 선택"
-        subtitle="보고 싶은 게시글의 카테고리를 선택해 주세요."
-        innerContentStyle={styles.innerContent}
-        useFixedFooter={false}>
-        <SafeAreaView style={{flex: 1}}>
-          <View style={styles.listWrapper}>
-            <ScrollView
-              style={[styles.scrollArea, {maxHeight: maxListHeight}]}
-              bounces={false}
-              showsVerticalScrollIndicator={false}>
-              {data.map((cat, index) => {
-                const isSelected = cat.title === tempSelected?.title;
-                const key = cat.id ? String(cat.id) : `${cat.title}-${index}`;
+        closeOnPressOutside={true}
+        onDismiss={handleDismiss}
+        title="카테고리"
+        subtitle="원하는 추억들만 모아봐요."
+        useInternalScroll={false}>
+        <SafeAreaView style={{flex: 1, backgroundColor: UI.bg}}>
+          <View style={{flex: 1}}>
+            {/* ✅ 카드(패널) */}
+            <View style={styles.panel}>
+              <View style={styles.headerRow}>
+                <Text style={styles.headerTitle}>목록</Text>
+                <View style={styles.pill}>
+                  <View style={styles.pillDot} />
+                  <Text style={styles.pillText}>
+                    {tempSelected?.title ?? '전체'}
+                  </Text>
+                </View>
+              </View>
 
-                return (
-                  <View
-                    key={key}
-                    style={{marginBottom: getResponsiveHeight(8)}}>
-                    <TouchableOpacity
-                      style={[
-                        styles.categoryItem,
-                        isSelected && styles.selectedItem,
-                      ]}
-                      activeOpacity={0.85}
-                      onPress={() => handleSelect(cat)}>
-                      <Text
-                        style={[
-                          styles.categoryText,
-                          isSelected && styles.selectedText,
-                        ]}>
-                        {cat.title}
-                      </Text>
+              {isOnlyAll ? (
+                <View style={styles.emptyBox}>
+                  <Text style={styles.emptyTitle}>카테고리가 없어요</Text>
+                  <Text style={styles.emptyDesc}>
+                    지금은 ‘전체’로 보거나, 업로드할 때 새로 만들 수 있어요.
+                  </Text>
+                </View>
+              ) : (
+                /**
+                 * ✅ 튀어나옴 방지 핵심:
+                 * - listViewport에 maxHeight 적용
+                 * - overflow:'hidden' + borderRadius 적용
+                 * - ScrollView는 그 안에서만 스크롤
+                 */
+                <View style={[styles.listViewport, {maxHeight: maxListHeight}]}>
+                  <ScrollView
+                    bounces={false}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.scrollContent}>
+                    {data.map((cat, index) => {
+                      const isSelected = isSameCategory(cat, tempSelected);
+                      const key =
+                        cat.id != null
+                          ? String(cat.id)
+                          : `${cat.title}-${index}`;
 
-                      {isSelected && (
-                        <Image
-                          source={require('../../../assets/icons/check-yellow.png')}
-                          style={styles.checkIcon}
-                        />
-                      )}
-                    </TouchableOpacity>
-                  </View>
-                );
-              })}
-            </ScrollView>
+                      return (
+                        <TouchableOpacity
+                          key={key}
+                          activeOpacity={0.88}
+                          onPress={() => handlePressItem(cat)}
+                          style={[
+                            styles.itemRow,
+                            index !== 0 && {marginTop: GAP},
+                            isSelected && styles.itemRowSelected,
+                          ]}>
+                          <Text
+                            style={[
+                              styles.itemText,
+                              isSelected && styles.itemTextSelected,
+                            ]}
+                            numberOfLines={1}>
+                            {cat.title}
+                          </Text>
+
+                          {isSelected ? (
+                            <View style={styles.selectedMark}>
+                              {/* <Image
+                                source={require('../../../assets/icons/check-yellow.png')}
+                                style={styles.checkIcon}
+                              /> */}
+                            </View>
+                          ) : (
+                            <View style={styles.checkPlaceholder} />
+                          )}
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+
+            {/* ✅ footer 고정 */}
+            <View style={styles.footerFixed}>
+              <BottomSheetButtons
+                onCancel={handleCancel}
+                onSave={handleApply}
+                saveLabel="적용하기"
+                autoCloseOnSave={false}
+              />
+            </View>
           </View>
         </SafeAreaView>
       </BottomSheetLayout>
@@ -140,49 +243,146 @@ CategoryBottomSheetModal.displayName = 'CategoryBottomSheetModal';
 export default CategoryBottomSheetModal;
 
 const styles = StyleSheet.create({
-  innerContent: {
-    paddingTop: getResponsiveHeight(6),
-    paddingBottom: getResponsiveHeight(4),
-  },
-  listWrapper: {
-    flex: 1,
-    position: 'relative',
-  },
-  scrollArea: {
-    flexGrow: 0,
-    paddingBottom: getResponsiveHeight(10),
-  },
-  categoryItem: {
-    paddingVertical: getResponsiveHeight(14),
-    paddingHorizontal: getResponsiveWidth(14),
-    borderRadius: 11,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'transparent',
+  panel: {
+    backgroundColor: UI.panel,
+    borderRadius: 18,
+    padding: getResponsiveWidth(14),
     borderWidth: 1,
-    borderColor: '#F3F4F6',
-    width: '100%',
+    borderColor: UI.lineSoft,
+    ...shadow,
   },
-  selectedItem: {
-    backgroundColor: '#FFF6DD',
-    borderColor: '#FFC749',
+
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: getResponsiveHeight(12),
   },
-  categoryText: {
+  headerTitle: {
+    fontSize: getResponsiveFontSize(13),
+    fontFamily: 'Pretendard-SemiBold',
+    color: UI.text,
+    letterSpacing: -0.2,
+  },
+
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(6),
+    paddingHorizontal: getResponsiveWidth(10),
+    paddingVertical: getResponsiveHeight(6),
+    borderRadius: 999,
+    backgroundColor: UI.card,
+    borderWidth: 1,
+    borderColor: UI.lineSoft,
+  },
+  pillDot: {
+    width: getResponsiveWidth(6),
+    height: getResponsiveWidth(6),
+    borderRadius: 999,
+    backgroundColor: UI.brandDeep,
+  },
+  pillText: {
+    fontSize: getResponsiveFontSize(11.5),
+    fontFamily: 'Pretendard-SemiBold',
+    color: UI.sub,
+    letterSpacing: -0.2,
+  },
+
+  /**
+   * ✅ 리스트 뷰포트:
+   * - 여기서 maxHeight로 "창"을 만들고
+   * - overflow hidden으로 내용이 절대 밖으로 못 나가게 막는다
+   */
+  listViewport: {
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+
+  scrollContent: {
+    paddingBottom: getResponsiveHeight(2),
+  },
+
+  itemRow: {
+    height: ITEM_HEIGHT,
+    paddingHorizontal: getResponsiveWidth(14),
+    borderRadius: 14,
+
+    backgroundColor: UI.card,
+    borderWidth: 1,
+    borderColor: UI.lineSoft,
+
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  itemRowSelected: {
+    backgroundColor: UI.selectedBg,
+    borderColor: 'rgba(17, 24, 39, 0.18)',
+  },
+
+  itemText: {
+    flex: 1,
+    paddingRight: getResponsiveWidth(10),
     fontSize:
       Platform.OS === 'android'
         ? getResponsiveFontSize(14)
         : getResponsiveFontSize(15),
     fontFamily: 'Pretendard-Medium',
-    color: '#374151',
+    color: UI.text,
+    letterSpacing: -0.2,
   },
-  selectedText: {
+
+  itemTextSelected: {
     fontFamily: 'Pretendard-SemiBold',
-    color: '#FF9A00',
+    color: UI.selectedText,
   },
+
+  selectedMark: {
+    width: getResponsiveIconSize(13),
+    height: getResponsiveIconSize(13),
+    borderRadius: 999,
+    backgroundColor: UI.brand,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   checkIcon: {
-    width: getResponsiveIconSize(15),
-    height: getResponsiveIconSize(15),
+    width: getResponsiveIconSize(14),
+    height: getResponsiveIconSize(14),
     resizeMode: 'contain',
+  },
+
+  checkPlaceholder: {
+    width: getResponsiveIconSize(26),
+    height: getResponsiveIconSize(26),
+  },
+
+  emptyBox: {
+    paddingVertical: getResponsiveHeight(16),
+    paddingHorizontal: getResponsiveWidth(12),
+    borderRadius: 16,
+    backgroundColor: UI.card,
+    borderWidth: 1,
+    borderColor: UI.lineSoft,
+  },
+  emptyTitle: {
+    fontSize: getResponsiveFontSize(14.5),
+    fontFamily: 'Pretendard-SemiBold',
+    color: UI.text,
+    letterSpacing: -0.2,
+  },
+  emptyDesc: {
+    marginTop: getResponsiveHeight(6),
+    fontSize: getResponsiveFontSize(12.5),
+    fontFamily: 'Pretendard-Medium',
+    color: UI.sub,
+    lineHeight: getResponsiveFontSize(18),
+  },
+
+  footerFixed: {
+    paddingTop: getResponsiveHeight(10),
+    paddingBottom: getResponsiveHeight(2),
   },
 });

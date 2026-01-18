@@ -575,23 +575,21 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   commentWriter: {
-    fontFamily: 'Pretendard-Regular',
-    fontWeight: '600',
-    fontSize: getResponsiveFontSize(14),
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(13),
     color: '#000',
   },
   timeText: {
-    fontSize: getResponsiveFontSize(11),
+    fontSize: getResponsiveFontSize(10),
     color: '#999',
   },
   commentContent: {
     marginTop: getResponsiveHeight(4),
-    fontFamily: 'Pretendard-Light',
-    fontSize: getResponsiveFontSize(13),
+    fontFamily: 'Pretendard-Regular',
+    fontSize: getResponsiveFontSize(12),
     lineHeight: 15,
     color: '#000',
   },
-
   mentionText: {
     color: '#111827',
     fontFamily: 'Pretendard-SemiBold',
@@ -716,7 +714,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     color: COLORS.textPrimary,
-    fontWeight:600,
     fontFamily: 'Pretendard-Medium',
     fontSize: getResponsiveFontSize(13.5),
   },

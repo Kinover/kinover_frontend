@@ -30,7 +30,7 @@ const memorySlice = createSlice({
       // 🔁 postsById도 같이 채워 넣기
       list.forEach(post => {
         if (post?.postId) {
-          state.postsById[post.postId] = post;
+          state.postsById[String(post.postId)] = post;
         }
       });
     },
@@ -46,7 +46,7 @@ const memorySlice = createSlice({
     setPostDetail(state, action) {
       const post = action.payload;
       if (post && post.postId) {
-        state.postsById[post.postId] = post;
+        state.postsById[String(post.postId)] = post;
       }
     },
 

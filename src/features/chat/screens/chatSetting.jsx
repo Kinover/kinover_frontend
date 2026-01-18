@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  ScrollView,
   Platform,
   ActivityIndicator,
   Modal,
@@ -21,6 +20,8 @@ import Animated, {
 
 import {useSelector, useDispatch} from 'react-redux';
 
+import DropShadow from 'react-native-drop-shadow';
+
 import {
   fetchChatRoomUsersThunk,
   renameChatRoomThunk,
@@ -32,8 +33,6 @@ import LeaveChatRoomModal from '../components/leaveChatRoomModal';
 import RenameChatRoomModal from '../components/renameChatRoomModal';
 import ChangeKinoModal from '../components/ChangeKinoModal';
 
-// ✅ Android 케이스 민감: 파일명이 MediaModal.jsx면 이렇게 import 해야 안전함
-// import MediaModal from '../components/MediaModal';
 import MediaModal from '../components/mediaModal';
 
 import {
@@ -71,7 +70,6 @@ export default function ChatSettings({
   const [showMembers, setShowMembers] = useState(false);
   const [isAlarmOn, setIsAlarmOn] = useState(true);
 
-  // ✅ 토스트
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
@@ -82,12 +80,14 @@ export default function ChatSettings({
     state => state.userFamily.familyUserList || [],
   );
 
-  // ✅ 현재 채팅방 정보
   const chatRoomList = useSelector(state => state.chatRoom.chatRoomList || []);
   const rid = chatRoomId == null ? null : String(chatRoomId);
   const currentRoom = chatRoomList.find(
     room => String(room.chatRoomId) === rid,
   );
+
+  // ✅ 3열 고정
+  const COLS = 3;
 
   const isAllFamilyInChat =
     Array.isArray(familyMembers) &&
@@ -96,7 +96,7 @@ export default function ChatSettings({
     chatRoomUsers.length >= familyMembers.length;
 
   // =========================================================
-  // ✅ “원래 있는 헤더 가리기” + 닫힐 때 스르륵 닫기
+  // ✅ 패널 슬라이드
   // =========================================================
   const panelW = getResponsiveWidth(310);
   const translateX = useSharedValue(panelW);
@@ -132,32 +132,33 @@ export default function ChatSettings({
   useEffect(() => () => clearCloseTimer(), []);
 
   // =========================================================
-  // ✅ 미디어 상태
+  // ✅ 미디어 상태 (프리뷰 3x3만)
   // =========================================================
   const [mediaType, setMediaType] = useState('ALL'); // ALL | IMAGE | VIDEO
   const [mediaItems, setMediaItems] = useState([]);
   const [mediaLoading, setMediaLoading] = useState(false);
-  const [mediaMoreLoading, setMediaMoreLoading] = useState(false);
-  const [mediaNextBefore, setMediaNextBefore] = useState(null);
   const [mediaOpened, setMediaOpened] = useState(false);
 
-  // ✅ MediaModal 연결 (너가 올린 시그니처)
+  const MEDIA_PREVIEW_LIMIT = 9;
+
   const [mediaModalVisible, setMediaModalVisible] = useState(false);
-  const [modalUrls, setModalUrls] = useState([]);
-  const [modalType, setModalType] = useState('image'); // 'image' | 'video'
+  const [modalMediaItems, setModalMediaItems] = useState([]);
   const [modalInitialIndex, setModalInitialIndex] = useState(0);
 
   const fetchingFirstRef = useRef(false);
 
-  const gridGap = getResponsiveWidth(8);
-  const paddingH = getResponsiveWidth(22); // container paddingHorizontal
+  const gridGap = getResponsiveWidth(6);
+  const innerBoxPad = getResponsiveWidth(14);
 
-  // ✅ cellSize 계산식 수정(패딩을 4번 빼고 있었음)
-  // panelW - (좌우 padding 2개) - (열 사이 gap 2개)
+  // ✅ numColumns=3로 강제 3열
+  const gridInnerWidth = useMemo(() => {
+    return panelW - getResponsiveWidth(34) * 2 - 2;
+  }, [panelW, innerBoxPad]);
+
   const cellSize = useMemo(() => {
-    const w = panelW - paddingH * 2 - gridGap * 2 - getResponsiveWidth(20);
-    return Math.floor(w / 3);
-  }, [panelW, paddingH, gridGap]);
+    const usable = gridInnerWidth - gridGap * (COLS - 1);
+    return Math.max(0, Math.floor(usable / COLS));
+  }, [gridInnerWidth, gridGap, COLS]);
 
   const pickThumbUri = item =>
     item?.thumbnailUrl ||
@@ -184,7 +185,6 @@ export default function ChatSettings({
     return 'FILE';
   };
 
-  // ✅ keyExtractor에서만 사용 (render 안정)
   const getMediaKey = item =>
     item?.messageId ||
     item?.id ||
@@ -212,42 +212,12 @@ export default function ChatSettings({
 
       const items = Array.isArray(res?.items) ? res.items : [];
       setMediaItems(items);
-      setMediaNextBefore(res?.nextBefore ?? null);
     } catch (e) {
       console.warn('❌ fetchMediaFirst 실패:', e);
       setMediaItems([]);
-      setMediaNextBefore(null);
     } finally {
       setMediaLoading(false);
       fetchingFirstRef.current = false;
-    }
-  };
-
-  // ✅ 핵심 수정: 더보기는 “절대 dedupe 하지 말고” 무조건 append
-  // (dedupe는 서버 key 확정된 뒤에 다시 설계)
-  const fetchMediaMore = async () => {
-    if (!chatRoomId) return;
-    if (!mediaNextBefore) return;
-    if (mediaMoreLoading) return;
-
-    setMediaMoreLoading(true);
-    try {
-      const res = await dispatch(
-        fetchChatRoomMediaThunk({
-          chatRoomId,
-          type: mediaType,
-          before: mediaNextBefore,
-          limit: 30,
-        }),
-      ).unwrap();
-
-      const nextItems = Array.isArray(res?.items) ? res.items : [];
-      setMediaItems(prev => [...prev, ...nextItems]); // ✅ 줄어드는 현상 방지
-      setMediaNextBefore(res?.nextBefore ?? null);
-    } catch (e) {
-      console.warn('❌ fetchMediaMore 실패:', e);
-    } finally {
-      setMediaMoreLoading(false);
     }
   };
 
@@ -257,36 +227,49 @@ export default function ChatSettings({
     await fetchMediaFirst(upper);
   };
 
+  const mediaGridData = useMemo(() => {
+    if (!Array.isArray(mediaItems)) return [];
+    return mediaItems.slice(0, MEDIA_PREVIEW_LIMIT);
+  }, [mediaItems]);
+
+  const showMoreButton =
+    mediaOpened &&
+    Array.isArray(mediaItems) &&
+    mediaItems.length > MEDIA_PREVIEW_LIMIT;
+
   const openMediaModal = useCallback(
     (pressedItem, pressedIndexInGrid) => {
-      const pressedKind = normalizeMediaType(pressedItem); // IMAGE | VIDEO | FILE
+      const pressedKind = normalizeMediaType(pressedItem);
       const pressedUri = pickMediaUri(pressedItem);
-
       if (!pressedUri) return;
       if (pressedKind === 'FILE') return;
 
-      // ✅ ALL이면 누른 타입끼리만 묶어서 모달 넘김
-      const kindForList =
+      const allowKind =
         mediaType === 'ALL'
-          ? pressedKind
-          : mediaType === 'VIDEO'
-          ? 'VIDEO'
-          : 'IMAGE';
+          ? ['IMAGE', 'VIDEO']
+          : mediaType === 'IMAGE'
+          ? ['IMAGE']
+          : ['VIDEO'];
 
       const list = (mediaItems || [])
-        .filter(it => normalizeMediaType(it) === kindForList)
-        .map(it => pickMediaUri(it))
-        .filter(Boolean);
+        .map(it => {
+          const kind = normalizeMediaType(it);
+          const url = pickMediaUri(it);
+          const thumb = pickThumbUri(it) || url;
+          return {kind, url, thumb};
+        })
+        .filter(x => allowKind.includes(x.kind) && !!x.url);
 
       if (!list.length) return;
 
-      const foundIndex = list.findIndex(u => String(u) === String(pressedUri));
-
-      setModalUrls(list);
-      setModalType(kindForList === 'VIDEO' ? 'video' : 'image');
-      setModalInitialIndex(
-        foundIndex >= 0 ? foundIndex : Math.max(0, pressedIndexInGrid || 0),
+      const foundIndex = list.findIndex(
+        x => String(x.url) === String(pressedUri),
       );
+      const nextIndex =
+        foundIndex >= 0 ? foundIndex : Math.max(0, pressedIndexInGrid || 0);
+
+      setModalMediaItems(list);
+      setModalInitialIndex(nextIndex);
       setMediaModalVisible(true);
     },
     [mediaItems, mediaType],
@@ -295,11 +278,21 @@ export default function ChatSettings({
   const closeMediaModal = useCallback(() => {
     setMediaModalVisible(false);
     setTimeout(() => {
-      setModalUrls([]);
+      setModalMediaItems([]);
       setModalInitialIndex(0);
-      setModalType('image');
     }, 0);
   }, []);
+
+  const goToMediaPage = useCallback(() => {
+    if (!chatRoomId) return;
+    onClose();
+    setTimeout(() => {
+      navigation.navigate('채팅방미디어모아보기화면', {
+        chatRoomId,
+        initialType: mediaType,
+      });
+    }, 220);
+  }, [chatRoomId, navigation, mediaType, onClose]);
 
   // =========================================================
   // 기존 로직
@@ -340,7 +333,7 @@ export default function ChatSettings({
     )
       .unwrap()
       .then(() => {
-        setToastMessage(newIsOn ? '알림을 켰어요' : '알림을 껐어요');
+        setToastMessage(newIsOn ? '알림을 켰어요.' : '알림을 껐어요.');
         setToastVisible(true);
       })
       .catch(err => {
@@ -392,7 +385,303 @@ export default function ChatSettings({
     setTimeout(() => navigation.navigate('키노선택화면', {chatRoomId}), 260);
   };
 
+  // =========================================================
+  // ✅ 루트 FlatList: 스크롤 컨테이너만
+  // =========================================================
+  const listData = useMemo(() => [], []);
+  const renderEmpty = useCallback(() => null, []);
+
+  // ✅ 미디어 프리뷰 (3x3) + 더보기
+  const MediaPreviewGrid = useMemo(() => {
+    if (!mediaOpened) return null;
+
+    if (mediaLoading) {
+      return (
+        <View style={styles.mediaLoadingBox}>
+          <ActivityIndicator />
+          <Text style={styles.helperText}>불러오는 중…</Text>
+        </View>
+      );
+    }
+
+    if (mediaItems.length === 0) {
+      return (
+        <Text style={styles.helperText}>아직 모아볼 미디어가 없어요.</Text>
+      );
+    }
+
+    return (
+      <View style={{marginTop: getResponsiveHeight(10)}}>
+        <View style={styles.gridWrapCenter}>
+          <FlatList
+            data={mediaGridData}
+            keyExtractor={(item, index) =>
+              `${String(getMediaKey(item) ?? 'noid')}_${index}`
+            }
+            numColumns={COLS}
+            scrollEnabled={false}
+            showsVerticalScrollIndicator={false}
+            removeClippedSubviews={false}
+            columnWrapperStyle={{
+              columnGap: gridGap,
+              marginBottom: gridGap,
+            }}
+            renderItem={({item, index}) => {
+              const thumb = pickThumbUri(item) || pickMediaUri(item);
+              const kind = normalizeMediaType(item);
+
+              return (
+                <TouchableOpacity
+                  style={[
+                    styles.mediaCell,
+                    {
+                      width: cellSize,
+                      height: cellSize,
+                    },
+                  ]}
+                  activeOpacity={0.9}
+                  onPress={() => openMediaModal(item, index)}>
+                  {thumb ? (
+                    <Image source={{uri: thumb}} style={styles.mediaThumb} />
+                  ) : (
+                    <View style={styles.mediaPlaceholder}>
+                      <Text style={styles.mediaPlaceholderText}>
+                        {kind === 'VIDEO' ? 'VIDEO' : 'FILE'}
+                      </Text>
+                    </View>
+                  )}
+
+                  {kind === 'VIDEO' && (
+                    <View style={styles.videoBadge}>
+                      <Text style={styles.videoBadgeText}>영상</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              );
+            }}
+          />
+        </View>
+
+        {showMoreButton && (
+          <TouchableOpacity
+            style={styles.moreButton}
+            onPress={goToMediaPage}
+            activeOpacity={0.9}>
+            <Text style={styles.moreButtonText}>더 보기</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  }, [
+    mediaOpened,
+    mediaLoading,
+    mediaItems,
+    mediaGridData,
+    cellSize,
+    gridGap,
+    showMoreButton,
+    goToMediaPage,
+    openMediaModal,
+    COLS,
+  ]);
+
+  // ✅ 섹션 구분선 컴포넌트
+  const SectionDivider = useCallback(() => {
+    return <View style={styles.sectionDivider} />;
+  }, []);
+
+  // ✅ Header
+  const Header = useMemo(() => {
+    return (
+      <View style={{paddingTop: getResponsiveHeight(18)}}>
+        {/* ✅ 섹션 1: 채팅방 이름 */}
+        {!isKino && (
+          <View style={styles.sectionWrap}>
+            <TouchableOpacity
+              style={styles.sectionRow}
+              onPress={() => setIsRenameModalVisible(true)}
+              activeOpacity={0.9}>
+              <View style={styles.sectionTextBox}>
+                <Text style={styles.sectionTitle}>채팅방 이름</Text>
+                <Text style={styles.sectionDesc}>채팅방 이름을 변경해요.</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {!isKino && <SectionDivider />}
+
+        {/* ✅ 섹션 2: 멤버 목록 */}
+        {!isKino && (
+          <View style={styles.sectionWrap}>
+            <TouchableOpacity
+              onPress={() => setShowMembers(!showMembers)}
+              style={styles.sectionRow}
+              activeOpacity={0.9}>
+              <View style={styles.sectionTextBox}>
+                <Text style={styles.sectionTitle}>멤버 목록</Text>
+                <Text style={styles.sectionDesc}>
+                  함께 채팅하는 멤버를 확인해요.
+                </Text>
+              </View>
+              <Image
+                source={require('../../../assets/images/down-yellow.png')}
+                style={[
+                  styles.chevronDown,
+                  {transform: [{rotate: showMembers ? '180deg' : '0deg'}]},
+                ]}
+              />
+            </TouchableOpacity>
+
+            {showMembers && (
+              <View style={styles.memberBox}>
+                {chatRoomUsers?.map((user, idx) => (
+                  <View
+                    key={`${user?.userId ?? 'u'}_${idx}`}
+                    style={styles.memberItem}>
+                    <Image
+                      source={{uri: user.image}}
+                      style={styles.memberImage}
+                    />
+                    <Text style={styles.memberName}>{user.name}</Text>
+                  </View>
+                ))}
+
+                {!isAllFamilyInChat && (
+                  <TouchableOpacity
+                    onPress={handleShowMembers}
+                    style={styles.inviteBtn}
+                    activeOpacity={0.9}>
+                    <Image
+                      source={require('../../../assets/images/addMember-bt.png')}
+                      style={styles.addIcon}
+                    />
+                    <Text style={styles.inviteText}>새 멤버 초대</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* ✅ 키노/일반 분기 */}
+        {isKino ? (
+          <>
+            {/* <SectionDivider /> */}
+
+            {/* ✅ 섹션 3: 키노 교체 */}
+            <View style={styles.sectionWrap}>
+              <TouchableOpacity
+                style={styles.sectionRow}
+                onPress={() => setIsChangeKinoModalVisible(true)}
+                activeOpacity={0.9}>
+                <View style={styles.sectionTextBox}>
+                  <Text style={styles.sectionTitle}>키노 교체하기</Text>
+                  <Text style={styles.sectionDesc}>
+                    새로운 키노를 만나볼래요.
+                  </Text>
+                </View>
+                <Image
+                  source={require('../../../assets/images/down-yellow.png')}
+                  style={styles.chevron}
+                />
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : (
+          <>
+            <SectionDivider />
+
+            {/* ✅ 섹션 3: 미디어 */}
+            <View style={styles.sectionWrap}>
+              <TouchableOpacity
+                style={styles.sectionRow}
+                onPress={() => {
+                  const next = !mediaOpened;
+                  setMediaOpened(next);
+                  if (next) fetchMediaFirst(mediaType);
+                }}
+                activeOpacity={0.9}>
+                <View style={styles.sectionTextBox}>
+                  <Text style={styles.sectionTitle}>미디어</Text>
+                  <Text style={styles.sectionDesc}>
+                    사진/영상을 한눈에 모아봐요.
+                  </Text>
+                </View>
+
+                <Image
+                  source={require('../../../assets/images/down-yellow.png')}
+                  style={[
+                    styles.chevronDown,
+                    {transform: [{rotate: mediaOpened ? '180deg' : '0deg'}]},
+                  ]}
+                />
+              </TouchableOpacity>
+
+              {mediaOpened && (
+                <View
+                  style={[styles.mediaBox, {paddingHorizontal: innerBoxPad}]}>
+                  <View style={styles.mediaTabs}>
+                    {['ALL', 'IMAGE', 'VIDEO'].map(t => {
+                      const active = mediaType === t;
+                      return (
+                        <TouchableOpacity
+                          key={t}
+                          onPress={() => onChangeMediaType(t)}
+                          style={[
+                            styles.mediaTab,
+                            active && styles.mediaTabActive,
+                          ]}
+                          activeOpacity={0.9}>
+                          <Text
+                            style={[
+                              styles.mediaTabText,
+                              active && styles.mediaTabTextActive,
+                            ]}>
+                            {t === 'ALL'
+                              ? '전체'
+                              : t === 'IMAGE'
+                              ? '사진'
+                              : '영상'}
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+
+                  {MediaPreviewGrid}
+                </View>
+              )}
+            </View>
+          </>
+        )}
+
+        <View style={{height: getResponsiveHeight(10)}} />
+      </View>
+    );
+  }, [
+    isKino,
+    mediaOpened,
+    mediaType,
+    showMembers,
+    chatRoomUsers,
+    isAllFamilyInChat,
+    handleShowMembers,
+    MediaPreviewGrid,
+    innerBoxPad,
+    fetchMediaFirst,
+    onChangeMediaType,
+    SectionDivider,
+  ]);
+
+  const Footer = useMemo(
+    () => <View style={{height: getResponsiveHeight(10)}} />,
+    [],
+  );
+
   if (!internalVisible) return null;
+
+  const LEAVE_BAR_H = getResponsiveHeight(66);
 
   return (
     <Modal
@@ -433,8 +722,7 @@ export default function ChatSettings({
 
         <MediaModal
           visible={mediaModalVisible}
-          mediaUrls={modalUrls}
-          mediaType={modalType}
+          mediaItems={modalMediaItems}
           initialIndex={modalInitialIndex}
           onClose={closeMediaModal}
         />
@@ -447,250 +735,57 @@ export default function ChatSettings({
       />
 
       <Animated.View style={[styles.container, animatedStyle]}>
+        {/* ✅ 헤더 */}
         <View style={styles.header}>
           <View style={styles.headerTextBox}>
             <Text style={styles.headerTitle}>채팅방 설정</Text>
             <Text style={styles.headerSubtitle}>
-              이름, 멤버, 알림을 한 번에 관리해요.
+              이름 · 멤버 · 알림을 관리해요.
             </Text>
           </View>
 
-          <TouchableOpacity onPress={handleToggleAlarm}>
-            <Image
-              style={styles.alarmIcon}
-              source={
-                isAlarmOn
-                  ? require('../../../assets/images/navigator_alarm-button.png')
-                  : require('../../../assets/images/navigator_alarm-button-off4.png')
-              }
-            />
+          <TouchableOpacity onPress={handleToggleAlarm} activeOpacity={0.9}>
+            <View style={styles.alarmBtn}>
+              <Image
+                style={styles.alarmIcon}
+                source={
+                  isAlarmOn
+                    ? require('../../../assets/images/navigator_alarm-button.png')
+                    : require('../../../assets/images/navigator_alarm-button-off4.png')
+                }
+              />
+            </View>
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {!isKino && (
+        {/* ✅ 스크롤 컨테이너 */}
+        <FlatList
+          data={listData}
+          renderItem={() => null}
+          keyExtractor={(_, idx) => `empty_${idx}`}
+          showsVerticalScrollIndicator={false}
+          removeClippedSubviews={false}
+          contentContainerStyle={{
+            paddingBottom: isKino
+              ? getResponsiveHeight(24)
+              : LEAVE_BAR_H + getResponsiveHeight(22),
+          }}
+          ListHeaderComponent={Header}
+          ListFooterComponent={Footer}
+        />
+
+        {/* ✅ 채팅방 나가기 (하단 고정) */}
+        {!isKino && (
+          <View style={[styles.leaveStickyWrap, {height: LEAVE_BAR_H}]}>
+            <View style={styles.leaveDivider} />
             <TouchableOpacity
-              style={styles.option}
-              onPress={() => setIsRenameModalVisible(true)}>
-              <Text style={styles.optionTitle}>채팅방 이름</Text>
-              <Text style={styles.optionDescription}>
-                채팅방 이름을 변경해요.
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {!isKino && (
-            <View style={styles.option}>
-              <TouchableOpacity
-                onPress={() => setShowMembers(!showMembers)}
-                style={styles.optionRow}>
-                <View>
-                  <Text style={styles.optionTitle}>멤버 목록</Text>
-                  <Text style={styles.optionDescription}>
-                    함께 채팅하는 가족을 확인해요.
-                  </Text>
-                </View>
-                <Image
-                  source={require('../../../assets/images/down-yellow.png')}
-                  style={[
-                    styles.arrowIcon,
-                    {transform: [{rotate: showMembers ? '180deg' : '0deg'}]},
-                  ]}
-                />
-              </TouchableOpacity>
-
-              {showMembers && (
-                <View style={styles.memberList}>
-                  {chatRoomUsers?.map((user, idx) => (
-                    <View
-                      key={`${user?.userId ?? 'u'}_${idx}`}
-                      style={styles.memberItem}>
-                      <Image
-                        source={{uri: user.image}}
-                        style={styles.memberImage}
-                      />
-                      <Text style={styles.memberName}>{user.name}</Text>
-                    </View>
-                  ))}
-
-                  {!isAllFamilyInChat && (
-                    <TouchableOpacity
-                      onPress={handleShowMembers}
-                      style={styles.addMemberButton}>
-                      <Image
-                        source={require('../../../assets/images/addMember-bt.png')}
-                        style={styles.addIcon}
-                      />
-                      <Text style={styles.addText}>새 멤버 초대</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
-            </View>
-          )}
-
-          {isKino && (
-            <TouchableOpacity
-              style={styles.option}
-              onPress={() => setIsChangeKinoModalVisible(true)}>
-              <Text style={styles.optionTitle}>키노 교체하기</Text>
-              <Text style={styles.optionDescription}>여러가지 성격의 키노를 만나보세요.</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* ✅ 미디어 */}
-          {!isKino && (
-            <View style={styles.option}>
-              <TouchableOpacity
-                style={styles.optionRow}
-                onPress={() => {
-                  const next = !mediaOpened;
-                  setMediaOpened(next);
-                  if (next) fetchMediaFirst(mediaType);
-                }}>
-                <View>
-                  <Text style={styles.optionTitle}>미디어</Text>
-                  <Text style={styles.optionDescription}>
-                    사진/영상을 한눈에 모아봐요.
-                  </Text>
-                </View>
-
-                <Image
-                  source={require('../../../assets/images/down-yellow.png')}
-                  style={[
-                    styles.arrowIcon,
-                    {transform: [{rotate: mediaOpened ? '180deg' : '0deg'}]},
-                  ]}
-                />
-              </TouchableOpacity>
-
-              {mediaOpened && (
-                <View
-                  style={{
-                    backgroundColor: BACKGROUND_COLORS.secondaryBg,
-                    borderRadius: getResponsiveHeight(10),
-                    paddingVertical: getResponsiveHeight(8),
-                    paddingHorizontal: getResponsiveWidth(10),
-                    marginTop: getResponsiveHeight(10),
-                  }}>
-                  <View style={styles.mediaTabs}>
-                    {['ALL', 'IMAGE', 'VIDEO'].map(t => {
-                      const active = mediaType === t;
-                      return (
-                        <TouchableOpacity
-                          key={t}
-                          onPress={() => onChangeMediaType(t)}
-                          style={[
-                            styles.mediaTab,
-                            active && styles.mediaTabActive,
-                          ]}>
-                          <Text
-                            style={[
-                              styles.mediaTabText,
-                              active && styles.mediaTabTextActive,
-                            ]}>
-                            {t === 'ALL'
-                              ? '전체'
-                              : t === 'IMAGE'
-                              ? '사진'
-                              : '영상'}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-
-                  {mediaLoading ? (
-                    <View style={styles.mediaLoadingBox}>
-                      <ActivityIndicator />
-                      <Text style={styles.mediaLoadingText}>불러오는 중…</Text>
-                    </View>
-                  ) : (
-                    <>
-                      {mediaItems.length === 0 ? (
-                        <Text style={styles.emptyText}>
-                          아직 모아볼 미디어가 없어요.
-                        </Text>
-                      ) : (
-                        <FlatList
-                          data={mediaItems}
-                          key="media-grid-3"
-                          numColumns={3}
-                          scrollEnabled={false}
-                          columnWrapperStyle={{justifyContent: 'space-between'}}
-                          keyExtractor={(item, idx) => {
-                            const baseKey = getMediaKey(item) ?? 'noid';
-                            return `${String(baseKey)}_${idx}`;
-                          }}
-                          renderItem={({item, index}) => {
-                            const thumb =
-                              pickThumbUri(item) || pickMediaUri(item);
-                            const kind = normalizeMediaType(item);
-
-                            return (
-                              <TouchableOpacity
-                                style={[
-                                  styles.mediaCell,
-                                  {
-                                    width: cellSize,
-                                    height: cellSize,
-                                    marginBottom: gridGap,
-                                  },
-                                ]}
-                                activeOpacity={0.85}
-                                onPress={() => openMediaModal(item, index)}>
-                                {thumb ? (
-                                  <Image
-                                    source={{uri: thumb}}
-                                    style={styles.mediaThumb}
-                                  />
-                                ) : (
-                                  <View style={styles.mediaPlaceholder}>
-                                    <Text style={styles.mediaPlaceholderText}>
-                                      {kind === 'VIDEO' ? 'VIDEO' : 'FILE'}
-                                    </Text>
-                                  </View>
-                                )}
-
-                                {kind === 'VIDEO' && (
-                                  <View style={styles.videoBadge}>
-                                    <Text style={styles.videoBadgeText}>
-                                      영상
-                                    </Text>
-                                  </View>
-                                )}
-                              </TouchableOpacity>
-                            );
-                          }}
-                        />
-                      )}
-
-                      {!!mediaNextBefore && (
-                        <TouchableOpacity
-                          style={styles.moreButton}
-                          onPress={fetchMediaMore}
-                          disabled={mediaMoreLoading}>
-                          <Text style={styles.moreButtonText}>
-                            {mediaMoreLoading ? '불러오는 중…' : '더 보기'}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                    </>
-                  )}
-                </View>
-              )}
-            </View>
-          )}
-          {!isKino && (
-            <TouchableOpacity
-              style={styles.leaveOption}
-              onPress={() => setIsLeaveModalVisible(true)}>
+              style={styles.leaveStickyBtn}
+              onPress={() => setIsLeaveModalVisible(true)}
+              activeOpacity={0.9}>
               <Text style={styles.leaveText}>채팅방 나가기</Text>
             </TouchableOpacity>
-          )}
-
-          <View style={{height: getResponsiveHeight(30)}} />
-        </ScrollView>
+          </View>
+        )}
       </Animated.View>
     </Modal>
   );
@@ -699,8 +794,9 @@ export default function ChatSettings({
 const styles = StyleSheet.create({
   backdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: 'rgba(0,0,0,0.38)',
   },
+
   container: {
     position: 'absolute',
     top: 0,
@@ -709,9 +805,9 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#FFFFFF',
     borderLeftWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: '#EEF2F7',
     paddingHorizontal: getResponsiveWidth(20),
-    paddingBottom: getResponsiveHeight(30),
+    paddingBottom: 0,
   },
 
   header: {
@@ -719,12 +815,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop:
       Platform.OS === 'android'
-        ? getResponsiveHeight(36)
-        : getResponsiveHeight(80),
-    marginBottom: getResponsiveHeight(28),
+        ? getResponsiveHeight(34)
+        : getResponsiveHeight(66),
+    marginBottom: getResponsiveHeight(10),
     alignItems: 'center',
   },
-  headerTextBox: {flexShrink: 1, paddingRight: getResponsiveWidth(12)},
+  headerTextBox: {flexShrink: 1, paddingRight: getResponsiveWidth(10)},
   headerTitle: {
     fontSize: getResponsiveFontSize(19),
     fontFamily: 'Pretendard-SemiBold',
@@ -736,53 +832,117 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Regular',
     color: COLORS.textSecondary,
   },
+  alarmBtn: {
+    width: getResponsiveIconSize(34),
+    height: getResponsiveIconSize(34),
+    borderRadius: getResponsiveIconSize(12),
+    backgroundColor: BACKGROUND_COLORS.secondaryBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   alarmIcon: {
-    width: getResponsiveIconSize(20),
-    height: getResponsiveIconSize(20),
+    width: getResponsiveIconSize(18),
+    height: getResponsiveIconSize(18),
     resizeMode: 'contain',
   },
 
-  content: {flex: 1, paddingTop: getResponsiveHeight(4)},
-  option: {
+  // ✅ 섹션 래퍼: 카드 제거, padding만
+  sectionWrap: {
     paddingVertical: getResponsiveHeight(14),
-    borderBottomWidth: 1,
-    borderColor: '#F3F4F6',
   },
-  optionRow: {
+
+  // ✅ 섹션 구분선
+  sectionDivider: {
+    height: 1,
+    backgroundColor: '#EEF2F7',
+  },
+
+  sectionRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  optionTitle: {
+  sectionTextBox: {flex: 1, paddingRight: getResponsiveWidth(10)},
+  sectionTitle: {
     fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-SemiBold',
-    // color: '#4B5563',
     color: COLORS.textPrimary,
-    marginBottom: getResponsiveHeight(3),
   },
-  optionText: {
-    color: COLORS.textPrimary,
-    fontSize: getResponsiveFontSize(15.5),
-    fontFamily: 'Pretendard-Regular',
-  },
-  optionDescription: {
+  sectionDesc: {
+    marginTop: getResponsiveHeight(4),
     fontSize: getResponsiveFontSize(11),
     fontFamily: 'Pretendard-Regular',
     color: COLORS.textSecondary,
   },
-  expandButton: {
-    paddingHorizontal: getResponsiveWidth(4),
-    paddingVertical: getResponsiveHeight(4),
-  },
-  arrowIcon: {
+
+  chevron: {
+    width: getResponsiveIconSize(14),
+    height: getResponsiveIconSize(14),
     resizeMode: 'contain',
-    width: getResponsiveWidth(13),
-    height: getResponsiveHeight(13),
+    opacity: 0.7,
+  },
+  chevronDown: {
+    width: getResponsiveIconSize(14),
+    height: getResponsiveIconSize(14),
+    resizeMode: 'contain',
+    opacity: 0.85,
+  },
+
+  memberBox: {
+    marginTop: getResponsiveHeight(12),
+    backgroundColor: '#F9FAFB',
+    borderRadius: getResponsiveIconSize(12),
+    borderWidth: 1,
+    borderColor: '#EEF2F7',
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(10),
+  },
+  memberItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: getResponsiveHeight(6),
+  },
+  memberImage: {
+    width: getResponsiveIconSize(34),
+    height: getResponsiveIconSize(34),
+    borderRadius: getResponsiveIconSize(17),
+    marginRight: getResponsiveWidth(10),
+    backgroundColor: '#FFFFFF',
+  },
+  memberName: {
+    fontSize: getResponsiveFontSize(13.5),
+    fontFamily: 'Pretendard-Medium',
+    color: '#111827',
+  },
+  inviteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: getResponsiveHeight(8),
+    marginTop: getResponsiveHeight(6),
+  },
+  addIcon: {
+    width: getResponsiveIconSize(30),
+    height: getResponsiveIconSize(30),
+    resizeMode: 'contain',
+    marginRight: getResponsiveWidth(10),
+  },
+  inviteText: {
+    fontSize: getResponsiveFontSize(13),
+    color: '#F59E0B',
+    fontFamily: 'Pretendard-Medium',
+  },
+
+  mediaBox: {
+    marginTop: getResponsiveHeight(12),
+    backgroundColor: BACKGROUND_COLORS.secondaryBg,
+    paddingVertical: getResponsiveHeight(12),
+    borderRadius: getResponsiveIconSize(12),
+    borderWidth: 1,
+    borderColor: '#EEF2F7',
   },
 
   mediaTabs: {
     flexDirection: 'row',
-    marginBottom: getResponsiveHeight(10),
     columnGap: getResponsiveWidth(6),
   },
   mediaTab: {
@@ -800,24 +960,23 @@ const styles = StyleSheet.create({
   mediaTabTextActive: {color: '#B45309'},
 
   mediaLoadingBox: {
-    paddingVertical: getResponsiveHeight(12),
+    paddingVertical: getResponsiveHeight(14),
     alignItems: 'center',
     justifyContent: 'center',
-    rowGap: getResponsiveHeight(6),
+    rowGap: getResponsiveHeight(8),
   },
-  mediaLoadingText: {
-    fontSize: getResponsiveFontSize(12),
-    color: '#6B7280',
-    fontFamily: 'Pretendard-Regular',
-  },
-  emptyText: {
+  helperText: {
     alignSelf: 'center',
-    fontSize: getResponsiveFontSize(11),
+    fontSize: getResponsiveFontSize(11.5),
     color: '#6B7280',
     fontFamily: 'Pretendard-Regular',
-    paddingVertical: getResponsiveHeight(10),
+    paddingVertical: getResponsiveHeight(8),
   },
 
+  gridWrapCenter: {
+    width: '100%',
+    alignItems: 'center',
+  },
   mediaCell: {
     borderRadius: getResponsiveIconSize(10),
     overflow: 'hidden',
@@ -847,11 +1006,16 @@ const styles = StyleSheet.create({
   },
 
   moreButton: {
-    marginTop: getResponsiveHeight(12),
+    marginTop: getResponsiveHeight(6),
     paddingVertical: getResponsiveHeight(10),
-    alignItems: 'center',
     borderRadius: getResponsiveIconSize(12),
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EEF2F7',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    columnGap: getResponsiveWidth(6),
   },
   moreButtonText: {
     fontSize: getResponsiveFontSize(12.5),
@@ -859,52 +1023,19 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Medium',
   },
 
-  memberList: {
-    width: '100%',
-    minHeight: getResponsiveHeight(110),
-    borderRadius: getResponsiveIconSize(10),
-    backgroundColor: '#f9f9f9',
-    marginTop: getResponsiveHeight(10),
-    paddingVertical: getResponsiveHeight(8),
-    paddingHorizontal: getResponsiveWidth(10),
-  },
-  memberItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: getResponsiveHeight(4),
-    marginBottom: getResponsiveHeight(2),
-  },
-  memberImage: {
-    width: getResponsiveIconSize(32),
-    height: getResponsiveIconSize(32),
-    borderRadius: getResponsiveIconSize(16),
-    marginRight: getResponsiveWidth(10),
+  leaveStickyWrap: {
+    position: 'absolute',
+    left: getResponsiveWidth(20),
+    right: getResponsiveWidth(20),
+    bottom: getResponsiveHeight(14),
     backgroundColor: '#FFFFFF',
   },
-  memberName: {
-    fontSize: getResponsiveFontSize(13.5),
-    fontFamily: 'Pretendard-Medium',
-    color: '#111827',
+  leaveDivider: {
+    height: 1,
+    backgroundColor: '#EEF2F7',
+    marginBottom: getResponsiveHeight(10),
   },
-  addMemberButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: getResponsiveHeight(6),
-  },
-  addIcon: {
-    width: getResponsiveIconSize(32),
-    height: getResponsiveIconSize(32),
-    resizeMode: 'contain',
-    marginRight: getResponsiveWidth(10),
-  },
-  addText: {
-    fontSize: getResponsiveFontSize(13),
-    color: '#F59E0B',
-    fontFamily: 'Pretendard-Medium',
-  },
-
-  leaveOption: {
-    marginTop: getResponsiveHeight(16),
+  leaveStickyBtn: {
     paddingVertical: getResponsiveHeight(10),
     alignItems: 'flex-start',
   },

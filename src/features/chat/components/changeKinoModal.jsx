@@ -38,7 +38,6 @@ const styles = StyleSheet.create({
         : getResponsiveFontSize(22),
     textAlign: 'center',
     fontFamily: 'Pretendard-SemiBold',
-    fontWeight: Platform.OS === 'ios' ? undefined : '700',
     marginBottom: getResponsiveHeight(12.5),
     marginTop: getResponsiveHeight(11),
   },

@@ -1,157 +1,230 @@
 // src/components/BottomSheetLayout.js
+/* eslint-disable react-native/no-inline-styles */
 
-import React, {useCallback, useEffect, useState} from 'react';
+import React, {useMemo, useCallback} from 'react';
 import {
   View,
   Text,
   StyleSheet,
   Animated,
-  Pressable,
+  Platform,
+  Dimensions,
   Keyboard,
+  Pressable,
 } from 'react-native';
-import {BottomSheetView} from '@gorhom/bottom-sheet';
+
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetView,
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
+
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {KinoBottomSheet} from './KinoBottomSheet';
-import {BottomSheetButtons} from 'components/BottomSheetButtons';
-import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
-import {BOTTOMSHEET_STYLE} from 'styles/style';
+
+import {
+  getResponsiveHeight,
+  getResponsiveWidth,
+  getResponsiveFontSize,
+} from 'utils/responsive';
+
+import {BOTTOMSHEET_STYLE, COLORS} from 'styles/style';
 
 export default function BottomSheetLayout({
   modalRef,
+
   snapPoints,
+  defaultSnapPoints = ['92%'],
+
+  useInternalScroll = true,
+
   enableContentPanningGesture = false,
   animationConfigs,
   keyboardBehavior = 'none',
   androidKeyboardInputMode = 'adjustNothing',
-  // ✅ dynamic snap points용 (useBottomSheetDynamicSnapPoints에서 받아옴)
-  handleHeight,
-  contentHeight,
-  onContentLayout, // ✅ 여기 중요
+
+  onDismiss,
+  closeOnPressOutside = true,
 
   title,
   subtitle,
+
   children,
 
-  footerProps,
   containerStyle,
   headerStyle,
   innerContentStyle,
-  footerStyle,
   contentStyle,
 
-  // ✅ children만 올릴 translateY
   contentTranslateY,
+
+  dismissKeyboardOnPress = true,
+
+  onTouchInside,
+
+  snapToIndexOnTouchInside = false,
+  snapIndexOnTouchInside = 0,
 }) {
   const insets = useSafeAreaInsets();
+  const WINDOW_H = Dimensions.get('window').height;
 
-  const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const safeBottom = Math.max(insets.bottom, getResponsiveHeight(10));
 
-  useEffect(() => {
-    const showSub = Keyboard.addListener('keyboardDidShow', () =>
-      setKeyboardOpen(true),
-    );
-    const hideSub = Keyboard.addListener('keyboardDidHide', () =>
-      setKeyboardOpen(false),
-    );
+  const resolvedSnapPoints = useMemo(() => {
+    if (Array.isArray(snapPoints) && snapPoints.length > 0) return snapPoints;
+    return defaultSnapPoints;
+  }, [snapPoints, defaultSnapPoints]);
 
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
+  const handleDismiss = useCallback(() => {
+    onDismiss?.();
+  }, [onDismiss]);
 
-  const injectedFooterProps = footerProps
-    ? {
-        ...footerProps,
-        bottomSheetRef: modalRef,
-        autoCloseOnSave:
-          footerProps.autoCloseOnSave !== undefined
-            ? footerProps.autoCloseOnSave
-            : true,
-      }
-    : undefined;
+  const renderBackdrop = useCallback(
+    props => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        pressBehavior={closeOnPressOutside ? 'close' : 'none'}
+      />
+    ),
+    [closeOnPressOutside],
+  );
 
-  // ✅ A버전: 1) 키보드 열려있으면 키보드만 내림
-  //         2) 키보드 닫혀있으면 바텀시트 닫기
-  const onPressOutside = useCallback(() => {
-    if (keyboardOpen) {
-      Keyboard.dismiss();
-      return;
+  const animatedContentStyle = useMemo(() => {
+    return [
+      styles.animatedContent,
+      contentTranslateY ? {transform: [{translateY: contentTranslateY}]} : null,
+    ];
+  }, [contentTranslateY]);
+
+  const handleTouchInside = useCallback(() => {
+    // 1) 키보드 내리기
+    if (dismissKeyboardOnPress) Keyboard.dismiss();
+
+    // 2) (옵션) 스냅 원복
+    if (snapToIndexOnTouchInside) {
+      const fn = modalRef?.current?.snapToIndex;
+      if (typeof fn === 'function') fn(snapIndexOnTouchInside);
     }
 
-    // BottomSheetModal이면 dismiss가 더 정확할 때가 많고,
-    // BottomSheet(ref close)면 close가 먹는 구조도 있어서 둘 다 안전하게 호출
-    modalRef?.current?.dismiss?.();
-    modalRef?.current?.close?.();
-  }, [keyboardOpen, modalRef]);
+    // 3) 자식 reset 콜백
+    onTouchInside?.();
+  }, [
+    dismissKeyboardOnPress,
+    snapToIndexOnTouchInside,
+    snapIndexOnTouchInside,
+    modalRef,
+    onTouchInside,
+  ]);
 
   return (
-    <KinoBottomSheet
-      modalRef={modalRef}
-      snapPoints={snapPoints}
+    <BottomSheetModal
+      ref={modalRef}
+      handleIndicatorStyle={{
+        width: getResponsiveHeight(35),
+        backgroundColor: COLORS.textTertiary,
+      }}
+      snapPoints={resolvedSnapPoints}
+      enableDynamicSizing={false}
       enableContentPanningGesture={enableContentPanningGesture}
       animationConfigs={animationConfigs}
       keyboardBehavior={keyboardBehavior}
       androidKeyboardInputMode={androidKeyboardInputMode}
-      handleHeight={handleHeight}
-      contentHeight={contentHeight}>
-      <BottomSheetView style={contentStyle}>
-        {/* ✅ “빈 공간” 터치 감지용 */}
-        <Pressable style={{flex: 1}} onPress={onPressOutside}>
-          {/* ✅ 여기 onLayout로 “콘텐츠 높이(버튼 포함)” 측정 */}
-          <View
-            onLayout={onContentLayout}
-            style={[
-              styles.container,
-              {paddingBottom: insets.bottom + getResponsiveHeight(14)},
-              containerStyle,
-            ]}>
-            {(title || subtitle) && (
-              <View style={[styles.header, headerStyle]}>
-                {title && <Text style={BOTTOMSHEET_STYLE.title}>{title}</Text>}
-                {subtitle && (
-                  <Text style={BOTTOMSHEET_STYLE.subtitle}>{subtitle}</Text>
-                )}
-              </View>
-            )}
+      backdropComponent={renderBackdrop}
+      onDismiss={handleDismiss}
+      enablePanDownToClose={true}>
+      <BottomSheetView
+        style={[
+          styles.container,
+          {flex: 1},
+          {paddingBottom: safeBottom, maxHeight: WINDOW_H},
+          containerStyle,
+        ]}>
+        {(title || subtitle) && (
+          <View style={[styles.header, headerStyle]}>
+            {!!title && <Text style={styles.title}>{title}</Text>}
+            {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+          </View>
+        )}
 
-            {/* ✅ children만 움직이게 */}
-            <Animated.View
-              style={[
-                styles.innerContent,
-                innerContentStyle,
-                contentTranslateY != null
-                  ? {transform: [{translateY: contentTranslateY}]}
-                  : null,
-              ]}>
-              {children}
-            </Animated.View>
+        {/* ✅ 여기부터가 핵심: "빈 공간 탭"만 잡는 구조
+            - 아래: Pressable (탭 캐처)
+            - 위: 실제 컨텐츠 (pointerEvents="box-none"로 View는 터치 안 먹고 자식만 터치 받게)
+            - 자식이 터치를 받으면 Pressable로 떨어지지 않는 케이스가 대부분이라 스크롤/버튼이 살아남
+        */}
+        <View style={{flex: 1}}>
+          {/* 1) 배경 탭 캐처 */}
+          <Pressable
+            style={StyleSheet.absoluteFillObject}
+            onPress={handleTouchInside}
+          />
 
-            {/* ✅ 버튼은 고정 X, 그냥 마지막 요소 */}
-            {!!injectedFooterProps && (
-              <View style={[styles.inlineFooter, footerStyle]}>
-                <BottomSheetButtons {...injectedFooterProps} />
-              </View>
+          {/* 2) 실제 컨텐츠 레이어 */}
+          <View style={{flex: 1}} pointerEvents="box-none">
+            {useInternalScroll ? (
+              <BottomSheetScrollView
+                style={[styles.scrollWrap, {flex: 1}, innerContentStyle]}
+                contentContainerStyle={[
+                  styles.scrollContent,
+                  {flexGrow: 1},
+                  contentStyle,
+                ]}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="always"
+                keyboardDismissMode="none">
+                {/* Animated.View는 box-none으로 두면 내부 터치 방해 덜함 */}
+                <Animated.View
+                  style={animatedContentStyle}
+                  pointerEvents="box-none">
+                  {children}
+                </Animated.View>
+              </BottomSheetScrollView>
+            ) : (
+              <Animated.View
+                style={[animatedContentStyle, {flex: 1}, innerContentStyle]}
+                pointerEvents="box-none">
+                {children}
+              </Animated.View>
             )}
           </View>
-        </Pressable>
+        </View>
       </BottomSheetView>
-    </KinoBottomSheet>
+    </BottomSheetModal>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: getResponsiveWidth(22),
-    paddingTop: getResponsiveHeight(14),
-  },
-  header: {
-    marginBottom: getResponsiveHeight(15),
+    paddingTop: getResponsiveHeight(12),
+    paddingHorizontal: getResponsiveWidth(16),
   },
 
-  innerContent: {},
-  inlineFooter: {
-    marginTop: getResponsiveHeight(10),
-    backgroundColor: 'white',
+  header: {
+    paddingBottom: getResponsiveHeight(10),
+  },
+  title: {
+    fontFamily: BOTTOMSHEET_STYLE?.title?.fontFamily || 'Pretendard-SemiBold',
+    fontSize: BOTTOMSHEET_STYLE?.title?.fontSize || getResponsiveFontSize(16),
+    color: BOTTOMSHEET_STYLE?.title?.color || '#111827',
+    letterSpacing: -0.2,
+  },
+  subtitle: {
+    marginTop: getResponsiveHeight(3),
+    fontFamily: BOTTOMSHEET_STYLE?.subtitle?.fontFamily || 'Pretendard-Medium',
+    fontSize:
+      BOTTOMSHEET_STYLE?.subtitle?.fontSize || getResponsiveFontSize(12.5),
+    color: BOTTOMSHEET_STYLE?.subtitle?.color || '#6B7280',
+    lineHeight: getResponsiveFontSize(18),
+  },
+
+  scrollWrap: {},
+  scrollContent: {
+    paddingTop: getResponsiveHeight(2),
+    paddingBottom: getResponsiveHeight(6),
+  },
+
+  animatedContent: {
+    minHeight: Platform.OS === 'android' ? 1 : undefined,
   },
 });

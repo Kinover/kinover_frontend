@@ -3,9 +3,7 @@ import {createStackNavigator} from '@react-navigation/stack';
 import CommunicationScreen from '../../../features/chat/screens';
 import KinoChatRoom from '../../../features/chat/screens/kinoChatRoomScreen';
 import ChatSettings from '../../../features/chat/screens/chatSetting';
-import {
-  getResponsiveHeight,
-} from '../../../utils/responsive';
+import {getResponsiveHeight} from '../../../utils/responsive';
 import {Text, Platform} from 'react-native';
 import {
   RenderGoBackButton,
@@ -16,9 +14,9 @@ import CreateChatRoom from '../../../features/chat/screens/createChatRoomScreen'
 import ChatRoom from '../../../features/chat/screens/chatRoomScreen';
 import KinoSelectScreen from '../../../features/chat/screens/kinoSelectScreen';
 import SettingScreen from '../../../features/setting/screens/SettingScreen';
-import NotificationScreen from '../../../features/notification/screens/NotificationScreen';
 import NotificationSettingScreen from '../../../features/setting/screens/NotificationSettingScreen';
 import {HEADER_STYLES} from 'styles/style';
+import ChatRoomMediaScreen from 'features/chat/screens/chatRoomMediaScreen';
 
 const Stack = createStackNavigator();
 
@@ -143,13 +141,13 @@ export default function CommunicationStack() {
       />
 
       <Stack.Screen
-        name="알림화면"
-        component={NotificationScreen}
+        name="채팅방미디어모아보기화면"
+        component={ChatRoomMediaScreen}
         options={({navigation}) => ({
           gestureEnabled: true,
-          headerRight: () => null,
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-          headerTitle: '',
+          headerTitle: () => '',
+          headerBackTitleVisible: false,
         })}
       />
 

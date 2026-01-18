@@ -1,19 +1,23 @@
+// src/navigation/appNavigator.jsx
 import React from 'react';
 import {View, Image} from 'react-native';
-import {getResponsiveHeight, getResponsiveWidth} from '../../utils/responsive';
 import {createStackNavigator} from '@react-navigation/stack';
+
+import {getResponsiveHeight, getResponsiveWidth} from '../../utils/responsive';
+
 import TabNavigator from './tabNavigator';
 import AuthNavigator from './authNavigator';
+import NotificationScreen from 'features/notification/screens/NotificationScreen';
+import {RenderGoBackButton, RenderNotificationBackButton} from './helpers/tabHeaderHelpers';
 
 const AppStack = createStackNavigator();
 
-export default function AppNavigator({_}) {
+export default function AppNavigator() {
   return (
     <AppStack.Navigator
       initialRouteName="Auth"
-      screenOptions={({_}) => ({
+      screenOptions={() => ({
         headerBackTitleVisible: false,
-        // ✅ 객체 구조분해 필수!
         headerStyle: {
           borderBottomWidth: 0,
           shadowOpacity: 0,
@@ -23,7 +27,7 @@ export default function AppNavigator({_}) {
         },
         headerTitleAlign: 'center',
         headerShown: false,
-        headerBackTitle: '', // ✅ iOS에서 <Auth 같은 텍스트 제거
+        headerBackTitle: '',
         headerTitle: () => (
           <View style={{paddingBottom: getResponsiveHeight(10)}}>
             <Image
@@ -36,27 +40,39 @@ export default function AppNavigator({_}) {
             />
           </View>
         ),
-        headerLeft: () => null, // ✅ 올바른 접근
+        headerLeft: () => null,
       })}>
-      {/* 인증 흐름 */}
       <AppStack.Screen
         name="Auth"
         component={AuthNavigator}
         options={{
           headerShown: false,
-          headerBackTitle: '', // ✅ iOS에서 <Auth 같은 텍스트 제거
+          headerBackTitle: '',
           headerBackTitleVisible: false,
         }}
       />
 
-      {/* 메인 탭 */}
       <AppStack.Screen
         name="Tabs"
         component={TabNavigator}
         options={{
           headerBackTitleVisible: false,
-          headerBackTitle: '', // ✅ iOS에서 <Auth 같은 텍스트 제거
+          headerBackTitle: '',
         }}
+      />
+
+      {/* ✅ 핵심: "바텀 탭에 안 보이는" 전역 알림 화면 */}
+      <AppStack.Screen
+        name="알림화면"
+        component={NotificationScreen}
+        options={({navigation, route}) => ({
+          headerShown: true,
+          gestureEnabled: true,
+          headerLeft: () => (
+            <RenderNotificationBackButton navigation={navigation} route={route} />
+          ),
+          headerTitle: '',
+        })}
       />
     </AppStack.Navigator>
   );

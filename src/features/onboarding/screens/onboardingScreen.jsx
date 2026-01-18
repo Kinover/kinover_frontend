@@ -53,7 +53,6 @@ const styles = StyleSheet.create({
         ? getResponsiveHeight(-50)
         : getResponsiveHeight(0),
     fontFamily: 'Pretendard-Bold',
-    fontWeight: Platform.OS === 'android' ? 'bold' : 'bold',
     color: '#333',
   },
   slideImage: {
@@ -66,7 +65,6 @@ const styles = StyleSheet.create({
   highlight: {
     color: '#FF8D29',
     fontFamily: 'Pretendard-Bold',
-    fontWeight: Platform.OS === 'android' ? 'bold' : 'bold',
   },
   indicatorContainer: {
     flexDirection: 'row',

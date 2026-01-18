@@ -39,7 +39,6 @@ const CLOUDFRONT_DOMAIN = 'https://dzqa9jgkeds0b.cloudfront.net';
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
 const toNumberSafe = v => {
-  // number / numeric string만 허용, object는 0 처리
   if (typeof v === 'number' && Number.isFinite(v)) return v;
   if (typeof v === 'string') {
     const n = Number(v);
@@ -136,9 +135,14 @@ function ZoomableImage({uri, isActive}) {
 }
 
 /* ================= MediaModal ================= */
-
+/**
+ * ✅ 지원 형태
+ * 1) (신규) mediaItems: [{ kind: 'IMAGE'|'VIDEO', url: string, thumb?: string }]
+ * 2) (기존) mediaUrls: string[], mediaType: 'image'|'video'
+ */
 export default function MediaModal({
   visible,
+  mediaItems = null,
   mediaUrls = [],
   mediaType = 'image',
   initialIndex = 0,
@@ -147,35 +151,55 @@ export default function MediaModal({
   const cancelRequestedRef = useRef(false);
   const listRef = useRef(null);
 
-  const resolvedUrls = useMemo(
-    () => (Array.isArray(mediaUrls) ? mediaUrls : []).map(toCdnUrl).filter(Boolean),
-    [mediaUrls],
-  );
+  // ✅ 1) 신규: mediaItems가 오면 혼합 리스트로 처리
+  // ✅ 2) 기존: mediaUrls + mediaType으로 단일 타입 리스트로 처리
+  const resolvedItems = useMemo(() => {
+    // 신규
+    if (Array.isArray(mediaItems) && mediaItems.length > 0) {
+      return mediaItems
+        .map(it => {
+          const kind = String(it?.kind || '').toUpperCase();
+          const url = toCdnUrl(it?.url);
+          if (!url) return null;
+          if (kind !== 'IMAGE' && kind !== 'VIDEO') return null;
+          return {
+            kind,
+            url,
+            thumb: toCdnUrl(it?.thumb) || url,
+          };
+        })
+        .filter(Boolean);
+    }
 
-  const isVideo = mediaType === 'video';
+    // 기존
+    const urls = (Array.isArray(mediaUrls) ? mediaUrls : [])
+      .map(toCdnUrl)
+      .filter(Boolean);
 
-  // ✅ 안전한 initialIndex (객체/NaN 방지 + 범위 clamp)
+    const kind = mediaType === 'video' ? 'VIDEO' : 'IMAGE';
+    return urls.map(u => ({kind, url: u, thumb: u}));
+  }, [mediaItems, mediaUrls, mediaType]);
+
+  // ✅ 안전한 initialIndex
   const safeInitialIndex = useMemo(() => {
-    if (!resolvedUrls.length) return 0;
+    if (!resolvedItems.length) return 0;
     const n = Math.floor(toNumberSafe(initialIndex));
-    return clamp(n, 0, resolvedUrls.length - 1);
-  }, [initialIndex, resolvedUrls.length]);
+    return clamp(n, 0, resolvedItems.length - 1);
+  }, [initialIndex, resolvedItems.length]);
 
   const [currentIndex, setCurrentIndex] = useState(safeInitialIndex);
 
-  // ✅ resolvedUrls 길이가 바뀌거나 initialIndex로 다시 열릴 때도 안전하게 맞춤
   useEffect(() => {
-    setCurrentIndex(prev => {
-      if (!resolvedUrls.length) return 0;
-      const next = clamp(safeInitialIndex, 0, resolvedUrls.length - 1);
-      return next;
+    setCurrentIndex(() => {
+      if (!resolvedItems.length) return 0;
+      return clamp(safeInitialIndex, 0, resolvedItems.length - 1);
     });
-  }, [safeInitialIndex, resolvedUrls.length]);
+  }, [safeInitialIndex, resolvedItems.length]);
 
   // ✅ 모달 열릴 때 해당 인덱스로 스크롤 맞추기 (initialScrollIndex 대신)
   useEffect(() => {
     if (!visible) return;
-    if (!resolvedUrls.length) return;
+    if (!resolvedItems.length) return;
 
     requestAnimationFrame(() => {
       try {
@@ -187,7 +211,7 @@ export default function MediaModal({
         null;
       }
     });
-  }, [visible, currentIndex, resolvedUrls.length]);
+  }, [visible, currentIndex, resolvedItems.length]);
 
   const [saving, setSaving] = useState(false);
   const [progress, setProgress] = useState({current: 0, total: 0});
@@ -204,10 +228,10 @@ export default function MediaModal({
   }, []);
 
   const openMenu = useCallback(() => {
-    if (saving || !resolvedUrls.length) return;
+    if (saving || !resolvedItems.length) return;
     setMenuVisible(true);
     menuAnim.value = withTiming(1, {duration: 140});
-  }, [saving, resolvedUrls.length, menuAnim]);
+  }, [saving, resolvedItems.length, menuAnim]);
 
   const closeMenu = useCallback(() => {
     menuAnim.value = withTiming(0, {duration: 120}, finished => {
@@ -235,14 +259,17 @@ export default function MediaModal({
     onClose?.();
   }, [saving, onClose, menuVisible, closeMenu]);
 
+  const currentItem = resolvedItems[currentIndex] || null;
+  const currentKind = currentItem?.kind || 'IMAGE'; // IMAGE | VIDEO
+
   const runSave = useCallback(
     async mode => {
-      if (saving || !resolvedUrls.length) return;
+      if (saving || !resolvedItems.length) return;
 
       setSaving(true);
       cancelRequestedRef.current = false;
 
-      const total = mode === 'all' ? resolvedUrls.length : 1;
+      const total = mode === 'all' ? resolvedItems.length : 1;
       setProgress({current: 0, total});
 
       try {
@@ -250,28 +277,37 @@ export default function MediaModal({
         if (!ok) throw new Error('permission');
 
         if (mode === 'single') {
-          const target = resolvedUrls[currentIndex];
-          if (!target) throw new Error('no_target');
+          const target = resolvedItems[currentIndex];
+          if (!target?.url) throw new Error('no_target');
 
           setProgress({current: 1, total: 1});
           await saveUrlToGallery({
-            url: target,
-            type: isVideo ? 'video' : 'photo',
+            url: target.url,
+            type: target.kind === 'VIDEO' ? 'video' : 'photo',
           });
 
-          showToast(isVideo ? '영상이 저장됐어요' : '사진이 저장됐어요');
+          showToast(target.kind === 'VIDEO' ? '영상이 저장됐어요' : '사진이 저장됐어요');
         } else {
-          for (let i = 0; i < resolvedUrls.length; i++) {
+          for (let i = 0; i < resolvedItems.length; i++) {
             if (cancelRequestedRef.current) throw new Error('cancel');
 
-            setProgress({current: i + 1, total: resolvedUrls.length});
+            const target = resolvedItems[i];
+            if (!target?.url) continue;
+
+            setProgress({current: i + 1, total: resolvedItems.length});
             await saveUrlToGallery({
-              url: resolvedUrls[i],
-              type: isVideo ? 'video' : 'photo',
+              url: target.url,
+              type: target.kind === 'VIDEO' ? 'video' : 'photo',
             });
           }
 
-          showToast(isVideo ? '영상이 모두 저장됐어요' : '사진이 모두 저장됐어요');
+          // ✅ 혼합이면 “미디어가 모두 저장됐어요”
+          const allSame =
+            resolvedItems.every(x => x.kind === 'VIDEO') ||
+            resolvedItems.every(x => x.kind === 'IMAGE');
+
+          if (!allSame) showToast('미디어가 모두 저장됐어요');
+          else showToast(resolvedItems[0].kind === 'VIDEO' ? '영상이 모두 저장됐어요' : '사진이 모두 저장됐어요');
         }
       } catch (e) {
         // 실패/취소는 조용히 종료
@@ -282,7 +318,7 @@ export default function MediaModal({
         }, 600);
       }
     },
-    [saving, resolvedUrls, currentIndex, isVideo, showToast],
+    [saving, resolvedItems, currentIndex, showToast],
   );
 
   useEffect(() => {
@@ -292,20 +328,26 @@ export default function MediaModal({
     }
   }, [visible, menuAnim]);
 
-  const isMenuDisabled = saving || !resolvedUrls.length;
+  const isMenuDisabled = saving || !resolvedItems.length;
 
   const renderItem = useCallback(
-    ({item, index}) =>
-      isVideo ? (
-        <Video source={{uri: item}} style={styles.video} controls />
-      ) : (
-        <ZoomableImage uri={item} isActive={index === currentIndex} />
-      ),
-    [isVideo, currentIndex],
+    ({item, index}) => {
+      if (item.kind === 'VIDEO') {
+        return <Video source={{uri: item.url}} style={styles.video} controls />;
+      }
+      return <ZoomableImage uri={item.url} isActive={index === currentIndex} />;
+    },
+    [currentIndex],
   );
 
+  const singleLabel = currentKind === 'VIDEO' ? '영상 개별저장' : '사진 개별저장';
+
   return (
-    <Modal transparent visible={visible} animationType="fade" onRequestClose={handleClose}>
+    <Modal
+      transparent
+      visible={visible}
+      animationType="fade"
+      onRequestClose={handleClose}>
       <View style={styles.overlay} />
 
       {/* 상단 버튼 */}
@@ -317,7 +359,7 @@ export default function MediaModal({
         {/* ✅ 가운데 인덱스 (1 / N) */}
         <View style={styles.indexPill}>
           <Text style={styles.indexText}>
-            {resolvedUrls.length ? currentIndex + 1 : 0} / {resolvedUrls.length}
+            {resolvedItems.length ? currentIndex + 1 : 0} / {resolvedItems.length}
           </Text>
         </View>
 
@@ -336,12 +378,12 @@ export default function MediaModal({
       {/* 미디어 */}
       <FlatList
         ref={listRef}
-        data={resolvedUrls}
+        data={resolvedItems}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         extraData={currentIndex}
-        keyExtractor={(v, i) => `${v}_${i}`}
+        keyExtractor={(v, i) => `${v.url}_${i}`}
         getItemLayout={(_, i) => ({
           length: screenWidth,
           offset: screenWidth * i,
@@ -350,7 +392,9 @@ export default function MediaModal({
         renderItem={renderItem}
         onMomentumScrollEnd={e => {
           const raw = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
-          const next = resolvedUrls.length ? clamp(raw, 0, resolvedUrls.length - 1) : 0;
+          const next = resolvedItems.length
+            ? clamp(raw, 0, resolvedItems.length - 1)
+            : 0;
           setCurrentIndex(next);
         }}
       />
@@ -371,13 +415,13 @@ export default function MediaModal({
               closeMenu();
               runSave('single');
             }}
-            disabled={saving || !resolvedUrls[currentIndex]}
+            disabled={saving || !resolvedItems[currentIndex]?.url}
             activeOpacity={0.85}
             style={[
               styles.menuItem,
-              (saving || !resolvedUrls[currentIndex]) && {opacity: 0.5},
+              (saving || !resolvedItems[currentIndex]?.url) && {opacity: 0.5},
             ]}>
-            <Text style={styles.menuText}>사진 개별저장</Text>
+            <Text style={styles.menuText}>{singleLabel}</Text>
           </TouchableOpacity>
 
           <View style={styles.menuDivider} />
@@ -387,11 +431,11 @@ export default function MediaModal({
               closeMenu();
               runSave('all');
             }}
-            disabled={saving || !resolvedUrls.length}
+            disabled={saving || !resolvedItems.length}
             activeOpacity={0.85}
             style={[
               styles.menuItem,
-              (saving || !resolvedUrls.length) && {opacity: 0.5},
+              (saving || !resolvedItems.length) && {opacity: 0.5},
             ]}>
             <Text style={styles.menuText}>전체저장</Text>
           </TouchableOpacity>

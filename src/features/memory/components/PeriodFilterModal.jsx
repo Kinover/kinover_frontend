@@ -16,78 +16,51 @@ function formatYMD(date) {
   return `${y}-${m}-${d}`;
 }
 
-const MODES = ['ALL', 'RECENT', 'MONTH'];
+const MODES = [
+  {key: 'ALL', label: '전체'},
+  {key: 'RECENT', label: '최근'},
+  {key: 'MONTH', label: '월별'},
+];
 
 export default function PeriodFilterModal({
   visible,
   onClose,
   onApply, // ({ startDate, endDate }) => void
-  initialStartDate, // 호환용 (안 써도 됨)
-  initialWeeks = 1, // 호환용 (안 써도 됨)
+  initialWeeks = 1,
 }) {
   const today = useMemo(() => new Date(), []);
 
-  // ✅ 카드 렌더 기준 모드
+  // ✅ 단일 상태로 단순화
   const [mode, setMode] = useState('ALL');
-
-  // ✅ 탭 하이라이트(즉시)
-  const [pendingMode, setPendingMode] = useState('ALL');
 
   const [recentWeeks, setRecentWeeks] = useState(1);
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
 
-  // =========================
-  // ✅ 1) 카드 슬라이드 전환
-  // =========================
+  // ✅ 카드 전환: 과하지 않게 페이드만
   const cardOpacity = useRef(new Animated.Value(1)).current;
-  const cardTranslateX = useRef(new Animated.Value(0)).current;
-  const isAnimatingRef = useRef(false);
 
-  // =========================
-  // ✅ 2) 세그먼트 알약(thumb) 슬라이드
-  // =========================
+  // ✅ 세그먼트 thumb
   const segmentW = useRef(0);
   const thumbX = useRef(new Animated.Value(0)).current;
 
-  const modeIndex = useMemo(() => MODES.indexOf(pendingMode), [pendingMode]);
+  const modeIndex = useMemo(() => {
+    const idx = MODES.findIndex(m => m.key === mode);
+    return idx < 0 ? 0 : idx;
+  }, [mode]);
 
-  const animateThumbTo = useCallback(
-    nextMode => {
-      const idx = MODES.indexOf(nextMode);
-      if (idx < 0) return;
-
-      const w = segmentW.current;
-      if (!w) return;
-
-      const padding = getResponsiveHeight(4);
-      const innerW = w - padding * 2;
-      const tabW = innerW / 3;
-
-      Animated.spring(thumbX, {
-        toValue: tabW * idx,
-        useNativeDriver: true,
-        stiffness: 220,
-        damping: 22,
-        mass: 0.9,
-      }).start();
-    },
-    [thumbX],
-  );
-
+  // ✅ 열릴 때 초기화
   useEffect(() => {
     if (!visible) return;
 
     setMode('ALL');
-    setPendingMode('ALL');
     setRecentWeeks(initialWeeks >= 1 && initialWeeks <= 4 ? initialWeeks : 1);
     setYear(today.getFullYear());
     setMonth(today.getMonth());
 
     cardOpacity.setValue(1);
-    cardTranslateX.setValue(0);
-    isAnimatingRef.current = false;
-  }, [visible, initialWeeks, today, cardOpacity, cardTranslateX]);
+    thumbX.setValue(0);
+  }, [visible, initialWeeks, today, cardOpacity, thumbX]);
 
   const {startDate, endDate} = useMemo(() => {
     if (mode === 'ALL') return {startDate: '', endDate: ''};
@@ -105,57 +78,67 @@ export default function PeriodFilterModal({
     return {startDate: formatYMD(start), endDate: formatYMD(end)};
   }, [mode, recentWeeks, year, month]);
 
-  const animateToMode = useCallback(
-    nextMode => {
-      if (isAnimatingRef.current) return;
-      if (nextMode === mode) {
-        animateThumbTo(nextMode);
-        setPendingMode(nextMode);
-        return;
-      }
+  const animateThumb = useCallback(
+    nextIndex => {
+      const w = segmentW.current;
+      if (!w) return;
 
-      isAnimatingRef.current = true;
+      const padding = getResponsiveHeight(4);
+      const innerW = w - padding * 2;
+      const tabW = innerW / 3;
 
-      setPendingMode(nextMode);
-      animateThumbTo(nextMode);
+      Animated.spring(thumbX, {
+        toValue: tabW * nextIndex,
+        useNativeDriver: true,
+        stiffness: 240,
+        damping: 24,
+        mass: 0.9,
+      }).start();
+    },
+    [thumbX],
+  );
 
-      Animated.parallel([
+  const fadeCardOnce = useCallback(
+    cb => {
+      Animated.timing(cardOpacity, {
+        toValue: 0,
+        duration: 110,
+        useNativeDriver: true,
+      }).start(() => {
+        cb?.();
         Animated.timing(cardOpacity, {
-          toValue: 0,
+          toValue: 1,
           duration: 140,
           useNativeDriver: true,
-        }),
-        Animated.timing(cardTranslateX, {
-          toValue: -getResponsiveWidth(10),
-          duration: 140,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        setMode(nextMode);
-
-        cardTranslateX.setValue(getResponsiveWidth(10));
-        Animated.parallel([
-          Animated.timing(cardOpacity, {
-            toValue: 1,
-            duration: 170,
-            useNativeDriver: true,
-          }),
-          Animated.timing(cardTranslateX, {
-            toValue: 0,
-            duration: 170,
-            useNativeDriver: true,
-          }),
-        ]).start(() => {
-          isAnimatingRef.current = false;
-        });
+        }).start();
       });
     },
-    [mode, cardOpacity, cardTranslateX, animateThumbTo],
+    [cardOpacity],
+  );
+
+  const handleSelectMode = useCallback(
+    nextMode => {
+      if (nextMode === mode) return;
+
+      const idx = MODES.findIndex(m => m.key === nextMode);
+      animateThumb(idx);
+
+      // ✅ 화면 변화는 부드럽게 “딱 한 번”만
+      fadeCardOnce(() => {
+        setMode(nextMode);
+      });
+    },
+    [mode, animateThumb, fadeCardOnce],
   );
 
   const handleChangeMonth = useCallback(
     diff => {
-      animateToMode('MONTH');
+      if (mode !== 'MONTH') {
+        // 월 버튼 누르면 월별 모드로 자동 이동
+        const idx = MODES.findIndex(m => m.key === 'MONTH');
+        animateThumb(idx);
+        fadeCardOnce(() => setMode('MONTH'));
+      }
 
       let newYear = year;
       let newMonth = month + diff;
@@ -171,17 +154,12 @@ export default function PeriodFilterModal({
       setYear(newYear);
       setMonth(newMonth);
     },
-    [animateToMode, year, month],
+    [mode, year, month, animateThumb, fadeCardOnce],
   );
 
   const handleApply = useCallback(() => {
     onApply({startDate, endDate});
   }, [onApply, startDate, endDate]);
-
-  const cardAnimatedStyle = {
-    opacity: cardOpacity,
-    transform: [{translateX: cardTranslateX}],
-  };
 
   const onSegmentLayout = useCallback(
     e => {
@@ -190,15 +168,15 @@ export default function PeriodFilterModal({
       segmentW.current = w;
 
       requestAnimationFrame(() => {
-        animateThumbTo(pendingMode);
+        animateThumb(modeIndex);
       });
     },
-    [animateThumbTo, pendingMode],
+    [animateThumb, modeIndex],
   );
 
-  const padding = getResponsiveHeight(4);
   const thumbStyle = useMemo(() => {
     const w = segmentW.current;
+    const padding = getResponsiveHeight(4);
     const innerW = w ? w - padding * 2 : 0;
     const tabW = innerW ? innerW / 3 : 0;
 
@@ -210,7 +188,7 @@ export default function PeriodFilterModal({
         transform: [{translateX: thumbX}],
       },
     ];
-  }, [thumbX, padding, modeIndex]);
+  }, [thumbX]);
 
   return (
     <CustomModal
@@ -221,103 +199,96 @@ export default function PeriodFilterModal({
       confirmText="적용하기"
       closeText="취소">
       <View style={styles.container}>
-        {/* ✅ 세그먼트 탭 */}
+        {/* ✅ 세그먼트 */}
         <View style={styles.segment} onLayout={onSegmentLayout}>
           <Animated.View pointerEvents="none" style={thumbStyle} />
 
-          <SegmentTab
-            label="전체"
-            active={pendingMode === 'ALL'}
-            onPress={() => animateToMode('ALL')}
-          />
-          <SegmentTab
-            label="최근"
-            active={pendingMode === 'RECENT'}
-            onPress={() => animateToMode('RECENT')}
-          />
-          <SegmentTab
-            label="월별"
-            active={pendingMode === 'MONTH'}
-            onPress={() => animateToMode('MONTH')}
-          />
+          {MODES.map(m => (
+            <SegmentTab
+              key={m.key}
+              label={m.label}
+              active={mode === m.key}
+              onPress={() => handleSelectMode(m.key)}
+            />
+          ))}
         </View>
 
-        {/* ✅ 내용 카드 */}
-        <Animated.View style={cardAnimatedStyle}>
-          {mode === 'RECENT' && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>최근 기준</Text>
+        {/* ✅ 카드: 톤 통일 + 페이드만 */}
+        <Animated.View style={{opacity: cardOpacity, width: '100%'}}>
+          <View style={styles.card}>
+            {mode === 'ALL' && (
+              <>
+                <Text style={styles.cardTitle}>전체 보기</Text>
+                <Text style={styles.cardHint}>
+                  기간 제한 없이 모든 추억을 보여줘요.
+                </Text>
+                <Text style={styles.rangeText}>전체 기간</Text>
+              </>
+            )}
 
-              <View style={styles.chipRow}>
-                <PresetChip
-                  label="1주"
-                  active={recentWeeks === 1}
-                  onPress={() => setRecentWeeks(1)}
-                />
-                <PresetChip
-                  label="2주"
-                  active={recentWeeks === 2}
-                  onPress={() => setRecentWeeks(2)}
-                />
-                <PresetChip
-                  label="4주"
-                  active={recentWeeks === 4}
-                  onPress={() => setRecentWeeks(4)}
-                />
-              </View>
+            {mode === 'RECENT' && (
+              <>
+                <Text style={styles.cardTitle}>최근 보기</Text>
 
-              <Text style={styles.cardHint}>
-                최근 N주 동안의 추억을 모아볼 수 있어요.
-              </Text>
-
-              {/* ✅ 날짜 범위도 가운데로 */}
-              <Text style={styles.rangeText}>
-                {startDate} {startDate && endDate ? '~' : ''} {endDate}
-              </Text>
-            </View>
-          )}
-
-          {mode === 'MONTH' && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>월별 선택</Text>
-
-              <View style={styles.monthPicker}>
-                <TouchableOpacity
-                  style={styles.monthBtn}
-                  onPress={() => handleChangeMonth(-1)}>
-                  <Text style={styles.monthBtnText}>‹</Text>
-                </TouchableOpacity>
-
-                <View style={styles.monthCenter}>
-                  <Text style={styles.monthMain}>
-                    {year}.{String(month + 1).padStart(2, '0')}
-                  </Text>
-                  <Text style={styles.monthRange}>
-                    {startDate} ~ {endDate}
-                  </Text>
+                <View style={styles.chipRow}>
+                  <PresetChip
+                    label="1주"
+                    active={recentWeeks === 1}
+                    onPress={() => setRecentWeeks(1)}
+                  />
+                  <PresetChip
+                    label="2주"
+                    active={recentWeeks === 2}
+                    onPress={() => setRecentWeeks(2)}
+                  />
+                  <PresetChip
+                    label="4주"
+                    active={recentWeeks === 4}
+                    onPress={() => setRecentWeeks(4)}
+                  />
                 </View>
 
-                <TouchableOpacity
-                  style={styles.monthBtn}
-                  onPress={() => handleChangeMonth(1)}>
-                  <Text style={styles.monthBtnText}>›</Text>
-                </TouchableOpacity>
-              </View>
+                <Text style={styles.rangeText}>
+                  {startDate} ~ {endDate}
+                </Text>
+              </>
+            )}
 
-              <Text style={styles.cardHint}>
-                선택한 달에 등록된 추억만 보여줘요.
-              </Text>
-            </View>
-          )}
+            {mode === 'MONTH' && (
+              <>
+                <Text style={styles.cardTitle}>월별 보기</Text>
 
-          {mode === 'ALL' && (
-            <View style={styles.card}>
-              <Text style={styles.cardTitle}>전체 기간</Text>
-              <Text style={styles.cardHint}>
-                기간 제한 없이 모든 추억을 시간순으로 볼 수 있어요.
-              </Text>
-            </View>
-          )}
+                <View style={styles.monthPicker}>
+                  <TouchableOpacity
+                    style={styles.monthBtn}
+                    onPress={() => handleChangeMonth(-1)}
+                    activeOpacity={0.85}>
+                    <Text style={styles.monthBtnText}>‹</Text>
+                  </TouchableOpacity>
+
+                  <View style={styles.monthCenter}>
+                    <Text style={styles.monthMain}>
+                      {year}.{String(month + 1).padStart(2, '0')}
+                    </Text>
+                    <Text style={styles.monthRange}>
+                      {startDate} ~ {endDate}
+                    </Text>
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.monthBtn}
+                    onPress={() => handleChangeMonth(1)}
+                    activeOpacity={0.85}>
+                    <Text style={styles.monthBtnText}>›</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <Text style={styles.cardHint}>
+                  선택한 달에 등록된 추억만 보여줘요.
+                </Text>
+              </>
+            )}
+          </View>
         </Animated.View>
       </View>
     </CustomModal>
@@ -355,8 +326,6 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingTop: getResponsiveHeight(2),
     marginBottom: getResponsiveHeight(7),
-
-    // ✅ 전체 가운데 정렬(내용 전반)
     alignItems: 'center',
   },
 
@@ -370,8 +339,6 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(12),
     position: 'relative',
     overflow: 'hidden',
-
-    // ✅ 자체는 full width 유지하면서 내부 요소는 가운데 느낌
     width: '100%',
   },
   segmentThumb: {
@@ -383,7 +350,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(17, 24, 39, 0.06)',
   },
-
   segmentTab: {
     flex: 1,
     paddingVertical: getResponsiveHeight(10),
@@ -410,19 +376,16 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveWidth(14),
     borderWidth: 1,
     borderColor: '#F1F5F9',
-    paddingVertical: getResponsiveHeight(12),
+    paddingVertical: getResponsiveHeight(14),
     paddingHorizontal: getResponsiveWidth(12),
-    gap: getResponsiveHeight(8),
-
-    // ✅ 카드 내부 전부 가운데 정렬
+    gap: getResponsiveHeight(10),
     alignItems: 'center',
   },
   cardTitle: {
-    fontSize: getResponsiveFontSize(13),
+    fontSize: getResponsiveFontSize(13.5),
     fontFamily: 'Pretendard-SemiBold',
     color: '#111827',
     textAlign: 'center',
-    alignSelf: 'center',
   },
   cardHint: {
     fontSize: getResponsiveFontSize(11.5),
@@ -431,12 +394,10 @@ const styles = StyleSheet.create({
     lineHeight: getResponsiveHeight(16),
     textAlign: 'center',
   },
-
-  // ✅ (선택) 범위 텍스트도 가운데
   rangeText: {
-    fontSize: getResponsiveFontSize(11.5),
-    color: '#6B7280',
-    fontFamily: 'Pretendard-Regular',
+    fontSize: getResponsiveFontSize(12),
+    color: '#374151',
+    fontFamily: 'Pretendard-Medium',
     textAlign: 'center',
   },
 
@@ -445,8 +406,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: getResponsiveWidth(8),
     width: '100%',
-
-    // ✅ row 자체도 가운데로
     justifyContent: 'center',
   },
   chip: {
@@ -506,7 +465,7 @@ const styles = StyleSheet.create({
   monthCenter: {
     alignItems: 'center',
     gap: getResponsiveHeight(2),
-    flex: 1, // ✅ 가운데 영역 넓게 잡아서 진짜 중앙 느낌
+    flex: 1,
   },
   monthMain: {
     fontSize: getResponsiveFontSize(14),

@@ -1,7 +1,7 @@
 // src/features/schedule/store/scheduleThunk.js
-import axios from 'axios';
+
 import {createAsyncThunk} from '@reduxjs/toolkit';
-import {getToken} from '../../../utils/storage';
+import {apiClient} from '../../../utils/apiClient';
 import {
   setScheduleList,
   setScheduleLoading,
@@ -14,39 +14,31 @@ import {
  * - refresh로 태우는 "조회" thunks는 로딩을 건드리지 않도록 분리
  */
 const fetchSchedulesForFamilyAndDateCore = async (familyId, date) => {
-  const apiUrl = `https://kinover.shop/api/schedules/get`;
-  const token = await getToken();
+  const apiUrl = `/schedules/get`;
 
-  const response = await axios.post(
+  const res = await apiClient.post(
     apiUrl,
     {familyId, date},
     {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers: {'Content-Type': 'application/json'},
     },
   );
 
-  return response.data;
+  return res.data;
 };
 
 const fetchSchedulesForUserAndDateCore = async (familyId, userId, date) => {
-  const apiUrl = `https://kinover.shop/api/schedules/get`;
-  const token = await getToken();
+  const apiUrl = `/schedules/get`;
 
-  const response = await axios.post(
+  const res = await apiClient.post(
     apiUrl,
     {familyId, userId, date},
     {
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers: {'Content-Type': 'application/json'},
     },
   );
 
-  return response.data;
+  return res.data;
 };
 
 /* ---------------------- 공통 리프레시 ---------------------- */
@@ -66,8 +58,14 @@ const refreshAfterMutation = async (dispatch, refresh) => {
           const data = await fetchSchedulesForFamilyAndDateCore(familyId, date);
           dispatch(setScheduleList(data));
         } catch (e) {
-          console.error('❌ [리프레시] 가족 스케줄 조회 실패:', e);
-          dispatch(setScheduleError(e?.message ?? 'FAMILY_REFRESH_FAILED'));
+          const msg =
+            e?.response?.data?.message ||
+            e?.response?.data ||
+            e?.message ||
+            'FAMILY_REFRESH_FAILED';
+
+          console.error('❌ [리프레시] 가족 스케줄 조회 실패:', msg);
+          dispatch(setScheduleError(msg));
         }
       })(),
     );
@@ -88,8 +86,14 @@ const refreshAfterMutation = async (dispatch, refresh) => {
           );
           dispatch(setScheduleList(data));
         } catch (e) {
-          console.error('❌ [리프레시] 유저 스케줄 조회 실패:', e);
-          dispatch(setScheduleError(e?.message ?? 'USER_REFRESH_FAILED'));
+          const msg =
+            e?.response?.data?.message ||
+            e?.response?.data ||
+            e?.message ||
+            'USER_REFRESH_FAILED';
+
+          console.error('❌ [리프레시] 유저 스케줄 조회 실패:', msg);
+          dispatch(setScheduleError(msg));
         }
       })(),
     );
@@ -117,8 +121,14 @@ export const fetchSchedulesForFamilyAndDateThunk = (familyId, date) => {
       dispatch(setScheduleList(data));
       return data;
     } catch (error) {
-      console.error('❌ [가족 스케줄] 오류 발생:', error);
-      dispatch(setScheduleError(error.message));
+      const msg =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        error?.message ||
+        '가족 스케줄 조회 실패';
+
+      console.error('❌ [가족 스케줄] 오류 발생:', msg);
+      dispatch(setScheduleError(msg));
       throw error;
     } finally {
       dispatch(setScheduleLoading(false));
@@ -138,8 +148,14 @@ export const fetchSchedulesForUserAndDateThunk = (familyId, userId, date) => {
       dispatch(setScheduleList(data));
       return data;
     } catch (error) {
-      console.error('❌ [유저별 스케줄] 오류 발생:', error);
-      dispatch(setScheduleError(error.message));
+      const msg =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        error?.message ||
+        '유저별 스케줄 조회 실패';
+
+      console.error('❌ [유저별 스케줄] 오류 발생:', msg);
+      dispatch(setScheduleError(msg));
       throw error;
     } finally {
       dispatch(setScheduleLoading(false));
@@ -154,23 +170,25 @@ export const addScheduleThunk = (scheduleData, refresh) => {
     console.log('📝 [스케줄 추가] 요청 시작:', scheduleData);
 
     try {
-      const apiUrl = `https://kinover.shop/api/schedules/add`;
-      const token = await getToken();
+      const apiUrl = `/schedules/add`;
 
-      const response = await axios.post(apiUrl, scheduleData, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+      const res = await apiClient.post(apiUrl, scheduleData, {
+        headers: {'Content-Type': 'application/json'},
       });
 
-      console.log('✅ [스케줄 추가] 성공:', response.data);
+      console.log('✅ [스케줄 추가] 성공:', res.data);
 
       await refreshAfterMutation(dispatch, refresh);
-      return response.data;
+      return res.data;
     } catch (error) {
-      console.error('❌ [스케줄 추가] 오류:', error);
-      dispatch(setScheduleError(error.message));
+      const msg =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        error?.message ||
+        '스케줄 추가 실패';
+
+      console.error('❌ [스케줄 추가] 오류:', msg);
+      dispatch(setScheduleError(msg));
       throw error;
     } finally {
       dispatch(setScheduleLoading(false));
@@ -185,23 +203,25 @@ export const updateScheduleThunk = (updatedScheduleData, refresh) => {
     console.log('✏️ [스케줄 수정] 요청 시작:', updatedScheduleData);
 
     try {
-      const apiUrl = `https://kinover.shop/api/schedules/modify`;
-      const token = await getToken();
+      const apiUrl = `/schedules/modify`;
 
-      const response = await axios.put(apiUrl, updatedScheduleData, {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+      const res = await apiClient.put(apiUrl, updatedScheduleData, {
+        headers: {'Content-Type': 'application/json'},
       });
 
-      console.log('✅ [스케줄 수정] 성공:', response.data);
+      console.log('✅ [스케줄 수정] 성공:', res.data);
 
       await refreshAfterMutation(dispatch, refresh);
-      return response.data;
+      return res.data;
     } catch (error) {
-      console.error('❌ [스케줄 수정] 오류:', error);
-      dispatch(setScheduleError(error.message));
+      const msg =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        error?.message ||
+        '스케줄 수정 실패';
+
+      console.error('❌ [스케줄 수정] 오류:', msg);
+      dispatch(setScheduleError(msg));
       throw error;
     } finally {
       dispatch(setScheduleLoading(false));
@@ -216,20 +236,23 @@ export const deleteScheduleThunk = (scheduleId, refresh) => {
     console.log('🗑️ [스케줄 삭제] 요청 시작:', scheduleId);
 
     try {
-      const apiUrl = `https://kinover.shop/api/schedules/remove/${scheduleId}`;
-      const token = await getToken();
+      const apiUrl = `/schedules/remove/${scheduleId}`;
 
-      const response = await axios.delete(apiUrl, {
-        headers: {Authorization: `Bearer ${token}`},
-      });
+      const res = await apiClient.delete(apiUrl);
 
-      console.log('✅ [스케줄 삭제] 성공:', response.data);
+      console.log('✅ [스케줄 삭제] 성공:', res.data);
 
       await refreshAfterMutation(dispatch, refresh);
-      return response.data;
+      return res.data;
     } catch (error) {
-      console.error('❌ [스케줄 삭제] 오류:', error);
-      dispatch(setScheduleError(error.message));
+      const msg =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        error?.message ||
+        '스케줄 삭제 실패';
+
+      console.error('❌ [스케줄 삭제] 오류:', msg);
+      dispatch(setScheduleError(msg));
       throw error;
     } finally {
       dispatch(setScheduleLoading(false));
@@ -242,26 +265,29 @@ export const getScheduleCountPerDayThunk = createAsyncThunk(
   'schedule/getCountPerDay',
   async ({familyId, year, month}, thunkAPI) => {
     try {
-      const token = await getToken();
-      const apiUrl = `https://kinover.shop/api/schedules/count-per-day`;
+      const apiUrl = `/schedules/count-per-day`;
 
-      const response = await axios.get(apiUrl, {
+      const res = await apiClient.get(apiUrl, {
         params: {familyId, year, month},
-        headers: {Authorization: `Bearer ${token}`},
       });
 
-      const originalData = response.data; // { "2025-06-26": 1, ... }
+      const originalData = res.data; // { "2025-06-26": 1, ... }
       const normalized = {};
 
-      // ✅ "하루 보정"은 현재 코드상 의미가 없어서 제거하고,
-      // ✅ 문자열 키는 그대로 사용 (달력 표시 쪽에서 로컬 키로 변환하면 그쪽이 단일 책임)
+      // ✅ 문자열 키는 그대로 사용
       Object.keys(originalData || {}).forEach(key => {
         normalized[key] = originalData[key];
       });
 
       return normalized;
     } catch (err) {
-      return thunkAPI.rejectWithValue(err.response?.data || err.message);
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data ||
+        err?.message ||
+        '일정 개수 조회 실패';
+
+      return thunkAPI.rejectWithValue(msg);
     }
   },
 );

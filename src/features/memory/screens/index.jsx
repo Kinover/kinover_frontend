@@ -2,12 +2,7 @@
 // src/screens/memory/MemoryScreen.js
 
 import React, {useMemo, useState, useRef, useCallback, useEffect} from 'react';
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-} from 'react-native';
+import {View, StyleSheet, TouchableOpacity, Animated} from 'react-native';
 
 import MemoryFeed from './MemoryFeedScreen';
 import AnimatedAlbumTabSelector from '../components/AlbumTabSelector';
@@ -30,7 +25,10 @@ import {setMemorySelectedTab} from '../store/memorySlice';
 import {hapticLight} from '../../../utils/haptic';
 import {useFocusEffect} from '@react-navigation/native';
 
-import AnimatedRe, {useAnimatedStyle, withTiming} from 'react-native-reanimated';
+import AnimatedRe, {
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
 import DropShadow from 'react-native-drop-shadow';
 import {BACKGROUND_COLORS} from 'styles/style';
 import FastImage from '@d11/react-native-fast-image'; // ✅ ScheduleScreen과 동일
@@ -118,7 +116,7 @@ export default function MemoryScreen() {
   // =========================
   // ✅ FAB도 탭바랑 "동시에" 숨김/등장
   // =========================
-  const FAB_RIGHT = getResponsiveWidth(14);
+  const FAB_RIGHT = getResponsiveWidth(13);
   const FAB_BOTTOM = getResponsiveHeight(110);
 
   const TABBAR_H = getResponsiveHeight(92);
@@ -285,7 +283,10 @@ export default function MemoryScreen() {
     <View style={styles.container}>
       <Animated.View style={headerAnimatedStyle}>
         <View onLayout={onHeaderContentLayout}>
-          <AnimatedAlbumTabSelector selected={selectedTab} onSelect={onSelectTab} />
+          <AnimatedAlbumTabSelector
+            selected={selectedTab}
+            onSelect={onSelectTab}
+          />
         </View>
       </Animated.View>
 
@@ -340,7 +341,11 @@ export default function MemoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F9F9F9', width: '100%'},
+  container: {
+    flex: 1,
+    backgroundColor: BACKGROUND_COLORS.secondaryBg,
+    width: '100%',
+  },
   rangeBar: {
     paddingHorizontal: getResponsiveWidth(24),
     paddingBottom: getResponsiveHeight(4),
@@ -351,8 +356,8 @@ const styles = StyleSheet.create({
   fabWrap: {
     position: 'absolute',
     zIndex: 99,
-    width: getResponsiveIconSize(60),
-    height: getResponsiveIconSize(60),
+    width: getResponsiveIconSize(65),
+    height: getResponsiveIconSize(65),
   },
 
   // ✅ DropShadow: ScheduleScreen과 동일
@@ -365,8 +370,8 @@ const styles = StyleSheet.create({
 
   // ✅ 버튼: ScheduleScreen과 동일
   fab: {
-    width: getResponsiveIconSize(60),
-    height: getResponsiveIconSize(60),
+    width: getResponsiveIconSize(65),
+    height: getResponsiveIconSize(65),
     backgroundColor: BACKGROUND_COLORS.primaryBg,
     borderRadius: 999,
     justifyContent: 'center',
@@ -375,8 +380,8 @@ const styles = StyleSheet.create({
   // ✅ 아이콘: ScheduleScreen과 동일 (50% + contain)
   fabIcon: {
     alignSelf: 'center',
-    width: '40%',
-    height: '40%',
+    width: '45%',
+    height: '45%',
     resizeMode: 'contain',
   },
 });

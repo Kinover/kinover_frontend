@@ -1,7 +1,7 @@
 // src/features/chat/store/chatRoomThunk.js
-import axios from 'axios';
+
 import {createAsyncThunk} from '@reduxjs/toolkit';
-import {getToken} from '../../../utils/storage';
+import {apiClient} from '../../../utils/apiClient';
 
 import {
   setChatRoomList,
@@ -14,28 +14,26 @@ import {
 import {markReadThunk} from './chatRoomSlice';
 import {syncAppBadgeThunk} from '../../notification/store/notificationThunk'; // 경로 맞춰줘!
 
-const API_BASE = 'https://kinover.shop/api/chatRoom';
+// ✅ apiClient baseURL = https://kinover.shop/api
+// 그래서 여기서는 /chatRoom만 붙이면 됨
+const API_BASE = '/chatRoom';
 
 // ✅ 이 파일에서 toId를 쓰려면 여기서 선언해야 함 (slice에만 있던 헬퍼라서)
 const toId = v => (v == null ? null : String(v));
 
+/**
+ * ✅ 채팅방 리스트 조회
+ * POST /api/chatRoom/{familyId}/{userId}
+ */
 export const fetchChatRoomListThunk = (familyId, userId) => {
   return async dispatch => {
     dispatch(setChatRoomLoading(true));
     try {
       const apiUrl = `${API_BASE}/${familyId}/${userId}`;
-      const token = await getToken();
 
-      const response = await axios.post(
-        apiUrl,
-        {},
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      const response = await apiClient.post(apiUrl, {}, {
+        headers: {'Content-Type': 'application/json'},
+      });
 
       dispatch(setChatRoomList(response.data));
     } catch (error) {
@@ -46,18 +44,17 @@ export const fetchChatRoomListThunk = (familyId, userId) => {
   };
 };
 
+/**
+ * ✅ 채팅방 유저 조회
+ * POST /api/chatRoom/{chatRoomId}/users/get
+ */
 export const fetchChatRoomUsersThunk = chatRoomId => {
   return async dispatch => {
     dispatch(setChatRoomLoading(true));
     try {
-      const token = await getToken();
       const apiUrl = `${API_BASE}/${chatRoomId}/users/get`;
 
-      const response = await axios.post(
-        apiUrl,
-        {},
-        {headers: {Authorization: `Bearer ${token}`}},
-      );
+      const response = await apiClient.post(apiUrl, {});
 
       dispatch(setChatRoomUsers(response.data));
     } catch (error) {
@@ -68,28 +65,27 @@ export const fetchChatRoomUsersThunk = chatRoomId => {
   };
 };
 
+/**
+ * ✅ 채팅방 나가기
+ * DELETE /api/chatRoom/{chatRoomId}/leave
+ */
 export const leaveChatRoomThunk = createAsyncThunk(
   'chatRoom/leaveChatRoom',
   async (chatRoomId, {rejectWithValue}) => {
     try {
-      const token = await getToken();
-
-      const res = await fetch(`${API_BASE}/${chatRoomId}/leave`, {
-        method: 'DELETE',
-        headers: {Authorization: `Bearer ${token}`},
-      });
-
-      if (!res.ok) {
-        return rejectWithValue(`서버 오류: ${res.status}`);
-      }
-
+      await apiClient.delete(`${API_BASE}/${chatRoomId}/leave`);
       return chatRoomId;
     } catch (error) {
-      return rejectWithValue(error?.message || '알 수 없는 에러');
+      const msg = error?.response?.data || error?.message || '알 수 없는 에러';
+      return rejectWithValue(msg);
     }
   },
 );
 
+/**
+ * ✅ 채팅방 이름 변경
+ * PATCH /api/chatRoom/{chatRoomId}/rename?roomName=...
+ */
 export const renameChatRoomThunk = createAsyncThunk(
   'chatRoom/renameChatRoom',
   async (
@@ -97,39 +93,31 @@ export const renameChatRoomThunk = createAsyncThunk(
     {rejectWithValue, dispatch},
   ) => {
     try {
-      const token = await getToken();
-      const response = await fetch(
-        `${API_BASE}/${chatRoomId}/rename?roomName=${encodeURIComponent(
-          roomName,
-        )}`,
-        {
-          method: 'PATCH',
-          headers: {Authorization: `Bearer ${token}`},
-        },
-      );
+      await apiClient.patch(`${API_BASE}/${chatRoomId}/rename`, null, {
+        params: {roomName},
+      });
 
-      if (!response.ok) {
-        return rejectWithValue(`이름 변경 실패: ${response.status}`);
-      }
-
-      await response.text().catch(() => '');
+      // ✅ 이름 바꾼 뒤 리스트 갱신
       dispatch(fetchChatRoomListThunk(familyId, userId));
       return true;
     } catch (err) {
-      return rejectWithValue(err?.message || '알 수 없는 오류');
+      const msg = err?.response?.data || err?.message || '알 수 없는 오류';
+      return rejectWithValue(msg);
     }
   },
 );
 
+/**
+ * ✅ 채팅방 생성
+ * POST /api/chatRoom/create/{roomName}/{userIds}/{familyId}
+ */
 export const createChatRoomThunk = createAsyncThunk(
   'chatRoom/create',
   async ({roomName, userIds, familyId}, {rejectWithValue}) => {
     try {
-      const token = await getToken();
-      const response = await axios.post(
+      const response = await apiClient.post(
         `${API_BASE}/create/${encodeURIComponent(roomName)}/${userIds}/${familyId}`,
         null,
-        {headers: {Authorization: `Bearer ${token}`}},
       );
       return response.data;
     } catch (error) {
@@ -138,20 +126,18 @@ export const createChatRoomThunk = createAsyncThunk(
   },
 );
 
+/**
+ * ✅ 키노 성격(페르소나) 변경
+ * PATCH /api/chatRoom/{chatRoomId}/personality
+ */
 export const updateKinoPersonalityThunk = createAsyncThunk(
   'chatRoom/updatePersonality',
   async ({chatRoomId, personality}, {rejectWithValue}) => {
     try {
-      const token = await getToken();
-      const response = await axios.patch(
+      const response = await apiClient.patch(
         `${API_BASE}/${chatRoomId}/personality`,
         {personality},
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-        },
+        {headers: {'Content-Type': 'application/json'}},
       );
       return response.data;
     } catch (err) {
@@ -162,30 +148,24 @@ export const updateKinoPersonalityThunk = createAsyncThunk(
   },
 );
 
+/**
+ * ✅ 채팅방 알림 ON/OFF
+ * PATCH /api/chatRoom/notification/chatroom?userId=...&chatRoomId=...&isOn=...
+ */
 export const toggleChatRoomNotificationThunk = createAsyncThunk(
   'chatRoom/toggleNotification',
   async ({userId, chatRoomId, isOn}, {rejectWithValue, dispatch}) => {
     try {
-      const token = await getToken();
-
-      const url = `${API_BASE}/notification/chatroom?userId=${userId}&chatRoomId=${chatRoomId}&isOn=${isOn}`;
-
-      const res = await fetch(url, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+      await apiClient.patch(`${API_BASE}/notification/chatroom`, null, {
+        params: {userId, chatRoomId, isOn},
+        headers: {'Content-Type': 'application/json'},
       });
-
-      if (!res.ok) {
-        return rejectWithValue(`알림 설정 실패: ${res.status}`);
-      }
 
       dispatch(setChatRoomNotificationState({chatRoomId, isOn}));
       return {chatRoomId, isOn};
     } catch (err) {
-      return rejectWithValue(err?.message || '알 수 없는 에러');
+      const msg = err?.response?.data || err?.message || '알 수 없는 에러';
+      return rejectWithValue(msg);
     }
   },
 );
@@ -193,9 +173,6 @@ export const toggleChatRoomNotificationThunk = createAsyncThunk(
 /**
  * ✅ 채팅방 미디어 모아보기
  * GET /api/chatRoom/{chatRoomId}/media?type=ALL|IMAGE|VIDEO&before=...&limit=...
- *
- * ✅ RN + ESLint no-undef 문제 회피:
- * - URLSearchParams 대신 axios의 params 옵션 사용 (가장 안정적)
  */
 export const fetchChatRoomMediaThunk = createAsyncThunk(
   'chatRoom/fetchChatRoomMedia',
@@ -204,12 +181,10 @@ export const fetchChatRoomMediaThunk = createAsyncThunk(
     {rejectWithValue},
   ) => {
     try {
-      const token = await getToken();
       const rid = toId(chatRoomId);
       if (!rid) return rejectWithValue('chatRoomId가 없습니다.');
 
-      const res = await axios.get(`${API_BASE}/${rid}/media`, {
-        headers: {Authorization: `Bearer ${token}`},
+      const res = await apiClient.get(`${API_BASE}/${rid}/media`, {
         params: {
           type: String(type || 'ALL').toUpperCase(),
           limit: limit ?? 30,
@@ -234,44 +209,36 @@ export const fetchChatRoomMediaThunk = createAsyncThunk(
   },
 );
 
+/**
+ * ✅ 전체 채팅방 알림 ON/OFF
+ * PATCH /api/chatRoom/notification/user?userId=...&isOn=...
+ */
 export const toggleAllChatRoomNotificationThunk = createAsyncThunk(
   'chatRoom/toggleAllNotification',
   async ({userId, isOn}, {rejectWithValue}) => {
     try {
-      const token = await getToken();
-      const url = `${API_BASE}/notification/user?userId=${userId}&isOn=${isOn}`;
-
-      const res = await fetch(url, {
-        method: 'PATCH',
-        headers: {Authorization: `Bearer ${token}`},
+      const res = await apiClient.patch(`${API_BASE}/notification/user`, null, {
+        params: {userId, isOn},
       });
 
-      if (!res.ok) {
-        return rejectWithValue(`전체 채팅방 알림 설정 실패: ${res.status}`);
-      }
-
-      const result = await res.text();
-      return {userId, isOn, result};
+      // 서버가 text를 주든 json을 주든 대응
+      return {userId, isOn, result: res?.data ?? null};
     } catch (err) {
-      return rejectWithValue(err?.message || '알 수 없는 에러');
+      const msg = err?.response?.data || err?.message || '알 수 없는 에러';
+      return rejectWithValue(msg);
     }
   },
 );
 
 /* =========================
  * ✅ 채팅방 단건 조회 (푸시/딥링크 진입용) - GET으로 통일
+ * GET /api/chatRoom/{chatRoomId}
  * ========================= */
 export const fetchChatRoomThunk = createAsyncThunk(
   'chatRoom/fetchChatRoom',
   async (chatRoomId, {rejectWithValue}) => {
     try {
-      const token = await getToken();
-      if (!token) return rejectWithValue('토큰이 없습니다.');
-
-      const res = await axios.get(`${API_BASE}/${chatRoomId}`, {
-        headers: {Authorization: `Bearer ${token}`},
-      });
-
+      const res = await apiClient.get(`${API_BASE}/${chatRoomId}`);
       return res?.data;
     } catch (error) {
       const msg =

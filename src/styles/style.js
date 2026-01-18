@@ -13,7 +13,9 @@ export const COLORS = {
   brandPrimarySoft: '#FEF3C7',
 
   /* ================= 텍스트 ================= */
-  textPrimary: '#111827',
+  // textPrimary: '#111827',
+  textPrimary: 'black',
+
   textSecondary: '#6B7280',
   textTertiary: '#9CA3AF', //👉 힌트·보조·비활성 느낌 텍스트
   textInverse: '#FFFFFF', //👉 어두운 배경 위에 올라가는 글자 색
@@ -30,7 +32,9 @@ export const BACKGROUND_COLORS = {
 
 export const BUTTON_STYLES = {
   // saveBg: '#FFC84D',
-  saveBg: '#111827',
+  saveBg: 'black',
+  // saveBg: '#111827',
+
   // saveBg: '#23314F',
   // saveBg: '#1F2B45',
   cancelBg: ' #FFFFFF',
@@ -41,7 +45,7 @@ export const BUTTON_STYLES = {
 export const HEADER_STYLES = {
   mainTitleFontSize: getResponsiveFontSize(23),
   mainTitleFontColor: 'black',
-  mainTitleFontFamily: 'Pretendard-Bold',
+  mainTitleFontFamily: 'Pretendard-SemiBold',
   mainTitleFontWeight: Platform.OS === 'android' ? '700' : undefined,
   mainTitleLineHeight: getResponsiveFontSize(27), // 살짝만
 
@@ -73,12 +77,12 @@ export const CHATROOM_STYLE = {
   messageFontFamily:
     Platform.OS === 'android' ? 'Pretendard-Regular' : 'Pretendard-Light',
   messageFontSize: getResponsiveFontSize(13), // 🔽 15 → 14
-  messageTimeFontSize: getResponsiveFontSize(10.5), // 🔽 10 → 9
+  messageTimeFontSize: getResponsiveFontSize(10), // 🔽 10 → 9
   KinoMessageFontSize: getResponsiveFontSize(13),
 };
 
 export const EMPTY_STYLE = {
-  emptyFontSize: getResponsiveFontSize(13),
+  emptyFontSize: getResponsiveFontSize(12),
   emptyFontFamily: 'Pretendard-Regular',
   emptyColor: COLORS.textTertiary,
 };

@@ -121,13 +121,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: DEFAULT_STYLE.sectionTitle.fontSize,
     fontFamily: DEFAULT_STYLE.sectionTitle.fontFamily,
-    fontWeight: '600',
     color: '#4A4A4A',
     textAlignVertical: 'bottom',
   },
   selectedText: {
     color: '#111827',
-    fontWeight: '700',
     fontFamily: 'Pretendard-Bold',
   },
 

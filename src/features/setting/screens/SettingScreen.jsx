@@ -1,3 +1,6 @@
+/* eslint-disable react-native/no-inline-styles */
+// SettingScreen.jsx (Switch -> CustomSwitch 교체)
+
 import React, {useEffect, useState, useCallback} from 'react';
 import {
   View,
@@ -7,7 +10,6 @@ import {
   ScrollView,
   Image,
   Linking,
-  Switch,
   Alert,
 } from 'react-native';
 
@@ -27,11 +29,13 @@ import {useLogout} from '../../auth/hooks/useLogout';
 import useHideTabBar from '../../../hooks/useHideTabBar';
 import {SETTING_STYLES} from 'styles/style';
 
-// ✅ 추가
 import {
   checkAndAuthBiometric,
   getBiometricAvailability,
 } from '../../../utils/biometrics';
+
+// ✅ CustomSwitch import (프로젝트 경로에 맞게 수정)
+import CustomSwitch from '../../../components/CustomSwitch';
 
 const BIOMETRIC_ON_KEY = '@kinover/biometric_on_v1';
 
@@ -70,22 +74,23 @@ export default function SettingScreen() {
     loadBiometricSetting();
   }, [loadBiometricSetting]);
 
+  // ✅ 토글 핸들러: "다음 상태값"을 받게 유지
   const onToggleBiometric = useCallback(
     async next => {
-      // OFF로 끄는 건 바로 허용
+      // OFF는 바로 허용
       if (!next) {
         await AsyncStorage.setItem(BIOMETRIC_ON_KEY, '0');
         setBioOn(false);
         return;
       }
 
-      // ON으로 켜려면: 지원 여부 확인
+      // ON: 지원 여부 확인
       if (!bioSupported) {
         Alert.alert('사용 불가', '이 기기에서는 생체인식을 사용할 수 없어요.');
         return;
       }
 
-      // ON으로 켜려면: 한번 인증 성공해야 함
+      // ON: 한번 인증 성공해야 함
       const res = await checkAndAuthBiometric();
       if (!res?.success) {
         Alert.alert('실패', '인증에 실패했어요. 다시 시도해줘요.');
@@ -97,6 +102,13 @@ export default function SettingScreen() {
     },
     [bioSupported],
   );
+
+  // ✅ CustomSwitch용: toggleSwitch는 "현재값" 기반으로 next를 만들어 호출
+  const handlePressCustomSwitch = useCallback(() => {
+    if (bioLoading) return; // 로딩 중엔 막기
+    const next = !bioOn;
+    onToggleBiometric(next);
+  }, [bioLoading, bioOn, onToggleBiometric]);
 
   const bioLabel = bioType
     ? bioType === 'FaceID'
@@ -126,6 +138,7 @@ export default function SettingScreen() {
       {/* ✅ 앱 잠금(생체인식) */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>보안</Text>
+
         <View style={styles.row}>
           <View style={{flex: 1, paddingRight: getResponsiveWidth(10)}}>
             <Text style={styles.label}>{bioLabel}</Text>
@@ -134,11 +147,13 @@ export default function SettingScreen() {
             ) : null}
           </View>
 
-          <Switch
-            value={bioOn}
-            onValueChange={onToggleBiometric}
-            disabled={bioLoading}
-          />
+          {/* ✅ Switch -> CustomSwitch */}
+          <View style={{opacity: bioLoading ? 0.55 : 1}}>
+            <CustomSwitch
+              isEnabled={bioOn}
+              toggleSwitch={handlePressCustomSwitch}
+            />
+          </View>
         </View>
       </View>
 
@@ -282,4 +297,3 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(6),
   },
 });
-

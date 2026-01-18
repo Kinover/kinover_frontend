@@ -32,7 +32,6 @@ const styles = StyleSheet.create({
   },
   text: {
     fontFamily: 'Pretendard-Bold',
-    fontWeight: 'bold',
     fontSize: HEADER_STYLES.mainTitleFontSize,
     // color: '#4D4D4D',
     color: 'black',

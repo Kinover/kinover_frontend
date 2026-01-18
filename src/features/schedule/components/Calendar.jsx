@@ -22,8 +22,8 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../../utils/responsive';
-import {useCalendarLayout} from '../hooks/useCalendarLayout';
 
+import {useCalendarLayout} from '../hooks/useCalendarLayout';
 import {useCalendarMode} from '../hooks/useCalendarMode';
 import {useLocalDateKey} from '../hooks/useLocalDateKey';
 import {useMonthDates} from '../hooks/useMonthDates';
@@ -32,12 +32,12 @@ import {useScheduleCountStyle} from '../hooks/useScheduleCountStyle';
 import {useYMDPicker} from '../hooks/useYMDPicker';
 
 import DropShadow from 'react-native-drop-shadow';
-
-// ✅ NEW (A안): 모달 전용 미니 캘린더 피커
-import MiniCalendarPickerModal from './MiniCalendarPickerModal';
-import {BACKGROUND_COLORS, COLORS, DEFAULT_STYLE} from 'styles/style';
 import FastImage from '@d11/react-native-fast-image';
 
+import {COLORS, DEFAULT_STYLE} from 'styles/style';
+
+// ✅ BottomSheet 버전(실제 파일명과 import를 일치)
+import MiniCalendarPickerBottomSheet from './MiniCalendarPickerModal';
 const RADIUS = 14;
 
 const TYPE = {
@@ -46,17 +46,10 @@ const TYPE = {
   ANNIVERSARY: 'ANNIVERSARY',
 };
 
-// ✅ 의미 컬러
-// - 기념일/생일: 노랑 점
-// - FAMILY 일정: 파랑 점
-// - INDIVIDUAL: 점 없음
 const COLOR = {
-  ANNIV: '#F59E0B', // 노랑
-  FAMILY: '#3B82F6', // 파랑
-
-
-  // ✅ 선택(FOCUS): 남색 꽉 채움
-  FOCUS_BG: 'rgba(17, 24, 39, 0.096)',   // 연한 남색(투명도 조절)
+  ANNIV: '#F59E0B',
+  FAMILY: '#3B82F6',
+  FOCUS_BG: 'rgba(17, 24, 39, 0.096)',
   FOCUS_BORDER: '#111827',
   FOCUS_TEXT: '#111827',
 };
@@ -84,7 +77,6 @@ const buildBirthdayMap = members => {
   return map;
 };
 
-// ✅ scheduleCountPerDay가 number/obj/string(type) 섞여 와도 흡수
 const normalizeCount = v => {
   if (v == null)
     return {
@@ -95,7 +87,6 @@ const normalizeCount = v => {
       type: null,
     };
 
-  // ✅ type만 내려오는 경우 (예: "FAMILY")
   if (typeof v === 'string') {
     const type = String(v).toUpperCase();
     return {
@@ -108,7 +99,6 @@ const normalizeCount = v => {
   }
 
   if (typeof v === 'number') {
-    // legacy: 숫자만 오면 개별 일정으로만 간주(점은 안 찍힘)
     return {
       total: v,
       individual: v,
@@ -118,7 +108,6 @@ const normalizeCount = v => {
     };
   }
 
-  // object
   const total = Number(v.total ?? v.count ?? 0) || 0;
   const individual = Number(v.individual ?? v.personal ?? 0) || 0;
   const family = Number(v.family ?? v.shared ?? 0) || 0;
@@ -133,7 +122,6 @@ const normalizeCount = v => {
   return {total: safeTotal, individual, family, anniversary, type};
 };
 
-// ✅ 생일을 "기념일(ANNIVERSARY)"과 동일한 카운트로 합치기
 const mergeBirthdayIntoCounts = (counts, hasBirthday) => {
   if (!hasBirthday) return counts;
 
@@ -163,7 +151,6 @@ export default function CalendarToggle({
   holidayMap = {},
   familyMembers = null,
   birthdayMap: birthdayMapProp = null,
-
   mode: modeProp = null,
   setMode: setModeProp = null,
 }) {
@@ -195,9 +182,23 @@ export default function CalendarToggle({
   );
 
   const weekDates = useWeekDates(selectedDate, getLocalDateKey);
-
   const {getCountColorStyle} = useScheduleCountStyle(cellSize);
+
+  // ✅ 기존 훅 그대로
   const {showYMD, openYMD, closeYMD} = useYMDPicker();
+
+  // ✅ BottomSheet ref
+  const ymdRef = useRef(null);
+
+  // ✅ showYMD가 source of truth, present/dismiss는 여기서만
+  useEffect(() => {
+    if (showYMD) {
+      ymdRef.current?.present?.();
+      return;
+    }
+    ymdRef.current?.dismiss?.();
+    ymdRef.current?.close?.();
+  }, [showYMD]);
 
   const birthdayMap = useMemo(() => {
     if (birthdayMapProp) return birthdayMapProp;
@@ -212,7 +213,7 @@ export default function CalendarToggle({
   };
 
   // =========================
-  // ✅ 좌우 스와이프로 월/주 변경
+  // ✅ 좌우 스와이프
   // =========================
   const SWIPE_THRESHOLD = getResponsiveWidth(40);
   const SWIPE_VS_SCROLL_SLOP = 6;
@@ -225,7 +226,6 @@ export default function CalendarToggle({
       if (mode === 'month') changeMonth(-1);
       else changeWeek(-1);
     };
-
     swipeNextRef.current = () => {
       if (mode === 'month') changeMonth(1);
       else changeWeek(1);
@@ -251,7 +251,7 @@ export default function CalendarToggle({
   ).current;
 
   // =========================
-  // ✅ 월<->주 “접힘/펼침” 애니메이션 (height clip)
+  // ✅ 월<->주 애니메이션
   // =========================
   const monthH = useSharedValue(0);
   const weekH = useSharedValue(0);
@@ -324,7 +324,6 @@ export default function CalendarToggle({
     opacity: weekOpacity.value,
   }));
 
-  // ✅ 점 표시 규칙 (type 3종 반영)
   const renderDots = counts => {
     const typeFamily = counts?.type === TYPE.FAMILY;
 
@@ -344,6 +343,10 @@ export default function CalendarToggle({
       </View>
     );
   };
+
+  const computedMaxYear = useMemo(() => {
+    return new Date().getFullYear() + 0;
+  }, []);
 
   return (
     <View style={[styles.container, {paddingHorizontal: OUTER_HPAD}]}>
@@ -431,13 +434,13 @@ export default function CalendarToggle({
         <View {...panResponder.panHandlers} style={styles.calendarTouchWrap}>
           <View style={styles.cardInnerCalendar}>
             <View style={[styles.weekRow, {width: gridWidth}]}>
-              {['일', '월', '화', '수', '목', '금', '토'].map(d => {
-                const isRestDow = d === '일';
+              {['일', '월', '화', '수', '목', '금', '토'].map(dow => {
+                const isRestDow = dow === '일';
                 return (
-                  <View key={d} style={[styles.weekCell, {width: cellSize}]}>
+                  <View key={dow} style={[styles.weekCell, {width: cellSize}]}>
                     <Text
                       style={[styles.dayText, isRestDow && styles.sundayText]}>
-                      {d}
+                      {dow}
                     </Text>
                   </View>
                 );
@@ -491,7 +494,6 @@ export default function CalendarToggle({
                               height: CIRCLE_SIZE,
                               borderRadius: CIRCLE_SIZE / 2,
                             },
-                            // ✅ 선택일 아닐 때만 count 색
                             !item.isSelected && getCountColorStyle(total),
                             item.isSelected && styles.selectedBox,
                             !item.isCurrentMonth && {opacity: 0.35},
@@ -504,7 +506,6 @@ export default function CalendarToggle({
                             ]}>
                             {item.date.getDate()}
                           </Text>
-
                           {renderDots(counts)}
                         </View>
                       </TouchableOpacity>
@@ -565,7 +566,6 @@ export default function CalendarToggle({
                             ]}>
                             {item.date.getDate()}
                           </Text>
-
                           {renderDots(counts)}
                         </View>
                       </TouchableOpacity>
@@ -578,17 +578,21 @@ export default function CalendarToggle({
         </View>
       </DropShadow>
 
-      {/* ✅ A안: 모달 전용 미니 캘린더 피커 */}
-      <MiniCalendarPickerModal
-        visible={showYMD}
+      {/* ✅ 날짜 피커 BottomSheet (핵심: onDismiss에서도 closeYMD 호출되게 연결) */}
+      <MiniCalendarPickerBottomSheet
+        modalRef={ymdRef}
+        snapPoints={['75%']}
         onClose={closeYMD}
+        onConfirm={date => {
+          setSelectedDate(date);
+          closeYMD();
+        }}
         initialDate={selectedDate}
         minYear={1950}
-        maxYear={2025}
-        onConfirm={date => {
-          closeYMD();
-          setSelectedDate(date);
-        }}
+        maxYear={computedMaxYear}
+        defaultYear={new Date().getFullYear()}
+        forceDefaultYear={false}
+        closeOnPressOutside={true}
       />
     </View>
   );
@@ -599,18 +603,15 @@ const styles = StyleSheet.create({
     paddingTop: getResponsiveHeight(8),
     marginBottom: getResponsiveHeight(5),
   },
-
   shadowBox: {
     alignSelf: 'center',
     backgroundColor: 'transparent',
     marginBottom: getResponsiveHeight(10),
   },
-
   calendarTouchWrap: {
     width: '100%',
     borderRadius: RADIUS,
   },
-
   cardInnerHeader: {
     borderRadius: RADIUS,
     overflow: 'hidden',
@@ -730,10 +731,8 @@ const styles = StyleSheet.create({
     borderColor: 'white',
     backgroundColor: '#FFFFFF',
   },
-
-  // ✅ 선택일: 남색 테두리 + 연한 남색 채움
   selectedBox: {
-    backgroundColor: COLOR.FOCUS_BG,   // 남색 꽉 채움
+    backgroundColor: COLOR.FOCUS_BG,
     borderColor: COLOR.FOCUS_BORDER,
     borderWidth: 1,
   },
@@ -753,7 +752,7 @@ const styles = StyleSheet.create({
   },
   selectedText: {
     fontFamily: 'Pretendard-SemiBold',
-    color: COLOR.FOCUS_TEXT, // ✅ 남색
+    color: COLOR.FOCUS_TEXT,
   },
   holidayText: {
     color: '#EF4444',
