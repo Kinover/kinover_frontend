@@ -15,10 +15,10 @@
 		16BAE2262E3B85DE005DC829 /* kino-logo2.png in Resources */ = {isa = PBXBuildFile; fileRef = 16BAE2252E3B85DE005DC829 /* kino-logo2.png */; };
 		16BAE2282E3B85E9005DC829 /* logo.png in Resources */ = {isa = PBXBuildFile; fileRef = 16BAE2272E3B85E9005DC829 /* logo.png */; };
 		16BAE22A2E3B85F0005DC829 /* kino family.png in Resources */ = {isa = PBXBuildFile; fileRef = 16BAE2292E3B85F0005DC829 /* kino family.png */; };
+		16DEBED22F2382A1001C13CC /* launch_screen.xml in Resources */ = {isa = PBXBuildFile; fileRef = 16DEBED12F2382A1001C13CC /* launch_screen.xml */; };
 		3B7B3A3963434C4FAC32595C /* Pretendard-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 4C3D6314155745B2822E0C42 /* Pretendard-Regular.ttf */; };
 		614BE0CC1DF94088850ED158 /* Pretendard-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 2AB0C14DB0A74AF7A8F2B567 /* Pretendard-Medium.ttf */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
-		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
 		9E20377A87810549896B7569 /* libPods-kinover_frontend.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BDFAC6758CD17C89FE6FE642 /* libPods-kinover_frontend.a */; };
 		B0D8D1A56DD74BBD9F2B4F79 /* Pretendard-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = A092DDCF5E154D8A90D88B5F /* Pretendard-Light.ttf */; };
 		DC5C471D9373FB5E6AC5F79B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
@@ -37,6 +37,7 @@
 		16BAE2252E3B85DE005DC829 /* kino-logo2.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "kino-logo2.png"; sourceTree = "<group>"; };
 		16BAE2272E3B85E9005DC829 /* logo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = logo.png; sourceTree = "<group>"; };
 		16BAE2292E3B85F0005DC829 /* kino family.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "kino family.png"; sourceTree = "<group>"; };
+		16DEBED12F2382A1001C13CC /* launch_screen.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = launch_screen.xml; sourceTree = "<group>"; };
 		16E09C992D7C9E3F001A55F3 /* kinover_frontend-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "kinover_frontend-Bridging-Header.h"; sourceTree = "<group>"; };
 		23E070ACEDC24F319092620E /* Pretendard-SemiBold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Pretendard-SemiBold.ttf"; path = "../src/assets/fonts/Pretendard-SemiBold.ttf"; sourceTree = "<group>"; };
 		27E0951A8C6D47C0A3FE218D /* SpaceMono-Regular.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "SpaceMono-Regular.ttf"; path = "../src/assets/fonts/SpaceMono-Regular.ttf"; sourceTree = "<group>"; };
@@ -45,7 +46,6 @@
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = kinover_frontend/AppDelegate.swift; sourceTree = "<group>"; };
 		762A9CDB29814039A72F4F1B /* Pods-kinover_frontend.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-kinover_frontend.release.xcconfig"; path = "Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend.release.xcconfig"; sourceTree = "<group>"; };
 		785593E748B10F240430E4CA /* Pods-kinover_frontend.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-kinover_frontend.debug.xcconfig"; path = "Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend.debug.xcconfig"; sourceTree = "<group>"; };
-		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = kinover_frontend/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		A092DDCF5E154D8A90D88B5F /* Pretendard-Light.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Pretendard-Light.ttf"; path = "../src/assets/fonts/Pretendard-Light.ttf"; sourceTree = "<group>"; };
 		BDFAC6758CD17C89FE6FE642 /* libPods-kinover_frontend.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-kinover_frontend.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		E50A530B3F0C4D22A857BD37 /* Pretendard-Bold.ttf */ = {isa = PBXFileReference; explicitFileType = undefined; fileEncoding = 9; includeInIndex = 0; lastKnownFileType = unknown; name = "Pretendard-Bold.ttf"; path = "../src/assets/fonts/Pretendard-Bold.ttf"; sourceTree = "<group>"; };
@@ -77,9 +77,9 @@
 				16BAE2272E3B85E9005DC829 /* logo.png */,
 				16BAE2232E3B8512005DC829 /* kino-logo.png */,
 				761780EC2CA45674006654EE /* AppDelegate.swift */,
-				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
 				165133DC2E5732220066FAD5 /* GoogleService-Info.plist */,
+				16DEBED12F2382A1001C13CC /* launch_screen.xml */,
 			);
 			name = kinover_frontend;
 			sourceTree = "<group>";
@@ -207,7 +207,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				DC5C471D9373FB5E6AC5F79B /* PrivacyInfo.xcprivacy in Resources */,
 				16BAE22A2E3B85F0005DC829 /* kino family.png in Resources */,
@@ -220,6 +219,7 @@
 				614BE0CC1DF94088850ED158 /* Pretendard-Medium.ttf in Resources */,
 				3B7B3A3963434C4FAC32595C /* Pretendard-Regular.ttf in Resources */,
 				122B5C86F73841A8AFF58FBB /* Pretendard-SemiBold.ttf in Resources */,
+				16DEBED22F2382A1001C13CC /* launch_screen.xml in Resources */,
 				E90FBD82AD854747B8932F37 /* SpaceMono-Regular.ttf in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
