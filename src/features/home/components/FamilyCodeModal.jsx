@@ -8,7 +8,6 @@ import {
 } from '../../../utils/responsive';
 import CustomModal from '../../../components/CustomModal';
 import Clipboard from '@react-native-clipboard/clipboard';
-import FastImage from '@d11/react-native-fast-image';
 import {BUTTON_STYLES, COLORS} from 'styles/style';
 
 // ✅ HAPTIC (경로는 네 프로젝트에 맞게 유지/조정)
@@ -45,7 +44,6 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
       onClose={onClose}
       onConfirm={onClose}
       confirmText="확인"
-      buttonBottomStyle={styles.modalButtonRow}
       title="가족 초대 코드"
       subText={subText}>
       <View style={styles.innerWrapper}>
@@ -61,8 +59,11 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
             !familyCode && {opacity: 0.6},
           ]}>
           <View style={styles.codeTextWrap}>
-            <Text style={styles.codeLabel}>INVITE CODE</Text>
+            <Text allowFontScaling={false} style={styles.codeLabel}>
+              INVITE CODE
+            </Text>
             <Text
+              allowFontScaling={false}
               style={styles.codeText}
               numberOfLines={1}
               ellipsizeMode="middle">
@@ -77,7 +78,9 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
               style={[styles.copyIcon, copied && styles.copyIconCopied]}
               resizeMode="contain"
             /> */}
-            <Text style={[styles.copyText, copied && styles.copyTextCopied]}>
+            <Text
+              allowFontScaling={false}
+              style={[styles.copyText, copied && styles.copyTextCopied]}>
               {copied ? '복사됨' : '복사'}
             </Text>
           </View>
@@ -147,7 +150,7 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(8),
     paddingHorizontal: getResponsiveWidth(12),
     borderRadius: 999,
-    backgroundColor: BUTTON_STYLES.saveBg,
+    backgroundColor: BUTTON_STYLES().saveBg,
   },
 
   copyBtnCopied: {
@@ -177,6 +180,6 @@ const styles = StyleSheet.create({
   modalButtonRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: getResponsiveHeight(10),
+    // marginTop: getResponsiveHeight(10),
   },
 });

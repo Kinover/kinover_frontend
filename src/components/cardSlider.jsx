@@ -31,8 +31,8 @@ function AnimatedSlide({ item }) {
 
   return (
     <Animated.View style={[styles.contentContainer, { opacity: fadeAnim }]}>
-      <Text style={styles.cardCategory}>{item.category}</Text>
-      <Text style={styles.cardText}>{item.title}</Text>
+      <Text allowFontScaling={false} style={styles.cardCategory}>{item.category}</Text>
+      <Text allowFontScaling={false} style={styles.cardText}>{item.title}</Text>
       <Image source={item.image} style={styles.cardImage} />
     </Animated.View>
   );

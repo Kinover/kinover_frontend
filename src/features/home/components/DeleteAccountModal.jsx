@@ -86,7 +86,7 @@ export default function DeleteAccountModal({visible, onClose}) {
         closeTextStyle={[styles.modalText, {color: '#fff'}]}
         buttonBottomStyle={styles.modalButtonRow}
         title={' 탈퇴 하시려면 아래에\n‘탈퇴합니다’를 입력해주세요'}>
-        <TextInput
+        <TextInput allowFontScaling={false}
           placeholder="탈퇴합니다"
           placeholderTextColor="#ccc"
           value={confirmationText}

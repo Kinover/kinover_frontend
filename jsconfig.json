@@ -4,5 +4,5 @@
     "checkJs": false   // ← 이게 핵심!
   },
   
-  "include": ["src"]
+  "include": ["src", "src/app/navigation/stacks"]
 }

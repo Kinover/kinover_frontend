@@ -29,7 +29,7 @@ export default function DescriptionSection({memory, onContentLayout}) {
               style={styles.writerImage}
               source={{uri: memory.authorImage}}
             />
-            <Text style={styles.writerName}>{memory.authorName}</Text>
+            <Text allowFontScaling={false} style={styles.writerName}>{memory.authorName}</Text>
           </View>
         </View>
       </TouchableWithoutFeedback>
@@ -47,7 +47,7 @@ export default function DescriptionSection({memory, onContentLayout}) {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           nestedScrollEnabled={true}>
-          <Text style={styles.content} onLayout={onContentLayout}>
+          <Text allowFontScaling={false} style={styles.content} onLayout={onContentLayout}>
             {memory.content}
           </Text>
         </ScrollView>

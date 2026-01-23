@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {FONT_MODE} from 'store/uiSlice';
 
 import FamilyCodeModal from '../components/FamilyCodeModal';
 import UserBottomSheetModal from '../components/UserBottomSheet';
@@ -17,10 +18,7 @@ import {fetchFamilyThunk, fetchFamilyStatusThunk} from '../store/familyThunk';
 import {fetchFamilyUserListThunk} from '../store/familyUserThunk';
 import {modifyUserThunk} from '../store/userThunk';
 
-import {
-  getResponsiveWidth,
-  getResponsiveHeight,
-} from '../../../utils/responsive';
+import {getResponsiveWidth} from '../../../utils/responsive';
 
 import HeaderSection from '../components/HeaderSection';
 import MemberGridSection from '../components/MemberGridSection';
@@ -43,6 +41,9 @@ export default function HomeScreen() {
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
   const {onlineUserIds, lastActiveMap} = useSelector(state => state.family);
 
+  // ✅ fontMode 구독
+  const fontMode = useSelector(state => state.ui.fontMode);
+
   const [isVisible, setIsVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
@@ -54,6 +55,14 @@ export default function HomeScreen() {
   const familyMembers = (familyUserList || []).filter(
     m => m.userId !== user.userId,
   );
+
+  // ✅ 모드별 paddingBottom "확실히" 차이나게 (숫자 직접)
+  const scrollPaddingBottom =
+    fontMode === FONT_MODE.EXTRA_LARGE
+      ? 90
+      : fontMode === FONT_MODE.LARGE
+      ? 70
+      : 50;
 
   // 🔔 알림 리스너
   useEffect(() => {
@@ -133,23 +142,14 @@ export default function HomeScreen() {
   }, [selectedUser]);
 
   const handleUserPress = member => {
-    // ✅ 같은 유저 연속 클릭 안전
     setSelectedUser(null);
     requestAnimationFrame(() => setSelectedUser(member));
   };
 
-  /**
-   * ✅ “상태정리 전용”
-   * - 절대 dismiss 호출하지 말 것 (onDismiss에서 또 호출되어 루프 발생)
-   */
   const clearSelectedUser = useCallback(() => {
     setSelectedUser(null);
   }, []);
 
-  /**
-   * ✅ “닫기 액션”
-   * - 버튼/저장/취소 등 “의도적으로 닫을 때”만 여기 호출
-   */
   const dismissUserSheet = useCallback(() => {
     userSheetRef.current?.dismiss?.();
   }, []);
@@ -173,7 +173,6 @@ export default function HomeScreen() {
       dispatch(fetchFamilyStatusThunk(family.familyId));
     }
 
-    // ✅ 저장 후 닫기(닫기만 호출) → 실제 닫힘 완료되면 onDismiss로 clearSelectedUser
     dismissUserSheet();
   };
 
@@ -199,10 +198,18 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <View style={styles.backgroundCurve} />
 
+      {/* ✅ 디버그 필요하면 켜 */}
+      {/* <Text style={{position:'absolute', top: 50, left: 20, zIndex: 999}}>
+        fontMode: {String(fontMode)} / pb: {String(scrollPaddingBottom)}
+      </Text> */}
+
       <ScrollView
         refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}>
+        contentContainerStyle={[
+          styles.scrollContent,
+          {paddingBottom: scrollPaddingBottom},
+        ]}>
         <HeaderSection user={user} onUserPress={handleUserPress} />
 
         <MemberGridSection
@@ -224,9 +231,7 @@ export default function HomeScreen() {
         ref={userSheetRef}
         selectedUser={selectedUser}
         onSave={handleSave}
-        // ✅ 취소 버튼 눌렀을 때 “닫기”만 호출 (상태정리는 onDismiss에서)
         onCancel={dismissUserSheet}
-        // ✅ 어떤 방식으로 닫혀도 상태 정리
         onDismiss={clearSelectedUser}
       />
     </View>
@@ -242,7 +247,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     width: '100%',
     paddingTop: Platform.OS === 'ios' ? '22%' : '13%',
-    paddingBottom: getResponsiveHeight(30),
     alignItems: 'center',
   },
   backgroundCurve: {

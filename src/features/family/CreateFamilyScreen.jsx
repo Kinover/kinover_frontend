@@ -28,11 +28,11 @@ export default function CreateFamilyScreen() {
           paddingHorizontal: '5%',
           gap: getResponsiveHeight(60),
         }}>
-        <Text style={{color: 'black', fontSize: getResponsiveFontSize(30)}}>
+        <Text allowFontScaling={false} style={{color: 'black', fontSize: getResponsiveFontSize(30)}}>
           {`가족명을\n입력하세요`}
         </Text>
 
-        <TextInput
+        <TextInput allowFontScaling={false}
           style={{
             borderColor: 'lightgray',
             borderWidth: 1,
@@ -41,7 +41,7 @@ export default function CreateFamilyScreen() {
       </View>
 
       <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonText}>생성 완료</Text>
+        <Text allowFontScaling={false} style={styles.buttonText}>생성 완료</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

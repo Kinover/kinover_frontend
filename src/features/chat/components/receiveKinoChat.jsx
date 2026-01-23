@@ -154,7 +154,7 @@ export default function ReceiveKinoChat({
         />
 
         <View style={styles.textContainer}>
-          <Text style={styles.userName}>키노</Text>
+          <Text allowFontScaling={false} style={styles.userName}>키노</Text>
 
           <View style={styles.messageContainer}>
             <View
@@ -203,7 +203,7 @@ export default function ReceiveKinoChat({
       />
 
       <View style={styles.textContainer}>
-        {!isGrouped && <Text style={styles.userName}>키노</Text>}
+        {!isGrouped && <Text allowFontScaling={false} style={styles.userName}>키노</Text>}
 
         <View style={styles.messageContainer}>
           {messageType === 'image' ? (
@@ -225,14 +225,14 @@ export default function ReceiveKinoChat({
                 styles.receivedBubble,
                 {backgroundColor: bubbleColors.bubble},
               ]}>
-              <Text style={[styles.receivedText, {color: bubbleColors.text}]}>
+              <Text allowFontScaling={false} style={[styles.receivedText, {color: bubbleColors.text}]}>
                 {message}
               </Text>
             </View>
           )}
 
           {showTime && (
-            <Text style={styles.receivedTime}>{formatTime(chatTime)}</Text>
+            <Text allowFontScaling={false} style={styles.receivedTime}>{formatTime(chatTime)}</Text>
           )}
         </View>
       </View>
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
   },
   userName: {
     fontFamily: 'Pretendard-Medium',
-    fontSize: CHATROOM_STYLE.messageFontSize,
+    fontSize: CHATROOM_STYLE().messageFontSize,
     color: '#444',
     marginBottom: getResponsiveHeight(7),
   },
@@ -281,14 +281,14 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   receivedText: {
-    fontFamily: CHATROOM_STYLE.messageFontFamily,
-    fontSize: CHATROOM_STYLE.KinoMessageFontSize,
+    fontFamily: CHATROOM_STYLE().messageFontFamily,
+    fontSize: CHATROOM_STYLE().KinoMessageFontSize,
     color: 'black', // ✅ 기본값(동적으로 override 됨)
     flexWrap: 'wrap',
     lineHeight: getResponsiveFontSize(18),
   },
   receivedTime: {
-    fontSize: CHATROOM_STYLE.messageTimeFontSize,
+    fontSize: CHATROOM_STYLE().messageTimeFontSize,
     color: '#666',
     marginLeft: getResponsiveWidth(5),
     lineHeight: getResponsiveFontSize(12),

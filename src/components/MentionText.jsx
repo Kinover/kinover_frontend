@@ -16,20 +16,20 @@ export default function MentionText({text, users = [], textStyle, mentionStyle})
   }, [text]);
 
   return (
-    <Text style={textStyle}>
+    <Text allowFontScaling={false} style={textStyle}>
       {parts.map((p, idx) => {
         if (p?.startsWith('@')) {
           const name = p.slice(1);
           const user = nameMap.get(name);
           if (user) {
             return (
-              <Text key={`${idx}_${p}`} style={mentionStyle}>
+              <Text allowFontScaling={false} key={`${idx}_${p}`} style={mentionStyle}>
                 {p}
               </Text>
             );
           }
         }
-        return <Text key={`${idx}_${p}`}>{p}</Text>;
+        return <Text allowFontScaling={false} key={`${idx}_${p}`}>{p}</Text>;
       })}
     </Text>
   );

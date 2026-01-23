@@ -20,6 +20,10 @@ import {
 } from 'utils/responsive';
 import {BottomSheetButtons} from 'components/BottomSheetButtons';
 
+// ✅ fontMode 구독
+import {useSelector} from 'react-redux';
+import {FONT_MODE} from '../../../store/uiSlice';
+
 const pad2 = n => String(n).padStart(2, '0');
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
@@ -74,9 +78,7 @@ const UI = {
   primaryText: '#FFFFFF',
 };
 
-const shadow = Platform.select({
-
-});
+const shadow = Platform.select({});
 
 const shadowStrong = Platform.select({
   ios: {
@@ -91,11 +93,12 @@ const shadowStrong = Platform.select({
 const DAY_COLS = 7;
 
 // ✅ footer 높이만큼 본문 바닥 여유 (버튼 가림 방지)
-const FOOTER_SPACE = getResponsiveHeight(88);
+// 기존 상수였는데, fontMode에 따라 동적으로 바꿀 거라 "BASE"로 변경
+const FOOTER_SPACE_BASE = getResponsiveHeight(88);
 
 export default function MiniCalendarPickerBottomSheet({
   modalRef,
-  snapPoints, // optional
+  snapPoints, // optional (외부에서 주면 우선)
 
   enableContentPanningGesture = false,
   animationConfigs,
@@ -114,6 +117,26 @@ export default function MiniCalendarPickerBottomSheet({
 
   closeOnPressOutside = true,
 }) {
+  // ✅ fontMode
+  const fontMode = useSelector(state => state.ui.fontMode);
+  const isLargeFont = fontMode === FONT_MODE.LARGE;
+
+  // ✅ LARGE면 footer 여유를 조금 더 (버튼 + 글씨 커짐 보정)
+  const FOOTER_SPACE = useMemo(() => {
+    return isLargeFont
+      ? FOOTER_SPACE_BASE + getResponsiveHeight(12)
+      : FOOTER_SPACE_BASE;
+  }, [isLargeFont]);
+
+  // ✅ LARGE면 기본 snapPoints를 더 크게
+  // - 외부에서 snapPoints를 넘기면 그걸 그대로 사용
+  const resolvedSnapPoints = useMemo(() => {
+    if (snapPoints) return snapPoints;
+    // NORMAL: 80%
+    // LARGE: 88% (원하면 86~90 사이로 조절 가능)
+    return isLargeFont ? ['92%'] : ['84%'];
+  }, [snapPoints, isLargeFont]);
+
   const baseDate = useMemo(() => {
     const safeDefaultYear = clamp(defaultYear, minYear, maxYear);
     const hasInitial = !!initialDate;
@@ -230,14 +253,14 @@ export default function MiniCalendarPickerBottomSheet({
             setStep(STEP.MONTH);
           }}
           style={[styles.yearRow, isSelected && styles.yearRowSelected]}>
-          <Text
+          <Text allowFontScaling={false}
             style={[styles.yearText, isSelected && styles.yearTextSelected]}>
             {item}년
           </Text>
 
           {isSelected ? (
             <View style={styles.selectedPill}>
-              <Text style={styles.selectedPillText}>선택</Text>
+              <Text allowFontScaling={false} style={styles.selectedPillText}>선택</Text>
             </View>
           ) : (
             <View style={{width: getResponsiveWidth(46)}} />
@@ -286,7 +309,7 @@ export default function MiniCalendarPickerBottomSheet({
             {marginBottom: DAY_GAP},
             isSelected && styles.dayBtnSelected,
           ]}>
-          <Text style={[styles.dayText, isSelected && styles.dayTextSelected]}>
+          <Text allowFontScaling={false} style={[styles.dayText, isSelected && styles.dayTextSelected]}>
             {day}
           </Text>
         </TouchableOpacity>
@@ -298,7 +321,7 @@ export default function MiniCalendarPickerBottomSheet({
   return (
     <BottomSheetLayout
       modalRef={modalRef}
-      snapPoints={snapPoints ?? ['80%']}
+      snapPoints={resolvedSnapPoints}
       enableContentPanningGesture={enableContentPanningGesture}
       animationConfigs={animationConfigs}
       keyboardBehavior={keyboardBehavior}
@@ -318,14 +341,14 @@ export default function MiniCalendarPickerBottomSheet({
                 onPress={goBackStep}
                 activeOpacity={0.88}
                 style={[styles.quickBtn, styles.quickBtnGhost]}>
-                <Text style={styles.quickTextGhost}>이전</Text>
+                <Text allowFontScaling={false} style={styles.quickTextGhost}>이전</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 onPress={pickToday}
                 activeOpacity={0.88}
                 style={[styles.quickBtn, styles.quickBtnPrimary]}>
-                <Text style={styles.quickTextPrimary}>오늘</Text>
+                <Text allowFontScaling={false} style={styles.quickTextPrimary}>오늘</Text>
               </TouchableOpacity>
             </View>
 
@@ -333,7 +356,7 @@ export default function MiniCalendarPickerBottomSheet({
             <View style={styles.card}>
               {step === STEP.YEAR && (
                 <>
-                  <Text style={styles.hint}>
+                  <Text allowFontScaling={false} style={styles.hint}>
                     연도를 고르면 다음 단계로 넘어가요
                   </Text>
 
@@ -357,7 +380,7 @@ export default function MiniCalendarPickerBottomSheet({
 
               {step === STEP.MONTH && (
                 <>
-                  <Text style={styles.hint}>{y}년의 월을 골라줘요</Text>
+                  <Text allowFontScaling={false} style={styles.hint}>{y}년의 월을 골라줘요</Text>
 
                   <View style={styles.monthGrid}>
                     {months.map(month0 => {
@@ -374,7 +397,7 @@ export default function MiniCalendarPickerBottomSheet({
                             styles.monthChip,
                             isSelected && styles.monthChipSelected,
                           ]}>
-                          <Text
+                          <Text allowFontScaling={false}
                             style={[
                               styles.monthChipText,
                               isSelected && styles.monthChipTextSelected,
@@ -390,7 +413,7 @@ export default function MiniCalendarPickerBottomSheet({
 
               {step === STEP.DAY && (
                 <>
-                  <Text style={styles.hint}>
+                  <Text allowFontScaling={false} style={styles.hint}>
                     {y}년 {m0 + 1}월은 {maxDay}일까지 있어요
                   </Text>
 
@@ -416,8 +439,8 @@ export default function MiniCalendarPickerBottomSheet({
 
                   {/* ✅ 선택된 날짜 강조 카드 */}
                   <View style={styles.selectedCard}>
-                    <Text style={styles.selectedCardLabel}>선택한 날짜</Text>
-                    <Text style={styles.selectedCardValue}>
+                    <Text allowFontScaling={false}  style={styles.selectedCardLabel}>선택한 날짜</Text>
+                    <Text allowFontScaling={false} style={styles.selectedCardValue}>
                       {y}.{pad2(m0 + 1)}.{pad2(d)} ({getDowLabel(selectedDate)})
                     </Text>
                   </View>
@@ -427,7 +450,7 @@ export default function MiniCalendarPickerBottomSheet({
 
             {!isDayStep && (
               <View style={styles.footerHintWrap}>
-                <Text style={styles.footerHint}>
+                <Text allowFontScaling={false} style={styles.footerHint}>
                   날짜(일)까지 선택해야 ‘선택하기’가 가능해요
                 </Text>
               </View>

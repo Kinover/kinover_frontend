@@ -170,13 +170,13 @@ export default function KinoSelectScreen() {
     const parts = text.split(/(키노)/g);
     return parts.map((part, i) =>
       part === '키노' ? (
-        <Text
+        <Text allowFontScaling={false}
           key={i}
           style={[styles.kinoHighlight, {color: cardColors.highlight}]}>
           {part}
         </Text>
       ) : (
-        <Text key={i} style={styles.kinoText}>
+        <Text allowFontScaling={false} key={i} style={styles.kinoText}>
           {part}
         </Text>
       ),
@@ -265,8 +265,8 @@ export default function KinoSelectScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>키노를 선택해주세요</Text>
-      <Text style={styles.subtitle}>각기 다른 성격의 키노를 만나보세요</Text>
+      <Text allowFontScaling={false} style={styles.title}>키노를 선택해주세요</Text>
+      <Text allowFontScaling={false} style={styles.subtitle}>각기 다른 성격의 키노를 만나보세요</Text>
 
       {/* ✅ 카드도 키노 색에 맞게 변경 */}
       <View
@@ -283,7 +283,7 @@ export default function KinoSelectScreen() {
             index={currentIndex}
             descriptions={KINOS.map(k => k.description)}
             renderRichText={text => (
-              <Text style={styles.kinoText}>{highlightKinoName(text)}</Text>
+              <Text allowFontScaling={false} style={styles.kinoText}>{highlightKinoName(text)}</Text>
             )}
           />
         </View>
@@ -587,6 +587,6 @@ const styles = StyleSheet.create({
     width: getResponsiveIconSize(18),
     height: getResponsiveIconSize(18),
     resizeMode: 'contain',
-    tintColor: BUTTON_STYLES.saveBg,
+    tintColor: BUTTON_STYLES().saveBg,
   },
 });

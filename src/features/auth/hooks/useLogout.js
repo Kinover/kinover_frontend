@@ -1,35 +1,60 @@
+// src/features/auth/hooks/useLogout.js
 import * as KakaoLogin from '@react-native-seoul/kakao-login';
-// import { removeToken, removeHasFamily } from '../utils/storage';
-import {useNavigation} from '@react-navigation/native';
-import { deleteFcmToken } from 'features/notification/utils/requestNotificationPermission';
+import {useCallback} from 'react';
+import {useDispatch} from 'react-redux';
 
-import {deleteLoginInfo} from '../../../utils/storage';
+import {persistor} from 'store';
+import {deleteFcmToken} from 'features/notification/utils/requestNotificationPermission';
+import {deleteLoginInfo} from 'utils/storage';
+
+import {stopChatSocket} from 'features/chat/hooks/ChatSocket';
+import {setLogout, setAuthChecked} from '../store/loginSlice';
+
+const nextTick = () => new Promise(resolve => setTimeout(resolve, 0));
 
 export const useLogout = () => {
-  const navigation = useNavigation();
+  const dispatch = useDispatch();
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
+    // 0) 소켓 끊기
     try {
-      await KakaoLogin.logout(); // ✅ 토큰 삭제
-      await deleteFcmToken();
-      await deleteLoginInfo();
+      stopChatSocket();
+    } catch (e) {null}
 
-      navigation.reset({
-        index: 0,
-        routes: [
-          {
-            name: 'Auth', // ← RootNavigator에 등록된 AuthNavigator의 이름
-            state: {
-              index: 0,
-              routes: [{name: '온보딩화면'}], // ← AuthStack 내부 스크린
-            },
-          },
-        ],
-      });
-    } catch (err) {
-      console.log('❌ 로그아웃 실패:', err);
+    // 1) 외부/서버 정리(실패해도 진행)
+    try {
+      await deleteFcmToken();
+    } catch (e) {
+      console.log('⚠️ deleteFcmToken 실패(무시):', e);
     }
-  };
+
+    try {
+      await KakaoLogin.logout();
+    } catch (e) {
+      console.log('⚠️ Kakao logout 실패(무시):', e);
+    }
+
+    // 2) 로컬 로그인정보 삭제
+    try {
+      await deleteLoginInfo();
+    } catch (e) {
+      console.log('⚠️ deleteLoginInfo 실패:', e);
+    }
+
+    // 3) persist 완전 초기화
+    try {
+      await persistor.purge();
+      // purge 직후 flush를 한 번 더(타이밍 안정화)
+      await persistor.flush();
+    } catch (e) {
+      console.log('⚠️ purge/flush 실패:', e);
+    }
+
+    // 4) ✅ 한 틱 쉬고 상태 보정 (rehydrate 타이밍 충돌 방지)
+    await nextTick();
+    dispatch(setLogout());
+    dispatch(setAuthChecked(true));
+  }, [dispatch]);
 
   return logout;
 };

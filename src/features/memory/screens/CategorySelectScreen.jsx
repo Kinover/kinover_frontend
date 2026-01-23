@@ -21,11 +21,14 @@ import {
 import CategoryModal from '../components/CategoryModal';
 import {fetchCategoryThunk} from '../store/categoryThunk';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {EMPTY_STYLE, HEADER_STYLES} from 'styles/style';
+import {EMPTY_STYLE, HEADER_STYLES, COLORS} from 'styles/style';
 import uuid from 'react-native-uuid';
 
 // ✅ 추가: post 단건 조회 thunk
 import {fetchPostByIdThunk} from '../store/memoryThunk';
+
+// ✅ 추가: 재사용 체크 뱃지
+import CheckBadge from 'components/CheckBadge';
 
 export default function CategorySelectPage({route}) {
   const navigation = useNavigation();
@@ -68,11 +71,10 @@ export default function CategorySelectPage({route}) {
   /** -----------------------
    * 카테고리 목록 조회
    * ---------------------- */
+  // ✅ 카테고리 목록 조회 (A안: 토큰 기반)
   useEffect(() => {
-    if (!familyId) return;
-    dispatch(fetchCategoryThunk(familyId));
-  }, [dispatch, familyId]);
-
+    dispatch(fetchCategoryThunk());
+  }, [dispatch]);
   /** -----------------------
    * ✅ 기본 선택 세팅
    * - 수정모드면 "게시글의 카테고리"를 우선으로 선택
@@ -142,7 +144,7 @@ export default function CategorySelectPage({route}) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <Text style={styles.headerTitle}>
+        <Text allowFontScaling={false} style={styles.headerTitle}>
           {isEditMode ? '카테고리 수정' : '카테고리 지정'}
         </Text>
       ),
@@ -198,16 +200,26 @@ export default function CategorySelectPage({route}) {
         }}
         activeOpacity={0.85}
         style={[styles.itemContainer, isSelected && styles.selectedItem]}>
-        <Text style={styles.itemText}>{item.title}</Text>
+        <Text allowFontScaling={false} style={styles.itemText}>
+          {item.title}
+        </Text>
 
-        <Image
-          source={
-            isSelected
-              ? require('../../../assets/images/selected-bt.png')
-              : require('../../../assets/images/unselected-bt.png')
-          }
-          style={styles.radioIcon}
-        />
+        {/* ✅ 기존 라디오 이미지 제거 → 체크뱃지로 통일 */}
+        <View style={styles.rightArea}>
+          {isSelected ? (
+            <CheckBadge
+              size={getResponsiveWidth(16)}
+              dotSize={getResponsiveWidth(8)}
+              borderWidth={2}
+              borderColor={COLORS.brandPrimary}
+              backgroundColor="#FFFFFF"
+              dotColor={COLORS.brandPrimary}
+            />
+          ) : (
+            // 비선택일 때 자리 흔들림 방지용(옵션)
+            <View style={styles.badgePlaceholder} />
+          )}
+        </View>
       </TouchableOpacity>
     );
   };
@@ -227,7 +239,9 @@ export default function CategorySelectPage({route}) {
               style={styles.addButton}
               onPress={() => setAddModalVisible(true)}
               activeOpacity={0.85}>
-              <Text style={styles.addText}>카테고리 추가</Text>
+              <Text allowFontScaling={false} style={styles.addText}>
+                카테고리 추가
+              </Text>
             </TouchableOpacity>
             <View style={styles.separator} />
           </>
@@ -243,11 +257,14 @@ export default function CategorySelectPage({route}) {
         onConfirm={handleAddCategory}
         content={
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>새 카테고리를 입력해주세요</Text>
+            <Text allowFontScaling={false} style={styles.modalTitle}>
+              새 카테고리를 입력해주세요
+            </Text>
             <View style={styles.inputBox}>
               <TextInput
+                allowFontScaling={false}
                 placeholder="예: 2025 가족 여행"
-                placeholderTextColor={EMPTY_STYLE.emptyColor}
+                placeholderTextColor={EMPTY_STYLE().emptyColor}
                 style={styles.input}
                 value={newCategory}
                 onChangeText={setNewCategory}
@@ -269,18 +286,18 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    fontSize: HEADER_STYLES.defaultTitleFontSize,
-    fontFamily: HEADER_STYLES.defaultTitleFontFamily,
-    color: HEADER_STYLES.defaultTitleFontColor,
+    fontSize: HEADER_STYLES().defaultTitleFontSize,
+    fontFamily: HEADER_STYLES().defaultTitleFontFamily,
+    color: HEADER_STYLES().defaultTitleFontColor,
     lineHeight: getResponsiveHeight(26),
     textAlign: 'center',
     textAlignVertical: 'center',
   },
   headerRight: {},
   checkImage: {
-    width: HEADER_STYLES.headerRightIconWidth,
-    height: HEADER_STYLES.headerRightIconHeight,
-    marginRight: HEADER_STYLES.headerRightIconRightPadding,
+    width: HEADER_STYLES().headerRightIconWidth,
+    height: HEADER_STYLES().headerRightIconHeight,
+    marginRight: HEADER_STYLES().headerRightIconRightPadding,
     resizeMode: 'contain',
   },
 
@@ -300,10 +317,17 @@ const styles = StyleSheet.create({
     color: 'black',
     textAlignVertical: 'center',
   },
-  radioIcon: {
-    width: getResponsiveWidth(14),
-    height: getResponsiveHeight(14),
-    resizeMode: 'contain',
+
+  // ✅ 오른쪽 영역(체크뱃지 자리)
+  rightArea: {
+    width: getResponsiveWidth(18),
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  // ✅ 비선택일 때도 높이/레이아웃 흔들림 방지용
+  badgePlaceholder: {
+    width: getResponsiveWidth(16),
+    height: getResponsiveWidth(16),
   },
 
   separator: {

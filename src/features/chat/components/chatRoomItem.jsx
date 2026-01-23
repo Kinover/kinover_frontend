@@ -69,19 +69,23 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
                   styles.aiBadge,
                   {width: AI_BADGE_SIZE, height: AI_BADGE_SIZE},
                 ]}>
-                <Text style={styles.aiBadgeText}>AI</Text>
+                <Text allowFontScaling={false} style={styles.aiBadgeText}>
+                  AI
+                </Text>
               </View>
             )}
           </View>
 
           <View style={styles.textArea}>
             <Text
+              allowFontScaling={false}
               style={[styles.name, unreadCount > 0 && styles.nameUnread]}
               numberOfLines={1}>
               {title}
             </Text>
 
             <Text
+              allowFontScaling={false}
               style={[
                 styles.description,
                 unreadCount > 0 && styles.descriptionUnread,
@@ -92,13 +96,13 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
           </View>
 
           <View style={styles.metaCol}>
-            <Text style={styles.time}>
+            <Text allowFontScaling={false} style={styles.time}>
               {latestMessageTime ? formatPreviewTime(latestMessageTime) : ''}
             </Text>
 
             {unreadCount > 0 && (
               <View style={styles.badge}>
-                <Text style={styles.badgeText}>
+                <Text allowFontScaling={false} style={styles.badgeText}>
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </Text>
               </View>
@@ -150,6 +154,7 @@ const styles = StyleSheet.create({
   name: {
     fontFamily: 'Pretendard-Medium',
     fontSize: getResponsiveFontSize(15),
+    lineHeight: getResponsiveFontSize(16),
     color: '#101010',
   },
   nameUnread: {fontFamily: 'Pretendard-SemiBold'},

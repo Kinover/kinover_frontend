@@ -86,7 +86,7 @@ const Chip = memo(function Chip({text}) {
   if (!text) return null;
   return (
     <View style={styles.chip}>
-      <Text style={styles.chipText} numberOfLines={1}>
+      <Text allowFontScaling={false} style={styles.chipText} numberOfLines={1}>
         {text}
       </Text>
     </View>
@@ -114,7 +114,8 @@ export default function MemoryFeed({
   /* -------------------------
    * Redux States
    * ------------------------- */
-  const familyId = useSelector(state => state.family?.familyId);
+  // ✅ A안: familyId는 클라에서 굳이 들고/보내지 않음(서버가 토큰으로 결정)
+  // const familyId = useSelector(state => state.family?.familyId);
 
   const memoryState = useSelector(state => state.memory || {});
   const memoryList = memoryState.memoryList || [];
@@ -195,11 +196,28 @@ export default function MemoryFeed({
     [normalizeMediaUrl, videoThumbMap, refreshing],
   );
 
+  /**
+   * ✅ 선택된 카테고리 타이틀 -> categoryId(UUID)로 변환
+   * - "전체"면 null (서버에 categoryId 안 붙게)
+   */
+  const selectedCategoryId = useMemo(() => {
+    if (!selectedCategoryTitle || selectedCategoryTitle === '전체') return null;
+    const found = categoryList.find(c => c?.title === selectedCategoryTitle);
+    return found?.categoryId ?? null;
+  }, [selectedCategoryTitle, categoryList]);
+
+  /**
+   * ✅ A안 doFetch
+   * - 카테고리/게시글 모두 "토큰 기반으로 서버가 familyId 결정" 전제
+   * - 게시글 목록은 categoryId만 optional로 전달
+   */
   const doFetch = useCallback(() => {
-    if (!familyId) return;
-    dispatch(fetchMemoryThunk(familyId));
-    dispatch(fetchCategoryThunk(familyId));
-  }, [dispatch, familyId]);
+    // ✅ 카테고리 API도 A안으로 바뀌었다면 인자 없이 호출
+    dispatch(fetchCategoryThunk());
+
+    // ✅ posts 목록: categoryId만 보냄(전체면 null)
+    dispatch(fetchMemoryThunk(selectedCategoryId));
+  }, [dispatch, selectedCategoryId]);
 
   /* -------------------------
    * Effects
@@ -211,8 +229,6 @@ export default function MemoryFeed({
   );
 
   const onRefresh = useCallback(() => {
-    if (!familyId) return;
-
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 350);
 
@@ -220,7 +236,7 @@ export default function MemoryFeed({
       doFetch();
       resetScrollToTop(false);
     });
-  }, [doFetch, familyId, resetScrollToTop]);
+  }, [doFetch, resetScrollToTop]);
 
   const isLoading = memoryLoading && !refreshing;
 
@@ -480,18 +496,23 @@ export default function MemoryFeed({
             <View style={styles.infoArea}>
               <View style={styles.topRow}>
                 <View style={styles.metaRow}>
-                  <Text style={styles.metaText}>{dateLabel}</Text>
+                  <Text allowFontScaling={false} style={styles.metaText}>
+                    {dateLabel}
+                  </Text>
                   <Bullet />
-                  <Text style={styles.metaText}>
+                  <Text allowFontScaling={false} style={styles.metaText}>
                     댓글 {memory.commentCount}
                   </Text>
                   <Bullet />
-                  <Text style={styles.metaText}>{mediaLabel}</Text>
+                  <Text allowFontScaling={false} style={styles.metaText}>
+                    {mediaLabel}
+                  </Text>
                 </View>
               </View>
 
               {memory.content ? (
                 <Text
+                  allowFontScaling={false}
                   style={styles.contentText}
                   numberOfLines={2}
                   ellipsizeMode="tail">
@@ -597,7 +618,7 @@ export default function MemoryFeed({
 
               {!!item?.duration && (
                 <View pointerEvents="none" style={styles.videoBadge}>
-                  <Text style={styles.videoBadgeText}>
+                  <Text allowFontScaling={false} style={styles.videoBadgeText}>
                     {formatDuration(item.duration)}
                   </Text>
                 </View>
@@ -645,8 +666,8 @@ export default function MemoryFeed({
               paddingTop: ITEM_MARGIN,
               paddingBottom: getResponsiveHeight(24),
             }}
-            showsVerticalScrollIndicator={false}
-          />
+            showsVerticalScrollIndicator={true}
+            />
         </View>
       );
     }
@@ -657,7 +678,7 @@ export default function MemoryFeed({
           data={Array.from({length: 5}, (_, i) => i.toString())}
           keyExtractor={item => item}
           renderItem={() => <SkeletonMemoryItem />}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
           contentContainerStyle={{
             paddingTop: ITEM_MARGIN,
             paddingBottom: getResponsiveHeight(24),
@@ -687,7 +708,7 @@ export default function MemoryFeed({
   const listHeader = (
     <View
       style={{
-        paddingHorizontal: LAYOUT_STYLE.screenPaddingHorizontal,
+        paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal,
         gap: getResponsiveHeight(4),
         paddingBottom: getResponsiveHeight(8),
       }}>
@@ -716,7 +737,7 @@ export default function MemoryFeed({
             data={data}
             onScroll={onScroll}
             scrollEventThrottle={16}
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator={true}
             keyExtractor={(item, index) => `${item.uri}_${index}`}
             numColumns={gridColumns}
             renderItem={renderMediaItem}
@@ -729,7 +750,7 @@ export default function MemoryFeed({
             }}
             ListEmptyComponent={
               <View style={styles.emptyWrapper}>
-                <Text style={styles.emptyText}>
+                <Text allowFontScaling={false} style={styles.emptyText}>
                   아직 등록된 게시글이 없어요
                 </Text>
               </View>
@@ -744,7 +765,7 @@ export default function MemoryFeed({
             data={data}
             onScroll={onScroll}
             scrollEventThrottle={16}
-            showsVerticalScrollIndicator={false}
+            showsVerticalScrollIndicator={true}
             keyExtractor={(item, index) =>
               item.postId?.toString() || `no-id-${index}`
             }
@@ -752,13 +773,9 @@ export default function MemoryFeed({
             renderItem={({item}) => renderListItem(item)}
             refreshControl={refreshControl}
             ListHeaderComponent={listHeader}
-            // contentContainerStyle={{
-            //   paddingTop: getResponsiveHeight(6),
-            //   paddingBottom: getResponsiveHeight(28),
-            // }}
             ListEmptyComponent={
               <View style={styles.emptyWrapper}>
-                <Text style={styles.emptyText}>
+                <Text allowFontScaling={false} style={styles.emptyText}>
                   아직 등록된 게시글이 없어요
                 </Text>
               </View>
@@ -779,6 +796,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: BG,
   },
+
+  postContainer: {},
 
   /* Card */
   cardOuter: {
@@ -843,11 +862,9 @@ const styles = StyleSheet.create({
     right: getResponsiveWidth(12),
     zIndex: 999,
     maxWidth: '92%',
-
     borderRadius: 999,
     paddingHorizontal: getResponsiveWidth(9),
     paddingVertical: getResponsiveHeight(4),
-
     backgroundColor: '#F3F4F6',
   },
   chipText: {
@@ -937,7 +954,6 @@ const styles = StyleSheet.create({
     bottom: getResponsiveWidth(4),
     right: getResponsiveWidth(4),
     zIndex: 2,
-
     backgroundColor: 'rgba(0,0,0,0.55)',
     paddingHorizontal: 6,
     paddingVertical: 3,
@@ -954,8 +970,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyText: {
-    fontSize: EMPTY_STYLE.emptyFontSize,
-    fontFamily: EMPTY_STYLE.emptyFontFamily,
-    color: EMPTY_STYLE.emptyColor,
+    fontSize: EMPTY_STYLE().emptyFontSize,
+    fontFamily: EMPTY_STYLE().emptyFontFamily,
+    color: EMPTY_STYLE().emptyColor,
   },
 });

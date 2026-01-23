@@ -1,7 +1,9 @@
 <resources>
-  <!-- 런치스크린 테마 -->
+  <!-- 런치스크린 테마 (이미지 제거: 흰 배경만) -->
   <style name="SplashTheme" parent="Theme.MaterialComponents.Light.NoActionBar">
-    <item name="android:windowBackground">@drawable/launch_screen</item>
+    <!-- ✅ 기존 @drawable/launch_screen 제거 -->
+    <item name="android:windowBackground">@android:color/white</item>
+
     <item name="android:windowNoTitle">true</item>
     <item name="android:windowFullscreen">true</item>
   </style>

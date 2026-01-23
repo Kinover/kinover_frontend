@@ -129,8 +129,8 @@ export default function SetupFinishScreen() {
           },
         ]}>
         <View style={styles.textBlock}>
-          <Text style={styles.headerTitle}>가족 모임 준비 완료!</Text>
-          <Text style={styles.headerSubTitle}>
+          <Text allowFontScaling={false} style={styles.headerTitle}>가족 모임 준비 완료!</Text>
+          <Text allowFontScaling={false} style={styles.headerSubTitle}>
             이제 키노와 함께 가족의 하루를 나누고,{'\n'}
             소중한 순간들을 편하게 기록해 보세요.
           </Text>

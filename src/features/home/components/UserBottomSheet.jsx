@@ -46,6 +46,10 @@ import {normalizeImageForSave} from 'utils/normalizeImageforSave';
 import {BOTTOMSHEET_STYLE, COLORS} from 'styles/style';
 import {BottomSheetButtons} from 'components/BottomSheetButtons';
 
+// ✅ 추가
+import {useSelector} from 'react-redux';
+import {FONT_MODE} from '../../../store/uiSlice';
+
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 const {height: WINDOW_H} = Dimensions.get('window');
 const SAFE_GAP = 12;
@@ -86,6 +90,35 @@ function UserBottomSheetModalBase(
   // ✅ 키보드 상태(스냅 제어용)
   const keyboardOpenRef = useRef(false);
 
+  // ✅ fontMode 가져오기
+  const fontMode = useSelector(state => state.ui.fontMode);
+
+  // ✅ fontMode에 따라 스냅 높이를 올려줌
+  // - large면 기본/키보드 스냅을 조금 더 높게
+  // ✅ fontMode에 따라 스냅 높이를 올려줌 (3단계)
+  const snapPoints = useMemo(() => {
+    const isLarge = fontMode === FONT_MODE.LARGE;
+    const isXL = fontMode === FONT_MODE.EXTRA_LARGE;
+
+    // 수치는 취향이지만, 논리는 이렇게:
+    // NORMAL: 기본/키보드
+    // LARGE:  기본 조금↑ / 키보드 조금↑
+    // XL:     기본 더↑ / 키보드 더↑
+    if (isXL) return ['74%', '96%'];
+    if (isLarge) return ['71%', '94%'];
+    return ['67%', '90%'];
+  }, [fontMode]);
+
+  // ✅ footer 높이도 폰트 커지면 더 확보 (버튼/인풋 가림 방지)
+  const footerSpace = useMemo(() => {
+    const isLarge = fontMode === FONT_MODE.LARGE;
+    const isXL = fontMode === FONT_MODE.EXTRA_LARGE;
+
+    if (isXL) return getResponsiveHeight(112);
+    if (isLarge) return getResponsiveHeight(98);
+    return FOOTER_SPACE; // 기존 86 기준
+  }, [fontMode]);
+
   const showToast = msg => {
     setToastMessage(msg);
     setToastVisible(true);
@@ -105,6 +138,13 @@ function UserBottomSheetModalBase(
       }).start();
 
       modalRef.current?.present?.();
+
+      // ✅ 열리자마자 large면 기본 스냅도 살짝 더 높은 쪽으로(선택)
+      // - snapPoints[0]이 이미 large에 맞춰져 있어서 사실 없어도 되는데,
+      //   기존 상태가 남아있을 때 보정용으로 넣어둠
+      requestAnimationFrame(() => {
+        modalRef.current?.snapToIndex?.(0);
+      });
     },
     dismiss: () => {
       setIsClosing(true);
@@ -118,7 +158,7 @@ function UserBottomSheetModalBase(
       keyboardOpenRef.current = true;
       keyboardHeightRef.current = e?.endCoordinates?.height || 0;
 
-      // ✅ 핵심: 키보드 뜨면 시트 자체를 크게 (90%)
+      // ✅ 키보드 뜨면 시트 자체를 크게 (index 1)
       modalRef.current?.snapToIndex?.(1);
     };
 
@@ -134,7 +174,7 @@ function UserBottomSheetModalBase(
         tapToResetRef.current = false;
       });
 
-      // ✅ 키보드 내려가면 기본 스냅(65%) 복귀
+      // ✅ 키보드 내려가면 기본 스냅(0) 복귀
       modalRef.current?.snapToIndex?.(0);
     };
 
@@ -175,7 +215,8 @@ function UserBottomSheetModalBase(
           const inputBottomY = y + h;
           const baseLimit = kbH ? WINDOW_H - kbH : WINDOW_H;
 
-          const limitY = baseLimit - SAFE_GAP - FOOTER_SPACE;
+          // ✅ footerSpace로 교체
+          const limitY = baseLimit - SAFE_GAP - footerSpace;
 
           if (inputBottomY <= limitY) {
             Animated.timing(shiftAnim, {
@@ -196,7 +237,7 @@ function UserBottomSheetModalBase(
         });
       });
     },
-    [shiftAnim],
+    [shiftAnim, footerSpace],
   );
 
   /**
@@ -252,6 +293,11 @@ function UserBottomSheetModalBase(
       duration: 120,
       useNativeDriver: true,
     }).start();
+
+    // ✅ 선택된 유저가 바뀌면서 내용이 늘어날 수 있으니 현재 키보드 상태에 맞춰 스냅 유지(선택)
+    requestAnimationFrame(() => {
+      modalRef.current?.snapToIndex?.(keyboardOpenRef.current ? 1 : 0);
+    });
   }, [selectedUser, isClosing, shiftAnim]);
 
   const handleImagePick = async () => {
@@ -377,8 +423,8 @@ function UserBottomSheetModalBase(
     <>
       <BottomSheetLayout
         modalRef={modalRef}
-        // ✅ 2단 스냅: 기본 65%, 키보드 시 90%
-        snapPoints={['65%', '90%']}
+        // ✅ fontMode에 따라 동적 스냅
+        snapPoints={snapPoints}
         keyboardBehavior={Platform.OS === 'ios' ? 'interactive' : 'none'}
         androidKeyboardInputMode="adjustNothing"
         title="프로필 편집"
@@ -398,7 +444,7 @@ function UserBottomSheetModalBase(
             style={{
               flex: 1,
               transform: [{translateY: shiftAnim}],
-              paddingBottom: FOOTER_SPACE + getResponsiveHeight(18),
+              paddingBottom: footerSpace + getResponsiveHeight(18),
             }}>
             <View>
               <Pressable onPress={() => {}}>
@@ -425,14 +471,19 @@ function UserBottomSheetModalBase(
                       />
                     </View>
                   </View>
-                  <Text style={styles.profileEditText}>사진 변경</Text>
+                  <Text allowFontScaling={false} style={styles.profileEditText}>
+                    사진 변경
+                  </Text>
                 </TouchableOpacity>
               </Pressable>
 
               <View style={styles.fieldBlock}>
-                <Text style={styles.label}>별명</Text>
+                <Text allowFontScaling={false} style={styles.label}>
+                  별명
+                </Text>
                 <Pressable onPress={() => {}}>
                   <BottomSheetTextInput
+                    allowFontScaling={false}
                     ref={nameInputRef}
                     key={`name-${nameKey}`}
                     style={styles.input}
@@ -453,9 +504,12 @@ function UserBottomSheetModalBase(
               </View>
 
               <View style={styles.fieldBlock}>
-                <Text style={styles.label}>한 줄 소개</Text>
+                <Text allowFontScaling={false} style={styles.label}>
+                  한 줄 소개
+                </Text>
                 <Pressable onPress={() => {}}>
                   <BottomSheetTextInput
+                    allowFontScaling={false}
                     ref={traitInputRef}
                     key={`trait-${traitKey}`}
                     style={[styles.input, styles.textArea]}
@@ -478,11 +532,17 @@ function UserBottomSheetModalBase(
                 <View style={styles.loadingOverlay}>
                   <View style={styles.loadingBox}>
                     <ActivityIndicator size="small" color="#4B5563" />
-                    <Text style={styles.loadingText}>저장 중...</Text>
+                    <Text
+                      allowFontScaling={false}
+                      allowFontScaling={false}
+                      style={styles.loadingText}>
+                      저장 중...
+                    </Text>
                   </View>
                 </View>
               )}
             </View>
+
             <View style={styles.footerFixed}>
               <BottomSheetButtons {...footerProps} />
             </View>
@@ -561,11 +621,11 @@ const styles = StyleSheet.create({
   },
   fieldBlock: {marginBottom: getResponsiveHeight(12)},
   label: {
-    fontSize: BOTTOMSHEET_STYLE.sectionLabel.fontSize,
-    fontFamily: BOTTOMSHEET_STYLE.sectionLabel.fontFamily,
-    color: BOTTOMSHEET_STYLE.sectionLabel.color,
-    marginBottom: BOTTOMSHEET_STYLE.sectionLabel.marginBottom,
-    marginTop: BOTTOMSHEET_STYLE.sectionLabel.marginTop,
+    fontSize: BOTTOMSHEET_STYLE().sectionLabel.fontSize,
+    fontFamily: BOTTOMSHEET_STYLE().sectionLabel.fontFamily,
+    color: BOTTOMSHEET_STYLE().sectionLabel.color,
+    marginBottom: BOTTOMSHEET_STYLE().sectionLabel.marginBottom,
+    marginTop: BOTTOMSHEET_STYLE().sectionLabel.marginTop,
   },
   input: {
     backgroundColor: '#F9FAFB',

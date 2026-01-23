@@ -143,8 +143,16 @@ export default function BottomSheetLayout({
         ]}>
         {(title || subtitle) && (
           <View style={[styles.header, headerStyle]}>
-            {!!title && <Text style={styles.title}>{title}</Text>}
-            {!!subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+            {!!title && (
+              <Text allowFontScaling={false} style={styles.title}>
+                {title}
+              </Text>
+            )}
+            {!!subtitle && (
+              <Text allowFontScaling={false} style={styles.subtitle}>
+                {subtitle}
+              </Text>
+            )}
           </View>
         )}
 
@@ -204,17 +212,17 @@ const styles = StyleSheet.create({
     paddingBottom: getResponsiveHeight(10),
   },
   title: {
-    fontFamily: BOTTOMSHEET_STYLE?.title?.fontFamily || 'Pretendard-SemiBold',
-    fontSize: BOTTOMSHEET_STYLE?.title?.fontSize || getResponsiveFontSize(16),
-    color: BOTTOMSHEET_STYLE?.title?.color || '#111827',
+    fontFamily: BOTTOMSHEET_STYLE()?.title?.fontFamily || 'Pretendard-SemiBold',
+    fontSize: BOTTOMSHEET_STYLE()?.title?.fontSize || getResponsiveFontSize(16),
+    color: BOTTOMSHEET_STYLE()?.title?.color || '#111827',
     letterSpacing: -0.2,
   },
   subtitle: {
     marginTop: getResponsiveHeight(3),
-    fontFamily: BOTTOMSHEET_STYLE?.subtitle?.fontFamily || 'Pretendard-Medium',
+    fontFamily: BOTTOMSHEET_STYLE()?.subtitle?.fontFamily || 'Pretendard-Medium',
     fontSize:
-      BOTTOMSHEET_STYLE?.subtitle?.fontSize || getResponsiveFontSize(12.5),
-    color: BOTTOMSHEET_STYLE?.subtitle?.color || '#6B7280',
+      BOTTOMSHEET_STYLE()?.subtitle?.fontSize || getResponsiveFontSize(12.5),
+    color: BOTTOMSHEET_STYLE()?.subtitle?.color || '#6B7280',
     lineHeight: getResponsiveFontSize(18),
   },
 

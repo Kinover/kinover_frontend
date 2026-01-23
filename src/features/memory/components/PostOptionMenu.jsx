@@ -96,7 +96,7 @@ export default function PostOptionsMenu({
             styles.menuItem,
             (disableMenu || !canSaveCurrent) && {opacity: 0.5},
           ]}>
-          <Text style={styles.menuText}>
+          <Text allowFontScaling={false} style={styles.menuText}>
             현재 미디어 저장{currentLabel ? ` (${currentLabel})` : ''}
           </Text>
         </TouchableOpacity>
@@ -114,7 +114,7 @@ export default function PostOptionsMenu({
             styles.menuItem,
             (disableMenu || !canSaveAll) && {opacity: 0.5},
           ]}>
-          <Text style={styles.menuText}>
+          <Text allowFontScaling={false} style={styles.menuText}>
             전체 미디어 저장 ({mediaCount || 0})
           </Text>
         </TouchableOpacity>
@@ -130,7 +130,7 @@ export default function PostOptionsMenu({
           disabled={disableMenu}
           activeOpacity={0.85}
           style={[styles.menuItem, disableMenu && {opacity: 0.5}]}>
-          <Text style={styles.menuText}>게시글 수정</Text>
+          <Text allowFontScaling={false} style={styles.menuText}>게시글 수정</Text>
         </TouchableOpacity>
 
         <View style={styles.menuDivider} />
@@ -146,7 +146,7 @@ export default function PostOptionsMenu({
             styles.menuItem,
             (disableMenu || !canDeleteCurrent) && {opacity: 0.5},
           ]}>
-          <Text style={[styles.menuText, {color: '#FF5A5F'}]}>
+          <Text allowFontScaling={false} style={[styles.menuText, {color: '#FF5A5F'}]}>
             현재 미디어 삭제
           </Text>
         </TouchableOpacity>
@@ -161,7 +161,7 @@ export default function PostOptionsMenu({
           disabled={disableMenu}
           activeOpacity={0.85}
           style={[styles.menuItem, disableMenu && {opacity: 0.5}]}>
-          <Text style={[styles.menuText, {color: '#FF5A5F'}]}>게시글 삭제</Text>
+          <Text allowFontScaling={false} style={[styles.menuText, {color: '#FF5A5F'}]}>게시글 삭제</Text>
         </TouchableOpacity>
       </Animated.View>
     </Animated.View>

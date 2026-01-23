@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
-  Platform,
   useWindowDimensions,
 } from 'react-native';
 
@@ -74,7 +73,7 @@ export default function HeaderSection({user, onUserPress}) {
   const navigation = useNavigation();
   const {width: screenWidth} = useWindowDimensions();
 
-  const containerWidth = screenWidth - LAYOUT_STYLE.screenPaddingHorizontal * 2;
+  const containerWidth = screenWidth - LAYOUT_STYLE().screenPaddingHorizontal * 2;
 
   /** =========================
    * ✅ 감정 판단
@@ -453,10 +452,10 @@ export default function HeaderSection({user, onUserPress}) {
           activeOpacity={0.92}
           onPress={handleCardPress}
           style={styles.headerCard}>
-          <Text style={styles.userNameHeader} numberOfLines={1}>
+          <Text allowFontScaling={false} style={styles.userNameHeader} numberOfLines={1}>
             {user?.name || '이름'}
           </Text>
-          <Text style={styles.trait} numberOfLines={2}>
+          <Text allowFontScaling={false} style={styles.trait} numberOfLines={2}>
             {user?.trait || '이 사람을 한마디로 표현한다면?'}
           </Text>
         </TouchableOpacity>
@@ -531,17 +530,17 @@ const styles = StyleSheet.create({
 
   userNameHeader: {
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: DEFAULT_STYLE.sectionTitle.fontSize,
+    fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
     color: COLORS.textPrimary,
     letterSpacing: -0.2,
   },
 
   trait: {
-    fontFamily: DEFAULT_STYLE.sectionSubtitle.fontFamily,
+    fontFamily: DEFAULT_STYLE().sectionSubtitle.fontFamily,
     fontSize: getResponsiveHeight(13),
     marginTop: getResponsiveHeight(4),
-    color: DEFAULT_STYLE.sectionSubtitle.color,
+    color: DEFAULT_STYLE().sectionSubtitle.color,
     textAlign: 'center',
-    lineHeight: DEFAULT_STYLE.sectionSubtitle.fontSize + 1,
+    lineHeight: DEFAULT_STYLE().sectionSubtitle.fontSize + 1,
   },
 });

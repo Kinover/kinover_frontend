@@ -475,8 +475,11 @@ export default function CreatePostPage({navigation, route}) {
         }
 
         // ✅ 신규(local) 처리 (압축 후 업로드)
-        const {uri: compressedUri, ext, skipUpload} =
-          await compressIfNeeded(item);
+        const {
+          uri: compressedUri,
+          ext,
+          skipUpload,
+        } = await compressIfNeeded(item);
 
         if (!compressedUri || skipUpload) {
           showToast('파일 준비 중 오류가 발생했어요.');
@@ -653,7 +656,7 @@ export default function CreatePostPage({navigation, route}) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <Text style={styles.headerText}>
+        <Text allowFontScaling={false} style={styles.headerText}>
           {isEditMode ? '게시글 수정' : '글쓰기'}
         </Text>
       ),
@@ -733,7 +736,9 @@ export default function CreatePostPage({navigation, route}) {
                       </View>
 
                       <View pointerEvents="none" style={styles.videoBadge}>
-                        <Text style={styles.videoBadgeText}>
+                        <Text
+                          allowFontScaling={false}
+                          style={styles.videoBadgeText}>
                           {formatDuration(getDuration(item))}
                         </Text>
                       </View>
@@ -742,7 +747,9 @@ export default function CreatePostPage({navigation, route}) {
 
                   {hasExtra && index === gridImages.length - 1 && (
                     <View pointerEvents="none" style={styles.moreOverlay}>
-                      <Text style={styles.moreOverlayText}>
+                      <Text
+                        allowFontScaling={false}
+                        style={styles.moreOverlayText}>
                         +{selectedImages.length - 3}
                       </Text>
                     </View>
@@ -754,6 +761,8 @@ export default function CreatePostPage({navigation, route}) {
         )}
 
         <TextInput
+          textAlignVertical="top"
+          allowFontScaling={false}
           style={styles.input}
           multiline
           value={text}
@@ -808,17 +817,17 @@ const styles = StyleSheet.create({
   },
 
   headerText: {
-    fontSize: HEADER_STYLES.defaultTitleFontSize,
-    fontFamily: HEADER_STYLES.defaultTitleFontFamily,
-    color: HEADER_STYLES.defaultTitleFontColor,
+    fontSize: HEADER_STYLES().defaultTitleFontSize,
+    fontFamily: HEADER_STYLES().defaultTitleFontFamily,
+    color: HEADER_STYLES().defaultTitleFontColor,
     lineHeight: getResponsiveHeight(26),
     textAlign: 'center',
     textAlignVertical: 'center',
   },
   checkIcon: {
-    width: HEADER_STYLES.headerRightIconWidth,
-    height: HEADER_STYLES.headerRightIconHeight,
-    marginRight: HEADER_STYLES.headerRightIconRightPadding,
+    width: HEADER_STYLES().headerRightIconWidth,
+    height: HEADER_STYLES().headerRightIconHeight,
+    marginRight: HEADER_STYLES().headerRightIconRightPadding,
     resizeMode: 'contain',
   },
   headerRightBtn: {
@@ -875,7 +884,7 @@ const styles = StyleSheet.create({
   videoBadgeText: {
     color: '#fff',
     fontSize: getResponsiveFontSize(11),
-    fontFamily:'Pretendard-Medium',
+    fontFamily: 'Pretendard-Medium',
   },
 
   moreOverlay: {

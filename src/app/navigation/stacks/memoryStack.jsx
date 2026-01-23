@@ -7,9 +7,7 @@ import MemoryScreen from '../../../features/memory/screens';
 import PostPage from '../../../features/memory/screens/PostScreen';
 import CategoryPage from '../../../features/memory/screens/CategoryPage';
 import CategorySelectPage from '../../../features/memory/screens/CategorySelectScreen';
-import SettingScreen from '../../../features/setting/screens/SettingScreen';
 import CreatePostPage from '../../../features/memory/screens/CreatePostScreen';
-import NotificationSettingScreen from '../../../features/setting/screens/NotificationSettingScreen';
 import ImageSelectPage from '../../../features/memory/screens/ImageSelectScreen';
 
 import {
@@ -19,9 +17,8 @@ import {
 } from '../helpers/tabHeaderHelpers';
 
 import {getResponsiveHeight} from '../../../utils/responsive';
-import MagazineDetailScreen from 'features/magazine/screens/MagazineDetailScreen';
-import BookShelfScreen from 'features/magazine/screens';
-import { HEADER_STYLES } from 'styles/style';
+
+import {HEADER_STYLES} from 'styles/style';
 
 const Stack = createStackNavigator();
 
@@ -36,7 +33,7 @@ export default function MemoryStack() {
     height:
       Platform.OS === 'ios'
         ? getResponsiveHeight(107.5)
-        : getResponsiveHeight(80),
+        : getResponsiveHeight(70),
   };
 
   return (
@@ -51,17 +48,16 @@ export default function MemoryStack() {
         headerRight: () => (
           <RenderHeaderHome navigation={navigation} currentScreen="추억" />
         ),
-        // headerLeft: () => (
-        //   <RenderHeaderBook currentScreen="추억" navigation={navigation} />
-        // ),
+
         headerTitle: () => (
           <Text
+            allowFontScaling={false}
             style={{
-              fontFamily: HEADER_STYLES.mainTitleFontFamily,
-              fontWeight: HEADER_STYLES.mainTitleFontWeight,
-              fontSize: HEADER_STYLES.mainTitleFontSize, // ✅ 24 → 16 (다른 앱이랑 비슷한 크기)
+              fontFamily: HEADER_STYLES().mainTitleFontFamily,
+              fontWeight: HEADER_STYLES().mainTitleFontWeight,
+              fontSize: HEADER_STYLES().mainTitleFontSize, // ✅ 24 → 16 (다른 앱이랑 비슷한 크기)
               color: 'black',
-              lineHeight: HEADER_STYLES.mainTitleLineHeight, // ✅ 너무 크지 않게 살짝만
+              lineHeight: HEADER_STYLES().mainTitleLineHeight, // ✅ 너무 크지 않게 살짝만
               textAlignVertical: 'center',
             }}>
             추억
@@ -79,47 +75,6 @@ export default function MemoryStack() {
           headerRight: () => <RenderHeaderDeletePost navigation={nav} />,
           headerTitle: route.params?.memory?.title || '',
           headerTitleAlign: 'center',
-        })}
-      />
-
-      <Stack.Screen
-        name="매거진화면"
-        component={BookShelfScreen}
-        options={({navigation: nav}) => ({
-          headerLeft: () => <RenderGoBackButton navigation={nav} />,
-          headerRight: null,
-        })}
-      />
-      <Stack.Screen
-        name="매거진상세화면"
-        component={MagazineDetailScreen}
-        options={({navigation: nav}) => ({
-          headerTransparent: 'true',
-          headerLeft: () => <RenderGoBackButton navigation={nav} />,
-          headerRight: null,
-        })}
-      />
-
-
-      <Stack.Screen
-        name="설정화면"
-        component={SettingScreen}
-        options={({navigation: nav}) => ({
-          gestureEnabled: true,
-          headerRight: () => null,
-          headerLeft: () => <RenderGoBackButton navigation={nav} />,
-          headerTitle: '',
-        })}
-      />
-
-      <Stack.Screen
-        name="알림설정화면"
-        component={NotificationSettingScreen}
-        options={({navigation: nav}) => ({
-          gestureEnabled: true,
-          headerRight: () => null,
-          headerLeft: () => <RenderGoBackButton navigation={nav} />,
-          headerTitle: '',
         })}
       />
 

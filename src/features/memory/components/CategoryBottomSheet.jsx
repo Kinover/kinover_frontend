@@ -15,7 +15,6 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   SafeAreaView,
   Platform,
   ScrollView,
@@ -30,15 +29,19 @@ import {
 
 import BottomSheetLayout from 'components/BottomSheetLayout';
 import {BottomSheetButtons} from 'components/BottomSheetButtons';
-import {
-  BACKGROUND_COLORS,
-  BOTTOMSHEET_STYLE,
-  BUTTON_STYLES,
-} from 'styles/style';
+import {BUTTON_STYLES} from 'styles/style';
 
-const ITEM_HEIGHT = getResponsiveHeight(48);
-const GAP = getResponsiveHeight(8);
-const MAX_VISIBLE_ITEMS = 7;
+import {useSelector} from 'react-redux';
+import {FONT_MODE} from '../../../store/uiSlice';
+
+/** ✅ 폰트모드별 UI 스케일(체감용) */
+const getFontScaleLevel = fontMode => {
+  if (fontMode === FONT_MODE.EXTRA_LARGE) return 'XL';
+  if (fontMode === FONT_MODE.LARGE) return 'L';
+  return 'N';
+};
+
+const MAX_VISIBLE_ITEMS_BASE = 7;
 
 const ALL_CATEGORY = {id: 'ALL', title: '전체'};
 
@@ -57,7 +60,7 @@ const UI = {
   brand: '#FFC84D',
   brandDeep: '#FFB020',
 
-  selectedBg: BUTTON_STYLES.saveBg,
+  selectedBg: BUTTON_STYLES().saveBg,
   selectedText: '#FFFFFF',
 };
 
@@ -70,17 +73,74 @@ const CategoryBottomSheetModal = forwardRef(
     const [tempSelected, setTempSelected] = useState(selectedCategory);
     const isClosingRef = useRef(false);
 
+    // ✅ fontMode 구독
+    const fontMode = useSelector(state => state.ui.fontMode);
+    const level = useMemo(() => getFontScaleLevel(fontMode), [fontMode]);
+
+    /** ✅ 폰트모드별 레이아웃 파라미터(핵심) */
+    const layout = useMemo(() => {
+      // rowHeight: 폰트 커질수록 늘려서 잘림 방지
+      const itemH =
+        level === 'XL'
+          ? getResponsiveHeight(60)
+          : level === 'L'
+          ? getResponsiveHeight(54)
+          : getResponsiveHeight(48);
+
+      // row 간격도 조금 늘려야 답답함이 줄어듦
+      const gap =
+        level === 'XL'
+          ? getResponsiveHeight(10)
+          : level === 'L'
+          ? getResponsiveHeight(9)
+          : getResponsiveHeight(8);
+
+      // 보이는 개수: 폰트 커질수록 한 화면에 덜 보여주는 게 자연스러움
+      const maxVisible =
+        level === 'XL'
+          ? 6
+          : level === 'L'
+          ? 6
+          : MAX_VISIBLE_ITEMS_BASE;
+
+      // 바텀시트 높이: 폰트 커질수록 여유를 더 줌
+      const snap =
+        level === 'XL'
+          ? ['90%']
+          : level === 'L'
+          ? ['82%']
+          : ['78%'];
+
+      // 리스트 하단 여유(버튼/패딩 체감)
+      const listExtra =
+        level === 'XL'
+          ? getResponsiveHeight(18)
+          : level === 'L'
+          ? getResponsiveHeight(12)
+          : getResponsiveHeight(8);
+
+      return {
+        ITEM_HEIGHT: itemH,
+        GAP: gap,
+        MAX_VISIBLE_ITEMS: maxVisible,
+        snapPoints: snap,
+        listExtra,
+      };
+    }, [level]);
+
     const data = useMemo(
       () => [ALL_CATEGORY, ...(categoryList || [])],
       [categoryList],
     );
 
     const maxListHeight = useMemo(() => {
-      // ✅ row height + gap을 고려해서 "정확히" maxHeight 계산
-      const visible = Math.min(MAX_VISIBLE_ITEMS, Math.max(1, data.length));
-      // 마지막 아이템은 gap 없음 → (ITEM_HEIGHT * n) + (GAP * (n-1))
-      return ITEM_HEIGHT * visible + GAP * Math.max(0, visible - 1);
-    }, [data.length]);
+      const visible = Math.min(layout.MAX_VISIBLE_ITEMS, Math.max(1, data.length));
+      // ✅ row height + gap 고려
+      const base =
+        layout.ITEM_HEIGHT * visible + layout.GAP * Math.max(0, visible - 1);
+
+      return base + layout.listExtra;
+    }, [data.length, layout]);
 
     useEffect(() => {
       setTempSelected(selectedCategory);
@@ -91,6 +151,10 @@ const CategoryBottomSheetModal = forwardRef(
         isClosingRef.current = false;
         setTempSelected(selectedCategory);
         modalRef.current?.present?.();
+
+        requestAnimationFrame(() => {
+          modalRef.current?.snapToIndex?.(0);
+        });
       },
       dismiss: () => {
         isClosingRef.current = true;
@@ -137,7 +201,8 @@ const CategoryBottomSheetModal = forwardRef(
     return (
       <BottomSheetLayout
         modalRef={modalRef}
-        snapPoints={['78%']}
+        // ✅ 폰트모드(N/L/XL)별 snapPoints 반영
+        snapPoints={layout.snapPoints}
         enableContentPanningGesture={false}
         keyboardBehavior="none"
         androidKeyboardInputMode="adjustNothing"
@@ -151,10 +216,13 @@ const CategoryBottomSheetModal = forwardRef(
             {/* ✅ 카드(패널) */}
             <View style={styles.panel}>
               <View style={styles.headerRow}>
-                <Text style={styles.headerTitle}>목록</Text>
+                <Text allowFontScaling={false} style={styles.headerTitle}>
+                  목록
+                </Text>
+
                 <View style={styles.pill}>
                   <View style={styles.pillDot} />
-                  <Text style={styles.pillText}>
+                  <Text allowFontScaling={false} style={styles.pillText}>
                     {tempSelected?.title ?? '전체'}
                   </Text>
                 </View>
@@ -162,18 +230,14 @@ const CategoryBottomSheetModal = forwardRef(
 
               {isOnlyAll ? (
                 <View style={styles.emptyBox}>
-                  <Text style={styles.emptyTitle}>카테고리가 없어요</Text>
-                  <Text style={styles.emptyDesc}>
+                  <Text allowFontScaling={false} style={styles.emptyTitle}>
+                    카테고리가 없어요
+                  </Text>
+                  <Text allowFontScaling={false} style={styles.emptyDesc}>
                     지금은 ‘전체’로 보거나, 업로드할 때 새로 만들 수 있어요.
                   </Text>
                 </View>
               ) : (
-                /**
-                 * ✅ 튀어나옴 방지 핵심:
-                 * - listViewport에 maxHeight 적용
-                 * - overflow:'hidden' + borderRadius 적용
-                 * - ScrollView는 그 안에서만 스크롤
-                 */
                 <View style={[styles.listViewport, {maxHeight: maxListHeight}]}>
                   <ScrollView
                     bounces={false}
@@ -182,9 +246,7 @@ const CategoryBottomSheetModal = forwardRef(
                     {data.map((cat, index) => {
                       const isSelected = isSameCategory(cat, tempSelected);
                       const key =
-                        cat.id != null
-                          ? String(cat.id)
-                          : `${cat.title}-${index}`;
+                        cat.id != null ? String(cat.id) : `${cat.title}-${index}`;
 
                       return (
                         <TouchableOpacity
@@ -193,12 +255,21 @@ const CategoryBottomSheetModal = forwardRef(
                           onPress={() => handlePressItem(cat)}
                           style={[
                             styles.itemRow,
-                            index !== 0 && {marginTop: GAP},
+                            {height: layout.ITEM_HEIGHT},
+                            index !== 0 && {marginTop: layout.GAP},
                             isSelected && styles.itemRowSelected,
                           ]}>
                           <Text
+                            allowFontScaling={false}
                             style={[
                               styles.itemText,
+                              // ✅ XL일수록 폰트 살짝 올리고, 라인 높이도 확보
+                              level === 'XL' && {
+                                fontSize: getResponsiveFontSize(16),
+                              },
+                              level === 'L' && {
+                                fontSize: getResponsiveFontSize(15),
+                              },
                               isSelected && styles.itemTextSelected,
                             ]}
                             numberOfLines={1}>
@@ -206,12 +277,7 @@ const CategoryBottomSheetModal = forwardRef(
                           </Text>
 
                           {isSelected ? (
-                            <View style={styles.selectedMark}>
-                              {/* <Image
-                                source={require('../../../assets/icons/check-yellow.png')}
-                                style={styles.checkIcon}
-                              /> */}
-                            </View>
+                            <View style={styles.selectedMark} />
                           ) : (
                             <View style={styles.checkPlaceholder} />
                           )}
@@ -289,11 +355,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
 
-  /**
-   * ✅ 리스트 뷰포트:
-   * - 여기서 maxHeight로 "창"을 만들고
-   * - overflow hidden으로 내용이 절대 밖으로 못 나가게 막는다
-   */
   listViewport: {
     borderRadius: 16,
     overflow: 'hidden',
@@ -304,7 +365,6 @@ const styles = StyleSheet.create({
   },
 
   itemRow: {
-    height: ITEM_HEIGHT,
     paddingHorizontal: getResponsiveWidth(14),
     borderRadius: 14,
 
@@ -346,12 +406,6 @@ const styles = StyleSheet.create({
     backgroundColor: UI.brand,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  checkIcon: {
-    width: getResponsiveIconSize(14),
-    height: getResponsiveIconSize(14),
-    resizeMode: 'contain',
   },
 
   checkPlaceholder: {

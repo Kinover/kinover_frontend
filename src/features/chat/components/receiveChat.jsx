@@ -185,7 +185,7 @@ export default function ReceiveChat({
 
               {isLastCell && (
                 <View style={styles.moreOverlay}>
-                  <Text style={styles.moreOverlayText}>+{extraCount}</Text>
+                  <Text allowFontScaling={false} style={styles.moreOverlayText}>+{extraCount}</Text>
                 </View>
               )}
             </View>
@@ -250,7 +250,7 @@ export default function ReceiveChat({
       )}
 
       <View style={styles.textContainer}>
-        {!isGrouped && <Text style={styles.userName}>{userName}</Text>}
+        {!isGrouped && <Text allowFontScaling={false} style={styles.userName}>{userName}</Text>}
 
         <View style={styles.messageLine}>
           {isMedia && safeMediaUrls.length === 1 ? (
@@ -278,10 +278,10 @@ export default function ReceiveChat({
           {(showTime || unreadCount > 0) && (
             <View style={styles.metaLine}>
               {unreadCount > 0 && (
-                <Text style={styles.unreadCountText}>{unreadCount}</Text>
+                <Text allowFontScaling={false} style={styles.unreadCountText}>{unreadCount}</Text>
               )}
               {showTime && (
-                <Text style={styles.receivedTime}>{formatTime(chatTime)}</Text>
+                <Text allowFontScaling={false} style={styles.receivedTime}>{formatTime(chatTime)}</Text>
               )}
             </View>
           )}
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
 
   userName: {
     fontFamily: 'Pretendard-Medium',
-    fontSize: CHATROOM_STYLE.messageFontSize,
+    fontSize: CHATROOM_STYLE().messageFontSize,
     color: '#444',
     marginBottom: getResponsiveHeight(7),
   },
@@ -352,8 +352,8 @@ const styles = StyleSheet.create({
   },
 
   receivedText: {
-    fontFamily: CHATROOM_STYLE.messageFontFamily,
-    fontSize: CHATROOM_STYLE.messageFontSize,
+    fontFamily: CHATROOM_STYLE().messageFontFamily,
+    fontSize: CHATROOM_STYLE().messageFontSize,
     color: 'black',
     flexWrap: 'wrap',
     lineHeight: getResponsiveFontSize(17),
@@ -378,7 +378,7 @@ const styles = StyleSheet.create({
   },
 
   receivedTime: {
-    fontSize: CHATROOM_STYLE.messageTimeFontSize,
+    fontSize: CHATROOM_STYLE().messageTimeFontSize,
     color: '#666',
     lineHeight: getResponsiveFontSize(11),
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),

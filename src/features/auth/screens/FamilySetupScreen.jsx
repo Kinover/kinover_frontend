@@ -15,13 +15,10 @@ import {useDispatch, useSelector} from 'react-redux';
 import ToastModal from '../../../components/ToastModal';
 import BottomActionButton from 'components/BottomActionButton';
 
-import {
-  fetchFamilyThunk,
-  addUserToFamily,
-} from '../../home/store/familyThunk';
+import {fetchFamilyThunk, addUserToFamily} from '../../home/store/familyThunk';
 import {setHasFamily} from 'utils/storage';
 import {useCreateFamily} from '../hooks/useCreateFamily';
-import { COLORS } from 'styles/style';
+import {COLORS} from 'styles/style';
 
 export default function FamilySetupScreen() {
   const navigation = useNavigation();
@@ -146,15 +143,18 @@ export default function FamilySetupScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <Text style={styles.title}>{`가족과 연결되려면
+      <Text allowFontScaling={false} style={styles.title}>{`가족과 연결되려면
 가족 코드가 필요해요`}</Text>
-      <Text style={styles.sub}>이미 초대받았다면 코드를 입력해주세요.</Text>
+      <Text allowFontScaling={false} style={styles.sub}>
+        이미 초대받았다면 코드를 입력해주세요.
+      </Text>
 
       <View style={styles.field}>
-        <Text style={styles.label}>
-          가족 코드 <Text style={styles.star}>*</Text>
+        <Text allowFontScaling={false} style={styles.label}>
+          가족 코드 <Text allowFontScaling={false} style={styles.star}>*</Text>
         </Text>
         <TextInput
+          allowFontScaling={false}
           style={styles.input}
           placeholder="가족 코드를 입력하세요"
           placeholderTextColor="#9E9E9E"
@@ -164,13 +164,13 @@ export default function FamilySetupScreen() {
         />
       </View>
 
-      {fieldError ? <Text style={styles.error}>{fieldError}</Text> : null}
+      {fieldError ? <Text allowFontScaling={false} style={styles.error}>{fieldError}</Text> : null}
 
       <BottomActionButton label="참여하기" onPress={handleSubmit} />
 
       <View style={styles.dividerRow}>
         <View style={styles.divider} />
-        <Text style={styles.dividerText}>또는</Text>
+        <Text allowFontScaling={false} style={styles.dividerText}>또는</Text>
         <View style={styles.divider} />
       </View>
 
@@ -181,15 +181,15 @@ export default function FamilySetupScreen() {
         onPress={handleCreateFamily}
         disabled={createFamilyLoading}>
         <View style={styles.createCardIconBox}>
-          <Text style={styles.createCardIcon}>🏡</Text>
+          <Text allowFontScaling={false} style={styles.createCardIcon}>🏡</Text>
         </View>
         <View style={styles.createCardTextBox}>
-          <Text style={styles.createCardTitle}>{'새 가족 모임 만들기'}</Text>
-          <Text style={styles.createCardDesc}>
+          <Text allowFontScaling={false} style={styles.createCardTitle}>{'새 가족 모임 만들기'}</Text>
+          <Text allowFontScaling={false} style={styles.createCardDesc}>
             내가 방장이 되어 가족을 초대할게요
           </Text>
         </View>
-        <Text style={styles.createCardArrow}>›</Text>
+        <Text allowFontScaling={false} style={styles.createCardArrow}>›</Text>
       </TouchableOpacity>
 
       <ToastModal

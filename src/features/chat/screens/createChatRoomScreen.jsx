@@ -42,7 +42,11 @@ export default function CreateChatRoom({navigation}) {
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitle: () => <Text style={styles.headerTitle}>채팅방 만들기</Text>,
+      headerTitle: () => (
+        <Text allowFontScaling={false} style={styles.headerTitle}>
+          채팅방 만들기
+        </Text>
+      ),
       headerRight: () => (
         <TouchableOpacity
           onPress={handleCreateChatRoom}
@@ -123,7 +127,9 @@ export default function CreateChatRoom({navigation}) {
                 ]}>
                 <View style={styles.userInfo}>
                   <Image source={{uri: user.image}} style={styles.userImage} />
-                  <Text style={styles.userName}>{user.name}</Text>
+                  <Text allowFontScaling={false} style={styles.userName}>
+                    {user.name}
+                  </Text>
                 </View>
                 <Image
                   source={
@@ -155,20 +161,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
     borderTopWidth: 2,
-    borderColor: 'lightgray',
+    borderColor: '#E5E5E5',
   },
   headerTitle: {
-    fontSize: HEADER_STYLES.defaultTitleFontSize, // 🔽 18 → 17
+    fontSize: HEADER_STYLES().defaultTitleFontSize, // 🔽 18 → 17
     textAlign: 'center',
-    fontFamily: HEADER_STYLES.defaultTitleFontFamily,
-    color: HEADER_STYLES.defaultTitleFontColor,
+    fontFamily: HEADER_STYLES().defaultTitleFontFamily,
+    color: HEADER_STYLES().defaultTitleFontColor,
   },
   userItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: getResponsiveHeight(12),
     justifyContent: 'space-between',
-    paddingHorizontal: LAYOUT_STYLE.screenPaddingHorizontal,
+    paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal,
   },
   userItemSelected: {
     backgroundColor: '#FFF2CC',

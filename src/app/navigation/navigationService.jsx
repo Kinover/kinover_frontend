@@ -44,61 +44,80 @@ export function flushPendingNavigation() {
       null;
     }
   });
-
-  
 }
 
-export function resetToTabScreen(tabName, screenName, params) {
+/**
+ * ✅ 이제 최상단은 AppNavigator(Stack)이고,
+ * 그 안에 RootScreen(Stack)이 있고,
+ * RootScreen 안에 Tabs(Screen)가 존재함.
+ *
+ * 따라서 reset은:
+ * routes: [{ name: 'Root', state: { routes: [{name:'Tabs', state:{...}}] } }]
+ */
+
+const TAB_ROUTES = ['홈', '소통', '일정', '추억'];
+
+export function resetToTabScreen(tabName) {
+  const tabIndex = TAB_ROUTES.indexOf(tabName);
+  const safeIndex = tabIndex >= 0 ? tabIndex : 0;
+
   return safeReset({
     index: 0,
     routes: [
       {
-        name: 'Tabs',
+        name: 'Root',
         state: {
-          // ✅ Tabs의 route 배열 순서는 TabNavigator의 Screen 등록 순서와 같아야 함
+          index: 0,
           routes: [
-            {name: '홈'},
-            {name: '소통'},
-            {name: '일정'},
-            {name: '추억'},
+            {
+              name: 'Tabs',
+              state: {
+                routes: TAB_ROUTES.map(name => ({name})),
+                index: safeIndex,
+              },
+            },
           ],
-          // ✅ 활성 탭 index
-          index: ['홈', '소통', '일정', '추억'].indexOf(tabName),
         },
       },
     ],
   });
 }
 
-
 export function resetToTabNestedScreen(tabName, stackRouteName, params) {
-  const tabRoutes = ['홈', '소통', '일정', '추억'];
-  const tabIndex = tabRoutes.indexOf(tabName);
+  const tabIndex = TAB_ROUTES.indexOf(tabName);
+  const safeIndex = tabIndex >= 0 ? tabIndex : 0;
 
   return safeReset({
     index: 0,
     routes: [
       {
-        name: 'Tabs',
+        name: 'Root',
         state: {
-          index: tabIndex >= 0 ? tabIndex : 0,
-          routes: tabRoutes.map(name => {
-            if (name !== tabName) return {name};
-
-            // ✅ 활성 탭은 “스택 상태를 목적 화면 1개만” 남김
-            return {
-              name,
+          index: 0,
+          routes: [
+            {
+              name: 'Tabs',
               state: {
-                index: 0,
-                routes: [
-                  {
-                    name: stackRouteName,
-                    params,
-                  },
-                ],
+                index: safeIndex,
+                routes: TAB_ROUTES.map(name => {
+                  if (name !== tabName) return {name};
+
+                  return {
+                    name,
+                    state: {
+                      index: 0,
+                      routes: [
+                        {
+                          name: stackRouteName,
+                          params,
+                        },
+                      ],
+                    },
+                  };
+                }),
               },
-            };
-          }),
+            },
+          ],
         },
       },
     ],

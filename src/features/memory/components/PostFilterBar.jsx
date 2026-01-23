@@ -104,7 +104,7 @@ export default function PostFilterBar({
           style={styles.categoryButton}
           onPress={onPressCategory}
           activeOpacity={0.7}>
-          <Text style={styles.categoryText}>{categoryTitle}</Text>
+          <Text allowFontScaling={false} style={styles.categoryText}>{categoryTitle}</Text>
           <Image
             source={require('../../../assets/icons/down-arrow.png')}
             style={styles.downIcon}
@@ -127,7 +127,7 @@ export default function PostFilterBar({
                 isPeriodActive && styles.calendarIconActive,
               ]}
             />
-            <Text
+            <Text allowFontScaling={false}
               style={[styles.pillText, isPeriodActive && styles.pillTextActive]}
               numberOfLines={1}
               ellipsizeMode="tail">
@@ -144,7 +144,7 @@ export default function PostFilterBar({
             ]}
             activeOpacity={0.7}
             onPress={openSort}>
-            <Text
+            <Text allowFontScaling={false}
               style={[styles.pillText, isSortActive && styles.pillTextActive]}
               numberOfLines={1}
               ellipsizeMode="tail">
@@ -192,7 +192,7 @@ export default function PostFilterBar({
                   ]}
                   activeOpacity={0.7}
                   onPress={() => pickSort(opt.key)}>
-                  <Text
+                  <Text allowFontScaling={false}
                     style={[
                       styles.dropdownItemText,
                       active && styles.dropdownItemTextActive,
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   sortButton: {paddingHorizontal: getResponsiveWidth(9)},
 
   pillActive: {
-    borderColor: BUTTON_STYLES?.backgroundColor ?? '#525252',
+    borderColor: BUTTON_STYLES()?.backgroundColor ?? '#525252',
     backgroundColor: '#FFFFFF',
   },
 

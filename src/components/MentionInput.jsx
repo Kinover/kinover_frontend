@@ -144,7 +144,7 @@ export default function MentionInput({
               pressed && {opacity: 0.85},
               disabled && {opacity: 0.5},
             ]}>
-            <Text style={styles.submitText}>{submitLabel}</Text>
+            <Text allowFontScaling={false} style={styles.submitText}>{submitLabel}</Text>
           </Pressable>
         )}
       </View>
@@ -171,10 +171,10 @@ export default function MentionInput({
                     }
                     style={styles.avatar}
                   />
-                  <Text style={styles.name} numberOfLines={1}>
+                  <Text allowFontScaling={false} style={styles.name} numberOfLines={1}>
                     {item.name}
                   </Text>
-                  <Text style={styles.hint}>@{item.name}</Text>
+                  <Text allowFontScaling={false} style={styles.hint}>@{item.name}</Text>
                 </Pressable>
               )}
             />

@@ -1,4 +1,10 @@
-import React, {useState, useEffect, useLayoutEffect} from 'react';
+/* =========================================================
+ * ✅ src/features/chat/screens/AddChatMemberScreen.jsx
+ * - 초대 성공 시: route.params.onInvited 콜백 호출 → goBack
+ * - 네비 이름/merge 필요 없음
+ * ========================================================= */
+
+import React, {useState, useEffect, useLayoutEffect, useCallback} from 'react';
 import {
   StyleSheet,
   View,
@@ -25,7 +31,8 @@ import FastImage from '@d11/react-native-fast-image';
 import {HEADER_STYLES} from 'styles/style';
 
 export default function AddChatMemberScreen({navigation, route}) {
-  const {chatRoomId} = route.params;
+  const {chatRoomId, onInvited} = route.params; // ✅ 콜백 받기
+
   const dispatch = useDispatch();
   const family = useSelector(state => state.family);
   const chatRoomUsers = useSelector(state => state.chatRoom.chatRoomUsers);
@@ -41,7 +48,19 @@ export default function AddChatMemberScreen({navigation, route}) {
     }
   }, [dispatch, family.familyId]);
 
-  const handleNext = async () => {
+  const selectableUsers = (familyUserList || []).filter(
+    user => !(chatRoomUsers || []).find(u => u.userId === user.userId),
+  );
+
+  const toggleUser = userId => {
+    setSelected(prev =>
+      prev.includes(userId)
+        ? prev.filter(id => id !== userId)
+        : [...prev, userId],
+    );
+  };
+
+  const handleNext = useCallback(async () => {
     if (selected.length === 0) return;
 
     try {
@@ -58,15 +77,28 @@ export default function AddChatMemberScreen({navigation, route}) {
         },
       );
 
+      // ✅ 핵심: 콜백 호출로 "이전 화면(채팅방)"이 직접 처리하게 함
+      if (typeof onInvited === 'function') {
+        onInvited({
+          count: selected.length,
+          // message: '멤버를 초대했어요.' // 필요하면 커스텀
+        });
+      }
+
+      // ✅ goBack으로 자연스럽게 복귀
       navigation.goBack();
     } catch (err) {
-      console.error('유저 초대 실패:', err);
+      console.error('유저 초대 실패:', err?.response?.data || err?.message || err);
     }
-  };
+  }, [chatRoomId, navigation, onInvited, selected]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
-      headerTitle: () => <Text style={styles.headerTitle}>새 멤버 초대</Text>,
+      headerTitle: () => (
+        <Text allowFontScaling={false} style={styles.headerTitle}>
+          새 멤버 초대
+        </Text>
+      ),
       headerRight: () => (
         <TouchableOpacity
           onPress={handleNext}
@@ -78,19 +110,7 @@ export default function AddChatMemberScreen({navigation, route}) {
         </TouchableOpacity>
       ),
     });
-  }, [navigation, selected, handleNext]);
-
-  const selectableUsers = familyUserList.filter(
-    user => !chatRoomUsers.find(u => u.userId === user.userId),
-  );
-
-  const toggleUser = userId => {
-    setSelected(prev =>
-      prev.includes(userId)
-        ? prev.filter(id => id !== userId)
-        : [...prev, userId],
-    );
-  };
+  }, [navigation, handleNext]);
 
   return (
     <View style={styles.container}>
@@ -104,13 +124,12 @@ export default function AddChatMemberScreen({navigation, route}) {
               <TouchableOpacity
                 key={user.userId}
                 onPress={() => toggleUser(user.userId)}
-                style={[
-                  styles.userItem,
-                  isSelected && styles.userItemSelected,
-                ]}>
+                style={[styles.userItem, isSelected && styles.userItemSelected]}>
                 <View style={styles.userInfo}>
                   <Image source={{uri: user.image}} style={styles.userImage} />
-                  <Text style={styles.userName}>{user.name}</Text>
+                  <Text allowFontScaling={false} style={styles.userName}>
+                    {user.name}
+                  </Text>
                 </View>
                 <Image
                   source={
@@ -137,17 +156,14 @@ const styles = StyleSheet.create({
     borderColor: '#E5E5E5',
   },
   headerTitle: {
-    fontSize: HEADER_STYLES.defaultTitleFontSize, // 🔽 18 → 17
+    fontSize: HEADER_STYLES().defaultTitleFontSize,
     textAlign: 'center',
-    fontFamily: HEADER_STYLES.defaultTitleFontFamily,
-    color:HEADER_STYLES.defaultTitleFontColor,
-  },
-  headerRight: {
-    marginRight: getResponsiveWidth(15),
+    fontFamily: HEADER_STYLES().defaultTitleFontFamily,
+    color: HEADER_STYLES().defaultTitleFontColor,
   },
   headerCheckIcon: {
-    width: getResponsiveWidth(24), // 🔽 30 → 24
-    height: getResponsiveHeight(24), // 🔽 30 → 24
+    width: getResponsiveWidth(24),
+    height: getResponsiveHeight(24),
     marginRight: getResponsiveWidth(15),
     resizeMode: 'contain',
   },
@@ -156,8 +172,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: getResponsiveHeight(13), // 🔽 15 → 13
-    paddingHorizontal: getResponsiveWidth(20), // 살짝 줄임
+    paddingVertical: getResponsiveHeight(13),
+    paddingHorizontal: getResponsiveWidth(20),
   },
   userItemSelected: {
     backgroundColor: '#FFF2CC',
@@ -168,19 +184,19 @@ const styles = StyleSheet.create({
     gap: getResponsiveWidth(6),
   },
   userImage: {
-    width: getResponsiveIconSize(40), // 🔽 45 → 40
+    width: getResponsiveIconSize(40),
     height: getResponsiveIconSize(40),
     borderRadius: getResponsiveIconSize(20),
     marginRight: getResponsiveWidth(8),
     backgroundColor: '#eee',
   },
   userName: {
-    fontSize: getResponsiveFontSize(15), // 🔽 16 → 15
+    fontSize: getResponsiveFontSize(15),
     fontFamily: 'Pretendard-Regular',
     color: '#222',
   },
   selectIcon: {
-    width: getResponsiveIconSize(13), // 🔽 14 → 13
+    width: getResponsiveIconSize(13),
     height: getResponsiveIconSize(13),
     resizeMode: 'contain',
   },

@@ -22,20 +22,20 @@ export default function ChatListGuideModal({
     <Modal transparent visible={visible} animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.content}>
-          <Text style={styles.stepText}>
+          <Text allowFontScaling={false} style={styles.stepText}>
             {step + 1}/{totalSteps}
           </Text>
 
-          <Text style={styles.title}>{title}</Text>
-          <Text style={styles.description}>{description}</Text>
+          <Text allowFontScaling={false} style={styles.title}>{title}</Text>
+          <Text allowFontScaling={false} style={styles.description}>{description}</Text>
 
           <View style={styles.buttonRow}>
             <TouchableOpacity onPress={onSkip}>
-              <Text style={styles.skipText}>건너뛰기</Text>
+              <Text allowFontScaling={false} style={styles.skipText}>건너뛰기</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.nextButton} onPress={onNext}>
-              <Text style={styles.nextButtonText}>
+              <Text allowFontScaling={false} style={styles.nextButtonText}>
                 {step === totalSteps - 1 ? '완료' : '다음'}
               </Text>
             </TouchableOpacity>

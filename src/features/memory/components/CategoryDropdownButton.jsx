@@ -1,16 +1,14 @@
 import React from 'react';
 import {TouchableOpacity, Text, Image, StyleSheet} from 'react-native';
 import {
-  getResponsiveFontSize,
   getResponsiveWidth,
-  getResponsiveHeight,
 } from '../../../utils/responsive';
 import {HEADER_STYLES} from 'styles/style';
 
 export default function CategoryDropdownButton({selectedTitle, onPress}) {
   return (
     <TouchableOpacity style={[styles.categoryButton]} onPress={onPress}>
-      <Text style={styles.text}>{selectedTitle}</Text>
+      <Text allowFontScaling={false} style={styles.text}>{selectedTitle}</Text>
       <Image
         source={require('../../../assets/icons/category-down.png')}
         style={styles.icon}
@@ -32,10 +30,10 @@ const styles = StyleSheet.create({
   },
   text: {
     fontFamily: 'Pretendard-Bold',
-    fontSize: HEADER_STYLES.mainTitleFontSize,
+    fontSize: HEADER_STYLES().mainTitleFontSize,
     // color: '#4D4D4D',
     color: 'black',
-    lineHeight: HEADER_STYLES.mainTitleLineHeight,
+    lineHeight: HEADER_STYLES().mainTitleLineHeight,
     textAlignVertical: 'center',
     textAlign: 'center',
   },

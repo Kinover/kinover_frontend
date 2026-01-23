@@ -51,17 +51,17 @@ const MagazineBanner = ({
 
         {/* 텍스트 */}
         <View style={styles.textWrap}>
-          <Text numberOfLines={1} style={styles.title}>
+          <Text allowFontScaling={false} numberOfLines={1} style={styles.title}>
             {title}
           </Text>
-          <Text numberOfLines={1} style={styles.subtitle}>
+          <Text allowFontScaling={false} numberOfLines={1} style={styles.subtitle}>
             {subtitle}
           </Text>
         </View>
 
         {/* 장식(필요하면 아이콘/이미지로 교체 가능) */}
-        <Text style={[styles.deco, styles.decoLeft]}> </Text>
-        <Text style={[styles.deco, styles.decoRight]}> </Text>
+        <Text allowFontScaling={false} style={[styles.deco, styles.decoLeft]}> </Text>
+        <Text allowFontScaling={false} style={[styles.deco, styles.decoRight]}> </Text>
       </View>
     </Pressable>
   );
@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
   pressable: {
     width: '100%',
     height: getResponsiveHeight(70),
-    backgroundColor: BACKGROUND_COLORS.secondaryBg,
+    backgroundColor: BACKGROUND_COLORS().secondaryBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     paddingTop: getResponsiveHeight(5),
     fontWeight: '800',
     color: '#1F2937',
-    lineHeight: 13,
+    lineHeight: getResponsiveFontSize(13),
   },
   subtitle: {
     fontFamily: 'Pretendard-Light',
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(10),
     // color: 'gray',
     color: 'black',
-    lineHeight: 11,
+    lineHeight: getResponsiveFontSize(10),
   },
 
   badge: {

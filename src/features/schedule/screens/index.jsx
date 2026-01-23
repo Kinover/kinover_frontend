@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#F9F9F9'},
   mainContainer: {
     flex: 1,
-    paddingHorizontal: LAYOUT_STYLE.screenPaddingHorizontal,
+    paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal,
     paddingTop: getResponsiveHeight(5),
   },
   fab: {

@@ -100,7 +100,7 @@ function MentionText({text, familyUsers, textStyle, mentionStyle}) {
   }, [text]);
 
   return (
-    <Text style={textStyle}>
+    <Text allowFontScaling={false} style={textStyle}>
       {parts.map((p, idx) => {
         if (p?.startsWith('@')) {
           const name = p.slice(1);
@@ -108,6 +108,7 @@ function MentionText({text, familyUsers, textStyle, mentionStyle}) {
           if (user) {
             return (
               <Text
+                allowFontScaling={false}
                 key={`${idx}_${p}`}
                 style={[styles.mentionText, mentionStyle]}>
                 {p}
@@ -115,7 +116,11 @@ function MentionText({text, familyUsers, textStyle, mentionStyle}) {
             );
           }
         }
-        return <Text key={`${idx}_${p}`}>{p}</Text>;
+        return (
+          <Text allowFontScaling={false} key={`${idx}_${p}`}>
+            {p}
+          </Text>
+        );
       })}
     </Text>
   );
@@ -258,10 +263,15 @@ function CommentFooter({
                       }
                       style={styles.mentionAvatar}
                     />
-                    <Text style={styles.mentionName} numberOfLines={1}>
+                    <Text
+                      allowFontScaling={false}
+                      style={styles.mentionName}
+                      numberOfLines={1}>
                       {item.name}
                     </Text>
-                    <Text style={styles.mentionHint}>@{item.name}</Text>
+                    <Text allowFontScaling={false} style={styles.mentionHint}>
+                      @{item.name}
+                    </Text>
                   </Pressable>
                 )}
               />
@@ -271,6 +281,7 @@ function CommentFooter({
 
         <View style={styles.commentInputContainer}>
           <BottomSheetTextInput
+            allowFontScaling={false}
             ref={inputRef}
             style={styles.commentInput}
             placeholder="댓글을 달아보세요 ( @가족이름 멘션 가능 )"
@@ -407,7 +418,9 @@ export default function MemoryDetailBottomSheet({
               style={styles.deleteAction}
               activeOpacity={0.85}
               onPress={() => onDeleteComment?.(commentId)}>
-              <Text style={styles.deleteActionText}>삭제</Text>
+              <Text allowFontScaling={false} style={styles.deleteActionText}>
+                삭제
+              </Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -437,8 +450,10 @@ export default function MemoryDetailBottomSheet({
               />
               <View style={styles.commentTextCol}>
                 <View style={styles.nameTimeRow}>
-                  <Text style={styles.commentWriter}>{item.authorName}</Text>
-                  <Text style={styles.timeText}>
+                  <Text allowFontScaling={false} style={styles.commentWriter}>
+                    {item.authorName}
+                  </Text>
+                  <Text allowFontScaling={false} style={styles.timeText}>
                     {formatPreviewTime(item.createdAt)}
                   </Text>
                 </View>
@@ -496,7 +511,7 @@ export default function MemoryDetailBottomSheet({
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>
+              <Text allowFontScaling={false} style={styles.emptyText}>
                 아직 댓글이 없어요.
                 {'\n'}첫 댓글을 남겨보세요!
               </Text>
@@ -605,9 +620,9 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     textAlign: 'center',
-    fontSize: EMPTY_STYLE.emptyFontSize,
-    fontFamily: EMPTY_STYLE.emptyFontFamily,
-    color: EMPTY_STYLE.emptyColor,
+    fontSize: EMPTY_STYLE().emptyFontSize,
+    fontFamily: EMPTY_STYLE().emptyFontFamily,
+    color: EMPTY_STYLE().emptyColor,
   },
 
   rightActionContainer: {

@@ -1,4 +1,5 @@
-import React from 'react';
+// src/components/CustomModal.jsx
+import React, {useMemo} from 'react';
 import {
   View,
   Text,
@@ -8,24 +9,32 @@ import {
   Platform,
   Image,
   TouchableWithoutFeedback,
+  Animated,
+  Easing,
+  Dimensions,
 } from 'react-native';
 import {BlurView} from '@react-native-community/blur';
+import {useSelector} from 'react-redux';
+import {FONT_MODE} from 'store/uiSlice';
+
 import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../utils/responsive';
-import {BACKGROUND_COLORS, BUTTON_STYLES} from 'styles/style';
 
+import {BACKGROUND_COLORS, BUTTON_STYLES} from 'styles/style';
 import {hapticLight, hapticMedium, hapticHeavy} from '../utils/haptic';
+import DropShadow from 'react-native-drop-shadow';
+
+const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
 /**
- * ✅ CustomModal 개선 포인트
- * - 모달 내부 폰트: Pretendard로 통일 (버튼도 포함)
- * - Android 텍스트 여백(includeFontPadding) 제거
- * - confirmText 기본값 제공
- * - children 본문 텍스트용 기본 스타일(contentTextStyle) 제공
+ * ✅ CustomModal (폰트모드 자동 반영 + 요즘 모션)
+ * ✅ width 개선(너비 너무 작아지는 문제 해결)
+ * ✅ 헤더-컨텐츠-버튼 간격 통일
+ * - margin 기반 간격을 제거하고 "섹션 padding"으로 리듬을 고정
  */
 export default function CustomModal({
   visible,
@@ -49,16 +58,47 @@ export default function CustomModal({
   titleImage,
   titleImageStyle,
 
-  // ✅ 모달 박스 "밖"에서 렌더될 레이어
   overlayChildren,
-
-  // ✅ 추가: backdrop 눌렀을 때 닫힐지 (원치 않을 때 false)
   closeOnBackdropPress = true,
 
-  // ✅ 추가: 본문 텍스트용 기본 스타일(자동 강제는 못 하니까, 쓰기 쉽게 제공)
   contentTextStyle,
+
+  titleTextStyle,
+  subTextStyle,
 }) {
-  if (!visible) return null;
+  const fontMode = useSelector(state => state.ui.fontMode);
+
+  const fontScale = useMemo(() => {
+    if (fontMode === FONT_MODE.EXTRA_LARGE) return 1.12;
+    if (fontMode === FONT_MODE.LARGE) return 1.06;
+    return 1.0;
+  }, [fontMode]);
+
+  const styles = useMemo(() => makeStyles(fontScale), [fontScale]);
+
+  const anim = useMemo(() => new Animated.Value(0), []);
+  const [isMounted, setIsMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    if (visible) {
+      setIsMounted(true);
+      Animated.timing(anim, {
+        toValue: 1,
+        duration: 220,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    } else if (isMounted) {
+      Animated.timing(anim, {
+        toValue: 0,
+        duration: 160,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }).start(({finished}) => {
+        if (finished) setIsMounted(false);
+      });
+    }
+  }, [visible, isMounted, anim]);
 
   const handleBackdropPress = () => {
     if (!closeOnBackdropPress) return;
@@ -81,122 +121,165 @@ export default function CustomModal({
     onTrashPress?.();
   };
 
-  // ✅ confirmText가 안 들어오면 기본값
   const resolvedConfirmText = confirmText ?? '확인';
+
+  const overlayAnimatedStyle = {
+    opacity: anim.interpolate({inputRange: [0, 1], outputRange: [0, 1]}),
+  };
+
+  const modalAnimatedStyle = {
+    opacity: anim.interpolate({inputRange: [0, 1], outputRange: [0, 1]}),
+    transform: [
+      {
+        translateY: anim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [10, 0],
+        }),
+      },
+      {
+        scale: anim.interpolate({inputRange: [0, 1], outputRange: [0.96, 1]}),
+      },
+    ],
+  };
+
+  if (!isMounted) return null;
+
+  const hasHeader = !!titleImage || !!title || !!subText;
 
   return (
     <Modal
-      animationType="fade"
+      key={`customModal_${fontMode}`}
+      animationType="none"
       transparent
-      visible={visible}
+      visible={isMounted}
       onRequestClose={handleClosePress}
       presentationStyle="overFullScreen"
       statusBarTranslucent>
-      {/* 🔹 배경 아무데나 탭하면 닫힘 */}
       <TouchableWithoutFeedback onPress={handleBackdropPress}>
-        <View style={styles.overlay}>
+        <Animated.View style={[styles.overlay, overlayAnimatedStyle]}>
           <BlurView
             style={StyleSheet.absoluteFill}
             blurType="light"
             blurAmount={2}
-            reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.4)"
+            reducedTransparencyFallbackColor="rgba(0, 0, 0, 0.35)"
           />
 
-          {/* ✅ 모달 박스 밖(화면 전체) 레이어 */}
           {overlayChildren ? (
             <View style={StyleSheet.absoluteFill} pointerEvents="none">
               {overlayChildren}
             </View>
           ) : null}
 
-          {/* 🔹 모달 박스는 탭해도 닫히지 않도록 */}
           <TouchableWithoutFeedback onPress={() => {}}>
-            <View style={[styles.modalBox, modalBoxStyle]}>
-              <View
-                style={[
-                  styles.topButtonRow,
-                  (showTrashButton || showCloseButton) && {
-                    justifyContent: showTrashButton
-                      ? 'space-between'
-                      : 'flex-end',
-                    width: '100%',
-                  },
-                ]}>
-                {showTrashButton && (
-                  <TouchableOpacity
-                    onPress={handleTrashPress}
-                    style={styles.trashButton}
-                    hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-                    <Image
-                      source={require('@/assets/images/trash.png')}
-                      style={styles.trashIcon}
-                      resizeMode="contain"
-                    />
-                  </TouchableOpacity>
-                )}
+            <Animated.View style={modalAnimatedStyle}>
+              <DropShadow style={styles.dropShadow}>
+                <View style={[styles.modalBox, modalBoxStyle]}>
+                  <View style={styles.topActionRow}>
+                    {showTrashButton && (
+                      <TouchableOpacity
+                        onPress={handleTrashPress}
+                        style={styles.iconButton}
+                        hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+                        activeOpacity={0.85}>
+                        <Image
+                          source={require('@/assets/images/trash.png')}
+                          style={styles.icon}
+                          resizeMode="contain"
+                        />
+                      </TouchableOpacity>
+                    )}
 
-                {showCloseButton && (
-                  <TouchableOpacity
-                    style={styles.closeXButton}
-                    onPress={handleClosePress}
-                    hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-                    <Image
-                      style={styles.closeXIcon}
-                      source={require('@/assets/images/close-yellow.png')}
-                    />
-                  </TouchableOpacity>
-                )}
-              </View>
+                    {showCloseButton && (
+                      <TouchableOpacity
+                        onPress={handleClosePress}
+                        style={styles.iconButton}
+                        hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+                        activeOpacity={0.85}>
+                        <Image
+                          style={styles.icon}
+                          source={require('@/assets/images/close-yellow.png')}
+                          resizeMode="contain"
+                        />
+                      </TouchableOpacity>
+                    )}
+                  </View>
 
-              {titleImage && (
-                <Image
-                  source={titleImage}
-                  style={[styles.titleImage, titleImageStyle]}
-                  resizeMode="contain"
-                />
-              )}
+                  {/* ✅ 헤더 섹션 */}
+                  {hasHeader ? (
+                    <View style={styles.headerSection}>
+                      {titleImage && (
+                        <Image
+                          source={titleImage}
+                          style={[styles.titleImage, titleImageStyle]}
+                          resizeMode="contain"
+                        />
+                      )}
 
-              {!!title && <Text style={styles.modalTitle}>{title}</Text>}
-              {!!subText && <Text style={styles.modalSubText}>{subText}</Text>}
+                      {!!title && (
+                        <Text
+                          allowFontScaling={false}
+                          style={[styles.modalTitle, titleTextStyle]}>
+                          {title}
+                        </Text>
+                      )}
 
-              {/* ✅ children 영역: 모달이 폰트를 “강제”하진 못함.
-                  대신 contentTextStyle을 내려서 children Text에 쉽게 적용하도록 유도. */}
-              <View style={[styles.contentWrapper, contentStyle]}>
-                {/* 필요하면 children에서 아래처럼 쓰면 됨:
-                    <Text style={[styles.modalContentText, contentTextStyle]}>...</Text>
-                */}
-                {children}
-              </View>
+                      {!!subText && (
+                        <Text
+                          allowFontScaling={false}
+                          style={[styles.modalSubText, subTextStyle]}>
+                          {subText}
+                        </Text>
+                      )}
+                    </View>
+                  ) : null}
 
-              <View style={[styles.buttonBottom, buttonBottomStyle]}>
-                {!!closeText && (
-                  <TouchableOpacity
-                    onPress={handleClosePress}
-                    style={[styles.closeButton, closeButtonStyle]}
-                    activeOpacity={0.85}>
-                    <Text style={[styles.closeText, closeTextStyle]}>
-                      {closeText}
-                    </Text>
-                  </TouchableOpacity>
-                )}
+                  {/* ✅ 컨텐츠 섹션 (헤더↔컨텐츠, 컨텐츠↔버튼 간격 동일 리듬) */}
+                  {children ? (
+                    <View style={[styles.contentSection, contentStyle]}>
+                      {children}
+                      {contentTextStyle ? (
+                        <Text
+                          style={[styles.modalContentText, contentTextStyle]}
+                        />
+                      ) : null}
+                    </View>
+                  ) : null}
 
-                {!!onConfirm && (
-                  <TouchableOpacity
-                    onPress={handleConfirmPress}
-                    style={[styles.confirmButton, confirmButtonStyle]}
-                    activeOpacity={0.85}>
-                    <Text style={[styles.confirmText, confirmTextStyle]}>
-                      {resolvedConfirmText}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+                  {/* ✅ 버튼 섹션 */}
+                  <View style={[styles.buttonSection]}>
+                    <View style={[styles.buttonBottom, buttonBottomStyle]}>
+                      {!!closeText && (
+                        <TouchableOpacity
+                          onPress={handleClosePress}
+                          style={[styles.closeButton, closeButtonStyle]}
+                          activeOpacity={0.88}>
+                          <Text
+                            allowFontScaling={false}
+                            style={[styles.closeText, closeTextStyle]}>
+                            {closeText}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
 
-              {/* ✅ 필요하면 본문 기본 텍스트를 여기 스타일로 쓰라고 제공 */}
-              {/* styles.modalContentText를 외부에서 import해서 써도 됨 */}
-            </View>
+                      {!!onConfirm && (
+                        <TouchableOpacity
+                          onPress={handleConfirmPress}
+                          style={[styles.confirmButton, confirmButtonStyle]}
+                          activeOpacity={0.88}>
+                          <Text
+                            allowFontScaling={false}
+                            style={[styles.confirmText, confirmTextStyle]}>
+                            {resolvedConfirmText}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              </DropShadow>
+            </Animated.View>
           </TouchableWithoutFeedback>
-        </View>
+        </Animated.View>
       </TouchableWithoutFeedback>
     </Modal>
   );
@@ -208,151 +291,196 @@ const BASE_FONT = {
   semibold: 'Pretendard-SemiBold',
 };
 
-const ANDROID_TEXT_FIX = Platform.OS === 'android' ? {includeFontPadding: false} : null;
+const ANDROID_TEXT_FIX =
+  Platform.OS === 'android' ? {includeFontPadding: false} : null;
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    paddingHorizontal: getResponsiveWidth(26),
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: BACKGROUND_COLORS.overlayBg,
-  },
+function makeStyles(fontScale) {
+  const RADIUS = 22;
+  const BTN_HEIGHT = getResponsiveHeight(46);
+  const ICON_BTN_SIZE = getResponsiveWidth(34);
+  const BTN_RADIUS = getResponsiveWidth(14);
 
-  modalBox: {
-    position: 'relative',
-    width: '100%',
-    paddingHorizontal: getResponsiveWidth(20),
-    paddingTop: getResponsiveHeight(22),
-    paddingBottom: getResponsiveHeight(18),
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    zIndex: 50,
+  // ✅ 너비 정책
+  const MAX_WIDTH = 420;
+  const MIN_SIDE_GAP = 32;
 
-    // iOS shadow
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 8},
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
+  const computedWidth = Math.min(
+    MAX_WIDTH,
+    Math.max(0, SCREEN_WIDTH - MIN_SIDE_GAP * 2),
+  );
 
-    // Android elevation
-    elevation: 10,
-  },
+  // ✅ 헤더↔컨텐츠, 컨텐츠↔버튼 간격 통일 값 (여기만 조절하면 리듬이 바뀜)
+  const SECTION_GAP = getResponsiveHeight(14);
 
-  topButtonRow: {
-    position: 'absolute',
-    top: getResponsiveHeight(10),
-    right: getResponsiveWidth(14),
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    zIndex: 5,
-  },
+  return StyleSheet.create({
+    overlay: {
+      flex: 1,
+      paddingHorizontal: getResponsiveWidth(12),
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: BACKGROUND_COLORS.overlayBg,
+    },
 
-  modalTitle: {
-    color: '#111827',
-    fontSize:
-      Platform.OS === 'android'
-        ? getResponsiveFontSize(16.5)
-        : getResponsiveFontSize(17.5),
-    textAlign: 'center',
-    fontFamily: BASE_FONT.medium,
-    marginTop: getResponsiveHeight(8),
-    marginBottom: getResponsiveHeight(6),
-    ...(ANDROID_TEXT_FIX || {}),
-  },
+    dropShadow: {
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 10},
+      shadowOpacity: Platform.OS === 'android' ? 0.16 : 0.12,
+      shadowRadius: Platform.OS === 'android' ? 18 : 24,
+    },
 
-  modalSubText: {
-    textAlign: 'center',
-    color: '#6B7280',
-    fontFamily: BASE_FONT.regular,
-    fontSize: getResponsiveFontSize(12.5),
-    lineHeight: getResponsiveHeight(17),
-    marginBottom: getResponsiveHeight(10),
-    ...(ANDROID_TEXT_FIX || {}),
-  },
+    modalBox: {
+      width: computedWidth,
+      backgroundColor: '#FFFFFF',
+      borderRadius: RADIUS,
 
-  // ✅ children에서 본문 Text에 쓰라고 제공하는 기본 스타일
-  modalContentText: {
-    color: '#374151',
-    fontFamily: BASE_FONT.regular,
-    fontSize: getResponsiveFontSize(13.5),
-    lineHeight: getResponsiveHeight(19),
-    ...(ANDROID_TEXT_FIX || {}),
-  },
+      paddingHorizontal: getResponsiveWidth(18),
+      paddingTop: getResponsiveHeight(18),
+      paddingBottom: getResponsiveHeight(16),
 
-  contentWrapper: {
-    marginBottom: getResponsiveHeight(5),
-  },
+      ...(Platform.OS === 'ios'
+        ? {
+            shadowColor: '#000',
+            shadowOffset: {width: 0, height: 10},
+            shadowOpacity: 0.08,
+            shadowRadius: 18,
+          }
+        : null),
 
-  buttonBottom: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: getResponsiveWidth(8),
-  },
+      elevation: 0,
+      overflow: 'visible',
+      borderWidth: 1,
+      borderColor: 'rgba(17,24,39,0.06)',
+    },
 
-  closeButton: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: BUTTON_STYLES.cancelBg,
-    borderRadius: 9,
-    paddingVertical: getResponsiveHeight(11),
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
+    topActionRow: {
+      position: 'absolute',
+      top: getResponsiveHeight(12),
+      right: getResponsiveWidth(12),
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: getResponsiveWidth(8),
+      zIndex: 10,
+    },
 
-  confirmButton: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: BUTTON_STYLES.saveBg,
-    borderRadius: 9,
-    borderWidth: 1,
-    borderColor: BUTTON_STYLES.saveBg,
-    paddingVertical: getResponsiveHeight(11),
-  },
+    iconButton: {
+      width: ICON_BTN_SIZE,
+      height: ICON_BTN_SIZE,
+      borderRadius: 999,
+      backgroundColor: 'rgba(17,24,39,0.06)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
 
-  // ✅ 버튼 텍스트: 모달 내부에서는 Pretendard로 통일 (BUTTON_STYLES에 의존 X)
-  closeText: {
-    color: '#4B5563',
-    fontFamily: BASE_FONT.medium,
-    fontSize:
-      BUTTON_STYLES?.fontSize != null
-        ? BUTTON_STYLES.fontSize
-        : getResponsiveFontSize(14),
-    ...(ANDROID_TEXT_FIX || {}),
-  },
+    icon: {
+      width: getResponsiveIconSize(14),
+      height: getResponsiveIconSize(14),
+      opacity: 0.9,
+    },
 
-  confirmText: {
-    color: '#FFFFFF',
-    fontFamily: BASE_FONT.medium,
-    fontSize:
-      BUTTON_STYLES?.fontSize != null
-        ? BUTTON_STYLES.fontSize
-        : getResponsiveFontSize(14),
-    ...(ANDROID_TEXT_FIX || {}),
-  },
+    /* =========================================================
+     * ✅ 섹션 기반 레이아웃 (간격 통일의 핵심)
+     * - headerSection: 아래로 SECTION_GAP
+     * - contentSection: 아래로 SECTION_GAP
+     * - buttonSection: paddingTop = 0 (섹션에서 이미 간격을 만들어줌)
+     * ========================================================= */
 
-  trashButton: {padding: 4},
-  trashIcon: {
-    width: getResponsiveWidth(16),
-    height: getResponsiveHeight(16),
-  },
+    headerSection: {
+      paddingTop: getResponsiveHeight(10),
+      paddingBottom: SECTION_GAP,
+    },
 
-  closeXButton: {padding: 6},
-  closeXIcon: {
-    width: getResponsiveIconSize(12),
-    height: getResponsiveIconSize(12),
-    resizeMode: 'contain',
-  },
+    contentSection: {
+      paddingTop: 0,
+      paddingBottom: SECTION_GAP,
+    },
 
-  titleImage: {
-    width: getResponsiveWidth(42),
-    height: getResponsiveHeight(42),
-    alignSelf: 'center',
-    marginTop: getResponsiveHeight(6),
-    marginBottom: getResponsiveHeight(6),
-  },
-});
+    buttonSection: {
+      paddingTop: 0,
+    },
+
+    titleImage: {
+      width: getResponsiveWidth(46),
+      height: getResponsiveHeight(46),
+      alignSelf: 'center',
+      marginBottom: getResponsiveHeight(8),
+    },
+
+    modalTitle: {
+      color: '#111827',
+      fontSize: getResponsiveFontSize(18) * fontScale,
+      lineHeight: Math.round(getResponsiveFontSize(24) * fontScale),
+      textAlign: 'center',
+      fontFamily: BASE_FONT.semibold,
+      marginTop: 0,
+      marginBottom: getResponsiveHeight(6),
+      ...(ANDROID_TEXT_FIX || {}),
+    },
+
+    modalSubText: {
+      textAlign: 'center',
+      color: '#6B7280',
+      fontFamily: BASE_FONT.regular,
+      fontSize: getResponsiveFontSize(13) * fontScale,
+      lineHeight: Math.round(getResponsiveFontSize(18) * fontScale),
+      marginBottom: 0,
+      ...(ANDROID_TEXT_FIX || {}),
+    },
+
+    modalContentText: {
+      color: '#374151',
+      fontFamily: BASE_FONT.regular,
+      fontSize: getResponsiveFontSize(14) * fontScale,
+      lineHeight: Math.round(getResponsiveFontSize(20) * fontScale),
+      ...(ANDROID_TEXT_FIX || {}),
+    },
+
+    buttonBottom: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: getResponsiveWidth(10),
+      paddingTop: 0,
+    },
+
+    closeButton: {
+      flex: 1,
+      height: BTN_HEIGHT,
+      borderRadius: BTN_RADIUS,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: '#E5E7EB',
+    },
+
+    confirmButton: {
+      flex: 1,
+      height: BTN_HEIGHT,
+      borderRadius: BTN_RADIUS,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: BUTTON_STYLES().saveBg,
+      borderWidth: 1,
+      borderColor: BUTTON_STYLES().saveBg,
+    },
+
+    closeText: {
+      color: '#111827',
+      fontFamily: BASE_FONT.medium,
+      fontSize:
+        BUTTON_STYLES()?.fontSize != null
+          ? BUTTON_STYLES().fontSize * fontScale
+          : getResponsiveFontSize(14) * fontScale,
+      ...(ANDROID_TEXT_FIX || {}),
+    },
+
+    confirmText: {
+      color: '#FFFFFF',
+      fontFamily: BASE_FONT.medium,
+      fontSize:
+        BUTTON_STYLES()?.fontSize != null
+          ? BUTTON_STYLES().fontSize * fontScale
+          : getResponsiveFontSize(14) * fontScale,
+      ...(ANDROID_TEXT_FIX || {}),
+    },
+  });
+}

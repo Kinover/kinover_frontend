@@ -130,11 +130,11 @@ export default function NotificationSettingScreen() {
   return (
     <>
       <ScrollView style={styles.container}>
-        <Text style={styles.header}>알림</Text>
+        <Text allowFontScaling={false} style={styles.header}>알림</Text>
 
         <View style={styles.section}>
           <View style={styles.row}>
-            <Text style={styles.label}>전체 알림</Text>
+            <Text allowFontScaling={false} style={styles.label}>전체 알림</Text>
             <CustomSwitch
               isEnabled={allNotification}
               toggleSwitch={handleToggleAllNotification}
@@ -144,7 +144,7 @@ export default function NotificationSettingScreen() {
 
         <View style={styles.section}>
           <View style={styles.row}>
-            <Text style={styles.label}>채팅방 알림</Text>
+            <Text allowFontScaling={false} style={styles.label}>채팅방 알림</Text>
             <CustomSwitch
               isEnabled={chatNotification}
               toggleSwitch={handleToggleChatNotification}
@@ -154,7 +154,7 @@ export default function NotificationSettingScreen() {
 
         <View style={styles.section}>
           <View style={styles.row}>
-            <Text style={styles.label}>게시물 알림</Text>
+            <Text allowFontScaling={false} style={styles.label}>게시물 알림</Text>
             <CustomSwitch
               isEnabled={postNotification}
               toggleSwitch={handleTogglePostNotification}
@@ -164,7 +164,7 @@ export default function NotificationSettingScreen() {
 
         <View style={styles.section}>
           <View style={styles.row}>
-            <Text style={styles.label}>댓글 알림</Text>
+            <Text allowFontScaling={false} style={styles.label}>댓글 알림</Text>
             <CustomSwitch
               isEnabled={commentNotification}
               toggleSwitch={handleToggleCommentNotification}
@@ -192,11 +192,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    fontSize: SETTING_STYLES.titleFontSize,
-    fontWeight: SETTING_STYLES.titleFontWeight,
+    fontSize: SETTING_STYLES().titleFontSize,
+    fontWeight: SETTING_STYLES().titleFontWeight,
     marginBottom: getResponsiveHeight(20), // 🔽 30 → 20
-    color: SETTING_STYLES.titleFontColor,
-    fontFamily: SETTING_STYLES.titleFontFamily,
+    color: SETTING_STYLES().titleFontColor,
+    fontFamily: SETTING_STYLES().titleFontFamily,
   },
   section: {
     borderBottomWidth: 0.5,
@@ -210,8 +210,8 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(8),
   },
   label: {
-    fontSize: SETTING_STYLES.labelFontSize,
-    color: SETTING_STYLES.labelFontColor,
-    fontFamily: SETTING_STYLES.labelFontFamily,
+    fontSize: SETTING_STYLES().labelFontSize,
+    color: SETTING_STYLES().labelFontColor,
+    fontFamily: SETTING_STYLES().labelFontFamily,
   },
 });

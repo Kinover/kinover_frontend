@@ -1,5 +1,4 @@
-// src/features/memory/store/memoryThunk.js
-
+// src/screens/memory/store/memoryThunk.js
 import {apiClient} from '../../../utils/apiClient';
 import {
   setMemoryList,
@@ -8,54 +7,94 @@ import {
   setPostDetail,
 } from './memorySlice';
 
-export const fetchMemoryThunk = (familyId, categoryId = null) => {
+/**
+ * ✅ 게시글 목록 조회 (A안: 서버가 userId로 familyId를 결정)
+ * - 이제 familyId를 보내지 않는다.
+ * - categoryId만 "진짜 UUID"일 때만 붙인다.
+ */
+export const fetchMemoryThunk = categoryId => {
   return async dispatch => {
+    const isUuid = v =>
+      typeof v === 'string' &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        v,
+      );
+
     dispatch(setMemoryLoading(true));
-    console.log('📥 게시글 목록 요청 시작:', {familyId, categoryId});
+    dispatch(setMemoryError(null));
 
     try {
-      // GET /api/posts?familyId=...&categoryId=...
-      const res = await apiClient.get('/posts', {
-        headers: {'Content-Type': 'application/json'},
-        params: {
-          familyId,
-          ...(categoryId ? {categoryId} : {}),
-        },
+      const params = {};
+
+      // ✅ categoryId는 "진짜 UUID"일 때만 붙이기
+      if (isUuid(categoryId)) {
+        params.categoryId = categoryId;
+      } else {
+        // 디버깅용: 전체 선택인데도 값이 들어오는 경우 잡아냄
+        if (categoryId != null) {
+          console.log('⚠️ categoryId 무시됨(UUID 아님):', categoryId);
+        }
+      }
+
+      console.log('🧪 posts list request', {
+        baseURL: apiClient?.defaults?.baseURL,
+        path: '/posts',
+        params: Object.keys(params).length ? params : undefined,
       });
 
-      console.log('✅ 게시글 목록 조회 성공:', res.data);
-      dispatch(setMemoryList(res.data));
+      const res = await apiClient.get('/posts', {
+        params: Object.keys(params).length ? params : undefined,
+      });
+
+      const data = res?.data;
+      if (!Array.isArray(data)) {
+        console.log('⚠️ posts list response is not array:', data);
+      }
+
+      dispatch(setMemoryList(Array.isArray(data) ? data : []));
+      return Array.isArray(data) ? data : [];
     } catch (error) {
+      console.error('❌ 게시글 목록 조회 실패:', {
+        baseURL: apiClient?.defaults?.baseURL,
+        status: error?.response?.status,
+        data: error?.response?.data,
+        message: error?.message,
+      });
+
       const msg =
         error?.response?.data?.message ||
         error?.response?.data ||
         error?.message ||
-        '게시글 목록 조회 실패';
+        '게시글을 불러오지 못했어요';
 
-      console.error('❌ 게시글 목록 조회 실패:', msg);
       dispatch(setMemoryError(msg));
+      throw error;
     } finally {
       dispatch(setMemoryLoading(false));
-      console.log('📤 게시글 요청 종료');
     }
   };
 };
 
-export const deletePostThunk = (postId, familyId) => {
+// ✅ 게시글 삭제
+// - A안: familyId 필요 없음
+// - 삭제 후 refresh가 필요하면 "현재 선택 categoryId"를 같이 넘겨서 목록 새로고침
+export const deletePostThunk = (postId, categoryId) => {
   return async dispatch => {
     dispatch(setMemoryLoading(true));
-    console.log('🗑️ 게시글 삭제 요청 시작:', {postId, familyId});
+    dispatch(setMemoryError(null));
+    console.log('🗑️ 게시글 삭제 요청 시작:', {postId, categoryId});
 
     try {
-      // DELETE /api/posts/{postId}
       const res = await apiClient.delete(`/posts/${postId}`, {
         headers: {'Content-Type': 'application/json'},
       });
 
       console.log('✅ 게시글 삭제 성공:', res.status);
 
-      // 삭제 후 다시 게시글 목록 요청
-      dispatch(fetchMemoryThunk(familyId));
+      // ✅ 삭제 후 목록 갱신
+      await dispatch(fetchMemoryThunk(categoryId));
+
+      return true;
     } catch (error) {
       const msg =
         error?.response?.data?.message ||
@@ -65,6 +104,7 @@ export const deletePostThunk = (postId, familyId) => {
 
       console.error('❌ 게시글 삭제 실패:', msg);
       dispatch(setMemoryError(msg));
+      throw error;
     } finally {
       dispatch(setMemoryLoading(false));
       console.log('📤 게시글 삭제 요청 종료');
@@ -73,31 +113,29 @@ export const deletePostThunk = (postId, familyId) => {
 };
 
 // ✅ 게시글 이미지 삭제
+// - A안: familyId 필요 없음
+// - 삭제 후 refresh가 필요하면 categoryId로 목록 새로고침
 export const deletePostImageThunk = (
   postId,
   imageUrlToDelete,
-  familyId,
+  categoryId,
   options = {refresh: true},
 ) => {
   return async dispatch => {
     dispatch(setMemoryLoading(true));
+    dispatch(setMemoryError(null));
     console.log('🗑️ 게시글 이미지 삭제 요청 시작:', {postId, imageUrlToDelete});
 
     try {
-      // DELETE /api/posts/{postId}/image
-      // axios 스타일로 delete body를 보내려면 { data: {...} }를 써야 함
       const res = await apiClient.delete(`/posts/${postId}/image`, {
         headers: {'Content-Type': 'application/json'},
-        data: {
-          imageUrl: imageUrlToDelete,
-        },
+        data: {imageUrl: imageUrlToDelete}, // ✅ axios delete body는 data로
       });
 
       console.log('✅ 이미지 삭제 성공:', res.status);
 
-      // ✅ 필요할 때만 리프레시
-      if (options?.refresh && familyId) {
-        dispatch(fetchMemoryThunk(familyId));
+      if (options?.refresh) {
+        await dispatch(fetchMemoryThunk(categoryId));
       }
 
       return res.data;
@@ -118,9 +156,10 @@ export const deletePostImageThunk = (
   };
 };
 
-// ✅ 게시글 알림 ON/OFF
+// ✅ 게시글 알림 ON/OFF (변경 없음)
 export const togglePostNotificationThunk = ({userId, isOn}) => {
   return async dispatch => {
+    dispatch(setMemoryError(null));
     try {
       console.log(`🔔 게시글 알림 설정 요청: userId=${userId}, isOn=${isOn}`);
 
@@ -130,6 +169,7 @@ export const togglePostNotificationThunk = ({userId, isOn}) => {
       });
 
       console.log('✅ 게시글 알림 설정 변경 성공');
+      return true;
     } catch (error) {
       const msg =
         error?.response?.data?.message ||
@@ -139,37 +179,33 @@ export const togglePostNotificationThunk = ({userId, isOn}) => {
 
       console.error('❌ 게시글 알림 설정 변경 실패:', msg);
       dispatch(setMemoryError(msg));
+      throw error;
     }
   };
 };
 
+// ✅ 특정 게시글 조회 (단건) (변경 없음)
 export const fetchPostByIdThunk = postId => {
   return async (dispatch, getState) => {
     dispatch(setMemoryLoading(true));
+    dispatch(setMemoryError(null));
     console.log('📥 특정 게시글 조회 요청 시작:', postId);
 
     try {
-      // 1) 스토어에 이미 있으면 API 호출 없이 종료
-      const {postsById} = getState().memory;
+      const {postsById} = getState().memory || {};
       const existingPost = postsById?.[String(postId)];
-
       if (existingPost) {
-        console.log('✅ 이미 스토어에 있는 게시글 발견:', existingPost);
-        dispatch(setMemoryLoading(false));
-        return;
+        console.log('✅ 이미 스토어에 있는 게시글:', postId);
+        return existingPost;
       }
 
-      console.log('🔍 스토어에 저장된 게시글 없음, API 요청 시작');
-
-      // GET /api/posts/{postId}
       const res = await apiClient.get(`/posts/${postId}`, {
         headers: {'Content-Type': 'application/json'},
       });
 
-      const fetchedPost = res.data;
-      console.log('✅ 특정 게시글 조회 성공:', fetchedPost);
-
-      dispatch(setPostDetail(fetchedPost));
+      dispatch(setPostDetail(res.data));
+      console.log('✅ 특정 게시글 조회 성공:', postId);
+      return res.data;
     } catch (error) {
       const msg =
         error?.response?.data?.message ||
@@ -187,19 +223,29 @@ export const fetchPostByIdThunk = postId => {
   };
 };
 
+// ✅ 스토어에서 postId로 게시글 가져오기 (동기 selector성 thunk)
 export const getPostFromStoreById = postId => {
   return (dispatch, getState) => {
-    // ⚠️ 원본 코드가 "getState().memory.memoryList.posts" 구조를 가정하고 있었는데,
-    // 실제 구조가 다를 수 있어도 일단 기존대로 유지함.
-    const {posts} = getState().memory.memoryList; // posts는 배열이라고 가정
-    const targetPost = posts.find(post => post.id === postId);
+    const state = getState();
+    const post = state?.memory?.postsById?.[String(postId)] || null;
 
-    if (targetPost) {
-      console.log('✅ 스토어에서 해당 게시글 찾음:', targetPost);
-      return targetPost;
-    } else {
-      console.warn('❌ 해당 ID의 게시글이 스토어에 없음:', postId);
-      return null;
+    if (post) {
+      console.log('✅ 스토어에서 해당 게시글 찾음:', postId);
+      return post;
     }
+
+    // postsById에 없으면 memoryList에서 한 번 더 찾기(방어)
+    const list = state?.memory?.memoryList || [];
+    const fallback = Array.isArray(list)
+      ? list.find(p => String(p?.postId) === String(postId))
+      : null;
+
+    if (fallback) {
+      console.log('✅ memoryList에서 해당 게시글 찾음:', postId);
+      return fallback;
+    }
+
+    console.warn('❌ 해당 ID 게시글이 스토어에 없음:', postId);
+    return null;
   };
 };

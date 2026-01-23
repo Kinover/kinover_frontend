@@ -252,9 +252,24 @@ export default function ImageSelectPage() {
       });
     }
 
-    setSelectedFiles(prev =>
-      isEditMode ? [...prev, ...converted] : converted,
-    );
+    setSelectedFiles(prev => {
+      const prevArr = Array.isArray(prev) ? prev : [];
+      const next = [...prevArr, ...converted];
+
+      // ✅ 중복 제거(선택한 uri 기준) - 필요 없으면 이 블록 삭제해도 됨
+      const seen = new Set();
+      const dedup = [];
+      for (const it of next) {
+        const key = String(it?.uri || it?.id || '');
+        if (!key) continue;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        dedup.push(it);
+      }
+
+      // ✅ 최대 30개 제한도 한 번 더 안전장치
+      return dedup.slice(0, MAX_SELECTION);
+    });
   }, [extToMime, getExt, navigation, selectedFiles, showToast, isEditMode]);
 
   useEffect(() => {
@@ -284,7 +299,7 @@ export default function ImageSelectPage() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <Text style={styles.headerTitle}>
+        <Text allowFontScaling={false} style={styles.headerTitle}>
           {isEditMode ? '미디어 수정' : '사진 업로드'}{' '}
           {hasSelection ? `(${selectedFiles.length})` : ''}
         </Text>
@@ -347,10 +362,14 @@ export default function ImageSelectPage() {
             ]}>
             <View style={styles.plusInner}>
               <View style={styles.plusIconCircle}>
-                <Text style={styles.plusIcon}>＋</Text>
+                <Text allowFontScaling={false} style={styles.plusIcon}>
+                  ＋
+                </Text>
               </View>
-              <Text style={styles.plusSubText}>추가하기</Text>
-              <Text style={styles.plusHint}>
+              <Text allowFontScaling={false} style={styles.plusSubText}>
+                추가하기
+              </Text>
+              <Text allowFontScaling={false} style={styles.plusHint}>
                 {selectedFiles.length}/{MAX_SELECTION}
               </Text>
             </View>
@@ -381,13 +400,17 @@ export default function ImageSelectPage() {
 
           {/* ✅ 순서칩(예쁘게) */}
           <View style={styles.orderChip}>
-            <Text style={styles.orderChipText}>{order}</Text>
+            <Text allowFontScaling={false} style={styles.orderChipText}>
+              {order}
+            </Text>
           </View>
 
           {/* ✅ 비디오 칩 */}
           {item.isVideo ? (
             <View style={styles.videoPill}>
-              <Text style={styles.videoPillText}>VIDEO</Text>
+              <Text allowFontScaling={false} style={styles.videoPillText}>
+                VIDEO
+              </Text>
             </View>
           ) : null}
 
@@ -412,7 +435,9 @@ export default function ImageSelectPage() {
             }}
             activeOpacity={0.85}
             style={styles.removeBtn}>
-            <Text style={styles.removeBtnText}>✕</Text>
+            <Text allowFontScaling={false} style={styles.removeBtnText}>
+              ✕
+            </Text>
           </TouchableOpacity>
         </Pressable>
       );
@@ -441,7 +466,7 @@ export default function ImageSelectPage() {
 
       {!hasSelection && (
         <View style={styles.helperBox}>
-          <Text style={styles.helperText}>
+          <Text allowFontScaling={false} style={styles.helperText}>
             오른쪽 ‘추가하기’ 타일을 눌러 미디어를 선택해줘요
           </Text>
         </View>
@@ -473,9 +498,9 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    fontSize: HEADER_STYLES.defaultTitleFontSize,
-    fontFamily: HEADER_STYLES.defaultTitleFontFamily,
-    color: HEADER_STYLES.defaultTitleFontColor,
+    fontSize: HEADER_STYLES().defaultTitleFontSize,
+    fontFamily: HEADER_STYLES().defaultTitleFontFamily,
+    color: HEADER_STYLES().defaultTitleFontColor,
     lineHeight: getResponsiveHeight(26),
     textAlign: 'center',
     textAlignVertical: 'center',
@@ -484,9 +509,9 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(6),
   },
   checkIcon: {
-    width: HEADER_STYLES.headerRightIconWidth,
-    height: HEADER_STYLES.headerRightIconHeight,
-    marginRight: HEADER_STYLES.headerRightIconRightPadding,
+    width: HEADER_STYLES().headerRightIconWidth,
+    height: HEADER_STYLES().headerRightIconHeight,
+    marginRight: HEADER_STYLES().headerRightIconRightPadding,
     resizeMode: 'contain',
   },
 
@@ -574,13 +599,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOpacity: 0.14,
-        shadowRadius: 8,
-        shadowOffset: {width: 0, height: 4},
-      },
-      android: {elevation: 2},
+      // ios: {
+      //   shadowColor: '#000',
+      //   shadowOpacity: 0.14,
+      //   shadowRadius: 8,
+      //   shadowOffset: {width: 0, height: 4},
+      // },
+      // android: {elevation: 2},
     }),
   },
   orderChipText: {
@@ -650,13 +675,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOpacity: 0.18,
-        shadowRadius: 8,
-        shadowOffset: {width: 0, height: 4},
-      },
-      android: {elevation: 2},
+      // ios: {
+      //   shadowColor: '#000',
+      //   shadowOpacity: 0.18,
+      //   shadowRadius: 8,
+      //   shadowOffset: {width: 0, height: 4},
+      // },
+      // android: {elevation: 2},
     }),
   },
   removeBtnText: {
@@ -665,8 +690,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-SemiBold',
     includeFontPadding: false,
     textAlignVertical: 'center',
+    lineHeight: getResponsiveFontSize(13),
     // ✅ 폰트 렌더링 때문에 살짝 위로 뜨는 경우가 있어서 보정
-    marginTop: Platform.OS === 'android' ? -1 : 0,
   },
 
   /* =================== 여기까지 =================== */

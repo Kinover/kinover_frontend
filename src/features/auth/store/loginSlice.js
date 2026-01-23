@@ -1,10 +1,11 @@
-// loginSlice.js
-import { createSlice } from '@reduxjs/toolkit';
+// src/features/auth/store/loginSlice.js
+import {createSlice} from '@reduxjs/toolkit';
 
 const initialLoginState = {
   loading: false,
   error: null,
   isLoggedIn: false,
+  authChecked: false,
 };
 
 const loginSlice = createSlice({
@@ -24,16 +25,18 @@ const loginSlice = createSlice({
     setLogout(state) {
       state.isLoggedIn = false;
     },
+    setAuthChecked(state, action) {
+      state.authChecked = !!action.payload;
+    },
   },
 });
-
-
 
 export const {
   setLoginLoading,
   setLoginError,
   setLoginSuccess,
   setLogout,
+  setAuthChecked,
 } = loginSlice.actions;
 
 export default loginSlice.reducer;

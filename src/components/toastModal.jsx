@@ -13,7 +13,7 @@ export default function ToastModal({
   onClose,
   message,
   duration = 1000,
-  useNativeModal = true,   // ✅ 추가: 기본은 기존처럼 Modal 사용
+  useNativeModal = true, // ✅ 추가: 기본은 기존처럼 Modal 사용
 }) {
   // 일정 시간 뒤 자동 닫기
   useEffect(() => {
@@ -30,7 +30,9 @@ export default function ToastModal({
   const content = (
     <View style={styles.overlay}>
       <View style={styles.toastBox}>
-        <Text style={styles.toastText}>{message}</Text>
+        <Text allowFontScaling={false} style={styles.toastText}>
+          {message}
+        </Text>
       </View>
     </View>
   );
@@ -62,7 +64,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingBottom: getResponsiveHeight(120),
+    paddingBottom: getResponsiveHeight(100),
     backgroundColor: 'transparent',
     pointerEvents: 'box-none',
 

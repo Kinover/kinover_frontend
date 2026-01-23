@@ -24,6 +24,9 @@ import {selectRoomMeta} from '../store/messageSlice';
 import useGuide from 'hooks/useGuide';
 import {fetchChatRoomUsersThunk} from '../store/chatRoomThunk';
 
+// ✅ 여기 추가: 토스트 모달
+import ToastModal from '../../../components/ToastModal';
+
 const CHAT_GUIDE_STEPS = [
   {
     title: '대화 나누기',
@@ -95,8 +98,6 @@ export default function ChatRoomScreenTemplate({
   const chatRoomId = chatRoom?.chatRoomId;
 
   // ✅ props userId가 undefined일 수 있음(푸시 진입에서 userId 안 넘기는 구조)
-  // 아래는 너희 프로젝트 auth/user slice에 맞춰 "내 userId" 경로를 하나로 고정해줘야 함.
-  // 일단 가장 흔한 케이스들 fallback으로 잡아둠.
   const myUserIdFromStore =
     useSelector(s => s?.user?.userId) ??
     useSelector(s => s?.auth?.user?.userId) ??
@@ -137,7 +138,46 @@ export default function ChatRoomScreenTemplate({
   useHideTabBar();
   useHeaderSetting(navigation, setIsSettingsOpen, title, isKino);
 
+  // =========================================================
+  // ✅ [추가] 초대 토스트 (스크린에서 띄움)
+  // =========================================================
+  const [inviteToastVisible, setInviteToastVisible] = useState(false);
+  const [inviteToastMessage, setInviteToastMessage] = useState('');
+
+  useEffect(() => {
+    if (!inviteToastVisible) return;
+    const t = setTimeout(() => setInviteToastVisible(false), 1800);
+    return () => clearTimeout(t);
+  }, [inviteToastVisible]);
+
+  // ✅ AddChatMemberScreen 열기 + 콜백으로 초대 완료 처리
+  const openAddMember = useCallback(() => {
+    if (!chatRoomId) return;
+
+    // 설정창이 열려있으면 닫아주기(UX 깔끔)
+    setIsSettingsOpen(false);
+
+    navigation.navigate('채팅방멤버추가화면', {
+      chatRoomId,
+      onInvited: ({count, message}) => {
+        // ✅ 1) 초대 완료 즉시 토스트
+        const msg =
+          message ??
+          (typeof count === 'number'
+            ? `${count}명을 초대했어요.`
+            : '멤버를 초대했어요.');
+        setInviteToastMessage(msg);
+        setInviteToastVisible(true);
+
+        // ✅ 2) 멤버 목록 갱신 (멘션 후보/멤버 리스트)
+        dispatch(fetchChatRoomUsersThunk(chatRoomId));
+      },
+    });
+  }, [chatRoomId, navigation, dispatch]);
+
+  // =========================================================
   // ✅ 방 메시지 fetch (여기서만)
+  // =========================================================
   useEffect(() => {
     if (!chatRoomId) return;
 
@@ -198,8 +238,6 @@ export default function ChatRoomScreenTemplate({
     if (!chatRoomId) return;
     if (!latestCreatedAtLocal) return;
 
-    // ✅ myUserId가 아직 없으면(스토어 로딩 전) 일단 서버 저장은 가능하지만,
-    // slice에서 내 포인터 즉시 반영을 못하니까 "다음번"에 다시 보내게 두는 게 안정적.
     if (myUserId == null) return;
 
     if (lastSentReadAtRef.current === latestCreatedAtLocal) return;
@@ -260,7 +298,7 @@ export default function ChatRoomScreenTemplate({
           flatListRef={flatListRef}
           messageList={messageList}
           chatRoom={currentChatRoom}
-          userId={myUserId} // ✅ 여기 꼭 myUserId로
+          userId={myUserId}
           isKino={isKino}
           noMoreMessages={noMoreMessages}
           isFetchingMore={isFetchingMore}
@@ -274,9 +312,16 @@ export default function ChatRoomScreenTemplate({
 
         <ChatInput
           chatRoom={currentChatRoom}
-          userId={myUserId} // ✅ 여기 꼭 myUserId로
+          userId={myUserId}
           enableMediaPicker={!isKino}
           mentionUsers={roomUsers}
+        />
+
+        {/* ✅ [추가] 초대 토스트: 설정창 안 열어도 바로 뜸 */}
+        <ToastModal
+          visible={inviteToastVisible}
+          message={inviteToastMessage}
+          onClose={() => setInviteToastVisible(false)}
         />
 
         <ChatSettings
@@ -286,6 +331,8 @@ export default function ChatRoomScreenTemplate({
           navigation={navigation}
           onLeaveChat={onLeaveChat}
           isKino={isKino}
+          // ✅ [추가] 설정 패널에서 "새 멤버 초대" 눌렀을 때 호출할 함수
+          onOpenAddMember={openAddMember}
         />
       </View>
     </KeyboardAvoidingView>

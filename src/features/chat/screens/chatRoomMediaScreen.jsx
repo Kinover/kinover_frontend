@@ -276,7 +276,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
             <Image source={{uri: thumb}} style={styles.mediaThumb} />
           ) : (
             <View style={styles.mediaPlaceholder}>
-              <Text style={styles.mediaPlaceholderText}>
+              <Text allowFontScaling={false} style={styles.mediaPlaceholderText}>
                 {kind === 'VIDEO' ? 'VIDEO' : 'FILE'}
               </Text>
             </View>
@@ -284,7 +284,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
 
           {kind === 'VIDEO' && (
             <View style={styles.videoBadge}>
-              <Text style={styles.videoBadgeText}>영상</Text>
+              <Text allowFontScaling={false} style={styles.videoBadgeText}>영상</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -299,7 +299,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
   const GridSizePicker = useMemo(() => {
     return (
       <View style={[styles.sizeRow, {paddingHorizontal: screenPaddingH}]}>
-        <Text style={styles.sizeLabel}>그리드</Text>
+        <Text allowFontScaling={false} style={styles.sizeLabel}>그리드</Text>
 
         {[2, 3, 4].map(n => {
           const active = columns === n;
@@ -309,7 +309,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
               onPress={() => setColumns(n)}
               style={[styles.sizeBtn, active && styles.sizeBtnActive]}
               activeOpacity={0.9}>
-              <Text
+              <Text allowFontScaling={false}
                 style={[
                   styles.sizeBtnText,
                   active && styles.sizeBtnTextActive,
@@ -335,7 +335,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
               onPress={() => onChangeType(t)}
               style={[styles.tab, active && styles.tabActive]}
               activeOpacity={0.9}>
-              <Text style={[styles.tabText, active && styles.tabTextActive]}>
+              <Text allowFontScaling={false} style={[styles.tabText, active && styles.tabTextActive]}>
                 {t === 'ALL' ? '전체' : t === 'IMAGE' ? '사진' : '영상'}
               </Text>
             </TouchableOpacity>
@@ -350,11 +350,11 @@ export default function ChatRoomMediaScreen({navigation, route}) {
       {loading ? (
         <View style={styles.centerBox}>
           <ActivityIndicator />
-          <Text style={styles.loadingText}>불러오는 중…</Text>
+          <Text allowFontScaling={false} style={styles.loadingText}>불러오는 중…</Text>
         </View>
       ) : items.length === 0 ? (
         <View style={styles.centerBox}>
-          <Text style={styles.emptyText}>아직 모아볼 미디어가 없어요.</Text>
+          <Text allowFontScaling={false} style={styles.emptyText}>아직 모아볼 미디어가 없어요.</Text>
         </View>
       ) : (
         <FlatList
@@ -426,7 +426,7 @@ const styles = StyleSheet.create({
   },
   tab: {
     paddingVertical: getResponsiveHeight(7),
-    paddingHorizontal: LAYOUT_STYLE.screenPaddingHorizontal,
+    paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal,
     borderRadius: getResponsiveIconSize(10),
     backgroundColor: '#F3F4F6',
   },

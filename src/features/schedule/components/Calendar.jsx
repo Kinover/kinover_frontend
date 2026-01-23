@@ -373,7 +373,7 @@ export default function CalendarToggle({
                 source={require('../../../assets/icons/calendar.png')}
               />
             </TouchableOpacity>
-            <Text style={styles.monthText}>{headerLabel}</Text>
+            <Text allowFontScaling={false} allowFontScaling={false} style={styles.monthText}>{headerLabel}</Text>
           </View>
 
           <View style={styles.headerRight}>
@@ -410,7 +410,7 @@ export default function CalendarToggle({
                 style={[styles.toggleChip, styles.toggleActive]}
                 onPress={toggleMode}
                 hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
-                <Text style={[styles.toggleText, styles.toggleTextActive]}>
+                <Text allowFontScaling={false} style={[styles.toggleText, styles.toggleTextActive]}>
                   {mode === 'month' ? '주' : '월'}
                 </Text>
               </TouchableOpacity>
@@ -438,7 +438,7 @@ export default function CalendarToggle({
                 const isRestDow = dow === '일';
                 return (
                   <View key={dow} style={[styles.weekCell, {width: cellSize}]}>
-                    <Text
+                    <Text allowFontScaling={false}
                       style={[styles.dayText, isRestDow && styles.sundayText]}>
                       {dow}
                     </Text>
@@ -498,7 +498,7 @@ export default function CalendarToggle({
                             item.isSelected && styles.selectedBox,
                             !item.isCurrentMonth && {opacity: 0.35},
                           ]}>
-                          <Text
+                          <Text allowFontScaling={false}
                             style={[
                               styles.dateText,
                               item.isSelected && styles.selectedText,
@@ -558,7 +558,7 @@ export default function CalendarToggle({
                             !item.isSelected && getCountColorStyle(total),
                             item.isSelected && styles.selectedBox,
                           ]}>
-                          <Text
+                          <Text allowFontScaling={false}
                             style={[
                               styles.dateText,
                               item.isSelected && styles.selectedText,
@@ -643,8 +643,8 @@ const styles = StyleSheet.create({
     gap: getResponsiveWidth(10),
   },
   monthText: {
-    fontFamily: DEFAULT_STYLE.sectionTitle.fontFamily,
-    fontSize: DEFAULT_STYLE.sectionTitle.fontSize,
+    fontFamily: DEFAULT_STYLE().sectionTitle.fontFamily,
+    fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
     color: COLORS.textPrimary,
     letterSpacing: -0.2,
   },

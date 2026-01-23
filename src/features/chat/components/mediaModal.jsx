@@ -20,7 +20,10 @@ import FastImage from '@d11/react-native-fast-image';
 import RNFS from 'react-native-fs';
 import {CameraRoll} from '@react-native-camera-roll/camera-roll';
 
-import {getResponsiveFontSize, getResponsiveWidth} from '../../../utils/responsive';
+import {
+  getResponsiveFontSize,
+  getResponsiveWidth,
+} from '../../../utils/responsive';
 import ToastModal from '../../../components/ToastModal';
 
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
@@ -30,6 +33,10 @@ import Animated, {
   withTiming,
   runOnJS,
 } from 'react-native-reanimated';
+
+// ✅ 추가: 폰트모드 구독
+import {useSelector} from 'react-redux';
+import {FONT_MODE} from 'store/uiSlice';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -80,7 +87,7 @@ const saveUrlToGallery = async ({url, type, album = 'Kinover'}) => {
 
 /* ================= ZoomableImage ================= */
 
-function ZoomableImage({uri, isActive}) {
+function ZoomableImage({uri, isActive, styles}) {
   const scale = useSharedValue(1);
   const lastScale = useSharedValue(1);
 
@@ -148,13 +155,29 @@ export default function MediaModal({
   initialIndex = 0,
   onClose,
 }) {
+  // ✅ 폰트모드 구독 (이게 있어야 “모드 변경 → 리렌더” 확정)
+  const fontMode = useSelector(state => state.ui.fontMode);
+
+  // ✅ multiplier
+  const fontMul = useMemo(() => {
+    if (fontMode === FONT_MODE.EXTRA_LARGE) return 1.22;
+    if (fontMode === FONT_MODE.LARGE) return 1.12;
+    return 1.0;
+  }, [fontMode]);
+
+  // ✅ 폰트 사이즈 함수
+  const rf = useCallback(
+    n => Math.round(getResponsiveFontSize(n) * fontMul),
+    [fontMul],
+  );
+
+  // ✅ styles 재생성
+  const styles = useMemo(() => makeStyles(rf), [rf]);
+
   const cancelRequestedRef = useRef(false);
   const listRef = useRef(null);
 
-  // ✅ 1) 신규: mediaItems가 오면 혼합 리스트로 처리
-  // ✅ 2) 기존: mediaUrls + mediaType으로 단일 타입 리스트로 처리
   const resolvedItems = useMemo(() => {
-    // 신규
     if (Array.isArray(mediaItems) && mediaItems.length > 0) {
       return mediaItems
         .map(it => {
@@ -171,7 +194,6 @@ export default function MediaModal({
         .filter(Boolean);
     }
 
-    // 기존
     const urls = (Array.isArray(mediaUrls) ? mediaUrls : [])
       .map(toCdnUrl)
       .filter(Boolean);
@@ -180,7 +202,6 @@ export default function MediaModal({
     return urls.map(u => ({kind, url: u, thumb: u}));
   }, [mediaItems, mediaUrls, mediaType]);
 
-  // ✅ 안전한 initialIndex
   const safeInitialIndex = useMemo(() => {
     if (!resolvedItems.length) return 0;
     const n = Math.floor(toNumberSafe(initialIndex));
@@ -196,7 +217,6 @@ export default function MediaModal({
     });
   }, [safeInitialIndex, resolvedItems.length]);
 
-  // ✅ 모달 열릴 때 해당 인덱스로 스크롤 맞추기 (initialScrollIndex 대신)
   useEffect(() => {
     if (!visible) return;
     if (!resolvedItems.length) return;
@@ -260,7 +280,7 @@ export default function MediaModal({
   }, [saving, onClose, menuVisible, closeMenu]);
 
   const currentItem = resolvedItems[currentIndex] || null;
-  const currentKind = currentItem?.kind || 'IMAGE'; // IMAGE | VIDEO
+  const currentKind = currentItem?.kind || 'IMAGE';
 
   const runSave = useCallback(
     async mode => {
@@ -286,7 +306,9 @@ export default function MediaModal({
             type: target.kind === 'VIDEO' ? 'video' : 'photo',
           });
 
-          showToast(target.kind === 'VIDEO' ? '영상이 저장됐어요' : '사진이 저장됐어요');
+          showToast(
+            target.kind === 'VIDEO' ? '영상이 저장됐어요' : '사진이 저장됐어요',
+          );
         } else {
           for (let i = 0; i < resolvedItems.length; i++) {
             if (cancelRequestedRef.current) throw new Error('cancel');
@@ -301,13 +323,17 @@ export default function MediaModal({
             });
           }
 
-          // ✅ 혼합이면 “미디어가 모두 저장됐어요”
           const allSame =
             resolvedItems.every(x => x.kind === 'VIDEO') ||
             resolvedItems.every(x => x.kind === 'IMAGE');
 
           if (!allSame) showToast('미디어가 모두 저장됐어요');
-          else showToast(resolvedItems[0].kind === 'VIDEO' ? '영상이 모두 저장됐어요' : '사진이 모두 저장됐어요');
+          else
+            showToast(
+              resolvedItems[0].kind === 'VIDEO'
+                ? '영상이 모두 저장됐어요'
+                : '사진이 모두 저장됐어요',
+            );
         }
       } catch (e) {
         // 실패/취소는 조용히 종료
@@ -335,12 +361,15 @@ export default function MediaModal({
       if (item.kind === 'VIDEO') {
         return <Video source={{uri: item.url}} style={styles.video} controls />;
       }
-      return <ZoomableImage uri={item.url} isActive={index === currentIndex} />;
+      return (
+        <ZoomableImage uri={item.url} isActive={index === currentIndex} styles={styles} />
+      );
     },
-    [currentIndex],
+    [currentIndex, styles],
   );
 
-  const singleLabel = currentKind === 'VIDEO' ? '영상 개별저장' : '사진 개별저장';
+  const singleLabel =
+    currentKind === 'VIDEO' ? '영상 개별저장' : '사진 개별저장';
 
   return (
     <Modal
@@ -350,15 +379,15 @@ export default function MediaModal({
       onRequestClose={handleClose}>
       <View style={styles.overlay} />
 
-      {/* 상단 버튼 */}
       <View style={styles.topBar}>
         <TouchableOpacity onPress={handleClose} style={styles.circleIconBtn}>
-          <Text style={styles.xText}>✕</Text>
+          <Text allowFontScaling={false} style={styles.xText}>
+            ✕
+          </Text>
         </TouchableOpacity>
 
-        {/* ✅ 가운데 인덱스 (1 / N) */}
         <View style={styles.indexPill}>
-          <Text style={styles.indexText}>
+          <Text allowFontScaling={false} style={styles.indexText}>
             {resolvedItems.length ? currentIndex + 1 : 0} / {resolvedItems.length}
           </Text>
         </View>
@@ -375,7 +404,6 @@ export default function MediaModal({
         </TouchableOpacity>
       </View>
 
-      {/* 미디어 */}
       <FlatList
         ref={listRef}
         data={resolvedItems}
@@ -399,7 +427,6 @@ export default function MediaModal({
         }}
       />
 
-      {/* 메뉴 */}
       <Animated.View
         pointerEvents={menuVisible ? 'auto' : 'none'}
         style={[styles.menuOverlay, menuOverlayStyle]}>
@@ -421,7 +448,9 @@ export default function MediaModal({
               styles.menuItem,
               (saving || !resolvedItems[currentIndex]?.url) && {opacity: 0.5},
             ]}>
-            <Text style={styles.menuText}>{singleLabel}</Text>
+            <Text allowFontScaling={false} style={styles.menuText}>
+              {singleLabel}
+            </Text>
           </TouchableOpacity>
 
           <View style={styles.menuDivider} />
@@ -437,25 +466,27 @@ export default function MediaModal({
               styles.menuItem,
               (saving || !resolvedItems.length) && {opacity: 0.5},
             ]}>
-            <Text style={styles.menuText}>전체저장</Text>
+            <Text allowFontScaling={false} style={styles.menuText}>
+              전체저장
+            </Text>
           </TouchableOpacity>
         </Animated.View>
       </Animated.View>
 
-      {/* 저장 중 */}
       {saving && (
         <View style={styles.progressOverlay}>
           <View style={styles.progressBox}>
             <ActivityIndicator size="large" color="#fff" />
-            <Text style={styles.progressText}>
+            <Text allowFontScaling={false} style={styles.progressText}>
               {progress.current} / {progress.total}
             </Text>
-            <Text style={styles.progressSub}>화면을 나가면 저장이 취소돼요</Text>
+            <Text allowFontScaling={false} style={styles.progressSub}>
+              화면을 나가면 저장이 취소돼요
+            </Text>
           </View>
         </View>
       )}
 
-      {/* 토스트 */}
       <ToastModal
         visible={toastVisible}
         message={toastMessage}
@@ -470,146 +501,153 @@ export default function MediaModal({
 
 const CIRCLE_SIZE = getResponsiveWidth(38);
 
-const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'black',
-  },
+const makeStyles = rf =>
+  StyleSheet.create({
+    overlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'black',
+    },
 
-  topBar: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 46 : 16,
-    left: 16,
-    right: 16,
-    zIndex: 50,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+    topBar: {
+      position: 'absolute',
+      top: Platform.OS === 'ios' ? 46 : 16,
+      left: 16,
+      right: 16,
+      zIndex: 50,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
 
-  circleIconBtn: {
-    width: CIRCLE_SIZE,
-    height: CIRCLE_SIZE,
-    borderRadius: 999,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+    circleIconBtn: {
+      width: CIRCLE_SIZE,
+      height: CIRCLE_SIZE,
+      borderRadius: 999,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
 
-  xText: {
-    color: '#fff',
-    fontSize: getResponsiveFontSize(16),
-    fontFamily: 'Pretendard-SemiBold',
-    includeFontPadding: false,
-    textAlignVertical: 'center',
-  },
+    xText: {
+      color: '#fff',
+      fontSize: rf(16),
+      fontFamily: 'Pretendard-SemiBold',
+      includeFontPadding: false,
+      textAlignVertical: 'center',
+    },
 
-  dotsIcon: {
-    width: getResponsiveWidth(16),
-    height: getResponsiveWidth(16),
-  },
+    dotsIcon: {
+      width: getResponsiveWidth(16),
+      height: getResponsiveWidth(16),
+    },
 
-  indexPill: {
-    paddingHorizontal: getResponsiveWidth(12),
-    height: CIRCLE_SIZE,
-    borderRadius: 999,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: getResponsiveWidth(92),
-  },
-  indexText: {
-    color: '#fff',
-    fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-SemiBold',
-    includeFontPadding: false,
-  },
+    indexPill: {
+      paddingHorizontal: getResponsiveWidth(12),
+      height: CIRCLE_SIZE,
+      borderRadius: 999,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      minWidth: getResponsiveWidth(92),
+    },
 
-  zoomContainer: {
-    width: screenWidth,
-    height: screenHeight,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  zoomImageWrap: {
-    width: screenWidth,
-    height: screenHeight,
-  },
-  zoomImage: {
-    width: '100%',
-    height: '100%',
-  },
+    indexText: {
+      color: '#fff',
+      fontSize: rf(13),
+      fontFamily: 'Pretendard-SemiBold',
+      includeFontPadding: false,
+    },
 
-  video: {
-    width: screenWidth,
-    height: screenHeight,
-  },
+    zoomContainer: {
+      width: screenWidth,
+      height: screenHeight,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
 
-  menuOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 80,
-    backgroundColor: 'rgba(0,0,0,0.12)',
-    justifyContent: 'flex-start',
-    alignItems: 'flex-end',
-    paddingTop:
-      Platform.OS === 'ios' ? 46 + CIRCLE_SIZE + 10 : 16 + CIRCLE_SIZE + 10,
-    paddingRight: 16,
-  },
+    zoomImageWrap: {
+      width: screenWidth,
+      height: screenHeight,
+    },
 
-  menuBox: {
-    width: getResponsiveWidth(170),
-    backgroundColor: 'rgba(20,20,20,0.96)',
-    borderRadius: 14,
-    overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.12)',
-    shadowColor: '#000',
-    shadowOpacity: 0.35,
-    shadowRadius: 10,
-    shadowOffset: {width: 0, height: 6},
-    elevation: 12,
-  },
+    zoomImage: {
+      width: '100%',
+      height: '100%',
+    },
 
-  menuItem: {
-    paddingVertical: 13,
-    paddingHorizontal: 14,
-  },
+    video: {
+      width: screenWidth,
+      height: screenHeight,
+    },
 
-  menuText: {
-    color: '#fff',
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(13),
-  },
+    menuOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      zIndex: 80,
+      backgroundColor: 'rgba(0,0,0,0.12)',
+      justifyContent: 'flex-start',
+      alignItems: 'flex-end',
+      paddingTop:
+        Platform.OS === 'ios' ? 46 + CIRCLE_SIZE + 10 : 16 + CIRCLE_SIZE + 10,
+      paddingRight: 16,
+    },
 
-  menuDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-  },
+    menuBox: {
+      width: getResponsiveWidth(170),
+      backgroundColor: 'rgba(20,20,20,0.96)',
+      borderRadius: 14,
+      overflow: 'hidden',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: 'rgba(255,255,255,0.12)',
+      shadowColor: '#000',
+      shadowOpacity: 0.35,
+      shadowRadius: 10,
+      shadowOffset: {width: 0, height: 6},
+      elevation: 12,
+    },
 
-  progressOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 100,
-  },
-  progressBox: {
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    borderRadius: 18,
-    paddingVertical: 22,
-    paddingHorizontal: 26,
-    alignItems: 'center',
-  },
-  progressText: {
-    color: '#fff',
-    fontSize: 16,
-    marginTop: 12,
-    fontFamily: 'Pretendard-SemiBold',
-  },
-  progressSub: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 12,
-    marginTop: 8,
-    fontFamily: 'Pretendard-Medium',
-  },
-});
+    menuItem: {
+      paddingVertical: 13,
+      paddingHorizontal: 14,
+    },
+
+    menuText: {
+      color: '#fff',
+      fontFamily: 'Pretendard-Medium',
+      fontSize: rf(13),
+    },
+
+    menuDivider: {
+      height: StyleSheet.hairlineWidth,
+      backgroundColor: 'rgba(255,255,255,0.18)',
+    },
+
+    progressOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.35)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 100,
+    },
+
+    progressBox: {
+      backgroundColor: 'rgba(0,0,0,0.75)',
+      borderRadius: 18,
+      paddingVertical: 22,
+      paddingHorizontal: 26,
+      alignItems: 'center',
+    },
+
+    progressText: {
+      color: '#fff',
+      fontSize: rf(16),
+      marginTop: 12,
+      fontFamily: 'Pretendard-SemiBold',
+    },
+
+    progressSub: {
+      color: 'rgba(255,255,255,0.8)',
+      fontSize: rf(12),
+      marginTop: 8,
+      fontFamily: 'Pretendard-Medium',
+    },
+  });

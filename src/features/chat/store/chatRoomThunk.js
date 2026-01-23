@@ -1,5 +1,4 @@
 // src/features/chat/store/chatRoomThunk.js
-
 import {createAsyncThunk} from '@reduxjs/toolkit';
 import {apiClient} from '../../../utils/apiClient';
 
@@ -12,13 +11,9 @@ import {
 } from './chatRoomSlice';
 
 import {markReadThunk} from './chatRoomSlice';
-import {syncAppBadgeThunk} from '../../notification/store/notificationThunk'; // 경로 맞춰줘!
+import {syncAppBadgeThunk} from '../../notification/store/notificationThunk';
 
-// ✅ apiClient baseURL = https://kinover.shop/api
-// 그래서 여기서는 /chatRoom만 붙이면 됨
 const API_BASE = '/chatRoom';
-
-// ✅ 이 파일에서 toId를 쓰려면 여기서 선언해야 함 (slice에만 있던 헬퍼라서)
 const toId = v => (v == null ? null : String(v));
 
 /**
@@ -30,11 +25,11 @@ export const fetchChatRoomListThunk = (familyId, userId) => {
     dispatch(setChatRoomLoading(true));
     try {
       const apiUrl = `${API_BASE}/${familyId}/${userId}`;
-
-      const response = await apiClient.post(apiUrl, {}, {
-        headers: {'Content-Type': 'application/json'},
-      });
-
+      const response = await apiClient.post(
+        apiUrl,
+        {},
+        {headers: {'Content-Type': 'application/json'}},
+      );
       dispatch(setChatRoomList(response.data));
     } catch (error) {
       dispatch(setChatRoomError(error?.message || '채팅방 목록 조회 실패'));
@@ -53,9 +48,7 @@ export const fetchChatRoomUsersThunk = chatRoomId => {
     dispatch(setChatRoomLoading(true));
     try {
       const apiUrl = `${API_BASE}/${chatRoomId}/users/get`;
-
       const response = await apiClient.post(apiUrl, {});
-
       dispatch(setChatRoomUsers(response.data));
     } catch (error) {
       dispatch(setChatRoomError(error?.message || '채팅방 유저 조회 실패'));
@@ -83,7 +76,7 @@ export const leaveChatRoomThunk = createAsyncThunk(
 );
 
 /**
- * ✅ 채팅방 이름 변경
+ * ✅ 채팅방 이름 변경 (방 자체 이름: 전체 사용자에게 영향 가능)
  * PATCH /api/chatRoom/{chatRoomId}/rename?roomName=...
  */
 export const renameChatRoomThunk = createAsyncThunk(
@@ -97,7 +90,6 @@ export const renameChatRoomThunk = createAsyncThunk(
         params: {roomName},
       });
 
-      // ✅ 이름 바꾼 뒤 리스트 갱신
       dispatch(fetchChatRoomListThunk(familyId, userId));
       return true;
     } catch (err) {
@@ -108,20 +100,133 @@ export const renameChatRoomThunk = createAsyncThunk(
 );
 
 /**
- * ✅ 채팅방 생성
- * POST /api/chatRoom/create/{roomName}/{userIds}/{familyId}
+ * ✅ 채팅방 이름 변경 (내 화면에서만)
+ * PATCH /api/chatRoom/{chatRoomId}/rename/me
+ * body: { roomName: "..." }
+ */
+export const renameChatRoomForMeThunk = createAsyncThunk(
+  'chatRoom/renameChatRoomForMe',
+  async ({chatRoomId, roomName}, {rejectWithValue}) => {
+    try {
+      const rid = toId(chatRoomId);
+      if (!rid) return rejectWithValue('chatRoomId가 없습니다.');
+
+      const nextName = String(roomName ?? '').trim();
+      if (!nextName) return rejectWithValue('roomName이 비어있습니다.');
+
+      await apiClient.patch(
+        `${API_BASE}/${rid}/rename/me`,
+        {roomName: nextName},
+        {headers: {'Content-Type': 'application/json'}},
+      );
+
+      return {chatRoomId: rid, roomName: nextName};
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.response?.data ||
+        err?.message ||
+        '알 수 없는 오류';
+      return rejectWithValue(msg);
+    }
+  },
+);
+
+/**
+ * ✅ 채팅방 생성 (권장: JSON)
+ * POST /api/chatRoom/create
+ * body: { familyId, roomName, userIds }
  */
 export const createChatRoomThunk = createAsyncThunk(
   'chatRoom/create',
   async ({roomName, userIds, familyId}, {rejectWithValue}) => {
     try {
-      const response = await apiClient.post(
-        `${API_BASE}/create/${encodeURIComponent(roomName)}/${userIds}/${familyId}`,
+      const trimmedName = String(roomName ?? '').trim();
+      if (!trimmedName) return rejectWithValue('roomName이 비어있습니다.');
+
+      const fid = familyId; // UUID는 보통 문자열 그대로 보내면 됨
+      if (!fid) return rejectWithValue('familyId가 없습니다.');
+
+      // userIds: 배열/문자열 둘 다 받아서 정규화
+      let ids = [];
+      if (Array.isArray(userIds)) {
+        ids = userIds
+          .map(v => (typeof v === 'object' ? v?.id : v))
+          .filter(v => v != null)
+          .map(v => Number(v))
+          .filter(n => Number.isFinite(n));
+      } else if (typeof userIds === 'string') {
+        ids = userIds
+          .split(',')
+          .map(s => Number(String(s).trim()))
+          .filter(n => Number.isFinite(n));
+      }
+
+      const res = await apiClient.post(
+        `${API_BASE}/create`,
+        {
+          familyId: fid,
+          roomName: trimmedName,
+          userIds: ids, // 서버에서 중복 제거 + 본인 자동 포함 처리
+        },
+        {headers: {'Content-Type': 'application/json'}},
+      );
+
+      return res.data; // ChatRoomDTO
+    } catch (error) {
+      const msg =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        error?.message ||
+        '채팅방 생성 실패';
+      return rejectWithValue(msg);
+    }
+  },
+);
+
+/**
+ * ✅ 채팅방에 유저 추가(초대)
+ * POST /api/chatRoom/{chatRoomId}/addUsers/{userIds}
+ * userIds: "1,2,3"
+ */
+export const addUsersToChatRoomThunk = createAsyncThunk(
+  'chatRoom/addUsersToChatRoom',
+  async ({chatRoomId, userIds}, {rejectWithValue}) => {
+    try {
+      const rid = toId(chatRoomId);
+      if (!rid) return rejectWithValue('chatRoomId가 없습니다.');
+
+      // userIds 정규화: 배열이면 join, 객체 배열이면 id 뽑기
+      let ids = [];
+      if (Array.isArray(userIds)) {
+        ids = userIds
+          .map(v => (typeof v === 'object' ? v?.id : v))
+          .filter(v => v != null)
+          .map(v => String(v).trim())
+          .filter(s => s.length > 0);
+      } else {
+        ids = String(userIds ?? '')
+          .split(',')
+          .map(s => s.trim())
+          .filter(Boolean);
+      }
+
+      if (ids.length === 0) return rejectWithValue('초대할 유저가 없습니다.');
+
+      const idPath = ids.join(',');
+      const res = await apiClient.post(
+        `${API_BASE}/${rid}/addUsers/${idPath}`,
         null,
       );
-      return response.data;
+
+      return res.data; // ChatRoomDTO
     } catch (error) {
-      return rejectWithValue(error?.response?.data || '채팅방 생성 실패');
+      const msg =
+        error?.response?.data?.message ||
+        error?.response?.data ||
+        error?.message ||
+        '유저 초대 실패';
+      return rejectWithValue(msg);
     }
   },
 );
@@ -220,8 +325,6 @@ export const toggleAllChatRoomNotificationThunk = createAsyncThunk(
       const res = await apiClient.patch(`${API_BASE}/notification/user`, null, {
         params: {userId, isOn},
       });
-
-      // 서버가 text를 주든 json을 주든 대응
       return {userId, isOn, result: res?.data ?? null};
     } catch (err) {
       const msg = err?.response?.data || err?.message || '알 수 없는 에러';
@@ -230,10 +333,10 @@ export const toggleAllChatRoomNotificationThunk = createAsyncThunk(
   },
 );
 
-/* =========================
- * ✅ 채팅방 단건 조회 (푸시/딥링크 진입용) - GET으로 통일
+/**
+ * ✅ 채팅방 단건 조회 (푸시/딥링크 진입용)
  * GET /api/chatRoom/{chatRoomId}
- * ========================= */
+ */
 export const fetchChatRoomThunk = createAsyncThunk(
   'chatRoom/fetchChatRoom',
   async (chatRoomId, {rejectWithValue}) => {
@@ -246,7 +349,6 @@ export const fetchChatRoomThunk = createAsyncThunk(
         error?.response?.data ||
         error?.message ||
         '채팅방 단건 조회 실패';
-
       return rejectWithValue(msg);
     }
   },

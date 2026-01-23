@@ -13,7 +13,6 @@ import {
   getResponsiveWidth,
   getResponsiveHeight,
 } from '../../../utils/responsive';
-import useHideTabBar from '../../../hooks/useHideTabBar';
 import YellowSpinner from '../../../components/YellowSpinner';
 import {useNotificationList} from '../hooks/useNotificationList';
 import {EMPTY_STYLE, LAYOUT_STYLE} from 'styles/style';
@@ -24,14 +23,12 @@ import {
   fetchNotificationsThunk,
   fetchHasUnreadThunk,
   syncAppBadgeThunk,
-  markNotificationsReadThunk, // ✅ 추가
+  markNotificationsReadThunk,
 } from '../store/notificationThunk';
 
 export default function NotificationScreen() {
   const AVATAR = getResponsiveWidth(46);
-
   const dispatch = useDispatch();
-  useHideTabBar();
 
   const {isLoading, error, rows, handlePress} = useNotificationList();
 
@@ -47,16 +44,10 @@ export default function NotificationScreen() {
 
       (async () => {
         try {
-          // 1) 알림 목록 갱신(조회만)
           await dispatch(fetchNotificationsThunk());
-
-          // 2) ✅ "읽음 확정"은 서버 mark-read로만
           await dispatch(markNotificationsReadThunk());
-
-          // 3) bell 점/카운트 갱신
           await dispatch(fetchHasUnreadThunk());
 
-          // 4) 앱 아이콘 뱃지 = 채팅 + 알림 합산으로 재동기화
           if (!alive) return;
           await dispatch(syncAppBadgeThunk());
         } catch (e) {
@@ -81,17 +72,22 @@ export default function NotificationScreen() {
   if (error) {
     return (
       <View style={[styles.container, {justifyContent: 'center'}]}>
-        <Text style={styles.error}>오류 발생: {String(error)}</Text>
+        <Text allowFontScaling={false} style={styles.error}>
+          오류 발생: {String(error)}
+        </Text>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={true}>
       {safeRows.map((row, index) => {
         if (row?.type === 'section') {
           return (
-            <Text key={`sec-${row.key}-${index}`} style={styles.sectionTitle}>
+            <Text
+              allowFontScaling={false}
+              key={`sec-${row.key}-${index}`}
+              style={styles.sectionTitle}>
               {row.title}
             </Text>
           );
@@ -119,21 +115,30 @@ export default function NotificationScreen() {
             <View style={styles.center}>
               <View style={styles.rowTop}>
                 <Text
+                  allowFontScaling={false}
                   style={[
                     styles.typeBadgeText,
                     {color: row.typeColor || 'black'},
                   ]}>
                   {row.title}
                 </Text>
-                <Text style={styles.when}>{row.when}</Text>
+                <Text allowFontScaling={false} style={styles.when}>
+                  {row.when}
+                </Text>
               </View>
 
-              <Text numberOfLines={1} style={styles.summary}>
+              <Text
+                allowFontScaling={false}
+                numberOfLines={1}
+                style={styles.summary}>
                 {row.summary}
               </Text>
 
               {!!row.preview && (
-                <Text numberOfLines={2} style={styles.content}>
+                <Text
+                  allowFontScaling={false}
+                  numberOfLines={2}
+                  style={styles.content}>
                   {row.preview}
                 </Text>
               )}
@@ -144,7 +149,9 @@ export default function NotificationScreen() {
 
       {!hasNotifications && (
         <View style={{paddingVertical: getResponsiveHeight(60)}}>
-          <Text style={styles.empty}>아직 새로운 소식이 없어요</Text>
+          <Text allowFontScaling={false} style={styles.empty}>
+            아직 새로운 소식이 없어요
+          </Text>
         </View>
       )}
     </ScrollView>
@@ -156,10 +163,10 @@ const styles = StyleSheet.create({
   sectionTitle: {
     marginTop: getResponsiveHeight(14),
     marginBottom: getResponsiveHeight(4),
-    fontSize: getResponsiveFontSize(11.5),
+    fontSize: getResponsiveFontSize(12),
     color: '#8D8D8D',
     fontFamily: 'Pretendard-Medium',
-    paddingHorizontal: LAYOUT_STYLE.screenPaddingHorizontal + 5,
+    paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal + 5,
   },
   error: {
     fontSize: getResponsiveFontSize(15),
@@ -170,7 +177,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: getResponsiveHeight(15),
-    paddingHorizontal: LAYOUT_STYLE.screenPaddingHorizontal + 5,
+    paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal + 5,
     borderBottomWidth: 0.5,
     borderBottomColor: '#EFEFEF',
     gap: getResponsiveWidth(12),
@@ -213,8 +220,8 @@ const styles = StyleSheet.create({
   },
   empty: {
     textAlign: 'center',
-    fontSize: EMPTY_STYLE.emptyFontSize,
-    fontFamily: EMPTY_STYLE.emptyFontFamily,
-    color: EMPTY_STYLE.emptyColor,
+    fontSize: EMPTY_STYLE().emptyFontSize,
+    fontFamily: EMPTY_STYLE().emptyFontFamily,
+    color: EMPTY_STYLE().emptyColor,
   },
 });

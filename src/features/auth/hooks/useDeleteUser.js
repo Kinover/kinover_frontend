@@ -4,7 +4,7 @@ import {useCallback, useState} from 'react';
 import {useDispatch} from 'react-redux';
 import {deleteUserThunk} from 'features/home/store/userThunk';
 import {deleteLoginInfo} from 'utils/storage';
-import { setLogout } from '../store/authSlice';
+import { setLogout } from '../store/loginSlice';
 import {setUserlogout} from 'features/home/store/userSlice';
 
 export function useDeleteUser(onSuccess) {
