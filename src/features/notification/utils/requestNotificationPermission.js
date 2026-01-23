@@ -17,8 +17,9 @@ import {
   fetchHasUnreadThunk,
 } from '../store/notificationThunk';
 
-// ✅ 앱 아이콘 뱃지 적용(ios/android)
 import {applyAppBadgeCount} from '../../../utils/appBadge';
+
+import notifee, {AndroidStyle, EventType} from '@notifee/react-native';
 
 // 🔥 ToastModal 컨트롤용
 let toastHandler = null;
@@ -101,12 +102,106 @@ function dispatchTabsNavigate(params) {
  */
 const toStr = v => (v == null ? null : String(v));
 
+const safeJsonParse = (v, fallback) => {
+  try {
+    if (typeof v !== 'string') return fallback;
+    return JSON.parse(v);
+  } catch {
+    return fallback;
+  }
+};
+
+/**
+ * ✅ 푸시 타입 정규화
+ * - ✅ pushType 우선
+ * - fallback: notificationType -> type
+ */
+function normalizeRemoteMessage(remoteMessage) {
+  const data = remoteMessage?.data || {};
+
+  const rawType = data.pushType || data.notificationType || data.type;
+  const notificationType = rawType ? String(rawType).toUpperCase() : null;
+
+  return {
+    notificationType,
+    pushType: data.pushType ? String(data.pushType).toUpperCase() : null,
+
+    postId: toStr(data.postId),
+    commentId: toStr(data.commentId),
+    chatRoomId: toStr(data.chatRoomId),
+    scheduleId: toStr(data.scheduleId),
+
+    unreadCount: toStr(data.unreadCount),
+    badgeCount: toStr(data.badgeCount),
+
+    roomName: toStr(data.roomName),
+  };
+}
+
+function isChatType(type) {
+  return type === 'CHAT' || type === 'MENTION_CHAT';
+}
+
+function isBellType(type) {
+  return type === 'POST' || type === 'COMMENT' || type === 'MENTION_COMMENT';
+}
+
+/**
+ * ✅ pushType 기반으로 안드 BG 채널 선택
+ */
+function pickAndroidChannelId(type) {
+  if (type === 'CHAT' || type === 'MENTION_CHAT') return 'chat';
+  if (type === 'POST') return 'post';
+  if (type === 'COMMENT' || type === 'MENTION_COMMENT') return 'comment';
+  return 'default';
+}
+
+async function ensureAndroidChannel(channelId) {
+  if (Platform.OS !== 'android') return channelId;
+
+  return await notifee.createChannel({
+    id: channelId,
+    name:
+      channelId === 'chat'
+        ? 'Chat'
+        : channelId === 'post'
+        ? 'Post'
+        : channelId === 'comment'
+        ? 'Comment'
+        : 'Default',
+  });
+}
+
+/**
+ * ✅ [핵심] iOS NSE(A안) 쓰는 경우 중복 방지 규칙
+ * - iOS: 시스템 알림(Extension이 이미지 붙임)을 쓰므로 Notifee 로컬 알림은 "채팅/멘션채팅"에선 띄우지 않기
+ * - Android: Notifee로 계속 렌더링(카톡 스타일)
+ */
+function shouldBlockNotifeeOnThisPlatform(type) {
+  if (Platform.OS !== 'ios') return false;
+
+  // ✅ iOS(A안): 채팅은 NSE + 시스템 알림이 떠야 한다.
+  // notifee까지 띄우면 중복 2개 뜸.
+  if (isChatType(type)) return true;
+
+  return false;
+}
+
 /**
  * ✅ 서버 기준 "종(bell)" 뱃지/빨간점만 동기화
  * - ⚠️ 채팅 푸시(CHAT / MENTION_CHAT)로는 절대 호출하면 안 됨
+ *
+ * ✅ (개선) 과호출 방지(throttle)
  */
-async function syncBellUnreadFromServer() {
+let lastBellSyncAt = 0;
+const BELL_SYNC_THROTTLE_MS = 5000;
+
+async function syncBellUnreadFromServer(force = false) {
   try {
+    const now = Date.now();
+    if (!force && now - lastBellSyncAt < BELL_SYNC_THROTTLE_MS) return;
+    lastBellSyncAt = now;
+
     await store.dispatch(fetchUnreadCountThunk()); // bell unreadCount
     store.dispatch(fetchHasUnreadThunk()); // bell hasUnread
   } catch {
@@ -131,59 +226,137 @@ async function applyBadgeFromPush(n) {
 }
 
 /**
- * ✅ 푸시 타입 정규화
- * - ✅ pushType 우선
- * - fallback: notificationType -> type
+ * ✅ (개선) openFromRemoteMessage 중복 방지 가드
+ * - 시스템알림 + notifee + 초기열기 등이 겹칠 때 라우팅 2번 타는 걸 막음
  */
-function normalizeRemoteMessage(remoteMessage) {
-  const data = remoteMessage?.data || {};
+let lastOpenSig = null;
+let lastOpenAt = 0;
+const OPEN_GUARD_MS = 900;
 
-  const rawType = data.pushType || data.notificationType || data.type;
-  const notificationType = rawType ? String(rawType).toUpperCase() : null;
+function buildOpenSig(remoteMessage) {
+  const d = remoteMessage?.data || {};
+  const type = (d.pushType || d.notificationType || d.type || '').toString();
+  const postId = (d.postId || '').toString();
+  const commentId = (d.commentId || '').toString();
+  const chatRoomId = (d.chatRoomId || '').toString();
+  const scheduleId = (d.scheduleId || '').toString();
 
-  return {
-    notificationType,
-    pushType: data.pushType ? String(data.pushType).toUpperCase() : null,
-
-    postId: toStr(data.postId),
-    commentId: toStr(data.commentId),
-    chatRoomId: toStr(data.chatRoomId),
-    scheduleId: toStr(data.scheduleId),
-
-    // 서버가 보내는 카운트(있으면 활용 가능)
-    unreadCount: toStr(data.unreadCount), // ✅ bell 전용 count(레거시 호환)
-    badgeCount: toStr(data.badgeCount),   // ✅ 앱 아이콘 뱃지(채팅+벨 합)
-
-    // 일부 서버가 roomName을 data로도 줄 수 있어서 대비
-    roomName: toStr(data.roomName),
-  };
+  // ✅ 가장 흔한 식별 조합
+  return `${type}|${postId}|${commentId}|${chatRoomId}|${scheduleId}`;
 }
 
-function isChatType(type) {
-  return type === 'CHAT' || type === 'MENTION_CHAT';
-}
+function shouldBlockDuplicateOpen(remoteMessage) {
+  const now = Date.now();
+  const sig = buildOpenSig(remoteMessage);
 
-function isBellType(type) {
-  return type === 'POST' || type === 'COMMENT' || type === 'MENTION_COMMENT';
+  if (lastOpenSig === sig && now - lastOpenAt < OPEN_GUARD_MS) {
+    return true;
+  }
+  lastOpenSig = sig;
+  lastOpenAt = now;
+  return false;
 }
 
 /**
- * ✅ pushType 기반으로 안드 BG 채널 선택
+ * ✅ data-only + 카톡스타일 Notifee 표시
+ * - Android: largeIcon = senderImage
+ * - 이미지 채팅이면 BIGPICTURE = imageUrls[0]
+ * - 게시글/댓글이면 BIGPICTURE = firstImageUrl
+ *
+ * ⚠️ smallIcon은 반드시 안드 리소스에 존재해야 함:
+ *   android/app/src/main/res/drawable/ic_stat_notification.png
  */
-function pickAndroidChannelId(type) {
-  if (type === 'CHAT' || type === 'MENTION_CHAT') return 'chat';
-  if (type === 'POST') return 'post';
-  if (type === 'COMMENT' || type === 'MENTION_COMMENT') return 'comment';
-  return 'default';
+async function displayNotifeeFromRemoteMessage(remoteMessage) {
+  const n = normalizeRemoteMessage(remoteMessage);
+  const data = remoteMessage?.data || {};
+  const type = n.notificationType || 'DEFAULT';
+
+  // ✅ iOS(A안) 중복 방지
+  if (shouldBlockNotifeeOnThisPlatform(type)) return;
+
+  const title =
+    data?.title ||
+    data?.roomName ||
+    data?.categoryTitle ||
+    remoteMessage?.notification?.title ||
+    '알림';
+
+  const body =
+    data?.body || remoteMessage?.notification?.body || '새 소식이 있어요';
+
+  // ✅ badgeCount가 있으면 먼저 반영
+  await applyBadgeFromPush(n);
+
+  const cid = pickAndroidChannelId(type);
+  const channelId = await ensureAndroidChannel(cid);
+
+  const senderImage = data?.senderImage || null;
+  const firstImageUrl = data?.firstImageUrl || null;
+  const messageType = String(data?.messageType || '').toLowerCase();
+  const imageUrls = safeJsonParse(data?.imageUrls, []);
+
+  // ✅ BIGPICTURE 대상
+  let bigPictureUrl = null;
+
+  if (isChatType(type) && messageType === 'image') {
+    bigPictureUrl = imageUrls?.[0] || firstImageUrl || null;
+  } else if (isBellType(type)) {
+    bigPictureUrl = firstImageUrl || null;
+  }
+
+  const android =
+    Platform.OS === 'android'
+      ? {
+          channelId,
+          pressAction: {id: 'default'},
+          smallIcon: 'ic_stat_notification',
+          largeIcon: senderImage || undefined,
+          ...(bigPictureUrl
+            ? {
+                style: {
+                  type: AndroidStyle.BIGPICTURE,
+                  picture: bigPictureUrl,
+                  largeIcon: senderImage || undefined,
+                },
+              }
+            : {}),
+        }
+      : undefined;
+
+  await notifee.displayNotification({
+    title: String(title),
+    body: String(body),
+
+    // ✅ 눌렀을 때 라우팅에 필요한 data 유지
+    data: {
+      ...data,
+
+      notificationType: n.notificationType,
+      pushType: n.pushType,
+
+      postId: n.postId,
+      commentId: n.commentId,
+      chatRoomId: n.chatRoomId,
+      scheduleId: n.scheduleId,
+
+      unreadCount: n.unreadCount,
+      badgeCount: n.badgeCount,
+      roomName: n.roomName,
+    },
+
+    android,
+  });
 }
 
 async function openFromRemoteMessage(remoteMessage) {
+  // ✅ (개선) 중복 open 방지
+  if (shouldBlockDuplicateOpen(remoteMessage)) return;
+
   const n = normalizeRemoteMessage(remoteMessage);
 
   console.log('[PUSH OPENED data]', remoteMessage?.data);
   console.log('[PUSH normalized]', n);
 
-  // ✅ 어떤 타입이든 badgeCount가 있으면 아이콘 뱃지부터 즉시 반영
   await applyBadgeFromPush(n);
 
   if (!n?.notificationType) {
@@ -222,10 +395,8 @@ async function openFromRemoteMessage(remoteMessage) {
         return;
       }
 
-      // ✅ FamilyChatRoom이 chatRoom 객체를 필요로 하니까 단건조회로 채워서 진입
       const chatRoom = await fetchChatRoomDetail(n.chatRoomId);
 
-      // 단건조회 실패하면, 그래도 소통 탭으로는 보내주기
       if (!chatRoom) {
         safeNavigate(() =>
           dispatchTabsNavigate({
@@ -235,14 +406,13 @@ async function openFromRemoteMessage(remoteMessage) {
         return;
       }
 
-      // route.params 포맷을 FamilyChatRoom.jsx가 기대하는 형태로 맞춤
       safeNavigate(() =>
         dispatchTabsNavigate({
           screen: '소통',
           params: {
             screen: '채팅방화면',
             params: {
-              chatRoom, // ✅ 이게 중요!
+              chatRoom,
               title: chatRoom?.roomName || n.roomName || '',
               userId: undefined,
               isKino: false,
@@ -352,69 +522,113 @@ export function handleNotificationListeners() {
   if (listenersAttached) return () => {};
   listenersAttached = true;
 
-  // ✅ 앱 시작 시: bell(종)만 동기화
-  syncBellUnreadFromServer();
+  // ✅ 첫 진입은 강제 1회
+  syncBellUnreadFromServer(true);
 
   const appStateSub = AppState.addEventListener('change', nextState => {
     if (nextState === 'active') {
-      // ✅ 포그라운드 복귀 시에도 bell만 동기화
-      syncBellUnreadFromServer();
+      // ✅ 과호출 방지(throttle)
+      syncBellUnreadFromServer(false);
     }
   });
 
-  // ✅ 앱 열려있는 상태(포그라운드)에서 푸시 수신
+  // ✅ 포그라운드 수신
   const unsubOnMessage = messaging().onMessage(async m => {
     const n = normalizeRemoteMessage(m);
 
-    // ✅ badgeCount가 있으면 아이콘 뱃지 즉시 반영(채팅 포함)
     await applyBadgeFromPush(n);
 
-    // ✅ bell 타입만 서버 기준 bell 동기화(채팅 푸시는 금지)
     if (isBellType(n.notificationType)) {
-      await syncBellUnreadFromServer();
+      // ✅ 과호출 방지(throttle)
+      await syncBellUnreadFromServer(false);
     }
 
+    // ✅ iOS(A안) 채팅 중복 방지 포함
+    await displayNotifeeFromRemoteMessage(m);
+
+    // ✅ 토스트는 포그라운드에서만
     const title = m.notification?.title ?? m.data?.title ?? '알림';
     const body =
       m.notification?.body ?? m.data?.body ?? '새로운 알림이 도착했어요';
     showToast(`${title}: ${body}`);
   });
 
-  // ✅ 알림 클릭 -> 앱 열림(백그라운드 -> 포그라운드)
-  const unsubOpened = messaging().onNotificationOpenedApp(async remoteMessage => {
-    const n = normalizeRemoteMessage(remoteMessage);
+  /**
+   * ✅ data-only 중심이면
+   * - 실제 클릭은 Notifee 로컬 알림에서 발생
+   * - -> Notifee press 이벤트로 라우팅
+   */
 
-    // ✅ badgeCount가 있으면 아이콘 뱃지 즉시 반영
+  // ✅ Notifee 클릭(포그라운드)
+  const unsubNotifeeFg = notifee.onForegroundEvent(async ({type, detail}) => {
+    if (type !== EventType.PRESS) return;
+
+    const data = detail?.notification?.data || {};
+    const fakeRemoteMessage = {data};
+
+    const n = normalizeRemoteMessage(fakeRemoteMessage);
+
     await applyBadgeFromPush(n);
 
-    // ✅ POST/COMMENT 계열만 bell 동기화 (채팅은 제외)
     if (isBellType(n.notificationType)) {
-      await syncBellUnreadFromServer();
+      await syncBellUnreadFromServer(false);
+    }
+
+    await openFromRemoteMessage(fakeRemoteMessage);
+  });
+
+  // ✅ 앱이 Notifee 알림 클릭으로 시작된 경우(완전 종료 -> 실행)
+  notifee.getInitialNotification().then(async initial => {
+    const data = initial?.notification?.data;
+    if (!data) return;
+
+    const fakeRemoteMessage = {data};
+    const n = normalizeRemoteMessage(fakeRemoteMessage);
+
+    await applyBadgeFromPush(n);
+
+    if (isBellType(n.notificationType)) {
+      await syncBellUnreadFromServer(false);
+    }
+
+    await openFromRemoteMessage(fakeRemoteMessage);
+  });
+
+  /**
+   * ✅ (레거시/혼합 대응) notification payload로 올 수도 있으면 유지
+   * - iOS에서 CHAT을 alert로 보내면 여기로 들어올 수 있음
+   * - openFromRemoteMessage로 동일 라우팅 처리
+   */
+  const unsubOpened = messaging().onNotificationOpenedApp(async remoteMessage => {
+    if (!remoteMessage) return;
+
+    const n = normalizeRemoteMessage(remoteMessage);
+
+    await applyBadgeFromPush(n);
+
+    if (isBellType(n.notificationType)) {
+      await syncBellUnreadFromServer(false);
     }
 
     await openFromRemoteMessage(remoteMessage);
   });
 
-  // ✅ 앱 종료 상태에서 알림 클릭
   messaging()
     .getInitialNotification()
     .then(async remoteMessage => {
-      if (remoteMessage) {
-        const n = normalizeRemoteMessage(remoteMessage);
+      if (!remoteMessage) return;
 
-        // ✅ badgeCount가 있으면 아이콘 뱃지 즉시 반영
-        await applyBadgeFromPush(n);
+      const n = normalizeRemoteMessage(remoteMessage);
 
-        // ✅ POST/COMMENT 계열만 bell 동기화 (채팅은 제외)
-        if (isBellType(n.notificationType)) {
-          await syncBellUnreadFromServer();
-        }
+      await applyBadgeFromPush(n);
 
-        await openFromRemoteMessage(remoteMessage);
+      if (isBellType(n.notificationType)) {
+        await syncBellUnreadFromServer(false);
       }
+
+      await openFromRemoteMessage(remoteMessage);
     });
 
-  // 🔄 토큰 갱신
   const unsubTokenRefresh = messaging().onTokenRefresh(async token => {
     const accessToken = await getJWT();
     if (!accessToken) return;
@@ -439,6 +653,11 @@ export function handleNotificationListeners() {
   return () => {
     try {
       unsubOnMessage();
+    } catch {
+      null;
+    }
+    try {
+      unsubNotifeeFg?.();
     } catch {
       null;
     }
@@ -468,40 +687,13 @@ export function registerBackgroundMessageHandler() {
 
       const n = normalizeRemoteMessage(remoteMessage);
 
-      // ✅ (가능하면) BG에서도 badgeCount 반영 시도
       await applyBadgeFromPush(n);
 
-      const notifee = (await import('@notifee/react-native')).default;
-
-      let channelId;
+      // ✅ iOS(A안): BG에서 Notifee 호출할 이유가 없다(채팅은 시스템 알림)
+      // ✅ Android: BG에서도 Notifee로 렌더링
       if (Platform.OS === 'android') {
-        const cid = pickAndroidChannelId(n.notificationType);
-
-        // ✅ 채널 미리 생성(없으면 생성)
-        channelId = await notifee.createChannel({
-          id: cid,
-          name:
-            cid === 'chat'
-              ? 'Chat'
-              : cid === 'post'
-              ? 'Post'
-              : cid === 'comment'
-              ? 'Comment'
-              : 'Default',
-        });
+        await displayNotifeeFromRemoteMessage(remoteMessage);
       }
-
-      await notifee.displayNotification({
-        title:
-          remoteMessage?.notification?.title ||
-          remoteMessage?.data?.title ||
-          '알림',
-        body:
-          remoteMessage?.notification?.body ||
-          remoteMessage?.data?.body ||
-          '새 소식이 있어요',
-        android: channelId ? {channelId} : undefined,
-      });
     } catch (e) {
       console.log('[BG] handler error:', e);
     }
