@@ -99,7 +99,7 @@ export default function SendKinoChat({
 
   return (
     <View style={[styles.sendContainer, spacingStyle]}>
-      {showTime && <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>}
+      {showTime && <Text allowFontScaling={false} style={styles.sendTime}>{formatTime(chatTime)}</Text>}
 
       {messageType === 'image' ? (
         imageUrls.length === 1 ? (
@@ -120,7 +120,7 @@ export default function SendKinoChat({
             styles.textPadding,
             {backgroundColor: bubbleColors.bubble},
           ]}>
-          <Text style={[styles.sendText, {color: bubbleColors.text}]}>
+          <Text allowFontScaling={false} style={[styles.sendText, {color: bubbleColors.text}]}>
             {message}
           </Text>
         </View>
@@ -159,14 +159,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(4.5),
   },
   sendText: {
-    fontFamily: CHATROOM_STYLE.messageFontFamily,
-    fontSize: CHATROOM_STYLE.KinoMessageFontSize,
+    fontFamily: CHATROOM_STYLE().messageFontFamily,
+    fontSize: CHATROOM_STYLE().KinoMessageFontSize,
     color: 'black', // ✅ 기본값(동적으로 override 됨)
     flexWrap: 'wrap',
     lineHeight: getResponsiveFontSize(18),
   },
   sendTime: {
-    fontSize: CHATROOM_STYLE.messageTimeFontSize,
+    fontSize: CHATROOM_STYLE().messageTimeFontSize,
     color: '#666',
     marginRight: getResponsiveWidth(5),
     marginBottom: getResponsiveHeight(2),

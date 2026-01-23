@@ -3,6 +3,7 @@
  */
 import 'react-native-gesture-handler'; // ✅ 가장 위
 import 'react-native-reanimated'; // ✅ 두 번째
+import './src/app/disableFontScaling';
 
 import {AppRegistry} from 'react-native';
 import {name as appName} from './app.json';

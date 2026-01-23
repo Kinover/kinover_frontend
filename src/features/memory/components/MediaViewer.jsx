@@ -352,12 +352,12 @@ export default function MediaViewer({
 
       <View style={styles.topBar}>
         <TouchableOpacity onPress={handleClose} style={styles.circleIconBtn}>
-          <Text style={styles.xText}>✕</Text>
+          <Text allowFontScaling={false} style={styles.xText}>✕</Text>
         </TouchableOpacity>
 
         <View pointerEvents="none" style={styles.indexPill}>
-          <Text style={styles.headerIndex}>
-            <Text style={styles.headerIndexCurrent}>{safeIndex + 1}</Text>
+          <Text allowFontScaling={false} style={styles.headerIndex}>
+            <Text allowFontScaling={false} style={styles.headerIndexCurrent}>{safeIndex + 1}</Text>
             {' / '}
             {media.length}
           </Text>
@@ -392,10 +392,10 @@ export default function MediaViewer({
         <View style={styles.progressOverlay}>
           <View style={styles.progressBox}>
             <ActivityIndicator size="large" color="#fff" />
-            <Text style={styles.progressText}>
+            <Text allowFontScaling={false} style={styles.progressText}>
               {progress.current} / {progress.total}
             </Text>
-            <Text style={styles.progressSub}>
+            <Text allowFontScaling={false} style={styles.progressSub}>
               화면을 나가면 저장이 취소돼요
             </Text>
           </View>

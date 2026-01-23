@@ -86,12 +86,12 @@ export default function CommunicationScreen({navigation}) {
           renderItem={renderItem}
           extraData={listRevision}
           contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator={true}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
           ListEmptyComponent={
-            <Text style={styles.noChatMessage}>
+            <Text allowFontScaling={false} style={styles.noChatMessage}>
               {'아직 채팅방이 없어요.\n가족과의 첫 대화를 시작해볼까요?'}
             </Text>
           }
@@ -137,9 +137,9 @@ const styles = StyleSheet.create({
     gap: getResponsiveHeight(6),
   },
   noChatMessage: {
-    fontSize: EMPTY_STYLE.emptyFontSize,
-    fontFamily: EMPTY_STYLE.emptyFontFamily,
-    color: EMPTY_STYLE.emptyColor,
+    fontSize: EMPTY_STYLE().emptyFontSize,
+    fontFamily: EMPTY_STYLE().emptyFontFamily,
+    color: EMPTY_STYLE().emptyColor,
     textAlign: 'center',
     marginTop: getResponsiveHeight(80),
     lineHeight: getResponsiveFontSize(20),

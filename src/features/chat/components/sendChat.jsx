@@ -124,10 +124,10 @@ export default function SendChat({
           {isUploading ? (
             <>
               <ActivityIndicator color="#fff" />
-              <Text style={styles.loadingText}>전송 중…</Text>
+              <Text allowFontScaling={false} style={styles.loadingText}>전송 중…</Text>
             </>
           ) : (
-            <Text style={styles.failText}>전송 실패</Text>
+            <Text allowFontScaling={false} style={styles.failText}>전송 실패</Text>
           )}
         </View>
       );
@@ -238,7 +238,7 @@ export default function SendChat({
 
                 {isLastCell && (
                   <View style={styles.moreOverlay}>
-                    <Text style={styles.moreOverlayText}>+{extraCount}</Text>
+                    <Text allowFontScaling={false} style={styles.moreOverlayText}>+{extraCount}</Text>
                   </View>
                 )}
               </View>
@@ -297,10 +297,10 @@ export default function SendChat({
       {(showTime && !!chatTime) || unreadCount > 0 ? (
         <View style={styles.metaLine}>
           {unreadCount > 0 && (
-            <Text style={styles.unreadCountText}>{unreadCount}</Text>
+            <Text allowFontScaling={false} style={styles.unreadCountText}>{unreadCount}</Text>
           )}
           {showTime && !!chatTime && (
-            <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>
+            <Text allowFontScaling={false} style={styles.sendTime}>{formatTime(chatTime)}</Text>
           )}
         </View>
       ) : null}
@@ -370,8 +370,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(4.5),
   },
   sendText: {
-    fontFamily: CHATROOM_STYLE.messageFontFamily,
-    fontSize: CHATROOM_STYLE.messageFontSize,
+    fontFamily: CHATROOM_STYLE().messageFontFamily,
+    fontSize: CHATROOM_STYLE().messageFontSize,
     color: 'black',
     lineHeight: getResponsiveFontSize(17),
   },
@@ -381,7 +381,7 @@ const styles = StyleSheet.create({
   },
 
   sendTime: {
-    fontSize: CHATROOM_STYLE.messageTimeFontSize,
+    fontSize: CHATROOM_STYLE().messageTimeFontSize,
     color: '#666',
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },

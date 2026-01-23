@@ -3,8 +3,7 @@ import {createStackNavigator} from '@react-navigation/stack';
 import {Platform} from 'react-native';
 
 import HomeScreen from '../../../features/home/screens';
-import SettingScreen from '../../../features/setting/screens/SettingScreen';
-import NotificationSettingScreen from '../../../features/setting/screens/NotificationSettingScreen';
+
 import {
   RenderHeaderHome,
   RenderGoBackButton,
@@ -23,7 +22,7 @@ import {useIsFocused} from '@react-navigation/native';
 const Stack = createStackNavigator();
 
 const getHeaderHeight = () =>
-  Platform.OS === 'ios' ? getResponsiveHeight(107.5) : getResponsiveHeight(80);
+  Platform.OS === 'ios' ? getResponsiveHeight(107.5) : getResponsiveHeight(70);
 
 const defaultHeaderStyle = {
   height: getHeaderHeight(),
@@ -77,28 +76,6 @@ const HomeStack = ({route}) => {
             <RenderHeaderHome navigation={navigation} currentScreen="홈" />
           ),
           headerStyle: [defaultHeaderStyle],
-        })}
-      />
-
-
-
-      <Stack.Screen
-        name="설정화면"
-        component={SettingScreen}
-        options={({navigation}) => ({
-          gestureEnabled: true,
-          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-          headerTitle: '',
-        })}
-      />
-
-      <Stack.Screen
-        name="알림설정화면"
-        component={NotificationSettingScreen}
-        options={({navigation}) => ({
-          gestureEnabled: true,
-          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-          headerTitle: '',
         })}
       />
 

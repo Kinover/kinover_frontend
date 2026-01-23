@@ -1,100 +1,118 @@
-// src/hooks/auth/useAutoLogin.js
+// src/features/auth/hooks/useAutoLogin.js
 import {useEffect, useRef} from 'react';
-import {useDispatch} from 'react-redux';
-import {useNavigation} from '@react-navigation/native';
+import {useDispatch, useSelector} from 'react-redux';
 
-import {getToken, getHasFamily, setHasFamily} from '../../../utils/storage';
+import {getToken, deleteLoginInfo, setHasFamily} from 'utils/storage';
 import {fetchUserThunk} from 'features/home/store/userThunk';
 import {fetchFamilyThunk} from 'features/home/store/familyThunk';
-import {setLoginSuccess} from '../store/authSlice';
+import store from 'store';
 
-import store from 'store/store';
-import {deleteLoginInfo} from 'utils/storage';
-import {startChatSocket, stopChatSocket} from 'features/chat/hooks/ChatSocket'; // ✅ 경로 통일
+import {startChatSocket, stopChatSocket} from 'features/chat/hooks/ChatSocket';
+import {setLoginSuccess, setLogout, setAuthChecked} from '../store/loginSlice';
+
+const withTimeout = (promise, ms = 6000) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`timeout ${ms}ms`)), ms),
+    ),
+  ]);
 
 export function useAutoLogin() {
   const dispatch = useDispatch();
-  const navigation = useNavigation();
 
-  const unsubscribeAppStateRef = useRef(null);
+  // ✅ 핵심: authChecked 상태를 보고 "필요할 때만" 실행
+  const authChecked = useSelector(state => state.login?.authChecked);
+
+  // ✅ 중복 실행 방지(동일 세션에서만)
+  const runningRef = useRef(false);
+  const socketUnsubRef = useRef(null);
 
   useEffect(() => {
-    const run = async () => {
-      try {
-        const token = await getToken();
-        const localHasFamily = await getHasFamily();
+    // ✅ 이미 체크 완료면 더 이상 실행할 필요 없음
+    if (authChecked) return;
 
-        console.log('🔐 AutoLogin - token:', token);
-        console.log('📦 AutoLogin - local hasFamily:', localHasFamily);
+    // ✅ 이미 실행 중이면 중복 실행 방지
+    if (runningRef.current) return;
+    runningRef.current = true;
+
+    const run = async () => {
+      console.log('🚀 AutoLogin start');
+
+      try {
+        const token = await withTimeout(getToken(), 6000);
+        console.log('🔐 token:', token ? 'YES' : 'NO');
 
         if (!token) {
-          console.log('❗ 토큰 없음 → 자동 로그인 스킵');
+          stopChatSocket();
+          dispatch(setLogout());
+          return;
+        }
+
+        // ✅ 토큰 유효성은 유저 조회로 확정
+        try {
+          const r = dispatch(fetchUserThunk());
+          if (typeof r?.unwrap === 'function') {
+            await withTimeout(r.unwrap(), 8000);
+          } else {
+            await withTimeout(r, 8000);
+          }
+          console.log('✅ fetchUser ok');
+        } catch (e) {
+          console.log('❌ fetchUser fail => logout', e?.message);
+          await deleteLoginInfo();
+          stopChatSocket();
+          dispatch(setLogout());
           return;
         }
 
         dispatch(setLoginSuccess());
 
-        // 1) 유저 조회 (여기서 진짜 토큰 유효성 확정)
+        // ✅ 가족 정보(있으면)
         try {
-          const result = await dispatch(fetchUserThunk());
-          console.log('✅ 자동 로그인 - 유저 조회 성공:', result);
+          const state = store.getState();
+          const userState = state.user;
+          const user = userState?.user ?? userState ?? null;
+          const familyId = user?.familyId ?? null;
+
+          const hasFamily = !!familyId;
+          await setHasFamily(hasFamily);
+
+          if (hasFamily && familyId) {
+            const r2 = dispatch(fetchFamilyThunk(familyId));
+            if (typeof r2?.unwrap === 'function') await r2.unwrap();
+            else await r2;
+            console.log('✅ fetchFamily ok');
+          }
         } catch (e) {
-          console.log(
-            '❌ 자동 로그인 중 유저 조회 실패, 토큰 삭제',
-            e?.response?.status,
-            e?.message,
-          );
-          await deleteLoginInfo();
-
-          // ✅ 혹시라도 열려있던 소켓이 있다면 닫기
-          stopChatSocket();
-          return;
+          console.log('⚠️ fetchFamily skip/fail:', e?.message);
         }
 
-        // ✅ 여기까지 왔으면 토큰 유효 → 전역 소켓 시작 (딱 1번)
-        if (!unsubscribeAppStateRef.current) {
-          unsubscribeAppStateRef.current = startChatSocket(dispatch);
-        }
-
-        // 2) 최신 state에서 user/familyId 읽기
-        const state = store.getState();
-        const userState = state.user;
-        const user = userState.user ?? userState;
-        const familyId = user?.familyId ?? null;
-
-        console.log('👤 AutoLogin 유저 정보:', user);
-        console.log('🏠 AutoLogin familyId:', familyId);
-
-        const hasFamily = !!familyId;
-        await setHasFamily(hasFamily);
-
-        if (hasFamily && familyId) {
-          await dispatch(fetchFamilyThunk(familyId));
-          navigation.reset({
-            index: 0,
-            routes: [{name: 'Tabs', params: {screen: 'Home'}}],
-          });
-        } else {
-          navigation.reset({
-            index: 0,
-            routes: [{name: '약관동의화면'}],
-          });
+        // ✅ 소켓 시작(필요 시 1회)
+        if (!socketUnsubRef.current) {
+          socketUnsubRef.current = startChatSocket(dispatch);
         }
       } catch (err) {
-        console.error('🚨 자동 로그인 전체 실패:', err);
+        console.log('🚨 AutoLogin fatal:', err?.message);
         await deleteLoginInfo();
         stopChatSocket();
+        dispatch(setLogout());
+      } finally {
+        console.log('✅ AutoLogin done -> authChecked true');
+        dispatch(setAuthChecked(true));
+        runningRef.current = false;
       }
     };
 
     run();
 
     return () => {
-      // 앱 루트에서 useAutoLogin이 언마운트 되는 경우 대비
-      if (unsubscribeAppStateRef.current) {
-        unsubscribeAppStateRef.current();
-        unsubscribeAppStateRef.current = null;
+      // ✅ 언마운트 시 소켓 구독 해제
+      if (socketUnsubRef.current) {
+        socketUnsubRef.current();
+        socketUnsubRef.current = null;
       }
+      runningRef.current = false;
     };
-  }, [dispatch, navigation]);
+  }, [dispatch, authChecked]);
 }

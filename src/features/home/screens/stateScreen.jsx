@@ -12,7 +12,6 @@ import {
   Animated,
   Dimensions,
   Platform,
-  Image,
 } from 'react-native';
 
 import DropShadow from 'react-native-drop-shadow';
@@ -22,6 +21,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
+  getResponsiveIconSize,
 } from '../../../utils/responsive';
 
 import useHideTabBar from '../../../hooks/useHideTabBar';
@@ -29,8 +29,10 @@ import {useDispatch, useSelector} from 'react-redux';
 import {modifyUserThunk} from '../store/userThunk';
 import {useNavigation} from '@react-navigation/native';
 import BottomActionButton from 'components/BottomActionButton';
+import {COLORS} from 'styles/style';
 
-const CHECK_IMAGE = require('../../../assets/icons/check-gray.png');
+// ✅ 추가: 재사용 체크 뱃지
+import CheckBadge from 'components/CheckBadge';
 
 const EMOTIONS = [
   {
@@ -179,7 +181,6 @@ const EmotionItem = ({item, index, isSelected, onPress, itemWidth}) => {
               width: itemWidth,
               height: CARD_H,
               borderRadius: RADIUS,
-              
             },
           ]}>
           <Animated.View
@@ -190,12 +191,16 @@ const EmotionItem = ({item, index, isSelected, onPress, itemWidth}) => {
                 borderColor,
               },
             ]}>
-            {/* ✅ 기존 체크 텍스트 제거하고, 체크 이미지로 교체 + 흰색 tint */}
-            <Animated.View style={[styles.checkBadge, {opacity: badgeOpacity}]}>
-              <Image
-                source={CHECK_IMAGE}
-                style={styles.checkIcon}
-                resizeMode="contain"
+            {/* ✅ CheckBadge 적용: Animated.View는 opacity만 담당 */}
+            <Animated.View
+              style={[styles.checkBadgePos, {opacity: badgeOpacity}]}>
+              <CheckBadge
+                size={getResponsiveWidth(16)}
+                dotSize={getResponsiveIconSize(8)}
+                borderWidth={2}
+                borderColor={COLORS.brandPrimary}
+                backgroundColor="#FFFFFF"
+                dotColor={COLORS.brandPrimary}
               />
             </Animated.View>
 
@@ -206,6 +211,7 @@ const EmotionItem = ({item, index, isSelected, onPress, itemWidth}) => {
             />
 
             <Text
+              allowFontScaling={false}
               style={[
                 styles.emotionText,
                 isSelected && styles.emotionTextSelected,
@@ -274,13 +280,14 @@ export default function StateScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>지금 나의 감정을 골라주세요</Text>
-      <Text style={styles.subtitle}>
+      <Text allowFontScaling={false} style={styles.title}>
+        지금 나의 감정을 골라주세요
+      </Text>
+      <Text allowFontScaling={false} style={styles.subtitle}>
         {'선택한 감정은 24시간 동안 유지돼요.'}
       </Text>
 
       <FlatList
-        scrollEnabled={false}
         data={EMOTIONS}
         renderItem={renderEmotion}
         keyExtractor={item => item.id}
@@ -322,8 +329,6 @@ const styles = StyleSheet.create({
   listContent: {
     paddingTop: getResponsiveHeight(5),
     paddingBottom: getResponsiveHeight(30),
-
-    // ✅ 여기! 그림자 잘림 방지용 리스트 좌우 여백
     paddingHorizontal: EDGE_GUTTER,
   },
 
@@ -354,27 +359,15 @@ const styles = StyleSheet.create({
   ring: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: RADIUS,
-    borderWidth: 2,
+    borderWidth: 1,
     opacity: 0,
   },
 
-  checkBadge: {
+  // ✅ 기존 checkBadge 스타일은 “위치만” 남김
+  checkBadgePos: {
     position: 'absolute',
     top: getResponsiveHeight(8),
     right: getResponsiveWidth(8),
-    width: getResponsiveWidth(22),
-    height: getResponsiveWidth(22),
-    borderRadius: 999,
-    backgroundColor: '#FFC84D', // ✅ 노란 배경 그대로
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // ✅ 체크 아이콘 (회색 png → 흰색 tint)
-  checkIcon: {
-    width: getResponsiveWidth(11),
-    height: getResponsiveWidth(11),
-    tintColor: '#FFFFFF',
   },
 
   emotionImage: {

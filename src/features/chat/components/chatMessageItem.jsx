@@ -163,7 +163,7 @@ export default function ChatMessageItem({
     <View style={[styles.wrapper, isMe ? styles.alignRight : styles.alignLeft]}>
       {shouldShowDate && !hideDateSeparator && message?.createdAt && (
         <View style={styles.dateSeparator}>
-          <Text style={styles.dateSeparatorText}>
+          <Text allowFontScaling={false} style={styles.dateSeparatorText}>
             {formatDate(message.createdAt)}
           </Text>
         </View>
@@ -179,8 +179,8 @@ const styles = StyleSheet.create({
   alignLeft: {alignItems: 'flex-start'},
   dateSeparator: {
     alignSelf: 'center',
-    paddingHorizontal: getResponsiveWidth(13),
-    paddingVertical: getResponsiveHeight(5),
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(4),
     marginVertical: getResponsiveHeight(25),
     backgroundColor: 'rgba(0, 0, 0, 0.25)',
     borderRadius: getResponsiveIconSize(20),
@@ -189,8 +189,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textAlignVertical: 'center',
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(10),
+    fontSize: getResponsiveFontSize(11.5),
     color: 'white',
-    lineHeight: getResponsiveHeight(17),
+    lineHeight: getResponsiveHeight(16),
   },
 });

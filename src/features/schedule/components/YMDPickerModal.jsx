@@ -77,12 +77,12 @@ export default function YMDPickerModal({
         <View style={styles.backdrop}>
           <TouchableWithoutFeedback>
             <View style={styles.card}>
-              <Text style={styles.title}>날짜 선택</Text>
+              <Text allowFontScaling={false} style={styles.title}>날짜 선택</Text>
 
               <View style={styles.row}>
                 {/* 년 */}
                 <View style={styles.col}>
-                  <Text style={styles.colLabel}>년</Text>
+                  <Text allowFontScaling={false} style={styles.colLabel}>년</Text>
                   <View style={styles.pickerBox}>
                     <RNPickerSelect
                       value={year}
@@ -269,19 +269,19 @@ const styles = StyleSheet.create({
   },
 
   confirm: {
-    backgroundColor: BUTTON_STYLES.saveBg,
-    borderColor: BUTTON_STYLES.saveBg,
+    backgroundColor: BUTTON_STYLES().saveBg,
+    borderColor: BUTTON_STYLES().saveBg,
   },
 
   cancelText: {
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: BUTTON_STYLES.fontSize,
+    fontSize: BUTTON_STYLES().fontSize,
     color: '#6B7280',
   },
 
   confirmText: {
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: BUTTON_STYLES.fontSize,
+    fontSize: BUTTON_STYLES().fontSize,
     color: '#FFFFFF',
   },
 });

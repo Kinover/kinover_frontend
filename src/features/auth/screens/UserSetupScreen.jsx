@@ -102,12 +102,21 @@ export default function UserSetupScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>{`가족 연결을 위해\n몇 가지 정보가 필요해요`}</Text>
-      <Text style={styles.sub}>Kinover에서 사용할 정보를 입력해주세요.</Text>
+      <Text
+        allowFontScaling={false}
+        style={
+          styles.title
+        }>{`가족 연결을 위해\n몇 가지 정보가 필요해요`}</Text>
+      <Text allowFontScaling={false} style={styles.sub}>
+        Kinover에서 사용할 정보를 입력해주세요.
+      </Text>
 
       <View style={styles.field}>
-        <Text style={styles.label}>
-          이름 <Text style={styles.star}>*</Text>
+        <Text allowFontScaling={false} style={styles.label}>
+          이름{' '}
+          <Text allowFontScaling={false} style={styles.star}>
+            *
+          </Text>
         </Text>
         <TextInput
           style={styles.input}
@@ -119,8 +128,11 @@ export default function UserSetupScreen() {
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>
-          생년월일 <Text style={styles.star}>*</Text>
+        <Text allowFontScaling={false} style={styles.label}>
+          생년월일{' '}
+          <Text allowFontScaling={false} style={styles.star}>
+            *
+          </Text>
         </Text>
         <TextInput
           style={styles.input}
@@ -131,12 +143,16 @@ export default function UserSetupScreen() {
         />
       </View>
 
-      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {error ? (
+        <Text allowFontScaling={false} style={styles.error}>
+          {error}
+        </Text>
+      ) : null}
 
       <BottomActionButton
         label={loading ? '저장 중...' : '완료하기'}
         onPress={handleSubmit}
-        disabled={isButtonDisabled}   // ← 여기!
+        disabled={isButtonDisabled} // ← 여기!
       />
     </SafeAreaView>
   );

@@ -27,8 +27,8 @@ const styles = StyleSheet.create({
       ios: {
         shadowColor: 'black',
         shadowOffset: {width: 0, height: -0}, // 위로 퍼지게
-        shadowOpacity: 0.7,
-        shadowRadius: 10,
+        shadowOpacity: 0.6,
+        shadowRadius: 7,
       },
       android: {
         elevation: 8, // 위쪽만 강조

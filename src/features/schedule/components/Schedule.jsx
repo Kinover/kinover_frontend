@@ -157,7 +157,9 @@ function Schedule({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.dateText}>{formattedDate}</Text>
+      <Text allowFontScaling={false} style={styles.dateText}>
+        {formattedDate}
+      </Text>
 
       {hasBirthday && (
         <DropShadow style={[styles.cardShadowBox, styles.roundPillShadow]}>
@@ -172,19 +174,26 @@ function Schedule({
                     styles.iconCircle,
                     {backgroundColor: COLOR.YELLOW_BG},
                   ]}>
-                  <Text style={styles.iconText}>🎂</Text>
+                  <Text allowFontScaling={false} style={styles.iconText}>
+                    🎂
+                  </Text>
                 </View>
 
                 <View style={styles.texts}>
-                  <Text style={styles.subtitle}>오늘</Text>
-                  <Text style={styles.title} numberOfLines={1}>
+                  <Text allowFontScaling={false} style={styles.subtitle}>
+                    오늘
+                  </Text>
+                  <Text
+                    allowFontScaling={false}
+                    style={styles.title}
+                    numberOfLines={1}>
                     {displayNames}님의 생일이에요
                   </Text>
                 </View>
               </View>
 
               <View style={[styles.pill, {backgroundColor: COLOR.YELLOW_PILL}]}>
-                <Text style={[styles.pillText, {color: COLOR.YELLOW_TEXT}]}>
+                <Text allowFontScaling={false} style={[styles.pillText, {color: COLOR.YELLOW_TEXT}]}>
                   기념일
                 </Text>
               </View>
@@ -227,16 +236,25 @@ function Schedule({
                           styles.iconCircle,
                           {backgroundColor: preset.iconBg},
                         ]}>
-                        <Text style={styles.iconText} numberOfLines={1}>
+                        <Text
+                          allowFontScaling={false}
+                          style={styles.iconText}
+                          numberOfLines={1}>
                           {preset.icon}
                         </Text>
                       </View>
 
                       <View style={styles.texts}>
-                        <Text style={styles.subtitle} numberOfLines={1}>
+                        <Text
+                          allowFontScaling={false}
+                          style={styles.subtitle}
+                          numberOfLines={1}>
                           {ownerLabel}
                         </Text>
-                        <Text style={styles.title} numberOfLines={1}>
+                        <Text
+                          allowFontScaling={false}
+                          style={styles.title}
+                          numberOfLines={1}>
                           {item.title || '제목 없음'}
                         </Text>
                       </View>
@@ -245,6 +263,7 @@ function Schedule({
                     <View
                       style={[styles.pill, {backgroundColor: preset.pillBg}]}>
                       <Text
+                        allowFontScaling={false}
                         style={[
                           styles.pillText,
                           {color: preset.pillTextColor},
@@ -259,7 +278,7 @@ function Schedule({
           })}
 
           {(Array.isArray(scheduleList) ? scheduleList.length : 0) === 0 ? (
-            <Text style={styles.emptyText}>
+            <Text allowFontScaling={false} style={styles.emptyText}>
               {'일정이 비어 있어요.\n새로운 일정을 추가해볼까요?'}
             </Text>
           ) : null}
@@ -279,8 +298,8 @@ const styles = StyleSheet.create({
   },
   dateText: {
     color: COLORS.textPrimary,
-    fontSize: DEFAULT_STYLE.sectionTitle.fontSize - 1.5,
-    fontFamily: DEFAULT_STYLE.sectionTitle.fontFamily,
+    fontSize: DEFAULT_STYLE().sectionTitle.fontSize - 1.5,
+    fontFamily: DEFAULT_STYLE().sectionTitle.fontFamily,
     marginTop: getResponsiveHeight(15),
     marginBottom: getResponsiveHeight(16),
     alignSelf: 'flex-start',
@@ -377,9 +396,9 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     marginTop: getResponsiveHeight(60),
-    fontSize: EMPTY_STYLE.emptyFontSize,
-    fontFamily: EMPTY_STYLE.emptyFontFamily,
-    color: EMPTY_STYLE.emptyColor,
+    fontSize: EMPTY_STYLE().emptyFontSize,
+    fontFamily: EMPTY_STYLE().emptyFontFamily,
+    color: EMPTY_STYLE().emptyColor,
     alignSelf: 'center',
     textAlign: 'center',
     textAlignVertical: 'center',

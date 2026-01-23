@@ -420,8 +420,8 @@ export default function ImageCarousel({
       {!isChromeHidden && (
         <View pointerEvents="none" style={styles.fixedTopBar}>
           <View style={styles.indexPill}>
-            <Text style={styles.headerIndex}>
-              <Text style={styles.headerIndexCurrent}>{currentIndex + 1}</Text>
+            <Text allowFontScaling={false} style={styles.headerIndex}>
+              <Text allowFontScaling={false} style={styles.headerIndexCurrent}>{currentIndex + 1}</Text>
               {' / '}
               {mediaList.length}
             </Text>

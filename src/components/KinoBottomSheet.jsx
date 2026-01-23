@@ -1,8 +1,10 @@
 // src/components/KinoBottomSheet.js
 
-import React from 'react';
+import React, {useMemo} from 'react';
 import {Keyboard, Dimensions} from 'react-native';
 import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
+import {useSelector} from 'react-redux';
+import {FONT_MODE} from 'store/uiSlice';
 import {getResponsiveWidth} from 'utils/responsive';
 
 const {height: WINDOW_H} = Dimensions.get('window');
@@ -12,30 +14,44 @@ export function KinoBottomSheet({
   snapPoints,
   children,
   enableContentPanningGesture = false,
-  animationConfigs = {
-    damping: 22,
-    stiffness: 190,
-    mass: 0.95,
-    overshootClamping: false,
-    restDisplacementThreshold: 0.5,
-    restSpeedThreshold: 0.5,
-  },
-
-  // ✅ 키보드가 시트/버튼을 밀지 않게
+  animationConfigs,
   keyboardBehavior = 'none',
   androidKeyboardInputMode = 'adjustNothing',
-
-  // ✅ Dynamic snap points용 (useBottomSheetDynamicSnapPoints에서 받아옴)
   handleHeight,
   contentHeight,
 }) {
+  // ✅ 1. 폰트모드 구독 (이거 없으면 아무것도 안 바뀜)
+  const fontMode = useSelector(state => state.ui.fontMode);
+
+  // ✅ 2. multiplier
+  const fontMul = useMemo(() => {
+    if (fontMode === FONT_MODE.EXTRA_LARGE) return 1.22;
+    if (fontMode === FONT_MODE.LARGE) return 1.12;
+    return 1.0;
+  }, [fontMode]);
+
+  // ✅ 3. snapPoints 재계산 (핵심)
+  const resolvedSnapPoints = useMemo(() => {
+    if (!Array.isArray(snapPoints)) return snapPoints;
+
+    return snapPoints.map(sp => {
+      if (typeof sp === 'number') {
+        return Math.min(
+          Math.floor(sp * fontMul),
+          Math.floor(WINDOW_H * 0.85),
+        );
+      }
+      return sp; // 'CONTENT_HEIGHT' 같은 문자열은 그대로
+    });
+  }, [snapPoints, fontMul]);
+
   return (
     <BottomSheetModal
       ref={modalRef}
       index={0}
-      snapPoints={snapPoints}
+      snapPoints={resolvedSnapPoints}
       enableDynamicSizing
-      maxDynamicContentSize={Math.floor(WINDOW_H * 0.85)}
+      maxDynamicContentSize={Math.floor(WINDOW_H * 0.85 * fontMul)}
       handleHeight={handleHeight}
       contentHeight={contentHeight}
       animationConfigs={animationConfigs}
@@ -49,6 +65,8 @@ export function KinoBottomSheet({
         height: 4,
         borderRadius: 2,
         backgroundColor: '#E5E7EB',
+        // 🔥 폰트 커질수록 indicator도 살짝 커지게
+        transform: [{scaleX: fontMul}],
       }}
       keyboardBehavior={keyboardBehavior}
       keyboardBlurBehavior="restore"

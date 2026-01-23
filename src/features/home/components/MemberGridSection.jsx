@@ -422,7 +422,9 @@ const MemberGridItem = memo(function MemberGridItem({
       </View>
 
       <View style={styles.infoCol}>
-        <Text style={styles.userName} numberOfLines={1}>
+        <Text allowFontScaling={false}
+          style={styles.userName}
+          numberOfLines={1}>
           {safeMember.name ?? ''}
         </Text>
 
@@ -432,7 +434,7 @@ const MemberGridItem = memo(function MemberGridItem({
               styles.statusPill,
               isOnline ? styles.statusPillOnline : styles.statusPillOffline,
             ]}>
-            <Text
+            <Text allowFontScaling={false}
               style={[
                 styles.statusText,
                 isOnline ? styles.statusOnline : styles.statusOffline,
@@ -465,7 +467,8 @@ export default function MemberGridSection({
   const gapX = getResponsiveWidth(8);
   const gapY = getResponsiveHeight(14);
 
-  const containerWidth = screenWidth - LAYOUT_STYLE.screenPaddingHorizontal * 2;
+  const containerWidth =
+    screenWidth - LAYOUT_STYLE().screenPaddingHorizontal * 2;
   const innerContentWidth = screenWidth - marginH * 2 - paddingH * 2;
   const itemWidth = (innerContentWidth - gapX * (chunkSize - 1)) / chunkSize;
 
@@ -522,19 +525,19 @@ export default function MemberGridSection({
         ]}>
         <View style={styles.sectionHeader}>
           <View>
-            <Text
+            <Text allowFontScaling={false}
               style={{
                 fontSize: getResponsiveFontSize(16),
-                fontFamily: DEFAULT_STYLE.sectionTitle.fontFamily,
-                color: DEFAULT_STYLE.sectionTitle.color,
+                fontFamily: DEFAULT_STYLE().sectionTitle.fontFamily,
+                color: DEFAULT_STYLE().sectionTitle.color,
               }}>
               우리 가족
             </Text>
-            <Text
+            <Text allowFontScaling={false}
               style={{
                 fontSize: getResponsiveFontSize(11.5),
-                fontFamily: DEFAULT_STYLE.sectionSubtitle.fontFamily,
-                color: DEFAULT_STYLE.sectionSubtitle.color,
+                fontFamily: DEFAULT_STYLE().sectionSubtitle.fontFamily,
+                color: DEFAULT_STYLE().sectionSubtitle.color,
               }}>
               실시간 접속 상태
             </Text>
@@ -558,7 +561,7 @@ export default function MemberGridSection({
         <View style={styles.gridArea}>
           {isEmptyState ? (
             <View style={styles.emptyStateContainer}>
-              <Text style={styles.emptyDesc}>
+              <Text allowFontScaling={false} style={styles.emptyDesc}>
                 {
                   '아직 가족 모임이 완성되지 않았어요\n가족을 초대해서 모임을 완성해보세요!'
                 }
@@ -593,7 +596,7 @@ export default function MemberGridSection({
             <View style={styles.loadingOverlay} pointerEvents="auto">
               <View style={styles.loadingCard}>
                 <ActivityIndicator size="small" color="#111827" />
-                <Text style={styles.loadingText}>로딩중…</Text>
+                <Text allowFontScaling={false} style={styles.loadingText}>로딩중…</Text>
               </View>
             </View>
           )}
@@ -788,9 +791,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(18),
   },
   emptyDesc: {
-    fontSize: EMPTY_STYLE.emptyFontSize,
-    fontFamily: EMPTY_STYLE.emptyFontFamily,
-    color: EMPTY_STYLE.emptyColor,
+    fontSize: EMPTY_STYLE().emptyFontSize,
+    fontFamily: EMPTY_STYLE().emptyFontFamily,
+    color: EMPTY_STYLE().emptyColor,
     textAlign: 'center',
   },
 });

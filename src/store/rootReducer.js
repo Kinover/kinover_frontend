@@ -1,7 +1,6 @@
-// src/store/rootReducer.ts
-import { combineReducers } from '@reduxjs/toolkit';
+// src/store/rootReducer.js
+import {combineReducers} from '@reduxjs/toolkit';
 
-// ⭕ 모든 slice는 default export(=reducer)만 import
 import familyReducer from '../features/home/store/familySlice';
 import memoryReducer from '../features/memory/store/memorySlice';
 import userReducer from '../features/home/store/userSlice';
@@ -10,14 +9,19 @@ import userFamilyReducer from '../features/home/store/userFamilySlice';
 import chatRoomReducer from '../features/chat/store/chatRoomSlice';
 import messageReducer from '../features/chat/store/messageSlice';
 import scheduleReducer from '../features/schedule/store/scheduleSlice';
-import authReducer from '../features/auth/store/authSlice';
+import authReducer from '../features/auth/store/loginSlice';
 import commentReducer from '../features/memory/store/commentSlice';
 import categoryReducer from '../features/memory/store/categorySlice';
 import statusReducer from '../features/home/store/statusSlice';
 import familyNoticeReducer from '../features/home/store/familyNoticeSlice';
 import notificationReducer from '../features/notification/store/notificationSlice';
 
+// ✅ 추가
+import uiReducer from './uiSlice';
+
 const rootReducer = combineReducers({
+  ui: uiReducer, // ✅ 추가 (맨 위든 아래든 상관 없음)
+
   family: familyReducer,
   memory: memoryReducer,
   user: userReducer,
@@ -35,3 +39,4 @@ const rootReducer = combineReducers({
 });
 
 export default rootReducer;
+

@@ -67,7 +67,7 @@ export default function AnimatedAlbumTabSelector({selected, onSelect}) {
                 style={styles.tab}
                 activeOpacity={0.7}
                 onLayout={e => handleLayout(tab.key, e)}>
-                <Text
+                <Text allowFontScaling={false}
                   style={[
                     styles.tabText,
                     selected === tab.key && styles.selectedText,
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     paddingBottom: getResponsiveHeight(15),
     paddingVertical: getResponsiveHeight(5),
-    paddingHorizontal: LAYOUT_STYLE.screenPaddingHorizontal+3,
+    paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal+3,
     paddingRight: getResponsiveWidth(18),
     height: getResponsiveHeight(50),
   },
@@ -119,8 +119,8 @@ const styles = StyleSheet.create({
   tab: {marginRight: getResponsiveWidth(25), flexDirection: 'row'},
   tabText: {
     textAlign: 'center',
-    fontSize: DEFAULT_STYLE.sectionTitle.fontSize,
-    fontFamily: DEFAULT_STYLE.sectionTitle.fontFamily,
+    fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
+    fontFamily: DEFAULT_STYLE().sectionTitle.fontFamily,
     color: '#4A4A4A',
     textAlignVertical: 'bottom',
   },

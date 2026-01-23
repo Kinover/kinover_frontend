@@ -1,5 +1,5 @@
 // src/features/notification/requestNotificationPermission.js
-import store from 'store/store';
+import store from 'store';
 import {
   PermissionsAndroid,
   Platform,

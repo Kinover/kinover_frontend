@@ -218,17 +218,17 @@ export default function PeriodFilterModal({
           <View style={styles.card}>
             {mode === 'ALL' && (
               <>
-                <Text style={styles.cardTitle}>전체 보기</Text>
-                <Text style={styles.cardHint}>
+                <Text allowFontScaling={false} style={styles.cardTitle}>전체 보기</Text>
+                <Text allowFontScaling={false} style={styles.cardHint}>
                   기간 제한 없이 모든 추억을 보여줘요.
                 </Text>
-                <Text style={styles.rangeText}>전체 기간</Text>
+                <Text allowFontScaling={false} style={styles.rangeText}>전체 기간</Text>
               </>
             )}
 
             {mode === 'RECENT' && (
               <>
-                <Text style={styles.cardTitle}>최근 보기</Text>
+                <Text allowFontScaling={false} style={styles.cardTitle}>최근 보기</Text>
 
                 <View style={styles.chipRow}>
                   <PresetChip
@@ -248,7 +248,7 @@ export default function PeriodFilterModal({
                   />
                 </View>
 
-                <Text style={styles.rangeText}>
+                <Text allowFontScaling={false} style={styles.rangeText}>
                   {startDate} ~ {endDate}
                 </Text>
               </>
@@ -256,21 +256,21 @@ export default function PeriodFilterModal({
 
             {mode === 'MONTH' && (
               <>
-                <Text style={styles.cardTitle}>월별 보기</Text>
+                <Text allowFontScaling={false} style={styles.cardTitle}>월별 보기</Text>
 
                 <View style={styles.monthPicker}>
                   <TouchableOpacity
                     style={styles.monthBtn}
                     onPress={() => handleChangeMonth(-1)}
                     activeOpacity={0.85}>
-                    <Text style={styles.monthBtnText}>‹</Text>
+                    <Text allowFontScaling={false} style={styles.monthBtnText}>‹</Text>
                   </TouchableOpacity>
 
                   <View style={styles.monthCenter}>
-                    <Text style={styles.monthMain}>
+                    <Text allowFontScaling={false} style={styles.monthMain}>
                       {year}.{String(month + 1).padStart(2, '0')}
                     </Text>
-                    <Text style={styles.monthRange}>
+                    <Text allowFontScaling={false} style={styles.monthRange}>
                       {startDate} ~ {endDate}
                     </Text>
                   </View>
@@ -279,11 +279,11 @@ export default function PeriodFilterModal({
                     style={styles.monthBtn}
                     onPress={() => handleChangeMonth(1)}
                     activeOpacity={0.85}>
-                    <Text style={styles.monthBtnText}>›</Text>
+                    <Text allowFontScaling={false} style={styles.monthBtnText}>›</Text>
                   </TouchableOpacity>
                 </View>
 
-                <Text style={styles.cardHint}>
+                <Text allowFontScaling={false} style={styles.cardHint}>
                   선택한 달에 등록된 추억만 보여줘요.
                 </Text>
               </>
@@ -301,7 +301,7 @@ function SegmentTab({label, active, onPress}) {
       onPress={onPress}
       activeOpacity={0.85}
       style={styles.segmentTab}>
-      <Text style={[styles.segmentText, active && styles.segmentTextActive]}>
+      <Text allowFontScaling={false} style={[styles.segmentText, active && styles.segmentTextActive]}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -314,7 +314,7 @@ function PresetChip({label, active, onPress}) {
       style={[styles.chip, active && styles.chipActive]}
       onPress={onPress}
       activeOpacity={0.85}>
-      <Text style={[styles.chipText, active && styles.chipTextActive]}>
+      <Text allowFontScaling={false} style={[styles.chipText, active && styles.chipTextActive]}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -419,8 +419,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipActive: {
-    backgroundColor: BUTTON_STYLES.saveBg,
-    borderColor: BUTTON_STYLES.saveBg,
+    backgroundColor: BUTTON_STYLES().saveBg,
+    borderColor: BUTTON_STYLES().saveBg,
   },
   chipText: {
     fontSize: getResponsiveFontSize(12.5),

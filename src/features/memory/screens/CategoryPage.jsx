@@ -25,7 +25,7 @@ import {EMPTY_STYLE} from 'styles/style';
 function CategoryHeaderTitle() {
   return (
     <View style={{width: '100%', alignItems: 'center'}}>
-      <Text style={{fontSize: getResponsiveFontSize(20)}}>카테고리 선택</Text>
+      <Text allowFontScaling={false} style={{fontSize: getResponsiveFontSize(20)}}>카테고리 선택</Text>
     </View>
   );
 }
@@ -165,7 +165,7 @@ export default function CategoryPage() {
               }}>
               <TextInput
                 placeholder="예: 2025 가족 여행"
-                placeholderTextColor={EMPTY_STYLE.emptyColor}
+                placeholderTextColor={EMPTY_STYLE().emptyColor}
                 style={{
                   fontFamily: 'Pretendard-Regular',
                   fontSize: getResponsiveFontSize(14),

@@ -473,7 +473,7 @@ export default function PostPage({route}) {
       headerShown: !isChromeHidden,
       headerTransparent: true,
       headerTitle: () => (
-        <Text style={styles.headerTitle}>{headerCategoryTitle}</Text>
+        <Text allowFontScaling={false} style={styles.headerTitle}>{headerCategoryTitle}</Text>
       ),
       headerTitleAlign: 'center',
       headerStyle: {backgroundColor: 'transparent'},
@@ -760,7 +760,7 @@ export default function PostPage({route}) {
                       : require('../../../assets/images/default.png')
                   }
                 />
-                <Text style={styles.author} numberOfLines={1}>
+                <Text allowFontScaling={false} style={styles.author} numberOfLines={1}>
                   {safeMemory.authorName}
                 </Text>
 
@@ -780,7 +780,7 @@ export default function PostPage({route}) {
               <ScrollView
                 scrollEnabled={descExpanded}
                 showsVerticalScrollIndicator={false}>
-                <Text
+                <Text allowFontScaling={false}
                   style={styles.descContent}
                   numberOfLines={descExpanded ? undefined : 2}>
                   {safeMemory.content}
@@ -822,17 +822,17 @@ const styles = StyleSheet.create({
 
   /** header */
   headerTitle: {
-    fontSize: HEADER_STYLES.defaultTitleFontSize,
-    fontFamily: HEADER_STYLES.defaultTitleFontFamily,
+    fontSize: HEADER_STYLES().defaultTitleFontSize,
+    fontFamily: HEADER_STYLES().defaultTitleFontFamily,
     color: '#fff',
     lineHeight: getResponsiveHeight(26),
     textAlign: 'center',
   },
   headerIcon: {
-    width: HEADER_STYLES.headerRightIconWidth,
-    height: HEADER_STYLES.headerRightIconHeight,
+    width: HEADER_STYLES().headerRightIconWidth,
+    height: HEADER_STYLES().headerRightIconHeight,
     resizeMode: 'contain',
-    marginRight: HEADER_STYLES.headerRightIconRightPadding,
+    marginRight: HEADER_STYLES().headerRightIconRightPadding,
     tintColor: '#fff',
   },
 

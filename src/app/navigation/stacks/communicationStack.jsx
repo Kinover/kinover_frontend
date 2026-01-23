@@ -13,8 +13,6 @@ import AddChatMemeberScreen from '../../../features/chat/screens/addChatMemberSc
 import CreateChatRoom from '../../../features/chat/screens/createChatRoomScreen';
 import ChatRoom from '../../../features/chat/screens/chatRoomScreen';
 import KinoSelectScreen from '../../../features/chat/screens/kinoSelectScreen';
-import SettingScreen from '../../../features/setting/screens/SettingScreen';
-import NotificationSettingScreen from '../../../features/setting/screens/NotificationSettingScreen';
 import {HEADER_STYLES} from 'styles/style';
 import ChatRoomMediaScreen from 'features/chat/screens/chatRoomMediaScreen';
 
@@ -33,7 +31,7 @@ export default function CommunicationStack() {
           height:
             Platform.OS === 'ios'
               ? getResponsiveHeight(107.5)
-              : getResponsiveHeight(80),
+              : getResponsiveHeight(70),
         },
         headerTitleAlign: 'center',
         headerShown: true,
@@ -49,13 +47,14 @@ export default function CommunicationStack() {
           headerLeft: () => null,
           headerTitle: () => (
             <Text
+              allowFontScaling={false}
               style={{
-                fontFamily: HEADER_STYLES.mainTitleFontFamily,
-                fontWeight: HEADER_STYLES.mainTitleFontWeight,
-                fontSize: HEADER_STYLES.mainTitleFontSize, // ✅ 24 → 16 (다른 앱이랑 비슷한 크기)
-                color: HEADER_STYLES.mainTitleFontColor,
+                fontFamily: HEADER_STYLES().mainTitleFontFamily,
+                fontWeight: HEADER_STYLES().mainTitleFontWeight,
+                fontSize: HEADER_STYLES().mainTitleFontSize, // ✅ 24 → 16 (다른 앱이랑 비슷한 크기)
+                color: HEADER_STYLES().mainTitleFontColor,
                 textAlign: 'center',
-                lineHeight: HEADER_STYLES.mainTitleLineHeight, // 살짝만
+                lineHeight: HEADER_STYLES().mainTitleLineHeight, // 살짝만
                 textAlignVertical: 'center',
               }}>
               소통
@@ -68,18 +67,6 @@ export default function CommunicationStack() {
           headerRight: () => (
             <RenderHeaderHome navigation={navigation} currentScreen="소통" />
           ),
-        })}
-      />
-
-      <Stack.Screen
-        name="알림설정화면"
-        component={NotificationSettingScreen}
-        options={({navigation}) => ({
-          gestureEnabled: true,
-          headerBackTitle: '',
-          headerRight: () => null,
-          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-          headerTitle: '',
         })}
       />
 
@@ -148,17 +135,6 @@ export default function CommunicationStack() {
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
           headerTitle: () => '',
           headerBackTitleVisible: false,
-        })}
-      />
-
-      <Stack.Screen
-        name="설정화면"
-        component={SettingScreen}
-        options={({navigation}) => ({
-          gestureEnabled: true,
-          headerRight: () => null,
-          headerLeft: () => <RenderGoBackButton navigation={navigation} />,
-          headerTitle: '',
         })}
       />
     </Stack.Navigator>

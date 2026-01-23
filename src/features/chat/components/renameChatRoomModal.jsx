@@ -1,5 +1,5 @@
 import React from 'react';
-import {TextInput, StyleSheet, Platform, Text, View} from 'react-native';
+import {TextInput, StyleSheet} from 'react-native';
 import CustomModal from '../../../components/CustomModal';
 import {
   getResponsiveHeight,
@@ -28,8 +28,11 @@ export default function RenameChatRoomModal({
       confirmText="변경"
       closeText="취소"
       title="채팅방 이름 변경"
-      subText={'채팅방 이름은 모든 참여자에게 동일하게 보여요'}>
+      subText={
+        '이름을 바꿔도 다른 참여자에게는 보이지 않아요.\n나만 쓰는 채팅방 이름이에요.'
+      }>
       <TextInput
+        allowFontScaling={false}
         placeholder={currentRoomName || '채팅방 이름'}
         value={newRoomName}
         onChangeText={setNewRoomName}
@@ -44,13 +47,12 @@ const styles = StyleSheet.create({
   textInput: {
     borderWidth: 1,
     borderColor: '#DADADA',
-    borderRadius: getResponsiveWidth(6),
+    borderRadius: getResponsiveWidth(12),
     paddingVertical: getResponsiveHeight(12),
     paddingHorizontal: getResponsiveWidth(12),
     fontSize: getResponsiveFontSize(15),
     backgroundColor: '#fff',
     fontFamily: 'Pretendard-Regular',
-    marginBottom: getResponsiveHeight(12),
   },
 
   noticeText: {

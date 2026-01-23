@@ -66,7 +66,9 @@ export function BottomSheetButtons({
           onPress={handleCancelPress}
           disabled={saving}
           activeOpacity={0.85}>
-          <Text style={[styles.buttonText, styles.cancelButtonText]}>
+          <Text
+            allowFontScaling={false}
+            style={[styles.buttonText, styles.cancelButtonText]}>
             {cancelLabel}
           </Text>
         </TouchableOpacity>
@@ -77,7 +79,9 @@ export function BottomSheetButtons({
         onPress={handleSavePress}
         disabled={saving}
         activeOpacity={0.85}>
-        <Text style={styles.buttonText}>{saving ? '저장 중...' : saveLabel}</Text>
+        <Text allowFontScaling={false} style={styles.buttonText}>
+          {saving ? '저장 중...' : saveLabel}
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -198,17 +202,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: BUTTON_STYLES.cancelBg,
+    backgroundColor: BUTTON_STYLES().cancelBg,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
   saveButton: {
-    backgroundColor: BUTTON_STYLES.saveBg,
+    backgroundColor: BUTTON_STYLES().saveBg,
   },
   buttonText: {
     textAlign: 'center',
-    fontFamily: BUTTON_STYLES.fontFamily,
-    fontSize: BUTTON_STYLES.fontSize,
+    fontFamily: BUTTON_STYLES().fontFamily,
+    fontSize: BUTTON_STYLES().fontSize,
     color: '#FFFFFF',
   },
   cancelButtonText: {

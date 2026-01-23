@@ -22,7 +22,7 @@ export default function BottomActionButton({label, onPress}) {
         style={styles.button}
         onPress={handlePress}
         activeOpacity={0.85}>
-        <Text style={styles.buttonText}>{label}</Text>
+        <Text allowFontScaling={false} style={styles.buttonText}>{label}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -40,17 +40,17 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   button: {
-    backgroundColor: BUTTON_STYLES.saveBg,
+    backgroundColor: BUTTON_STYLES().saveBg,
     height: getResponsiveHeight(50),
     width: '100%',
     borderRadius: getResponsiveIconSize(10),
     justifyContent: 'center',
   },
   buttonText: {
-    fontSize: BUTTON_STYLES.fontSize,
+    fontSize: BUTTON_STYLES().fontSize,
     lineHeight: getResponsiveHeight(30),
     textAlign: 'center',
-    fontFamily: BUTTON_STYLES.fontFamily,
+    fontFamily: BUTTON_STYLES().fontFamily,
     color: 'white',
   },
 });

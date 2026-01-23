@@ -36,11 +36,15 @@ import BottomSheetLayout from 'components/BottomSheetLayout';
 import {BOTTOMSHEET_STYLE} from 'styles/style';
 import {BottomSheetButtons} from 'components/BottomSheetButtons';
 
+// ✅ fontMode 구독
+import {useSelector} from 'react-redux';
+import {FONT_MODE} from '../../../store/uiSlice';
+
 const {height: WINDOW_H} = Dimensions.get('window');
 const SAFE_GAP = 12;
 
-// ✅ footer 높이만큼 본문 바닥 여유 (버튼 가림/측정 보정용)
-const FOOTER_SPACE = getResponsiveHeight(86);
+// ✅ footer 높이 기본값 (폰트모드에 따라 가산)
+const FOOTER_SPACE_BASE = getResponsiveHeight(86);
 
 const KIND = {
   INDIVIDUAL: 'individual',
@@ -90,9 +94,7 @@ const COLORS = {
   pillText: '#FFFFFF',
 };
 
-const shadow = Platform.select({
-
-});
+const shadow = Platform.select({});
 
 const shadowStrong = Platform.select({
   ios: {
@@ -104,6 +106,49 @@ const shadowStrong = Platform.select({
   android: {elevation: 4},
   default: {},
 });
+
+// ✅ percent clamp
+const clampPct = (n, min, max) => Math.min(Math.max(n, min), max);
+const toPct = n => `${n.toFixed(1)}%`;
+
+/**
+ * ✅ 이 시트(에디터형)용 폰트모드 → 높이 전략
+ * - base(기본 높이)는 "이 시트 고유" 값으로 유지
+ * - LARGE/EXTRA_LARGE에서 올라가는 폭(step)은 에디터 특성상 조금 더 주는 편이 안전
+ * - 2번째 스냅(키보드용)은 98%로 고정
+ */
+const getEditorSnapPointsByFontMode = fontMode => {
+  // ✅ 이 시트의 고유 base
+  const BASE = 78.5;
+
+  // ✅ 에디터형은 커질 때 답답해지기 쉬워서 step을 조금 더
+  // - LARGE: +4.5 정도
+  // - EXTRA: +8.0 정도
+  const inc =
+    fontMode === FONT_MODE.EXTRA_LARGE
+      ? 11
+      : fontMode === FONT_MODE.LARGE
+      ? 7
+      : 1.2;
+
+  // ✅ 상한(너무 커져 숨막히는 것 방지)
+  const first = clampPct(BASE + inc, 72, 90);
+
+  return [toPct(first), '98%'];
+};
+
+const getEditorFooterSpaceByFontMode = fontMode => {
+  // ✅ footer 아래 여유도 폰트가 커질수록 같이 올려주기
+  // 에디터형은 버튼+입력+키보드가 겹쳐서 여유가 중요함
+  const extra =
+    fontMode === FONT_MODE.EXTRA_LARGE
+      ? getResponsiveHeight(26)
+      : fontMode === FONT_MODE.LARGE
+      ? getResponsiveHeight(14)
+      : 0;
+
+  return FOOTER_SPACE_BASE + extra;
+};
 
 const ScheduleEditorBottomSheetModal = forwardRef(
   (
@@ -130,6 +175,19 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     },
     ref,
   ) => {
+    // ✅ fontMode 구독
+    const fontMode = useSelector(state => state.ui.fontMode);
+
+    // ✅ fontMode에 따른 footer 공간
+    const FOOTER_SPACE = useMemo(() => {
+      return getEditorFooterSpaceByFontMode(fontMode);
+    }, [fontMode]);
+
+    // ✅ fontMode에 따른 snapPoints (기본/키보드)
+    const snapPoints = useMemo(() => {
+      return getEditorSnapPointsByFontMode(fontMode);
+    }, [fontMode]);
+
     const [localKind, setLocalKind] = useState(KIND.INDIVIDUAL);
     const [localSelectedUserIds, setLocalSelectedUserIds] = useState([]);
 
@@ -341,6 +399,11 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         }).start();
 
         modalRef.current?.present?.();
+
+        // ✅ fontMode 바뀌었을 때 이전 스냅 상태가 남는 경우 보정
+        requestAnimationFrame(() => {
+          modalRef.current?.snapToIndex?.(0);
+        });
       },
       dismiss: () => closeSheet(),
     }));
@@ -351,7 +414,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         keyboardOpenRef.current = true;
         keyboardHeightRef.current = e?.endCoordinates?.height || 0;
 
-        // ✅ 핵심: 키보드 뜨면 시트 자체를 크게 (90%)
+        // ✅ 키보드 뜨면 2번째 스냅(98%)로
         modalRef.current?.snapToIndex?.(1);
       };
 
@@ -367,7 +430,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
           tapToResetRef.current = false;
         });
 
-        // ✅ 키보드 내려가면 기본 스냅 복귀
+        // ✅ 키보드 내려가면 기본 스냅(0) 복귀
         modalRef.current?.snapToIndex?.(0);
       };
 
@@ -388,7 +451,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
     /**
      * ✅ input이 "아직도" 가려지면 내용만 추가로 올림(미세 보정)
-     * - UserBottomSheet 로직 그대로: limitY에 FOOTER_SPACE까지 고려
+     * - limitY에 FOOTER_SPACE까지 고려 (fontMode LARGE/EXTRA면 FOOTER_SPACE가 더 커짐)
      */
     const ensureVisible = useCallback(
       refNode => {
@@ -408,8 +471,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
             const inputBottomY = y + h;
             const baseLimit = kbH ? WINDOW_H - kbH : WINDOW_H;
 
-            // ✅ footer는 키보드 위로 안 올라가니까,
-            // ✅ 입력이 footer 영역까지 고려해서 보이게 해야 함
+            // ✅ footer 공간 + safe gap을 빼서 “입력 하단이 보이는 영역” 계산
             const limitY = baseLimit - SAFE_GAP - FOOTER_SPACE;
 
             if (inputBottomY <= limitY) {
@@ -431,7 +493,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
           });
         });
       },
-      [shiftAnim],
+      [shiftAnim, FOOTER_SPACE],
     );
 
     const dismissKeyboardAndReset = useCallback(() => {
@@ -604,6 +666,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
               (isAnniversaryMode || disabledByMode) && styles.chipDisabled,
             ]}>
             <Text
+              allowFontScaling={false}
               style={[styles.chipText, selected && styles.chipTextSelected]}
               numberOfLines={1}>
               {item.name}
@@ -626,8 +689,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       <>
         <BottomSheetLayout
           modalRef={modalRef}
-          // ✅ 2단 스냅: 기본 78%, 키보드 시 90%
-          snapPoints={['78%', '98%']}
+          snapPoints={snapPoints} // ✅ NORMAL/LARGE/EXTRA_LARGE 반영
           keyboardBehavior={Platform.OS === 'ios' ? 'interactive' : 'none'}
           androidKeyboardInputMode="adjustNothing"
           onDismiss={handleSheetDismiss}
@@ -645,12 +707,15 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                   style={{
                     flex: 1,
                     transform: [{translateY: shiftAnim}],
-                    // ✅ footer 공간 확보 (UserBottomSheet처럼)
+                    // ✅ footer 공간 확보 (fontMode에 따라 더 확보됨)
                     paddingBottom: FOOTER_SPACE + getResponsiveHeight(18),
                   }}>
                   <View style={styles.content}>
                     {/* ----------------- 1) 구분 ----------------- */}
-                    <Text style={styles.sectionTitle}>구분</Text>
+                    <Text allowFontScaling={false} style={styles.sectionTitle}>
+                      구분
+                    </Text>
+
                     <View style={styles.segmentWrap}>
                       <TouchableOpacity
                         activeOpacity={0.9}
@@ -661,6 +726,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                             styles.segmentItemActive,
                         ]}>
                         <Text
+                          allowFontScaling={false}
                           style={[
                             styles.segmentText,
                             currentKind === KIND.INDIVIDUAL &&
@@ -679,6 +745,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                             styles.segmentItemActive,
                         ]}>
                         <Text
+                          allowFontScaling={false}
                           style={[
                             styles.segmentText,
                             currentKind === KIND.FAMILY &&
@@ -697,6 +764,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                             styles.segmentItemActive,
                         ]}>
                         <Text
+                          allowFontScaling={false}
                           style={[
                             styles.segmentText,
                             currentKind === KIND.ANNIVERSARY &&
@@ -710,14 +778,24 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                     {/* ----------------- 2) 구성원 ----------------- */}
                     <View style={{marginTop: getResponsiveHeight(18)}}>
                       <View style={styles.sectionRow}>
-                        <Text style={styles.sectionTitle}>구성원</Text>
+                        <Text
+                          allowFontScaling={false}
+                          style={styles.sectionTitle}>
+                          구성원
+                        </Text>
 
                         {isAnniversaryMode ? (
                           <View style={styles.badgeInfo}>
-                            <Text style={styles.badgeInfoText}>자동</Text>
+                            <Text
+                              allowFontScaling={false}
+                              style={styles.badgeInfoText}>
+                              자동
+                            </Text>
                           </View>
                         ) : (
-                          <Text style={styles.countText}>
+                          <Text
+                            allowFontScaling={false}
+                            style={styles.countText}>
                             {selectedCount}명 선택
                           </Text>
                         )}
@@ -725,10 +803,14 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
                       {isAnniversaryMode ? (
                         <View style={styles.infoCard}>
-                          <Text style={styles.infoTitle}>
+                          <Text
+                            allowFontScaling={false}
+                            style={styles.infoTitle}>
                             기념일은 구성원 선택이 필요 없어요
                           </Text>
-                          <Text style={styles.infoDesc}>
+                          <Text
+                            allowFontScaling={false}
+                            style={styles.infoDesc}>
                             저장하면 가족 공통 기념일로 등록돼요.
                           </Text>
                         </View>
@@ -740,7 +822,9 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
                           <View style={styles.tipRow}>
                             <View style={styles.tipDot} />
-                            <Text style={styles.tipText}>
+                            <Text
+                              allowFontScaling={false}
+                              style={styles.tipText}>
                               개별: 1명 이상 · 가족: 전체 또는 여러 명
                             </Text>
                           </View>
@@ -750,14 +834,17 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
                     {/* ----------------- 3) 일정 내용 ----------------- */}
                     <View style={{marginTop: getResponsiveHeight(18)}}>
-                      <Text style={[styles.sectionTitle, {marginBottom: 3}]}>
+                      <Text
+                        allowFontScaling={false}
+                        style={[styles.sectionTitle, {marginBottom: 3}]}>
                         내용
                       </Text>
-                      <Text style={styles.inputHelp}>
+                      <Text allowFontScaling={false} style={styles.inputHelp}>
                         핵심만 짧게 적어도 충분해요.
                       </Text>
 
                       <BottomSheetTextInput
+                        allowFontScaling={false}
                         ref={inputRef}
                         key={`input-${inputKey}`}
                         defaultValue={scheduleRef.current}
@@ -803,7 +890,6 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     paddingTop: getResponsiveHeight(6),
-    // ✅ 여기 paddingBottom은 Animated.View에서 footer 공간 확보하니까 과하게 안 줘도 됨
     paddingBottom: getResponsiveHeight(18),
   },
 
@@ -813,8 +899,8 @@ const styles = StyleSheet.create({
   },
 
   sectionTitle: {
-    fontSize: BOTTOMSHEET_STYLE.sectionLabel.fontSize,
-    fontFamily: BOTTOMSHEET_STYLE.sectionLabel.fontFamily,
+    fontSize: BOTTOMSHEET_STYLE().sectionLabel.fontSize,
+    fontFamily: BOTTOMSHEET_STYLE().sectionLabel.fontFamily,
     color: COLORS.text,
     marginBottom: getResponsiveHeight(10),
     marginTop: getResponsiveHeight(6),
