@@ -1471,6 +1471,8 @@ PODS:
     - ReactCommon/turbomodule/bridging
     - ReactCommon/turbomodule/core
     - Yoga
+  - react-native-restart (0.0.27):
+    - React-Core
   - react-native-safe-area-context (5.4.0):
     - React-Core
   - react-native-video (6.18.0):
@@ -2148,6 +2150,7 @@ DEPENDENCIES:
   - react-native-drop-shadow (from `../node_modules/react-native-drop-shadow`)
   - react-native-get-random-values (from `../node_modules/react-native-get-random-values`)
   - react-native-image-picker (from `../node_modules/react-native-image-picker`)
+  - react-native-restart (from `../node_modules/react-native-restart`)
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - react-native-video (from `../node_modules/react-native-video`)
   - react-native-video-helper (from `../node_modules/react-native-video-helper`)
@@ -2329,6 +2332,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native-get-random-values"
   react-native-image-picker:
     :path: "../node_modules/react-native-image-picker"
+  react-native-restart:
+    :path: "../node_modules/react-native-restart"
   react-native-safe-area-context:
     :path: "../node_modules/react-native-safe-area-context"
   react-native-video:
@@ -2501,6 +2506,7 @@ SPEC CHECKSUMS:
   react-native-drop-shadow: a30a971eed0b9ef1a3656492b82f12ebe93de120
   react-native-get-random-values: 21325b2244dfa6b58878f51f9aa42821e7ba3d06
   react-native-image-picker: 186ad584e64736397c7d1f988d9d07bb0d85b942
+  react-native-restart: 7595693413fe3ca15893702f2c8306c62a708162
   react-native-safe-area-context: 8870dc3e45c8d241336cd8ee3fa3fc76f3a040ac
   react-native-video: 865d91f3637dd7b6cc97e0bb05e485c0025dfedb
   react-native-video-helper: f5e1ccf46c0a1436c2b3c3891feeada00cf0d4fe
