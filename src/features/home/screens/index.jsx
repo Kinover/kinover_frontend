@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {SafeAreaView} from 'react-native-safe-area-context';
+
 import {FONT_MODE} from 'store/uiSlice';
 
 import FamilyCodeModal from '../components/FamilyCodeModal';
@@ -18,7 +19,7 @@ import {fetchFamilyThunk, fetchFamilyStatusThunk} from '../store/familyThunk';
 import {fetchFamilyUserListThunk} from '../store/familyUserThunk';
 import {modifyUserThunk} from '../store/userThunk';
 
-import {getResponsiveWidth} from '../../../utils/responsive';
+import {getResponsiveHeight, getResponsiveWidth} from '../../../utils/responsive';
 
 import HeaderSection from '../components/HeaderSection';
 import MemberGridSection from '../components/MemberGridSection';
@@ -29,8 +30,13 @@ import {
   getFcmTokenAndSend,
   handleNotificationListeners,
 } from '../../notification/utils/requestNotificationPermission';
+
 import useWebSocketStatus from '../../../hooks/useWebSocketStatus';
 import useFamilyStatusSocket from '../../../hooks/useFamilyStatusSocket';
+
+import HomeGuideModal from '../components/HomeGuideModal';
+import AppAlertHost from 'components/modal/AppAlertHost';
+import useActiveAppEvent from 'hooks/useActiveAppEvent';
 
 export default function HomeScreen() {
   const dispatch = useDispatch();
@@ -41,30 +47,53 @@ export default function HomeScreen() {
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
   const {onlineUserIds, lastActiveMap} = useSelector(state => state.family);
 
-  // ✅ fontMode 구독
   const fontMode = useSelector(state => state.ui.fontMode);
 
-  const [isVisible, setIsVisible] = useState(false);
-  const [selectedUser, setSelectedUser] = useState(null);
+  // ✅ familyId를 "family slice"만 보지 말고 "user"에도 있으면 그걸 우선 활용
+  // (백엔드 UserDTO에 familyId를 넣어둔 경우가 많음)
+  const familyId =
+    family?.familyId ||
+    user?.familyId ||
+    user?.family?.familyId ||
+    null;
 
+  // ✅ FamilyCodeModal 표시 상태
+  const [isVisible, setIsVisible] = useState(false);
+
+  const [selectedUser, setSelectedUser] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [didInitialLoad, setDidInitialLoad] = useState(false);
 
-  const familyLoaded = !!family?.familyId;
+  // ✅ AppAlertModal 상태 (뜩! 알림)
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertPayload, setAlertPayload] = useState({
+    title: '가이드 완료!',
+    message: '이제 홈 기능을 편하게 써볼 수 있어요 🙂',
+  });
+
+  const activeEvent = useActiveAppEvent({screen: 'home'});
+
+  const familyLoaded = !!familyId;
 
   const familyMembers = (familyUserList || []).filter(
     m => m.userId !== user.userId,
   );
 
-  // ✅ 모드별 paddingBottom "확실히" 차이나게 (숫자 직접)
   const scrollPaddingBottom =
     fontMode === FONT_MODE.EXTRA_LARGE
-      ? 90
+      ? getResponsiveHeight(130)
       : fontMode === FONT_MODE.LARGE
-      ? 70
-      : 50;
+      ? getResponsiveHeight(110)
+      : getResponsiveHeight(100);
 
-  // 🔔 알림 리스너
+  const openInviteCodeModal = useCallback(() => {
+    setIsVisible(true);
+  }, []);
+
+  const closeInviteCodeModal = useCallback(() => {
+    setIsVisible(false);
+  }, []);
+
   useEffect(() => {
     const unsubscribe = handleNotificationListeners();
     return () => {
@@ -72,7 +101,6 @@ export default function HomeScreen() {
     };
   }, []);
 
-  // 🔑 권한 요청 → FCM 토큰
   useEffect(() => {
     if (!user?.userId) return;
 
@@ -88,41 +116,51 @@ export default function HomeScreen() {
     };
   }, [user?.userId]);
 
-  // 웹소켓
-  useWebSocketStatus(user.userId);
-  useFamilyStatusSocket(family.familyId);
+  // ✅ 소켓도 familyId 기준으로
+  useWebSocketStatus(user?.userId);
+  useFamilyStatusSocket(familyId);
 
-  // ✅ 데이터 로드
+  // ✅ 초기 로딩: userId + familyId가 준비되면 무조건 한 번 로딩하고 didInitialLoad를 true로 바꾼다
   useEffect(() => {
     let mounted = true;
 
     (async () => {
-      if (user.userId && family.familyId) {
-        try {
-          await dispatch(fetchFamilyThunk(family.familyId));
-          await dispatch(fetchFamilyUserListThunk(family.familyId));
-          await dispatch(fetchFamilyStatusThunk(family.familyId));
-        } finally {
-          if (mounted) setDidInitialLoad(true);
-        }
+      if (!user?.userId) return;
+
+      // ✅ 가족이 있는 유저인데 familyId가 아직 안 들어온 상태면
+      // 여기서 무한스피너 방지용으로 "상태 확인" 로그를 찍어두면 디버깅이 빨라짐
+      if (!familyId) {
+        // familyId가 늦게 들어오는 구조라면, 여기서 setDidInitialLoad를 true로 해버리면
+        // 화면은 뜨지만 데이터는 비어있을 수 있음.
+        // 지금은 "정상 로딩을 위해 familyId가 필요"하니 일단 기다리되,
+        // 무한 대기를 막고 싶다면 타임아웃 처리도 가능.
+        return;
+      }
+
+      try {
+        await dispatch(fetchFamilyThunk(familyId));
+        await dispatch(fetchFamilyUserListThunk(familyId));
+        await dispatch(fetchFamilyStatusThunk(familyId));
+      } finally {
+        if (mounted) setDidInitialLoad(true);
       }
     })();
 
     return () => {
       mounted = false;
     };
-  }, [dispatch, user.userId, family.familyId]);
+  }, [dispatch, user?.userId, familyId]);
 
   const doRefreshMembers = useCallback(async () => {
-    if (!family?.familyId) return;
+    if (!familyId) return;
 
-    await dispatch(fetchFamilyUserListThunk(family.familyId));
-    await dispatch(fetchFamilyStatusThunk(family.familyId));
-    await dispatch(fetchFamilyThunk(family.familyId));
-  }, [dispatch, family?.familyId]);
+    await dispatch(fetchFamilyUserListThunk(familyId));
+    await dispatch(fetchFamilyStatusThunk(familyId));
+    await dispatch(fetchFamilyThunk(familyId));
+  }, [dispatch, familyId]);
 
   const onPullRefresh = useCallback(() => {
-    if (!family?.familyId) return;
+    if (!familyId) return;
     if (refreshing) return;
 
     setRefreshing(true);
@@ -131,9 +169,8 @@ export default function HomeScreen() {
     requestAnimationFrame(() => {
       doRefreshMembers();
     });
-  }, [doRefreshMembers, family?.familyId, refreshing]);
+  }, [doRefreshMembers, familyId, refreshing]);
 
-  // ✅ selectedUser가 세팅되면 그때 열기
   useEffect(() => {
     if (!selectedUser) return;
     requestAnimationFrame(() => {
@@ -168,14 +205,27 @@ export default function HomeScreen() {
 
     await dispatch(modifyUserThunk(payload));
 
-    if (family?.familyId) {
-      dispatch(fetchFamilyUserListThunk(family.familyId));
-      dispatch(fetchFamilyStatusThunk(family.familyId));
+    if (familyId) {
+      dispatch(fetchFamilyUserListThunk(familyId));
+      dispatch(fetchFamilyStatusThunk(familyId));
     }
 
     dismissUserSheet();
   };
 
+  const showGuideDoneAlert = useCallback(() => {
+    setAlertPayload({
+      title: '가이드 완료!',
+      message: '프로필을 눌러 편집도 해보고, 가족도 초대해봐요 🙂',
+    });
+    setAlertVisible(true);
+
+    setTimeout(() => {
+      setAlertVisible(false);
+    }, 1200);
+  }, []);
+
+  // ✅ 로딩 조건도 familyId 기준으로
   const isLoading = !familyLoaded || !didInitialLoad;
 
   if (isLoading) {
@@ -198,11 +248,6 @@ export default function HomeScreen() {
     <View style={styles.container}>
       <View style={styles.backgroundCurve} />
 
-      {/* ✅ 디버그 필요하면 켜 */}
-      {/* <Text style={{position:'absolute', top: 50, left: 20, zIndex: 999}}>
-        fontMode: {String(fontMode)} / pb: {String(scrollPaddingBottom)}
-      </Text> */}
-
       <ScrollView
         refreshControl={refreshControl}
         showsVerticalScrollIndicator={false}
@@ -210,21 +255,34 @@ export default function HomeScreen() {
           styles.scrollContent,
           {paddingBottom: scrollPaddingBottom},
         ]}>
-        <HeaderSection user={user} onUserPress={handleUserPress} />
+        <HeaderSection
+          user={user}
+          onUserPress={handleUserPress}
+          onInvitePress={openInviteCodeModal}
+        />
 
         <MemberGridSection
           members={familyMembers}
           onlineUserIds={onlineUserIds}
           lastActiveMap={lastActiveMap}
           onUserPress={handleUserPress}
-          onAddPress={() => setIsVisible(true)}
+          onAddPress={openInviteCodeModal}
         />
       </ScrollView>
 
+      <HomeGuideModal
+        enabled={true}
+        ready={didInitialLoad}
+        forceVisible={false}
+        onDone={showGuideDoneAlert}
+      />
+
+      <AppAlertHost enabled={true} event={activeEvent} />
+
       <FamilyCodeModal
         visible={isVisible}
-        onClose={() => setIsVisible(false)}
-        familyCode={family.familyId}
+        onClose={closeInviteCodeModal}
+        familyCode={familyId}
       />
 
       <UserBottomSheetModal

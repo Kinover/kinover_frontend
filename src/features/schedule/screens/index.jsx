@@ -6,8 +6,8 @@ import {
   ScrollView,
   View,
   TouchableOpacity,
-  Image,
   RefreshControl,
+  Image,
 } from 'react-native';
 
 import {useSelector, useDispatch} from 'react-redux';
@@ -41,7 +41,8 @@ import useGuide from 'hooks/useGuide';
 import {hapticLight} from '../../../utils/haptic';
 import DropShadow from 'react-native-drop-shadow';
 import {BACKGROUND_COLORS, LAYOUT_STYLE} from 'styles/style';
-import FastImage from '@d11/react-native-fast-image';
+// import FastImage from '@d11/react-native-fast-image';
+import ScheduleGuideModal from '../components/ScheduleGuideModal';
 
 const SCHEDULE_GUIDE_STEPS = [
   {
@@ -172,6 +173,30 @@ export default function ScheduleScreen() {
   } = useScheduleEditor(currentUserId);
 
   /** =========================
+   * ✅ IMPORTANT: openSheet 래핑
+   * - Schedule.jsx에서 주입한 __forcedKind를 절대 잃지 않게
+   * - (혹시 useScheduleEditor 내부에서 normalize/clone 하면 빠질 수 있어서 안전장치)
+   ========================= */
+  const handleOpenSheet = useCallback(
+    item => {
+      // item이 null이면 "추가" 모드
+      if (!item) {
+        openSheet(null);
+        return;
+      }
+
+      // ✅ forced kind 유지 (없으면 그대로)
+      const forced = item?.__forcedKind;
+      if (forced) {
+        openSheet({...item, __forcedKind: forced});
+      } else {
+        openSheet(item);
+      }
+    },
+    [openSheet],
+  );
+
+  /** =========================
    * 가이드
    ========================= */
   const guideEnabled = !familyId;
@@ -208,8 +233,14 @@ export default function ScheduleScreen() {
         undefined;
 
       // ✅ type 방어: useScheduleBottomSheetModal이 scheduleType으로 줄 수도 있어서
+      // ✅ + __forcedKind도 먼저 먹게(안전)
       const typeRaw =
-        incoming?.type ?? incoming?.scheduleType ?? incoming?.kind;
+        incoming?.type ??
+        incoming?.scheduleType ??
+        incoming?.kind ??
+        incoming?.__forcedKind ??
+        editingSchedule?.__forcedKind;
+
       const type = typeRaw ? String(typeRaw).toUpperCase() : null;
 
       const rawParticipantIds = incoming?.participantIds;
@@ -238,7 +269,6 @@ export default function ScheduleScreen() {
           : {}),
       };
 
-      // ✅ 여기서 조용히 return 되는 걸 막으려고 로그도 남김
       if (!payload.familyId || !payload.date || !payload.type) {
         console.log('❌ [Schedule onSubmit] 필수값 누락:', payload);
         return;
@@ -260,7 +290,6 @@ export default function ScheduleScreen() {
         year,
         month,
         userId: selectedUserId,
-        // mode: 'USER',
       };
 
       try {
@@ -314,7 +343,6 @@ export default function ScheduleScreen() {
       year,
       month,
       userId: selectedUserId,
-      // mode: 'USER',
     };
 
     try {
@@ -380,7 +408,7 @@ export default function ScheduleScreen() {
 
         <Schedule
           selectedDate={selectedDate}
-          onOpenSheet={openSheet}
+          onOpenSheet={handleOpenSheet} // ✅ 여기만 교체
           refreshTrigger={refreshTrigger}
           birthdayNames={birthdayNamesForSelectedDate}
         />
@@ -400,6 +428,7 @@ export default function ScheduleScreen() {
         onDelete={onDelete}
         onRefresh={handleRefresh}
       />
+
       <DropShadow
         style={{
           shadowColor: '#000',
@@ -411,8 +440,8 @@ export default function ScheduleScreen() {
           style={[styles.fab, isLoading && {opacity: 0.4}]}
           onPress={handleFabPress}
           activeOpacity={0.8}>
-          <FastImage
-            source={require('../../../assets/icons/sub/three.png')}
+          <Image
+            source={require('../../../assets/icons/tabs/3/three.png')}
             style={{
               alignSelf: 'center',
               width: '45%',
@@ -429,6 +458,8 @@ export default function ScheduleScreen() {
           <YellowSpinner />
         </View>
       )}
+
+      <ScheduleGuideModal forceVisible />
     </View>
   );
 }

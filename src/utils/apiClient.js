@@ -1,6 +1,6 @@
 // src/utils/apiClient.js
-import axios from 'axios';
-import {getToken, deleteLoginInfo} from './storage';
+import axios from 'axios/dist/browser/axios.cjs';
+import {getToken, deleteLoginInfo, getGuestMode} from './storage';
 import {safeReset} from 'app/navigation/navigationService';
 
 const BASE = 'https://kinover.shop/api';
@@ -10,52 +10,60 @@ export const apiClient = axios.create({
   timeout: 15000,
 });
 
-apiClient.interceptors.request.use(
-  async config => {
-    const token = await getToken();
-    if (token) {
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  error => Promise.reject(error),
-);
+apiClient.interceptors.request.use(async config => {
+  const isGuest = await getGuestMode();
+  if (isGuest) {
+    return Promise.reject({ isGuestBlocked: true, message: 'GUEST_MODE_BLOCKED', config });
+  }
+
+  const token = await getToken();
+  if (token) {
+    const t = String(token).trim().replace(/^Bearer\s+/i, '');
+
+    // ✅ 기존 헤더를 유지하면서 Authorization만 주입
+    config.headers = {
+      ...(config.headers || {}),
+      Authorization: `Bearer ${t}`,
+    };
+  }
+
+  return config;
+});
+
 
 let isHandlingAuthError = false;
 
 apiClient.interceptors.response.use(
   res => res,
   async error => {
+    if (error?.isGuestBlocked) {
+      return Promise.reject(error);
+    }
+
     const status = error?.response?.status;
     const data = error?.response?.data;
     const msg = String(data || '');
 
-    // ✅ 토큰 만료/인증 실패 공통 처리
     if (status === 401) {
       const isExpired =
         msg.includes('TOKEN_EXPIRED') ||
         msg.includes('EXPIRED') ||
         msg.includes('UNAUTHORIZED') ||
-        msg.includes('INVALID_TOKEN');
+        msg.includes('INVALID_TOKEN') ||
+        msg.includes('TOKEN_MISSING');
 
       if (isExpired && !isHandlingAuthError) {
         isHandlingAuthError = true;
 
         try {
-          // ✅ 저장된 로그인 정보 제거(토큰 + hasFamily)
           await deleteLoginInfo();
-
-          // ✅ Auth로 reset (네비 ready 전이면 큐에 쌓임)
           safeReset({
             index: 0,
             routes: [{name: 'Auth'}],
           });
         } catch {
-          // 혹시 여기서 에러나도 앱 크래시 방지
           null;
         } finally {
-          // 너무 오래 잠그지 않게
           setTimeout(() => {
             isHandlingAuthError = false;
           }, 800);

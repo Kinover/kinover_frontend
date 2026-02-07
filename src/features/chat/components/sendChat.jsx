@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Platform,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 
@@ -32,7 +33,7 @@ import {CHATROOM_STYLE} from 'styles/style';
 import {getVideoThumbnail} from '../../../utils/videoThumbnail';
 import {toCdnUrl} from '../../../utils/mediaUrl';
 
-import MentionText from 'components/MentionText';
+import MentionText from 'components/mention/MentionText';
 
 export default function SendChat({
   chatTime,
@@ -52,11 +53,11 @@ export default function SendChat({
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  // ✅ 타입 먼저 계산 (useEffect보다 위)
   const normalizedType = useMemo(
     () => String(messageType ?? 'text').toLowerCase(),
     [messageType],
   );
-
   const isImage = normalizedType === 'image';
   const isVideo = normalizedType === 'video';
   const isMedia = isImage || isVideo;
@@ -64,6 +65,7 @@ export default function SendChat({
   const isUploading = uploadStatus === 'uploading';
   const isFailed = uploadStatus === 'failed';
 
+  // ✅ 미디어 url 정리도 위에서
   const safeMediaRaw = useMemo(() => {
     if (Array.isArray(mediaUrls)) return mediaUrls.filter(Boolean);
     if (mediaUrls) return [mediaUrls].filter(Boolean);
@@ -77,6 +79,102 @@ export default function SendChat({
   const hasExtra = safeMediaUrls.length > 9;
   const displayMedia = hasExtra ? safeMediaUrls.slice(0, 9) : safeMediaUrls;
 
+  // ✅ 영상 썸네일 맵 (ratio 계산에서 쓰니까 위로)
+  const [videoThumbMap, setVideoThumbMap] = useState({});
+
+  useEffect(() => {
+    if (!isVideo) return;
+    if (!safeMediaUrls.length) return;
+
+    let alive = true;
+
+    (async () => {
+      const results = await Promise.all(
+        safeMediaUrls.map(async url => {
+          try {
+            const t = await getVideoThumbnail(url);
+            return [url, t?.uri || null];
+          } catch {
+            return [url, null];
+          }
+        }),
+      );
+
+      if (!alive) return;
+
+      const next = {};
+      for (const [url, thumbUri] of results) {
+        if (thumbUri) next[url] = thumbUri;
+      }
+
+      if (Object.keys(next).length) {
+        setVideoThumbMap(prev => ({...prev, ...next}));
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [isVideo, safeMediaUrls]);
+
+  // ✅ 단건(1장) 원본 비율 렌더를 위한 ratio
+  const SINGLE_W = getResponsiveWidth(200);
+  const SINGLE_MAX_H = getResponsiveWidth(500);
+  const [singleRatio, setSingleRatio] = useState(null);
+
+  useEffect(() => {
+    if (!isMedia) return;
+    if (safeMediaUrls.length !== 1) return;
+
+    const uri = safeMediaUrls[0];
+    if (!uri) return;
+
+    let alive = true;
+
+    // uri 바뀔 때 잔상 방지
+    setSingleRatio(null);
+
+    if (isImage) {
+      Image.getSize(
+        uri,
+        (w, h) => {
+          if (!alive) return;
+          if (!w || !h) return;
+          setSingleRatio(w / h);
+        },
+        () => {
+          if (!alive) return;
+          setSingleRatio(1);
+        },
+      );
+    } else if (isVideo) {
+      const thumb = videoThumbMap[uri];
+
+      if (thumb) {
+        Image.getSize(
+          thumb,
+          (w, h) => {
+            if (!alive) return;
+            if (!w || !h) return;
+            setSingleRatio(w / h);
+          },
+          () => {
+            if (!alive) return;
+            setSingleRatio(16 / 9);
+          },
+        );
+      } else {
+        // 썸네일 늦게 나와도 레이아웃 잡히게
+        setSingleRatio(16 / 9);
+      }
+    }
+
+    return () => {
+      alive = false;
+    };
+  }, [isMedia, isImage, isVideo, safeMediaUrls, videoThumbMap]);
+
+  // ✅ 이미지 preload (그리드만)
   useEffect(() => {
     if (!isImage) return;
     if (!displayMedia.length) return;
@@ -85,6 +183,7 @@ export default function SendChat({
     );
   }, [isImage, displayMedia]);
 
+  // ✅ 시간 표시 로직
   const [showTime, setShowTime] = useState(false);
   const idRef = useRef(Math.random().toString(36).slice(2));
 
@@ -124,10 +223,14 @@ export default function SendChat({
           {isUploading ? (
             <>
               <ActivityIndicator color="#fff" />
-              <Text allowFontScaling={false} style={styles.loadingText}>전송 중…</Text>
+              <Text allowFontScaling={false} style={styles.loadingText}>
+                전송 중…
+              </Text>
             </>
           ) : (
-            <Text allowFontScaling={false} style={styles.failText}>전송 실패</Text>
+            <Text allowFontScaling={false} style={styles.failText}>
+              전송 실패
+            </Text>
           )}
         </View>
       );
@@ -140,38 +243,6 @@ export default function SendChat({
 
   if (isMedia && safeMediaUrls.length === 0) return null;
 
-  const [videoThumbMap, setVideoThumbMap] = useState({});
-  useEffect(() => {
-    if (!isVideo) return;
-    if (!safeMediaUrls.length) return;
-
-    let alive = true;
-
-    (async () => {
-      const results = await Promise.all(
-        safeMediaUrls.map(async url => {
-          try {
-            const t = await getVideoThumbnail(url);
-            return [url, t?.uri || null];
-          } catch {
-            return [url, null];
-          }
-        }),
-      );
-
-      if (!alive) return;
-
-      const next = {};
-      for (const [url, thumbUri] of results) if (thumbUri) next[url] = thumbUri;
-      if (Object.keys(next).length)
-        setVideoThumbMap(prev => ({...prev, ...next}));
-    })();
-
-    return () => {
-      alive = false;
-    };
-  }, [isVideo, safeMediaUrls]);
-
   const getThumbSource = useCallback(
     uri => {
       if (isImage) {
@@ -181,6 +252,7 @@ export default function SendChat({
           cache: FastImage.cacheControl.immutable,
         };
       }
+
       const thumbUri = videoThumbMap[uri];
       if (thumbUri) {
         return {
@@ -189,6 +261,7 @@ export default function SendChat({
           cache: FastImage.cacheControl.immutable,
         };
       }
+
       return null;
     },
     [isImage, videoThumbMap],
@@ -215,15 +288,12 @@ export default function SendChat({
               <View style={styles.thumbWrap}>
                 {thumbSource ? (
                   <FastImage
+                    fallback={true}
                     source={thumbSource}
                     style={styles.imageItem}
                     resizeMode={FastImage.resizeMode.cover}
                     onError={e =>
-                      console.log(
-                        '❌ SendChat thumb error:',
-                        item,
-                        e?.nativeEvent,
-                      )
+                      console.log('❌ SendChat thumb error:', item, e?.nativeEvent)
                     }
                   />
                 ) : (
@@ -238,7 +308,9 @@ export default function SendChat({
 
                 {isLastCell && (
                   <View style={styles.moreOverlay}>
-                    <Text allowFontScaling={false} style={styles.moreOverlayText}>+{extraCount}</Text>
+                    <Text allowFontScaling={false} style={styles.moreOverlayText}>
+                      +{extraCount}
+                    </Text>
                   </View>
                 )}
               </View>
@@ -251,9 +323,16 @@ export default function SendChat({
     </View>
   );
 
+  // ✅ 단건(1장) 원본 비율 렌더
   const renderSingle = () => {
     const uri = safeMediaUrls[0];
     const thumbSource = getThumbSource(uri);
+
+    const ratio = singleRatio || (isVideo ? 16 / 9 : 1);
+
+    const computedH = SINGLE_W / ratio;
+    const finalH = Math.min(computedH, SINGLE_MAX_H);
+    const finalRatio = SINGLE_W / finalH;
 
     return (
       <View style={styles.singleWrapper}>
@@ -263,19 +342,35 @@ export default function SendChat({
           <View>
             {thumbSource ? (
               <FastImage
+                fallback={true}
                 source={thumbSource}
-                style={styles.singleImage}
-                resizeMode={FastImage.resizeMode.cover}
+                style={[
+                  styles.singleBase,
+                  {
+                    width: SINGLE_W,
+                    height: finalH,
+                    aspectRatio: finalRatio,
+                    alignSelf: 'flex-end',
+                  },
+                ]}
+                resizeMode={FastImage.resizeMode.contain}
                 onError={e =>
-                  console.log(
-                    '❌ SendChat single thumb error:',
-                    uri,
-                    e?.nativeEvent,
-                  )
+                  console.log('❌ SendChat single thumb error:', uri, e?.nativeEvent)
                 }
               />
             ) : (
-              <View style={[styles.singleImage, styles.thumbFallback]} />
+              <View
+                style={[
+                  styles.singleBase,
+                  styles.thumbFallback,
+                  {
+                    width: SINGLE_W,
+                    height: finalH,
+                    aspectRatio: finalRatio,
+                    alignSelf: 'flex-end',
+                  },
+                ]}
+              />
             )}
 
             {isVideo && (
@@ -293,14 +388,17 @@ export default function SendChat({
 
   return (
     <View style={[styles.sendContainer, spacingStyle, style]}>
-      {/* ✅ 안읽은 수 + 시간 */}
       {(showTime && !!chatTime) || unreadCount > 0 ? (
         <View style={styles.metaLine}>
           {unreadCount > 0 && (
-            <Text allowFontScaling={false} style={styles.unreadCountText}>{unreadCount}</Text>
+            <Text allowFontScaling={false} style={styles.unreadCountText}>
+              {unreadCount}
+            </Text>
           )}
           {showTime && !!chatTime && (
-            <Text allowFontScaling={false} style={styles.sendTime}>{formatTime(chatTime)}</Text>
+            <Text allowFontScaling={false} style={styles.sendTime}>
+              {formatTime(chatTime)}
+            </Text>
           )}
         </View>
       ) : null}
@@ -399,11 +497,8 @@ const styles = StyleSheet.create({
   thumbFallback: {backgroundColor: '#E5E7EB'},
 
   singleWrapper: {position: 'relative', alignSelf: 'flex-end'},
-  singleImage: {
-    width: getResponsiveWidth(200),
-    aspectRatio: 1,
+  singleBase: {
     borderRadius: 10,
-    alignSelf: 'flex-end',
     backgroundColor: '#F3F4F6',
   },
 

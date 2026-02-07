@@ -137,7 +137,8 @@ function CommentFooter({
   onChangeComment,
   familyUsers = [],
   myUserId,
-  onFooterLayoutHeight, // ✅ 추가
+  onFooterLayoutHeight,
+  disabled = false,
 }) {
   const insets = useSafeAreaInsets();
 
@@ -180,6 +181,7 @@ function CommentFooter({
 
   const handlePickMention = useCallback(
     user => {
+      if (disabled) return;
       if (!activeMention) return;
 
       const current = String(draftRef.current || '');
@@ -203,10 +205,12 @@ function CommentFooter({
         }
       });
     },
-    [activeMention, cursor],
+    [activeMention, cursor, disabled],
   );
 
   const handleSubmit = useCallback(() => {
+    if (disabled) return;
+
     const next = String(draftRef.current || '').trim();
     if (!next) return;
 
@@ -222,21 +226,19 @@ function CommentFooter({
     setDraftText('');
     setCursor(0);
     inputRef.current?.setNativeProps?.({text: ''});
-  }, [familyUsers, myUserId, onChangeComment, onSubmitComment]);
+  }, [familyUsers, myUserId, onChangeComment, onSubmitComment, disabled]);
 
   return (
     <BottomSheetFooter
       {...footerProps}
-      // ✅ safe-area만. 키보드는 enableFooterMarginAdjustment가 처리
       bottomInset={Math.max(insets.bottom, 0)}>
-      {/* ✅ 불투명 배경 바 */}
       <View
         style={styles.footerBar}
         onLayout={e => {
           const h = e?.nativeEvent?.layout?.height ?? 0;
           if (h > 0) onFooterLayoutHeight?.(h);
         }}>
-        {!!activeMention && mentionCandidates.length > 0 && (
+        {!!activeMention && mentionCandidates.length > 0 && !disabled && (
           <View
             style={[
               styles.mentionDropdown,
@@ -279,19 +281,27 @@ function CommentFooter({
           </View>
         )}
 
-        <View style={styles.commentInputContainer}>
+        <View
+          style={[styles.commentInputContainer, disabled && {opacity: 0.55}]}>
           <BottomSheetTextInput
             allowFontScaling={false}
             ref={inputRef}
+            editable={!disabled}
             style={styles.commentInput}
-            placeholder="댓글을 달아보세요 ( @가족이름 멘션 가능 )"
+            placeholder={
+              disabled
+                ? '지금은 댓글을 작성할 수 없어요'
+                : '댓글을 달아보세요 ( @가족이름 멘션 가능 )'
+            }
             placeholderTextColor="#999"
             defaultValue={initialText || ''}
             onChangeText={t => {
+              if (disabled) return;
               draftRef.current = t;
               setDraftText(t);
             }}
             onSelectionChange={e => {
+              if (disabled) return;
               const nextCursor = e?.nativeEvent?.selection?.start ?? 0;
               setCursor(nextCursor);
             }}
@@ -300,8 +310,11 @@ function CommentFooter({
             blurOnSubmit={false}
           />
 
-          <TouchableOpacity onPress={handleSubmit} activeOpacity={0.9}>
-            <FastImage
+          <TouchableOpacity
+            onPress={handleSubmit}
+            activeOpacity={0.9}
+            disabled={disabled}>
+            <Image
               style={styles.commentSendBt}
               source={require('../../../assets/icons/sendBt-dark.png')}
             />
@@ -325,8 +338,10 @@ export default function MemoryDetailBottomSheet({
   backgroundColor = '#F9F9F9',
   familyUsers = [],
   myUserId,
+  onSheetChange, // ✅ 추가: 열린/닫힌 상태를 부모가 추적
+  disabled = false, // ✅ 추가: 크롬 숨김/풀스크린이면 입력/제스처 막기
 }) {
-  const snapPoints = useMemo(() => snapPointsProp || ['80%'], [snapPointsProp]);
+  const snapPoints = useMemo(() => snapPointsProp || ['81%'], [snapPointsProp]);
 
   const listRef = useRef(null);
 
@@ -417,7 +432,10 @@ export default function MemoryDetailBottomSheet({
             <TouchableOpacity
               style={styles.deleteAction}
               activeOpacity={0.85}
-              onPress={() => onDeleteComment?.(commentId)}>
+              onPress={() => {
+                if (disabled) return;
+                onDeleteComment?.(commentId);
+              }}>
               <Text allowFontScaling={false} style={styles.deleteActionText}>
                 삭제
               </Text>
@@ -426,7 +444,7 @@ export default function MemoryDetailBottomSheet({
         </View>
       );
     },
-    [onDeleteComment],
+    [onDeleteComment, disabled],
   );
 
   const renderCommentItem = useCallback(
@@ -435,16 +453,19 @@ export default function MemoryDetailBottomSheet({
 
       return (
         <Swipeable
-          enabled={mine}
+          enabled={mine && !disabled}
           overshootRight={false}
           rightThreshold={ACTION_W / 2}
           simultaneousHandlers={listRef}
           renderRightActions={progress =>
-            mine ? renderRightActions(item.commentId, progress) : null
+            mine && !disabled
+              ? renderRightActions(item.commentId, progress)
+              : null
           }>
           <View style={styles.commentBox}>
             <View style={styles.commentRow}>
               <FastImage
+                fallback={true}
                 style={styles.commentWriterImage}
                 source={{uri: item.authorImage}}
               />
@@ -469,20 +490,25 @@ export default function MemoryDetailBottomSheet({
         </Swipeable>
       );
     },
-    [familyUsers, isMyComment, renderRightActions],
+    [familyUsers, isMyComment, renderRightActions, disabled],
   );
 
   return (
     <BottomSheetModal
       ref={sheetRef}
       snapPoints={snapPoints}
-      enablePanDownToClose
+      enablePanDownToClose={!disabled}
       backdropComponent={renderBackdrop}
       keyboardBehavior="interactive"
       keyboardBlurBehavior="restore"
       android_keyboardInputMode="adjustResize"
       enableFooterMarginAdjustment
       backgroundStyle={[styles.sheetBackground, {backgroundColor}]}
+      // ✅ 부모가 open/close 추적할 수 있게
+      onChange={onSheetChange}
+      // ✅ disabled면 드래그로 내용 끌어내리는 것도 막는게 안정적
+      enableContentPanningGesture={!disabled}
+      enableHandlePanningGesture={!disabled}
       footerComponent={props => {
         return (
           <CommentFooter
@@ -492,8 +518,8 @@ export default function MemoryDetailBottomSheet({
             onSubmitComment={onSubmitComment}
             familyUsers={familyUsers}
             myUserId={myUserId ?? user?.userId}
+            disabled={disabled}
             onFooterLayoutHeight={h => {
-              // ✅ 너무 잦은 setState 방지(미세 변화 무시)
               setFooterLayoutH(prev => (Math.abs(prev - h) > 1 ? h : prev));
             }}
           />
@@ -509,6 +535,7 @@ export default function MemoryDetailBottomSheet({
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
+          scrollEnabled={!disabled}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Text allowFontScaling={false} style={styles.emptyText}>
@@ -517,7 +544,6 @@ export default function MemoryDetailBottomSheet({
               </Text>
             </View>
           }
-          // ✅ RN Animated / reanimated 섞지 말고 숫자로 처리
           contentContainerStyle={{
             paddingBottom: footerLayoutH + getResponsiveHeight(12),
           }}
@@ -573,7 +599,7 @@ const styles = StyleSheet.create({
   },
 
   commentBox: {
-    paddingHorizontal: getResponsiveWidth(15),
+    paddingHorizontal: getResponsiveWidth(10),
     paddingVertical: getResponsiveHeight(10),
   },
   commentRow: {flexDirection: 'row'},

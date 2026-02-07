@@ -36,8 +36,8 @@ import FastImage from '@d11/react-native-fast-image';
 
 import {COLORS, DEFAULT_STYLE} from 'styles/style';
 
-// ✅ BottomSheet 버전(실제 파일명과 import를 일치)
-import MiniCalendarPickerBottomSheet from './MiniCalendarPickerModal';
+import MiniCalendarPickerModal from './MiniCalendarPickerModal';
+
 const RADIUS = 14;
 
 const TYPE = {
@@ -184,21 +184,8 @@ export default function CalendarToggle({
   const weekDates = useWeekDates(selectedDate, getLocalDateKey);
   const {getCountColorStyle} = useScheduleCountStyle(cellSize);
 
-  // ✅ 기존 훅 그대로
+  // ✅ showYMD가 source of truth
   const {showYMD, openYMD, closeYMD} = useYMDPicker();
-
-  // ✅ BottomSheet ref
-  const ymdRef = useRef(null);
-
-  // ✅ showYMD가 source of truth, present/dismiss는 여기서만
-  useEffect(() => {
-    if (showYMD) {
-      ymdRef.current?.present?.();
-      return;
-    }
-    ymdRef.current?.dismiss?.();
-    ymdRef.current?.close?.();
-  }, [showYMD]);
 
   const birthdayMap = useMemo(() => {
     if (birthdayMapProp) return birthdayMapProp;
@@ -235,6 +222,9 @@ export default function CalendarToggle({
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, g) => {
+        // ✅ 모달이 열려있으면 뒤에서 스와이프 판정 금지
+        if (showYMD) return false;
+
         const absDx = Math.abs(g.dx);
         const absDy = Math.abs(g.dy);
 
@@ -243,6 +233,7 @@ export default function CalendarToggle({
         return true;
       },
       onPanResponderRelease: (_, g) => {
+        if (showYMD) return;
         if (Math.abs(g.dx) < SWIPE_THRESHOLD) return;
         if (g.dx > 0) swipePrevRef.current();
         else swipeNextRef.current();
@@ -345,7 +336,7 @@ export default function CalendarToggle({
   };
 
   const computedMaxYear = useMemo(() => {
-    return new Date().getFullYear() + 0;
+    return new Date().getFullYear();
   }, []);
 
   return (
@@ -373,7 +364,9 @@ export default function CalendarToggle({
                 source={require('../../../assets/icons/calendar.png')}
               />
             </TouchableOpacity>
-            <Text allowFontScaling={false} allowFontScaling={false} style={styles.monthText}>{headerLabel}</Text>
+            <Text allowFontScaling={false} style={styles.monthText}>
+              {headerLabel}
+            </Text>
           </View>
 
           <View style={styles.headerRight}>
@@ -384,7 +377,7 @@ export default function CalendarToggle({
                   mode === 'month' ? changeMonth(-1) : changeWeek(-1)
                 }
                 hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
-                <FastImage
+                <Image
                   source={require('../../../assets/icons/leftArrow_gray_bold.png')}
                   style={styles.navIcon}
                   resizeMode="contain"
@@ -397,7 +390,7 @@ export default function CalendarToggle({
                   mode === 'month' ? changeMonth(1) : changeWeek(1)
                 }
                 hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
-                <FastImage
+                <Image
                   source={require('../../../assets/icons/rightArrow_gray_bold.png')}
                   style={styles.navIcon}
                   resizeMode="contain"
@@ -410,7 +403,9 @@ export default function CalendarToggle({
                 style={[styles.toggleChip, styles.toggleActive]}
                 onPress={toggleMode}
                 hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
-                <Text allowFontScaling={false} style={[styles.toggleText, styles.toggleTextActive]}>
+                <Text
+                  allowFontScaling={false}
+                  style={[styles.toggleText, styles.toggleTextActive]}>
                   {mode === 'month' ? '주' : '월'}
                 </Text>
               </TouchableOpacity>
@@ -431,14 +426,18 @@ export default function CalendarToggle({
             shadowRadius: 3,
           },
         ]}>
-        <View {...panResponder.panHandlers} style={styles.calendarTouchWrap}>
+        {/* ✅ 모달 열리면 panHandlers 자체를 안 붙임 (더 안전) */}
+        <View
+          {...(!showYMD ? panResponder.panHandlers : {})}
+          style={styles.calendarTouchWrap}>
           <View style={styles.cardInnerCalendar}>
             <View style={[styles.weekRow, {width: gridWidth}]}>
               {['일', '월', '화', '수', '목', '금', '토'].map(dow => {
                 const isRestDow = dow === '일';
                 return (
                   <View key={dow} style={[styles.weekCell, {width: cellSize}]}>
-                    <Text allowFontScaling={false}
+                    <Text
+                      allowFontScaling={false}
                       style={[styles.dayText, isRestDow && styles.sundayText]}>
                       {dow}
                     </Text>
@@ -498,7 +497,8 @@ export default function CalendarToggle({
                             item.isSelected && styles.selectedBox,
                             !item.isCurrentMonth && {opacity: 0.35},
                           ]}>
-                          <Text allowFontScaling={false}
+                          <Text
+                            allowFontScaling={false}
                             style={[
                               styles.dateText,
                               item.isSelected && styles.selectedText,
@@ -558,7 +558,8 @@ export default function CalendarToggle({
                             !item.isSelected && getCountColorStyle(total),
                             item.isSelected && styles.selectedBox,
                           ]}>
-                          <Text allowFontScaling={false}
+                          <Text
+                            allowFontScaling={false}
                             style={[
                               styles.dateText,
                               item.isSelected && styles.selectedText,
@@ -578,14 +579,14 @@ export default function CalendarToggle({
         </View>
       </DropShadow>
 
-      {/* ✅ 날짜 피커 BottomSheet (핵심: onDismiss에서도 closeYMD 호출되게 연결) */}
-      <MiniCalendarPickerBottomSheet
-        modalRef={ymdRef}
-        snapPoints={['75%']}
+      {/* ✅ 날짜 피커: visible은 showYMD가 단일 진실 */}
+      <MiniCalendarPickerModal
+        visible={showYMD}
+        onRequestClose={closeYMD}
         onClose={closeYMD}
         onConfirm={date => {
           setSelectedDate(date);
-          closeYMD();
+          closeYMD(); // ✅ 닫기는 여기서만
         }}
         initialDate={selectedDate}
         minYear={1950}

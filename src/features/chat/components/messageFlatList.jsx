@@ -260,9 +260,18 @@ export default function MessageFlatList({
       ListHeaderComponent={<View style={{height: getResponsiveHeight(20)}} />}
       removeClippedSubviews={false}
       onScroll={handleScroll}
-      scrollEventThrottle={30}
+
+      // ✅✅ 변경 1) 스크롤 이벤트 촘촘하게(부드러움 + 바닥판단 안정)
+      scrollEventThrottle={16}
+
+      // ✅✅ 변경 2) 키보드 열린 채로 스크롤 가능하게 (터치가 키보드로 빨려가지 않게)
       keyboardShouldPersistTaps="handled"
-      keyboardDismissMode="on-drag"
+
+      // ✅✅ 변경 3) 스크롤 드래그로 키보드가 내려가며 제스처가 뻣뻣해지는 걸 방지
+      keyboardDismissMode="none"
+
+      // ✅✅ 변경 4) 안드로이드 중첩/제스처 충돌 완화
+      nestedScrollEnabled
     />
   );
 }

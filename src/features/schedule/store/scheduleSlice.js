@@ -12,7 +12,7 @@ const initialState = {
   loading: false,
   error: null,
 
-  // ✅ (있으면 편함) 달력 count 저장용
+  // ✅ 달력 count 저장용
   scheduleCountPerDay: {},
 };
 
@@ -30,6 +30,11 @@ const scheduleSlice = createSlice({
     setScheduleError(state, action) {
       state.error = action.payload;
     },
+
+    // ✅ 추가: 게스트/로컬 업데이트 시 count를 바로 주입하기 위해
+    setScheduleCountPerDay(state, action) {
+      state.scheduleCountPerDay = action.payload || {};
+    },
   },
   extraReducers: builder => {
     builder
@@ -42,7 +47,11 @@ const scheduleSlice = createSlice({
   },
 });
 
-export const {setScheduleList, setScheduleLoading, setScheduleError} =
-  scheduleSlice.actions;
+export const {
+  setScheduleList,
+  setScheduleLoading,
+  setScheduleError,
+  setScheduleCountPerDay,
+} = scheduleSlice.actions;
 
 export default scheduleSlice.reducer;

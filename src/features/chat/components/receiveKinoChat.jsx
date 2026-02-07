@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Animated,
   Platform,
+  Image,
 } from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {
@@ -135,7 +136,7 @@ export default function ReceiveKinoChat({
       numColumns={3}
       renderItem={({item, index}) => (
         <TouchableOpacity onPress={() => handleImagePress(item, index)}>
-          <FastImage source={{uri: item}} style={styles.imageItem} />
+          <Image source={{uri: item}} style={styles.imageItem} />
         </TouchableOpacity>
       )}
       scrollEnabled={false}
@@ -147,14 +148,16 @@ export default function ReceiveKinoChat({
   if (isTyping) {
     return (
       <View style={[styles.receivedContainer, spacingStyle]}>
-        <FastImage
+        <Image
           source={kinoProfileSource}
           style={styles.kinoProfileImage}
           resizeMode={FastImage.resizeMode.contain}
         />
 
         <View style={styles.textContainer}>
-          <Text allowFontScaling={false} style={styles.userName}>키노</Text>
+          <Text allowFontScaling={false} style={styles.userName}>
+            키노
+          </Text>
 
           <View style={styles.messageContainer}>
             <View
@@ -196,14 +199,14 @@ export default function ReceiveKinoChat({
   // ✅ 평소 메시지 버전
   return (
     <View style={[styles.receivedContainer, spacingStyle]}>
-      <FastImage
-        source={kinoProfileSource}
-        style={styles.kinoProfileImage}
-        resizeMode={FastImage.resizeMode.contain}
-      />
+      <Image source={kinoProfileSource} style={styles.kinoProfileImage} />
 
       <View style={styles.textContainer}>
-        {!isGrouped && <Text allowFontScaling={false} style={styles.userName}>키노</Text>}
+        {!isGrouped && (
+          <Text allowFontScaling={false} style={styles.userName}>
+            키노
+          </Text>
+        )}
 
         <View style={styles.messageContainer}>
           {messageType === 'image' ? (
@@ -211,6 +214,7 @@ export default function ReceiveKinoChat({
               <TouchableOpacity
                 onPress={() => handleImagePress(imageUrls[0], 0)}>
                 <FastImage
+                  fallback={true}
                   source={{uri: imageUrls[0]}}
                   style={styles.singleImage}
                   resizeMode="cover"
@@ -225,14 +229,18 @@ export default function ReceiveKinoChat({
                 styles.receivedBubble,
                 {backgroundColor: bubbleColors.bubble},
               ]}>
-              <Text allowFontScaling={false} style={[styles.receivedText, {color: bubbleColors.text}]}>
+              <Text
+                allowFontScaling={false}
+                style={[styles.receivedText, {color: bubbleColors.text}]}>
                 {message}
               </Text>
             </View>
           )}
 
           {showTime && (
-            <Text allowFontScaling={false} style={styles.receivedTime}>{formatTime(chatTime)}</Text>
+            <Text allowFontScaling={false} style={styles.receivedTime}>
+              {formatTime(chatTime)}
+            </Text>
           )}
         </View>
       </View>
@@ -264,6 +272,7 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(35),
     marginRight: getResponsiveWidth(7),
     bottom: getResponsiveHeight(0),
+    resizeMode: 'contain',
   },
   avatarSpacer: {
     width: AVATAR_W,

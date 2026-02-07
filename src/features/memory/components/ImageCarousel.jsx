@@ -369,6 +369,8 @@ export default function ImageCarousel({
                     <Animated.View style={[styles.fullMedia, animatedMediaStyle]}>
                       {thumbUri ? (
                         <FastImage
+                        fallback={true}
+
                           pointerEvents="none"
                           source={{
                             uri: thumbUri,
@@ -399,6 +401,8 @@ export default function ImageCarousel({
             ) : (
               <Animated.View style={[styles.fullMedia, animatedMediaStyle]}>
                 <FastImage
+                        fallback={true}
+
                   pointerEvents="none"
                   source={{uri}}
                   style={styles.fullMediaInner}

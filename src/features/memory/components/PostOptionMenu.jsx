@@ -1,8 +1,15 @@
 /* eslint-disable react-native/no-inline-styles */
-// src/features/post/components/PostOptionsMenu.jsx
+// src/features/post/components/PostOptionMenu.jsx
 
-import React, {useEffect, useMemo} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, Platform} from 'react-native';
+import React, {
+  useEffect,
+  useCallback,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
+import {View, Text, TouchableOpacity, StyleSheet, Platform, Pressable} from 'react-native';
+
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -16,45 +23,70 @@ import {
   getResponsiveWidth,
 } from '../../../utils/responsive';
 
-export default function PostOptionsMenu({
-  visible,
-  setVisible, // ✅ 내부 애니메이션 종료 후 false 처리용
-  isChromeHidden,
+function PostOptionsMenu(
+  {
+    visible,
+    setVisible,
+    isChromeHidden,
 
-  // ✅ disabled 상태
-  disableMenu,
-  canSaveCurrent,
-  canSaveAll,
-  canDeleteCurrent,
+    disableMenu,
+    canSaveCurrent,
+    canSaveAll,
+    canDeleteCurrent,
 
-  // ✅ labels
-  currentLabel,
-  mediaCount,
+    currentLabel,
+    mediaCount,
 
-  // ✅ actions
-  onClose,
-  onSaveCurrent,
-  onSaveAll,
-  onEditPost,
-  onDeleteCurrentImage,
-  onDeletePost,
-}) {
+    onSaveCurrent,
+    onSaveAll,
+    onEditPost,
+    onDeleteCurrentImage,
+    onDeletePost,
+  },
+  ref,
+) {
   const anim = useSharedValue(0);
+  const closingRef = useRef(false);
 
-  const close = () => {
-    anim.value = withTiming(0, {duration: 120}, finished => {
-      if (finished) runOnJS(setVisible)(false);
+  const finishClose = useCallback(() => {
+    setVisible?.(false);
+    closingRef.current = false;
+  }, [setVisible]);
+
+  const close = useCallback(() => {
+    if (!visible) return;
+    if (closingRef.current) return;
+
+    closingRef.current = true;
+
+    anim.value = withTiming(0, {duration: 120}, () => {
+      runOnJS(finishClose)();
     });
-    onClose?.();
-  };
+  }, [visible, anim, finishClose]);
+
+  const open = useCallback(() => {
+    if (visible) return;
+    setVisible?.(true);
+  }, [visible, setVisible]);
+
+  useImperativeHandle(ref, () => ({close, open}), [close, open]);
 
   useEffect(() => {
     if (!visible) return;
+    closingRef.current = false;
+    anim.value = 0;
     anim.value = withTiming(1, {duration: 140});
   }, [visible, anim]);
 
-  const overlayStyle = useAnimatedStyle(() => ({
-    opacity: anim.value,
+  useEffect(() => {
+    if (visible) return;
+    anim.value = 0;
+    closingRef.current = false;
+  }, [visible, anim]);
+
+  // ✅ dim만 투명도 조절 (검정 잔상 방지)
+  const dimStyle = useAnimatedStyle(() => ({
+    opacity: anim.value * 0.12, // 필요하면 0.08~0.18 조절
   }));
 
   const boxStyle = useAnimatedStyle(() => ({
@@ -62,27 +94,16 @@ export default function PostOptionsMenu({
     transform: [{translateY: (1 - anim.value) * -6}],
   }));
 
-  const rootPointer = useMemo(
-    () => (visible ? 'auto' : 'none'),
-    [visible],
-  );
-
-  if (!visible) return null;
+  const actuallyVisible = visible && !isChromeHidden;
+  if (!actuallyVisible) return null;
 
   return (
-    <Animated.View
-      pointerEvents={rootPointer}
-      style={[
-        styles.menuOverlay,
-        overlayStyle,
-        isChromeHidden && {opacity: 0},
-      ]}>
-      {/* 바깥 클릭하면 닫힘 */}
-      <TouchableOpacity
-        style={StyleSheet.absoluteFillObject}
-        activeOpacity={1}
-        onPress={close}
-      />
+    <View style={styles.root} pointerEvents="box-none">
+      {/* ✅ dim */}
+      <Animated.View style={[styles.dim, dimStyle]} pointerEvents="none" />
+
+      {/* ✅ 바깥 클릭 닫기 */}
+      <Pressable style={StyleSheet.absoluteFillObject} onPress={close} />
 
       <Animated.View style={[styles.menuBox, boxStyle]}>
         <TouchableOpacity
@@ -95,7 +116,8 @@ export default function PostOptionsMenu({
           style={[
             styles.menuItem,
             (disableMenu || !canSaveCurrent) && {opacity: 0.5},
-          ]}>
+          ]}
+        >
           <Text allowFontScaling={false} style={styles.menuText}>
             현재 미디어 저장{currentLabel ? ` (${currentLabel})` : ''}
           </Text>
@@ -113,7 +135,8 @@ export default function PostOptionsMenu({
           style={[
             styles.menuItem,
             (disableMenu || !canSaveAll) && {opacity: 0.5},
-          ]}>
+          ]}
+        >
           <Text allowFontScaling={false} style={styles.menuText}>
             전체 미디어 저장 ({mediaCount || 0})
           </Text>
@@ -121,7 +144,6 @@ export default function PostOptionsMenu({
 
         <View style={styles.menuDivider} />
 
-        {/* ✅ 게시글 수정 추가 */}
         <TouchableOpacity
           onPress={() => {
             close();
@@ -129,8 +151,11 @@ export default function PostOptionsMenu({
           }}
           disabled={disableMenu}
           activeOpacity={0.85}
-          style={[styles.menuItem, disableMenu && {opacity: 0.5}]}>
-          <Text allowFontScaling={false} style={styles.menuText}>게시글 수정</Text>
+          style={[styles.menuItem, disableMenu && {opacity: 0.5}]}
+        >
+          <Text allowFontScaling={false} style={styles.menuText}>
+            게시글 수정
+          </Text>
         </TouchableOpacity>
 
         <View style={styles.menuDivider} />
@@ -145,7 +170,8 @@ export default function PostOptionsMenu({
           style={[
             styles.menuItem,
             (disableMenu || !canDeleteCurrent) && {opacity: 0.5},
-          ]}>
+          ]}
+        >
           <Text allowFontScaling={false} style={[styles.menuText, {color: '#FF5A5F'}]}>
             현재 미디어 삭제
           </Text>
@@ -160,23 +186,32 @@ export default function PostOptionsMenu({
           }}
           disabled={disableMenu}
           activeOpacity={0.85}
-          style={[styles.menuItem, disableMenu && {opacity: 0.5}]}>
-          <Text allowFontScaling={false} style={[styles.menuText, {color: '#FF5A5F'}]}>게시글 삭제</Text>
+          style={[styles.menuItem, disableMenu && {opacity: 0.5}]}
+        >
+          <Text allowFontScaling={false} style={[styles.menuText, {color: '#FF5A5F'}]}>
+            게시글 삭제
+          </Text>
         </TouchableOpacity>
       </Animated.View>
-    </Animated.View>
+    </View>
   );
 }
 
+export default forwardRef(PostOptionsMenu);
+
 const styles = StyleSheet.create({
-  menuOverlay: {
+  root: {
     ...StyleSheet.absoluteFillObject,
-    zIndex: 999,
-    backgroundColor: 'rgba(0,0,0,0.10)',
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
-    paddingTop: Platform.OS === 'ios' ? 52 : 16,
+    paddingTop: 70 ,
     paddingRight: 14,
+    zIndex: 9999,
+    elevation: 9999,
+  },
+  dim: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: '#000',
   },
   menuBox: {
     width: getResponsiveWidth(190),

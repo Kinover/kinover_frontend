@@ -12,12 +12,12 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import BottomActionButton from 'components/BottomActionButton';
 import {useNavigateToWhere} from 'hooks/useNatigateToWhere';
 import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
-import ToastModal from 'components/ToastModal';
+import ToastModal from 'components/modal/ToastModal';
 import {COLORS} from 'styles/style';
 
 // ✅ 추가
 import {useSelector} from 'react-redux';
-import { FONT_MODE } from 'store/uiSlice';
+import {FONT_MODE} from 'store/uiSlice';
 // import {FONT_MODE} from '../../store/uiSlice'; // 경로는 프로젝트에 맞게 조정해줘
 // 지금 파일 위치가 src/screens/auth 라면 보통 ../../../store/uiSlice 이런 식일 수도 있어.
 // 네 프로젝트에서 SettingScreen은 '../../../store/uiSlice'였으니,
@@ -46,9 +46,9 @@ export default function TermsAgreementScreen() {
 
   // ✅ 폰트모드에 따른 바텀시트 높이
   const snapPoints = useMemo(() => {
-    if (fontMode === FONT_MODE.EXTRA_LARGE) return ['86%'];
-    if (fontMode === FONT_MODE.LARGE) return ['80%'];
-    return ['72%'];
+    if (fontMode === FONT_MODE.EXTRA_LARGE) return ['87%'];
+    if (fontMode === FONT_MODE.LARGE) return ['81%'];
+    return ['73%'];
   }, [fontMode]);
 
   const [toastVisible, setToastVisible] = useState(false);
@@ -156,12 +156,16 @@ export default function TermsAgreementScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>{`킨오버 사용을 위해\n약관에 동의해 주세요`}</Text>
+      <Text
+        allowFontScaling={false}
+        style={styles.title}>{`킨오버 사용을 위해\n약관에 동의해 주세요`}</Text>
       <Text allowFontScaling={false} style={styles.sub}>
         서비스 이용을 위해 필수 약관에 동의해 주세요.
       </Text>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={{paddingBottom: 24}}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={{paddingBottom: 24}}>
         {/* 전체 동의 */}
         <View style={[styles.row, styles.allRow]}>
           <TouchableOpacity
@@ -281,7 +285,7 @@ export default function TermsAgreementScreen() {
       <BottomSheetModal
         ref={bottomSheetRef}
         index={0}
-        snapPoints={snapPoints}  // ✅ 폰트모드 반영
+        snapPoints={snapPoints} // ✅ 폰트모드 반영
         backdropComponent={renderBackdrop}
         handleIndicatorStyle={{backgroundColor: '#D1D5DB'}}>
         <View style={styles.sheetContainer}>{renderDetailContent()}</View>

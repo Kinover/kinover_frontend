@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { apiClient } from 'utils/apiClient';
 import {getToken} from '../utils/storage';
 
 export const createCategory = async (title, familyId) => {
@@ -9,7 +9,7 @@ export const createCategory = async (title, familyId) => {
       throw new Error('로그인이 필요합니다.');
     }
 
-    const response = await axios.post(
+    const response = await apiClient.post(
       'https://kinover.shop/api/categories',
       {
         title,

@@ -1,45 +1,41 @@
-import React, {useState, useEffect, useLayoutEffect} from 'react';
-import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  ScrollView,
-  ActivityIndicator,
-} from 'react-native';
+/* eslint-disable react-native/no-inline-styles */
+// src/features/chat/screens/CreateChatRoom.jsx
+
+import React, {useState, useEffect, useLayoutEffect, useRef, useCallback} from 'react';
+import {View, Text,  ActivityIndicator} from 'react-native';
+
 import {useSelector, useDispatch} from 'react-redux';
+import {CommonActions} from '@react-navigation/native';
+
 import {createChatRoomThunk} from '../store/chatRoomThunk';
 import {fetchFamilyUserListThunk} from '../../home/store/familyUserThunk';
-import {CommonActions} from '@react-navigation/native';
+
 import {
   getResponsiveWidth,
-  getResponsiveFontSize,
   getResponsiveHeight,
-  getResponsiveIconSize,
 } from '../../../utils/responsive';
-import useHideTabBar from '../../../hooks/useHideTabBar';
-import ToastModal from '../../../components/ToastModal'; // ✅ 추가
-import {HEADER_STYLES, LAYOUT_STYLE} from 'styles/style';
+
+import ToastModal from '../../../components/modal/ToastModal';
+import {HEADER_STYLES} from 'styles/style';
+
+// ✅ 너가 만든 바텀시트 컴포넌트
+import CreateChatRoomBottomSheet from '../components/CreateChatRoomBottomSheet';
 
 export default function CreateChatRoom({navigation}) {
   const dispatch = useDispatch();
+  const modalRef = useRef(null);
+
   const family = useSelector(state => state.family);
   const currentUserId = useSelector(state => state.user.userId);
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
   const loading = useSelector(state => state.userFamily.loading);
 
-  const [selected, setSelected] = useState([]);
-  const [toastVisible, setToastVisible] = useState(false); // ✅ 토스트 상태 추가
+  const [toastVisible, setToastVisible] = useState(false);
 
-  useHideTabBar();
-
-  useEffect(() => {
-    if (family.familyId) {
-      dispatch(fetchFamilyUserListThunk(family.familyId));
-    }
-  }, [dispatch, family.familyId]);
-
+  /**
+   * 1) 헤더는 타이틀만(체크버튼 제거)
+   * - 저장은 바텀시트 내부 "저장하기"로 처리하니까
+   */
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
@@ -47,51 +43,74 @@ export default function CreateChatRoom({navigation}) {
           채팅방 만들기
         </Text>
       ),
-      headerRight: () => (
-        <TouchableOpacity
-          onPress={handleCreateChatRoom}
-          style={{marginRight: getResponsiveWidth(10)}}>
-          <Image
-            source={require('../../../assets/icons/check.png')}
-            style={styles.headerCheckIcon}
-          />
-        </TouchableOpacity>
-      ),
+      headerRight: () => null,
     });
-  }, [navigation, selected]);
+  }, [navigation]);
 
-  const toggleUser = userId => {
-    setSelected(prev =>
-      prev.includes(userId)
-        ? prev.filter(id => id !== userId)
-        : [...prev, userId],
-    );
-  };
+  /**
+   * 2) 가족 유저 목록 가져오기 (기존 코드 그대로)
+   */
+  useEffect(() => {
+    if (family.familyId) {
+      dispatch(fetchFamilyUserListThunk(family.familyId));
+    }
+  }, [dispatch, family.familyId]);
 
-  const handleCreateChatRoom = async () => {
-    if (selected.length === 0) return;
+  /**
+   * 3) 이 화면 들어오면 바텀시트 자동으로 열기
+   */
+  useEffect(() => {
+    const t = setTimeout(() => {
+      modalRef.current?.present?.();
+    }, 0);
 
-    const idsStr = selected.join(',');
+    return () => clearTimeout(t);
+  }, []);
 
-    const selectedUserNames = selectableUsers
-      .filter(user => selected.includes(user.userId))
-      .map(user => user.name);
+  /**
+   * 4) 바텀시트 칩용 members 만들기
+   * - 네 바텀시트는 members: [{id, name, disabled?}] 형태
+   * - 여기서는 본인 제외
+   */
+  const members = (familyUserList || [])
+    .filter(u => u.userId !== currentUserId)
+    .map(u => ({
+      id: u.userId,
+      name: u.name,
+      disabled: false,
+    }));
 
-    const autoRoomName = selectedUserNames.join(', ');
+  /**
+   * 5) 바텀시트 저장(onSubmit) → 기존 createChatRoomThunk 로직 이식
+   * - roomName이 빈 값이면: 기존처럼 선택된 사람들 이름으로 자동 생성
+   */
+  const handleSubmit = useCallback(
+    async ({roomName, userIds}) => {
+      // userIds: 배열 형태로 들어옴
+      if (!Array.isArray(userIds) || userIds.length === 0) return;
 
-    try {
+      const idsStr = userIds.join(',');
+
+      const selectedUserNames = (familyUserList || [])
+        .filter(user => userIds.includes(user.userId))
+        .map(user => user.name);
+
+      const autoRoomName = selectedUserNames.join(', ');
+      const finalRoomName =
+        roomName && roomName.trim().length > 0 ? roomName.trim() : autoRoomName;
+
       await dispatch(
         createChatRoomThunk({
-          roomName: autoRoomName,
+          roomName: finalRoomName,
           userIds: idsStr,
           familyId: family.familyId,
         }),
       ).unwrap();
 
-      // ✅ 성공 시 토스트 띄우기
+      // ✅ 성공 토스트
       setToastVisible(true);
 
-      // ✅ 일정 시간 후 "소통" 화면으로 이동
+      // ✅ 잠깐 뒤 소통 탭으로 이동
       setTimeout(() => {
         navigation.dispatch(
           CommonActions.reset({
@@ -100,52 +119,32 @@ export default function CreateChatRoom({navigation}) {
           }),
         );
       }, 1200);
-    } catch (err) {
-      console.error('🔴 채팅방 생성 실패:', err);
-    }
-  };
-
-  const selectableUsers = familyUserList.filter(
-    user => user.userId !== currentUserId,
+    },
+    [dispatch, family.familyId, familyUserList, navigation],
   );
 
   return (
     <View style={styles.container}>
-      {loading ? (
-        <ActivityIndicator size="large" color="#F8B500" />
-      ) : (
-        <ScrollView>
-          {selectableUsers.map(user => {
-            const isSelected = selected.includes(user.userId);
-            return (
-              <TouchableOpacity
-                key={user.userId}
-                onPress={() => toggleUser(user.userId)}
-                style={[
-                  styles.userItem,
-                  isSelected && styles.userItemSelected,
-                ]}>
-                <View style={styles.userInfo}>
-                  <Image source={{uri: user.image}} style={styles.userImage} />
-                  <Text allowFontScaling={false} style={styles.userName}>
-                    {user.name}
-                  </Text>
-                </View>
-                <Image
-                  source={
-                    isSelected
-                      ? require('../../../assets/images/selected-bt.png')
-                      : require('../../../assets/images/unselected-bt.png')
-                  }
-                  style={styles.selectIcon}
-                />
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+      {/* 로딩이면 스켈레톤/인디케이터만 보여주고, 바텀시트는 members 비어있어도 렌더 가능 */}
+      {loading && (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator size="large" color="#F8B500" />
+        </View>
       )}
 
-      {/* ✅ 채팅방 생성 완료 토스트 */}
+      {/* ✅ 너가 만든 바텀시트 적용 */}
+      <CreateChatRoomBottomSheet
+        modalRef={modalRef}
+        members={members}
+        initialRoomName=""          // 필요하면 기본값 넣어도 됨
+        initialSelectedIds={[]}     // 처음엔 아무도 선택 X
+        onSubmit={handleSubmit}
+        requireRoomName={false}     // 이름 필수 아니게(기존처럼 자동이름 가능)
+        maxRoomNameLength={30}
+        snapPoints={['92%']}
+      />
+
+      {/* ✅ 채팅방 생성 완료 토스트(기존 그대로) */}
       <ToastModal
         visible={toastVisible}
         message="채팅방을 생성했어요"
@@ -156,58 +155,32 @@ export default function CreateChatRoom({navigation}) {
   );
 }
 
-const styles = StyleSheet.create({
+const styles = {
   container: {
     flex: 1,
     backgroundColor: 'white',
-    borderTopWidth: 2,
-    borderColor: '#E5E5E5',
   },
+
   headerTitle: {
-    fontSize: HEADER_STYLES().defaultTitleFontSize, // 🔽 18 → 17
+    fontSize: HEADER_STYLES().defaultTitleFontSize,
     textAlign: 'center',
     fontFamily: HEADER_STYLES().defaultTitleFontFamily,
     color: HEADER_STYLES().defaultTitleFontColor,
   },
-  userItem: {
-    flexDirection: 'row',
+
+  loadingWrap: {
+    position: 'absolute',
+    top: getResponsiveHeight(220),
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    paddingVertical: getResponsiveHeight(12),
-    justifyContent: 'space-between',
-    paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal,
+    zIndex: 1,
   },
-  userItemSelected: {
-    backgroundColor: '#FFF2CC',
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(5),
-  },
-  userImage: {
-    width: getResponsiveIconSize(45),
-    height: getResponsiveIconSize(45),
-    borderRadius: getResponsiveIconSize(22.5),
-    marginRight: getResponsiveWidth(10),
-    backgroundColor: '#eee',
-  },
-  userName: {
-    fontSize: getResponsiveFontSize(15.5),
-    fontFamily: 'Pretendard-Medium',
-    color: '#101010',
-    lineHeight: getResponsiveHeight(20),
-    textAlignVertical: 'center',
-  },
-  selectIcon: {
-    width: getResponsiveWidth(14),
-    height: getResponsiveHeight(14),
-    resizeMode: 'contain',
-    marginRight: getResponsiveWidth(5),
-  },
+
   headerCheckIcon: {
-    width: getResponsiveWidth(24), // 🔽 30 → 24
-    height: getResponsiveHeight(24), // 🔽 30 → 24
+    width: getResponsiveWidth(24),
+    height: getResponsiveHeight(24),
     marginRight: getResponsiveWidth(15),
     resizeMode: 'contain',
   },
-});
+};

@@ -6,32 +6,40 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
+import DropShadow from 'react-native-drop-shadow';
 
 const AVATAR_RADIUS = getResponsiveWidth(8);
 const CARD_RADIUS = getResponsiveIconSize(10);
 
 export default function SkeletonMemoryItem() {
   return (
-    <View style={styles.card}>
-      {/* 날짜 + 뱃지 영역 */}
-      <View style={styles.topRow}>
+    <DropShadow
+      style={{
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 3},
+        shadowOpacity: 0.08,
+        shadowRadius: 3,
+      }}>
+      <View style={styles.card}>
+        {/* 날짜 + 뱃지 영역 */}
+        {/* <View style={styles.topRow}>
         <View style={styles.date} />
         <View style={styles.badgeRow}>
           <View style={styles.badge} />
           <View style={[styles.badge, styles.badgeShort]} />
         </View>
+      </View> */}
+
+        {/* 대표 이미지 자리 */}
+        <View style={styles.image} />
+
+        {/* 카테고리 */}
+        <View style={styles.category} />
+
+        {/* 내용 두 줄 */}
+        <View style={styles.text1} />
       </View>
-
-      {/* 대표 이미지 자리 */}
-      <View style={styles.image} />
-
-      {/* 카테고리 */}
-      <View style={styles.category} />
-
-      {/* 내용 두 줄 */}
-      <View style={styles.text1} />
-      <View style={styles.text2} />
-    </View>
+    </DropShadow>
   );
 }
 

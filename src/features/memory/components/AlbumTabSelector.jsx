@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
     fontFamily: DEFAULT_STYLE().sectionTitle.fontFamily,
-    color: '#4A4A4A',
+    color: 'gray',
     textAlignVertical: 'bottom',
   },
   selectedText: {

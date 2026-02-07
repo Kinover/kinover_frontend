@@ -1,4 +1,7 @@
-import React, {useEffect, useCallback, useState} from 'react';
+/* eslint-disable react-native/no-inline-styles */
+// src/features/chat/screens/CommunicationScreen.jsx
+
+import React, {useEffect, useCallback, useState, useRef, useMemo} from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,52 +9,71 @@ import {
   TouchableOpacity,
   FlatList,
   RefreshControl,
+  Image,
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
-import {fetchChatRoomListThunk} from '../store/chatRoomThunk';
+
+import {
+  fetchChatRoomListThunk,
+  createChatRoomThunk,
+} from '../store/chatRoomThunk';
+import {fetchFamilyUserListThunk} from '../../home/store/familyUserThunk';
+
 import ChatRoomItem from '../components/ChatRoomItem';
+
 import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-import FastImage from '@d11/react-native-fast-image';
+
 import YellowSpinner from '../../../components/YellowSpinner';
+import ToastModal from '../../../components/modal/ToastModal';
+
 import {BACKGROUND_COLORS, EMPTY_STYLE} from 'styles/style';
 import {hapticLight} from '../../../utils/haptic';
 import DropShadow from 'react-native-drop-shadow';
 
+// ✅ 너가 만든 바텀시트
+import CreateChatRoomBottomSheet from '../components/CreateChatRoomBottomSheet';
+
 export default function CommunicationScreen({navigation}) {
   const dispatch = useDispatch();
+
+  const modalRef = useRef(null);
+
   const {userId, login} = useSelector(s => s.user);
   const {familyId} = useSelector(s => s.family);
+
   const {chatRoomList, loading, listRevision} = useSelector(s => s.chatRoom);
+
+  // ✅ 바텀시트에 필요한 가족 유저 리스트
+  const familyUserList = useSelector(s => s.userFamily.familyUserList);
+  const familyUserLoading = useSelector(s => s.userFamily.loading);
+
   const [refreshing, setRefreshing] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
 
-  // ✅ 갱신(load)할 때 채팅방 리스트 + 알림 unread 같이 갱신
+  // ✅ 채팅방 리스트 load
   const load = useCallback(async () => {
-    console.log('[CommunicationScreen] load 호출', {familyId, userId});
-
     if (familyId != null && userId != null) {
-      console.log('[CommunicationScreen] fetchChatRoomListThunk 디스패치');
-
-      // 1) 채팅방 리스트 갱신
       const result = await dispatch(fetchChatRoomListThunk(familyId, userId));
-
       return result;
-    } else {
-      console.log('[CommunicationScreen] 조건 불만족으로 fetch 생략', {
-        familyId,
-        userId,
-      });
-      return null;
     }
+    return null;
   }, [dispatch, familyId, userId]);
 
   useEffect(() => {
     load();
   }, [load, login]);
+
+  // ✅ 가족 유저 목록도 미리 가져오기(바텀시트 열 때 바로 뜨게)
+  useEffect(() => {
+    if (familyId != null) {
+      dispatch(fetchFamilyUserListThunk(familyId));
+    }
+  }, [dispatch, familyId]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -69,10 +91,55 @@ export default function CommunicationScreen({navigation}) {
     [navigation, userId],
   );
 
-  const handleFabPress = useCallback(() => {
-    hapticLight();
-    navigation.navigate('채팅방생성화면');
-  }, [navigation]);
+  // ✅ 바텀시트 members 변환 (본인 제외)
+  const members = useMemo(() => {
+    return (familyUserList || [])
+      .filter(u => u?.userId !== userId)
+      .map(u => ({
+        id: u.userId,
+        name: u.name,
+        disabled: false,
+      }));
+  }, [familyUserList, userId]);
+
+  // ✅ 바텀시트 열기
+  const openCreateChatRoomSheet = useCallback(() => {
+    hapticLight?.();
+    modalRef.current?.present?.();
+  }, []);
+
+  // ✅ 바텀시트 저장(onSubmit) → 채팅방 생성 thunk 연결
+  const handleSubmit = useCallback(
+    async ({roomName, userIds}) => {
+      if (!Array.isArray(userIds) || userIds.length === 0) return;
+
+      const idsStr = userIds.join(',');
+
+      // roomName 비어있으면 선택된 사람들 이름으로 자동 생성
+      const selectedUserNames = (familyUserList || [])
+        .filter(u => userIds.includes(u.userId))
+        .map(u => u.name);
+
+      const autoRoomName = selectedUserNames.join(', ');
+      const finalRoomName =
+        roomName && roomName.trim().length > 0 ? roomName.trim() : autoRoomName;
+
+      await dispatch(
+        createChatRoomThunk({
+          roomName: finalRoomName,
+          userIds: idsStr,
+          familyId,
+        }),
+      ).unwrap();
+
+      // ✅ 성공 토스트
+      setToastVisible(true);
+
+      // ✅ 생성 후 리스트 갱신
+      await load();
+    },
+    [dispatch, familyId, familyUserList, load],
+  );
 
   return (
     <View style={styles.container}>
@@ -99,6 +166,26 @@ export default function CommunicationScreen({navigation}) {
         />
       )}
 
+      {/* ✅ 채팅방 만들기 바텀시트 (화면 이동 없이 present로만 띄움) */}
+      <CreateChatRoomBottomSheet
+        modalRef={modalRef}
+        members={members}
+        initialRoomName=""
+        initialSelectedIds={[]}
+        onSubmit={handleSubmit}
+        requireRoomName={false}
+        maxRoomNameLength={30}
+        // snapPoints={['57%']}
+      />
+
+      {/* ✅ 완료 토스트 */}
+      <ToastModal
+        visible={toastVisible}
+        message="채팅방을 생성했어요"
+        onClose={() => setToastVisible(false)}
+        duration={1000}
+      />
+
       <DropShadow
         style={{
           shadowColor: '#000',
@@ -107,11 +194,11 @@ export default function CommunicationScreen({navigation}) {
           shadowRadius: 3,
         }}>
         <TouchableOpacity
-          onPress={handleFabPress}
+          onPress={openCreateChatRoomSheet}
           style={styles.fab}
           activeOpacity={0.8}>
-          <FastImage
-            source={require('../../../assets/icons/sub/two.png')}
+          <Image
+            source={require('../../../assets/icons/tabs/2/two.png')}
             style={{
               alignSelf: 'center',
               width: '45%',

@@ -3,6 +3,7 @@ package com.kinover_frontend
 import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
+import androidx.core.view.WindowCompat
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
@@ -18,13 +19,11 @@ class MainActivity : ReactActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         setTheme(R.style.AppTheme) // SplashTheme 방지
         super.onCreate(savedInstanceState)
+
+        // ✅ edge-to-edge: 시스템 바 아래까지 콘텐츠 렌더링 허용
+        WindowCompat.setDecorFitsSystemWindows(window, false)
     }
 
-    /**
-     * ✅ 시스템 폰트 크기(접근성 글자 크기) 무시: 항상 fontScale=1.0 유지
-     * - JS의 allowFontScaling=false 가 전역으로 새는 케이스가 있어서
-     *   Android 리소스 레벨에서 강제로 고정하는 방식이 제일 확실함.
-     */
     override fun attachBaseContext(newBase: Context) {
         val config = newBase.resources.configuration
         if (config.fontScale != 1.0f) {

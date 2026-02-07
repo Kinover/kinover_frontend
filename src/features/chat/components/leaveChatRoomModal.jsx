@@ -1,6 +1,6 @@
 import React from 'react';
-import { StyleSheet, Platform} from 'react-native';
-import CustomModal from '../../../components/CustomModal';
+import {StyleSheet, Platform} from 'react-native';
+import CustomModal from '../../../components/modal/CustomModal';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
@@ -10,6 +10,7 @@ import {
 export default function LeaveChatRoomModal({visible, onClose, onConfirm}) {
   return (
     <CustomModal
+      showCloseButton
       visible={visible}
       onClose={onClose}
       onConfirm={() => {
@@ -19,9 +20,9 @@ export default function LeaveChatRoomModal({visible, onClose, onConfirm}) {
         }, 100); // 100ms 정도만 주면 충분해
       }}
       confirmText="나가기"
-      closeText="취소"
-      buttonBottomStyle={styles.modalButtonRow}
-      title="채팅방을 나갈까요?"/>
+      closeText="취소하기"
+      title="채팅방을 나갈까요?"
+    />
   );
 }
 

@@ -1,4 +1,4 @@
-// familySlice.js
+// src/features/home/store/familySlice.js
 import {createSlice} from '@reduxjs/toolkit';
 
 const relationshipMap = {
@@ -19,8 +19,10 @@ const initialFamilyState = {
   createdAt: null,
   updatedAt: null,
   relationship: null,
+
   loading: false,
   error: null,
+
   onlineUserIds: [],
   lastActiveMap: {},
 };
@@ -30,34 +32,54 @@ const familySlice = createSlice({
   initialState: initialFamilyState,
   reducers: {
     setFamily(state, action) {
-      const {familyId, name, notice, relationship} =
-        action.payload || {};
+      const payload = action.payload || {};
+
+      const {familyId, name, notice, createdAt, updatedAt, relationship} =
+        payload;
+
       state.familyId = familyId ?? state.familyId;
       state.name = name ?? state.name;
       state.notice = notice ?? state.notice;
-      state.relationship = relationshipMap[relationship] || state.relationship;
+      state.createdAt = createdAt ?? state.createdAt;
+      state.updatedAt = updatedAt ?? state.updatedAt;
+
+      // relationship는 서버가 enum을 주면 맵핑, 이미 한글로 주면 그대로 유지
+      state.relationship =
+        relationshipMap[relationship] ?? relationship ?? state.relationship;
     },
+
     setFamilyLoading(state, action) {
-      state.loading = action.payload;
+      state.loading = !!action.payload;
     },
+
     setFamilyError(state, action) {
-      state.error = action.payload;
+      state.error = action.payload ?? null;
     },
-    setOnlineUserIds: (state, action) => {
-      state.onlineUserIds = [...action.payload];
+
+    setOnlineUserIds(state, action) {
+      state.onlineUserIds = Array.isArray(action.payload)
+        ? [...action.payload]
+        : [];
     },
-    setLastActiveMap: (state, action) => {
-      state.lastActiveMap = action.payload;
+
+    setLastActiveMap(state, action) {
+      state.lastActiveMap = action.payload || {};
+    },
+
+    // (선택) 로그아웃/초기화 등에 쓰고 싶으면
+    resetFamilyState() {
+      return {...initialFamilyState};
     },
   },
 });
 
 export const {
   setFamily,
-  setOnlineUserIds,
-  setLastActiveMap,
   setFamilyLoading,
   setFamilyError,
+  setOnlineUserIds,
+  setLastActiveMap,
+  resetFamilyState,
 } = familySlice.actions;
 
 export default familySlice.reducer;

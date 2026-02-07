@@ -12,6 +12,7 @@ import {
   Animated,
   Dimensions,
   Platform,
+  Image,
 } from 'react-native';
 
 import DropShadow from 'react-native-drop-shadow';
@@ -194,20 +195,13 @@ const EmotionItem = ({item, index, isSelected, onPress, itemWidth}) => {
             {/* ✅ CheckBadge 적용: Animated.View는 opacity만 담당 */}
             <Animated.View
               style={[styles.checkBadgePos, {opacity: badgeOpacity}]}>
-              <CheckBadge
-                size={getResponsiveWidth(16)}
-                dotSize={getResponsiveIconSize(8)}
-                borderWidth={2}
-                borderColor={COLORS.brandPrimary}
-                backgroundColor="#FFFFFF"
-                dotColor={COLORS.brandPrimary}
-              />
+              
             </Animated.View>
 
-            <FastImage
+            <Image
               source={item.url}
               style={styles.emotionImage}
-              resizeMode="contain"
+              resizeMode={FastImage.resizeMode.contain}
             />
 
             <Text

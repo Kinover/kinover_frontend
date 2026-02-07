@@ -1,5 +1,9 @@
 /* eslint-disable react-native/no-inline-styles */
 // ScheduleEditorBottomSheetModal.jsx
+// ✅ 흐름형 footer(1번) 버전 - 버벅 개선
+// - 내부 탭에서 snapToIndex 제거(키보드 정책에 맡김)
+// - 탭 연타 방지
+// - Layout은 dismissKeyboardOnPress=true로 “키보드 열려있을 때만” dismiss 하도록
 
 import React, {
   forwardRef,
@@ -31,20 +35,17 @@ import {
 } from '../../../utils/responsive';
 
 import {useScheduleBottomSheetModal} from '../hooks/useScheduleBottomSheetModal';
-import ToastModal from '../../../components/ToastModal';
-import BottomSheetLayout from 'components/BottomSheetLayout';
+import ToastModal from '../../../components/modal/ToastModal';
+import CustomModal from 'components/modal/CustomModal';
+import BottomSheetLayout from 'components/botomSheet/BottomSheetLayout';
 import {BOTTOMSHEET_STYLE} from 'styles/style';
-import {BottomSheetButtons} from 'components/BottomSheetButtons';
 
-// ✅ fontMode 구독
 import {useSelector} from 'react-redux';
-import {FONT_MODE} from '../../../store/uiSlice';
+import SlideSegment from 'components/SlideSegment';
+import BottomSheetFooterButtons from 'components/botomSheet/BottomSheetFooterButtons';
 
 const {height: WINDOW_H} = Dimensions.get('window');
 const SAFE_GAP = 12;
-
-// ✅ footer 높이 기본값 (폰트모드에 따라 가산)
-const FOOTER_SPACE_BASE = getResponsiveHeight(86);
 
 const KIND = {
   INDIVIDUAL: 'individual',
@@ -76,117 +77,75 @@ const uniqNums = arr =>
 
 const COLORS = {
   bg: '#FFFFFF',
-
   text: '#0B1220',
   sub: '#566073',
   muted: '#98A2B3',
-
   card: '#FFFFFF',
   surface: '#F6F7FB',
   line: 'rgba(15, 23, 42, 0.08)',
-
   brand: '#FFC84D',
   brandDeep: '#FFB020',
-
   danger: '#EF4444',
-
-  pill: '#0B1220',
+  pill: 'black',
   pillText: '#FFFFFF',
 };
 
 const shadow = Platform.select({});
 
-const shadowStrong = Platform.select({
-  ios: {
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 6},
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-  },
-  android: {elevation: 4},
-  default: {},
-});
+const normalizeKind = raw => {
+  const t = String(raw ?? '').toLowerCase();
 
-// ✅ percent clamp
-const clampPct = (n, min, max) => Math.min(Math.max(n, min), max);
-const toPct = n => `${n.toFixed(1)}%`;
+  const isAnniv =
+    t.includes('anniv') ||
+    t.includes('anniversary') ||
+    t.includes('기념') ||
+    t === 'anniversary';
 
-/**
- * ✅ 이 시트(에디터형)용 폰트모드 → 높이 전략
- * - base(기본 높이)는 "이 시트 고유" 값으로 유지
- * - LARGE/EXTRA_LARGE에서 올라가는 폭(step)은 에디터 특성상 조금 더 주는 편이 안전
- * - 2번째 스냅(키보드용)은 98%로 고정
- */
-const getEditorSnapPointsByFontMode = fontMode => {
-  // ✅ 이 시트의 고유 base
-  const BASE = 78.5;
+  if (isAnniv) return KIND.ANNIVERSARY;
 
-  // ✅ 에디터형은 커질 때 답답해지기 쉬워서 step을 조금 더
-  // - LARGE: +4.5 정도
-  // - EXTRA: +8.0 정도
-  const inc =
-    fontMode === FONT_MODE.EXTRA_LARGE
-      ? 11
-      : fontMode === FONT_MODE.LARGE
-      ? 7
-      : 1.2;
+  const isFamily =
+    t.includes('family') || t.includes('shared') || t.includes('공동');
 
-  // ✅ 상한(너무 커져 숨막히는 것 방지)
-  const first = clampPct(BASE + inc, 72, 90);
+  if (isFamily) return KIND.FAMILY;
 
-  return [toPct(first), '98%'];
+  if (
+    t.includes('individual') ||
+    t.includes('personal') ||
+    t.includes('개별') ||
+    t.includes('개인')
+  ) {
+    return KIND.INDIVIDUAL;
+  }
+
+  return KIND.INDIVIDUAL;
 };
 
-const getEditorFooterSpaceByFontMode = fontMode => {
-  // ✅ footer 아래 여유도 폰트가 커질수록 같이 올려주기
-  // 에디터형은 버튼+입력+키보드가 겹쳐서 여유가 중요함
-  const extra =
-    fontMode === FONT_MODE.EXTRA_LARGE
-      ? getResponsiveHeight(26)
-      : fontMode === FONT_MODE.LARGE
-      ? getResponsiveHeight(14)
-      : 0;
-
-  return FOOTER_SPACE_BASE + extra;
-};
+const KIND_SEGMENTS = [
+  {key: KIND.INDIVIDUAL, label: '개별'},
+  {key: KIND.FAMILY, label: '가족'},
+];
 
 const ScheduleEditorBottomSheetModal = forwardRef(
   (
     {
       editingSchedule,
       familyUserList = [],
-
       familyId: familyIdProp,
       date: dateProp,
       memo: memoProp,
-
       selectedUserIds: selectedUserIdsProp,
       setSelectedUserIds: setSelectedUserIdsProp,
-
       title,
       setTitle,
-
       kind: kindProp,
       setKind: setKindProp,
-
       onSubmit,
       onDelete,
       onRefresh,
     },
     ref,
   ) => {
-    // ✅ fontMode 구독
     const fontMode = useSelector(state => state.ui.fontMode);
-
-    // ✅ fontMode에 따른 footer 공간
-    const FOOTER_SPACE = useMemo(() => {
-      return getEditorFooterSpaceByFontMode(fontMode);
-    }, [fontMode]);
-
-    // ✅ fontMode에 따른 snapPoints (기본/키보드)
-    const snapPoints = useMemo(() => {
-      return getEditorSnapPointsByFontMode(fontMode);
-    }, [fontMode]);
 
     const [localKind, setLocalKind] = useState(KIND.INDIVIDUAL);
     const [localSelectedUserIds, setLocalSelectedUserIds] = useState([]);
@@ -195,30 +154,43 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const [toastMessage, setToastMessage] = useState('');
     const [isClosing, setIsClosing] = useState(false);
 
+    const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+
     const closingRef = useRef(false);
 
-    // ✅ "내용만" 올리는 값(미세 보정용)
+    // ✅ shift는 “입력/콘텐츠 영역”만 올릴거라 contentWrapRef를 따로 둠
     const shiftAnim = useRef(new Animated.Value(0)).current;
     const keyboardHeightRef = useRef(0);
     const inputRef = useRef(null);
 
     const tapToResetRef = useRef(false);
-    const isPresentedRef = useRef(false);
-
-    // ✅ 키보드 상태(스냅 제어용)
     const keyboardOpenRef = useRef(false);
 
+    // ✅ 내부 탭 연타 방지
+    const touchLockRef = useRef(false);
+    const touchLockTimerRef = useRef(null);
+    const lockTouchBriefly = useCallback(() => {
+      touchLockRef.current = true;
+      if (touchLockTimerRef.current) clearTimeout(touchLockTimerRef.current);
+      touchLockTimerRef.current = setTimeout(() => {
+        touchLockRef.current = false;
+      }, 180);
+    }, []);
+
     const showToast = msg => {
-      setToastMessage(msg);
+      setToastMessage(String(msg ?? ''));
       setToastVisible(true);
     };
     const hideToast = () => setToastVisible(false);
 
     const currentKind = kindProp ?? localKind;
     const selectedUserIds = selectedUserIdsProp ?? localSelectedUserIds;
-    const isAnniversaryMode = currentKind === KIND.ANNIVERSARY;
 
-    const setSelectedUserIds = next => {
+    const isAnniversaryMode = currentKind === KIND.ANNIVERSARY;
+    const isIndividualMode = currentKind === KIND.INDIVIDUAL;
+    const isFamilyMode = currentKind === KIND.FAMILY;
+
+    const setSelectedUserIdsSafe = next => {
       if (isClosing) return;
       const setter = setSelectedUserIdsProp ?? setLocalSelectedUserIds;
       setter(Array.isArray(next) ? uniqNums(next) : []);
@@ -237,77 +209,92 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       allFamilyUserIds.length > 0 &&
       safeSelectedIds.length === allFamilyUserIds.length;
 
-    const setKindSafe = v => {
-      if (isClosing) return;
-      const setter = setKindProp ?? setLocalKind;
-      setter(v);
+    const isAllSelectedUI = isAnniversaryMode ? true : isAllSelected;
 
-      // ✅ 기념일이면 구성원 선택 비움
-      if (v === KIND.ANNIVERSARY) {
-        (setSelectedUserIdsProp ?? setLocalSelectedUserIds)([]);
-      }
-    };
+    const setKindSafe = useCallback(
+      v => {
+        const setter = setKindProp ?? setLocalKind;
+        setter(v);
+
+        if (v === KIND.ANNIVERSARY) {
+          (setSelectedUserIdsProp ?? setLocalSelectedUserIds)([]);
+        }
+      },
+      [setKindProp, setSelectedUserIdsProp],
+    );
+
+    // ✅ 안정 키
+    const editingScheduleRef = useRef(editingSchedule);
+    useEffect(() => {
+      editingScheduleRef.current = editingSchedule;
+    }, [editingSchedule]);
+
+    const editingKey = useMemo(() => {
+      return (
+        editingSchedule?.scheduleId ??
+        editingSchedule?.id ??
+        editingSchedule?.scheduleID ??
+        null
+      );
+    }, [editingSchedule]);
 
     useEffect(() => {
+      const es = editingScheduleRef.current;
+
+      if (!es) {
+        setKindSafe(KIND.INDIVIDUAL);
+        (setSelectedUserIdsProp ?? setLocalSelectedUserIds)([]);
+        return;
+      }
+
       const raw =
-        editingSchedule?.kind ??
-        editingSchedule?.type ??
-        editingSchedule?.scheduleType ??
-        editingSchedule?.category ??
+        es?.__forcedKind ??
+        es?.kind ??
+        es?.type ??
+        es?.scheduleType ??
+        es?.category ??
         null;
 
-      const t = String(raw || '').toLowerCase();
+      const forcedFamily = es?.isShared === true || es?.shared === true;
 
-      const isAnniv =
-        editingSchedule?.isAnniversary === true ||
-        t.includes('anniv') ||
-        t.includes('anniversary') ||
-        t.includes('기념');
+      let initialKind = normalizeKind(raw);
+      if (initialKind !== KIND.ANNIVERSARY && forcedFamily) {
+        initialKind = KIND.FAMILY;
+      }
 
-      const isFamily =
-        editingSchedule?.isShared === true ||
-        editingSchedule?.shared === true ||
-        t.includes('family') ||
-        t.includes('공동') ||
-        t.includes('shared') ||
-        editingSchedule?.userId == null;
-
-      let initialKind = KIND.INDIVIDUAL;
-      if (isAnniv) initialKind = KIND.ANNIVERSARY;
-      else if (isFamily) initialKind = KIND.FAMILY;
-
-      if (!editingSchedule) initialKind = KIND.INDIVIDUAL;
-
-      (setKindProp ?? setLocalKind)(initialKind);
+      setKindSafe(initialKind);
 
       const candidateIds =
-        editingSchedule?.userIds ??
-        editingSchedule?.participantIds ??
-        editingSchedule?.participants ??
-        editingSchedule?.memberIds ??
+        es?.userIds ??
+        es?.participantIds ??
+        es?.participants ??
+        es?.memberIds ??
         null;
 
       const candidateArr = Array.isArray(candidateIds)
         ? candidateIds
         : candidateIds
         ? [candidateIds]
-        : editingSchedule?.userId != null
-        ? [editingSchedule.userId]
+        : es?.userId != null
+        ? [es.userId]
         : null;
 
       const normalizedCandidates = candidateArr ? uniqNums(candidateArr) : null;
 
-      if (
-        normalizedCandidates &&
-        (initialKind === KIND.INDIVIDUAL || initialKind === KIND.FAMILY)
-      ) {
+      if (initialKind === KIND.ANNIVERSARY) {
+        (setSelectedUserIdsProp ?? setLocalSelectedUserIds)([]);
+        return;
+      }
+
+      if (normalizedCandidates && normalizedCandidates.length > 0) {
         (setSelectedUserIdsProp ?? setLocalSelectedUserIds)(
           uniqNums(normalizedCandidates),
         );
       } else {
         (setSelectedUserIdsProp ?? setLocalSelectedUserIds)([]);
       }
-    }, [editingSchedule]);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [editingKey]);
 
     const scheduleType = useMemo(
       () => kindToScheduleType(currentKind),
@@ -325,16 +312,15 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     }, [currentKind, safeSelectedIds, isAllSelected, allFamilyUserIds]);
 
     const basePayload = useMemo(() => {
-      const familyId = editingSchedule?.familyId ?? familyIdProp;
-      const date = editingSchedule?.date ?? dateProp;
+      const es = editingScheduleRef.current;
+
+      const familyId = es?.familyId ?? familyIdProp;
+      const date = es?.date ?? dateProp;
 
       const scheduleId =
-        editingSchedule?.scheduleId ??
-        editingSchedule?.id ??
-        editingSchedule?.scheduleID ??
-        undefined;
+        es?.scheduleId ?? es?.id ?? es?.scheduleID ?? undefined;
 
-      const memo = editingSchedule?.memo ?? memoProp;
+      const memo = es?.memo ?? memoProp;
 
       return {
         ...(scheduleId != null ? {scheduleId} : {}),
@@ -342,7 +328,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         date,
         ...(memo != null ? {memo} : {}),
       };
-    }, [editingSchedule, familyIdProp, dateProp, memoProp]);
+    }, [familyIdProp, dateProp, memoProp]);
 
     const {modalRef, scheduleRef, inputKey, handleSave, handleDelete} =
       useScheduleBottomSheetModal({
@@ -357,6 +343,22 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         basePayload,
       });
 
+    const snapPoints = useMemo(() => {
+      const fm = String(fontMode ?? '').toLowerCase();
+      const isLarge = fm.includes('large') && !fm.includes('extra');
+      const isXL = fm.includes('extra');
+
+      if (isXL) return ['78%', '99%'];
+      if (isLarge) return ['74%', '98%'];
+      return ['69.6%', '97%'];
+    }, [fontMode]);
+
+    const bottomSafe = 0;
+
+    const sheetKey = useMemo(() => {
+      return `scheduleEditor-flow-${fontMode}-${editingKey ?? 'new'}`;
+    }, [fontMode, editingKey]);
+
     const closeSheet = useCallback(() => {
       if (closingRef.current) return;
       closingRef.current = true;
@@ -370,11 +372,12 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const handleSheetDismiss = useCallback(() => {
       setIsClosing(false);
       closingRef.current = false;
-      isPresentedRef.current = false;
 
       tapToResetRef.current = false;
       keyboardHeightRef.current = 0;
       keyboardOpenRef.current = false;
+
+      setDeleteModalVisible(false);
 
       Animated.timing(shiftAnim, {
         toValue: 0,
@@ -387,10 +390,11 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       present: () => {
         setIsClosing(false);
         closingRef.current = false;
-        isPresentedRef.current = true;
 
         tapToResetRef.current = false;
         keyboardOpenRef.current = false;
+
+        setDeleteModalVisible(false);
 
         Animated.timing(shiftAnim, {
           toValue: 0,
@@ -400,7 +404,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
         modalRef.current?.present?.();
 
-        // ✅ fontMode 바뀌었을 때 이전 스냅 상태가 남는 경우 보정
         requestAnimationFrame(() => {
           modalRef.current?.snapToIndex?.(0);
         });
@@ -408,14 +411,11 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       dismiss: () => closeSheet(),
     }));
 
-    // ✅ 키보드 show/hide 시: 시트 스냅으로 "인풋이 보이게"
+    // ✅ 키보드 이벤트: 높이 추적 + shift 리셋만
     useEffect(() => {
       const onShow = e => {
         keyboardOpenRef.current = true;
         keyboardHeightRef.current = e?.endCoordinates?.height || 0;
-
-        // ✅ 키보드 뜨면 2번째 스냅(98%)로
-        modalRef.current?.snapToIndex?.(1);
       };
 
       const onHide = () => {
@@ -429,9 +429,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         }).start(() => {
           tapToResetRef.current = false;
         });
-
-        // ✅ 키보드 내려가면 기본 스냅(0) 복귀
-        modalRef.current?.snapToIndex?.(0);
       };
 
       const subShow = Keyboard.addListener(
@@ -447,17 +444,14 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         subShow.remove();
         subHide.remove();
       };
-    }, [shiftAnim, modalRef]);
+    }, [shiftAnim]);
 
-    /**
-     * ✅ input이 "아직도" 가려지면 내용만 추가로 올림(미세 보정)
-     * - limitY에 FOOTER_SPACE까지 고려 (fontMode LARGE/EXTRA면 FOOTER_SPACE가 더 커짐)
-     */
     const ensureVisible = useCallback(
       refNode => {
         if (tapToResetRef.current) return;
 
         const kbH = keyboardHeightRef.current || 0;
+        if (!kbH) return;
 
         requestAnimationFrame(() => {
           if (tapToResetRef.current) return;
@@ -469,10 +463,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
             if (tapToResetRef.current) return;
 
             const inputBottomY = y + h;
-            const baseLimit = kbH ? WINDOW_H - kbH : WINDOW_H;
-
-            // ✅ footer 공간 + safe gap을 빼서 “입력 하단이 보이는 영역” 계산
-            const limitY = baseLimit - SAFE_GAP - FOOTER_SPACE;
+            const limitY = WINDOW_H - kbH - SAFE_GAP;
 
             if (inputBottomY <= limitY) {
               Animated.timing(shiftAnim, {
@@ -493,24 +484,29 @@ const ScheduleEditorBottomSheetModal = forwardRef(
           });
         });
       },
-      [shiftAnim, FOOTER_SPACE],
+      [shiftAnim],
     );
 
-    const dismissKeyboardAndReset = useCallback(() => {
-      tapToResetRef.current = true;
+    /**
+     * ✅✅✅ 버벅 제거 핵심:
+     * - 내부 탭에서는 “snapToIndex(0)” 하지 말고
+     * - shift만 0으로 리셋 + (키보드 닫기는 Layout이 담당)
+     * - 탭 연타 방지
+     */
+    const handleTouchInsideResetOnly = useCallback(() => {
+      if (touchLockRef.current) return;
+      lockTouchBriefly();
 
-      Keyboard.dismiss();
+      tapToResetRef.current = true;
 
       Animated.timing(shiftAnim, {
         toValue: 0,
-        duration: 160,
+        duration: 150,
         useNativeDriver: true,
       }).start(() => {
         tapToResetRef.current = false;
       });
-
-      modalRef.current?.snapToIndex?.(0);
-    }, [shiftAnim, modalRef]);
+    }, [shiftAnim, lockTouchBriefly]);
 
     const toggleUser = userId => {
       if (isClosing) return;
@@ -520,9 +516,9 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       if (id == null) return;
 
       if (safeSelectedIds.includes(id)) {
-        setSelectedUserIds(safeSelectedIds.filter(x => x !== id));
+        setSelectedUserIdsSafe(safeSelectedIds.filter(x => x !== id));
       } else {
-        setSelectedUserIds([...safeSelectedIds, id]);
+        setSelectedUserIdsSafe([...safeSelectedIds, id]);
       }
     };
 
@@ -540,7 +536,11 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         return;
       }
 
-      setSelectedUserIds(allFamilyUserIds);
+      if (isAllSelected) {
+        setSelectedUserIdsSafe([]);
+      } else {
+        setSelectedUserIdsSafe(allFamilyUserIds);
+      }
     };
 
     const handlePressSave = async () => {
@@ -567,9 +567,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       const familyId = basePayload?.familyId;
       const date = basePayload?.date;
       if (!familyId || !date) {
-        showToast(
-          'familyId/date가 없어서 저장할 수 없어요. (부모에서 내려줘야 함)',
-        );
+        showToast('familyId/date가 없어서 저장할 수 없어요. (부모에서 내려줘야 함)');
         return;
       }
 
@@ -583,9 +581,10 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       }
     };
 
-    const handlePressDelete = async () => {
+    const confirmDelete = async () => {
       if (isClosing) return;
 
+      setDeleteModalVisible(false);
       setIsClosing(true);
 
       try {
@@ -594,6 +593,11 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         setIsClosing(false);
         showToast('삭제 실패! 콘솔에서 에러 로그 확인해줘.');
       }
+    };
+
+    const handlePressDelete = () => {
+      if (isClosing) return;
+      setDeleteModalVisible(true);
     };
 
     const footerProps = useMemo(() => {
@@ -613,7 +617,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
           };
     }, [editingSchedule, handlePressDelete, handlePressSave]);
 
-    // ✅ "칩" 데이터: 전체를 맨 앞에
     const memberChipData = useMemo(() => {
       const normalized = (familyUserList || [])
         .map(u => ({
@@ -644,7 +647,11 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         const isAll = item.type === 'ALL';
         const id = item.userId;
 
-        const selected = isAll ? isAllSelected : safeSelectedIds.includes(id);
+        const selected = isAll
+          ? isAllSelectedUI
+          : isAnniversaryMode
+          ? false
+          : safeSelectedIds.includes(id);
 
         const onPress = () => {
           if (isAnniversaryMode) return;
@@ -652,18 +659,19 @@ const ScheduleEditorBottomSheetModal = forwardRef(
           return toggleUser(id);
         };
 
-        const disabledByMode = currentKind === KIND.INDIVIDUAL && isAll;
+        const disabledByMode =
+          (currentKind === KIND.INDIVIDUAL && isAll) || isAnniversaryMode;
 
         return (
           <TouchableOpacity
             key={`${item.type}-${item.userId}`}
             activeOpacity={0.85}
             onPress={onPress}
-            disabled={isAnniversaryMode || disabledByMode}
+            disabled={disabledByMode}
             style={[
               styles.chip,
               selected && styles.chipSelected,
-              (isAnniversaryMode || disabledByMode) && styles.chipDisabled,
+              disabledByMode && styles.chipDisabled,
             ]}>
             <Text
               allowFontScaling={false}
@@ -671,207 +679,153 @@ const ScheduleEditorBottomSheetModal = forwardRef(
               numberOfLines={1}>
               {item.name}
             </Text>
-            {selected ? <View style={styles.chipDot} /> : null}
           </TouchableOpacity>
         );
       },
       [
         currentKind,
         isAnniversaryMode,
-        isAllSelected,
+        isAllSelectedUI,
         safeSelectedIds,
         selectAll,
         toggleUser,
       ],
     );
 
+    const deleteTitle = useMemo(() => '일정을 삭제할까요?', []);
+    const deleteSubText = useMemo(() => '삭제하면 되돌릴 수 없어요.', []);
+
     return (
       <>
         <BottomSheetLayout
           modalRef={modalRef}
-          snapPoints={snapPoints} // ✅ NORMAL/LARGE/EXTRA_LARGE 반영
-          keyboardBehavior={Platform.OS === 'ios' ? 'interactive' : 'none'}
-          androidKeyboardInputMode="adjustNothing"
-          onDismiss={handleSheetDismiss}
+          snapPoints={snapPoints}
+          sheetKey={sheetKey}
           title={editingSchedule ? '일정 수정' : '일정 추가'}
           subtitle="가족과 일정을 공유해요."
-          useInternalScroll={false}>
-          <SafeAreaView style={{flex: 1, backgroundColor: COLORS.bg}}>
-            {/* ✅ 바텀시트 내부 아무 데나 탭하면 키보드 내림 + 원복 */}
-            <View
-              style={{flex: 1}}
-              onStartShouldSetResponder={() => true}
-              onResponderRelease={dismissKeyboardAndReset}>
-              <BottomSheetView style={{flex: 1}}>
-                <Animated.View
-                  style={{
-                    flex: 1,
-                    transform: [{translateY: shiftAnim}],
-                    // ✅ footer 공간 확보 (fontMode에 따라 더 확보됨)
-                    paddingBottom: FOOTER_SPACE + getResponsiveHeight(18),
-                  }}>
-                  <View style={styles.content}>
-                    {/* ----------------- 1) 구분 ----------------- */}
-                    <Text allowFontScaling={false} style={styles.sectionTitle}>
-                      구분
-                    </Text>
+          useInternalScroll={true}
+          keyboardBehavior={Platform.OS === 'ios' ? 'interactive' : 'none'}
+          keyboardBlurBehavior="restore"
+          androidKeyboardInputMode="adjustResize"
+          enableKeyboardPolicy={true}
+          keyboardOpenSnapIndex={1}
+          keyboardCloseSnapIndex={0}
+          useTouchOverlay={true}
+          // ✅✅✅ 여기 중요: Layout이 “키보드 열려있을 때만” dismiss 하게
+          dismissKeyboardOnPress={true}
+          // ✅ 내부 탭 추가 동작은 shift 리셋만
+          onTouchInside={handleTouchInsideResetOnly}
+          onDismiss={handleSheetDismiss}
+        >
+          <SafeAreaView style={{backgroundColor: COLORS.bg}}>
+            <BottomSheetView>
+              <Animated.View
+                style={{
+                  transform: [{translateY: shiftAnim}],
+                }}
+              >
+                <View style={styles.content}>
+                  <Text allowFontScaling={false} style={styles.sectionTitle}>
+                    구분
+                  </Text>
 
-                    <View style={styles.segmentWrap}>
-                      <TouchableOpacity
-                        activeOpacity={0.9}
-                        onPress={() => setKindSafe(KIND.INDIVIDUAL)}
-                        style={[
-                          styles.segmentItem,
-                          currentKind === KIND.INDIVIDUAL &&
-                            styles.segmentItemActive,
-                        ]}>
-                        <Text
-                          allowFontScaling={false}
-                          style={[
-                            styles.segmentText,
-                            currentKind === KIND.INDIVIDUAL &&
-                              styles.segmentTextActive,
-                          ]}>
-                          개별
+                  <SlideSegment
+                    items={KIND_SEGMENTS}
+                    value={currentKind}
+                    onChange={setKindSafe}
+                    padding={getResponsiveWidth(6)}
+                    gap={getResponsiveWidth(6)}
+                    containerStyle={styles.segmentWrap}
+                    thumbStyle={styles.segmentThumb}
+                    textStyle={styles.segmentText}
+                    activeTextStyle={styles.segmentTextActive}
+                  />
+
+                  <View style={{marginTop: getResponsiveHeight(18)}}>
+                    <View style={styles.sectionRow}>
+                      <Text allowFontScaling={false} style={styles.sectionTitle}>
+                        구성원
+                      </Text>
+
+                      {isAnniversaryMode ? null : (
+                        <Text allowFontScaling={false} style={styles.countText}>
+                          {selectedCount}명 선택
                         </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        activeOpacity={0.9}
-                        onPress={() => setKindSafe(KIND.FAMILY)}
-                        style={[
-                          styles.segmentItem,
-                          currentKind === KIND.FAMILY &&
-                            styles.segmentItemActive,
-                        ]}>
-                        <Text
-                          allowFontScaling={false}
-                          style={[
-                            styles.segmentText,
-                            currentKind === KIND.FAMILY &&
-                              styles.segmentTextActive,
-                          ]}>
-                          가족
-                        </Text>
-                      </TouchableOpacity>
-
-                      <TouchableOpacity
-                        activeOpacity={0.9}
-                        onPress={() => setKindSafe(KIND.ANNIVERSARY)}
-                        style={[
-                          styles.segmentItem,
-                          currentKind === KIND.ANNIVERSARY &&
-                            styles.segmentItemActive,
-                        ]}>
-                        <Text
-                          allowFontScaling={false}
-                          style={[
-                            styles.segmentText,
-                            currentKind === KIND.ANNIVERSARY &&
-                              styles.segmentTextActive,
-                          ]}>
-                          기념일
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    {/* ----------------- 2) 구성원 ----------------- */}
-                    <View style={{marginTop: getResponsiveHeight(18)}}>
-                      <View style={styles.sectionRow}>
-                        <Text
-                          allowFontScaling={false}
-                          style={styles.sectionTitle}>
-                          구성원
-                        </Text>
-
-                        {isAnniversaryMode ? (
-                          <View style={styles.badgeInfo}>
-                            <Text
-                              allowFontScaling={false}
-                              style={styles.badgeInfoText}>
-                              자동
-                            </Text>
-                          </View>
-                        ) : (
-                          <Text
-                            allowFontScaling={false}
-                            style={styles.countText}>
-                            {selectedCount}명 선택
-                          </Text>
-                        )}
-                      </View>
-
-                      {isAnniversaryMode ? (
-                        <View style={styles.infoCard}>
-                          <Text
-                            allowFontScaling={false}
-                            style={styles.infoTitle}>
-                            기념일은 구성원 선택이 필요 없어요
-                          </Text>
-                          <Text
-                            allowFontScaling={false}
-                            style={styles.infoDesc}>
-                            저장하면 가족 공통 기념일로 등록돼요.
-                          </Text>
-                        </View>
-                      ) : (
-                        <View style={styles.memberCard}>
-                          <View style={styles.chipWrap}>
-                            {memberChipData.map(renderChip)}
-                          </View>
-
-                          <View style={styles.tipRow}>
-                            <View style={styles.tipDot} />
-                            <Text
-                              allowFontScaling={false}
-                              style={styles.tipText}>
-                              개별: 1명 이상 · 가족: 전체 또는 여러 명
-                            </Text>
-                          </View>
-                        </View>
                       )}
                     </View>
 
-                    {/* ----------------- 3) 일정 내용 ----------------- */}
-                    <View style={{marginTop: getResponsiveHeight(18)}}>
-                      <Text
-                        allowFontScaling={false}
-                        style={[styles.sectionTitle, {marginBottom: 3}]}>
-                        내용
-                      </Text>
-                      <Text allowFontScaling={false} style={styles.inputHelp}>
-                        핵심만 짧게 적어도 충분해요.
-                      </Text>
-
-                      <BottomSheetTextInput
-                        allowFontScaling={false}
-                        ref={inputRef}
-                        key={`input-${inputKey}`}
-                        defaultValue={scheduleRef.current}
-                        onChangeText={text => {
-                          if (!isClosing) scheduleRef.current = text;
-                        }}
-                        onFocus={() => {
-                          tapToResetRef.current = false;
-                          ensureVisible(inputRef);
-                        }}
-                        placeholder="예) 병원 예약, 가족 모임"
-                        placeholderTextColor={COLORS.muted}
-                        style={styles.input}
-                        multiline
-                      />
+                    <View style={styles.memberCard}>
+                      <View style={styles.chipWrap}>
+                        {memberChipData.map(renderChip)}
+                      </View>
                     </View>
 
-                    {/* ----------------- Footer Buttons ----------------- */}
-                    <View style={styles.footerFixed}>
-                      <BottomSheetButtons {...footerProps} />
+                    <View style={styles.tipRow}>
+                      <View style={styles.tipDot} />
+                      <Text allowFontScaling={false} style={styles.tipText}>
+                        {isIndividualMode ? '개별: 1명 이상' : null}
+                        {isFamilyMode ? '가족: 전체 또는 여러 명' : null}
+                        {isAnniversaryMode
+                          ? '기념일: 구성원은 “전체”로 고정돼요.'
+                          : null}
+                      </Text>
                     </View>
                   </View>
-                </Animated.View>
-              </BottomSheetView>
-            </View>
+
+                  <View style={{marginTop: getResponsiveHeight(18)}}>
+                    <Text
+                      allowFontScaling={false}
+                      style={[styles.sectionTitle, {marginBottom: 3}]}
+                    >
+                      내용
+                    </Text>
+
+                    <BottomSheetTextInput
+                      allowFontScaling={false}
+                      ref={inputRef}
+                      key={`input-${inputKey}`}
+                      defaultValue={scheduleRef.current}
+                      onChangeText={text => {
+                        if (!isClosing) scheduleRef.current = text;
+                      }}
+                      onFocus={() => {
+                        tapToResetRef.current = false;
+                        ensureVisible(inputRef);
+                      }}
+                      placeholder="예) 병원 예약, 가족 모임"
+                      placeholderTextColor={COLORS.muted}
+                      style={styles.input}
+                      multiline
+                    />
+                  </View>
+
+                  <BottomSheetFooterButtons
+                    bottomSafe={bottomSafe}
+                    includeBottomSafePadding={true}
+                    excludeSafeForMeasure={false}
+                    onLayoutHeight={undefined}
+                    style={styles.footerFlow}
+                    {...footerProps}
+                  />
+                </View>
+              </Animated.View>
+            </BottomSheetView>
           </SafeAreaView>
         </BottomSheetLayout>
+
+        <CustomModal
+          visible={deleteModalVisible}
+          title={deleteTitle}
+          subText={deleteSubText}
+          closeText="취소하기"
+          confirmText="삭제하기"
+          onClose={() => setDeleteModalVisible(false)}
+          onConfirm={confirmDelete}
+          onRequestClose={() => setDeleteModalVisible(false)}
+          closeOnBackdropPress={true}
+          showCloseButton={true}
+          confirmTextStyle={{color: '#FFFFFF'}}
+        />
 
         <ToastModal
           visible={toastVisible}
@@ -888,12 +842,11 @@ export default ScheduleEditorBottomSheetModal;
 
 const styles = StyleSheet.create({
   content: {
-    flex: 1,
     paddingTop: getResponsiveHeight(6),
-    paddingBottom: getResponsiveHeight(18),
+    paddingBottom: getResponsiveHeight(12),
   },
 
-  footerFixed: {
+  footerFlow: {
     paddingTop: getResponsiveHeight(12),
     paddingBottom: getResponsiveHeight(2),
   },
@@ -901,87 +854,47 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: BOTTOMSHEET_STYLE().sectionLabel.fontSize,
     fontFamily: BOTTOMSHEET_STYLE().sectionLabel.fontFamily,
-    color: COLORS.text,
-    marginBottom: getResponsiveHeight(10),
-    marginTop: getResponsiveHeight(6),
+    color: BOTTOMSHEET_STYLE().sectionLabel.color,
+    marginBottom: BOTTOMSHEET_STYLE().sectionLabel.marginBottom,
+    marginTop: BOTTOMSHEET_STYLE().sectionLabel.marginTop,
   },
 
-  /* ----------------- Segment Control ----------------- */
   segmentWrap: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.surface,
+    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
     borderRadius: 999,
-    padding: getResponsiveWidth(6),
     borderWidth: 1,
     borderColor: COLORS.line,
+    overflow: 'hidden',
   },
-  segmentItem: {
-    flex: 1,
-    height: getResponsiveHeight(38),
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  segmentItemActive: {
+
+  segmentThumb: {
     backgroundColor: COLORS.pill,
-    ...shadowStrong,
+    borderRadius: 999,
   },
+
   segmentText: {
     fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-SemiBold',
     color: COLORS.sub,
     letterSpacing: -0.2,
   },
-  segmentTextActive: {color: COLORS.pillText},
 
-  /* ----------------- Section Row ----------------- */
+  segmentTextActive: {
+    color: COLORS.pillText,
+  },
+
   sectionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  badgeInfo: {
-    paddingHorizontal: getResponsiveWidth(10),
-    paddingVertical: getResponsiveHeight(5),
-    borderRadius: 999,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-  },
-  badgeInfoText: {
-    fontSize: getResponsiveFontSize(11.5),
-    fontFamily: 'Pretendard-SemiBold',
-    color: COLORS.sub,
-  },
+
   countText: {
     fontSize: getResponsiveFontSize(12),
     fontFamily: 'Pretendard-SemiBold',
     color: COLORS.sub,
   },
 
-  /* ----------------- Info Card ----------------- */
-  infoCard: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 16,
-    paddingHorizontal: getResponsiveWidth(14),
-    paddingVertical: getResponsiveHeight(14),
-    borderWidth: 1,
-    borderColor: COLORS.line,
-  },
-  infoTitle: {
-    fontSize: getResponsiveFontSize(13.5),
-    fontFamily: 'Pretendard-SemiBold',
-    color: COLORS.text,
-    marginBottom: getResponsiveHeight(6),
-  },
-  infoDesc: {
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-Medium',
-    color: COLORS.sub,
-    lineHeight: getResponsiveFontSize(17),
-  },
-
-  /* ----------------- Member (Chip) Card ----------------- */
   memberCard: {
     backgroundColor: COLORS.card,
     borderRadius: 18,
@@ -1004,7 +917,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     borderWidth: 1,
     borderColor: COLORS.line,
-    backgroundColor: COLORS.surface,
+    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'row',
@@ -1026,14 +939,6 @@ const styles = StyleSheet.create({
   },
   chipTextSelected: {color: COLORS.pillText},
 
-  chipDot: {
-    marginLeft: getResponsiveWidth(6),
-    width: getResponsiveWidth(6),
-    height: getResponsiveWidth(6),
-    borderRadius: 999,
-    backgroundColor: COLORS.brand,
-  },
-
   tipRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1052,11 +957,10 @@ const styles = StyleSheet.create({
     color: COLORS.sub,
   },
 
-  /* ----------------- Input ----------------- */
   input: {
     minHeight: getResponsiveHeight(120),
     borderRadius: 14,
-    backgroundColor: COLORS.surface,
+    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
     borderWidth: 1,
     borderColor: COLORS.line,
     paddingHorizontal: getResponsiveWidth(12),
@@ -1068,11 +972,5 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Regular',
     color: COLORS.text,
     textAlignVertical: 'top',
-  },
-  inputHelp: {
-    marginBottom: getResponsiveHeight(10),
-    fontSize: getResponsiveFontSize(11),
-    fontFamily: 'Pretendard-Regular',
-    color: '#6B7280',
   },
 });

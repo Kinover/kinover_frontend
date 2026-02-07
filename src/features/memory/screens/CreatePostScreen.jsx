@@ -27,8 +27,10 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
+  BackHandler, // ✅ ADD
 } from 'react-native';
 
+import {useFocusEffect} from '@react-navigation/native'; // ✅ ADD
 import FastImage from '@d11/react-native-fast-image';
 
 import {
@@ -39,7 +41,7 @@ import {
 
 import {getPresignedUrls, uploadFileToS3} from '../../../api/imageUrlApi';
 import useHideTabBar from '../../../hooks/useHideTabBar';
-import ToastModal from '../../../components/ToastModal';
+import ToastModal from '../../../components/modal/ToastModal';
 import {HEADER_STYLES} from 'styles/style';
 
 import {uploadPostApi} from 'api/uploadPostApi';
@@ -132,7 +134,6 @@ export default function CreatePostPage({navigation, route}) {
 
   /** -----------------------------
    * ✅ 초기값(글/미디어) 세팅
-   * - 사용자가 이미 입력/수정 시작했으면 덮어쓰지 않기
    * ---------------------------- */
   const didInitTextRef = useRef(false);
   const didInitMediaRef = useRef(false);
@@ -141,13 +142,9 @@ export default function CreatePostPage({navigation, route}) {
   const [text, setText] = useState(initialContent || '');
   const [isUploading, setIsUploading] = useState(false);
 
-  // ✅ selectedImages는 수정모드에서 store 기반으로도 채워야 해서 state로 관리
   const [selectedImages, setSelectedImages] = useState(initImages ?? []);
-
-  // ✅ CategorySelectScreen에서 넘어온 category가 최우선
   const selectedCategory = routeSelectedCategory;
 
-  // ✅ removedUrls는 filename 기준 비교가 안전해서 미리 정규화
   const removedFileNameSet = useMemo(() => {
     return new Set(
       (removedUrlsFromRoute || [])
@@ -156,7 +153,6 @@ export default function CreatePostPage({navigation, route}) {
     );
   }, [removedUrlsFromRoute]);
 
-  // ✅ 글 내용 초기 세팅(수정모드)
   useEffect(() => {
     if (!isEditMode) return;
     if (didInitTextRef.current) return;
@@ -169,19 +165,16 @@ export default function CreatePostPage({navigation, route}) {
     didInitTextRef.current = true;
   }, [isEditMode, postFromStore, initialContent]);
 
-  // ✅ 미디어 초기 세팅(수정모드)
   useEffect(() => {
     if (!isEditMode) return;
     if (didInitMediaRef.current) return;
 
-    // route로 넘어온 initImages가 있으면 그걸 우선 사용
     if (Array.isArray(initImages) && initImages.length > 0) {
       setSelectedImages(initImages);
       didInitMediaRef.current = true;
       return;
     }
 
-    // initImages가 없으면 postFromStore에서 기존 미디어로 채움
     const urls = postFromStore?.imageUrls || postFromStore?.mediaUrls || [];
     const types = postFromStore?.postTypes || postFromStore?.mediaTypes || [];
 
@@ -191,7 +184,6 @@ export default function CreatePostPage({navigation, route}) {
           const raw = String(u || '');
           if (!raw) return null;
 
-          // removedUrls 제외(파일명 기준)
           const fileName = extractFileNameFromUrl(raw) || raw;
           if (removedFileNameSet.has(fileName)) return null;
 
@@ -305,7 +297,7 @@ export default function CreatePostPage({navigation, route}) {
    * ✅ video thumbnail cache
    * ========================= */
 
-  const [videoThumbMap, setVideoThumbMap] = useState({}); // { [videoUri]: thumbUri }
+  const [videoThumbMap, setVideoThumbMap] = useState({});
   const thumbLoadingRef = useRef(new Set());
 
   const ensureVideoThumb = useCallback(
@@ -360,13 +352,11 @@ export default function CreatePostPage({navigation, route}) {
       const uri = getItemUri(item);
       if (!uri) return {uri, ext: getExtFromUri(item)};
 
-      // ✅ 원격은 압축/업로드 대상 아님(수정모드에서 기존 미디어)
       if (isRemoteItem(item)) {
         const ext = getExtFromUri(uri) || (isVideoItem(item) ? 'mp4' : 'jpg');
         return {uri, ext, skipUpload: true};
       }
 
-      // ✅ 영상 압축
       if (isVideoItem(item)) {
         const compressedUri = await VideoCompressor.compress(uri, {
           compressionMethod: 'auto',
@@ -377,7 +367,6 @@ export default function CreatePostPage({navigation, route}) {
         return {uri: compressedUri, ext, skipUpload: false};
       }
 
-      // ✅ 이미지 압축
       const compressedUri = await ImageCompressor.compress(uri, {
         compressionMethod: 'auto',
         quality: 0.8,
@@ -397,15 +386,6 @@ export default function CreatePostPage({navigation, route}) {
 
     const authorId = userId;
 
-    console.log('[STEP 0] start', {
-      isEditMode,
-      postId,
-      familyId,
-      authorId,
-      selectedCount: selectedImages.length,
-      removedCount: removedUrlsFromRoute?.length || 0,
-    });
-
     if (!selectedCategory) {
       showToast('카테고리를 먼저 선택해 주세요.');
       return;
@@ -422,9 +402,6 @@ export default function CreatePostPage({navigation, route}) {
     try {
       setIsUploading(true);
 
-      console.log('✅ [STEP 1] category 준비');
-
-      /** 1) 카테고리(임시면 생성) */
       let finalCategoryId = selectedCategory.categoryId;
 
       if (selectedCategory.isTemporary) {
@@ -444,14 +421,10 @@ export default function CreatePostPage({navigation, route}) {
           action.payload?.categoryId ?? selectedCategory.categoryId;
       }
 
-      console.log('✅ [STEP 1 DONE] finalCategoryId:', finalCategoryId);
-      console.log('✅ [STEP 2] media 준비');
-
-      /** 2) selectedImages 순서를 그대로 유지하면서 */
       const now = Date.now();
 
       const localUploadJobs = [];
-      const finalMedia = []; // {fileName, postType}
+      const finalMedia = [];
 
       for (let i = 0; i < selectedImages.length; i++) {
         const item = selectedImages[i];
@@ -462,7 +435,6 @@ export default function CreatePostPage({navigation, route}) {
           return;
         }
 
-        // ✅ 기존(remote) 처리
         if (isRemoteItem(item)) {
           const fileName = extractFileNameFromUrl(rawUri);
           if (!fileName) {
@@ -474,7 +446,6 @@ export default function CreatePostPage({navigation, route}) {
           continue;
         }
 
-        // ✅ 신규(local) 처리 (압축 후 업로드)
         const {
           uri: compressedUri,
           ext,
@@ -501,10 +472,6 @@ export default function CreatePostPage({navigation, route}) {
         finalMedia.push(null);
       }
 
-      console.log('✅ [STEP 2 DONE] localUploadJobs:', localUploadJobs.length);
-      console.log('✅ [STEP 3] presigned 요청');
-
-      // ✅ presigned + upload (로컬만)
       if (localUploadJobs.length > 0) {
         const presignedUrls = await getPresignedUrls(
           localUploadJobs.map(f => ({
@@ -512,9 +479,6 @@ export default function CreatePostPage({navigation, route}) {
             contentType: f.contentType,
           })),
         );
-
-        console.log('✅ [STEP 3 DONE] presignedUrls:', presignedUrls.length);
-        console.log('✅ [STEP 4] S3 upload');
 
         for (let i = 0; i < localUploadJobs.length; i++) {
           const job = localUploadJobs[i];
@@ -530,29 +494,17 @@ export default function CreatePostPage({navigation, route}) {
             postType: job.postType,
           };
         }
-
-        console.log('✅ [STEP 4 DONE] S3 upload 완료');
       }
 
       const normalizedFinalMedia = finalMedia.filter(Boolean);
       const imageUrls = normalizedFinalMedia.map(m => m.fileName);
       const postTypes = normalizedFinalMedia.map(m => m.postType);
 
-      console.log('✅ [STEP 4.5] final payload media', {
-        imageUrlsLen: imageUrls.length,
-        postTypesLen: postTypes.length,
-        postTypes,
-      });
-
-      /** 3) removedUrls fileName 정규화 */
       const removedFileNames = (removedUrlsFromRoute || [])
         .map(u => extractFileNameFromUrl(u))
         .filter(Boolean);
 
-      /** ✅ 3.5) 수정모드면 삭제된 이미지를 서버에서 먼저 삭제 */
       if (isEditMode && removedFileNames.length > 0) {
-        console.log('✅ [STEP 5] removed 삭제 시작:', removedFileNames);
-
         for (const fileName of removedFileNames) {
           try {
             const action = await dispatch(
@@ -565,22 +517,16 @@ export default function CreatePostPage({navigation, route}) {
             );
 
             if (action?.meta?.requestStatus === 'rejected') {
-              console.log('❌ deletePostImageThunk rejected:', action);
               showToast('삭제 처리 중 오류가 발생했어요.');
               return;
             }
           } catch (e) {
-            logAxiosError('STEP 5 deletePostImageThunk', e);
+            logAxiosError('deletePostImageThunk', e);
             showToast('삭제 처리 중 오류가 발생했어요.');
             return;
           }
         }
-
-        console.log('✅ [STEP 5 DONE] removed 삭제 완료');
       }
-
-      /** 4) API 호출 */
-      console.log('✅ [STEP 6] API 호출');
 
       if (isEditMode) {
         const payload = {
@@ -592,12 +538,10 @@ export default function CreatePostPage({navigation, route}) {
           postTypes,
         };
 
-        console.log('✅ [STEP 6-EDIT] update payload', payload);
-
         try {
           await updatePostApi(postId, payload);
         } catch (e) {
-          logAxiosError('STEP 6 updatePostApi', e);
+          logAxiosError('updatePostApi', e);
           showToast('수정 요청 중 서버 오류가 발생했어요.');
           return;
         }
@@ -611,12 +555,10 @@ export default function CreatePostPage({navigation, route}) {
           postTypes,
         };
 
-        console.log('✅ [STEP 6-CREATE] upload payload', payload);
-
         try {
           await uploadPostApi(payload);
         } catch (e) {
-          logAxiosError('STEP 6 uploadPostApi', e);
+          logAxiosError('uploadPostApi', e);
           showToast('업로드 요청 중 서버 오류가 발생했어요.');
           return;
         }
@@ -650,6 +592,22 @@ export default function CreatePostPage({navigation, route}) {
   ]);
 
   /* =========================
+   * ✅ 뒤로가기 완전 차단 (헤더 + 제스처 + 안드 물리)
+   * ========================= */
+
+  // ✅ ADD: 안드 물리 뒤로가기 막기
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => true; // true = 뒤로가기 먹어버림
+      const sub = BackHandler.addEventListener(
+        'hardwareBackPress',
+        onBackPress,
+      );
+      return () => sub.remove();
+    }, []),
+  );
+
+  /* =========================
    * header
    * ========================= */
 
@@ -672,6 +630,12 @@ export default function CreatePostPage({navigation, route}) {
           />
         </TouchableOpacity>
       ),
+
+      // ✅ ADD: 헤더 뒤로 버튼 제거
+      headerBackVisible: false,
+
+      // ✅ ADD: iOS 스와이프 뒤로(gesture)도 차단
+      gestureEnabled: false,
     });
   }, [navigation, handleUpload, isUploading, isEditMode]);
 
@@ -690,7 +654,6 @@ export default function CreatePostPage({navigation, route}) {
           </View>
         )}
 
-        {/* 미리보기 그리드 */}
         {gridImages.length > 0 && (
           <View style={styles.gridContainer}>
             {gridImages.map((item, index) => {
@@ -707,8 +670,7 @@ export default function CreatePostPage({navigation, route}) {
                   key={(uri || 'unknown') + index}
                   style={styles.gridImageWrapper}
                   onPress={() => {
-                    // ✅ gridImages index -> selectedImages 실제 index로 변환
-                    const realIndex = index; // gridImages는 앞에서 slice(0,3)라서 0~2는 동일
+                    const realIndex = index;
                     setViewerIndex(realIndex);
                   }}>
                   {isVideo ? (
@@ -774,7 +736,6 @@ export default function CreatePostPage({navigation, route}) {
           placeholderTextColor="#999"
         />
 
-        {/* ✅ MediaViewer (ImageSelectPage와 동일) */}
         <MediaViewer
           visible={viewerIndex !== null}
           media={viewerMedia}
@@ -788,7 +749,10 @@ export default function CreatePostPage({navigation, route}) {
           message={isEditMode ? '게시글을 수정했어요' : '게시글을 업로드했어요'}
           onClose={() => {
             setSuccessModalVisible(false);
-            navigation.navigate('추억');
+            navigation.reset({
+              index: 0,
+              routes: [{name: '추억'}],
+            });
           }}
         />
 

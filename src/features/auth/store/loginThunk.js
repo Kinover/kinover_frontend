@@ -1,15 +1,45 @@
 // src/features/auth/store/loginThunk.js
-import axios from 'axios';
-import {saveToken, setHasFamily} from 'utils/storage';
+import {apiClient} from 'utils/apiClient';
+import {
+  saveToken,
+  setHasFamily,
+  getGuestMode,
+} from 'utils/storage';
 import {setLoginLoading, setLoginError, setLoginSuccess} from './loginSlice';
 import {fetchUserThunk} from 'features/home/store/userThunk';
+import {emitAuthFlagsChanged} from 'utils/authFlagsEvent';
+
+// ✅ 게스트 토큰
+const GUEST_TOKEN = 'GUEST_TOKEN_LOCAL_ONLY';
 
 export const loginThunk = kakaoAccessToken => {
-  return async dispatch => {
+  return async (dispatch, getState) => {
     dispatch(setLoginLoading(true));
     dispatch(setLoginError(null));
 
     try {
+      // ✅ 0) 게스트 모드면: 카카오/서버 로그인 스킵
+      const isGuest = await getGuestMode?.();
+      if (isGuest) {
+        const hasFamily = true;
+
+        await saveToken(GUEST_TOKEN);
+        await setHasFamily(hasFamily);
+
+        // ✅ RootScreen에 즉시 반영
+        emitAuthFlagsChanged({hasFamily});
+
+        dispatch(setLoginSuccess());
+
+        const r = dispatch(fetchUserThunk());
+        if (typeof r?.unwrap === 'function') await r.unwrap();
+        else await r;
+
+        console.log('🟡 [GUEST] loginThunk: server skipped');
+        return {token: GUEST_TOKEN, hasFamily, guest: true};
+      }
+
+      // ✅ 1) 일반 로그인(서버)
       const apiUrl = 'https://kinover.shop/api/login/kakao';
 
       const requestBody =
@@ -19,7 +49,7 @@ export const loginThunk = kakaoAccessToken => {
 
       console.log('📤 전송할 데이터:', JSON.stringify(requestBody));
 
-      const response = await axios.post(apiUrl, requestBody, {
+      const response = await apiClient.post(apiUrl, requestBody, {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
@@ -28,27 +58,51 @@ export const loginThunk = kakaoAccessToken => {
       });
 
       const token = response?.data?.token ?? null;
-      const hasFamily = !!response?.data?.hasFamily;
+      const hasFamilyFromLogin = !!response?.data?.hasFamily;
 
       if (!token) {
         throw new Error('서버에서 토큰이 내려오지 않았어요(token 없음)');
       }
 
-      // ✅ 1) 저장
+      // ✅ 2) 토큰 먼저 저장
       await saveToken(token);
-      await setHasFamily(hasFamily);
 
-      // ✅ 2) 로그인 상태 true (RootScreen이 이거 보고 Tabs로 감)
+      // ✅ 3) 로그인 성공(토큰 인증 성공)
       dispatch(setLoginSuccess());
 
-      // ✅ 3) 유저 조회 (토큰 유효성 및 user/familyId 채우기)
+      // ✅ 4) 유저 조회 (SSOT: familyId)
       const r = dispatch(fetchUserThunk());
-      if (typeof r?.unwrap === 'function') await r.unwrap();
-      else await r;
+      let userResult = null;
 
-      console.log('✅ 로그인 완료:', response.data);
+      if (typeof r?.unwrap === 'function') userResult = await r.unwrap();
+      else userResult = await r;
 
-      return response.data;
+      const state = getState?.();
+      const userFromStore = state?.home?.user || state?.user || null;
+
+      const familyId =
+        userResult?.familyId ??
+        userFromStore?.familyId ??
+        null;
+
+      const finalHasFamily = familyId != null;
+
+      // ✅ 5) 로컬 저장 + Root 즉시 반영(중요!)
+      await setHasFamily(finalHasFamily);
+      emitAuthFlagsChanged({hasFamily: finalHasFamily});
+
+      console.log('✅ 로그인 완료:', {
+        token: token ? 'OK' : 'NO',
+        hasFamilyFromLogin,
+        familyId,
+        finalHasFamily,
+      });
+
+      return {
+        ...response.data,
+        hasFamily: finalHasFamily,
+        familyId,
+      };
     } catch (error) {
       const message =
         error?.response?.data?.message ||

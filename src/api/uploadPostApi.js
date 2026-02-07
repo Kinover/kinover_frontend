@@ -1,5 +1,5 @@
 // 📁 /api/uploadPostApi.js
-import axios from 'axios';
+import { apiClient } from 'utils/apiClient';
 import { getToken } from '../utils/storage';
 
 export const uploadPostApi = async (postData) => {
@@ -7,7 +7,7 @@ export const uploadPostApi = async (postData) => {
     const token = await getToken();
     if (!token) throw new Error('로그인이 필요합니다.');
 
-    const response = await axios.post(
+    const response = await apiClient.post(
       'http://43.200.47.242:9090/api/posts',
       postData,
       {

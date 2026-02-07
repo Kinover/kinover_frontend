@@ -56,7 +56,6 @@ export function flushPendingNavigation() {
  */
 
 const TAB_ROUTES = ['홈', '소통', '일정', '추억'];
-
 export function resetToTabScreen(tabName) {
   const tabIndex = TAB_ROUTES.indexOf(tabName);
   const safeIndex = tabIndex >= 0 ? tabIndex : 0;
@@ -65,18 +64,10 @@ export function resetToTabScreen(tabName) {
     index: 0,
     routes: [
       {
-        name: 'Root',
+        name: 'Tabs',
         state: {
-          index: 0,
-          routes: [
-            {
-              name: 'Tabs',
-              state: {
-                routes: TAB_ROUTES.map(name => ({name})),
-                index: safeIndex,
-              },
-            },
-          ],
+          routes: TAB_ROUTES.map(name => ({name})),
+          index: safeIndex,
         },
       },
     ],

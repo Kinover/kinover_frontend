@@ -1,4 +1,4 @@
-import axios from 'axios';
+import { apiClient } from 'utils/apiClient';
 import { getToken } from '../utils/storage';
 
 export const getCategoryApi = async (familyId) => {
@@ -9,7 +9,7 @@ export const getCategoryApi = async (familyId) => {
       throw new Error('로그인이 필요합니다.');
     }
 
-    const response = await axios.get(
+    const response = await apiClient.get(
       `https://kinover.shop/api/categories/${familyId}`,
       {
         headers: {

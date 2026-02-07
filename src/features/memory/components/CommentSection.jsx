@@ -160,17 +160,24 @@ export default function CommentSection({
                             <FastImage
                               style={styles.commentWriterImage}
                               source={{uri: comment.authorImage}}
+                              resizeMode={FastImage.resizeMode.contain}
                             />
                             <View style={styles.textColumn}>
-                              <Text allowFontScaling={false} style={styles.commentWriter}>
+                              <Text
+                                allowFontScaling={false}
+                                style={styles.commentWriter}>
                                 {comment.authorName}
                               </Text>
-                              <Text allowFontScaling={false} style={styles.commentContent}>
+                              <Text
+                                allowFontScaling={false}
+                                style={styles.commentContent}>
                                 {comment.content}
                               </Text>
                             </View>
                           </View>
-                          <Text allowFontScaling={false} style={styles.timeText}>
+                          <Text
+                            allowFontScaling={false}
+                            style={styles.timeText}>
                             {formatPreviewTime(comment.createdAt)}
                           </Text>
                         </View>
@@ -202,7 +209,8 @@ export default function CommentSection({
 
           {/* 하단 입력창 (PostPage에서 commentWrapper 자체를 올림) */}
           <View style={styles.commentInputContainer}>
-            <TextInput allowFontScaling={false}
+            <TextInput
+              allowFontScaling={false}
               style={styles.commentInput}
               placeholder="댓글 달고 추억 쌓기...."
               placeholderTextColor="#D9D9D9"
@@ -215,6 +223,8 @@ export default function CommentSection({
               <FastImage
                 style={styles.commentSendBt}
                 source={require('../../../assets/icons/paperPlaneTilt.png')}
+                resizeMode={FastImage.resizeMode.contain}
+
               />
             </TouchableOpacity>
           </View>

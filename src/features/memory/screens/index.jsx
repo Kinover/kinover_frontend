@@ -2,7 +2,7 @@
 // src/screens/memory/MemoryScreen.js
 
 import React, {useMemo, useState, useRef, useCallback, useEffect} from 'react';
-import {View, StyleSheet, TouchableOpacity, Animated} from 'react-native';
+import {View, StyleSheet, TouchableOpacity, Animated, Image} from 'react-native';
 
 import MemoryFeed from './MemoryFeedScreen';
 import AnimatedAlbumTabSelector from '../components/AlbumTabSelector';
@@ -320,8 +320,8 @@ export default function MemoryScreen() {
             style={styles.fab}
             onPress={handleFabPress}
             activeOpacity={0.8}>
-            <FastImage
-              source={require('../../../assets/icons/sub/four.png')}
+            <Image
+              source={require('../../../assets/icons/tabs/4/four.png')}
               style={styles.fabIcon}
               tintColor={'white'}
             />

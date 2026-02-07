@@ -1,5 +1,5 @@
 // 📁 /api/imageUrlApi.js
-import axios from 'axios';
+import {apiClient} from 'utils/apiClient';
 import {getToken} from '../utils/storage';
 import RNBlobUtil from 'react-native-blob-util';
 
@@ -32,7 +32,7 @@ export const getPresignedUrls = async filesOrNames => {
       ? {files: filesOrNames}
       : {fileNames: filesOrNames};
 
-    const response = await axios.post(
+    const response = await apiClient.post(
       'http://43.200.47.242:9090/api/image/upload-urls',
       payload,
       {
@@ -116,4 +116,3 @@ export const uploadFileToS3 = async (
     throw err;
   }
 };
-

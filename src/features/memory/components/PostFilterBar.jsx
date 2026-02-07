@@ -1,7 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/screens/memory/components/PostFilterBar.jsx
 
-import React, {useMemo, useState, useCallback, useRef} from 'react';
+import React, {useMemo, useState, useCallback, useRef, useEffect} from 'react';
 import {
   View,
   Text,
@@ -11,20 +11,27 @@ import {
   Modal,
   Pressable,
   Platform,
+  Dimensions,
+  Animated,
 } from 'react-native';
 
 import {
   getResponsiveFontSize,
   getResponsiveWidth,
   getResponsiveHeight,
+  getResponsiveIconSize,
 } from '../../../utils/responsive';
 
 import {BUTTON_STYLES, COLORS} from '../../../styles/style';
+
+const {width: SCREEN_W} = Dimensions.get('window');
 
 const DEFAULT_SORT_OPTIONS = [
   {key: 'latest', title: '최신순'},
   {key: 'oldest', title: '오래된순'},
 ];
+
+const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
 const formatPeriodLabel = raw => {
   if (!raw) return '';
@@ -45,7 +52,7 @@ const formatPeriodLabel = raw => {
 };
 
 export default function PostFilterBar({
-  categoryTitle = '전체글',
+  categoryTitle = '전체',
   onPressCategory,
   periodLabel,
   onPressDateFilter,
@@ -58,6 +65,10 @@ export default function PostFilterBar({
   const sortBtnRef = useRef(null);
   const [sortAnchor, setSortAnchor] = useState({x: 0, y: 0, w: 0, h: 0});
 
+  const isCategoryActive = !!categoryTitle && categoryTitle !== '전체';
+  const isPeriodActive = !!periodLabel;
+  const isSortActive = sortKey !== 'latest';
+
   const sortTitle = useMemo(() => {
     const found = (sortOptions || []).find(v => v.key === sortKey);
     return found?.title || '최신순';
@@ -67,14 +78,11 @@ export default function PostFilterBar({
     return periodLabel ? formatPeriodLabel(periodLabel) : '기간 선택';
   }, [periodLabel]);
 
-  const isPeriodActive = !!periodLabel;
-  const isSortActive = sortKey !== 'latest';
-
   const closeSort = useCallback(() => setSortModalOpen(false), []);
 
   const pickSort = useCallback(
     key => {
-      onChangeSort && onChangeSort(key);
+      onChangeSort?.(key);
       setSortModalOpen(false);
     },
     [onChangeSort],
@@ -93,96 +101,151 @@ export default function PostFilterBar({
     });
   }, []);
 
-  const dropdownWidth = sortAnchor.w;
+  // ✅ Dropdown position clamp
+  const DROPDOWN_MIN_W = getResponsiveWidth(120);
+  const dropdownWidth = Math.max(DROPDOWN_MIN_W, sortAnchor.w);
   const dropdownTop = sortAnchor.y + sortAnchor.h + getResponsiveHeight(6);
-  const dropdownLeft = sortAnchor.x;
+
+  const safeLeft = useMemo(() => {
+    const margin = getResponsiveWidth(10);
+    const maxLeft = SCREEN_W - dropdownWidth - margin;
+    return clamp(sortAnchor.x, margin, maxLeft);
+  }, [dropdownWidth, sortAnchor.x]);
+
+  // ✅ caret rotate (sort open)
+  const sortArrow = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(sortArrow, {
+      toValue: sortModalOpen ? 1 : 0,
+      duration: 160,
+      useNativeDriver: true,
+    }).start();
+  }, [sortModalOpen, sortArrow]);
+
+  const sortArrowStyle = useMemo(
+    () => ({
+      transform: [
+        {
+          rotate: sortArrow.interpolate({
+            inputRange: [0, 1],
+            outputRange: ['0deg', '180deg'],
+          }),
+        },
+      ],
+    }),
+    [sortArrow],
+  );
+
+  // ✅ tone
+  const ACTIVE_BORDER = BUTTON_STYLES()?.backgroundColor ?? '#111827';
+  const TEXT_MAIN = '#111827';
+  const TEXT_SUB = COLORS.textTertiary;
 
   return (
     <>
       <View style={styles.container}>
+        {/* ✅ Category: pill로 “통일”하지 말고, 드롭다운 트리거처럼 자연스럽게 */}
         <TouchableOpacity
           style={styles.categoryButton}
           onPress={onPressCategory}
-          activeOpacity={0.7}>
-          <Text allowFontScaling={false} style={styles.categoryText}>{categoryTitle}</Text>
+          activeOpacity={0.75}>
+          <Text
+            allowFontScaling={false}
+            style={[
+              styles.categoryText,
+              isCategoryActive && styles.categoryTextActive,
+            ]}
+            numberOfLines={1}
+            ellipsizeMode="tail">
+            {categoryTitle}
+          </Text>
           <Image
             source={require('../../../assets/icons/down-arrow.png')}
-            style={styles.downIcon}
+            style={[
+              styles.categoryCaret,
+              {tintColor: isCategoryActive ? TEXT_MAIN : '#525252'},
+            ]}
           />
         </TouchableOpacity>
 
+        {/* ✅ Filters */}
         <View style={styles.rightControls}>
+          {/* Period */}
           <TouchableOpacity
             style={[
-              styles.pillButton,
-              styles.periodButton,
-              isPeriodActive && styles.pillActive,
+              styles.pill,
+              isPeriodActive && {borderColor: ACTIVE_BORDER},
             ]}
-            activeOpacity={0.7}
+            activeOpacity={0.75}
             onPress={onPressDateFilter}>
             <Image
               source={require('../../../assets/icons/calendar.png')}
               style={[
-                styles.calendarIcon,
-                isPeriodActive && styles.calendarIconActive,
+                styles.icon,
+                {tintColor: isPeriodActive ? TEXT_MAIN : TEXT_SUB},
               ]}
             />
-            <Text allowFontScaling={false}
-              style={[styles.pillText, isPeriodActive && styles.pillTextActive]}
+            <Text
+              allowFontScaling={false}
+              style={[
+                styles.pillText,
+                {color: isPeriodActive ? TEXT_MAIN : TEXT_SUB},
+                isPeriodActive && styles.pillTextActive,
+              ]}
               numberOfLines={1}
               ellipsizeMode="tail">
               {displayPeriodLabel}
             </Text>
           </TouchableOpacity>
 
+          {/* Sort */}
           <TouchableOpacity
             ref={sortBtnRef}
-            style={[
-              styles.pillButton,
-              styles.sortButton,
-              isSortActive && styles.pillActive,
-            ]}
-            activeOpacity={0.7}
+            style={[styles.pill, isSortActive && {borderColor: ACTIVE_BORDER}]}
+            activeOpacity={0.75}
             onPress={openSort}>
-            <Text allowFontScaling={false}
-              style={[styles.pillText, isSortActive && styles.pillTextActive]}
+            <Text
+              allowFontScaling={false}
+              style={[
+                styles.pillText,
+                {color: isSortActive ? TEXT_MAIN : TEXT_SUB},
+                isSortActive && styles.pillTextActive,
+              ]}
               numberOfLines={1}
               ellipsizeMode="tail">
               {sortTitle}
             </Text>
-            <Image
+
+            <Animated.Image
               source={require('../../../assets/icons/down-arrow.png')}
               style={[
-                styles.sortDownIcon,
-                isSortActive && styles.sortDownIconActive,
+                styles.caret,
+                {tintColor: isSortActive ? TEXT_MAIN : TEXT_SUB},
+                sortArrowStyle,
               ]}
             />
           </TouchableOpacity>
         </View>
       </View>
 
+      {/* ✅ Sort dropdown */}
       <Modal
         visible={sortModalOpen}
         transparent
         animationType="fade"
         onRequestClose={closeSort}>
-        <Pressable
-          style={styles.modalBackdropTransparent}
-          onPress={closeSort}
-        />
+        <Pressable style={styles.modalBackdrop} onPress={closeSort} />
 
         <View
           style={[
             styles.dropdownWrap,
-            {
-              top: dropdownTop,
-              left: dropdownLeft,
-              width: dropdownWidth,
-            },
+            {top: dropdownTop, left: safeLeft, width: dropdownWidth},
           ]}>
           <View style={styles.dropdown}>
             {(sortOptions || []).map(opt => {
               const active = opt.key === sortKey;
+
               return (
                 <TouchableOpacity
                   key={opt.key}
@@ -190,9 +253,10 @@ export default function PostFilterBar({
                     styles.dropdownItem,
                     active && styles.dropdownItemActive,
                   ]}
-                  activeOpacity={0.7}
+                  activeOpacity={0.75}
                   onPress={() => pickSort(opt.key)}>
-                  <Text allowFontScaling={false}
+                  <Text
+                    allowFontScaling={false}
                     style={[
                       styles.dropdownItemText,
                       active && styles.dropdownItemTextActive,
@@ -201,6 +265,18 @@ export default function PostFilterBar({
                     ellipsizeMode="tail">
                     {opt.title}
                   </Text>
+
+                  {active ? (
+                    <Image
+                      style={{
+                        tintColor: 'black',
+                        width: getResponsiveIconSize(9),
+                        height: getResponsiveIconSize(9),
+                        resizeMode: 'contain',
+                      }}
+                      source={require('../../../assets/icons/check-gray.png')}
+                    />
+                  ) : null}
                 </TouchableOpacity>
               );
             })}
@@ -222,10 +298,12 @@ const styles = StyleSheet.create({
     paddingBottom: getResponsiveHeight(5),
   },
 
+  /* ✅ Category = 트리거 느낌 */
   categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: getResponsiveWidth(3),
+    gap: getResponsiveWidth(4),
+    maxWidth: getResponsiveWidth(160),
     paddingVertical: getResponsiveHeight(6),
     paddingRight: getResponsiveWidth(6),
   },
@@ -235,7 +313,11 @@ const styles = StyleSheet.create({
     lineHeight: getResponsiveHeight(17),
     color: '#525252',
   },
-  downIcon: {
+  categoryTextActive: {
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#111827',
+  },
+  categoryCaret: {
     resizeMode: 'contain',
     width: getResponsiveWidth(14),
     height: getResponsiveWidth(14),
@@ -247,56 +329,41 @@ const styles = StyleSheet.create({
     gap: getResponsiveWidth(10),
   },
 
-  pillButton: {
+  /* ✅ Filter pill = 가벼운 칩 */
+  pill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: getResponsiveWidth(4),
+    gap: getResponsiveWidth(6),
     borderRadius: 999,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     backgroundColor: '#F9FAFB',
     paddingHorizontal: getResponsiveWidth(11),
     paddingVertical: getResponsiveHeight(6),
-    ...Platform.select({
-      android: {paddingVertical: getResponsiveHeight(6)},
-      ios: {paddingVertical: getResponsiveHeight(6)},
-    }),
-  },
-
-  periodButton: {maxWidth: getResponsiveWidth(220)},
-  sortButton: {paddingHorizontal: getResponsiveWidth(9)},
-
-  pillActive: {
-    borderColor: BUTTON_STYLES()?.backgroundColor ?? '#525252',
-    backgroundColor: '#FFFFFF',
+    maxWidth: getResponsiveWidth(220),
   },
 
   pillText: {
     fontSize: getResponsiveFontSize(11.5),
     fontFamily: 'Pretendard-Medium',
-    color: COLORS.textTertiary,
   },
   pillTextActive: {
     fontFamily: 'Pretendard-SemiBold',
-    color: '#525252',
   },
 
-  calendarIcon: {
+  icon: {
     width: getResponsiveWidth(13),
     height: getResponsiveWidth(13),
-    tintColor: COLORS.textTertiary,
   },
-  calendarIconActive: {tintColor: '#525252'},
 
-  sortDownIcon: {
+  caret: {
     resizeMode: 'contain',
     width: getResponsiveWidth(14),
     height: getResponsiveWidth(14),
-    tintColor: COLORS.textTertiary,
   },
-  sortDownIconActive: {tintColor: '#525252'},
 
-  modalBackdropTransparent: {
+  /* Modal */
+  modalBackdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
   },
@@ -312,7 +379,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5E7EB',
     paddingVertical: getResponsiveHeight(6),
-
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -346,6 +412,14 @@ const styles = StyleSheet.create({
   },
 
   dropdownItemTextActive: {
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#111827',
+  },
+
+  checkMark: {
+    marginLeft: getResponsiveWidth(8),
+    fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-Bold',
+    color: '#111827',
   },
 });

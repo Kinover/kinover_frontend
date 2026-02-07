@@ -5,16 +5,16 @@ import {
   getResponsiveFontSize,
   getResponsiveWidth,
 } from '../../../utils/responsive';
-import CustomModal from '../../../components/CustomModal';
+import CustomModal from '../../../components/modal/CustomModal';
 export default function LogoutModal({ visible, onClose, onConfirm }) {
   return (
     <CustomModal
+    showCloseButton
       visible={visible}
       onClose={onClose} // ❗ 취소 → 닫기
       onConfirm={onConfirm} // ❗ 로그아웃 → 처리 실행
       confirmText="로그아웃"
       closeText="취소"
-      buttonBottomStyle={styles.modalButtonRow}
       title="로그아웃 할까요?">
     </CustomModal>
   );

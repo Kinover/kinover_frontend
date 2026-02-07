@@ -24,12 +24,11 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
-  getResponsiveIconSize,
 } from '../../../utils/responsive';
 
-import BottomSheetLayout from 'components/BottomSheetLayout';
-import {BottomSheetButtons} from 'components/BottomSheetButtons';
-import {BUTTON_STYLES} from 'styles/style';
+import BottomSheetLayout from 'components/botomSheet/BottomSheetLayout';
+import {BottomSheetButtons} from 'components/botomSheet/BottomSheetButtons';
+import {BOTTOMSHEET_STYLE, BUTTON_STYLES, COLORS} from 'styles/style';
 
 import {useSelector} from 'react-redux';
 import {FONT_MODE} from '../../../store/uiSlice';
@@ -41,20 +40,22 @@ const getFontScaleLevel = fontMode => {
   return 'N';
 };
 
-const MAX_VISIBLE_ITEMS_BASE = 7;
-
+const MAX_VISIBLE_ITEMS_BASE = 8;
 const ALL_CATEGORY = {id: 'ALL', title: '전체'};
 
 const UI = {
   bg: '#FFFFFF',
-  panel: '#F6F7FB',
+  panel: '#FFFFFF',
   card: '#FFFFFF',
+
+  optionBg: '#F6F7FB',
+  optionBgHover: '#F2F4F7',
 
   text: '#0B1220',
   sub: '#667085',
   muted: '#98A2B3',
 
-  line: 'rgba(15, 23, 42, 0.08)',
+  line: 'rgba(15, 23, 42, 0.10)',
   lineSoft: 'rgba(15, 23, 42, 0.06)',
 
   brand: '#FFC84D',
@@ -62,6 +63,9 @@ const UI = {
 
   selectedBg: BUTTON_STYLES().saveBg,
   selectedText: '#FFFFFF',
+
+  countBg: '#F2F4F7',
+  countText: '#475467',
 };
 
 const shadow = Platform.select({});
@@ -73,13 +77,11 @@ const CategoryBottomSheetModal = forwardRef(
     const [tempSelected, setTempSelected] = useState(selectedCategory);
     const isClosingRef = useRef(false);
 
-    // ✅ fontMode 구독
     const fontMode = useSelector(state => state.ui.fontMode);
     const level = useMemo(() => getFontScaleLevel(fontMode), [fontMode]);
 
-    /** ✅ 폰트모드별 레이아웃 파라미터(핵심) */
+    // ✅ 폰트모드에 따른 레이아웃 계산
     const layout = useMemo(() => {
-      // rowHeight: 폰트 커질수록 늘려서 잘림 방지
       const itemH =
         level === 'XL'
           ? getResponsiveHeight(60)
@@ -87,7 +89,6 @@ const CategoryBottomSheetModal = forwardRef(
           ? getResponsiveHeight(54)
           : getResponsiveHeight(48);
 
-      // row 간격도 조금 늘려야 답답함이 줄어듦
       const gap =
         level === 'XL'
           ? getResponsiveHeight(10)
@@ -95,23 +96,12 @@ const CategoryBottomSheetModal = forwardRef(
           ? getResponsiveHeight(9)
           : getResponsiveHeight(8);
 
-      // 보이는 개수: 폰트 커질수록 한 화면에 덜 보여주는 게 자연스러움
       const maxVisible =
-        level === 'XL'
-          ? 6
-          : level === 'L'
-          ? 6
-          : MAX_VISIBLE_ITEMS_BASE;
+        level === 'XL' ? 7 : level === 'L' ? 7 : MAX_VISIBLE_ITEMS_BASE;
 
-      // 바텀시트 높이: 폰트 커질수록 여유를 더 줌
-      const snap =
-        level === 'XL'
-          ? ['90%']
-          : level === 'L'
-          ? ['82%']
-          : ['78%'];
+      // ✅ 스냅: 폰트모드마다 확실히 차이
+      const snap = level === 'XL' ? ['92%'] : level === 'L' ? ['84%'] : ['81%'];
 
-      // 리스트 하단 여유(버튼/패딩 체감)
       const listExtra =
         level === 'XL'
           ? getResponsiveHeight(18)
@@ -128,14 +118,21 @@ const CategoryBottomSheetModal = forwardRef(
       };
     }, [level]);
 
+    // ✅ 데이터 구성: [전체 + 카테고리들]
     const data = useMemo(
       () => [ALL_CATEGORY, ...(categoryList || [])],
       [categoryList],
     );
 
+    const totalCount = useMemo(() => {
+      return Array.isArray(categoryList) ? categoryList.length : 0;
+    }, [categoryList]);
+
     const maxListHeight = useMemo(() => {
-      const visible = Math.min(layout.MAX_VISIBLE_ITEMS, Math.max(1, data.length));
-      // ✅ row height + gap 고려
+      const visible = Math.min(
+        layout.MAX_VISIBLE_ITEMS,
+        Math.max(1, data.length),
+      );
       const base =
         layout.ITEM_HEIGHT * visible + layout.GAP * Math.max(0, visible - 1);
 
@@ -146,12 +143,19 @@ const CategoryBottomSheetModal = forwardRef(
       setTempSelected(selectedCategory);
     }, [selectedCategory]);
 
+    // ✅ sheetKey: 폰트모드/스냅이 바뀌면 BottomSheetLayout 자체 리마운트 트리거
+    // (열려있던 시트에서 snapPoints 갱신 안 먹는 케이스를 가장 안정적으로 제거)
+    const sheetKey = useMemo(() => {
+      const snapKey = (layout.snapPoints || []).join('|');
+      return `category-${fontMode}-${snapKey}`;
+    }, [fontMode, layout.snapPoints]);
+
     useImperativeHandle(ref, () => ({
       present: () => {
         isClosingRef.current = false;
         setTempSelected(selectedCategory);
-        modalRef.current?.present?.();
 
+        modalRef.current?.present?.();
         requestAnimationFrame(() => {
           modalRef.current?.snapToIndex?.(0);
         });
@@ -170,6 +174,19 @@ const CategoryBottomSheetModal = forwardRef(
         isClosingRef.current = false;
       }, 280);
     }, []);
+
+    // ✅ 폰트모드 변경 시: 열린 상태에서 레이아웃이 꼬이는 케이스 방지
+    // - CreateChatRoomBottomSheet처럼 "자동 present"는 하지 않고
+    // - 안전하게 snapToIndex(0)로만 정리
+    useEffect(() => {
+      const refObj = modalRef?.current;
+      if (!refObj) return;
+
+      // dismiss/present가 있어도 여기서는 "다시 열지 않음"
+      requestAnimationFrame(() => {
+        refObj.snapToIndex?.(0);
+      });
+    }, [fontMode, sheetKey]);
 
     const isSameCategory = useCallback((a, b) => {
       if (!a && !b) return true;
@@ -201,8 +218,8 @@ const CategoryBottomSheetModal = forwardRef(
     return (
       <BottomSheetLayout
         modalRef={modalRef}
-        // ✅ 폰트모드(N/L/XL)별 snapPoints 반영
         snapPoints={layout.snapPoints}
+        sheetKey={sheetKey} // ✅ 핵심: 리마운트 트리거
         enableContentPanningGesture={false}
         keyboardBehavior="none"
         androidKeyboardInputMode="adjustNothing"
@@ -213,91 +230,87 @@ const CategoryBottomSheetModal = forwardRef(
         useInternalScroll={false}>
         <SafeAreaView style={{flex: 1, backgroundColor: UI.bg}}>
           <View style={{flex: 1}}>
-            {/* ✅ 카드(패널) */}
-            <View style={styles.panel}>
-              <View style={styles.headerRow}>
+            {/* Header */}
+            <View style={styles.headerRow}>
+              <View style={styles.headerLeft}>
                 <Text allowFontScaling={false} style={styles.headerTitle}>
                   목록
                 </Text>
-
-                <View style={styles.pill}>
-                  <View style={styles.pillDot} />
-                  <Text allowFontScaling={false} style={styles.pillText}>
-                    {tempSelected?.title ?? '전체'}
-                  </Text>
-                </View>
+                <Text allowFontScaling={false} style={styles.countChipText}>
+                  ({totalCount}개)
+                </Text>
               </View>
 
-              {isOnlyAll ? (
-                <View style={styles.emptyBox}>
-                  <Text allowFontScaling={false} style={styles.emptyTitle}>
-                    카테고리가 없어요
-                  </Text>
-                  <Text allowFontScaling={false} style={styles.emptyDesc}>
-                    지금은 ‘전체’로 보거나, 업로드할 때 새로 만들 수 있어요.
-                  </Text>
-                </View>
-              ) : (
-                <View style={[styles.listViewport, {maxHeight: maxListHeight}]}>
-                  <ScrollView
-                    bounces={false}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.scrollContent}>
-                    {data.map((cat, index) => {
-                      const isSelected = isSameCategory(cat, tempSelected);
-                      const key =
-                        cat.id != null ? String(cat.id) : `${cat.title}-${index}`;
+              <View style={styles.pill}>
+                <View style={styles.pillDot} />
+                <Text allowFontScaling={false} style={styles.pillText}>
+                  {tempSelected?.title ?? '전체'}
+                </Text>
+              </View>
+            </View>
 
-                      return (
-                        <TouchableOpacity
-                          key={key}
-                          activeOpacity={0.88}
-                          onPress={() => handlePressItem(cat)}
+            {isOnlyAll ? (
+              <View style={styles.emptyBox}>
+                <Text allowFontScaling={false} style={styles.emptyTitle}>
+                  카테고리가 없어요
+                </Text>
+                <Text allowFontScaling={false} style={styles.emptyDesc}>
+                  지금은 ‘전체’로 보거나, 업로드할 때 새로 만들 수 있어요.
+                </Text>
+              </View>
+            ) : (
+              <View style={[styles.listViewport, {maxHeight: maxListHeight}]}>
+                <ScrollView
+                  bounces={false}
+                  showsVerticalScrollIndicator={true}
+                  contentContainerStyle={styles.scrollContent}>
+                  {data.map((cat, index) => {
+                    const isSelected = isSameCategory(cat, tempSelected);
+                    const key =
+                      cat.id != null ? String(cat.id) : `${cat.title}-${index}`;
+
+                    return (
+                      <TouchableOpacity
+                        key={key}
+                        activeOpacity={0.9}
+                        onPress={() => handlePressItem(cat)}
+                        style={[
+                          styles.itemRow,
+                          {height: layout.ITEM_HEIGHT},
+                          index !== 0 && {marginTop: layout.GAP},
+                          isSelected && styles.itemRowSelected,
+                        ]}>
+                        <Text
+                          allowFontScaling={false}
                           style={[
-                            styles.itemRow,
-                            {height: layout.ITEM_HEIGHT},
-                            index !== 0 && {marginTop: layout.GAP},
-                            isSelected && styles.itemRowSelected,
-                          ]}>
-                          <Text
-                            allowFontScaling={false}
-                            style={[
-                              styles.itemText,
-                              // ✅ XL일수록 폰트 살짝 올리고, 라인 높이도 확보
-                              level === 'XL' && {
-                                fontSize: getResponsiveFontSize(16),
-                              },
-                              level === 'L' && {
-                                fontSize: getResponsiveFontSize(15),
-                              },
-                              isSelected && styles.itemTextSelected,
-                            ]}
-                            numberOfLines={1}>
-                            {cat.title}
-                          </Text>
+                            styles.itemText,
+                            level === 'XL' && {
+                              fontSize: getResponsiveFontSize(16),
+                            },
+                            level === 'L' && {
+                              fontSize: getResponsiveFontSize(15),
+                            },
+                            isSelected && styles.itemTextSelected,
+                          ]}
+                          numberOfLines={1}>
+                          {cat.title}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
+          </View>
 
-                          {isSelected ? (
-                            <View style={styles.selectedMark} />
-                          ) : (
-                            <View style={styles.checkPlaceholder} />
-                          )}
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
-
-            {/* ✅ footer 고정 */}
-            <View style={styles.footerFixed}>
-              <BottomSheetButtons
-                onCancel={handleCancel}
-                onSave={handleApply}
-                saveLabel="적용하기"
-                autoCloseOnSave={false}
-              />
-            </View>
+          {/* footer 고정 */}
+          <View style={styles.footerFixed}>
+            <BottomSheetButtons
+              onCancel={handleCancel}
+              onSave={handleApply}
+              saveLabel="적용하기"
+              autoCloseOnSave={false}
+            />
           </View>
         </SafeAreaView>
       </BottomSheetLayout>
@@ -322,13 +335,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: getResponsiveHeight(12),
+    marginBottom: BOTTOMSHEET_STYLE().sectionLabel.marginBottom,
+    marginTop: BOTTOMSHEET_STYLE().sectionLabel.marginTop,
   },
+
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: getResponsiveWidth(4),
+  },
+
   headerTitle: {
-    fontSize: getResponsiveFontSize(13),
+    fontSize: BOTTOMSHEET_STYLE().sectionLabel.fontSize,
+    fontFamily: BOTTOMSHEET_STYLE().sectionLabel.fontFamily,
+    color: BOTTOMSHEET_STYLE().sectionLabel.color,
+    lineHeight: BOTTOMSHEET_STYLE().sectionLabel.fontSize,
+  },
+
+  countChipText: {
+    fontSize: getResponsiveFontSize(11.5),
     fontFamily: 'Pretendard-SemiBold',
-    color: UI.text,
-    letterSpacing: -0.2,
+    color: COLORS.textTertiary,
+    lineHeight: getResponsiveFontSize(12),
   },
 
   pill: {
@@ -338,7 +367,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(10),
     paddingVertical: getResponsiveHeight(6),
     borderRadius: 999,
-    backgroundColor: UI.card,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: UI.lineSoft,
   },
@@ -361,17 +390,15 @@ const styles = StyleSheet.create({
   },
 
   scrollContent: {
-    paddingBottom: getResponsiveHeight(2),
+    // paddingBottom: getResponsiveHeight(10), // ✅ footer랑 겹침 체감 줄이기
   },
 
   itemRow: {
     paddingHorizontal: getResponsiveWidth(14),
     borderRadius: 14,
-
-    backgroundColor: UI.card,
+    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
     borderWidth: 1,
     borderColor: UI.lineSoft,
-
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -397,20 +424,6 @@ const styles = StyleSheet.create({
   itemTextSelected: {
     fontFamily: 'Pretendard-SemiBold',
     color: UI.selectedText,
-  },
-
-  selectedMark: {
-    width: getResponsiveIconSize(13),
-    height: getResponsiveIconSize(13),
-    borderRadius: 999,
-    backgroundColor: UI.brand,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  checkPlaceholder: {
-    width: getResponsiveIconSize(26),
-    height: getResponsiveIconSize(26),
   },
 
   emptyBox: {

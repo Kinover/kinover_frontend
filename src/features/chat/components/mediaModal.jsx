@@ -13,6 +13,7 @@ import {
   Platform,
   PermissionsAndroid,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import Video from 'react-native-video';
 import FastImage from '@d11/react-native-fast-image';
@@ -24,7 +25,7 @@ import {
   getResponsiveFontSize,
   getResponsiveWidth,
 } from '../../../utils/responsive';
-import ToastModal from '../../../components/ToastModal';
+import ToastModal from '../../../components/modal/ToastModal';
 
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 import Animated, {
@@ -131,6 +132,7 @@ function ZoomableImage({uri, isActive, styles}) {
       <GestureDetector gesture={composed}>
         <Animated.View style={[styles.zoomImageWrap, style]}>
           <FastImage
+            fallback={true}
             source={{uri}}
             style={styles.zoomImage}
             resizeMode={FastImage.resizeMode.contain}
@@ -362,7 +364,11 @@ export default function MediaModal({
         return <Video source={{uri: item.url}} style={styles.video} controls />;
       }
       return (
-        <ZoomableImage uri={item.url} isActive={index === currentIndex} styles={styles} />
+        <ZoomableImage
+          uri={item.url}
+          isActive={index === currentIndex}
+          styles={styles}
+        />
       );
     },
     [currentIndex, styles],
@@ -388,7 +394,8 @@ export default function MediaModal({
 
         <View style={styles.indexPill}>
           <Text allowFontScaling={false} style={styles.indexText}>
-            {resolvedItems.length ? currentIndex + 1 : 0} / {resolvedItems.length}
+            {resolvedItems.length ? currentIndex + 1 : 0} /{' '}
+            {resolvedItems.length}
           </Text>
         </View>
 
@@ -396,10 +403,10 @@ export default function MediaModal({
           onPress={openMenu}
           disabled={isMenuDisabled}
           style={[styles.circleIconBtn, isMenuDisabled && {opacity: 0.5}]}>
-          <FastImage
+          <Image
             source={require('../../../assets/images/dots_white.png')}
             style={styles.dotsIcon}
-            resizeMode={FastImage.resizeMode.contain}
+            // resizeMode={FastImage.resizeMode.contain}
           />
         </TouchableOpacity>
       </View>
@@ -531,14 +538,17 @@ const makeStyles = rf =>
     xText: {
       color: '#fff',
       fontSize: rf(16),
+      textAlign: 'center',
+      textAlignVertical: 'center',
+      lineHeight: rf(17),
       fontFamily: 'Pretendard-SemiBold',
       includeFontPadding: false,
-      textAlignVertical: 'center',
     },
 
     dotsIcon: {
       width: getResponsiveWidth(16),
       height: getResponsiveWidth(16),
+      resizeMode: 'contain',
     },
 
     indexPill: {

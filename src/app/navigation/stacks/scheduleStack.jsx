@@ -22,9 +22,7 @@ export default function ScheduleStack() {
           shadowOpacity: 0,
           elevation: 0,
           height:
-            Platform.OS === 'ios'
-              ? getResponsiveHeight(107.5)
-              : getResponsiveHeight(70),
+          getResponsiveHeight(107.5),
         },
         headerTitleAlign: 'left',
         headerLeft: () => null,

@@ -1,10 +1,12 @@
 platform :ios, '16.0'
 ENV['RCT_NEW_ARCH_ENABLED'] = '0'
 
-require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods.rb")
+require File.join(
+  File.dirname(`node --print "require.resolve('react-native/package.json')"`),
+  "scripts/react_native_pods.rb"
+)
 
 prepare_react_native_project!
-inhibit_all_warnings!
 
 target 'kinover_frontend' do
   config = use_native_modules!
@@ -13,84 +15,51 @@ target 'kinover_frontend' do
     :path => config[:reactNativePath],
     :app_path => "#{Pod::Config.instance.installation_root}/..",
     :fabric_enabled => false,
-    :hermes_enabled => true,
+    :hermes_enabled => true
   )
 
-  # ✅ RNFB 의존성 모듈러 헤더 강제
-  pod 'GoogleUtilities',        :modular_headers => true
-  pod 'FirebaseCoreInternal',   :modular_headers => true
-  pod 'FirebaseCore',           :modular_headers => true
-  pod 'FirebaseInstallations',  :modular_headers => true
+  # ✅ RNFB 의존성 모듈러 헤더 강제 (유지)
+  pod 'GoogleUtilities',       :modular_headers => true
+  pod 'FirebaseCoreInternal',  :modular_headers => true
+  pod 'FirebaseCore',          :modular_headers => true
+  pod 'FirebaseInstallations', :modular_headers => true
 
   # 3rd party
   pod 'lottie-react-native', :path => '../node_modules/lottie-react-native'
   pod 'kakao-login',         :path => '../node_modules/@react-native-seoul/kakao-login'
 
-  # ❌ 절대 금지: use_frameworks!
-
   post_install do |installer|
-    react_native_post_install(installer, config[:reactNativePath], :mac_catalyst_enabled => false)
+    react_native_post_install(
+      installer,
+      config[:reactNativePath],
+      :mac_catalyst_enabled => false
+    )
 
-    # Pods 타겟 공통 설정
     installer.pods_project.targets.each do |t|
       t.build_configurations.each do |c|
         c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
-        c.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
-        c.build_settings['ALWAYS_SEARCH_USER_PATHS'] = 'NO'
         c.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
-
-        # ⚡ C++20 강제 (unordered_map.contains 지원)
-        c.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
-        c.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
-
-        # 경고 무시
         c.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
-        c.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-error=return-type -Wno-error=deprecated-objc-isa-usage -Wno-error=objc-root-class'
-        c.build_settings['CLANG_WARN_EMPTY_BODY'] = 'NO'
-        c.build_settings['CLANG_WARN_UNREACHABLE_CODE'] = 'NO'
-        c.build_settings['CLANG_WARN_DOCUMENTATION_COMMENTS'] = 'NO'
-        c.build_settings['CLANG_WARN_OBJC_ROOT_CLASS'] = 'NO'
-        c.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
       end
     end
 
-    # App 타겟 설정
-    installer.aggregate_targets.each do |agg|
-      agg.user_project.native_targets.each do |nt|
-        next unless nt.name == 'kinover_frontend'
-        nt.build_configurations.each do |bc|
-          bc.build_settings['CLANG_ENABLE_MODULES'] = 'YES'
-          bc.build_settings['ALWAYS_SEARCH_USER_PATHS'] = 'NO'
-          bc.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+    # ✅ Yoga modulemap 충돌 방지
+    rn_yoga_modulemap = File.expand_path(
+      "../node_modules/react-native/ReactCommon/yoga/yoga/module.modulemap",
+      __dir__
+    )
 
-          # ⚡ C++20 강제
-          bc.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
-          bc.build_settings['CLANG_CXX_LIBRARY'] = 'libc++'
-
-          # 경고 무시
-          bc.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
-          bc.build_settings['OTHER_CFLAGS'] = '$(inherited) -Wno-error=return-type -Wno-error=deprecated-objc-isa-usage -Wno-error=objc-root-class'
-          bc.build_settings['CLANG_WARN_EMPTY_BODY'] = 'NO'
-          bc.build_settings['CLANG_WARN_UNREACHABLE_CODE'] = 'NO'
-          bc.build_settings['CLANG_WARN_DOCUMENTATION_COMMENTS'] = 'NO'
-          bc.build_settings['CLANG_WARN_OBJC_ROOT_CLASS'] = 'NO'
-          bc.build_settings['GCC_WARN_INHIBIT_ALL_WARNINGS'] = 'YES'
-
-          # ⚡ ARCHS 경고 제거
-          bc.build_settings['ARCHS'] = '$(ARCHS_STANDARD)'
-        end
+    if File.exist?(rn_yoga_modulemap)
+      begin
+        File.delete(rn_yoga_modulemap)
+        puts "[Podfile] Deleted RN Yoga modulemap: #{rn_yoga_modulemap}"
+      rescue => e
+        File.open(rn_yoga_modulemap, "w") { |f| f.write("") }
+        puts "[Podfile] Emptied RN Yoga modulemap instead: #{rn_yoga_modulemap}"
+        puts "[Podfile] Delete error: #{e}"
       end
+    else
+      puts "[Podfile] RN Yoga modulemap not found: #{rn_yoga_modulemap}"
     end
-
-    # ⚡ ARCHS[@] → ${ARCHS:-arm64} 전부 치환 (조건 제거)
-    installer.pods_project.targets.each do |target|
-      target.shell_script_build_phases.each do |phase|
-        next unless phase.shell_script # ✅ nil 방지
-        phase.shell_script = phase.shell_script
-          .gsub('${ARCHS[@]}', '${ARCHS:-arm64}')
-          .gsub('"${ARCHS[@]}"', '${ARCHS:-arm64}')
-          .gsub('${ARCHS}', '${ARCHS:-arm64}')
-      end
-    end
-  end   
+  end
 end

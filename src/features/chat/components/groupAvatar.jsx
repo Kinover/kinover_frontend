@@ -16,6 +16,7 @@ export default function GroupAvatar({images = [], size = 60}) {
     <View style={[styles.container, {width: size, height: size}]}>
       {count === 1 && (
         <FastImage
+        fallback={true}
           source={{uri: images[0]}}
           style={[styles.absolute, imageStyle(1)]}
         />
@@ -23,10 +24,14 @@ export default function GroupAvatar({images = [], size = 60}) {
       {count === 2 && (
         <>
           <FastImage
+                  fallback={true}
+
             source={{uri: images[0]}}
             style={[styles.absolute, imageStyle(1.6), {top: 0, left: 0}]}
           />
           <FastImage
+                  fallback={true}
+
             source={{uri: images[1]}}
             style={[styles.absolute, imageStyle(1.6), {bottom: 0, right: 0}]}
           />
@@ -35,6 +40,8 @@ export default function GroupAvatar({images = [], size = 60}) {
       {count === 3 && (
         <>
           <FastImage
+                  fallback={true}
+
             source={{uri: images[0]}}
             style={[
               styles.absolute,
@@ -43,10 +50,14 @@ export default function GroupAvatar({images = [], size = 60}) {
             ]}
           />
           <FastImage
+                  fallback={true}
+
             source={{uri: images[1]}}
             style={[styles.absolute, imageStyle(1.8), {bottom: 0, left: 0}]}
           />
           <FastImage
+                  fallback={true}
+
             source={{uri: images[2]}}
             style={[styles.absolute, imageStyle(1.8), {bottom: 0, right: 0}]}
           />
@@ -55,18 +66,25 @@ export default function GroupAvatar({images = [], size = 60}) {
       {count === 4 && (
         <>
           <FastImage
+                  fallback={true}
+
             source={{uri: images[0]}}
             style={[styles.absolute, imageStyle(2), {top: 0, left: 0}]}
           />
           <FastImage
+                  fallback={true}
+
             source={{uri: images[1]}}
             style={[styles.absolute, imageStyle(2), {top: 0, right: 0}]}
           />
           <FastImage
+                  fallback={true}
+
             source={{uri: images[2]}}
             style={[styles.absolute, imageStyle(2), {bottom: 0, left: 0}]}
           />
-          <FastImage
+          <FastImage        fallback={true}
+
             source={{uri: images[3]}}
             style={[styles.absolute, imageStyle(2), {bottom: 0, right: 0}]}
           />

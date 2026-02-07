@@ -20,7 +20,7 @@ import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
 
-import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
+import BottomSheet, {BottomSheetBackdrop} from '@gorhom/bottom-sheet';
 import LinearGradient from 'react-native-linear-gradient';
 
 import RNBlobUtil from 'react-native-blob-util';
@@ -34,7 +34,7 @@ import usePostPageViewModel from '../hooks/usePostPageViewModel';
 
 import ImageCarousel from '../components/ImageCarousel';
 import MemoryDetailBottomSheet from '../components/MemoryDetailBottomSheet';
-import ToastModal from '../../../components/ToastModal';
+import ToastModal from '../../../components/modal/ToastModal';
 
 import {
   getResponsiveFontSize,
@@ -47,10 +47,7 @@ import {HEADER_STYLES} from 'styles/style';
 import ImageDeleteModal from '../components/DeleteOptionModal';
 import {deleteCommentThunk} from '../store/commentThunk';
 
-// ✅ 옵션 메뉴 컴포넌트로 분리
 import PostOptionsMenu from '../components/PostOptionMenu';
-
-// ✅ category fetch thunk (너가 넣은 경로 유지)
 import {fetchCategoryThunk} from '../store/categoryThunk';
 
 const {width: SCREEN_W} = Dimensions.get('window');
@@ -63,10 +60,15 @@ export default function PostPage({route}) {
   const commentSheetRef = useRef(null);
   const didInitIndexRef = useRef(false);
 
-  // ✅ descSheet 중복 present 방지
-  const didPresentDescRef = useRef(false);
-  // ✅ 화면 나가는 중 가드
   const isLeavingRef = useRef(false);
+
+  const commentOpenRef = useRef(false);
+  const presentingCommentRef = useRef(false);
+  const commentOpenTimerRef = useRef(null);
+
+  // ✅ desc index는 0(기본) / 1(확장)만 유지 (숨김은 "언마운트"로 해결)
+  const [descIndex, setDescIndex] = useState(0);
+  const lastDescIndexRef = useRef(0);
 
   const {postId, imageIndex = 0} = route?.params || {};
   const familyId = useSelector(s => s.family?.familyId);
@@ -75,10 +77,7 @@ export default function PostPage({route}) {
     postId ? state.memory?.postsById?.[String(postId)] : null,
   );
 
-  // ✅ null-safe
   const categoryList = useSelector(state => state.category?.categoryList || []);
-
-  // ✅ 알림 reset 진입 플래그(있으면 백버튼 숨김)
   const fromNotificationReset = Boolean(route?.params?._fromNotificationReset);
 
   const safeMemory = useMemo(
@@ -96,15 +95,15 @@ export default function PostPage({route}) {
   useHideTabBar();
 
   const [descExpanded, setDescExpanded] = useState(false);
+
+  // ✅ 화면 탭으로 헤더 + desc 같이 숨김/복원
   const [isChromeHidden, setIsChromeHidden] = useState(false);
 
-  // ✅ confirm 모달 상태
   const [confirmVisible, setConfirmVisible] = useState(false);
-  const [pendingDeleteType, setPendingDeleteType] = useState(null); // 'image' | 'post' | 'comment' | null
+  const [pendingDeleteType, setPendingDeleteType] = useState(null);
   const [pendingCommentId, setPendingCommentId] = useState(null);
   const [isConfirmDeleting, setIsConfirmDeleting] = useState(false);
 
-  // ✅ 옵션 로딩/중복 클릭 방지
   const [isOptionBusy, setIsOptionBusy] = useState(false);
 
   /** ---------------- 토스트 helper ---------------- */
@@ -138,57 +137,121 @@ export default function PostPage({route}) {
     return `${Math.min(i + 1, total)}/${total}`;
   }, [vm.currentImageIndex, mediaCount]);
 
-  /** ---------------- “상단 우측 옵션 메뉴(팝오버)” ---------------- */
+  /** ---------------- 옵션 메뉴 ---------------- */
   const [menuVisible, setMenuVisible] = useState(false);
+  const menuRef = useRef(null);
 
   const closeMenu = useCallback(() => {
-    setMenuVisible(false);
+    menuRef.current?.close?.();
   }, []);
 
-  const openMenu = useCallback(() => {
+  /** ---------------- desc ---------------- */
+  const descSnapPoints = useMemo(() => ['20%', '30%'], []);
+
+  const setDescToIndex = useCallback(
+    nextIndex => {
+      if (isChromeHidden) return;
+      if (isLeavingRef.current) return;
+      if (vm.isImageFullScreen) return;
+      if (commentOpenRef.current) return;
+
+      const idx = nextIndex === 1 ? 1 : 0;
+      lastDescIndexRef.current = idx;
+
+      setDescIndex(idx);
+      setDescExpanded(idx === 1);
+
+      requestAnimationFrame(() => {
+        descSheetRef.current?.snapToIndex?.(idx);
+      });
+    },
+    [isChromeHidden, vm.isImageFullScreen],
+  );
+
+  const toggleDescByClick = useCallback(() => {
+    if (vm.isImageFullScreen) return;
     if (isChromeHidden) return;
     if (isLeavingRef.current) return;
-    if (isOptionBusy) return;
-    setMenuVisible(true);
-  }, [isChromeHidden, isOptionBusy]);
 
-  const toggleMenu = useCallback(() => {
+    setDescToIndex(descIndex === 0 ? 1 : 0);
+  }, [descIndex, isChromeHidden, setDescToIndex, vm.isImageFullScreen]);
+
+  const collapseDesc = useCallback(() => {
+    setDescToIndex(0);
+  }, [setDescToIndex]);
+
+  /** ---------------- comment sheet ---------------- */
+  const openCommentSheet = useCallback(() => {
+    if (isChromeHidden) return;
+    if (isLeavingRef.current) return;
+
     if (menuVisible) closeMenu();
-    else openMenu();
-  }, [menuVisible, closeMenu, openMenu]);
 
-  /** ---------------- 모든 시트 닫기 (유령 모달 방지) ---------------- */
-  const dismissAllSheets = useCallback(() => {
+    if (commentOpenRef.current) return;
+    if (presentingCommentRef.current) return;
+
+    collapseDesc();
+
+    if (commentOpenTimerRef.current) {
+      clearTimeout(commentOpenTimerRef.current);
+      commentOpenTimerRef.current = null;
+    }
+
+    presentingCommentRef.current = true;
+
+    commentOpenTimerRef.current = setTimeout(() => {
+      commentOpenTimerRef.current = null;
+
+      if (isLeavingRef.current) {
+        presentingCommentRef.current = false;
+        return;
+      }
+
+      commentSheetRef.current?.present?.();
+    }, 120);
+  }, [collapseDesc, isChromeHidden, menuVisible, closeMenu]);
+
+  // ✅ 풀스크린 진입 시 commentSheet 닫기
+  useEffect(() => {
+    if (!vm.isImageFullScreen) return;
     try {
       commentSheetRef.current?.dismiss?.();
-    } catch {
-      null;
-    }
-    try {
-      descSheetRef.current?.dismiss?.();
-    } catch {
-      null;
-    }
-    didPresentDescRef.current = false;
+    } catch {}
+  }, [vm.isImageFullScreen]);
 
-    // ✅ 옵션 팝오버도 같이 닫기
+  /** ---------------- focus/blur 정리 ---------------- */
+  const cleanupOnLeave = useCallback(() => {
+    if (commentOpenTimerRef.current) {
+      clearTimeout(commentOpenTimerRef.current);
+      commentOpenTimerRef.current = null;
+    }
+
+    try {
+      commentSheetRef.current?.dismiss?.();
+    } catch {}
+
     try {
       if (menuVisible) closeMenu();
-    } catch {
-      null;
-    }
+    } catch {}
+
+    commentOpenRef.current = false;
+    presentingCommentRef.current = false;
+
+    // desc 상태도 정리
+    setDescIndex(0);
+    setDescExpanded(false);
+    lastDescIndexRef.current = 0;
   }, [closeMenu, menuVisible]);
 
-  /** ---------------- focus/blur 시점에 정리 ---------------- */
   useFocusEffect(
     useCallback(() => {
       isLeavingRef.current = false;
 
       return () => {
         isLeavingRef.current = true;
-        dismissAllSheets();
+        cleanupOnLeave();
       };
-    }, [dismissAllSheets]),
+    }, [cleanupOnLeave]),
   );
 
   /** ---------------- fetch ---------------- */
@@ -206,15 +269,13 @@ export default function PostPage({route}) {
     didInitIndexRef.current = true;
   }, [imageIndex, vm]);
 
-  // ✅ 알림 진입에서 특히 잘 터지는 부분:
-  // categoryList가 비어있으면 PostPage에서 fetch 보장
   useEffect(() => {
     if (!categoryList?.length && familyId) {
       dispatch(fetchCategoryThunk(familyId));
     }
   }, [categoryList?.length, familyId, dispatch]);
 
-  /** ---------------- 댓글 삭제 모달 열기 ---------------- */
+  /** ---------------- 삭제 confirm ---------------- */
   const openDeleteCommentConfirm = useCallback(commentId => {
     setPendingDeleteType('comment');
     setPendingCommentId(commentId);
@@ -305,34 +366,31 @@ export default function PostPage({route}) {
     }
   }, []);
 
-  const downloadToLocalFile = useCallback(
-    async (urlOrUri, extGuess = 'jpg') => {
-      const src = String(urlOrUri || '');
-      if (!src) throw new Error('empty uri');
+  const downloadToLocalFile = useCallback(async (urlOrUri, extGuess = 'jpg') => {
+    const src = String(urlOrUri || '');
+    if (!src) throw new Error('empty uri');
 
-      if (src.startsWith('file://')) {
-        return src.replace('file://', '');
-      }
+    if (src.startsWith('file://')) {
+      return src.replace('file://', '');
+    }
 
-      const safeExt = extGuess || 'jpg';
-      const dest = `${
-        RNBlobUtil.fs.dirs.CacheDir
-      }/kino_save_${Date.now()}_${Math.random()
-        .toString(16)
-        .slice(2)}.${safeExt}`;
+    const safeExt = extGuess || 'jpg';
+    const dest = `${
+      RNBlobUtil.fs.dirs.CacheDir
+    }/kino_save_${Date.now()}_${Math.random()
+      .toString(16)
+      .slice(2)}.${safeExt}`;
 
-      const res = await RNBlobUtil.config({path: dest, fileCache: true}).fetch(
-        'GET',
-        src,
-      );
+    const res = await RNBlobUtil.config({path: dest, fileCache: true}).fetch(
+      'GET',
+      src,
+    );
 
-      const p = res?.path?.() || dest;
-      const exists = await RNBlobUtil.fs.exists(p);
-      if (!exists) throw new Error('download failed');
-      return p;
-    },
-    [],
-  );
+    const p = res?.path?.() || dest;
+    const exists = await RNBlobUtil.fs.exists(p);
+    if (!exists) throw new Error('download failed');
+    return p;
+  }, []);
 
   const saveOneToGallery = useCallback(
     async uri => {
@@ -449,7 +507,6 @@ export default function PostPage({route}) {
     setConfirmVisible(true);
   }, [vm.isImageFullScreen]);
 
-  // ✅ 게시글 수정 옵션 추가
   const actionEditPost = useCallback(() => {
     if (vm.isImageFullScreen) return;
     if (!postId) return;
@@ -457,7 +514,7 @@ export default function PostPage({route}) {
     navigation.navigate('이미지선택화면', {postId: postId, mode: '수정'});
   }, [navigation, postId, vm.isImageFullScreen]);
 
-  /** ---------------- header title 계산을 안정화 (categoryList 늦게 와도 갱신) ---------------- */
+  /** ---------------- header title ---------------- */
   const headerCategoryTitle = useMemo(() => {
     const cid = safeMemory?.categoryId;
     if (!cid) return '게시물';
@@ -467,13 +524,15 @@ export default function PostPage({route}) {
     return matched?.title || matched?.name || '게시물';
   }, [categoryList, safeMemory?.categoryId]);
 
-  /** ---------------- header (투명 헤더) ---------------- */
+  /** ---------------- header ---------------- */
   useEffect(() => {
     navigation.setOptions({
       headerShown: !isChromeHidden,
       headerTransparent: true,
       headerTitle: () => (
-        <Text allowFontScaling={false} style={styles.headerTitle}>{headerCategoryTitle}</Text>
+        <Text allowFontScaling={false} style={styles.headerTitle}>
+          {headerCategoryTitle}
+        </Text>
       ),
       headerTitleAlign: 'center',
       headerStyle: {backgroundColor: 'transparent'},
@@ -482,10 +541,7 @@ export default function PostPage({route}) {
       headerBackground: () => (
         <View style={{flex: 1, backgroundColor: 'transparent'}} />
       ),
-
-      // ✅ 알림 reset 진입이면 백버튼 숨김 (히스토리/뒤로 UX 차단)
       headerLeft: () => {
-
         return (
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -502,10 +558,16 @@ export default function PostPage({route}) {
           </TouchableOpacity>
         );
       },
-
       headerRight: () => (
         <TouchableOpacity
-          onPress={toggleMenu}
+          onPress={() => {
+            if (isChromeHidden) return;
+            if (isLeavingRef.current) return;
+            if (isOptionBusy) return;
+
+            if (menuVisible) closeMenu();
+            else setMenuVisible(true);
+          }}
           disabled={isOptionBusy}
           hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
           style={{opacity: isOptionBusy ? 0.5 : 1}}>
@@ -519,85 +581,32 @@ export default function PostPage({route}) {
   }, [
     navigation,
     isChromeHidden,
-    headerCategoryTitle, // ✅ 타이틀 바뀌면 헤더 재세팅
-    toggleMenu,
+    headerCategoryTitle,
     isOptionBusy,
     fromNotificationReset,
+    menuVisible,
+    closeMenu,
   ]);
 
-  /** ---------------- description sheet ---------------- */
-  const descSnapPoints = useMemo(() => ['20%', '30%'], []);
-
-  const presentDescSheet = useCallback(() => {
-    if (isChromeHidden) return;
-    if (isLeavingRef.current) return;
-
-    // ✅ 이미 떠 있으면 또 present 하지 않기
-    if (didPresentDescRef.current) return;
-
-    descSheetRef.current?.present?.();
-    didPresentDescRef.current = true;
-  }, [isChromeHidden]);
-
-  const applyDescIndex = useCallback(
-    nextExpanded => {
-      if (isChromeHidden) return;
-      if (isLeavingRef.current) return;
-
-      const nextIndex = nextExpanded ? 1 : 0;
-
-      // ✅ present는 1번만
-      presentDescSheet();
-      descSheetRef.current?.snapToIndex?.(nextIndex);
-    },
-    [isChromeHidden, presentDescSheet],
-  );
-
-  const toggleDescByClick = useCallback(() => {
+  /** ✅ 데이터 로드 후 desc 기본값 0 */
+  useEffect(() => {
+    if (!postFromStore) return;
     if (vm.isImageFullScreen) return;
-    if (isChromeHidden) return;
-    if (isLeavingRef.current) return;
 
-    setDescExpanded(prev => {
-      const next = !prev;
-      applyDescIndex(next);
-      return next;
-    });
-  }, [applyDescIndex, vm.isImageFullScreen, isChromeHidden]);
-
-  const collapseDesc = useCallback(() => {
+    lastDescIndexRef.current = 0;
+    setDescIndex(0);
     setDescExpanded(false);
-    applyDescIndex(false);
-  }, [applyDescIndex]);
 
-  // ✅ 초기 1회만 띄우기
+    requestAnimationFrame(() => {
+      descSheetRef.current?.snapToIndex?.(0);
+    });
+  }, [postFromStore, vm.isImageFullScreen]);
+
+  // ✅ 풀스크린이면 desc는 렌더 자체가 안 되게(아래 조건에서 처리)
   useEffect(() => {
-    if (!postFromStore) return;
-    if (isChromeHidden) return;
-    presentDescSheet();
-    requestAnimationFrame(() => applyDescIndex(false));
-  }, [postFromStore, presentDescSheet, applyDescIndex, isChromeHidden]);
-
-  useEffect(() => {
-    if (!postFromStore) return;
-    didPresentDescRef.current = false;
-  }, [postFromStore]);
-
-  useEffect(() => {
-    if (vm.isImageFullScreen) collapseDesc();
-  }, [vm.isImageFullScreen, collapseDesc]);
-
-  /** ---------------- comment sheet ---------------- */
-  const openCommentSheet = useCallback(() => {
-    if (isChromeHidden) return;
-    if (isLeavingRef.current) return;
-
-    // ✅ 댓글 열 때 메뉴 닫기
-    if (menuVisible) closeMenu();
-
-    collapseDesc();
-    setTimeout(() => commentSheetRef.current?.present?.(), 120);
-  }, [collapseDesc, isChromeHidden, menuVisible, closeMenu]);
+    if (!vm.isImageFullScreen) return;
+    setDescExpanded(false);
+  }, [vm.isImageFullScreen]);
 
   const handleSwipeFromFirstToRight = useCallback(() => {
     if (vm.isImageFullScreen) return;
@@ -605,26 +614,32 @@ export default function PostPage({route}) {
     navigation.goBack();
   }, [dispatch, navigation, vm.isImageFullScreen]);
 
-  /** “한 번 탭” 토글 */
+  /** ✅ 화면(이미지) 탭: 헤더+desc 동시에 토글 + 열려있는 UI 정리 */
   const toggleChrome = useCallback(() => {
     setIsChromeHidden(prev => {
       const next = !prev;
 
       if (next) {
-        // ✅ 숨길 때: 전부 닫고 presented 플래그 리셋
-        dismissAllSheets();
+        // 숨김으로 갈 때: 메뉴 닫고 댓글도 닫기
+        if (menuVisible) closeMenu();
+        try {
+          commentSheetRef.current?.dismiss?.();
+        } catch {}
+        commentOpenRef.current = false;
+        presentingCommentRef.current = false;
       } else {
-        // ✅ 다시 보여줄 때: desc만 1번 present
+        // 다시 보일 때: desc를 마지막 인덱스로 복원
         requestAnimationFrame(() => {
-          didPresentDescRef.current = false;
-          presentDescSheet();
-          descSheetRef.current?.snapToIndex?.(0);
+          const idx = lastDescIndexRef.current ?? 0;
+          setDescIndex(idx);
+          setDescExpanded(idx === 1);
+          descSheetRef.current?.snapToIndex?.(idx);
         });
       }
 
       return next;
     });
-  }, [dismissAllSheets, presentDescSheet]);
+  }, [menuVisible, closeMenu]);
 
   if (!postFromStore) return <SafeAreaView style={{flex: 1}} />;
 
@@ -644,14 +659,14 @@ export default function PostPage({route}) {
 
   const disableMenu = isOptionBusy || isConfirmDeleting;
 
-  // ✅ 메뉴 아이템 활성 조건
   const canSaveCurrent = Boolean(currentMediaUri && CameraRoll);
   const canSaveAll = Boolean(mediaCount && CameraRoll);
   const canDeleteCurrent = Boolean(!vm.isImageFullScreen && currentMediaUri);
 
+  const showDescSheet = !isChromeHidden && !vm.isImageFullScreen;
+
   return (
     <SafeAreaView edges={[]} style={styles.container}>
-      {/* ✅ 통합 삭제 확인 모달 */}
       <ImageDeleteModal
         visible={confirmVisible}
         onClose={closeConfirmModal}
@@ -660,8 +675,8 @@ export default function PostPage({route}) {
         subText={confirmMessage}
       />
 
-      {/* ✅ 상단 우측 옵션 메뉴(컴포넌트 분리) */}
       <PostOptionsMenu
+        ref={menuRef}
         visible={menuVisible}
         setVisible={setMenuVisible}
         isChromeHidden={isChromeHidden}
@@ -671,10 +686,9 @@ export default function PostPage({route}) {
         canDeleteCurrent={canDeleteCurrent}
         currentLabel={currentLabel}
         mediaCount={mediaCount}
-        onClose={closeMenu}
         onSaveCurrent={actionSaveCurrent}
         onSaveAll={actionSaveAll}
-        onEditPost={actionEditPost} // ✅ 추가
+        onEditPost={actionEditPost}
         onDeleteCurrentImage={actionDeleteCurrentImage}
         onDeletePost={actionDeletePost}
       />
@@ -691,7 +705,6 @@ export default function PostPage({route}) {
           isChromeHidden={isChromeHidden}
         />
 
-        {/* ✅ 위 그라데이션 */}
         {!isChromeHidden && (
           <LinearGradient
             pointerEvents="none"
@@ -715,17 +728,21 @@ export default function PostPage({route}) {
         )}
       </View>
 
-      {/* ✅ 아래 설명창 */}
-      {!isChromeHidden && (
-        <BottomSheetModal
+      {/* ✅ 설명 바텀시트: 크롬 숨김이면 "아예 렌더 안 함" (제일 확실) */}
+      {showDescSheet && (
+        <BottomSheet
           ref={descSheetRef}
+          index={descIndex}
           snapPoints={descSnapPoints}
-          handleIndicatorStyle={{backgroundColor: 'transparent'}}
           enableContentPanningGesture={false}
           enableHandlePanningGesture={false}
-          enablePanDownToClose={false}
-          onDismiss={() => {
-            didPresentDescRef.current = false;
+          handleIndicatorStyle={{backgroundColor: 'transparent'}}
+          backgroundStyle={{backgroundColor: 'transparent'}}
+          onChange={index => {
+            const idx = index === 1 ? 1 : 0;
+            lastDescIndexRef.current = idx;
+            setDescIndex(idx);
+            setDescExpanded(idx === 1);
           }}
           backdropComponent={props => (
             <BottomSheetBackdrop
@@ -734,9 +751,14 @@ export default function PostPage({route}) {
               disappearsOnIndex={0}
               opacity={0.25}
               pressBehavior="none"
+              onPress={() => {
+                if (isChromeHidden) return;
+                if (isLeavingRef.current) return;
+                if (vm.isImageFullScreen) return;
+                collapseDesc();
+              }}
             />
-          )}
-          backgroundStyle={{backgroundColor: 'transparent'}}>
+          )}>
           <Pressable
             onPress={toggleDescByClick}
             hitSlop={{top: 16, bottom: 16, left: 16, right: 16}}
@@ -760,7 +782,10 @@ export default function PostPage({route}) {
                       : require('../../../assets/images/default.png')
                   }
                 />
-                <Text allowFontScaling={false} style={styles.author} numberOfLines={1}>
+                <Text
+                  allowFontScaling={false}
+                  style={styles.author}
+                  numberOfLines={1}>
                   {safeMemory.authorName}
                 </Text>
 
@@ -780,7 +805,8 @@ export default function PostPage({route}) {
               <ScrollView
                 scrollEnabled={descExpanded}
                 showsVerticalScrollIndicator={false}>
-                <Text allowFontScaling={false}
+                <Text
+                  allowFontScaling={false}
                   style={styles.descContent}
                   numberOfLines={descExpanded ? undefined : 2}>
                   {safeMemory.content}
@@ -788,25 +814,28 @@ export default function PostPage({route}) {
               </ScrollView>
             </LinearGradient>
           </Pressable>
-        </BottomSheetModal>
+        </BottomSheet>
       )}
 
       {/* ✅ 댓글 BottomSheet */}
-      {!vm.isImageFullScreen && !isChromeHidden && (
-        <MemoryDetailBottomSheet
-          sheetRef={commentSheetRef}
-          memory={safeMemory}
-          commentList={vm.commentList}
-          user={vm.user}
-          familyUsers={vm.familyUsers}
-          commentText={vm.commentText}
-          onChangeComment={vm.setCommentText}
-          onSubmitComment={vm.handleSendComment}
-          onDeleteComment={openDeleteCommentConfirm}
-          snapPoints={['75%']}
-          myUserId={vm.user?.userId}
-        />
-      )}
+      <MemoryDetailBottomSheet
+        sheetRef={commentSheetRef}
+        memory={safeMemory}
+        commentList={vm.commentList}
+        user={vm.user}
+        familyUsers={vm.familyUsers}
+        commentText={vm.commentText}
+        onChangeComment={vm.setCommentText}
+        onSubmitComment={vm.handleSendComment}
+        onDeleteComment={openDeleteCommentConfirm}
+        snapPoints={['75%']}
+        myUserId={vm.user?.userId}
+        onSheetChange={index => {
+          commentOpenRef.current = index >= 0;
+          if (index < 0) presentingCommentRef.current = false;
+        }}
+        disabled={vm.isImageFullScreen || isChromeHidden}
+      />
 
       <ToastModal
         visible={vm.toastVisible}
@@ -820,7 +849,6 @@ export default function PostPage({route}) {
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#000'},
 
-  /** header */
   headerTitle: {
     fontSize: HEADER_STYLES().defaultTitleFontSize,
     fontFamily: HEADER_STYLES().defaultTitleFontFamily,
@@ -836,10 +864,7 @@ const styles = StyleSheet.create({
     tintColor: '#fff',
   },
 
-  /** desc sheet */
-  descTapArea: {
-    flex: 1,
-  },
+  descTapArea: {flex: 1},
   descSheet: {
     flex: 1,
     paddingHorizontal: getResponsiveWidth(16),

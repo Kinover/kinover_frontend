@@ -177,7 +177,8 @@ const styles = StyleSheet.create({
   badge: {
     marginTop: getResponsiveHeight(3.5),
     padding: getResponsiveHeight(4),
-    minWidth: getResponsiveWidth(23),
+    width: getResponsiveWidth(23),
+
     borderRadius: 999,
     backgroundColor: '#FFC84D',
     justifyContent: 'center',

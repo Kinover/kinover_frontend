@@ -1,8 +1,9 @@
-apply plugin: "com.android.application"
-apply plugin: "org.jetbrains.kotlin.android"
-apply plugin: "com.facebook.react"
-apply plugin: "com.google.gms.google-services"
-
+plugins {
+  id "com.android.application"
+  id "org.jetbrains.kotlin.android"
+  id "com.facebook.react"
+  id "com.google.gms.google-services"
+}
 // ✅ .env를 Gradle에서 읽어오게 하는 설정
 apply from: "../../node_modules/react-native-config/android/dotenv.gradle"
 
@@ -90,20 +91,16 @@ def enableProguardInReleaseBuilds = false
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
 android {
-    ndkVersion rootProject.ext.ndkVersion
-    buildToolsVersion rootProject.ext.buildToolsVersion
-    compileSdk rootProject.ext.compileSdkVersion
+  compileSdkVersion 35
+  buildToolsVersion rootProject.ext.buildToolsVersion
+  ndkVersion rootProject.ext.ndkVersion
 
     namespace "com.kinover_frontend"
     defaultConfig {
         applicationId "com.kinover_frontend"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-<<<<<<< Updated upstream
-        versionCode 41
-=======
-        versionCode 46
->>>>>>> Stashed changes
+        versionCode 54
         versionName "1.0"
          ndk {
         abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"

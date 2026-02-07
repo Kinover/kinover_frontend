@@ -13,7 +13,6 @@ import authReducer from '../features/auth/store/loginSlice';
 import commentReducer from '../features/memory/store/commentSlice';
 import categoryReducer from '../features/memory/store/categorySlice';
 import statusReducer from '../features/home/store/statusSlice';
-import familyNoticeReducer from '../features/home/store/familyNoticeSlice';
 import notificationReducer from '../features/notification/store/notificationSlice';
 
 // ✅ 추가
@@ -34,7 +33,6 @@ const rootReducer = combineReducers({
   comment: commentReducer,
   category: categoryReducer,
   status: statusReducer,
-  familyNotice: familyNoticeReducer,
   notification: notificationReducer,
 });
 

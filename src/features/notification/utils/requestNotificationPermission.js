@@ -7,7 +7,7 @@ import {
   InteractionManager,
 } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
-import axios from 'axios';
+import { apiClient } from 'utils/apiClient';
 import {getToken as getJWT} from '../../../utils/storage';
 import {navigate, navigationRef} from '../../../app/navigation/navigationRef';
 import {CommonActions} from '@react-navigation/native';
@@ -43,7 +43,7 @@ async function fetchChatRoomDetail(chatRoomId) {
   if (!accessToken) return null;
 
   try {
-    const res = await axios.get(`${CHATROOM_BASE}/${chatRoomId}`, {
+    const res = await apiClient.get(`${CHATROOM_BASE}/${chatRoomId}`, {
       headers: {Authorization: `Bearer ${accessToken}`},
     });
     return res?.data ?? null;
@@ -501,7 +501,7 @@ export async function getFcmTokenAndSend() {
       return;
     }
 
-    const res = await axios.post(
+    const res = await apiClient.post(
       REGISTER_URL,
       {fcmToken},
       {
@@ -634,7 +634,7 @@ export function handleNotificationListeners() {
     if (!accessToken) return;
 
     try {
-      await axios.post(
+      await apiClient.post(
         REGISTER_URL,
         {fcmToken: token},
         {

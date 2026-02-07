@@ -256,21 +256,14 @@ export default function CategorySelectPage({route}) {
         }}
         onConfirm={handleAddCategory}
         content={
-          <View style={styles.modalContent}>
-            <Text allowFontScaling={false} style={styles.modalTitle}>
-              새 카테고리를 입력해주세요
-            </Text>
-            <View style={styles.inputBox}>
-              <TextInput
-                allowFontScaling={false}
-                placeholder="예: 2025 가족 여행"
-                placeholderTextColor={EMPTY_STYLE().emptyColor}
-                style={styles.input}
-                value={newCategory}
-                onChangeText={setNewCategory}
-              />
-            </View>
-          </View>
+          <TextInput
+            allowFontScaling={false}
+            placeholder="예: 2026 가족 여행"
+            placeholderTextColor={EMPTY_STYLE().emptyColor}
+            style={styles.input}
+            value={newCategory}
+            onChangeText={setNewCategory}
+          />
         }
       />
     </SafeAreaView>
@@ -368,7 +361,20 @@ const styles = StyleSheet.create({
       Platform.OS === 'ios' ? getResponsiveHeight(10) : getResponsiveHeight(4),
   },
   input: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: getResponsiveWidth(10),
+    paddingVertical:
+      Platform.OS === 'android'
+        ? getResponsiveHeight(10)
+        : getResponsiveHeight(12),
+    paddingHorizontal: getResponsiveWidth(12),
+    fontSize: getResponsiveFontSize(16),
     fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(14.5),
+    color: '#111827',
+    backgroundColor: '#FFFFFF',
+    marginTop: getResponsiveHeight(8),
+    marginBottom: getResponsiveHeight(8),
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
 });

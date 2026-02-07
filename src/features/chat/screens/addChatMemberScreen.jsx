@@ -15,7 +15,7 @@ import {
   Image,
 } from 'react-native';
 
-import axios from 'axios';
+import { apiClient } from 'utils/apiClient';
 import {useSelector, useDispatch} from 'react-redux';
 
 import {getToken} from '../../../utils/storage';
@@ -67,7 +67,7 @@ export default function AddChatMemberScreen({navigation, route}) {
       const token = await getToken();
       const idsStr = selected.join(',');
 
-      await axios.post(
+      await apiClient.post(
         `http://43.200.47.242:9090/api/chatRoom/${chatRoomId}/addUsers/${idsStr}`,
         {},
         {

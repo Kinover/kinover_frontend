@@ -21,8 +21,7 @@ import {useIsFocused} from '@react-navigation/native';
 
 const Stack = createStackNavigator();
 
-const getHeaderHeight = () =>
-  Platform.OS === 'ios' ? getResponsiveHeight(107.5) : getResponsiveHeight(70);
+const getHeaderHeight = () => getResponsiveHeight(107.5);
 
 const defaultHeaderStyle = {
   height: getHeaderHeight(),
