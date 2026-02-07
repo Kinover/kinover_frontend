@@ -42,7 +42,7 @@ import {hapticLight} from '../../../utils/haptic';
 import DropShadow from 'react-native-drop-shadow';
 import {BACKGROUND_COLORS, LAYOUT_STYLE} from 'styles/style';
 // import FastImage from '@d11/react-native-fast-image';
-import ScheduleGuideModal from '../components/ScheduleGuideModal';
+// import ScheduleGuideModal from '../components/ScheduleGuideModal';
 
 const SCHEDULE_GUIDE_STEPS = [
   {
@@ -458,8 +458,6 @@ export default function ScheduleScreen() {
           <YellowSpinner />
         </View>
       )}
-
-      <ScheduleGuideModal forceVisible />
     </View>
   );
 }

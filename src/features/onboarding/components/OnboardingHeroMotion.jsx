@@ -10,8 +10,6 @@ import {
   getResponsiveFontSize,
 } from '../../../utils/responsive';
 
-const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
-
 const emotionIcons = {
   annoyed: require('../../../assets/icons/state_v2/annoyed.png'),
   anxious: require('../../../assets/icons/state_v2/anxious.png'),
@@ -24,9 +22,17 @@ const emotionIcons = {
 };
 
 const kinoImages = {
-  blue: require('../../../assets/images/kino-blue.png'),
-  yellow: require('../../../assets/images/kino-yellow.png'),
-  pink: require('../../../assets/images/kino-pink.png'),
+  blue: require('../../../assets/onboarding/slide2/kino-b.png'),
+  yellow: require('../../../assets/onboarding/slide2/kino-y.png'),
+  pink: require('../../../assets/onboarding/slide2/kino-p.png'),
+};
+
+// ✅ 말풍선 이미지(1~4)
+const bubbleImages = {
+  1: require('../../../assets/onboarding/slide2/1.png'),
+  2: require('../../../assets/onboarding/slide2/2.png'),
+  3: require('../../../assets/onboarding/slide2/3.png'),
+  4: require('../../../assets/onboarding/slide2/4.png'),
 };
 
 function useOneShotBounce(isActive) {
@@ -185,12 +191,10 @@ const s = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
 
-    // iOS shadow
     shadowColor: '#000',
     shadowOpacity: 0.25,
     shadowRadius: 999,
     shadowOffset: {width: 3, height: 3.5},
-    // Android shadow
     elevation: 10,
   },
 
@@ -209,32 +213,21 @@ const s = StyleSheet.create({
     borderRadius: getResponsiveWidth(12),
   },
 
-  bubble: {
+  bubbleWrap: {
     position: 'absolute',
-    maxWidth: getResponsiveWidth(240),
-    paddingHorizontal: getResponsiveWidth(12),
-    paddingVertical: getResponsiveHeight(9),
-    borderRadius: getResponsiveWidth(12),
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#F0D7A5',
-    shadowRadius: getResponsiveWidth(2),
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: {width: 3, height: 3},
-    elevation: 3,
   },
-  bubbleText: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(12.5),
-    color: '#333',
+
+  // ✅ 여기 핵심: stretch로 박스를 꽉 채워서 “크기 통일”
+  bubbleImg: {
+    resizeMode: 'contain',
   },
+
   kinoRow: {
     position: 'absolute',
     bottom:
       Platform.OS === 'ios'
-        ? getResponsiveHeight(-25)
-        : getResponsiveHeight(-35),
+        ? getResponsiveHeight(-35)
+        : getResponsiveHeight(-45),
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -248,16 +241,12 @@ const s = StyleSheet.create({
     resizeMode: 'contain',
   },
 
-  // Slide 3 (✅ 여기부터 “열 안 맞는” 문제 해결용)
+  // Slide 3
   calWrap: {
     width: getResponsiveWidth(320),
     paddingTop: getResponsiveHeight(10),
     paddingBottom: getResponsiveHeight(10),
     alignSelf: 'center',
-  },
-  weekRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
   },
   weekText: {
     fontFamily: 'Pretendard-Medium',
@@ -268,10 +257,6 @@ const s = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-  },
-  dayCell: {
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   dayText: {
     fontFamily: 'Pretendard-Medium',
@@ -287,7 +272,6 @@ const s = StyleSheet.create({
     borderRadius: 999,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFB000',
   },
   dotText: {
     fontFamily: 'Pretendard-Bold',
@@ -308,8 +292,8 @@ const s = StyleSheet.create({
   // Slide 4
   photo: {
     width: '100%',
-    height: '100%',
-    resizeMode: 'contain',
+    height: '105%',
+    resizeMode: 'cover',
   },
 });
 
@@ -331,7 +315,7 @@ const Slide1Emotions = memo(function Slide1Emotions({isActive}) {
 
     const count = ringKeys.length;
     const step = (Math.PI * 2) / count;
-    const r = getResponsiveWidth(98);
+    const r = getResponsiveWidth(108);
     const start = -Math.PI / 2;
 
     const ring = ringKeys.map((key, i) => {
@@ -386,7 +370,7 @@ const Slide2Chat = memo(function Slide2Chat({isActive}) {
   const floatY = useGentleFloat(isActive);
   const items = useStaggerIn(isActive, 4);
 
-  const bubbleStyle = (v, base) => {
+  const bubbleAnimStyle = (v, base) => {
     const opacity = v;
     const translateY = v.interpolate({inputRange: [0, 1], outputRange: [8, 0]});
     return {opacity, transform: [{translateY}], ...base};
@@ -398,58 +382,53 @@ const Slide2Chat = memo(function Slide2Chat({isActive}) {
     extrapolate: 'clamp',
   });
 
+  // ✅ “보이는 크기” 통일: 4개 모두 동일 박스
+  // - 너 chatWrap이 300px이니까 너무 꽉 차지 않게 살짝 여유 둔 폭 추천
+  const BUBBLE_W = getResponsiveWidth(235);
+  const BUBBLE_H = getResponsiveHeight(46);
+
+  const bubblePos = useMemo(
+    () => [
+      {top: getResponsiveHeight(10), right: getResponsiveWidth(10)},
+      {top: getResponsiveHeight(62), left: getResponsiveWidth(12)},
+      {top: getResponsiveHeight(132), right: getResponsiveWidth(18)},
+      {top: getResponsiveHeight(192), left: getResponsiveWidth(14)},
+    ],
+    [],
+  );
+
   return (
     <View style={s.chatWrap}>
       <Animated.View
-        style={[
-          s.bubble,
-          bubbleStyle(items[0], {
-            top: getResponsiveHeight(10),
-            right: getResponsiveWidth(10),
-          }),
-        ]}>
-        <Text allowFontScaling={false} style={s.bubbleText}>
-          오늘 하루도 별거 없었어
-        </Text>
+        style={[s.bubbleWrap, bubbleAnimStyle(items[0], bubblePos[0])]}>
+        <Image
+          source={bubbleImages[1]}
+          style={[s.bubbleImg, {width: BUBBLE_W, height: BUBBLE_H}]}
+        />
       </Animated.View>
 
       <Animated.View
-        style={[
-          s.bubble,
-          bubbleStyle(items[1], {
-            top: getResponsiveHeight(62),
-            left: getResponsiveWidth(12),
-          }),
-        ]}>
-        <Text allowFontScaling={false} style={s.bubbleText}>
-          별거 없는 하루가 가장 소중한 기억이 될 때도 있어요
-        </Text>
+        style={[s.bubbleWrap, bubbleAnimStyle(items[1], bubblePos[1])]}>
+        <Image
+          source={bubbleImages[2]}
+          style={[s.bubbleImg, {width: BUBBLE_W, height: BUBBLE_H}]}
+        />
       </Animated.View>
 
       <Animated.View
-        style={[
-          s.bubble,
-          bubbleStyle(items[2], {
-            top: getResponsiveHeight(132),
-            right: getResponsiveWidth(18),
-          }),
-        ]}>
-        <Text allowFontScaling={false} style={s.bubbleText}>
-          그냥 찍은 사진도 소중할까?
-        </Text>
+        style={[s.bubbleWrap, bubbleAnimStyle(items[2], bubblePos[2])]}>
+        <Image
+          source={bubbleImages[3]}
+          style={[s.bubbleImg, {width: BUBBLE_W, height: BUBBLE_H}]}
+        />
       </Animated.View>
 
       <Animated.View
-        style={[
-          s.bubble,
-          bubbleStyle(items[3], {
-            top: getResponsiveHeight(192),
-            left: getResponsiveWidth(14),
-          }),
-        ]}>
-        <Text allowFontScaling={false} style={s.bubbleText}>
-          평범한 사진 속에도 당신의 마음이 담겨 있어요 ☺️
-        </Text>
+        style={[s.bubbleWrap, bubbleAnimStyle(items[3], bubblePos[3])]}>
+        <Image
+          source={bubbleImages[4]}
+          style={[s.bubbleImg, {width: BUBBLE_W, height: BUBBLE_H}]}
+        />
       </Animated.View>
 
       <Animated.View style={[s.kinoRow, {transform: [{translateY: kinoUp}]}]}>
@@ -457,21 +436,21 @@ const Slide2Chat = memo(function Slide2Chat({isActive}) {
           source={kinoImages.yellow}
           style={[
             s.kino,
-            {width: getResponsiveWidth(46), height: getResponsiveWidth(46)},
+            {width: getResponsiveWidth(56), height: getResponsiveWidth(56)},
           ]}
         />
         <Image
           source={kinoImages.blue}
           style={[
             s.kino,
-            {width: getResponsiveWidth(72), height: getResponsiveWidth(72)},
+            {width: getResponsiveWidth(87), height: getResponsiveWidth(87)},
           ]}
         />
         <Image
           source={kinoImages.pink}
           style={[
             s.kino,
-            {width: getResponsiveWidth(66), height: getResponsiveWidth(66)},
+            {width: getResponsiveWidth(101), height: getResponsiveWidth(101)},
           ]}
         />
       </Animated.View>
@@ -482,36 +461,38 @@ const Slide2Chat = memo(function Slide2Chat({isActive}) {
 const Slide3Calendar = memo(function Slide3Calendar({isActive}) {
   const {scale, opacity} = usePulse(isActive);
 
-  // 스샷과 동일: 채움 2/6/17/23, 테두리 25/27, 29/30은 “다음 달 느낌”으로 흐리게
   const filled = useMemo(() => new Set([2, 6, 17, 23]), []);
   const outlined = useMemo(() => new Set([25, 27]), []);
   const mutedDays = useMemo(() => new Set([29, 30]), []);
-
   const week = useMemo(() => ['일', '월', '화', '수', '목', '금', '토'], []);
 
-  // ✅ 핵심: 퍼센트(문자열)로 width 주면 기기별 반올림 때문에 열이 틀어질 수 있음
-  // 그래서 “정확한 픽셀 셀너비”를 계산해서 7칸을 딱 맞춰줌
+  const filledColorMap = useMemo(
+    () => ({
+      2: '#FFB50E',
+      6: '#FFD370',
+      17: '#FFF3D2',
+      23: '#FFD370',
+    }),
+    [],
+  );
+
   const wrapW = getResponsiveWidth(320);
   const padX = getResponsiveWidth(10);
   const cellW = useMemo(() => {
     const raw = (wrapW - padX * 2) / 7;
-    // 반올림/내림 통일: 줄 단위로 딱 맞추기
     return Math.floor(raw);
   }, [wrapW, padX]);
 
-  // 남는 픽셀은 좌우 padding에 다시 분배해서 “가운데 정렬” 느낌 유지
   const contentW = cellW * 7;
   const extra = wrapW - contentW;
   const adjPadX = Math.floor(extra / 2);
 
   const cellH = getResponsiveHeight(38);
-
   const days = useMemo(() => Array.from({length: 30}, (_, i) => i + 1), []);
 
   return (
     <View style={[s.calWrap, {width: wrapW}]}>
-      {/* 요일 */}
-      <View style={[s.weekRow, {paddingHorizontal: adjPadX}]}>
+      <View style={[{flexDirection: 'row'}, {paddingHorizontal: adjPadX}]}>
         {week.map(w => (
           <View
             key={w}
@@ -527,7 +508,6 @@ const Slide3Calendar = memo(function Slide3Calendar({isActive}) {
         ))}
       </View>
 
-      {/* 날짜 그리드 */}
       <View style={[s.grid, {paddingHorizontal: adjPadX}]}>
         {days.map(d => {
           const isFilled = filled.has(d);
@@ -542,9 +522,15 @@ const Slide3Calendar = memo(function Slide3Calendar({isActive}) {
           };
 
           if (isFilled) {
+            const bg = filledColorMap?.[d] ?? '#FFB50E';
             return (
               <View key={d} style={baseCellStyle}>
-                <Animated.View style={[s.dot, {transform: [{scale}], opacity}]}>
+                <Animated.View
+                  style={[
+                    s.dot,
+                    {backgroundColor: bg},
+                    {transform: [{scale}], opacity},
+                  ]}>
                   <Text allowFontScaling={false} style={s.dotText}>
                     {d}
                   </Text>
@@ -557,9 +543,7 @@ const Slide3Calendar = memo(function Slide3Calendar({isActive}) {
             return (
               <View key={d} style={baseCellStyle}>
                 <View style={s.dotGhost}>
-                  <Text
-                    allowFontScaling={false}
-                    style={[s.dayText, {color: '#111'}]}>
+                  <Text allowFontScaling={false} style={s.dayText}>
                     {d}
                   </Text>
                 </View>
