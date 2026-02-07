@@ -25,13 +25,9 @@ import {setMemorySelectedTab} from '../store/memorySlice';
 import {hapticLight} from '../../../utils/haptic';
 import {useFocusEffect} from '@react-navigation/native';
 
-import AnimatedRe, {
-  useAnimatedStyle,
-  withTiming,
-} from 'react-native-reanimated';
+import AnimatedRe, {useAnimatedStyle, withTiming} from 'react-native-reanimated';
 import DropShadow from 'react-native-drop-shadow';
 import {BACKGROUND_COLORS} from 'styles/style';
-import FastImage from '@d11/react-native-fast-image'; // ✅ ScheduleScreen과 동일
 
 export default function MemoryScreen() {
   const dispatch = useDispatch();
@@ -40,12 +36,18 @@ export default function MemoryScreen() {
 
   const {
     selectedCategory,
-    selectedCategoryTitle,
+    // ✅ 여기서 selectedCategoryTitle은 "안 받는다" (stale 가능성 제거)
     categoryList,
     categorySheetRef,
     handleSelectCategory,
     navigateToImageSelect,
   } = useMemoryScreen();
+
+  // ✅ title은 항상 selectedCategory에서 즉시 계산 (단일 소스)
+  const computedSelectedCategoryTitle = useMemo(() => {
+    const t = selectedCategory?.title;
+    return t && String(t).trim().length > 0 ? t : '전체';
+  }, [selectedCategory]);
 
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [startDate, setStartDate] = useState('');
@@ -217,6 +219,9 @@ export default function MemoryScreen() {
 
   const handleSelectCategoryWithReset = useCallback(
     cat => {
+      // ✅ 여기서 cat이 들어오는지부터 확인하면 디버깅 끝남
+      // console.log('[MemoryScreen] onSelectCategory:', cat);
+
       handleSelectCategory?.(cat);
       requestAnimationFrame(() => forceShowHeaderAndTabBar(true));
     },
@@ -283,15 +288,13 @@ export default function MemoryScreen() {
     <View style={styles.container}>
       <Animated.View style={headerAnimatedStyle}>
         <View onLayout={onHeaderContentLayout}>
-          <AnimatedAlbumTabSelector
-            selected={selectedTab}
-            onSelect={onSelectTab}
-          />
+          <AnimatedAlbumTabSelector selected={selectedTab} onSelect={onSelectTab} />
         </View>
       </Animated.View>
 
       <MemoryFeed
-        selectedCategoryTitle={selectedCategoryTitle}
+        // ✅ 여기만 바뀜: 훅에서 온 title 말고 "selectedCategory 기반 title"
+        selectedCategoryTitle={computedSelectedCategoryTitle}
         startDate={startDate}
         endDate={endDate}
         onScroll={handleFeedScroll}
@@ -307,19 +310,15 @@ export default function MemoryScreen() {
         onCancel={() => {}}
       />
 
-      {/* ✅ FAB: ScheduleScreen과 동일한 DropShadow + TouchableOpacity + FastImage */}
       <AnimatedRe.View
         pointerEvents={fabHidden ? 'none' : 'auto'}
         style={[
-          styles.fabWrap, // ✅ 위치/크기만 담당
+          styles.fabWrap,
           {right: FAB_RIGHT, bottom: FAB_BOTTOM},
           fabAnimatedStyle,
         ]}>
         <DropShadow style={styles.fabShadow}>
-          <TouchableOpacity
-            style={styles.fab}
-            onPress={handleFabPress}
-            activeOpacity={0.8}>
+          <TouchableOpacity style={styles.fab} onPress={handleFabPress} activeOpacity={0.8}>
             <Image
               source={require('../../../assets/icons/tabs/4/four.png')}
               style={styles.fabIcon}
@@ -352,23 +351,18 @@ const styles = StyleSheet.create({
   },
   rangeText: {fontSize: getResponsiveFontSize(12), color: '#777'},
 
-  // ✅ FAB wrapper: 애니메이션/포인터 이벤트용 컨테이너
   fabWrap: {
     position: 'absolute',
     zIndex: 99,
     width: getResponsiveIconSize(65),
     height: getResponsiveIconSize(65),
   },
-
-  // ✅ DropShadow: ScheduleScreen과 동일
   fabShadow: {
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 3},
     shadowOpacity: 0.08,
     shadowRadius: 3,
   },
-
-  // ✅ 버튼: ScheduleScreen과 동일
   fab: {
     width: getResponsiveIconSize(65),
     height: getResponsiveIconSize(65),
@@ -376,8 +370,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     justifyContent: 'center',
   },
-
-  // ✅ 아이콘: ScheduleScreen과 동일 (50% + contain)
   fabIcon: {
     alignSelf: 'center',
     width: '45%',

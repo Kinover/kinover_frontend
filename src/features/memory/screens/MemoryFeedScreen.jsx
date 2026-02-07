@@ -68,7 +68,7 @@ const CARD_RADIUS = getResponsiveIconSize(18);
 const BG = BACKGROUND_COLORS.secondaryBg;
 const SURFACE = '#FFFFFF';
 
-// ✅ FastImage 공통 정책(키노버처럼 CDN url이면 immutable이 보통 제일 깔끔함)
+// ✅ FastImage 공통 정책
 const FASTIMAGE_DEFAULTS = {
   priority: FastImage.priority.normal,
   cache: FastImage.cacheControl.immutable,
@@ -101,6 +101,12 @@ const Chip = memo(function Chip({text}) {
 const Bullet = memo(function Bullet() {
   return <View style={styles.bullet} />;
 });
+
+// ✅ id/categoryId 혼용 대비 유틸
+const getCatId = cat => {
+  const v = cat?.categoryId ?? cat?.id ?? null;
+  return v != null ? String(v) : null;
+};
 
 /* =========================
  * Main
@@ -141,8 +147,7 @@ export default function MemoryFeed({
 
   const listRef = useRef(null);
 
-  // ✅ 카드 scale 애니메이션 값 저장소 (key별로 유지)
-  // - postId 없는 케이스도 있으니, index 기반 fallback key를 쓰도록 개선
+  // ✅ 카드 scale 애니메이션 값 저장소
   const cardScaleMapRef = useRef(new Map());
 
   const getCardScale = useCallback(scaleKey => {
@@ -241,14 +246,22 @@ export default function MemoryFeed({
     [normalizeMediaUrl, videoThumbMap, refreshing],
   );
 
+  // ✅ 선택 카테고리 id 찾기: categoryId / id 혼용 대응
   const selectedCategoryId = useMemo(() => {
     if (!selectedCategoryTitle || selectedCategoryTitle === '전체') return null;
+
     const found = categoryList.find(c => c?.title === selectedCategoryTitle);
-    return found?.categoryId ?? null;
+    if (!found) return null;
+
+    // 서버/리덕스가 categoryId로 주든 id로 주든 OK
+    const id = getCatId(found);
+    return id != null ? id : null;
   }, [selectedCategoryTitle, categoryList]);
 
   const doFetch = useCallback(() => {
     dispatch(fetchCategoryThunk());
+    // ✅ fetchMemoryThunk가 number를 기대하면 여기서 Number로 변환 필요
+    // 일단 안전하게 원본 그대로 넘김(서버 로직에 맞춰)
     dispatch(fetchMemoryThunk(selectedCategoryId));
   }, [dispatch, selectedCategoryId]);
 
@@ -275,7 +288,7 @@ export default function MemoryFeed({
 
   const getCategoryLabel = useCallback(
     id => {
-      const found = categoryList.find(cat => cat.categoryId === id);
+      const found = categoryList.find(cat => getCatId(cat) === String(id));
       return found ? found.title : '카테고리 없음';
     },
     [categoryList],
@@ -332,7 +345,7 @@ export default function MemoryFeed({
         ? memoryList
         : memoryList.filter(memory => {
             const cat = categoryList.find(
-              c => c.categoryId === memory.categoryId,
+              c => getCatId(c) === String(memory.categoryId),
             );
             return cat?.title === selectedCategoryTitle;
           });
@@ -480,7 +493,6 @@ export default function MemoryFeed({
       const firstThumb =
         firstIsVideo && firstUri ? videoThumbMap[firstUri] : null;
 
-      // (기존 방식 유지) 렌더 중 호출 방지 장치(thumbLoadingRef)가 있으니 폭발하진 않음
       if (!refreshing && firstIsVideo && firstUri && !firstThumb) {
         requestAnimationFrame(() => ensureVideoThumbByUri(firstUri));
       }
@@ -500,7 +512,6 @@ export default function MemoryFeed({
           ? {uri: firstUri, ...FASTIMAGE_DEFAULTS}
           : null;
 
-      // ✅ postId 없을 때도 안정적으로 유지되도록 fallback key 사용
       const scaleKey =
         memory?.postId != null ? `post-${memory.postId}` : `idx-${index}`;
 
@@ -832,15 +843,9 @@ export default function MemoryFeed({
  * Styles
  * ========================= */
 const styles = StyleSheet.create({
-  /* Layout */
-  container: {
-    flex: 1,
-    backgroundColor: BG,
-  },
-
+  container: {flex: 1, backgroundColor: BG},
   postContainer: {},
 
-  /* Card */
   cardOuter: {
     backgroundColor: SURFACE,
     borderRadius: CARD_RADIUS,
@@ -848,11 +853,8 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(20),
     marginHorizontal: '3%',
   },
-  cardPress: {
-    width: '100%',
-  },
+  cardPress: {width: '100%'},
 
-  /* Media */
   mediaWrap: {
     width: '100%',
     aspectRatio: 4 / 3,
@@ -862,18 +864,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
   },
-  mediaImg: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#E5E7EB',
-  },
-  mediaPlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#E5E7EB',
-  },
+  mediaImg: {width: '100%', height: '100%', backgroundColor: '#E5E7EB'},
+  mediaPlaceholder: {width: '100%', height: '100%', backgroundColor: '#E5E7EB'},
 
-  /* Video Icon (Card) */
   playCenter: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
@@ -901,7 +894,6 @@ const styles = StyleSheet.create({
     marginLeft: 3,
   },
 
-  /* Chip */
   chip: {
     position: 'absolute',
     top: getResponsiveHeight(12),
@@ -920,22 +912,15 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  /* Info */
   infoArea: {
     backgroundColor: SURFACE,
     paddingHorizontal: getResponsiveWidth(14),
     paddingTop: getResponsiveHeight(12),
     paddingBottom: getResponsiveHeight(14),
   },
-  topRow: {
-    marginBottom: getResponsiveHeight(8),
-  },
+  topRow: {marginBottom: getResponsiveHeight(8)},
 
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-  },
+  metaRow: {flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap'},
   metaText: {
     fontSize: getResponsiveFontSize(12.5),
     fontFamily: 'Pretendard-Medium',
@@ -962,12 +947,7 @@ const styles = StyleSheet.create({
     color: COLORS.textPrimary,
   },
 
-  /* Album */
-  galleryImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#E5E7EB',
-  },
+  galleryImage: {width: '100%', height: '100%', backgroundColor: '#E5E7EB'},
   galleryPlaceholder: {
     width: '100%',
     height: '100%',
@@ -1009,16 +989,9 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 7,
   },
-  videoBadgeText: {
-    color: '#fff',
-    fontSize: getResponsiveFontSize(10.5),
-  },
+  videoBadgeText: {color: '#fff', fontSize: getResponsiveFontSize(10.5)},
 
-  /* Empty */
-  emptyWrapper: {
-    paddingTop: getResponsiveHeight(60),
-    alignItems: 'center',
-  },
+  emptyWrapper: {paddingTop: getResponsiveHeight(60), alignItems: 'center'},
   emptyText: {
     fontSize: EMPTY_STYLE().emptyFontSize,
     fontFamily: EMPTY_STYLE().emptyFontFamily,

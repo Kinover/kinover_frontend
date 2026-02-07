@@ -41,7 +41,27 @@ const getFontScaleLevel = fontMode => {
 };
 
 const MAX_VISIBLE_ITEMS_BASE = 8;
+
+// ✅ "전체"도 id를 확실히 가짐
 const ALL_CATEGORY = {id: 'ALL', title: '전체'};
+
+// ✅ id 키 통일: id / categoryId 둘 다 지원
+const getCatId = cat => {
+  const v = cat?.id ?? cat?.categoryId ?? null;
+  return v != null ? String(v) : null;
+};
+
+// ✅ 밖으로 내보낼 때는 항상 id를 박아줌(훅이 id 기반으로 안정적으로 비교 가능)
+const normalizeCategory = cat => {
+  if (!cat) return null;
+  const id = getCatId(cat);
+  const title = cat?.title ?? '전체';
+  return {
+    ...cat,
+    id: id != null ? id : cat?.id,
+    title,
+  };
+};
 
 const UI = {
   bg: '#FFFFFF',
@@ -99,7 +119,6 @@ const CategoryBottomSheetModal = forwardRef(
       const maxVisible =
         level === 'XL' ? 7 : level === 'L' ? 7 : MAX_VISIBLE_ITEMS_BASE;
 
-      // ✅ 스냅: 폰트모드마다 확실히 차이
       const snap = level === 'XL' ? ['92%'] : level === 'L' ? ['84%'] : ['81%'];
 
       const listExtra =
@@ -143,8 +162,6 @@ const CategoryBottomSheetModal = forwardRef(
       setTempSelected(selectedCategory);
     }, [selectedCategory]);
 
-    // ✅ sheetKey: 폰트모드/스냅이 바뀌면 BottomSheetLayout 자체 리마운트 트리거
-    // (열려있던 시트에서 snapPoints 갱신 안 먹는 케이스를 가장 안정적으로 제거)
     const sheetKey = useMemo(() => {
       const snapKey = (layout.snapPoints || []).join('|');
       return `category-${fontMode}-${snapKey}`;
@@ -175,24 +192,26 @@ const CategoryBottomSheetModal = forwardRef(
       }, 280);
     }, []);
 
-    // ✅ 폰트모드 변경 시: 열린 상태에서 레이아웃이 꼬이는 케이스 방지
-    // - CreateChatRoomBottomSheet처럼 "자동 present"는 하지 않고
-    // - 안전하게 snapToIndex(0)로만 정리
     useEffect(() => {
       const refObj = modalRef?.current;
       if (!refObj) return;
-
-      // dismiss/present가 있어도 여기서는 "다시 열지 않음"
       requestAnimationFrame(() => {
         refObj.snapToIndex?.(0);
       });
     }, [fontMode, sheetKey]);
 
+    // ✅ 핵심: id/categoryId 통일 비교
     const isSameCategory = useCallback((a, b) => {
       if (!a && !b) return true;
       if (!a || !b) return false;
-      if (a.id != null && b.id != null) return String(a.id) === String(b.id);
-      return a.title === b.title;
+
+      const aId = getCatId(a);
+      const bId = getCatId(b);
+
+      if (aId && bId) return aId === bId;
+
+      // fallback
+      return (a?.title ?? '') === (b?.title ?? '');
     }, []);
 
     const handlePressItem = useCallback(cat => {
@@ -204,8 +223,10 @@ const CategoryBottomSheetModal = forwardRef(
       closeSheet();
     }, [closeSheet, selectedCategory]);
 
+    // ✅ Apply: 밖으로 나갈 때 normalize 해서 id를 박아줌
     const handleApply = useCallback(() => {
-      onSelectCategory?.(tempSelected || ALL_CATEGORY);
+      const next = normalizeCategory(tempSelected || ALL_CATEGORY);
+      onSelectCategory?.(next);
       closeSheet();
     }, [closeSheet, onSelectCategory, tempSelected]);
 
@@ -219,7 +240,7 @@ const CategoryBottomSheetModal = forwardRef(
       <BottomSheetLayout
         modalRef={modalRef}
         snapPoints={layout.snapPoints}
-        sheetKey={sheetKey} // ✅ 핵심: 리마운트 트리거
+        sheetKey={sheetKey}
         enableContentPanningGesture={false}
         keyboardBehavior="none"
         androidKeyboardInputMode="adjustNothing"
@@ -230,7 +251,6 @@ const CategoryBottomSheetModal = forwardRef(
         useInternalScroll={false}>
         <SafeAreaView style={{flex: 1, backgroundColor: UI.bg}}>
           <View style={{flex: 1}}>
-            {/* Header */}
             <View style={styles.headerRow}>
               <View style={styles.headerLeft}>
                 <Text allowFontScaling={false} style={styles.headerTitle}>
@@ -266,8 +286,10 @@ const CategoryBottomSheetModal = forwardRef(
                   contentContainerStyle={styles.scrollContent}>
                   {data.map((cat, index) => {
                     const isSelected = isSameCategory(cat, tempSelected);
-                    const key =
-                      cat.id != null ? String(cat.id) : `${cat.title}-${index}`;
+
+                    // ✅ key도 id/categoryId 둘 다 지원
+                    const idKey = getCatId(cat);
+                    const key = idKey != null ? idKey : `${cat.title}-${index}`;
 
                     return (
                       <TouchableOpacity
@@ -303,7 +325,6 @@ const CategoryBottomSheetModal = forwardRef(
             )}
           </View>
 
-          {/* footer 고정 */}
           <View style={styles.footerFixed}>
             <BottomSheetButtons
               onCancel={handleCancel}
@@ -389,9 +410,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
-  scrollContent: {
-    // paddingBottom: getResponsiveHeight(10), // ✅ footer랑 겹침 체감 줄이기
-  },
+  scrollContent: {},
 
   itemRow: {
     paddingHorizontal: getResponsiveWidth(14),

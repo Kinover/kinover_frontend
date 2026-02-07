@@ -1,7 +1,14 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/features/onboarding/screens/OnboardingScreen.jsx
 
-import React, {useMemo, useCallback, memo, useEffect, useRef, useState} from 'react';
+import React, {
+  useMemo,
+  useCallback,
+  memo,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   View,
   StyleSheet,
@@ -23,6 +30,10 @@ import {
 } from '../../../utils/responsive';
 
 import {useKakaoLogin} from 'features/auth/hooks/useKakaoLogin';
+import {useAppleLogin} from 'features/auth/hooks/useAppleLogin';
+
+// ✅ Apple Button
+import {AppleButton} from '@invertase/react-native-apple-authentication';
 
 // ✅ 추가: 슬라이드별 모션 히어로 컴포넌트
 import OnboardingHeroMotion from '../components/OnboardingHeroMotion';
@@ -73,14 +84,12 @@ const OnboardingSoftGlow = memo(function OnboardingSoftGlow({
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#FFFEFC'},
 
-  // ✅ FlatList item 전체
   slide: {
     flex: 1,
     backgroundColor: '#FFFEFC',
     overflow: 'hidden',
   },
 
-  // ✅ 상단 Skip (높이/위치 안정화)
   topBar: {
     position: 'absolute',
     left: 0,
@@ -100,7 +109,6 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
 
-  // ✅ 위: 이미지 영역은 flex로
   heroArea: {
     flex: 4 / 5,
     justifyContent: 'center',
@@ -111,7 +119,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // ✅ 아래: 텍스트 영역
   textArea: {
     paddingHorizontal: getResponsiveWidth(26),
     paddingTop: getResponsiveHeight(8),
@@ -127,7 +134,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Bold',
   },
 
-  // ✅ 인디케이터
   indicatorContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -149,7 +155,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
 
-  // ✅ 하단 CTA
   bottomArea: {
     backgroundColor: '#FFFEFC',
     paddingHorizontal: getResponsiveWidth(18),
@@ -175,6 +180,16 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(51),
     borderRadius: getResponsiveWidth(10),
     resizeMode: 'cover',
+  },
+
+  appleBtnWrap: {
+    marginTop: getResponsiveHeight(10),
+    borderRadius: getResponsiveWidth(10),
+    overflow: 'hidden',
+  },
+  appleBtn: {
+    width: '100%',
+    height: getResponsiveHeight(51),
   },
 
   helper: {
@@ -240,14 +255,13 @@ const SlideItem = memo(function SlideItem({
             transform: [{translateY: imageTranslateY}, {scale: imageScale}],
           }}>
           <View style={[styles.imageBox, imageBoxStyle]}>
-            {/* ✅ 여기서부터 슬라이드별 커스텀 모션 렌더 */}
             <OnboardingHeroMotion
               slideKey={item.key}
               isActive={isActive}
               scrollX={scrollX}
               index={index}
               width={width}
-              imageSource={item.image} // ✅ 4번은 이 이미지 사용
+              imageSource={item.image}
             />
           </View>
         </Animated.View>
@@ -274,7 +288,9 @@ const SlideItem = memo(function SlideItem({
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const {width: SCREEN_WIDTH} = useWindowDimensions();
-  const {login} = useKakaoLogin();
+
+  const {login: kakaoLogin} = useKakaoLogin();
+  const {login: appleLogin} = useAppleLogin();
 
   const listRef = useRef(null);
   const scrollX = useRef(new Animated.Value(0)).current;
@@ -286,11 +302,10 @@ export default function OnboardingScreen() {
     () => [
       {
         key: '1',
-        // ✅ 1~3번은 사실상 이미지가 필요 없지만, 남겨도 무방
         image: require('../../../assets/onboarding/slide1_yellow.png'),
         textSize: 25,
         textSize_ios: 26,
-        glow: {cy: '48%', color: '#F6E3B6', op0: 0.55, opMid: 0.22},
+        glow: {cy: '38%', color: '#F6E3B6', op0: 0.65, opMid: 0.32},
         text: (
           <>
             우리 가족, {'\n'}오늘은
@@ -342,7 +357,6 @@ export default function OnboardingScreen() {
       },
       {
         key: '4',
-        // ✅ 4번은 “기존 이미지 사용”이므로 반드시 필요
         image: require('../../../assets/onboarding/slide4.png'),
         textSize: 23,
         textSize_ios: 24.5,
@@ -364,7 +378,6 @@ export default function OnboardingScreen() {
   const total = slides.length;
   const isLast = currentPage === total - 1;
 
-  // ✅ iOS 음수 padding 제거 (안정성)
   const bottomPadding = useMemo(() => {
     const base = Platform.OS === 'ios' ? 0 : getResponsiveHeight(14);
     return Math.max(insets.bottom, 0) + base;
@@ -377,10 +390,6 @@ export default function OnboardingScreen() {
     );
   }, [insets.top]);
 
-  /**
-   * ✅ 슬라이드별 이미지 박스 스타일
-   * - 지금은 기존값 유지 (네 스크린샷 기준 맞춰둔 느낌)
-   */
   const imageBoxByKey = useMemo(
     () => ({
       1: {
@@ -426,24 +435,13 @@ export default function OnboardingScreen() {
     }
   }, [slides]);
 
-  const updateIndex = useCallback(
-    x => {
-      const next = clamp(Math.round(x / SCREEN_WIDTH), 0, total - 1);
-      if (currentIndexRef.current !== next) {
-        currentIndexRef.current = next;
-        setCurrentPage(next);
-      }
-    },
-    [SCREEN_WIDTH, total],
-  );
-
-  const onMomentumEnd = useCallback(
-    e => {
-      const x = e?.nativeEvent?.contentOffset?.x ?? 0;
-      updateIndex(x);
-    },
-    [updateIndex],
-  );
+  // ✅ width 변화(리사이즈/회전) 시 현재 페이지로 재정렬
+  useEffect(() => {
+    const idx = clamp(currentIndexRef.current, 0, total - 1);
+    requestAnimationFrame(() => {
+      listRef.current?.scrollToIndex?.({index: idx, animated: false});
+    });
+  }, [SCREEN_WIDTH, total]);
 
   const getItemLayout = useCallback(
     (_, index) => ({
@@ -454,27 +452,54 @@ export default function OnboardingScreen() {
     [SCREEN_WIDTH],
   );
 
+  // ✅ 페이지 확정은 "스크롤 끝"에서만
+  const onMomentumEnd = useCallback(
+    e => {
+      const x = e?.nativeEvent?.contentOffset?.x ?? 0;
+      const next = clamp(Math.round(x / SCREEN_WIDTH), 0, total - 1);
+      if (currentIndexRef.current !== next) currentIndexRef.current = next;
+      setCurrentPage(next);
+    },
+    [SCREEN_WIDTH, total],
+  );
+
   const handleNext = useCallback(() => {
-    const next = clamp(currentPage + 1, 0, total - 1);
+    const next = clamp(currentIndexRef.current + 1, 0, total - 1);
     listRef.current?.scrollToIndex?.({index: next, animated: true});
-    currentIndexRef.current = next;
-    setCurrentPage(next);
-  }, [currentPage, total]);
+    // ✅ 여기서 setCurrentPage를 "미리" 바꾸지 않음 (스크롤 끝나면 onMomentumEnd에서 확정)
+  }, [total]);
 
   const handleSkip = useCallback(() => {
     const last = total - 1;
     listRef.current?.scrollToIndex?.({index: last, animated: true});
-    currentIndexRef.current = last;
-    setCurrentPage(last);
   }, [total]);
 
-  const handleLoginPress = useCallback(async () => {
+  const handleKakaoLoginPress = useCallback(async () => {
     try {
-      await login();
+      await kakaoLogin();
     } catch (e) {
       null;
     }
-  }, [login]);
+  }, [kakaoLogin]);
+
+  const handleAppleLoginPress = useCallback(async () => {
+    try {
+      await appleLogin();
+    } catch (e) {
+      null;
+    }
+  }, [appleLogin]);
+
+  const onScrollToIndexFailed = useCallback(
+    info => {
+      // ✅ 안드에서 가끔 레이아웃 측정 전 실패 -> 잠깐 뒤 재시도
+      const index = clamp(info?.index ?? 0, 0, total - 1);
+      setTimeout(() => {
+        listRef.current?.scrollToIndex?.({index, animated: true});
+      }, 80);
+    },
+    [total],
+  );
 
   const renderItem = useCallback(
     ({item, index}) => (
@@ -484,7 +509,7 @@ export default function OnboardingScreen() {
         width={SCREEN_WIDTH}
         scrollX={scrollX}
         imageBoxStyle={imageBoxByKey[item.key]}
-        isActive={currentPage === index} // ✅ 활성 슬라이드 여부 전달
+        isActive={currentPage === index}
       />
     ),
     [SCREEN_WIDTH, scrollX, imageBoxByKey, currentPage],
@@ -492,7 +517,6 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      {/* 상단 Skip */}
       <View style={[styles.topBar, {paddingTop: topBarPaddingTop}]}>
         <View style={styles.skipHit}>
           {!isLast ? (
@@ -523,22 +547,15 @@ export default function OnboardingScreen() {
         getItemLayout={getItemLayout}
         renderItem={renderItem}
         onMomentumScrollEnd={onMomentumEnd}
+        onScrollToIndexFailed={onScrollToIndexFailed}
         scrollEventThrottle={16}
         style={{flex: 1}}
-        onScroll={Animated.event([{nativeEvent: {contentOffset: {x: scrollX}}}], {
-          useNativeDriver: true,
-          listener: e => {
-            const x = e?.nativeEvent?.contentOffset?.x ?? 0;
-            const approx = clamp(Math.round(x / SCREEN_WIDTH), 0, total - 1);
-            if (approx !== currentIndexRef.current) {
-              currentIndexRef.current = approx;
-              setCurrentPage(approx);
-            }
-          },
-        })}
+        onScroll={Animated.event(
+          [{nativeEvent: {contentOffset: {x: scrollX}}}],
+          {useNativeDriver: true},
+        )}
       />
 
-      {/* 하단 CTA + 인디케이터 */}
       <View style={[styles.bottomArea, {paddingBottom: bottomPadding}]}>
         <View style={styles.indicatorContainer}>
           {slides.map((_, idx) => (
@@ -568,15 +585,35 @@ export default function OnboardingScreen() {
           </>
         ) : (
           <>
-            <TouchableOpacity activeOpacity={0.9} onPress={handleLoginPress}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={handleKakaoLoginPress}>
               <Image
                 style={styles.kakaoBtnImage}
                 source={require('../../../assets/images/kakao-login-button.jpg')}
               />
             </TouchableOpacity>
-            <Text allowFontScaling={false} style={styles.helper}>
-              카카오로 3초 만에 시작해요
-            </Text>
+
+            {Platform.OS === 'ios' && (
+              <View style={styles.appleBtnWrap}>
+                <AppleButton
+                  buttonStyle={AppleButton.Style.BLACK}
+                  buttonType={AppleButton.Type.SIGN_IN}
+                  style={styles.appleBtn}
+                  onPress={handleAppleLoginPress}
+                />
+              </View>
+            )}
+
+            {Platform.OS === 'ios' ? (
+              <Text allowFontScaling={false} style={styles.helper}>
+                간편 로그인으로 3초 만에 시작해요
+              </Text>
+            ) : (
+              <Text allowFontScaling={false} style={styles.helper}>
+                카카오로 3초 만에 시작해요
+              </Text>
+            )}
           </>
         )}
       </View>
