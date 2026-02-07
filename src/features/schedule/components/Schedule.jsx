@@ -1,7 +1,5 @@
-// src/features/schedule/components/Schedule.jsx
-/* eslint-disable react-native/no-inline-styles */
-import React, {useMemo, useState, useCallback} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, Platform} from 'react-native';
+import React, {useMemo, useState, useCallback, useRef} from 'react';
+import {View, Text, TouchableOpacity, StyleSheet, Animated} from 'react-native';
 
 import {
   getResponsiveFontSize,
@@ -36,6 +34,46 @@ const TYPE = {
   ANNIVERSARY: 'ANNIVERSARY',
 };
 
+/* =========================================================
+ * 카드 컴포넌트: 눌렀을 때 살짝 작아지는 효과
+ * ========================================================= */
+function ScheduleCard({children, onPress}) {
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const handlePressIn = () => {
+    Animated.spring(scale, {
+      toValue: 0.97,
+      useNativeDriver: true,
+      speed: 28,
+      bounciness: 0,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scale, {
+      toValue: 1,
+      useNativeDriver: true,
+      speed: 28,
+      bounciness: 6,
+    }).start();
+  };
+
+  return (
+    <DropShadow style={[styles.cardShadowBox, styles.roundPillShadow]}>
+      <Animated.View style={{transform: [{scale}]}}>
+        <TouchableOpacity
+          onPress={onPress}
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          activeOpacity={1}
+          style={[styles.cardWrap, styles.roundPillWrap]}>
+          {children}
+        </TouchableOpacity>
+      </Animated.View>
+    </DropShadow>
+  );
+}
+
 function Schedule({
   selectedDate,
   onOpenSheet,
@@ -43,6 +81,7 @@ function Schedule({
   birthdayNames = [],
 }) {
   const hookResult = useScheduleListByDate(selectedDate, refreshTrigger) || {};
+
   const individual = hookResult.individual ?? hookResult.personal ?? [];
   const family = hookResult.family ?? hookResult.shared ?? [];
   const anniversary = hookResult.anniversary ?? [];
@@ -75,6 +114,7 @@ function Schedule({
     return `${displayNames} 🎉`;
   }, [hasBirthday, displayNames]);
 
+  // ✅ type 판별 로직
   const getCardPreset = item => {
     const raw =
       item?.type ??
@@ -119,8 +159,8 @@ function Schedule({
     if (isFamily) {
       return {
         type: TYPE.FAMILY,
-        pillText: '가족 일정',
-        icon: '🤝',
+        pillText: '가족',
+        icon: '🫶🏻',
         iconBg: COLOR.BLUE_BG,
         pillBg: COLOR.BLUE_PILL,
         pillTextColor: COLOR.BLUE_TEXT,
@@ -129,7 +169,7 @@ function Schedule({
 
     return {
       type: TYPE.INDIVIDUAL,
-      pillText: '개별 일정',
+      pillText: '개별',
       icon: String(item?.userName || '가족').slice(0, 1),
       iconBg: COLOR.GRAY_BG,
       pillBg: COLOR.GRAY_PILL,
@@ -144,15 +184,11 @@ function Schedule({
 
     if (names.length === 1) return names[0];
     if (names.length > 1) return `${names[0]} 외 ${names.length - 1}명`;
-
     return item?.userName || '가족';
   }, []);
 
   const mergedForRender = useMemo(() => {
-    const a = Array.isArray(anniversary) ? anniversary : [];
-    const f = Array.isArray(family) ? family : [];
-    const i = Array.isArray(individual) ? individual : [];
-    return [...a, ...f, ...i];
+    return [...anniversary, ...family, ...individual];
   }, [anniversary, family, individual]);
 
   return (
@@ -193,7 +229,9 @@ function Schedule({
               </View>
 
               <View style={[styles.pill, {backgroundColor: COLOR.YELLOW_PILL}]}>
-                <Text allowFontScaling={false} style={[styles.pillText, {color: COLOR.YELLOW_TEXT}]}>
+                <Text
+                  allowFontScaling={false}
+                  style={[styles.pillText, {color: COLOR.YELLOW_TEXT}]}>
                   기념일
                 </Text>
               </View>
@@ -214,74 +252,58 @@ function Schedule({
         <View style={styles.scheduleCards}>
           {mergedForRender.map(item => {
             const preset = getCardPreset(item);
-
             const ownerLabel =
               preset.type === TYPE.ANNIVERSARY ? '가족' : getMemberLabel(item);
 
             return (
-              <DropShadow
-                key={
-                  item.scheduleId ??
-                  `${preset.type}-${ownerLabel}-${item.title}`
-                }
-                style={[styles.cardShadowBox, styles.roundPillShadow]}>
-                <TouchableOpacity
-                  onPress={() => onOpenSheet(item)}
-                  activeOpacity={0.9}
-                  style={[styles.cardWrap, styles.roundPillWrap]}>
-                  <View style={styles.cardHeaderRow}>
-                    <View style={styles.cardLeft}>
-                      <View
-                        style={[
-                          styles.iconCircle,
-                          {backgroundColor: preset.iconBg},
-                        ]}>
-                        <Text
-                          allowFontScaling={false}
-                          style={styles.iconText}
-                          numberOfLines={1}>
-                          {preset.icon}
-                        </Text>
-                      </View>
-
-                      <View style={styles.texts}>
-                        <Text
-                          allowFontScaling={false}
-                          style={styles.subtitle}
-                          numberOfLines={1}>
-                          {ownerLabel}
-                        </Text>
-                        <Text
-                          allowFontScaling={false}
-                          style={styles.title}
-                          numberOfLines={1}>
-                          {item.title || '제목 없음'}
-                        </Text>
-                      </View>
+              <ScheduleCard
+                key={item.scheduleId ?? `${preset.type}-${item.title}`}
+                // ✅ FIX: 카드에서 판별한 type을 강제로 전달
+                onPress={() =>
+                  onOpenSheet({
+                    ...item,
+                    __forcedKind: preset.type,
+                  })
+                }>
+                <View style={styles.cardHeaderRow}>
+                  <View style={styles.cardLeft}>
+                    <View
+                      style={[
+                        styles.iconCircle,
+                        {backgroundColor: preset.iconBg},
+                      ]}>
+                      <Text allowFontScaling={false} style={styles.iconText}>
+                        {preset.icon}
+                      </Text>
                     </View>
 
-                    <View
-                      style={[styles.pill, {backgroundColor: preset.pillBg}]}>
-                      <Text
-                        allowFontScaling={false}
-                        style={[
-                          styles.pillText,
-                          {color: preset.pillTextColor},
-                        ]}>
-                        {preset.pillText}
+                    <View style={styles.texts}>
+                      <Text allowFontScaling={false} style={styles.subtitle}>
+                        {ownerLabel}
+                      </Text>
+                      <Text allowFontScaling={false} style={styles.title}>
+                        {item.title || '제목 없음'}
                       </Text>
                     </View>
                   </View>
-                </TouchableOpacity>
-              </DropShadow>
+
+                  <View style={[styles.pill, {backgroundColor: preset.pillBg}]}>
+                    <Text
+                      allowFontScaling={false}
+                      style={[styles.pillText, {color: preset.pillTextColor}]}>
+                      {preset.pillText}
+                    </Text>
+                  </View>
+                </View>
+              </ScheduleCard>
             );
           })}
 
-          {(Array.isArray(scheduleList) ? scheduleList.length : 0) === 0 ? (
+          {scheduleList.length === 0 && (
             <Text allowFontScaling={false} style={styles.emptyText}>
               {'일정이 비어 있어요.\n새로운 일정을 추가해볼까요?'}
             </Text>
-          ) : null}
+          )}
         </View>
       </View>
     </View>
@@ -329,8 +351,6 @@ const styles = StyleSheet.create({
     width: '100%',
     borderRadius: 14,
     backgroundColor: '#FFFFFF',
-    // borderWidth: 1,
-    // borderColor: 'rgba(17,24,39,0.08)',
     paddingVertical: getResponsiveHeight(12),
     paddingHorizontal: getResponsiveWidth(14),
     overflow: 'hidden',
@@ -361,7 +381,7 @@ const styles = StyleSheet.create({
   },
   iconText: {
     fontSize: getResponsiveFontSize(16),
-    lineHeight: getResponsiveFontSize(18),
+    lineHeight: getResponsiveFontSize(25),
     fontFamily: 'Pretendard-SemiBold',
     color: '#111827',
   },
@@ -380,6 +400,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(14.5),
     color: '#111827',
+    lineHeight: getResponsiveFontSize(15.5),
   },
   pill: {
     paddingVertical: getResponsiveHeight(5),
@@ -390,7 +411,7 @@ const styles = StyleSheet.create({
   },
   pillText: {
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(10),
+    fontSize: getResponsiveFontSize(10.5),
     color: '#111827',
     letterSpacing: 0.4,
   },

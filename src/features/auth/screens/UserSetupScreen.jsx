@@ -119,6 +119,7 @@ export default function UserSetupScreen() {
           </Text>
         </Text>
         <TextInput
+          allowFontScaling={false}
           style={styles.input}
           placeholder="이름을 입력하세요"
           placeholderTextColor="#9E9E9E"
@@ -135,6 +136,7 @@ export default function UserSetupScreen() {
           </Text>
         </Text>
         <TextInput
+          allowFontScaling={false}
           style={styles.input}
           placeholder="YYYY-MM-DD"
           placeholderTextColor="#9E9E9E"

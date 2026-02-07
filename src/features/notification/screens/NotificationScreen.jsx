@@ -103,6 +103,8 @@ export default function NotificationScreen() {
             style={[styles.card, row.isNew && styles.cardNew]}>
             <View style={styles.avatarWrap}>
               <FastImage
+                      fallback={true}
+
                 source={
                   row.leftImageUrl
                     ? {uri: row.leftImageUrl}
@@ -150,7 +152,7 @@ export default function NotificationScreen() {
       {!hasNotifications && (
         <View style={{paddingVertical: getResponsiveHeight(60)}}>
           <Text allowFontScaling={false} style={styles.empty}>
-            아직 새로운 소식이 없어요
+            아직 새로운 소식이 없어요.
           </Text>
         </View>
       )}

@@ -11,7 +11,7 @@ import {
   Image,
   Linking,
   Alert,
-  Platform,
+  Pressable,
 } from 'react-native';
 
 import {useNavigation} from '@react-navigation/native';
@@ -20,7 +20,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import RNRestart from 'react-native-restart';
 
 import LogoutModal from '../../home/components/LogoutModal';
-import DeleteAccountModal from '../../home/components/DeleteAccountModal';
+import DeleteAccountModal from '../components/DeleteAccountModal';
 
 import {
   getResponsiveHeight,
@@ -59,8 +59,6 @@ export default function SettingScreen() {
   const [bioLoading, setBioLoading] = useState(true);
 
   const fontMode = useSelector(state => state.ui.fontMode);
-
-  // ✅ Redux로 저장된 생체 잠금 사용 여부
   const bioOn = useSelector(state => state.ui.bioLockEnabled);
 
   const modeToValue = useCallback(m => {
@@ -75,24 +73,45 @@ export default function SettingScreen() {
     return FONT_MODE.NORMAL;
   }, []);
 
-  const sliderStep = useMemo(() => modeToValue(fontMode), [fontMode, modeToValue]);
+  const sliderStep = useMemo(
+    () => modeToValue(fontMode),
+    [fontMode, modeToValue],
+  );
 
-  const openLink = useCallback(url => {
-    Linking.openURL(url).catch(err => console.error(err));
+  const openLink = useCallback(async url => {
+    try {
+      const ok = await Linking.canOpenURL(url);
+      if (!ok) {
+        Alert.alert('열 수 없음', '링크를 열 수 없어요.');
+        return;
+      }
+      await Linking.openURL(url);
+    } catch (e) {
+      Alert.alert('오류', '링크를 여는 중 문제가 발생했어요.');
+    }
+  }, []);
+
+  const openMail = useCallback(async () => {
+    const email = 'kinover.service@gmail.com';
+    const url = `mailto:${email}`;
+    try {
+      const ok = await Linking.canOpenURL(url);
+      if (!ok) {
+        Alert.alert('메일 앱 없음', '메일 앱을 열 수 없어요.');
+        return;
+      }
+      await Linking.openURL(url);
+    } catch (e) {
+      Alert.alert('오류', '메일 앱을 여는 중 문제가 발생했어요.');
+    }
   }, []);
 
   const loadBiometricSetting = useCallback(async () => {
     setBioLoading(true);
     try {
       const avail = await getBiometricAvailability();
-
-      // 디버깅 필요하면 이거 한번 켜봐
-      // console.log('biometric avail =>', avail);
-
       setBioSupported(!!avail?.available);
       setBioType(avail?.biometryType ?? null);
-
-      // ✅ 여기서 bioOn을 false로 초기화하면 안됨 (설정 저장을 다 날려버림)
     } finally {
       setBioLoading(false);
     }
@@ -124,7 +143,9 @@ export default function SettingScreen() {
               dispatch(setFontMode(safe));
               try {
                 await persistor.flush();
-              } catch (e) {null}
+              } catch (e) {
+                null;
+              }
               RNRestart.Restart();
             },
           },
@@ -144,7 +165,9 @@ export default function SettingScreen() {
         dispatch(setBioLockEnabled(false));
         try {
           await persistor.flush();
-        } catch (e) {null}
+        } catch (e) {
+          null;
+        }
         return;
       }
 
@@ -161,18 +184,20 @@ export default function SettingScreen() {
         return;
       }
 
-      // ✅ 인증 성공 시에만 ON 저장
       dispatch(setBioLockEnabled(true));
       try {
         await persistor.flush();
-      } catch (e) {null}
+      } catch (e) {
+        null;
+      }
     },
     [bioLoading, bioSupported, dispatch],
   );
 
   const handlePressCustomSwitch = useCallback(() => {
+    if (bioLoading) return;
     onToggleBiometric(!bioOn);
-  }, [bioOn, onToggleBiometric]);
+  }, [bioOn, onToggleBiometric, bioLoading]);
 
   const bioLabel = useMemo(() => {
     return bioType
@@ -185,54 +210,15 @@ export default function SettingScreen() {
   }, [bioType]);
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={true}> 
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={true}>
       <Text allowFontScaling={false} style={styles.header}>
         설정
       </Text>
 
-      {/* 알림 */}
-      <View style={styles.section}>
-        <TouchableOpacity
-          style={styles.row}
-          onPress={() => navigation.navigate('알림설정화면')}>
-          <Text allowFontScaling={false} style={styles.label}>
-            알림
-          </Text>
-          <Image
-            style={styles.arrow}
-            source={require('../../../assets/images/rightArrow-gray.png')}
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* ✅ 앱 잠금(생체인식) */}
-      <View style={styles.section}>
-        <Text allowFontScaling={false} style={styles.sectionTitle}>
-          보안
-        </Text>
-
-        <View style={styles.row}>
-          <View style={{flex: 1, paddingRight: getResponsiveWidth(10)}}>
-            <Text allowFontScaling={false} style={styles.label}>
-              {bioLabel}
-            </Text>
-            {!bioSupported && !bioLoading ? (
-              <Text allowFontScaling={false} style={styles.hint}>
-                이 기기에서는 사용할 수 없어요
-              </Text>
-            ) : null}
-          </View>
-
-          <View style={{opacity: bioLoading ? 0.55 : 1}}>
-            <CustomSwitch
-              isEnabled={!!bioOn}
-              toggleSwitch={handlePressCustomSwitch}
-            />
-          </View>
-        </View>
-      </View>
-
-      {/* 글씨 크기 */}
+      {/* 1) 화면(글씨 크기) */}
       <View style={styles.section}>
         <Text allowFontScaling={false} style={styles.sectionTitle}>
           화면
@@ -258,37 +244,68 @@ export default function SettingScreen() {
         </View>
       </View>
 
-      {/* 버전 정보 */}
+      {/* 2) 알림 */}
+      <View style={styles.section}>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => navigation.navigate('알림설정화면')}>
+          <Text allowFontScaling={false} style={styles.label}>
+            알림
+          </Text>
+          <Image
+            style={styles.arrow}
+            source={require('../../../assets/images/rightArrow-gray.png')}
+          />
+        </TouchableOpacity>
+      </View>
+
+      {/* 3) 보안(생체인식) */}
       <View style={styles.section}>
         <Text allowFontScaling={false} style={styles.sectionTitle}>
-          버전정보
+          보안
         </Text>
+
         <View style={styles.row}>
-          <Text allowFontScaling={false} style={styles.label}>
-            현재버전
-          </Text>
-          <Text allowFontScaling={false} style={styles.value}>
-            1.1.0
-          </Text>
+          <View style={{flex: 1, paddingRight: getResponsiveWidth(10)}}>
+            <Text allowFontScaling={false} style={styles.label}>
+              {bioLabel}
+            </Text>
+            {!bioSupported && !bioLoading ? (
+              <Text allowFontScaling={false} style={styles.hint}>
+                이 기기에서는 사용할 수 없어요
+              </Text>
+            ) : null}
+          </View>
+
+          <Pressable
+            onPress={handlePressCustomSwitch}
+            disabled={bioLoading}
+            style={{opacity: bioLoading ? 0.5 : 1}}>
+            <CustomSwitch
+              isEnabled={!!bioOn}
+              toggleSwitch={handlePressCustomSwitch}
+            />
+          </Pressable>
         </View>
       </View>
 
-      {/* 고객지원 */}
+      {/* 4) 고객지원 */}
       <View style={styles.section}>
         <Text allowFontScaling={false} style={styles.sectionTitle}>
           고객지원
         </Text>
-        <View style={styles.row}>
+
+        <TouchableOpacity style={styles.row} onPress={openMail} activeOpacity={0.8}>
           <Text allowFontScaling={false} style={styles.label}>
             문의하기
           </Text>
           <Text allowFontScaling={false} style={styles.value}>
             kinover.service@gmail.com
           </Text>
-        </View>
+        </TouchableOpacity>
       </View>
 
-      {/* 약관 및 정책 */}
+      {/* 5) 약관 및 정책 */}
       <View style={styles.section}>
         <Text allowFontScaling={false} style={styles.sectionTitle}>
           약관 및 정책
@@ -323,7 +340,22 @@ export default function SettingScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* 로그인 정보 */}
+      {/* 6) 버전 정보 */}
+      <View style={styles.section}>
+        <Text allowFontScaling={false} style={styles.sectionTitle}>
+          버전 정보
+        </Text>
+        <View style={styles.row}>
+          <Text allowFontScaling={false} style={styles.label}>
+            현재 버전
+          </Text>
+          <Text allowFontScaling={false} style={styles.value}>
+            1.1.0
+          </Text>
+        </View>
+      </View>
+
+      {/* 7) 로그인 정보 (맨 아래 고정) */}
       <View style={styles.section}>
         <Text allowFontScaling={false} style={styles.sectionTitle}>
           로그인 정보
@@ -345,7 +377,7 @@ export default function SettingScreen() {
           style={styles.row}
           onPress={() => setShowDeleteModal(true)}>
           <Text allowFontScaling={false} style={styles.label}>
-            계정탈퇴
+            계정 탈퇴
           </Text>
           <Image
             style={styles.arrow}
@@ -370,11 +402,13 @@ export default function SettingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scroll: {
     backgroundColor: '#fff',
+    flex: 1,
+  },
+  container: {
     paddingHorizontal: getResponsiveWidth(18),
     paddingTop: getResponsiveHeight(16),
-    flex: 1,
   },
   header: {
     fontSize: SETTING_STYLES().titleFontSize,

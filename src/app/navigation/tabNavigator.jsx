@@ -1,6 +1,6 @@
 // TabNavigator.jsx 상단 imports에 Image가 아직 없으면 추가
 import React from 'react';
-import {Image} from 'react-native';
+import {Image, Platform} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import HomeStack from './stacks/homeStack';
 import CommunicationStack from './stacks/communicationStack';
@@ -15,7 +15,7 @@ import {
   getResponsiveWidth,
 } from '../../utils/responsive';
 import {useSharedValue} from 'react-native-reanimated';
-import { COLORS } from 'styles/style';
+import {COLORS} from 'styles/style';
 
 const Tab = createBottomTabNavigator();
 
@@ -26,29 +26,29 @@ const tabBarBaseStyle = {
   borderTopRightRadius: getResponsiveIconSize(15),
   paddingTop: 8,
   paddingHorizontal: getResponsiveWidth(15),
-  height: getResponsiveHeight(90),
+  height:getResponsiveHeight(107.5),
 };
 
 const TABS = [
   {
     name: '홈',
     component: HomeStack,
-    icon: require('../../assets/icons/tab/one.png'),
+    icon: require('../../assets/icons/bottomTab/one.png'),
   },
   {
     name: '소통',
     component: CommunicationStack,
-    icon: require('../../assets/icons/tab/two.png'),
+    icon: require('../../assets/icons/bottomTab/two.png'),
   },
   {
     name: '일정',
     component: ScheduleStack,
-    icon: require('../../assets/icons/tab/three.png'),
+    icon: require('../../assets/icons/bottomTab/three.png'),
   },
   {
     name: '추억',
     component: MemoryStack,
-    icon: require('../../assets/icons/tab/four.png'),
+    icon: require('../../assets/icons/bottomTab/four.png'),
   },
 ];
 
@@ -96,7 +96,7 @@ function TabIcon({focused, source}) {
         width: getResponsiveIconSize(30),
         height: getResponsiveIconSize(30),
         resizeMode: 'contain',
-        tintColor: focused ? 'black' : COLORS.textTertiary ,
+        tintColor: focused ? 'black' : COLORS.textTertiary,
       }}
     />
   );

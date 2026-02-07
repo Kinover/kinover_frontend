@@ -30,6 +30,7 @@ export const getButtonStyles = () => ({
   cancelBg: '#FFFFFF',
   fontSize: getResponsiveFontSize(14),
   fontFamily: 'Pretendard-Medium',
+  border_radius: getResponsiveIconSize(14),
 });
 
 export const getHeaderStyles = () => ({
@@ -39,9 +40,9 @@ export const getHeaderStyles = () => ({
   mainTitleFontWeight: Platform.OS === 'android' ? '700' : undefined,
   mainTitleLineHeight: getResponsiveFontSize(27),
 
-  defaultTitleFontSize: getResponsiveFontSize(19),
+  defaultTitleFontSize: getResponsiveFontSize(20),
   defaultTitleFontColor: '#333',
-  defaultTitleFontFamily: 'Pretendard-Regular',
+  defaultTitleFontFamily: 'Pretendard-Medium',
 
   headerLeftIconWidth:
     Platform.OS === 'ios'
@@ -102,11 +103,15 @@ export const getBottomSheetStyle = () => ({
     color: COLORS.textSecondary,
   },
   sectionLabel: {
-    fontSize: getResponsiveFontSize(14),
+    fontSize: getResponsiveFontSize(14.5),
     fontFamily: 'Pretendard-SemiBold',
     color: 'black',
     marginBottom: getResponsiveHeight(6),
     marginTop: getResponsiveHeight(10),
+  },
+  inactive: {
+    // color: ' #F6F7FB',
+    color: '#F3F4F6',
   },
 });
 

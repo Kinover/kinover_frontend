@@ -4,7 +4,6 @@ import {TouchableOpacity, Text, View, StyleSheet, Platform} from 'react-native';
 import {BUTTON_STYLES} from 'styles/style';
 import {
   getResponsiveHeight,
-  getResponsiveIconSize,
 } from 'utils/responsive';
 
 // ✅ 햅틱 유틸 (이미 쓰고 있는 그 파일)
@@ -43,7 +42,7 @@ const styles = StyleSheet.create({
     backgroundColor: BUTTON_STYLES().saveBg,
     height: getResponsiveHeight(50),
     width: '100%',
-    borderRadius: getResponsiveIconSize(10),
+    borderRadius: BUTTON_STYLES().border_radius,
     justifyContent: 'center',
   },
   buttonText: {

@@ -18,10 +18,9 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import DropShadow from 'react-native-drop-shadow';
 import {hapticLight} from '../../../utils/haptic';
-import {getEmotionImage} from '../utils/emotionUtils';
+import {getEmotionImage, getEmotionColor} from '../utils/emotionUtils';
 import {COLORS, DEFAULT_STYLE, LAYOUT_STYLE} from 'styles/style';
 
-// ✅ reanimated
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -43,10 +42,8 @@ function isEmotionValid(emotion, emotionUpdatedAt) {
   return Date.now() - t <= EMOTION_EXPIRE_MS;
 }
 
-// ✅ clamp 유틸
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
-// ✅ base
 const AVATAR = getResponsiveIconSize(92);
 const CARD_RADIUS = getResponsiveIconSize(16);
 
@@ -56,85 +53,106 @@ const BASE_RING = BASE_DISPLAY * 1.2;
 const BASE_AREA = BASE_DISPLAY * 1.05;
 const BASE_OVERLAP = -BASE_DISPLAY * 0.499;
 
-// ✅ 안전 가드(상/하한)
-// - ring이 너무 크면 전체가 폭주하니까 ring 기준으로 clamp
+// ===== safety guards =====
 const RING_MIN = getResponsiveIconSize(124);
 const RING_MAX = getResponsiveIconSize(148);
 
-// - area는 ring 대비 살짝 작게(기존 비율 유지) + 안전 범위
 const AREA_MIN = getResponsiveIconSize(126);
 const AREA_MAX = getResponsiveIconSize(160);
 
-// - overlap이 과하면 카드와 겹침이 터짐 (절대값 너무 커지는 거 방지)
 const OVERLAP_MIN = -getResponsiveIconSize(86);
 const OVERLAP_MAX = -getResponsiveIconSize(56);
 
-export default function HeaderSection({user, onUserPress}) {
+export default function HeaderSection({user, onUserPress, onInvitePress}) {
   const navigation = useNavigation();
   const {width: screenWidth} = useWindowDimensions();
 
-  const containerWidth = screenWidth - LAYOUT_STYLE().screenPaddingHorizontal * 2;
+  const containerWidth =
+    screenWidth - LAYOUT_STYLE().screenPaddingHorizontal * 2;
 
-  /** =========================
-   * ✅ 감정 판단
-   * ========================= */
+  /**
+   * =========================
+   * ✅ Emotion (valid 24h)
+   * =========================
+   */
   const emotionKey = useMemo(() => {
     if (!isEmotionValid(user?.emotion, user?.emotionUpdatedAt)) return null;
-    return String(user.emotion).toUpperCase();
+    return String(user?.emotion ?? '').toUpperCase();
   }, [user?.emotion, user?.emotionUpdatedAt]);
 
-  const emotionImage = emotionKey ? getEmotionImage(emotionKey) : null;
+  const emotionImage = useMemo(() => {
+    return emotionKey ? getEmotionImage(emotionKey) : null;
+  }, [emotionKey]);
+
   const hasEmotion = !!emotionImage;
+
+  const emotionColor = useMemo(() => {
+    return emotionKey ? getEmotionColor(emotionKey) : null;
+  }, [emotionKey]);
+
+  const ringBorderColor = useMemo(() => {
+    if (emotionColor) return emotionColor;
+    return '#EEF2F7';
+  }, [emotionColor]);
 
   const profileSource = useMemo(() => {
     return user?.image
       ? {
-          uri: user.image.startsWith('https')
+          uri: String(user.image).startsWith('https')
             ? user.image
             : CLOUD_FRONT + user.image,
         }
       : require('../../../assets/images/default.png');
   }, [user?.image]);
 
-  /** =========================
-   * ✅ 사이즈 (여기서 폭주 방지)
-   * ========================= */
+  /**
+   * =========================
+   * ✅ Sizes (clamped)
+   * =========================
+   */
   const ringSize = clamp(BASE_RING, RING_MIN, RING_MAX);
   const areaSize = clamp(BASE_AREA, AREA_MIN, AREA_MAX);
   const overlap = clamp(BASE_OVERLAP, OVERLAP_MIN, OVERLAP_MAX);
 
+  const PROFILE_SCALE = 0.95;
+  const profileSize = Math.round(ringSize * PROFILE_SCALE);
+  const profileRadius = profileSize / 2;
+
   /**
    * =========================================================
-   * ✅ "고개 갸웃" Peek
+   * ✅ Emotion Peek (튀어나오는 연출)
    * =========================================================
    */
   const popY = useSharedValue(0); // 0~1
-  const tilt = useSharedValue(0); // -1~1
-  const pivotX = useSharedValue(0); // -1~1
-  const scale = useSharedValue(1);
+  const tilt = useSharedValue(0);
+  const pivotX = useSharedValue(0);
+  const peekScale = useSharedValue(1);
 
-  const peekDistance = ringSize * 0.7;
+  const HIDDEN_Y = profileSize * 1.3;
+  const RISE_Y = profileSize * 1.05;
+
   const tiltDeg = 12;
-  const pivotShift = ringSize * 0.18;
+  const pivotShift = profileSize * 0.18;
 
   const emotionPeekStyle = useAnimatedStyle(() => {
     const px = pivotX.value * pivotShift;
     const deg = `${tilt.value * tiltDeg}deg`;
+    const ty = HIDDEN_Y - popY.value * RISE_Y;
 
     return {
       transform: [
-        {translateY: -popY.value * peekDistance},
+        {translateY: ty},
         {translateX: px},
         {rotate: deg},
         {translateX: -px},
-        {scale: scale.value},
+        {scale: peekScale.value},
       ],
     };
-  }, [peekDistance, tiltDeg, pivotShift]);
+  }, [HIDDEN_Y, RISE_Y, pivotShift, tiltDeg]);
 
   /**
    * =========================================================
-   * ✅ 프로필 "눌림" 손맛
+   * ✅ Press feedback
    * =========================================================
    */
   const pressScale = useSharedValue(1);
@@ -142,29 +160,25 @@ export default function HeaderSection({user, onUserPress}) {
   const glow = useSharedValue(0);
 
   const avatarPressStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{scale: pressScale.value}],
-    };
+    return {transform: [{scale: pressScale.value}]};
   }, []);
 
   const ringPulseStyle = useAnimatedStyle(() => {
     const s = 1 + ringPulse.value * 0.045;
-    return {
-      transform: [{scale: s}],
-    };
+    return {transform: [{scale: s}]};
   }, []);
 
   const glowStyle = useAnimatedStyle(() => {
-    return {
-      opacity: glow.value,
-    };
+    return {opacity: glow.value};
   }, []);
 
   const longPressedRef = useRef(false);
 
-  // =========================================================
-  // ✅ 랜덤 peek (감정 있을 때만)
-  // =========================================================
+  /**
+   * =========================================================
+   * ✅ Random peek loop (only when emotion exists)
+   * =========================================================
+   */
   useEffect(() => {
     if (!hasEmotion) return;
 
@@ -175,7 +189,7 @@ export default function HeaderSection({user, onUserPress}) {
       cancelAnimation(popY);
       cancelAnimation(tilt);
       cancelAnimation(pivotX);
-      cancelAnimation(scale);
+      cancelAnimation(peekScale);
 
       const dir = Math.random() > 0.5 ? 1 : -1;
 
@@ -183,16 +197,18 @@ export default function HeaderSection({user, onUserPress}) {
         duration: 130,
         easing: Easing.out(Easing.cubic),
       });
-
       pivotX.value = withTiming(dir, {duration: 120});
 
       tilt.value = withSequence(
         withTiming(dir, {duration: 120, easing: Easing.out(Easing.cubic)}),
-        withTiming(-dir * 0.25, {duration: 140, easing: Easing.out(Easing.cubic)}),
+        withTiming(-dir * 0.25, {
+          duration: 140,
+          easing: Easing.out(Easing.cubic),
+        }),
         withTiming(0, {duration: 120, easing: Easing.out(Easing.cubic)}),
       );
 
-      scale.value = withSequence(
+      peekScale.value = withSequence(
         withTiming(1.07, {duration: 110}),
         withTiming(1.0, {duration: 160}),
       );
@@ -233,13 +249,15 @@ export default function HeaderSection({user, onUserPress}) {
       cancelAnimation(popY);
       cancelAnimation(tilt);
       cancelAnimation(pivotX);
-      cancelAnimation(scale);
+      cancelAnimation(peekScale);
     };
-  }, [hasEmotion, popY, tilt, pivotX, scale]);
+  }, [hasEmotion, popY, tilt, pivotX, peekScale]);
 
-  // =========================================================
-  // ✅ 탭/롱프레스 제어
-  // =========================================================
+  /**
+   * =========================================================
+   * ✅ Tap peek once (프로필 탭 시 살짝 장난만)
+   * =========================================================
+   */
   const tapTimerRef = useRef(null);
 
   const clearTapTimer = useCallback(() => {
@@ -261,20 +279,26 @@ export default function HeaderSection({user, onUserPress}) {
     cancelAnimation(popY);
     cancelAnimation(tilt);
     cancelAnimation(pivotX);
-    cancelAnimation(scale);
+    cancelAnimation(peekScale);
 
     const dir = Math.random() > 0.5 ? 1 : -1;
 
-    popY.value = withTiming(1, {duration: 120, easing: Easing.out(Easing.cubic)});
+    popY.value = withTiming(1, {
+      duration: 120,
+      easing: Easing.out(Easing.cubic),
+    });
     pivotX.value = withTiming(dir, {duration: 110});
 
     tilt.value = withSequence(
       withTiming(dir, {duration: 120, easing: Easing.out(Easing.cubic)}),
-      withTiming(-dir * 0.22, {duration: 140, easing: Easing.out(Easing.cubic)}),
+      withTiming(-dir * 0.22, {
+        duration: 140,
+        easing: Easing.out(Easing.cubic),
+      }),
       withTiming(0, {duration: 120, easing: Easing.out(Easing.cubic)}),
     );
 
-    scale.value = withSequence(
+    peekScale.value = withSequence(
       withTiming(1.08, {duration: 110}),
       withTiming(1.0, {duration: 170}),
     );
@@ -286,13 +310,34 @@ export default function HeaderSection({user, onUserPress}) {
       cancelAnimation(pivotX);
       pivotX.value = withTiming(0, {duration: 180});
     }, 520);
-  }, [hasEmotion, clearTapTimer, popY, tilt, pivotX, scale]);
+  }, [hasEmotion, clearTapTimer, popY, tilt, pivotX, peekScale]);
 
+  /**
+   * =========================================================
+   * ✅ Navigation
+   * =========================================================
+   */
   const goEmotionSetting = useCallback(() => {
     hapticLight();
     navigation.navigate('감정상태화면');
   }, [navigation]);
 
+
+  /**
+   * =========================================================
+   * ✅ BottomSheet open (프로필 탭)
+   * =========================================================
+   */
+  const openUserBottomSheet = useCallback(() => {
+    hapticLight();
+    onUserPress?.(user);
+  }, [onUserPress, user]);
+
+  /**
+   * =========================================================
+   * ✅ Press Handlers
+   * =========================================================
+   */
   const handleAvatarPressIn = useCallback(() => {
     if (longPressedRef.current) return;
 
@@ -300,7 +345,10 @@ export default function HeaderSection({user, onUserPress}) {
     cancelAnimation(ringPulse);
     cancelAnimation(glow);
 
-    pressScale.value = withTiming(0.965, {duration: 90, easing: Easing.out(Easing.cubic)});
+    pressScale.value = withTiming(0.965, {
+      duration: 90,
+      easing: Easing.out(Easing.cubic),
+    });
 
     ringPulse.value = 0;
     ringPulse.value = withSequence(
@@ -317,31 +365,46 @@ export default function HeaderSection({user, onUserPress}) {
 
   const handleAvatarPressOutAnim = useCallback(() => {
     cancelAnimation(pressScale);
-    pressScale.value = withTiming(1, {duration: 140, easing: Easing.out(Easing.cubic)});
+    pressScale.value = withSpring(1, {damping: 12, stiffness: 260, mass: 0.6});
   }, [pressScale]);
 
   const handleAvatarPress = useCallback(() => {
     if (longPressedRef.current) return;
+
+    cancelAnimation(pressScale);
+    pressScale.value = withSequence(
+      withTiming(1.02, {duration: 80, easing: Easing.out(Easing.cubic)}),
+      withTiming(1.0, {duration: 120, easing: Easing.out(Easing.cubic)}),
+    );
+
     runTapTiltPeekOnce();
-  }, [runTapTiltPeekOnce]);
+  }, [runTapTiltPeekOnce, pressScale]);
 
   const handleAvatarLongPress = useCallback(() => {
     longPressedRef.current = true;
-    goEmotionSetting();
-  }, [goEmotionSetting]);
+    hapticLight();
+
+    cancelAnimation(pressScale);
+    pressScale.value = withTiming(0.96, {
+      duration: 90,
+      easing: Easing.out(Easing.cubic),
+    });
+
+    openUserBottomSheet();
+  }, [pressScale, openUserBottomSheet]);
 
   const handleAvatarPressOut = useCallback(() => {
     longPressedRef.current = false;
   }, []);
 
-  const handleCardPress = () => {
-    hapticLight();
-    onUserPress?.(user);
-  };
+  const handleCardPress = useCallback(() => {
+    openUserBottomSheet();
+  }, [openUserBottomSheet]);
+
+  const emotionRenderSize = Math.round(profileSize * 1.1);
 
   return (
     <View style={[styles.headerContainer, {width: containerWidth}]}>
-      {/* 프로필 영역 */}
       <TouchableOpacity
         activeOpacity={1}
         onPressIn={handleAvatarPressIn}
@@ -359,50 +422,15 @@ export default function HeaderSection({user, onUserPress}) {
             height: areaSize + 35,
             marginBottom: overlap,
             borderRadius: 999,
-            backgroundColor: 'white',
+            backgroundColor: '#FFFFFF',
           },
         ]}>
-        {/* ✅ 아바타 전체 눌림 스케일 */}
         <Animated.View style={avatarPressStyle}>
-          {/* ✅ 감정 peek 마스크 */}
-          {hasEmotion && (
-            <View
-              style={[
-                styles.emotionPeekMask,
-                {
-                  width: ringSize,
-                  height: ringSize,
-                  borderRadius: ringSize / 2,
-                },
-              ]}>
-              <Animated.View
-                style={[
-                  {
-                    position: 'absolute',
-                    left: 0,
-                    right: 0,
-                    bottom: -ringSize,
-                  },
-                  emotionPeekStyle,
-                ]}>
-                <Image
-                  source={emotionImage}
-                  style={[styles.emotionImage, {width: ringSize, height: ringSize}]}
-                />
-              </Animated.View>
-            </View>
-          )}
-
-          {/* ✅ 링 펄스 */}
           <Animated.View style={ringPulseStyle}>
             <View
               style={[
                 styles.avatarPress,
-                {
-                  width: ringSize,
-                  height: ringSize,
-                  borderRadius: ringSize / 2,
-                },
+                {width: ringSize, height: ringSize, borderRadius: ringSize / 2},
               ]}>
               <View
                 style={[
@@ -411,48 +439,106 @@ export default function HeaderSection({user, onUserPress}) {
                     width: ringSize,
                     height: ringSize,
                     borderRadius: ringSize / 2,
-                    borderColor: 'white',
-                    borderWidth: 4,
+                    borderWidth: 6,
+                    borderColor: ringBorderColor,
+                    backgroundColor: '#FFFFFF',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   },
                 ]}>
-                <Image
-                  source={profileSource}
-                  resizeMode="cover"
-                  style={[
-                    styles.profileImage,
-                    {
-                      width: ringSize,
-                      height: ringSize,
-                      borderRadius: ringSize / 2,
-                    },
-                  ]}
-                />
+                <View
+                  style={{
+                    width: profileSize,
+                    height: profileSize,
+                    borderRadius: profileRadius,
+                    overflow: 'hidden',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}>
+                  <Image
+                    source={profileSource}
+                    resizeMode="cover"
+                    style={{
+                      width: profileSize,
+                      height: profileSize,
+                      borderRadius: profileRadius,
+                      position: 'absolute',
+                      zIndex: 1,
+                    }}
+                  />
 
-                {/* ✅ 노란 글로우 살짝 번쩍 */}
-                <Animated.View
-                  pointerEvents="none"
-                  style={[
-                    StyleSheet.absoluteFillObject,
-                    {
-                      borderRadius: ringSize / 2,
-                      backgroundColor: 'rgba(255, 200, 77, 0.18)',
-                    },
-                    glowStyle,
-                  ]}
-                />
+                  {!!emotionImage && (
+                    <Animated.View
+                      pointerEvents="none"
+                      style={[
+                        {
+                          position: 'absolute',
+                          width: emotionRenderSize,
+                          height: emotionRenderSize,
+                          left: (profileSize - emotionRenderSize) / 2,
+                          top: (profileSize - emotionRenderSize) / 2,
+                          zIndex: 2,
+                        },
+                        emotionPeekStyle,
+                      ]}>
+                      <Image
+                        source={emotionImage}
+                        style={{
+                          width: emotionRenderSize,
+                          height: emotionRenderSize,
+                          resizeMode: 'contain',
+                        }}
+                      />
+                    </Animated.View>
+                  )}
+
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[
+                      StyleSheet.absoluteFillObject,
+                      {
+                        borderRadius: profileRadius,
+                        backgroundColor: emotionColor
+                          ? `${emotionColor}18`
+                          : 'rgba(255, 200, 77, 0.14)',
+                        zIndex: 3,
+                      },
+                      glowStyle,
+                    ]}
+                  />
+                </View>
               </View>
             </View>
           </Animated.View>
         </Animated.View>
       </TouchableOpacity>
 
-      {/* 카드 */}
       <DropShadow style={styles.shadowBox}>
         <TouchableOpacity
           activeOpacity={0.92}
           onPress={handleCardPress}
           style={styles.headerCard}>
-          <Text allowFontScaling={false} style={styles.userNameHeader} numberOfLines={1}>
+          {/* ✅ 우측 상단: 버튼 2개 (초대코드 + 감정) */}
+          <View style={styles.topRightButtons}>
+       
+
+            {/* ✅ 감정 설정 버튼 (기존) */}
+            <TouchableOpacity
+              onPress={goEmotionSetting}
+              hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+              activeOpacity={0.85}
+              style={styles.smileBtn}>
+              <Image
+                source={require('../../../assets/icons/tabs/1/smile_gray.png')}
+                style={styles.smileIcon}
+              />
+            </TouchableOpacity>
+          </View>
+
+          <Text
+            allowFontScaling={false}
+            style={styles.userNameHeader}
+            numberOfLines={1}>
             {user?.name || '이름'}
           </Text>
           <Text allowFontScaling={false} style={styles.trait} numberOfLines={2}>
@@ -465,6 +551,52 @@ export default function HeaderSection({user, onUserPress}) {
 }
 
 const styles = StyleSheet.create({
+  smileIcon: {
+    width: '58%',
+    height: '58%',
+    resizeMode: 'contain',
+  },
+
+  inviteIcon: {
+    width: '62%',
+    height: '62%',
+    resizeMode: 'contain',
+    tintColor: '#6B7280', // MemberGridSection 톤 참고
+  },
+
+  // ✅ 두 버튼 묶어서 우상단 정렬
+  topRightButtons: {
+    position: 'absolute',
+    right: getResponsiveWidth(14),
+    top: getResponsiveWidth(14),
+    flexDirection: 'row',
+    alignItems: 'center',
+    columnGap: getResponsiveWidth(8),
+  },
+
+  smileBtn: {
+    width: getResponsiveIconSize(30),
+    height: getResponsiveIconSize(30),
+    borderRadius: getResponsiveIconSize(10),
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#ECEFF3',
+  },
+
+  // ✅ 초대 버튼은 같은 톤으로(살짝만 키워도 됨)
+  inviteBtn: {
+    width: getResponsiveIconSize(30),
+    height: getResponsiveIconSize(30),
+    borderRadius: getResponsiveIconSize(10),
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#ECEFF3',
+  },
+
   headerContainer: {
     position: 'relative',
     alignItems: 'center',
@@ -472,52 +604,29 @@ const styles = StyleSheet.create({
     marginTop: getResponsiveHeight(34),
     marginBottom: getResponsiveHeight(16),
   },
-
   avatarArea: {
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 3,
   },
-
   avatarRing: {
     backgroundColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
   },
-
   avatarPress: {
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  profileImage: {
-    zIndex: 1,
-  },
-
-  emotionPeekMask: {
-    position: 'absolute',
-    overflow: 'hidden',
-    zIndex: 2,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    bottom: -3,
-  },
-
-  emotionImage: {
-    resizeMode: 'contain',
-  },
-
   shadowBox: {
     width: '100%',
-    borderRadius: CARD_RADIUS,
+    borderRadius: getResponsiveIconSize(16),
     backgroundColor: 'transparent',
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 3},
     shadowOpacity: 0.08,
     shadowRadius: 3,
   },
-
   headerCard: {
     width: '100%',
     alignItems: 'center',
@@ -525,7 +634,7 @@ const styles = StyleSheet.create({
     paddingBottom: getResponsiveHeight(22),
     paddingHorizontal: getResponsiveWidth(8),
     backgroundColor: '#FFFFFF',
-    borderRadius: CARD_RADIUS,
+    borderRadius: getResponsiveIconSize(16),
   },
 
   userNameHeader: {
@@ -533,8 +642,8 @@ const styles = StyleSheet.create({
     fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
     color: COLORS.textPrimary,
     letterSpacing: -0.2,
+    marginBottom: 3,
   },
-
   trait: {
     fontFamily: DEFAULT_STYLE().sectionSubtitle.fontFamily,
     fontSize: getResponsiveHeight(13),

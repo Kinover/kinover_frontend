@@ -1,6 +1,14 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
-import {View, Text, StyleSheet, FlatList, TouchableOpacity, Platform} from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Platform,
+  Image,
+} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 
 import {
@@ -23,7 +31,7 @@ import {CHATROOM_STYLE} from 'styles/style';
 
 import {getVideoThumbnail} from '../../../utils/videoThumbnail';
 import {toCdnUrl} from '../../../utils/mediaUrl';
-import MentionText from 'components/MentionText';
+import MentionText from 'components/mention/MentionText';
 
 export default function ReceiveChat({
   userProfileImage,
@@ -35,16 +43,14 @@ export default function ReceiveChat({
   mediaUrls = [],
   isGrouped = false,
   isSameSender = false,
-
   mentionUsers = [],
-
-  // ✅ 이 메시지를 아직 안읽은 사람 수(보낸사람 제외 기준)
   unreadCount = 0,
 }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
 
+  // ✅ 타입 먼저 계산 (useEffect보다 위에 있어야 함)
   const normalizedType = useMemo(
     () => String(messageType ?? 'text').toLowerCase(),
     [messageType],
@@ -53,18 +59,7 @@ export default function ReceiveChat({
   const isVideo = normalizedType === 'video';
   const isMedia = isImage || isVideo;
 
-  const [showTime, setShowTime] = useState(false);
-  const idRef = useRef(Math.random().toString(36).slice(2));
-
-  const senderKey = String(userName ?? '').trim();
-  const key = `${senderKey}|${minuteKey(chatTime)}`;
-  const timeMs = toEpochMs(chatTime);
-
-  useEffect(() => {
-    registerTimeLast(key, idRef.current, timeMs, setShowTime);
-    return () => unregisterTimeLast(key, idRef.current);
-  }, [key, timeMs]);
-
+  // ✅ 미디어 url 정리도 먼저 (ratio 계산에서 쓰니까 위로)
   const safeMediaRaw = useMemo(() => {
     if (Array.isArray(mediaUrls)) return mediaUrls.filter(Boolean);
     if (mediaUrls) return [mediaUrls].filter(Boolean);
@@ -75,30 +70,17 @@ export default function ReceiveChat({
     return safeMediaRaw.map(toCdnUrl).filter(Boolean);
   }, [safeMediaRaw]);
 
-  const profileUrl = useMemo(() => toCdnUrl(userProfileImage), [userProfileImage]);
+  const profileUrl = useMemo(
+    () => toCdnUrl(userProfileImage),
+    [userProfileImage],
+  );
 
   const hasExtra = safeMediaUrls.length > 9;
   const displayMedia = hasExtra ? safeMediaUrls.slice(0, 9) : safeMediaUrls;
 
-  useEffect(() => {
-    if (!isImage) return;
-    if (!displayMedia.length) return;
-    FastImage.preload(displayMedia.map(uri => ({uri, priority: FastImage.priority.normal})));
-  }, [isImage, displayMedia]);
-
-  useEffect(() => {
-    if (!profileUrl) return;
-    FastImage.preload([{uri: profileUrl, priority: FastImage.priority.low}]);
-  }, [profileUrl]);
-
-  const spacingStyle = getSpacingStyle({isGrouped, isSameSender});
-
-  const handleMediaPress = useCallback((_, index) => {
-    setSelectedIndex(index);
-    setModalVisible(true);
-  }, []);
-
+  // ✅ videoThumbMap을 ratio effect보다 먼저 선언해야 함
   const [videoThumbMap, setVideoThumbMap] = useState({});
+
   useEffect(() => {
     if (!isVideo) return;
     if (!safeMediaUrls.length) return;
@@ -120,14 +102,110 @@ export default function ReceiveChat({
       if (!alive) return;
 
       const next = {};
-      for (const [url, thumbUri] of results) if (thumbUri) next[url] = thumbUri;
-      if (Object.keys(next).length) setVideoThumbMap(prev => ({...prev, ...next}));
+      for (const [url, thumbUri] of results) {
+        if (thumbUri) next[url] = thumbUri;
+      }
+      if (Object.keys(next).length) {
+        setVideoThumbMap(prev => ({...prev, ...next}));
+      }
     })();
 
     return () => {
       alive = false;
     };
   }, [isVideo, safeMediaUrls]);
+
+  // ✅ 단건 비율 상태
+  const SINGLE_W = getResponsiveWidth(200);
+  const SINGLE_MAX_H = getResponsiveWidth(500);
+  const [singleRatio, setSingleRatio] = useState(null);
+
+  // ✅ 단건 비율 계산 (선언 순서 정리 완료)
+  useEffect(() => {
+    if (!isMedia) return;
+    if (safeMediaUrls.length !== 1) return;
+
+    const uri = safeMediaUrls[0];
+    if (!uri) return;
+
+    let alive = true;
+
+    // uri 바뀌면 일단 초기화 (레이아웃 점프/잔상 방지)
+    setSingleRatio(null);
+
+    if (isImage) {
+      Image.getSize(
+        uri,
+        (w, h) => {
+          if (!alive) return;
+          if (!w || !h) return;
+          setSingleRatio(w / h);
+        },
+        () => {
+          if (!alive) return;
+          setSingleRatio(1);
+        },
+      );
+    } else if (isVideo) {
+      const thumb = videoThumbMap[uri];
+
+      if (thumb) {
+        Image.getSize(
+          thumb,
+          (w, h) => {
+            if (!alive) return;
+            if (!w || !h) return;
+            setSingleRatio(w / h);
+          },
+          () => {
+            if (!alive) return;
+            setSingleRatio(16 / 9);
+          },
+        );
+      } else {
+        // 썸네일 아직 없으면 기본값으로 먼저 렌더
+        setSingleRatio(16 / 9);
+      }
+    }
+
+    return () => {
+      alive = false;
+    };
+  }, [isMedia, isImage, isVideo, safeMediaUrls, videoThumbMap]);
+
+  // ✅ 시간 표시 로직
+  const [showTime, setShowTime] = useState(false);
+  const idRef = useRef(Math.random().toString(36).slice(2));
+
+  const senderKey = String(userName ?? '').trim();
+  const key = `${senderKey}|${minuteKey(chatTime)}`;
+  const timeMs = toEpochMs(chatTime);
+
+  useEffect(() => {
+    registerTimeLast(key, idRef.current, timeMs, setShowTime);
+    return () => unregisterTimeLast(key, idRef.current);
+  }, [key, timeMs]);
+
+  // ✅ preload
+  useEffect(() => {
+    if (!isImage) return;
+    if (!displayMedia.length) return;
+    FastImage.preload(
+      displayMedia.map(uri => ({uri, priority: FastImage.priority.normal})),
+    );
+  }, [isImage, displayMedia]);
+
+  useEffect(() => {
+    if (!profileUrl) return;
+    FastImage.preload([{uri: profileUrl, priority: FastImage.priority.low}]);
+  }, [profileUrl]);
+
+  const spacingStyle = getSpacingStyle({isGrouped, isSameSender});
+
+  const handleMediaPress = useCallback((_, index) => {
+    setSelectedIndex(index);
+    setModalVisible(true);
+  }, []);
 
   const getThumbSource = useCallback(
     uri => {
@@ -164,14 +242,23 @@ export default function ReceiveChat({
         const thumbSource = getThumbSource(item);
 
         return (
-          <TouchableOpacity onPress={() => handleMediaPress(item, index)} activeOpacity={0.9}>
+          <TouchableOpacity
+            onPress={() => handleMediaPress(item, index)}
+            activeOpacity={0.9}>
             <View style={styles.thumbWrap}>
               {thumbSource ? (
                 <FastImage
+                  fallback={true}
                   source={thumbSource}
                   style={styles.imageItem}
                   resizeMode={FastImage.resizeMode.cover}
-                  onError={e => console.log('❌ ReceiveChat thumb error:', item, e?.nativeEvent)}
+                  onError={e =>
+                    console.log(
+                      '❌ ReceiveChat thumb error:',
+                      item,
+                      e?.nativeEvent,
+                    )
+                  }
                 />
               ) : (
                 <View style={[styles.imageItem, styles.thumbFallback]} />
@@ -185,7 +272,9 @@ export default function ReceiveChat({
 
               {isLastCell && (
                 <View style={styles.moreOverlay}>
-                  <Text allowFontScaling={false} style={styles.moreOverlayText}>+{extraCount}</Text>
+                  <Text allowFontScaling={false} style={styles.moreOverlayText}>
+                    +{extraCount}
+                  </Text>
                 </View>
               )}
             </View>
@@ -199,18 +288,42 @@ export default function ReceiveChat({
     const uri = safeMediaUrls[0];
     const thumbSource = getThumbSource(uri);
 
+    const ratio = singleRatio || (isVideo ? 16 / 9 : 1);
+
+    const computedH = SINGLE_W / ratio;
+    const finalH = Math.min(computedH, SINGLE_MAX_H);
+    const finalRatio = SINGLE_W / finalH;
+
     return (
-      <TouchableOpacity onPress={() => handleMediaPress(uri, 0)} activeOpacity={0.9}>
+      <TouchableOpacity
+        onPress={() => handleMediaPress(uri, 0)}
+        activeOpacity={0.9}>
         <View style={{position: 'relative'}}>
           {thumbSource ? (
             <FastImage
+              fallback={true}
               source={thumbSource}
-              style={styles.singleImage}
-              resizeMode={FastImage.resizeMode.cover}
-              onError={e => console.log('❌ ReceiveChat single thumb error:', uri, e?.nativeEvent)}
+              style={[
+                styles.singleBase,
+                {width: SINGLE_W, height: finalH, aspectRatio: finalRatio},
+              ]}
+              resizeMode={FastImage.resizeMode.contain}
+              onError={e =>
+                console.log(
+                  '❌ ReceiveChat single thumb error:',
+                  uri,
+                  e?.nativeEvent,
+                )
+              }
             />
           ) : (
-            <View style={[styles.singleImage, styles.thumbFallback]} />
+            <View
+              style={[
+                styles.singleBase,
+                styles.thumbFallback,
+                {width: SINGLE_W, height: finalH, aspectRatio: finalRatio},
+              ]}
+            />
           )}
 
           {isVideo && (
@@ -238,19 +351,26 @@ export default function ReceiveChat({
             setProfileModalVisible(true);
           }}>
           <FastImage
+            fallback={true}
             source={{
               uri: profileUrl,
               priority: FastImage.priority.low,
               cache: FastImage.cacheControl.immutable,
             }}
             style={styles.receivedUserImage}
-            onError={e => console.log('❌ profile error:', profileUrl, e?.nativeEvent)}
+            onError={e =>
+              console.log('❌ profile error:', profileUrl, e?.nativeEvent)
+            }
           />
         </TouchableOpacity>
       )}
 
       <View style={styles.textContainer}>
-        {!isGrouped && <Text allowFontScaling={false} style={styles.userName}>{userName}</Text>}
+        {!isGrouped && (
+          <Text allowFontScaling={false} style={styles.userName}>
+            {userName}
+          </Text>
+        )}
 
         <View style={styles.messageLine}>
           {isMedia && safeMediaUrls.length === 1 ? (
@@ -259,7 +379,9 @@ export default function ReceiveChat({
             <View
               style={[
                 styles.receivedBubble,
-                normalizedType === 'text' ? styles.textPadding : styles.imagePadding,
+                normalizedType === 'text'
+                  ? styles.textPadding
+                  : styles.imagePadding,
               ]}>
               {isMedia ? (
                 renderMediaGrid()
@@ -274,14 +396,17 @@ export default function ReceiveChat({
             </View>
           )}
 
-          {/* ✅ 안읽은 수 + 시간 */}
           {(showTime || unreadCount > 0) && (
             <View style={styles.metaLine}>
               {unreadCount > 0 && (
-                <Text allowFontScaling={false} style={styles.unreadCountText}>{unreadCount}</Text>
+                <Text allowFontScaling={false} style={styles.unreadCountText}>
+                  {unreadCount}
+                </Text>
               )}
               {showTime && (
-                <Text allowFontScaling={false} style={styles.receivedTime}>{formatTime(chatTime)}</Text>
+                <Text allowFontScaling={false} style={styles.receivedTime}>
+                  {formatTime(chatTime)}
+                </Text>
               )}
             </View>
           )}
@@ -394,9 +519,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
   },
   thumbFallback: {backgroundColor: '#E5E7EB'},
-  singleImage: {
-    width: getResponsiveWidth(200),
-    aspectRatio: 1,
+
+  singleBase: {
     borderRadius: 10,
     backgroundColor: '#F3F4F6',
   },
@@ -434,6 +558,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
     marginLeft: 3,
   },
+
   playOverlaySingle: {
     position: 'absolute',
     left: 0,

@@ -15,9 +15,10 @@ import {getResponsiveHeight} from 'utils/responsive';
 
 const Stack = createStackNavigator();
 
-export default function RootNavigator() {
+export default function RootNavigator({initialRouteName = 'Tabs'}) {
   return (
     <Stack.Navigator
+      initialRouteName={initialRouteName}
       screenOptions={{
         headerShown: false,
       }}>
@@ -32,9 +33,7 @@ export default function RootNavigator() {
           headerShown: true,
           headerStyle: {
             height:
-              Platform.OS === 'ios'
-                ? getResponsiveHeight(107.5)
-                : getResponsiveHeight(70),
+           getResponsiveHeight(107.5),
             shadowColor: 'transparent',
             elevation: 0,
             borderBottomWidth: 0,
@@ -52,10 +51,7 @@ export default function RootNavigator() {
         options={({navigation, route}) => ({
           headerShown: true,
           headerStyle: {
-            height:
-              Platform.OS === 'ios'
-                ? getResponsiveHeight(107.5)
-                : getResponsiveHeight(70),
+            height: getResponsiveHeight(107.5),
             shadowColor: 'transparent',
             elevation: 0,
             borderBottomWidth: 0,
@@ -73,10 +69,7 @@ export default function RootNavigator() {
         options={({navigation, route}) => ({
           headerShown: true,
           headerStyle: {
-            height:
-              Platform.OS === 'ios'
-                ? getResponsiveHeight(107.5)
-                : getResponsiveHeight(70),
+            height: getResponsiveHeight(107.5),
             shadowColor: 'transparent',
             elevation: 0,
             borderBottomWidth: 0,

@@ -14,7 +14,7 @@ import {toggleCommentNotificationThunk} from '../../memory/store/commentThunk';
 import {togglePostNotificationThunk} from '../../memory/store/memoryThunk';
 
 // ✅ 토스트 모달 import
-import ToastModal from '../../../components/ToastModal';
+import ToastModal from '../../../components/modal/ToastModal';
 import {SETTING_STYLES} from 'styles/style';
 
 export default function NotificationSettingScreen() {

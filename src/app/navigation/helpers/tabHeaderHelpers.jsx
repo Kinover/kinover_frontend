@@ -1,6 +1,13 @@
 // src/utils/navigationRenderers.js
 import React, {memo, useCallback} from 'react';
-import {Platform, Text, TouchableOpacity, View, StyleSheet} from 'react-native';
+import {
+  Platform,
+  Text,
+  TouchableOpacity,
+  View,
+  StyleSheet,
+  Image,
+} from 'react-native';
 import {useSelector} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
 
@@ -13,61 +20,77 @@ import {
 
 import {BUTTON_STYLES, HEADER_STYLES, LAYOUT_STYLE} from 'styles/style';
 import {hapticLight} from 'utils/haptic';
-
-// ✅ 전역 네비게이션 서비스
 import {safeNavigate, safeReset} from '../navigationService';
 
 /* =========================================================
- * ✅ 공통: FastImage tintColor 선택 적용
- * - tintColor가 있으면 style에만 붙이고, 없으면 아예 안 붙임(기본 원본색 유지)
- * - (주의) FastImage는 tintColor를 style로 줘야 적용됨
- * ========================================================= */
-const withOptionalTint = (styleObj = {}, tintColor) => {
-  if (!tintColor) return styleObj;
-  return {...styleObj, tintColor};
-};
-
-/* =========================================================
- * ✅ 공통: 아이콘 + (뱃지 or 빨간 점)
- * - tintColor 옵션 추가
+ * ✅ 공통: 아이콘 + (알림 뱃지 or 빨간 점)
+ * - “갉아먹는” 2겹 배지 + 이너 pill padding 지원
  * ========================================================= */
 const IconWithBadge = memo(function IconWithBadge({
   source,
   size = 24,
   showDot = false,
   badgeCount = 0,
+
   dotStyle,
-  badgeStyle,
-  badgeTextStyle,
   imageStyle,
-  tintColor, // ✅ 추가
+  tintColor,
+
+  // 큰 원(노치)
+  badgeBaseColor = '#FFFFFF',
+  badgeBaseSize = 15,
+  badgeBaseBorderWidth = 8,
+  badgeBaseBorderColor = '#FFFFFF',
+
+  // 이너 뱃지(pill)
+  badgeInnerHeight = 12,
+  badgeInnerMinWidth = 12,
+  badgeInnerHPadding = 5, // ✅ 여기 올리면 “좌우 여백” 확실히 늘어남
 }) {
-  const count = Number(badgeCount || 0);
+  const count = Number(badgeCount || 0); // ✅ 절대 20 같은 하드코딩 하면 안 됨
   const showBadge = count > 0;
+
+  const iconPx = getResponsiveIconSize(size);
+  const basePx = getResponsiveIconSize(badgeBaseSize);
+
+  const innerH = getResponsiveHeight(badgeInnerHeight);
+  const innerMinW = getResponsiveWidth(badgeInnerMinWidth);
+  const innerPadH = getResponsiveWidth(badgeInnerHPadding);
 
   return (
     <View style={styles.iconWrap}>
-      <FastImage
+      <Image
         source={source}
         style={[
-          {
-            width: getResponsiveIconSize(size),
-            height: getResponsiveIconSize(size),
-          },
+          {width: iconPx, height: iconPx, resizeMode: 'contain'},
           imageStyle,
-          tintColor ? {tintColor} : null, // ✅ 선택 적용
+          tintColor ? {tintColor} : null,
         ]}
-        resizeMode={FastImage.resizeMode.contain}
       />
 
       {showBadge ? (
-        <View style={[styles.badge, badgeStyle]}>
-          <Text
-            allowFontScaling={false}
-            style={[styles.badgeText, badgeTextStyle]}
-            numberOfLines={1}>
-            {count > 99 ? '99+' : String(count)}
-          </Text>
+        <View
+          style={[
+            styles.badgeBase,
+            {
+              width: basePx,
+              height: basePx,
+              borderRadius: basePx / 2,
+              backgroundColor: badgeBaseColor,
+              borderWidth: badgeBaseBorderWidth,
+              borderColor: badgeBaseBorderColor,
+            },
+          ]}>
+          <View
+            style={[
+              styles.badgeInner,
+              {
+                height: innerH,
+                minWidth: innerMinW,
+                paddingHorizontal: innerPadH,
+                borderRadius: innerH / 2,
+              },
+            ]}></View>
         </View>
       ) : (
         showDot && <View style={[styles.dot, dotStyle]} />
@@ -84,14 +107,14 @@ export const TabBarIcon = memo(function TabBarIcon({
   focusedUri,
   defaultUri,
   tabName,
-  tintColor, // ✅ 필요하면 외부에서 주입 가능
+  tintColor,
 }) {
   const hasUnread = useSelector(state => state.notification.hasUnread);
   const unreadCount = useSelector(state => state.notification.unreadCount || 0);
 
   const isAlarmTab = tabName === '알림';
-
   const badgeCount = isAlarmTab ? unreadCount : 0;
+
   const showDot = isAlarmTab ? !!hasUnread : false;
 
   const size = Platform.OS === 'ios' ? 22 : 24;
@@ -103,15 +126,15 @@ export const TabBarIcon = memo(function TabBarIcon({
       badgeCount={badgeCount}
       showDot={showDot}
       dotStyle={styles.tabDot}
-      badgeStyle={styles.tabBadge}
-      badgeTextStyle={styles.tabBadgeText}
-      tintColor={tintColor} // ✅ 선택 적용
+      badgeBaseColor="#FFFFFF"
+      badgeBaseBorderColor="#FFFFFF"
+      tintColor={tintColor}
     />
   );
 });
 
 /* =========================================================
- * ✅ 탭바 라벨 (세로 고정)
+ * ✅ 탭바 라벨 (이게 없어서 지금 터진 거임)
  * ========================================================= */
 export const renderTabBarLabel = (label, focused) => {
   const fontSize = getResponsiveFontSize(Platform.OS === 'ios' ? 11 : 12);
@@ -137,7 +160,6 @@ export const renderTabBarLabel = (label, focused) => {
 
 /* =========================================================
  * ✅ 공통: 헤더 아이콘 버튼 (햅틱 포함)
- * - tintColor 옵션 추가
  * ========================================================= */
 const createIconButton = (
   onPress,
@@ -145,7 +167,7 @@ const createIconButton = (
   size,
   marginStyle = {},
   imageExtraStyle = {},
-  tintColor, // ✅ 추가
+  tintColor,
 ) => {
   return (
     <TouchableOpacity
@@ -154,18 +176,18 @@ const createIconButton = (
         onPress?.();
       }}
       activeOpacity={0.8}>
-      <FastImage
+      <Image
         source={imageSource}
         style={[
           {
             width: getResponsiveIconSize(size),
             height: getResponsiveIconSize(size),
+            resizeMode:'contain',
           },
           marginStyle,
           imageExtraStyle,
-          tintColor ? {tintColor} : null, // ✅ 여기로
+          tintColor ? {tintColor} : null,
         ]}
-        resizeMode={FastImage.resizeMode.contain}
       />
     </TouchableOpacity>
   );
@@ -177,13 +199,12 @@ const createIconButton = (
 export const RenderHeaderTitleLogo = memo(function RenderHeaderTitleLogo() {
   return (
     <View style={{paddingBottom: getResponsiveHeight(14)}}>
-      <FastImage
-        source={require('@/assets/icons/kino-logo.png')}
+      <Image
+        source={require('../../../assets/icons/kino-logo.png')}
         style={{
           top: getResponsiveHeight(4),
           width: getResponsiveWidth(40),
           height: getResponsiveHeight(40),
-          resizeMode: 'contain',
           marginLeft: LAYOUT_STYLE().screenPaddingHorizontal - 3,
         }}
       />
@@ -192,14 +213,13 @@ export const RenderHeaderTitleLogo = memo(function RenderHeaderTitleLogo() {
 });
 
 /* =========================================================
- * ✅ 헤더: 매거진 아이콘 (홈/다른 화면 tint 처리)
- * - ✅ 여기서 tintColor 옵션 사용
+ * ✅ 헤더: 매거진 아이콘
  * ========================================================= */
 export const RenderHeaderBook = memo(function RenderHeaderBook({
   navigation,
   currentScreen = '홈',
 }) {
-  const bookIcon = require('@/assets/icons/header/magazine.png');
+  const bookIcon = require('../../../assets/icons/header/magazine.png');
   const tint = currentScreen === '홈' ? '#FFFFFF' : 'black';
 
   const goBook = () =>
@@ -216,17 +236,17 @@ export const RenderHeaderBook = memo(function RenderHeaderBook({
           goBook();
         }}
         activeOpacity={0.8}>
-        <FastImage
+        <Image
           source={bookIcon}
           style={[
             {
               marginLeft: getResponsiveWidth(16),
               width: getResponsiveIconSize(30),
               height: getResponsiveIconSize(30),
+              resizeMode: 'contain',
             },
-            tint ? {tintColor: tint} : null, // ✅ 선택 적용
+            tint ? {tintColor: tint} : null,
           ]}
-          resizeMode={FastImage.resizeMode.contain}
         />
       </TouchableOpacity>
     </View>
@@ -235,7 +255,8 @@ export const RenderHeaderBook = memo(function RenderHeaderBook({
 
 /* =========================================================
  * ✅ 헤더: 홈(종 + 설정)
- * - 설정 아이콘 tint 선택 적용
+ * - 홈: 큰 원 배경 = #FFC84D
+ * - 다른 화면: 큰 원 배경 = #FFFFFF
  * ========================================================= */
 export const RenderHeaderHome = memo(function RenderHeaderHome({
   navigation,
@@ -247,19 +268,17 @@ export const RenderHeaderHome = memo(function RenderHeaderHome({
   const isHome = currentScreen === '홈';
 
   const bellIcon = isHome
-    ? require('@/assets/icons/header/bell_white.png')
-    : require('@/assets/icons/header/bell_black.png');
+    ? require('../../../assets/icons/header/bell_white.png')
+    : require('../../../assets/icons/header/bell_black.png');
 
   const settingIcon = isHome
-    ? require('@/assets/icons/header/setting_white.png')
-    : require('@/assets/icons/header/setting_black.png');
+    ? require('../../../assets/icons/header/setting_white.png')
+    : require('../../../assets/icons/header/setting_black.png');
 
   const goAlarm = () => safeNavigate('알림화면', {fromTab: currentScreen});
-  const goSetting = () => safeNavigate('설정화면',{fromTab: currentScreen});
+  const goSetting = () => safeNavigate('설정화면', {fromTab: currentScreen});
 
-  // ✅ 아이콘 파일 자체가 이미 흰/검 버전이면 tint 필요 없음
-  // ✅ 만약 “무조건 한 파일만 쓰고 tint로만 바꾸고 싶다”면 여기서 tintColor를 넣으면 됨
-  const settingTint = null; // 예: !isHome ? 'black' : '#FFFFFF'
+  const baseColor = isHome ? '#FFC84D' : '#FFFFFF';
 
   return (
     <View
@@ -279,9 +298,13 @@ export const RenderHeaderHome = memo(function RenderHeaderHome({
           badgeCount={unreadCount}
           showDot={!!hasUnread}
           dotStyle={styles.headerDot}
-          badgeStyle={styles.headerBadge}
-          badgeTextStyle={styles.headerBadgeText}
-          // tintColor={...}  // ✅ 필요할 때만
+          badgeBaseColor={baseColor}
+          badgeBaseBorderColor={baseColor}
+          badgeBaseSize={10}
+          badgeBaseBorderWidth={7.5}
+          badgeInnerHeight={9}
+          badgeInnerMinWidth={9}
+          badgeInnerHPadding={0} // ✅ 홈에서는 살짝 더 여유 주기
         />
       </TouchableOpacity>
 
@@ -293,7 +316,7 @@ export const RenderHeaderHome = memo(function RenderHeaderHome({
         HEADER_STYLES().headerRightIconWidth + 3,
         {},
         {},
-        settingTint, // ✅ 선택 적용
+        null,
       )}
     </View>
   );
@@ -301,16 +324,15 @@ export const RenderHeaderHome = memo(function RenderHeaderHome({
 
 /* =========================================================
  * ✅ 나머지 헤더 버튼들
- * - createIconButton의 마지막 인자로 tintColor를 “필요할 때만” 전달
  * ========================================================= */
 export const RenderHeaderLeft1 = memo(function RenderHeaderLeft1() {
   return createIconButton(
     () => safeNavigate('알림화면'),
-    require('@/assets/images/navigator_alarm-button.png'),
+    require('../../../assets/images/navigator_alarm-button.png'),
     HEADER_STYLES().headerLeftIconWidth,
     {marginLeft: HEADER_STYLES().headerLeftIconLeftPadding},
     {},
-    null, // ✅ tintColor (필요하면 색 넣기)
+    null,
   );
 });
 
@@ -323,24 +345,20 @@ export const RenderHeaderRightSetting = memo(function RenderHeaderRightSetting({
         screen: '홈',
         params: {screen: '설정화면'},
       }),
-    require('@/assets/images/setting_bt.png'),
+    require('../../../assets/images/setting_bt.png'),
     HEADER_STYLES().headerRightIconWidth,
     {marginRight: HEADER_STYLES().headerRightIconRightPadding},
   );
 });
 
 export const RenderHeaderRightChatSetting = memo(
-  function RenderHeaderRightChatSetting({
-    setIsSettingsOpen,
-    tintColor = 'black',
-  }) {
+  function RenderHeaderRightChatSetting({setIsSettingsOpen}) {
     return createIconButton(
       () => setIsSettingsOpen(true),
-      require('@/assets/icons/List.png'),
+      require('../../../assets/icons/List_black.png'),
       HEADER_STYLES().headerRightIconWidth,
       {marginRight: HEADER_STYLES().headerRightIconRightPadding},
       {},
-      tintColor, // ✅ 선택 적용
     );
   },
 );
@@ -348,7 +366,7 @@ export const RenderHeaderRightChatSetting = memo(
 export const RenderHeaderDeletePost = memo(function RenderHeaderDeletePost() {
   return createIconButton(
     () => {},
-    require('@/assets/images/trash.png'),
+    require('../../../assets/images/trash.png'),
     HEADER_STYLES().headerRightIconWidth,
     {marginRight: HEADER_STYLES().headerRightIconRightPadding},
     {zIndex: 999},
@@ -361,11 +379,14 @@ export const RenderGoBackButton = memo(function RenderGoBackButton({
 }) {
   return createIconButton(
     () => navigation.goBack(),
-    require('@/assets/icons/caretDown.png'),
+    require('../../../assets/icons/caretDown_black.png'),
     HEADER_STYLES().headerLeftIconWidth,
-    {marginLeft: HEADER_STYLES().headerLeftIconLeftPadding},
+    {
+      marginLeft:
+        HEADER_STYLES().headerLeftIconLeftPadding - getResponsiveWidth(3),
+    },
     {zIndex: 999},
-    tintColor, // ✅ 선택 적용
+    tintColor,
   );
 });
 
@@ -373,83 +394,7 @@ export const RenderGoBackButtonGallery = memo(
   function RenderGoBackButtonGallery({navigation, tintColor}) {
     return createIconButton(
       () => navigation.goBack(),
-      require('@/assets/images/navigator_goback-button.png'),
-      HEADER_STYLES().headerLeftIconWidth,
-      {marginLeft: HEADER_STYLES().headerLeftIconLeftPadding},
-      {zIndex: 999},
-      tintColor, // ✅ 선택 적용
-    );
-  },
-);
-
-/* =========================================================
- * ✅ 알림화면 back 버튼
- * ========================================================= */
-export const RenderHeaderBackButton = memo(
-  function RenderHeaderBackButton({
-    navigation,
-    route,
-    tintColor = 'black',
-  }) {
-    const fromTab = route?.params?.fromTab;
-    const fromScreen = route?.params?.fromScreen;
-    const fromParams = route?.params?.fromParams;
-
-    const onPress = useCallback(() => {
-      hapticLight();
-
-      // ✅ 1순위: 스택 back
-      if (navigation?.canGoBack?.()) {
-        navigation.goBack();
-        return;
-      }
-
-      // ✅ 2순위: 특정 탭 복귀
-      if (fromTab) {
-        const tabRoutes = ['홈', '소통', '일정', '추억'];
-        const tabIndex = Math.max(0, tabRoutes.indexOf(fromTab));
-
-        safeReset({
-          index: 0,
-          routes: [
-            {
-              name: 'Root',
-              state: {
-                index: 0,
-                routes: [
-                  {
-                    name: 'Tabs',
-                    state: {
-                      index: tabIndex,
-                      routes: tabRoutes.map(name => {
-                        if (name !== fromTab) return {name};
-                        if (!fromScreen) return {name};
-
-                        return {
-                          name,
-                          state: {
-                            index: 0,
-                            routes: [{name: fromScreen, params: fromParams}],
-                          },
-                        };
-                      }),
-                    },
-                  },
-                ],
-              },
-            },
-          ],
-        });
-        return;
-      }
-
-      // ✅ fallback
-      safeReset({index: 0, routes: [{name: 'Root'}]});
-    }, [navigation, fromTab, fromScreen, fromParams]);
-
-    return createIconButton(
-      onPress,
-      require('@/assets/icons/caretDown.png'),
+      require('../../../assets/images/navigator_goback-button.png'),
       HEADER_STYLES().headerLeftIconWidth,
       {marginLeft: HEADER_STYLES().headerLeftIconLeftPadding},
       {zIndex: 999},
@@ -457,9 +402,78 @@ export const RenderHeaderBackButton = memo(
     );
   },
 );
-/* =========================================================
- * ✅ 헤더: 로고(Kinover + 텍스트)
- * ========================================================= */
+
+export const RenderHeaderBackButton = memo(function RenderHeaderBackButton({
+  navigation,
+  route,
+  tintColor = 'black',
+}) {
+  const fromTab = route?.params?.fromTab;
+  const fromScreen = route?.params?.fromScreen;
+  const fromParams = route?.params?.fromParams;
+
+  const onPress = useCallback(() => {
+    hapticLight();
+
+    if (navigation?.canGoBack?.()) {
+      navigation.goBack();
+      return;
+    }
+
+    if (fromTab) {
+      const tabRoutes = ['홈', '소통', '일정', '추억'];
+      const tabIndex = Math.max(0, tabRoutes.indexOf(fromTab));
+
+      safeReset({
+        index: 0,
+        routes: [
+          {
+            name: 'Root',
+            state: {
+              index: 0,
+              routes: [
+                {
+                  name: 'Tabs',
+                  state: {
+                    index: tabIndex,
+                    routes: tabRoutes.map(name => {
+                      if (name !== fromTab) return {name};
+                      if (!fromScreen) return {name};
+
+                      return {
+                        name,
+                        state: {
+                          index: 0,
+                          routes: [{name: fromScreen, params: fromParams}],
+                        },
+                      };
+                    }),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      });
+      return;
+    }
+
+    safeReset({index: 0, routes: [{name: 'Root'}]});
+  }, [navigation, fromTab, fromScreen, fromParams]);
+
+  return createIconButton(
+    onPress,
+    require('../../../assets/icons/caretDown_black.png'),
+    HEADER_STYLES().headerLeftIconWidth,
+    {
+      marginLeft:
+        HEADER_STYLES().headerLeftIconLeftPadding - getResponsiveWidth(3),
+    },
+    {zIndex: 999},
+    tintColor,
+  );
+});
+
 export const RenderHeaderLogo = memo(function RenderHeaderLogo({
   currentScreen = '홈',
 }) {
@@ -473,8 +487,8 @@ export const RenderHeaderLogo = memo(function RenderHeaderLogo({
         safeNavigate('알림화면');
       }}
       style={{flexDirection: 'row', alignItems: 'flex-end'}}>
-      <FastImage
-        source={require('@/assets/images/kinover.png')}
+      <Image
+        source={require('../../../assets/images/kinover.png')}
         style={{
           width: getResponsiveWidth(60),
           height: getResponsiveHeight(60),
@@ -517,32 +531,31 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF3B30',
   },
 
-  badge: {
+  headerDot: {top: -2.5, right: -2.5},
+  tabDot: {top: -2.5, right: -2.5},
+
+  // ✅ “갉아먹는” 큰 원(노치) — 위치는 여기만
+  badgeBase: {
     position: 'absolute',
-    minWidth: getResponsiveWidth(16),
-    height: getResponsiveWidth(16),
-    borderRadius: 999,
+    top: -2,
+    right: -2,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // ✅ 이너 pill
+  badgeInner: {
     backgroundColor: '#FF3B30',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: getResponsiveWidth(4),
   },
 
-  badgeText: {
-    color: '#fff',
+  badgeInnerText: {
+    color: '#FFFFFF',
     fontSize: getResponsiveFontSize(10),
-    lineHeight: Math.round(getResponsiveFontSize(10) + 4),
+    lineHeight: Math.round(getResponsiveFontSize(10) + 2),
     fontFamily: 'Pretendard-SemiBold',
     includeFontPadding: false,
     textAlignVertical: 'center',
   },
-
-  headerDot: {top: -2.5, right: -2.5},
-  tabDot: {top: -2.5, right: -2.5},
-
-  headerBadge: {top: -6, right: -8},
-  headerBadgeText: {fontSize: getResponsiveFontSize(10)},
-
-  tabBadge: {top: -6, right: -10},
-  tabBadgeText: {fontSize: getResponsiveFontSize(10)},
 });

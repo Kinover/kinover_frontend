@@ -6,7 +6,7 @@ import {COLORS} from 'styles/style';
 export default function CheckBadge({
   // 표시만 담당 (애니메이션은 부모에서 opacity로 처리해도 됨)
   size = getResponsiveWidth(16),
-  dotSize = getResponsiveIconSize(8),
+  dotSize = getResponsiveIconSize(6),
 
   borderWidth = 2,
   borderColor = COLORS.brandPrimary,
@@ -17,7 +17,7 @@ export default function CheckBadge({
   style,
 }) {
   const s = typeof size === 'number' ? size : getResponsiveWidth(16);
-  const d = typeof dotSize === 'number' ? dotSize : getResponsiveIconSize(8);
+  const d = typeof dotSize === 'number' ? dotSize : getResponsiveIconSize(6);
 
   return (
     <View

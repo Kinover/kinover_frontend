@@ -5,10 +5,11 @@ import {useDispatch, useSelector} from 'react-redux';
 import {getToken, deleteLoginInfo, setHasFamily} from 'utils/storage';
 import {fetchUserThunk} from 'features/home/store/userThunk';
 import {fetchFamilyThunk} from 'features/home/store/familyThunk';
-import store from 'store';
-
 import {startChatSocket, stopChatSocket} from 'features/chat/hooks/ChatSocket';
 import {setLoginSuccess, setLogout, setAuthChecked} from '../store/loginSlice';
+
+// ✅ 추가: flags 변경 이벤트 발행(없으면 utils/authFlagsEvent에 만들어야 함)
+import {emitAuthFlagsChanged} from 'utils/authFlagsEvent';
 
 const withTimeout = (promise, ms = 6000) =>
   Promise.race([
@@ -18,23 +19,26 @@ const withTimeout = (promise, ms = 6000) =>
     ),
   ]);
 
-export function useAutoLogin() {
+export function useAutoLogin(shouldRun = true) {
   const dispatch = useDispatch();
 
-  // ✅ 핵심: authChecked 상태를 보고 "필요할 때만" 실행
+  const rehydrated = useSelector(state => !!state?._persist?.rehydrated);
   const authChecked = useSelector(state => state.login?.authChecked);
+  const loginLoading = useSelector(state => !!state.login?.loading);
 
-  // ✅ 중복 실행 방지(동일 세션에서만)
   const runningRef = useRef(false);
   const socketUnsubRef = useRef(null);
 
   useEffect(() => {
-    // ✅ 이미 체크 완료면 더 이상 실행할 필요 없음
+    if (!shouldRun) return;
+    if (!rehydrated) return;
     if (authChecked) return;
+    if (loginLoading) return;
 
-    // ✅ 이미 실행 중이면 중복 실행 방지
     if (runningRef.current) return;
     runningRef.current = true;
+
+    let cancelled = false;
 
     const run = async () => {
       console.log('🚀 AutoLogin start');
@@ -43,20 +47,21 @@ export function useAutoLogin() {
         const token = await withTimeout(getToken(), 6000);
         console.log('🔐 token:', token ? 'YES' : 'NO');
 
+        if (cancelled) return;
+
         if (!token) {
           stopChatSocket();
           dispatch(setLogout());
           return;
         }
 
-        // ✅ 토큰 유효성은 유저 조회로 확정
+        let userResult = null;
         try {
           const r = dispatch(fetchUserThunk());
-          if (typeof r?.unwrap === 'function') {
-            await withTimeout(r.unwrap(), 8000);
-          } else {
-            await withTimeout(r, 8000);
-          }
+          userResult =
+            typeof r?.unwrap === 'function'
+              ? await withTimeout(r.unwrap(), 8000)
+              : await withTimeout(r, 8000);
           console.log('✅ fetchUser ok');
         } catch (e) {
           console.log('❌ fetchUser fail => logout', e?.message);
@@ -66,29 +71,35 @@ export function useAutoLogin() {
           return;
         }
 
+        if (cancelled) return;
+
         dispatch(setLoginSuccess());
 
-        // ✅ 가족 정보(있으면)
         try {
-          const state = store.getState();
-          const userState = state.user;
-          const user = userState?.user ?? userState ?? null;
-          const familyId = user?.familyId ?? null;
+          const familyId = userResult?.familyId ?? null;
+          const hasFamilyValue = !!familyId;
 
-          const hasFamily = !!familyId;
-          await setHasFamily(hasFamily);
+          await setHasFamily(hasFamilyValue);
 
-          if (hasFamily && familyId) {
+          // ✅✅✅ Root가 즉시 refreshAuthFlags 하도록 “이벤트 발행”
+          try {
+            emitAuthFlagsChanged?.();
+          } catch {}
+
+          if (hasFamilyValue) {
             const r2 = dispatch(fetchFamilyThunk(familyId));
             if (typeof r2?.unwrap === 'function') await r2.unwrap();
             else await r2;
             console.log('✅ fetchFamily ok');
+          } else {
+            console.log('👀 familyId is null -> no family (create/join flow)');
           }
         } catch (e) {
           console.log('⚠️ fetchFamily skip/fail:', e?.message);
         }
 
-        // ✅ 소켓 시작(필요 시 1회)
+        if (cancelled) return;
+
         if (!socketUnsubRef.current) {
           socketUnsubRef.current = startChatSocket(dispatch);
         }
@@ -98,6 +109,10 @@ export function useAutoLogin() {
         stopChatSocket();
         dispatch(setLogout());
       } finally {
+        if (cancelled) {
+          runningRef.current = false;
+          return;
+        }
         console.log('✅ AutoLogin done -> authChecked true');
         dispatch(setAuthChecked(true));
         runningRef.current = false;
@@ -107,12 +122,14 @@ export function useAutoLogin() {
     run();
 
     return () => {
-      // ✅ 언마운트 시 소켓 구독 해제
+      cancelled = true;
+
+      // ✅ shouldRun 변동으로 cleanup이 타더라도, 소켓 끊기는 게 싫으면 여기 제거 가능
       if (socketUnsubRef.current) {
         socketUnsubRef.current();
         socketUnsubRef.current = null;
       }
       runningRef.current = false;
     };
-  }, [dispatch, authChecked]);
+  }, [dispatch, rehydrated, authChecked, shouldRun, loginLoading]);
 }

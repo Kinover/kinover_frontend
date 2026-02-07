@@ -1,16 +1,30 @@
 <resources>
-  <!-- 런치스크린 테마 (이미지 제거: 흰 배경만) -->
-  <style name="SplashTheme" parent="Theme.MaterialComponents.Light.NoActionBar">
-    <!-- ✅ 기존 @drawable/launch_screen 제거 -->
-    <item name="android:windowBackground">@android:color/white</item>
 
+  <style name="SplashTheme" parent="Theme.MaterialComponents.Light.NoActionBar">
+    <item name="android:windowBackground">@android:color/white</item>
     <item name="android:windowNoTitle">true</item>
-    <item name="android:windowFullscreen">true</item>
+
+    <!-- ✅ 시스템 바 투명 -->
+    <item name="android:statusBarColor">@android:color/transparent</item>
+    <item name="android:navigationBarColor">@android:color/transparent</item>
+    <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+
+    <!-- ✅ Android 10+에서 자동으로 깔리는 흰/검 스크림 방지 -->
+    <item name="android:enforceNavigationBarContrast">false</item>
+    <item name="android:enforceStatusBarContrast">false</item>
   </style>
 
-  <!-- 앱 본테마 -->
   <style name="AppTheme" parent="Theme.MaterialComponents.Light.NoActionBar">
     <item name="android:windowNoTitle">true</item>
-    <item name="android:windowFullscreen">true</item>
+
+    <!-- ✅ 시스템 바 투명 -->
+    <item name="android:statusBarColor">@android:color/transparent</item>
+    <item name="android:navigationBarColor">@android:color/transparent</item>
+    <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+
+    <!-- ✅ Android 10+ 스크림 방지 -->
+    <item name="android:enforceNavigationBarContrast">false</item>
+    <item name="android:enforceStatusBarContrast">false</item>
   </style>
+
 </resources>

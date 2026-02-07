@@ -31,17 +31,17 @@ export default function MemoryStack() {
     shadowOpacity: 0,
     elevation: 0,
     height:
-      Platform.OS === 'ios'
-        ? getResponsiveHeight(107.5)
-        : getResponsiveHeight(70),
+   getResponsiveHeight(107.5),
   };
 
   return (
     <Stack.Navigator
       initialRouteName="추억"
       screenOptions={{
-        gestureEnabled: true,
+        gestureEnabled: false,
         headerShown: true,
+        headerBackVisible: false,
+
         headerStyle: defaultHeaderStyle,
         headerTitleAlign: 'left',
         // headerTitle: '',
@@ -64,17 +64,22 @@ export default function MemoryStack() {
           </Text>
         ),
       }}>
-      <Stack.Screen name="추억" component={MemoryScreen} />
+      <Stack.Screen
+        name="추억"
+        screenOptions={{headerBackVisible: false}}
+        component={MemoryScreen}
+      />
 
       <Stack.Screen
         name="게시글화면"
         component={PostPage}
         options={({route, navigation: nav}) => ({
-          gestureEnabled: true,
+          gestureEnabled: false,
           headerLeft: () => <RenderGoBackButton navigation={nav} />,
           headerRight: () => <RenderHeaderDeletePost navigation={nav} />,
           headerTitle: route.params?.memory?.title || '',
           headerTitleAlign: 'center',
+          headerBackVisible: false,
         })}
       />
 
@@ -89,7 +94,7 @@ export default function MemoryStack() {
           name={name}
           component={component}
           options={({navigation: nav}) => ({
-            gestureEnabled: true,
+            gestureEnabled: false,
             headerTitleAlign: 'center',
             headerLeft: () => <RenderGoBackButton navigation={nav} />,
           })}

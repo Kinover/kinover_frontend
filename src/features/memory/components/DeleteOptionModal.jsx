@@ -1,6 +1,6 @@
 import React from 'react';
 import {StyleSheet} from 'react-native';
-import CustomModal from '../../../components/CustomModal';
+import CustomModal from '../../../components/modal/CustomModal';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -18,15 +18,16 @@ export default function ImageDeleteModal({
   if (!visible) return null;
   return (
     <CustomModal
+      showCloseButton
       visible={visible}
       onClose={onClose}
       onConfirm={onConfirm}
-      closeText="취소"
-      confirmText="삭제"
+      closeText="취소하기"
+      confirmText="삭제하기"
       title={title}
       subText={subText}
-      buttonBottomStyle={styles.buttonRow}
-      modalBoxStyle={[styles.modalBox]}>
+      // buttonBottomStyle={styles.buttonRow}
+    >
       {children}
     </CustomModal>
   );
@@ -43,6 +44,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: getResponsiveWidth(10),
+    marginTop: -getResponsiveHeight(1),
   },
   closeButton: {
     flex: 1,

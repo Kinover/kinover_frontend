@@ -6,7 +6,7 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from '../../../utils/responsive';
-import CustomModal from '../../../components/CustomModal';
+import CustomModal from '../../../components/modal/CustomModal';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {BUTTON_STYLES, COLORS} from 'styles/style';
 
@@ -35,11 +35,11 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
 
   const subText = copied
     ? '초대 코드가 복사되었어요!'
-    : '초대 코드를 눌러 복사한 뒤,\n가족에게 보내주세요';
+    : '초대 코드를 복사해 가족에게 보내주세요';
 
   return (
     <CustomModal
-      showCloseButton={false}
+      showCloseButton
       visible={visible}
       onClose={onClose}
       onConfirm={onClose}
@@ -101,12 +101,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-
     backgroundColor: '#F9FAFB',
     borderRadius: getResponsiveWidth(14),
     paddingVertical: getResponsiveHeight(14),
     paddingHorizontal: getResponsiveWidth(14),
-
+    marginBottom: getResponsiveHeight(14),
+    marginTop: getResponsiveHeight(4),
     borderWidth: 1,
     borderColor: '#EEF2F7',
   },

@@ -1,3 +1,6 @@
+/* eslint-disable react-native/no-inline-styles */
+// src/features/chat/screens/KinoSelectScreen.jsx
+
 import React, {useEffect, useRef, useState, useCallback, useMemo} from 'react';
 import {
   View,
@@ -32,25 +35,26 @@ const KINO_TYPE_TO_PERSONALITY = {
   BLUE_KINO: 'SERENE',
   PINK_KINO: 'SNUGGLE',
 };
+
 // ✅ kinoType 기준으로 통일
 const KINOS = [
   {
     kinoType: 'YELLOW_KINO',
     image: require('../../../assets/images/yellowKino.png'),
     description:
-      '안녕하세요~! \n\n저는 밝고 긍정적인 에너지를 전하는 상담사, 키노예요. \n\n언제든 기분이 꿀꿀할 땐 저랑 수다 떨어요~ \n웃으면서 기분 전환, 제가 책임질게요!',
+      '안녕하세요~!\n\n저는 밝고 긍정적인 에너지를 전하는 상담사, 키노예요.\n\n언제든 기분이 꿀꿀할 땐 저랑 수다 떨어요~\n웃으면서 기분 전환, 제가 책임질게요!',
   },
   {
     kinoType: 'BLUE_KINO',
     image: require('../../../assets/images/blueKino.png'),
     description:
-      '안녕하세요. \n\n저는 잔잔하고 조용하게 곁을 지켜주는 상담사, 키노입니다. \n\n말하지 않아도 괜찮아요.\n천천히, 편안하게 당신의 이야기를 들어드릴게요.',
+      '안녕하세요.\n\n저는 잔잔하고 조용하게 곁을 지켜주는 상담사, 키노입니다.\n\n말하지 않아도 괜찮아요.\n천천히, 편안하게 당신의 이야기를 들어드릴게요.',
   },
   {
     kinoType: 'PINK_KINO',
     image: require('../../../assets/images/pinkKino.png'),
     description:
-      '아… 안녕하세요… \n\n저는 부족하지만 진심으로 곁에 있고 싶은 상담사, 키노예요. \n\n뭔가 잘 모르지만… 그냥 옆에 있고 싶었어요.\n우리 같이, 천천히 이야기해봐요…!',
+      '아… 안녕하세요…\n\n저는 부족하지만 진심으로 곁에 있고 싶은 상담사, 키노예요.\n\n뭔가 잘 모르지만… 그냥 옆에 있고 싶었어요.\n우리 같이, 천천히 이야기해봐요…!',
   },
 ];
 
@@ -60,7 +64,6 @@ const mod = (n, m) => ((n % m) + m) % m;
 const CIRCLE_PALETTE = {
   YELLOW_KINO: {soft: '#FFF3DE', strong: '#FFE7C4'},
   BLUE_KINO: {soft: '#EAF4FF', strong: '#D7E9FF'},
-  // PINK_KINO: {soft: '#FFEAF2', strong: '#FFD6E5'},
   PINK_KINO: {soft: '#FFF8FB', strong: '#FFEAF2'},
 };
 
@@ -102,14 +105,10 @@ export default function KinoSelectScreen() {
   const floatAnim = useRef(new Animated.Value(0)).current;
 
   // ✅ 배경 원 애니메이션 값들 (슬라이드업 + 페이드)
-  const circleSoftY = useRef(
-    new Animated.Value(getResponsiveHeight(44)),
-  ).current;
+  const circleSoftY = useRef(new Animated.Value(getResponsiveHeight(44))).current;
   const circleSoftOpacity = useRef(new Animated.Value(0)).current;
 
-  const circleStrongY = useRef(
-    new Animated.Value(getResponsiveHeight(58)),
-  ).current;
+  const circleStrongY = useRef(new Animated.Value(getResponsiveHeight(58))).current;
   const circleStrongOpacity = useRef(new Animated.Value(0)).current;
 
   useHideTabBar({stayHidden: true});
@@ -165,23 +164,33 @@ export default function KinoSelectScreen() {
     return CARD_PALETTE[currentKinoType] || CARD_PALETTE.YELLOW_KINO;
   }, [currentKinoType]);
 
-  const highlightKinoName = text => {
-    if (!text) return null;
-    const parts = text.split(/(키노)/g);
-    return parts.map((part, i) =>
-      part === '키노' ? (
-        <Text allowFontScaling={false}
-          key={i}
-          style={[styles.kinoHighlight, {color: cardColors.highlight}]}>
-          {part}
-        </Text>
-      ) : (
-        <Text allowFontScaling={false} key={i} style={styles.kinoText}>
-          {part}
-        </Text>
-      ),
-    );
-  };
+  /**
+   * ✅ 줄바꿈 안정화 + 하이라이트(키노) 유지:
+   * - "한 줄"만 받아서 하이라이트 처리
+   * - 전체 텍스트는 split('\n') 후, 하나의 Text 컨테이너 안에서 렌더
+   */
+  const renderHighlightedLine = useCallback(
+    line => {
+      if (!line) return null;
+      const parts = line.split(/(키노)/g);
+
+      return parts.map((part, i) =>
+        part === '키노' ? (
+          <Text
+            allowFontScaling={false}
+            key={`h-${i}`}
+            style={[styles.kinoHighlight, {color: cardColors.highlight}]}>
+            {part}
+          </Text>
+        ) : (
+          <Text allowFontScaling={false} key={`t-${i}`} style={styles.kinoText}>
+            {part}
+          </Text>
+        ),
+      );
+    },
+    [cardColors.highlight],
+  );
 
   // 둥둥 모션(캐릭터)
   useEffect(() => {
@@ -265,8 +274,12 @@ export default function KinoSelectScreen() {
 
   return (
     <View style={styles.container}>
-      <Text allowFontScaling={false} style={styles.title}>키노를 선택해주세요</Text>
-      <Text allowFontScaling={false} style={styles.subtitle}>각기 다른 성격의 키노를 만나보세요</Text>
+      <Text allowFontScaling={false} style={styles.title}>
+        키노를 선택해주세요
+      </Text>
+      <Text allowFontScaling={false} style={styles.subtitle}>
+        각기 다른 성격의 키노를 만나보세요
+      </Text>
 
       {/* ✅ 카드도 키노 색에 맞게 변경 */}
       <View
@@ -282,9 +295,7 @@ export default function KinoSelectScreen() {
           <FadingKinoText
             index={currentIndex}
             descriptions={KINOS.map(k => k.description)}
-            renderRichText={text => (
-              <Text allowFontScaling={false} style={styles.kinoText}>{highlightKinoName(text)}</Text>
-            )}
+            renderLine={renderHighlightedLine}
           />
         </View>
       </View>
@@ -341,11 +352,6 @@ export default function KinoSelectScreen() {
                   {width: screenW, height: carouselHeight},
                   floatStyle,
                 ]}>
-                {/* <Image
-                  source={require('../../../assets/icons/background-effect.png')}
-                  style={styles.characterBackground}
-                  resizeMode="contain"
-                /> */}
                 <Image
                   source={item.image}
                   style={styles.character}
@@ -402,7 +408,13 @@ export default function KinoSelectScreen() {
   );
 }
 
-function FadingKinoText({index, descriptions, renderRichText}) {
+/**
+ * ✅ 줄바꿈을 확실히 먹이면서 애니메이션 페이드 유지
+ * - 텍스트를 lines로 나눈 뒤
+ * - "단일 Text 컨테이너" 안에서 줄별 렌더
+ * - 줄 사이에는 '\n'을 그대로 넣어 RN이 라인 레이아웃을 안정적으로 계산하게 함
+ */
+function FadingKinoText({index, descriptions, renderLine}) {
   const [displayIndex, setDisplayIndex] = useState(index);
   const fade = useRef(new Animated.Value(1)).current;
   const translateY = useRef(new Animated.Value(0)).current;
@@ -438,9 +450,18 @@ function FadingKinoText({index, descriptions, renderRichText}) {
   }, [index, descriptions, fade, translateY]);
 
   const text = descriptions?.[displayIndex] ?? '';
+  const lines = String(text).split(/\n/);
+
   return (
     <Animated.View style={{opacity: fade, transform: [{translateY}]}}>
-      {renderRichText(text)}
+      <Text allowFontScaling={false} style={styles.kinoText}>
+        {lines.map((line, idx) => (
+          <React.Fragment key={`line-${idx}`}>
+            {renderLine(line)}
+            {idx !== lines.length - 1 ? '\n' : ''}
+          </React.Fragment>
+        ))}
+      </Text>
     </Animated.View>
   );
 }
@@ -498,7 +519,8 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(15),
     fontFamily:
       Platform.OS === 'android' ? 'Pretendard-Regular' : 'Pretendard-Light',
-    lineHeight: getResponsiveHeight(18),
+    // ✅ 줄바꿈/줄간격 안정화: height 기반보다 fontSize 기반이 흔들림 적음
+    lineHeight: getResponsiveFontSize(21),
     color: '#18181B',
   },
   kinoHighlight: {
@@ -547,15 +569,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  characterBackground: {
-    position: 'absolute',
-    width: getResponsiveWidth(260),
-    height: getResponsiveWidth(260),
-    top: '50%',
-    left: '50%',
-    marginLeft: -getResponsiveWidth(130),
-    marginTop: -getResponsiveWidth(130),
-  },
+
   character: {
     width: getResponsiveWidth(185),
     height: getResponsiveWidth(185),

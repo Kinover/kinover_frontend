@@ -221,12 +221,11 @@ const styles = StyleSheet.create({
     left: 0,
     // backgroundColor: '#3B82F6',
     backgroundColor: COLORS.brandPrimary,
-
     // thumb에 “살짝 떠있는 느낌” (iOS/Android 둘 다 어느정도 먹게)
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 6},
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 6,
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 9,
   },
 });

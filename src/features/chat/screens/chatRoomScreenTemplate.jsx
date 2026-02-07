@@ -24,8 +24,7 @@ import {selectRoomMeta} from '../store/messageSlice';
 import useGuide from 'hooks/useGuide';
 import {fetchChatRoomUsersThunk} from '../store/chatRoomThunk';
 
-// ✅ 여기 추가: 토스트 모달
-import ToastModal from '../../../components/ToastModal';
+import ToastModal from '../../../components/modal/ToastModal';
 
 const CHAT_GUIDE_STEPS = [
   {
@@ -237,11 +236,9 @@ export default function ChatRoomScreenTemplate({
   const sendReadIfNeeded = useCallback(() => {
     if (!chatRoomId) return;
     if (!latestCreatedAtLocal) return;
-
     if (myUserId == null) return;
 
     if (lastSentReadAtRef.current === latestCreatedAtLocal) return;
-
     lastSentReadAtRef.current = latestCreatedAtLocal;
 
     dispatch(
@@ -288,55 +285,68 @@ export default function ChatRoomScreenTemplate({
     : 'CHAT_GUIDE_SHOWN_V1';
   useGuide(guideStorageKey, guideSteps, !!chatRoomId);
 
-  return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 102.5 : 0}>
-      <View style={{flex: 1}}>
-        <MessageFlatList
-          flatListRef={flatListRef}
-          messageList={messageList}
-          chatRoom={currentChatRoom}
-          userId={myUserId}
-          isKino={isKino}
-          noMoreMessages={noMoreMessages}
-          isFetchingMore={isFetchingMore}
-          loadOlderMessages={loadOlderMessages}
-          handleScroll={handleScroll}
-          scrollToBottom={scrollToBottom}
-          isMessageFetched={isMessageFetched}
-          mentionUsers={roomUsers}
-          readPointersMap={readPointersMap}
-        />
+  // =========================================================
+  // ✅ 핵심 변경: iOS만 KeyboardAvoidingView 사용
+  // - Android는 시스템(adjustResize)에게 맡기고, RN이 padding으로 또 밀지 않게 함
+  // =========================================================
+  const content = (
+    <View style={{flex: 1}}>
+      <MessageFlatList
+        flatListRef={flatListRef}
+        messageList={messageList}
+        chatRoom={currentChatRoom}
+        userId={myUserId}
+        isKino={isKino}
+        noMoreMessages={noMoreMessages}
+        isFetchingMore={isFetchingMore}
+        loadOlderMessages={loadOlderMessages}
+        handleScroll={handleScroll}
+        scrollToBottom={scrollToBottom}
+        isMessageFetched={isMessageFetched}
+        mentionUsers={roomUsers}
+        readPointersMap={readPointersMap}
+      />
 
-        <ChatInput
-          chatRoom={currentChatRoom}
-          userId={myUserId}
-          enableMediaPicker={!isKino}
-          mentionUsers={roomUsers}
-        />
+      <ChatInput
+        chatRoom={currentChatRoom}
+        userId={myUserId}
+        enableMediaPicker={!isKino}
+        mentionUsers={roomUsers}
+      />
 
-        {/* ✅ [추가] 초대 토스트: 설정창 안 열어도 바로 뜸 */}
-        <ToastModal
-          visible={inviteToastVisible}
-          message={inviteToastMessage}
-          onClose={() => setInviteToastVisible(false)}
-        />
+      <ToastModal
+        visible={inviteToastVisible}
+        message={inviteToastMessage}
+        onClose={() => setInviteToastVisible(false)}
+      />
 
-        <ChatSettings
-          isOpen={isSettingsOpen}
-          onClose={() => setIsSettingsOpen(false)}
-          chatRoomId={chatRoomId}
-          navigation={navigation}
-          onLeaveChat={onLeaveChat}
-          isKino={isKino}
-          // ✅ [추가] 설정 패널에서 "새 멤버 초대" 눌렀을 때 호출할 함수
-          onOpenAddMember={openAddMember}
-        />
-      </View>
-    </KeyboardAvoidingView>
+      <ChatSettings
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        chatRoomId={chatRoomId}
+        navigation={navigation}
+        onLeaveChat={onLeaveChat}
+        isKino={isKino}
+        onOpenAddMember={openAddMember}
+      />
+    </View>
   );
+
+  // ✅ iOS만 KAV로 부드럽게
+  if (Platform.OS === 'ios') {
+    return (
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior="padding"
+        // 너 기존 값 유지. (헤더 높이가 바뀌면 여기만 조정)
+        keyboardVerticalOffset={102.5}>
+        {content}
+      </KeyboardAvoidingView>
+    );
+  }
+
+  // ✅ Android는 KAV 제거(팍 튐/이중 회피 방지)
+  return <View style={styles.container}>{content}</View>;
 }
 
 const styles = StyleSheet.create({

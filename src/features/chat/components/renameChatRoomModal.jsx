@@ -1,6 +1,6 @@
 import React from 'react';
 import {TextInput, StyleSheet} from 'react-native';
-import CustomModal from '../../../components/CustomModal';
+import CustomModal from '../../../components/modal/CustomModal';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
@@ -17,6 +17,7 @@ export default function RenameChatRoomModal({
 }) {
   return (
     <CustomModal
+      showCloseButton
       visible={visible}
       onClose={onClose}
       onConfirm={() => {
@@ -53,6 +54,8 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(15),
     backgroundColor: '#fff',
     fontFamily: 'Pretendard-Regular',
+    marginTop: getResponsiveHeight(4),
+    marginBottom: getResponsiveHeight(10),
   },
 
   noticeText: {

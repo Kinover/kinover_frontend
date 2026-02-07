@@ -1,5 +1,11 @@
-// src/features/home/components/UserBottomSheet.jsx
 /* eslint-disable react-native/no-inline-styles */
+// src/features/home/components/UserBottomSheet.jsx
+// ✅ ScheduleEditor 패턴 통일 버전 (버벅 제거)
+// - snapToIndex 금지(키보드/스냅 정책은 Layout에 맡김)
+// - shiftAnim으로 콘텐츠만 위로 올림(ensureVisible)
+// - 내부 탭: shift 리셋만 + 연타 방지
+// - 키보드 이벤트: 높이 추적 + shift 리셋만
+
 import React, {
   useState,
   useEffect,
@@ -10,25 +16,26 @@ import React, {
   useCallback,
 } from 'react';
 import {
-  Dimensions,
   Platform,
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
+  ActivityIndicator,
+  Image,
   Keyboard,
   Animated,
-  ActivityIndicator,
-  Pressable,
+  Dimensions,
+  SafeAreaView,
 } from 'react-native';
 
-import {BottomSheetTextInput} from '@gorhom/bottom-sheet';
+import {BottomSheetTextInput, BottomSheetView} from '@gorhom/bottom-sheet';
 import {launchImageLibrary} from 'react-native-image-picker';
+import {useSelector} from 'react-redux';
 
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
-  getResponsiveWidth,
 } from '../../../utils/responsive';
 
 import FastImage from '@d11/react-native-fast-image';
@@ -38,29 +45,25 @@ import {
   convertContentUriToFileUri,
 } from '../../../utils/photoUriConverter';
 
-import ToastModal from '../../../components/ToastModal';
+import ToastModal from '../../../components/modal/ToastModal';
 import {getPresignedUrls, uploadFileToS3} from 'api/imageUrlApi';
 
-import BottomSheetLayout from 'components/BottomSheetLayout';
+import BottomSheetLayout from 'components/botomSheet/BottomSheetLayout';
 import {normalizeImageForSave} from 'utils/normalizeImageforSave';
 import {BOTTOMSHEET_STYLE, COLORS} from 'styles/style';
-import {BottomSheetButtons} from 'components/BottomSheetButtons';
 
-// ✅ 추가
-import {useSelector} from 'react-redux';
-import {FONT_MODE} from '../../../store/uiSlice';
+import BottomSheetFooterButtons from 'components/botomSheet/BottomSheetFooterButtons';
 
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
+
 const {height: WINDOW_H} = Dimensions.get('window');
 const SAFE_GAP = 12;
-
-// ✅ footer 높이만큼 본문 바닥 여유 (버튼 가림 방지)
-const FOOTER_SPACE = getResponsiveHeight(86);
 
 function UserBottomSheetModalBase(
   {selectedUser, onSave, onCancel, onDismiss},
   ref,
 ) {
+  // ✅ input 데이터는 ref로 (불필요 리렌더 방지)
   const nameRef = useRef('');
   const traitRef = useRef('');
   const imageUrlRef = useRef('');
@@ -77,59 +80,72 @@ function UserBottomSheetModalBase(
   const [isClosing, setIsClosing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // ✅ "내용만" 올리는 값(미세 보정용으로 유지)
-  const shiftAnim = useRef(new Animated.Value(0)).current;
-  const keyboardHeightRef = useRef(0);
-
   const nameInputRef = useRef(null);
   const traitInputRef = useRef(null);
 
-  // ✅ 탭으로 원복할 때 ensureVisible 재상승 방지
-  const tapToResetRef = useRef(false);
-
-  // ✅ 키보드 상태(스냅 제어용)
-  const keyboardOpenRef = useRef(false);
-
-  // ✅ fontMode 가져오기
   const fontMode = useSelector(state => state.ui.fontMode);
 
-  // ✅ fontMode에 따라 스냅 높이를 올려줌
-  // - large면 기본/키보드 스냅을 조금 더 높게
-  // ✅ fontMode에 따라 스냅 높이를 올려줌 (3단계)
-  const snapPoints = useMemo(() => {
-    const isLarge = fontMode === FONT_MODE.LARGE;
-    const isXL = fontMode === FONT_MODE.EXTRA_LARGE;
+  // ✅ “콘텐츠 영역만” 올릴 shift
+  const shiftAnim = useRef(new Animated.Value(0)).current;
+  const keyboardHeightRef = useRef(0);
+  const keyboardOpenRef = useRef(false);
+  const tapToResetRef = useRef(false);
 
-    // 수치는 취향이지만, 논리는 이렇게:
-    // NORMAL: 기본/키보드
-    // LARGE:  기본 조금↑ / 키보드 조금↑
-    // XL:     기본 더↑ / 키보드 더↑
-    if (isXL) return ['74%', '96%'];
-    if (isLarge) return ['71%', '94%'];
-    return ['67%', '90%'];
-  }, [fontMode]);
+  // ✅ 내부 탭 연타 방지
+  const touchLockRef = useRef(false);
+  const touchLockTimerRef = useRef(null);
+  const lockTouchBriefly = useCallback(() => {
+    touchLockRef.current = true;
+    if (touchLockTimerRef.current) clearTimeout(touchLockTimerRef.current);
+    touchLockTimerRef.current = setTimeout(() => {
+      touchLockRef.current = false;
+    }, 180);
+  }, []);
 
-  // ✅ footer 높이도 폰트 커지면 더 확보 (버튼/인풋 가림 방지)
-  const footerSpace = useMemo(() => {
-    const isLarge = fontMode === FONT_MODE.LARGE;
-    const isXL = fontMode === FONT_MODE.EXTRA_LARGE;
-
-    if (isXL) return getResponsiveHeight(112);
-    if (isLarge) return getResponsiveHeight(98);
-    return FOOTER_SPACE; // 기존 86 기준
-  }, [fontMode]);
-
-  const showToast = msg => {
-    setToastMessage(msg);
+  const showToast = useCallback(msg => {
+    setToastMessage(String(msg ?? ''));
     setToastVisible(true);
-  };
-  const hideToast = () => setToastVisible(false);
+  }, []);
+
+  const hideToast = useCallback(() => setToastVisible(false), []);
+
+  // ✅ cleanup
+  useEffect(() => {
+    return () => {
+      if (touchLockTimerRef.current) clearTimeout(touchLockTimerRef.current);
+    };
+  }, []);
+
+  // ✅ snapPoints는 기존 유지
+  const snapPoints = useMemo(() => {
+    const fm = String(fontMode ?? '').toLowerCase();
+    const isLarge = fm.includes('large') && !fm.includes('extra');
+    const isXL = fm.includes('extra');
+
+    if (isXL) return ['74%', '94%'];
+    if (isLarge) return ['70%', '93%'];
+    return ['66%', '92%'];
+  }, [fontMode]);
+
+  const sheetKey = useMemo(() => {
+    return `user-flow-${String(fontMode ?? '')}-${selectedUser?.userId ?? 'none'}`;
+  }, [fontMode, selectedUser?.userId]);
+
+  const closeSheet = useCallback(() => {
+    if (isClosing) return;
+    setIsClosing(true);
+    modalRef.current?.dismiss?.();
+  }, [isClosing]);
 
   useImperativeHandle(ref, () => ({
     present: () => {
       setIsClosing(false);
+      setIsSaving(false);
+      hideToast();
+
       tapToResetRef.current = false;
       keyboardOpenRef.current = false;
+      keyboardHeightRef.current = 0;
 
       Animated.timing(shiftAnim, {
         toValue: 0,
@@ -137,131 +153,13 @@ function UserBottomSheetModalBase(
         useNativeDriver: true,
       }).start();
 
+      // ✅ present만. snapToIndex 절대 금지.
       modalRef.current?.present?.();
-
-      // ✅ 열리자마자 large면 기본 스냅도 살짝 더 높은 쪽으로(선택)
-      // - snapPoints[0]이 이미 large에 맞춰져 있어서 사실 없어도 되는데,
-      //   기존 상태가 남아있을 때 보정용으로 넣어둠
-      requestAnimationFrame(() => {
-        modalRef.current?.snapToIndex?.(0);
-      });
     },
-    dismiss: () => {
-      setIsClosing(true);
-      modalRef.current?.dismiss?.();
-    },
+    dismiss: () => closeSheet(),
   }));
 
-  // ✅ 키보드 show/hide 시: 시트 스냅을 바꿔서 "인풋이 보이게"
-  useEffect(() => {
-    const onShow = e => {
-      keyboardOpenRef.current = true;
-      keyboardHeightRef.current = e?.endCoordinates?.height || 0;
-
-      // ✅ 키보드 뜨면 시트 자체를 크게 (index 1)
-      modalRef.current?.snapToIndex?.(1);
-    };
-
-    const onHide = () => {
-      keyboardOpenRef.current = false;
-      keyboardHeightRef.current = 0;
-
-      Animated.timing(shiftAnim, {
-        toValue: 0,
-        duration: 160,
-        useNativeDriver: true,
-      }).start(() => {
-        tapToResetRef.current = false;
-      });
-
-      // ✅ 키보드 내려가면 기본 스냅(0) 복귀
-      modalRef.current?.snapToIndex?.(0);
-    };
-
-    const subShow = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-      onShow,
-    );
-    const subHide = Keyboard.addListener(
-      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-      onHide,
-    );
-
-    return () => {
-      subShow.remove();
-      subHide.remove();
-    };
-  }, [shiftAnim]);
-
-  /**
-   * ✅ input이 "아직도" 가려지면 내용만 추가로 올림(미세 보정)
-   * ✅ (키보드 스냅으로 1차 해결, shiftAnim은 2차 보정)
-   */
-  const ensureVisible = useCallback(
-    inputRef => {
-      if (tapToResetRef.current) return;
-
-      const kbH = keyboardHeightRef.current || 0;
-
-      requestAnimationFrame(() => {
-        if (tapToResetRef.current) return;
-
-        const node = inputRef?.current;
-        if (!node || typeof node.measureInWindow !== 'function') return;
-
-        node.measureInWindow((x, y, w, h) => {
-          if (tapToResetRef.current) return;
-
-          const inputBottomY = y + h;
-          const baseLimit = kbH ? WINDOW_H - kbH : WINDOW_H;
-
-          // ✅ footerSpace로 교체
-          const limitY = baseLimit - SAFE_GAP - footerSpace;
-
-          if (inputBottomY <= limitY) {
-            Animated.timing(shiftAnim, {
-              toValue: 0,
-              duration: 140,
-              useNativeDriver: true,
-            }).start();
-            return;
-          }
-
-          const diff = inputBottomY - limitY;
-
-          Animated.timing(shiftAnim, {
-            toValue: -diff,
-            duration: 180,
-            useNativeDriver: true,
-          }).start();
-        });
-      });
-    },
-    [shiftAnim, footerSpace],
-  );
-
-  /**
-   * ✅ "아무데나 탭"하면:
-   * - 키보드 내림
-   * - shiftAnim 0
-   * - 스냅 원복
-   */
-  const dismissKeyboardAndReset = useCallback(() => {
-    tapToResetRef.current = true;
-
-    Keyboard.dismiss();
-
-    Animated.timing(shiftAnim, {
-      toValue: 0,
-      duration: 160,
-      useNativeDriver: true,
-    }).start(() => {
-      tapToResetRef.current = false;
-    });
-
-    modalRef.current?.snapToIndex?.(0);
-  }, [shiftAnim]);
-
+  // ✅ selectedUser 바뀔 때 입력 초기화 (snap 금지)
   useEffect(() => {
     if (!selectedUser) return;
     if (isClosing) return;
@@ -287,20 +185,118 @@ function UserBottomSheetModalBase(
     setNameKey(k => k + 1);
     setTraitKey(k => k + 1);
 
-    tapToResetRef.current = false;
+    // ✅ shift도 0으로 리셋
     Animated.timing(shiftAnim, {
       toValue: 0,
       duration: 120,
       useNativeDriver: true,
     }).start();
 
-    // ✅ 선택된 유저가 바뀌면서 내용이 늘어날 수 있으니 현재 키보드 상태에 맞춰 스냅 유지(선택)
-    requestAnimationFrame(() => {
-      modalRef.current?.snapToIndex?.(keyboardOpenRef.current ? 1 : 0);
-    });
-  }, [selectedUser, isClosing, shiftAnim]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedUser]);
 
-  const handleImagePick = async () => {
+  // ✅ 키보드 이벤트: 높이 추적 + shift 리셋만
+  useEffect(() => {
+    const onShow = e => {
+      keyboardOpenRef.current = true;
+      keyboardHeightRef.current = e?.endCoordinates?.height || 0;
+    };
+
+    const onHide = () => {
+      keyboardOpenRef.current = false;
+      keyboardHeightRef.current = 0;
+
+      Animated.timing(shiftAnim, {
+        toValue: 0,
+        duration: 160,
+        useNativeDriver: true,
+      }).start(() => {
+        tapToResetRef.current = false;
+      });
+    };
+
+    const subShow = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      onShow,
+    );
+    const subHide = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      onHide,
+    );
+
+    return () => {
+      subShow.remove();
+      subHide.remove();
+    };
+  }, [shiftAnim]);
+
+  // ✅ 입력이 키보드에 가리면 “콘텐츠만” 올리기
+  const ensureVisible = useCallback(
+    refNode => {
+      if (tapToResetRef.current) return;
+
+      const kbH = keyboardHeightRef.current || 0;
+      if (!kbH) return;
+
+      requestAnimationFrame(() => {
+        if (tapToResetRef.current) return;
+
+        const node = refNode?.current;
+        if (!node || typeof node.measureInWindow !== 'function') return;
+
+        node.measureInWindow((x, y, w, h) => {
+          if (tapToResetRef.current) return;
+
+          const inputBottomY = y + h;
+          const limitY = WINDOW_H - kbH - SAFE_GAP;
+
+          if (inputBottomY <= limitY) {
+            Animated.timing(shiftAnim, {
+              toValue: 0,
+              duration: 140,
+              useNativeDriver: true,
+            }).start();
+            return;
+          }
+
+          const diff = inputBottomY - limitY;
+
+          Animated.timing(shiftAnim, {
+            toValue: -diff,
+            duration: 180,
+            useNativeDriver: true,
+          }).start();
+        });
+      });
+    },
+    [shiftAnim],
+  );
+
+  /**
+   * ✅✅✅ 버벅 제거 핵심:
+   * - 내부 탭에서는 snapToIndex 절대 금지
+   * - shift만 0으로 리셋
+   * - 키보드 dismiss는 Layout이 담당(dismissKeyboardOnPress=true)
+   */
+  const handleTouchInsideResetOnly = useCallback(() => {
+    if (!keyboardOpenRef.current) return; // 키보드 없으면 굳이 할 게 없음
+    if (touchLockRef.current) return;
+    lockTouchBriefly();
+
+    hideToast();
+
+    tapToResetRef.current = true;
+
+    Animated.timing(shiftAnim, {
+      toValue: 0,
+      duration: 150,
+      useNativeDriver: true,
+    }).start(() => {
+      tapToResetRef.current = false;
+    });
+  }, [shiftAnim, lockTouchBriefly, hideToast]);
+
+  const handleImagePick = useCallback(async () => {
     const result = await launchImageLibrary({mediaType: 'photo'});
     if (!result.assets?.length) return;
 
@@ -314,9 +310,7 @@ function UserBottomSheetModalBase(
       return;
     }
 
-    if (!/\.[a-zA-Z0-9]+$/.test(fileName)) {
-      fileName = `${fileName}.jpg`;
-    }
+    if (!/\.[a-zA-Z0-9]+$/.test(fileName)) fileName = `${fileName}.jpg`;
 
     setPreviewImage(fileUri);
 
@@ -340,18 +334,15 @@ function UserBottomSheetModalBase(
       console.error('❌ 프로필 이미지 업로드 실패:', err);
       showToast('이미지 업로드 중 문제가 발생했어요.');
     }
-  };
+  }, [showToast]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (isSaving) return;
     setIsSaving(true);
 
     try {
-      const {
-        name: initialName,
-        trait: initialTrait,
-        image: initialImage,
-      } = initialDataRef.current;
+      const {name: initialName, trait: initialTrait, image: initialImage} =
+        initialDataRef.current;
 
       const trimmedName = (nameRef.current || '').trim();
       const finalName =
@@ -370,17 +361,15 @@ function UserBottomSheetModalBase(
 
       await onSave?.(finalName, finalTrait, finalImageUrl);
 
-      setIsClosing(true);
-      modalRef.current?.dismiss?.();
+      closeSheet();
     } catch (err) {
       console.error('❌ 프로필 저장 실패:', err);
       showToast('프로필 저장 중 문제가 발생했어요.');
-    } finally {
       setIsSaving(false);
     }
-  };
+  }, [isSaving, onSave, showToast, closeSheet]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     const {name, trait, image} = initialDataRef.current;
 
     nameRef.current = name;
@@ -398,74 +387,89 @@ function UserBottomSheetModalBase(
     setNameKey(k => k + 1);
     setTraitKey(k => k + 1);
 
+    hideToast();
+
+    // ✅ snap/keyboard 건드리지 말기
+    onCancel?.();
+  }, [onCancel, hideToast]);
+
+  const footerProps = useMemo(
+    () => ({
+      onCancel: handleCancel,
+      onSave: handleSave,
+      saveLabel: isSaving ? '저장 중...' : '적용하기',
+      autoCloseOnSave: false,
+      disabled: isSaving,
+    }),
+    [handleCancel, handleSave, isSaving],
+  );
+
+  const handleDismiss = useCallback(() => {
+    setIsClosing(false);
+    setIsSaving(false);
+    hideToast();
+
     tapToResetRef.current = false;
+    keyboardOpenRef.current = false;
+    keyboardHeightRef.current = 0;
+
     Animated.timing(shiftAnim, {
       toValue: 0,
       duration: 140,
       useNativeDriver: true,
     }).start();
 
-    modalRef.current?.snapToIndex?.(0);
-    onCancel?.();
-  };
-
-  const footerProps = useMemo(
-    () => ({
-      onCancel: handleCancel,
-      onSave: handleSave,
-      saveLabel: '적용하기',
-      autoCloseOnSave: true,
-    }),
-    [handleCancel, handleSave],
-  );
+    onDismiss?.();
+  }, [onDismiss, hideToast, shiftAnim]);
 
   return (
     <>
       <BottomSheetLayout
         modalRef={modalRef}
-        // ✅ fontMode에 따라 동적 스냅
         snapPoints={snapPoints}
-        keyboardBehavior={Platform.OS === 'ios' ? 'interactive' : 'none'}
-        androidKeyboardInputMode="adjustNothing"
+        defaultSnapPoints={snapPoints}
+        sheetKey={sheetKey}
         title="프로필 편집"
-        subtitle="가족에게 보이는 이름과 한마디를 설정해요."
-        useInternalScroll={false}
-        onDismiss={() => {
-          setIsClosing(true);
-          tapToResetRef.current = false;
-          keyboardOpenRef.current = false;
-          onDismiss?.();
-        }}>
-        <View
-          style={{flex: 1}}
-          onStartShouldSetResponder={() => true}
-          onResponderRelease={dismissKeyboardAndReset}>
-          <Animated.View
-            style={{
-              flex: 1,
-              transform: [{translateY: shiftAnim}],
-              paddingBottom: footerSpace + getResponsiveHeight(18),
-            }}>
-            <View>
-              <Pressable onPress={() => {}}>
+        subtitle="가족이 기억할 ‘별명’과 ‘특징’을 남겨요."
+        useInternalScroll={true}
+        keyboardBehavior={Platform.OS === 'ios' ? 'interactive' : 'none'}
+        keyboardBlurBehavior="restore"
+        androidKeyboardInputMode="adjustResize"
+        enableKeyboardPolicy={true}
+        keyboardOpenSnapIndex={1}
+        keyboardCloseSnapIndex={0}
+        useTouchOverlay={true}
+        dismissKeyboardOnPress={true} // ✅ Layout이 키보드 내림 담당
+        onTouchInside={handleTouchInsideResetOnly} // ✅ 내부 탭은 shift만 리셋
+        onDismiss={handleDismiss}
+      >
+        <SafeAreaView style={{backgroundColor: '#fff'}}>
+          <BottomSheetView>
+            <Animated.View style={{transform: [{translateY: shiftAnim}]}}>
+              <View style={styles.body}>
                 <TouchableOpacity
                   style={styles.profileTouchArea}
                   onPress={handleImagePick}
-                  activeOpacity={0.9}>
+                  activeOpacity={0.9}
+                  disabled={isSaving}
+                >
                   <View style={styles.profileimageContainer}>
                     <FastImage
+                      fallback={true}
                       source={
                         previewImage
                           ? {uri: previewImage}
                           : require('../../../assets/images/default.png')
                       }
                       style={styles.profileImage}
+                      // ✅ blurRadius는 무거움. 버벅 더 줄이고 싶으면 아래처럼 조건부로 바꿔도 됨:
+                      // blurRadius={keyboardOpenRef.current ? 0 : 4}
                       blurRadius={4}
                     />
                     <View style={styles.profileOverlay} />
                     <View style={styles.profileRing} />
                     <View style={styles.profileBadge}>
-                      <FastImage
+                      <Image
                         style={styles.profileBadgeIcon}
                         source={require('../../../assets/images/pencil.png')}
                       />
@@ -475,39 +479,36 @@ function UserBottomSheetModalBase(
                     사진 변경
                   </Text>
                 </TouchableOpacity>
-              </Pressable>
 
-              <View style={styles.fieldBlock}>
-                <Text allowFontScaling={false} style={styles.label}>
-                  별명
-                </Text>
-                <Pressable onPress={() => {}}>
+                <View style={styles.fieldBlock}>
+                  <Text allowFontScaling={false} style={styles.label}>
+                    별명
+                  </Text>
                   <BottomSheetTextInput
                     allowFontScaling={false}
                     ref={nameInputRef}
                     key={`name-${nameKey}`}
                     style={styles.input}
                     defaultValue={nameRef.current}
-                    onFocus={() => {
-                      tapToResetRef.current = false;
-                      ensureVisible(nameInputRef);
-                    }}
                     onChangeText={text => {
                       nameRef.current = text;
                     }}
                     placeholder="가족들이 부르는 이름을 적어주세요."
                     placeholderTextColor={COLORS.textTertiary}
                     returnKeyType="next"
+                    onFocus={() => {
+                      tapToResetRef.current = false;
+                      ensureVisible(nameInputRef);
+                    }}
                     onSubmitEditing={() => traitInputRef.current?.focus?.()}
+                    editable={!isSaving}
                   />
-                </Pressable>
-              </View>
+                </View>
 
-              <View style={styles.fieldBlock}>
-                <Text allowFontScaling={false} style={styles.label}>
-                  한 줄 소개
-                </Text>
-                <Pressable onPress={() => {}}>
+                <View style={styles.fieldBlock}>
+                  <Text allowFontScaling={false} style={styles.label}>
+                    한 줄 소개
+                  </Text>
                   <BottomSheetTextInput
                     allowFontScaling={false}
                     ref={traitInputRef}
@@ -515,39 +516,42 @@ function UserBottomSheetModalBase(
                     style={[styles.input, styles.textArea]}
                     defaultValue={traitRef.current}
                     multiline
-                    onFocus={() => {
-                      tapToResetRef.current = false;
-                      ensureVisible(traitInputRef);
-                    }}
                     onChangeText={text => {
                       traitRef.current = text;
                     }}
                     placeholder="성격, 분위기, 기억에 남는 포인트를 가볍게 적어보세요."
                     placeholderTextColor={COLORS.textTertiary}
+                    onFocus={() => {
+                      tapToResetRef.current = false;
+                      ensureVisible(traitInputRef);
+                    }}
+                    editable={!isSaving}
                   />
-                </Pressable>
-              </View>
-
-              {isSaving && (
-                <View style={styles.loadingOverlay}>
-                  <View style={styles.loadingBox}>
-                    <ActivityIndicator size="small" color="#4B5563" />
-                    <Text
-                      allowFontScaling={false}
-                      allowFontScaling={false}
-                      style={styles.loadingText}>
-                      저장 중...
-                    </Text>
-                  </View>
                 </View>
-              )}
-            </View>
 
-            <View style={styles.footerFixed}>
-              <BottomSheetButtons {...footerProps} />
-            </View>
-          </Animated.View>
-        </View>
+                <BottomSheetFooterButtons
+                  bottomSafe={0}
+                  includeBottomSafePadding={true}
+                  excludeSafeForMeasure={false}
+                  onLayoutHeight={undefined}
+                  style={styles.footerFlow}
+                  {...footerProps}
+                />
+
+                {isSaving && (
+                  <View style={styles.loadingOverlay} pointerEvents="none">
+                    <View style={styles.loadingBox}>
+                      <ActivityIndicator size="small" color="#4B5563" />
+                      <Text allowFontScaling={false} style={styles.loadingText}>
+                        저장 중...
+                      </Text>
+                    </View>
+                  </View>
+                )}
+              </View>
+            </Animated.View>
+          </BottomSheetView>
+        </SafeAreaView>
       </BottomSheetLayout>
 
       <ToastModal
@@ -564,7 +568,12 @@ UserBottomSheetModal.displayName = 'UserBottomSheetModal';
 export default UserBottomSheetModal;
 
 const styles = StyleSheet.create({
-  footerFixed: {
+  body: {
+    paddingTop: getResponsiveHeight(6),
+    paddingBottom: getResponsiveHeight(10),
+  },
+
+  footerFlow: {
     paddingTop: getResponsiveHeight(10),
     paddingBottom: getResponsiveHeight(2),
   },
@@ -617,8 +626,9 @@ const styles = StyleSheet.create({
     marginTop: getResponsiveHeight(6),
     fontSize: getResponsiveFontSize(12.5),
     fontFamily: 'Pretendard-Medium',
-    color: '#4B5563',
+    color: BOTTOMSHEET_STYLE().sectionLabel.color,
   },
+
   fieldBlock: {marginBottom: getResponsiveHeight(12)},
   label: {
     fontSize: BOTTOMSHEET_STYLE().sectionLabel.fontSize,
@@ -628,7 +638,7 @@ const styles = StyleSheet.create({
     marginTop: BOTTOMSHEET_STYLE().sectionLabel.marginTop,
   },
   input: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical:
@@ -640,6 +650,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Regular',
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    color: '#111827',
   },
   textArea: {
     height: getResponsiveHeight(96),
@@ -653,14 +664,14 @@ const styles = StyleSheet.create({
     bottom: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.18)',
   },
+
   loadingOverlay: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: getResponsiveHeight(20),
+    top: getResponsiveHeight(8),
     alignItems: 'center',
     justifyContent: 'center',
-    pointerEvents: 'none',
   },
   loadingBox: {
     flexDirection: 'row',

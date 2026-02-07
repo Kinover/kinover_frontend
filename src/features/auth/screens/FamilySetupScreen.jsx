@@ -10,33 +10,30 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
-import {useDispatch, useSelector} from 'react-redux';
+import {useDispatch} from 'react-redux';
 
-import ToastModal from '../../../components/ToastModal';
+import ToastModal from '../../../components/modal/ToastModal';
 import BottomActionButton from 'components/BottomActionButton';
 
-import {fetchFamilyThunk, addUserToFamily} from '../../home/store/familyThunk';
+// ✅ 변경: addUserToFamily 제거, join/create-and-join 사용
+import {
+  fetchFamilyThunk,
+  joinFamilyThunk,
+  createFamilyAndJoinThunk,
+} from '../../home/store/familyThunk';
+
 import {setHasFamily} from 'utils/storage';
-import {useCreateFamily} from '../hooks/useCreateFamily';
 import {COLORS} from 'styles/style';
 
 export default function FamilySetupScreen() {
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
-  const userId = useSelector(state => state.user.userId);
-
   const [familyCode, setFamilyCode] = useState('');
   const [fieldError, setFieldError] = useState('');
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-
-  // 새 가족 생성 훅 (내부에서 createFamilyThunk 쓰고 있을 것)
-  const {
-    createFamily,
-    loading: createFamilyLoading,
-    error: createFamilyError,
-  } = useCreateFamily();
+  const [creating, setCreating] = useState(false);
 
   const showToast = useCallback(msg => {
     setToastMessage(msg);
@@ -54,90 +51,70 @@ export default function FamilySetupScreen() {
       return;
     }
 
-    if (!userId) {
-      const msg = '로그인 정보가 확인되지 않아요.';
-      showToast(msg);
-      return;
-    }
-
     setFieldError('');
 
     try {
-      // 1) 가족 코드로 가족 정보 조회 (여기서는 존재 여부 확인용)
-      //    fetchFamilyThunk 안에서 에러 처리(setFamilyError)만 하고 throw는 안 하니까
-      //    여기서는 그냥 await만 해두면 됨.
+      // 1) 가족 존재 확인(선택이지만 유지하면 UX 좋아짐)
       await dispatch(fetchFamilyThunk(trimmed));
 
-      // 2) 해당 가족에 나를 추가
-      //    백엔드가 /add/{familyId}/{userId} 에서 {familyId}를 "가족코드"로 쓰는 구조라면
-      //    그대로 trimmed를 familyId 자리에 넣어주면 됨.
-      await dispatch(addUserToFamily(trimmed, userId));
+      // 2) 참여 (✅ 토큰 유저로 서버가 처리)
+      await dispatch(joinFamilyThunk(trimmed));
 
-      console.log('🎉 가족 참여 성공');
       await setHasFamily(true);
 
-      // 필요하면 여기서 다시 가족 정보 한번 더 가져와도 됨
-      // await dispatch(fetchFamilyThunk(trimmed));
-
-      // 3) 완료 화면 이동
-      navigation.navigate('설정완료화면');
+      console.log('🎉 가족 참여 성공');
+      navigation.navigate('설정완료화면', {familyId: trimmed});
     } catch (err) {
-      console.log('❌ 가족 참여 실패:', err?.response || err);
-
-      const status = err?.response?.status;
       const msg =
-        status === 404
-          ? '가족 코드를 찾을 수 없어요. 다시 확인해 주세요.'
-          : err?.response?.data?.message ||
-            err?.message ||
-            '가족 참여 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.';
+        err?.message ||
+        err?.response?.data?.message ||
+        '가족 참여 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.';
 
+      console.log('❌ 가족 참여 실패:', msg);
       setFieldError(msg);
       showToast(msg);
     }
   };
 
-  // ✅ 새 가족 생성 + 내가 그 가족에 들어가기
+  // ✅ 새 가족 생성 + 자동 참여 (한 방)
   const handleCreateFamily = async () => {
-    if (!userId) {
-      const msg = '로그인 정보가 확인되지 않아요.';
-      showToast(msg);
-      return;
-    }
+    if (creating) return;
+    setCreating(true);
 
     try {
-      // 1) 새 가족 생성 (createFamily 내부에서 createFamilyThunk 호출해서 newFamilyId 리턴)
-      const newFamilyId = await createFamily();
+      const newFamilyId = await dispatch(createFamilyAndJoinThunk());
 
-      if (!newFamilyId) {
-        const msg =
-          createFamilyError ||
-          '가족 생성에 실패했어요. 잠시 후 다시 시도해 주세요.';
+      // thunk 구현에 따라 familyId가 문자열로 오거나, 객체로 올 수도 있으니 안전 처리
+      const id =
+        typeof newFamilyId === 'string'
+          ? newFamilyId
+          : newFamilyId?.familyId || null;
+
+      if (!id) {
+        const msg = '가족 생성에 실패했어요. 잠시 후 다시 시도해 주세요.';
         showToast(msg);
         return;
       }
 
-      console.log('🎉 새 가족 생성 성공, ID(or Code):', newFamilyId);
-
-      // 2) 내가 그 가족에 추가
-      await dispatch(addUserToFamily(newFamilyId, userId));
-
-      // 3) "가족 있음" 플래그 저장
       await setHasFamily(true);
 
-      // 4) 가족 정보 스토어에 최신화
-      await dispatch(fetchFamilyThunk(newFamilyId));
+      console.log('🎉 새 가족 생성+참여 성공, familyId:', id);
 
-      // 5) 완료 화면 이동 (+ 필요하면 familyId 넘기기)
-      navigation.navigate('설정완료화면', {familyId: newFamilyId});
+      // create-and-join에서 이미 setFamily까지 했으면 fetchFamily는 굳이 안 해도 됨
+      // 그래도 확실히 하고 싶으면 아래 주석 해제
+      // await dispatch(fetchFamilyThunk(id));
+
+      navigation.navigate('설정완료화면', {familyId: id});
     } catch (err) {
-      console.log('❌ 새 가족 생성/참여 실패:', err?.response || err);
-
       const msg =
-        err?.response?.data?.message ||
         err?.message ||
+        err?.response?.data?.message ||
         '가족을 만드는 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.';
+
+      console.log('❌ 새 가족 생성/참여 실패:', msg);
       showToast(msg);
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -151,7 +128,10 @@ export default function FamilySetupScreen() {
 
       <View style={styles.field}>
         <Text allowFontScaling={false} style={styles.label}>
-          가족 코드 <Text allowFontScaling={false} style={styles.star}>*</Text>
+          가족 코드{' '}
+          <Text allowFontScaling={false} style={styles.star}>
+            *
+          </Text>
         </Text>
         <TextInput
           allowFontScaling={false}
@@ -164,32 +144,43 @@ export default function FamilySetupScreen() {
         />
       </View>
 
-      {fieldError ? <Text allowFontScaling={false} style={styles.error}>{fieldError}</Text> : null}
+      {fieldError ? (
+        <Text allowFontScaling={false} style={styles.error}>
+          {fieldError}
+        </Text>
+      ) : null}
 
       <BottomActionButton label="참여하기" onPress={handleSubmit} />
 
       <View style={styles.dividerRow}>
         <View style={styles.divider} />
-        <Text allowFontScaling={false} style={styles.dividerText}>또는</Text>
+        <Text allowFontScaling={false} style={styles.dividerText}>
+          또는
+        </Text>
         <View style={styles.divider} />
       </View>
 
-      {/* 새 가족 모임 카드형 선택 UI */}
       <TouchableOpacity
         style={styles.createCard}
         activeOpacity={0.85}
         onPress={handleCreateFamily}
-        disabled={createFamilyLoading}>
+        disabled={creating}>
         <View style={styles.createCardIconBox}>
-          <Text allowFontScaling={false} style={styles.createCardIcon}>🏡</Text>
+          <Text allowFontScaling={false} style={styles.createCardIcon}>
+            🏡
+          </Text>
         </View>
         <View style={styles.createCardTextBox}>
-          <Text allowFontScaling={false} style={styles.createCardTitle}>{'새 가족 모임 만들기'}</Text>
+          <Text allowFontScaling={false} style={styles.createCardTitle}>
+            {'새 가족 모임 만들기'}
+          </Text>
           <Text allowFontScaling={false} style={styles.createCardDesc}>
             내가 방장이 되어 가족을 초대할게요
           </Text>
         </View>
-        <Text allowFontScaling={false} style={styles.createCardArrow}>›</Text>
+        <Text allowFontScaling={false} style={styles.createCardArrow}>
+          ›
+        </Text>
       </TouchableOpacity>
 
       <ToastModal

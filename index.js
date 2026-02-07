@@ -2,13 +2,13 @@
  * @format
  */
 import 'react-native-gesture-handler'; // ✅ 가장 위
-import 'react-native-reanimated'; // ✅ 두 번째
+import 'react-native-reanimated'; // ✅ 두 번째 (프로젝트에서 이 방식 쓰고 있으면 유지)
 import './src/app/disableFontScaling';
 
 import {AppRegistry} from 'react-native';
 import {name as appName} from './app.json';
 import App from './src/app/App';
-import { registerBackgroundMessageHandler } from './src/features/notification/utils/requestNotificationPermission';
+import {registerBackgroundMessageHandler} from './src/features/notification/utils/requestNotificationPermission';
 
 // ✅ polyfill
 if (!Array.prototype.findLastIndex) {
@@ -32,8 +32,8 @@ if (!Array.prototype.findLastIndex) {
   });
 }
 
-// ✅ FCM 백그라운드 핸들러 등록
+// ✅ FCM 백그라운드 핸들러 등록 (한 번만)
 registerBackgroundMessageHandler();
 
-// ✅ 딱 한 번만 등록
+// ✅ 앱 등록도 한 번만
 AppRegistry.registerComponent(appName, () => App);

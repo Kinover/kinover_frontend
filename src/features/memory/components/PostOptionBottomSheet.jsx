@@ -33,7 +33,7 @@ export default function PostOptionBottomSheet({
   onDeletePost,
   CameraRollAvailable = true,
 }) {
-  const snapPoints = useMemo(() => ['50%'], []);
+  const snapPoints = useMemo(() => ['51%'], []);
 
   return (
     <BottomSheetModal

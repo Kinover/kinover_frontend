@@ -1,6 +1,6 @@
 // src/features/chat/store/chatRoomSlice.js
 import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
-import axios from 'axios';
+import { apiClient } from 'utils/apiClient';
 import {getToken} from '../../../utils/storage';
 import { fetchChatRoomMediaThunk } from './chatRoomThunk';
 
@@ -93,7 +93,7 @@ export const markReadThunk = createAsyncThunk(
 
       const body = {lastReadAt: normalized};
 
-      await axios.post(`${API_BASE}/${rid}/read`, body, {
+      await apiClient.post(`${API_BASE}/${rid}/read`, body, {
         headers: {Authorization: `Bearer ${token}`},
       });
 
@@ -121,7 +121,7 @@ export const fetchReadPointersThunk = createAsyncThunk(
       const rid = toId(chatRoomId);
       if (!rid) return rejectWithValue('chatRoomId가 없습니다.');
 
-      const res = await axios.get(`${API_BASE}/${rid}/readPointers`, {
+      const res = await apiClient.get(`${API_BASE}/${rid}/readPointers`, {
         headers: {Authorization: `Bearer ${token}`},
       });
 

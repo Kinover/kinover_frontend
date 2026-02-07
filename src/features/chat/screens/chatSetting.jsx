@@ -58,7 +58,7 @@ import {
   updateChatRoomNameInList,
 } from '../store/chatRoomSlice';
 
-import ToastModal from '../../../components/ToastModal';
+import ToastModal from '../../../components/modal/ToastModal';
 import {resetRoomMessageList} from '../store/messageSlice';
 import {BACKGROUND_COLORS, COLORS} from 'styles/style';
 import {FONT_MODE} from 'store/uiSlice';
@@ -740,7 +740,7 @@ export default function ChatSettings({
                       style={styles.inviteBtn}
                       activeOpacity={0.9}>
                       <Image
-                        source={require('../../../assets/images/addMember-bt.png')}
+                        source={require('../../../assets/images/addMember_bt.png')}
                         style={styles.addIcon}
                       />
                       <Text allowFontScaling={false} style={styles.inviteText}>
@@ -1032,10 +1032,7 @@ const makeStyles = rf =>
       paddingHorizontal: getResponsiveWidth(20),
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginTop:
-        Platform.OS === 'android'
-          ? getResponsiveHeight(34)
-          : getResponsiveHeight(66),
+      marginTop: getResponsiveHeight(75),
       marginBottom: getResponsiveHeight(30),
       alignItems: 'center',
     },
@@ -1046,7 +1043,7 @@ const makeStyles = rf =>
       fontSize: rf(19),
       fontFamily: 'Pretendard-SemiBold',
       color: COLORS.textPrimary,
-      lineHeight: rf(19),
+      lineHeight: rf(20),
     },
 
     headerSubtitle: {
@@ -1170,7 +1167,9 @@ const makeStyles = rf =>
 
     inviteText: {
       fontSize: rf(13),
-      color: '#F59E0B',
+      // color: '#F59E0B',
+      color: 'black',
+
       fontFamily: 'Pretendard-Medium',
     },
 
@@ -1195,7 +1194,7 @@ const makeStyles = rf =>
       backgroundColor: '#F3F4F6',
     },
 
-    mediaTabActive: {backgroundColor: '#FEF3C7'},
+    mediaTabActive: {backgroundColor: 'black'},
 
     mediaTabText: {
       fontSize: rf(12),
@@ -1203,7 +1202,7 @@ const makeStyles = rf =>
       color: '#6B7280',
     },
 
-    mediaTabTextActive: {color: '#B45309'},
+    mediaTabTextActive: {color: 'white'},
 
     mediaLoadingBox: {
       paddingVertical: getResponsiveHeight(14),
@@ -1218,6 +1217,7 @@ const makeStyles = rf =>
       color: '#6B7280',
       fontFamily: 'Pretendard-Regular',
       paddingVertical: getResponsiveHeight(8),
+      marginVertical: getResponsiveHeight(30),
     },
 
     gridWrapCenter: {
@@ -1278,6 +1278,7 @@ const makeStyles = rf =>
 
     leaveStickyWrap: {
       position: 'absolute',
+      height: getResponsiveHeight(30),
       left: 0,
       right: 0,
       bottom: 0,

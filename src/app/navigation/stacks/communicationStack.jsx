@@ -29,9 +29,7 @@ export default function CommunicationStack() {
           shadowOpacity: 0,
           elevation: 0,
           height:
-            Platform.OS === 'ios'
-              ? getResponsiveHeight(107.5)
-              : getResponsiveHeight(70),
+          getResponsiveHeight(107.5),
         },
         headerTitleAlign: 'center',
         headerShown: true,

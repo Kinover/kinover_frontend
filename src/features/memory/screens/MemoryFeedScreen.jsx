@@ -20,6 +20,7 @@ import {
   Platform,
   RefreshControl,
   Dimensions,
+  Animated,
 } from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
@@ -67,7 +68,11 @@ const CARD_RADIUS = getResponsiveIconSize(18);
 const BG = BACKGROUND_COLORS.secondaryBg;
 const SURFACE = '#FFFFFF';
 
-const fallbackImage = null;
+// ✅ FastImage 공통 정책(키노버처럼 CDN url이면 immutable이 보통 제일 깔끔함)
+const FASTIMAGE_DEFAULTS = {
+  priority: FastImage.priority.normal,
+  cache: FastImage.cacheControl.immutable,
+};
 
 /* =========================
  * Android Layout Animation
@@ -114,9 +119,6 @@ export default function MemoryFeed({
   /* -------------------------
    * Redux States
    * ------------------------- */
-  // ✅ A안: familyId는 클라에서 굳이 들고/보내지 않음(서버가 토큰으로 결정)
-  // const familyId = useSelector(state => state.family?.familyId);
-
   const memoryState = useSelector(state => state.memory || {});
   const memoryList = memoryState.memoryList || [];
   const memoryLoading = !!memoryState.loading;
@@ -138,6 +140,49 @@ export default function MemoryFeed({
   const [sortKey, setSortKey] = useState('latest');
 
   const listRef = useRef(null);
+
+  // ✅ 카드 scale 애니메이션 값 저장소 (key별로 유지)
+  // - postId 없는 케이스도 있으니, index 기반 fallback key를 쓰도록 개선
+  const cardScaleMapRef = useRef(new Map());
+
+  const getCardScale = useCallback(scaleKey => {
+    const key = scaleKey != null ? String(scaleKey) : null;
+    if (!key) return null;
+
+    const map = cardScaleMapRef.current;
+    if (!map.has(key)) map.set(key, new Animated.Value(1));
+    return map.get(key);
+  }, []);
+
+  const pressInCard = useCallback(
+    scaleKey => {
+      const scale = getCardScale(scaleKey);
+      if (!scale) return;
+
+      Animated.spring(scale, {
+        toValue: 0.97,
+        useNativeDriver: true,
+        speed: 150,
+        bounciness: 0,
+      }).start();
+    },
+    [getCardScale],
+  );
+
+  const pressOutCard = useCallback(
+    scaleKey => {
+      const scale = getCardScale(scaleKey);
+      if (!scale) return;
+
+      Animated.spring(scale, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 28,
+        bounciness: 6,
+      }).start();
+    },
+    [getCardScale],
+  );
 
   /* -------------------------
    * Helpers
@@ -196,26 +241,14 @@ export default function MemoryFeed({
     [normalizeMediaUrl, videoThumbMap, refreshing],
   );
 
-  /**
-   * ✅ 선택된 카테고리 타이틀 -> categoryId(UUID)로 변환
-   * - "전체"면 null (서버에 categoryId 안 붙게)
-   */
   const selectedCategoryId = useMemo(() => {
     if (!selectedCategoryTitle || selectedCategoryTitle === '전체') return null;
     const found = categoryList.find(c => c?.title === selectedCategoryTitle);
     return found?.categoryId ?? null;
   }, [selectedCategoryTitle, categoryList]);
 
-  /**
-   * ✅ A안 doFetch
-   * - 카테고리/게시글 모두 "토큰 기반으로 서버가 familyId 결정" 전제
-   * - 게시글 목록은 categoryId만 optional로 전달
-   */
   const doFetch = useCallback(() => {
-    // ✅ 카테고리 API도 A안으로 바뀌었다면 인자 없이 호출
     dispatch(fetchCategoryThunk());
-
-    // ✅ posts 목록: categoryId만 보냄(전체면 null)
     dispatch(fetchMemoryThunk(selectedCategoryId));
   }, [dispatch, selectedCategoryId]);
 
@@ -437,7 +470,7 @@ export default function MemoryFeed({
    * Render: Feed Card
    * ========================= */
   const renderListItem = useCallback(
-    memory => {
+    (memory, index) => {
       const {mediaCount, videoCount} = getMediaStats(memory);
 
       const rawFirstUri = memory?.imageUrls?.[0] || null;
@@ -447,6 +480,7 @@ export default function MemoryFeed({
       const firstThumb =
         firstIsVideo && firstUri ? videoThumbMap[firstUri] : null;
 
+      // (기존 방식 유지) 렌더 중 호출 방지 장치(thumbLoadingRef)가 있으니 폭발하진 않음
       if (!refreshing && firstIsVideo && firstUri && !firstThumb) {
         requestAnimationFrame(() => ensureVideoThumbByUri(firstUri));
       }
@@ -459,28 +493,40 @@ export default function MemoryFeed({
           ? `미디어 ${mediaCount} · 영상 ${videoCount}`
           : `미디어 ${mediaCount}`;
 
-      const mediaSource = firstIsVideo
-        ? firstThumb
-          ? {uri: firstThumb}
-          : fallbackImage
-        : firstUri
-        ? {uri: firstUri}
-        : fallbackImage;
+      const mediaSource =
+        firstIsVideo && firstThumb
+          ? {uri: firstThumb, ...FASTIMAGE_DEFAULTS}
+          : !firstIsVideo && firstUri
+          ? {uri: firstUri, ...FASTIMAGE_DEFAULTS}
+          : null;
 
-      const Card = (
+      // ✅ postId 없을 때도 안정적으로 유지되도록 fallback key 사용
+      const scaleKey =
+        memory?.postId != null ? `post-${memory.postId}` : `idx-${index}`;
+
+      const scale = refreshing ? null : getCardScale(scaleKey);
+
+      const CardInner = (
         <View style={styles.cardOuter}>
           <TouchableOpacity
-            activeOpacity={0.9}
+            activeOpacity={1}
+            onPressIn={() => pressInCard(scaleKey)}
+            onPressOut={() => pressOutCard(scaleKey)}
             onPress={() =>
               navigation.navigate('게시글화면', {postId: memory?.postId})
             }
             style={styles.cardPress}>
             <View style={styles.mediaWrap}>
-              <FastImage
-                style={styles.mediaImg}
-                source={mediaSource}
-                resizeMode={FastImage.resizeMode.cover}
-              />
+              {mediaSource ? (
+                <FastImage
+                  fallback={true}
+                  style={styles.mediaImg}
+                  source={mediaSource}
+                  resizeMode={FastImage.resizeMode.cover}
+                />
+              ) : (
+                <View style={styles.mediaPlaceholder} />
+              )}
 
               {firstIsVideo && (
                 <View pointerEvents="none" style={styles.playCenter}>
@@ -524,29 +570,34 @@ export default function MemoryFeed({
         </View>
       );
 
-      if (refreshing) return Card;
+      if (refreshing || !scale) return CardInner;
 
       return (
         <DropShadow
-          key={memory.postId}
+          key={memory.postId ?? `shadow-${index}`}
           style={{
             shadowColor: '#000',
             shadowOffset: {width: 0, height: 3},
             shadowOpacity: 0.08,
             shadowRadius: 3,
           }}>
-          {Card}
+          <Animated.View style={{transform: [{scale}]}}>
+            {CardInner}
+          </Animated.View>
         </DropShadow>
       );
     },
     [
       ensureVideoThumbByUri,
       formatDate,
+      getCardScale,
       getCategoryLabel,
       getMediaStats,
       inferIsVideo,
       navigation,
       normalizeMediaUrl,
+      pressInCard,
+      pressOutCard,
       refreshing,
       videoThumbMap,
     ],
@@ -572,40 +623,32 @@ export default function MemoryFeed({
         });
       };
 
+      const source =
+        isVideo && thumbUri
+          ? {uri: thumbUri, ...FASTIMAGE_DEFAULTS}
+          : !isVideo && uri
+          ? {uri, ...FASTIMAGE_DEFAULTS}
+          : null;
+
       return (
         <TouchableOpacity
           activeOpacity={0.85}
-          key={`${uri}_${index}`}
+          key={`${uri || 'no-uri'}_${index}`}
           onPress={goPost}
           style={{
             width: tileWidth,
             aspectRatio: 1,
             marginBottom: ITEM_MARGIN,
           }}>
-          {isVideo ? (
-            thumbUri ? (
-              <FastImage
-                source={{
-                  uri: thumbUri,
-                  priority: FastImage.priority.normal,
-                  cache: FastImage.cacheControl.immutable,
-                }}
-                style={styles.galleryImage}
-                resizeMode={FastImage.resizeMode.cover}
-              />
-            ) : (
-              <FastImage
-                source={fallbackImage}
-                style={styles.galleryImage}
-                resizeMode="cover"
-              />
-            )
-          ) : (
+          {source ? (
             <FastImage
-              source={uri ? {uri} : fallbackImage}
+              fallback={true}
+              source={source}
               style={styles.galleryImage}
-              resizeMode="cover"
+              resizeMode={FastImage.resizeMode.cover}
             />
+          ) : (
+            <View style={styles.galleryPlaceholder} />
           )}
 
           {isVideo && (
@@ -667,7 +710,7 @@ export default function MemoryFeed({
               paddingBottom: getResponsiveHeight(24),
             }}
             showsVerticalScrollIndicator={true}
-            />
+          />
         </View>
       );
     }
@@ -696,9 +739,7 @@ export default function MemoryFeed({
   );
 
   const headerCategoryTitle =
-    selectedCategoryTitle === '전체'
-      ? '전체글'
-      : selectedCategoryTitle || '전체글';
+    selectedCategoryTitle === '전체' ? '전체' : selectedCategoryTitle || '전체';
 
   const headerPeriodLabel =
     startDate && endDate
@@ -751,7 +792,7 @@ export default function MemoryFeed({
             ListEmptyComponent={
               <View style={styles.emptyWrapper}>
                 <Text allowFontScaling={false} style={styles.emptyText}>
-                  아직 등록된 게시글이 없어요
+                  아직 등록된 게시글이 없어요.
                 </Text>
               </View>
             }
@@ -770,13 +811,13 @@ export default function MemoryFeed({
               item.postId?.toString() || `no-id-${index}`
             }
             numColumns={1}
-            renderItem={({item}) => renderListItem(item)}
+            renderItem={({item, index}) => renderListItem(item, index)}
             refreshControl={refreshControl}
             ListHeaderComponent={listHeader}
             ListEmptyComponent={
               <View style={styles.emptyWrapper}>
                 <Text allowFontScaling={false} style={styles.emptyText}>
-                  아직 등록된 게시글이 없어요
+                  아직 등록된 게시글이 없어요.
                 </Text>
               </View>
             }
@@ -822,6 +863,11 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   mediaImg: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#E5E7EB',
+  },
+  mediaPlaceholder: {
     width: '100%',
     height: '100%',
     backgroundColor: '#E5E7EB',
@@ -891,7 +937,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   metaText: {
-    fontSize: getResponsiveFontSize(12),
+    fontSize: getResponsiveFontSize(12.5),
     fontFamily: 'Pretendard-Medium',
     color: COLORS.textSecondary,
   },
@@ -920,7 +966,11 @@ const styles = StyleSheet.create({
   galleryImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
+    backgroundColor: '#E5E7EB',
+  },
+  galleryPlaceholder: {
+    width: '100%',
+    height: '100%',
     backgroundColor: '#E5E7EB',
   },
 

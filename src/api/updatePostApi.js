@@ -1,5 +1,5 @@
 // src/api/updatePostApi.jsx
-import axios from 'axios';
+import { apiClient } from 'utils/apiClient';
 import {getToken} from '../utils/storage';
 
 const BASE_URL = 'https://kinover.shop';
@@ -65,7 +65,7 @@ export async function updatePostApi(postId, payload) {
 
   const apiUrl = `${BASE_URL}/api/posts/${postId}`;
 
-  const res = await axios.patch(apiUrl, body, {
+  const res = await apiClient.patch(apiUrl, body, {
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',

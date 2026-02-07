@@ -19,7 +19,9 @@ export const useLogout = () => {
     // 0) 소켓 끊기
     try {
       stopChatSocket();
-    } catch (e) {null}
+    } catch (e) {
+      null;
+    }
 
     // 1) 외부/서버 정리(실패해도 진행)
     try {
@@ -34,7 +36,7 @@ export const useLogout = () => {
       console.log('⚠️ Kakao logout 실패(무시):', e);
     }
 
-    // 2) 로컬 로그인정보 삭제
+    // 2) 로컬 로그인정보 삭제 (needsSignup 포함)
     try {
       await deleteLoginInfo();
     } catch (e) {
@@ -44,13 +46,12 @@ export const useLogout = () => {
     // 3) persist 완전 초기화
     try {
       await persistor.purge();
-      // purge 직후 flush를 한 번 더(타이밍 안정화)
       await persistor.flush();
     } catch (e) {
       console.log('⚠️ purge/flush 실패:', e);
     }
 
-    // 4) ✅ 한 틱 쉬고 상태 보정 (rehydrate 타이밍 충돌 방지)
+    // 4) 타이밍 안정화
     await nextTick();
     dispatch(setLogout());
     dispatch(setAuthChecked(true));

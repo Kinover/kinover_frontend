@@ -137,17 +137,22 @@ export const renameChatRoomForMeThunk = createAsyncThunk(
  * POST /api/chatRoom/create
  * body: { familyId, roomName, userIds }
  */
+/**
+ * ✅ 채팅방 생성 (권장: JSON)
+ * POST /api/chatRoom/create
+ * body: { familyId, roomName, userIds }
+ */
 export const createChatRoomThunk = createAsyncThunk(
   'chatRoom/create',
   async ({roomName, userIds, familyId}, {rejectWithValue}) => {
     try {
-      const trimmedName = String(roomName ?? '').trim();
-      if (!trimmedName) return rejectWithValue('roomName이 비어있습니다.');
-
-      const fid = familyId; // UUID는 보통 문자열 그대로 보내면 됨
+      const fid = familyId;
       if (!fid) return rejectWithValue('familyId가 없습니다.');
 
-      // userIds: 배열/문자열 둘 다 받아서 정규화
+      // ✅ roomName: 비면 기본값으로 보정
+      let trimmedName = String(roomName ?? '').trim();
+      if (!trimmedName) trimmedName = '새 채팅방';
+
       let ids = [];
       if (Array.isArray(userIds)) {
         ids = userIds
@@ -167,12 +172,12 @@ export const createChatRoomThunk = createAsyncThunk(
         {
           familyId: fid,
           roomName: trimmedName,
-          userIds: ids, // 서버에서 중복 제거 + 본인 자동 포함 처리
+          userIds: ids,
         },
         {headers: {'Content-Type': 'application/json'}},
       );
 
-      return res.data; // ChatRoomDTO
+      return res.data;
     } catch (error) {
       const msg =
         error?.response?.data?.message ||

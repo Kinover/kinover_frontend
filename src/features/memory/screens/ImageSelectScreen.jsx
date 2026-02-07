@@ -34,7 +34,7 @@ import {
 } from '../../../utils/responsive';
 
 import useHideTabBar from '../../../hooks/useHideTabBar';
-import ToastModal from '../../../components/ToastModal';
+import ToastModal from '../../../components/modal/ToastModal';
 import {HEADER_STYLES} from 'styles/style';
 
 import {

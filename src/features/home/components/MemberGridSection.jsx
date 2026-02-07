@@ -1,3 +1,5 @@
+// src/features/home/components/MemberGridSection.jsx (or .tsx)
+
 import React, {
   useMemo,
   useCallback,
@@ -14,6 +16,7 @@ import {
   useWindowDimensions,
   Image,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 
 import {
@@ -23,14 +26,13 @@ import {
   getResponsiveWidth,
 } from '../../../utils/responsive';
 import {formatRelativeKorean} from '../utils/dateUtils';
-import {getEmotionImage} from '../utils/emotionUtils';
-import {DEFAULT_STYLE, EMPTY_STYLE, LAYOUT_STYLE} from 'styles/style';
+import {getEmotionImage, getEmotionColor} from '../utils/emotionUtils';
+import {EMPTY_STYLE, LAYOUT_STYLE} from 'styles/style';
 import DropShadow from 'react-native-drop-shadow';
 
-// ✅ HAPTIC
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {hapticLight} from '../../../utils/haptic';
 
-// ✅ REANIMATED
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -52,20 +54,19 @@ function isEmotionValid(emotion, emotionUpdatedAt) {
   return Date.now() - t <= EMOTION_EXPIRE_MS;
 }
 
-// ✅ clamp 유틸
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
-// ✅ 사이즈 가드 (핵심)
-// - 기기별 responsive 폭주/디스플레이 확대 방지용
 const SHELL_MIN = getResponsiveIconSize(54);
 const SHELL_MAX = getResponsiveIconSize(78);
 
 const PROFILE_MIN = getResponsiveIconSize(46);
 const PROFILE_MAX = getResponsiveIconSize(70);
 
-// dot은 너무 커지면 촌스러워져서 상한
 const DOT_MIN = 8;
 const DOT_MAX = 14;
+
+// ✅ 6명 초과면 “그리드 영역만” 내부 스크롤
+const INTERNAL_SCROLL_THRESHOLD = 6;
 
 const MemberGridItem = memo(function MemberGridItem({
   member,
@@ -89,7 +90,6 @@ const MemberGridItem = memo(function MemberGridItem({
     ? `${formatRelativeKorean(lastRaw)} 접속`
     : null;
 
-  // ✅ 감정: 24시간 지나면 null 처리
   let finalEmotion = safeMember.emotion;
   let finalEmotionUpdatedAt = safeMember.emotionUpdatedAt;
 
@@ -101,13 +101,8 @@ const MemberGridItem = memo(function MemberGridItem({
   const emotionImage = finalEmotion ? getEmotionImage(finalEmotion) : null;
   const hasEmotion = !!emotionImage;
 
-  // =========================================================
-  // ✅ 사이즈 계산 (여기서 폭주 방지)
-  // =========================================================
   const shellMax = AVATAR * 1.36;
 
-  // 원래: Math.min(shellMax, itemWidth)
-  // 수정: clamp로 하한/상한 걸고, itemWidth랑도 비교
   const shellSizeRaw = Math.min(shellMax, itemWidth);
   const shellSize = clamp(
     shellSizeRaw,
@@ -117,13 +112,11 @@ const MemberGridItem = memo(function MemberGridItem({
 
   const ringSize = shellSize * 1;
 
-  // 프로필/감정 사이즈도 안정화
   const profileSizeRaw = shellSize * 0.88;
   const profileSize = clamp(profileSizeRaw, PROFILE_MIN, PROFILE_MAX);
 
   const emotionSize = clamp(shellSize * 0.98, PROFILE_MIN, PROFILE_MAX + 12);
 
-  // dot도 상한
   const dot = clamp(Math.round(shellSize * 0.22), DOT_MIN, DOT_MAX);
   const dotTop = Math.max(2, Math.round(shellSize * 0.07));
   const dotRight = Math.max(2, Math.round(shellSize * 0.07));
@@ -132,15 +125,26 @@ const MemberGridItem = memo(function MemberGridItem({
     ? {uri: safeMember.image}
     : require('../../../assets/images/kino-blue.png');
 
-  // =========================================================
-  // ✅ "고개 갸웃" Peek 애니메이션
-  // =========================================================
+  const emotionColor = finalEmotion ? getEmotionColor(finalEmotion) : null;
+
+  const ringBorderColor = useMemo(() => {
+    if (emotionColor) return emotionColor;
+    if (isOnline) return 'rgba(34,197,94,0.20)';
+    return null;
+  }, [emotionColor, isOnline]);
+
+  const pressScale = useSharedValue(1);
+
+  const avatarPressStyle = useAnimatedStyle(() => {
+    return {transform: [{scale: pressScale.value}]};
+  }, [pressScale]);
+
   const popY = useSharedValue(0);
   const tilt = useSharedValue(0);
   const pivotX = useSharedValue(0);
   const scale = useSharedValue(1);
 
-  const peekDistance = profileSize * 0.74;
+  const peekDistance = profileSize * 1.14;
   const tiltDeg = 12;
   const pivotShift = profileSize * 0.18;
 
@@ -157,7 +161,7 @@ const MemberGridItem = memo(function MemberGridItem({
         {scale: scale.value},
       ],
     };
-  }, [peekDistance, tiltDeg, pivotShift]);
+  }, [peekDistance, tiltDeg, pivotShift, popY, pivotX, tilt, scale]);
 
   const longPressedRef = useRef(false);
   const tapPeekTimerRef = useRef(null);
@@ -202,7 +206,6 @@ const MemberGridItem = memo(function MemberGridItem({
       duration: 120,
       easing: Easing.out(Easing.cubic),
     });
-
     pivotX.value = withTiming(dir, {duration: 110});
 
     tilt.value = withSequence(
@@ -230,8 +233,15 @@ const MemberGridItem = memo(function MemberGridItem({
 
   const handlePress = useCallback(() => {
     if (longPressedRef.current) return;
+
+    cancelAnimation(pressScale);
+    pressScale.value = withSequence(
+      withTiming(1.1, {duration: 90, easing: Easing.out(Easing.cubic)}),
+      withTiming(1.0, {duration: 140, easing: Easing.out(Easing.cubic)}),
+    );
+
     runTiltPeekOnce();
-  }, [runTiltPeekOnce]);
+  }, [runTiltPeekOnce, pressScale]);
 
   const handleLongPress = useCallback(() => {
     if (isRefreshing) return;
@@ -239,15 +249,31 @@ const MemberGridItem = memo(function MemberGridItem({
     longPressedRef.current = true;
     hapticLight();
 
+    cancelAnimation(pressScale);
+    pressScale.value = withTiming(0.94, {
+      duration: 90,
+      easing: Easing.out(Easing.cubic),
+    });
+
     clearTapPeekTimer();
     resetAnim();
 
     onUserPress?.(safeMember);
-  }, [isRefreshing, onUserPress, safeMember, clearTapPeekTimer, resetAnim]);
+  }, [
+    isRefreshing,
+    onUserPress,
+    safeMember,
+    clearTapPeekTimer,
+    resetAnim,
+    pressScale,
+  ]);
 
   const handlePressOut = useCallback(() => {
     longPressedRef.current = false;
-  }, []);
+
+    cancelAnimation(pressScale);
+    pressScale.value = withSpring(1, {damping: 12, stiffness: 260, mass: 0.6});
+  }, [pressScale]);
 
   useEffect(() => {
     if (!hasEmotion) return;
@@ -270,7 +296,6 @@ const MemberGridItem = memo(function MemberGridItem({
         duration: 130,
         easing: Easing.out(Easing.cubic),
       });
-
       pivotX.value = withTiming(dir, {duration: 120});
 
       tilt.value = withSequence(
@@ -329,6 +354,8 @@ const MemberGridItem = memo(function MemberGridItem({
     };
   }, [hasEmotion, isRefreshing, popY, tilt, pivotX, scale]);
 
+  const EMOTION_HIDE_PUSH = Math.round(profileSize * 0.2) + 6;
+
   return (
     <TouchableOpacity
       style={[styles.user, {width: itemWidth}]}
@@ -338,7 +365,12 @@ const MemberGridItem = memo(function MemberGridItem({
       onPressOut={handlePressOut}
       activeOpacity={0.85}
       disabled={isRefreshing}>
-      <View style={[styles.avatarShell, {width: shellSize, height: shellSize}]}>
+      <Animated.View
+        style={[
+          styles.avatarShell,
+          {width: shellSize, height: shellSize},
+          avatarPressStyle,
+        ]}>
         <View
           style={[
             styles.avatarRing,
@@ -346,8 +378,10 @@ const MemberGridItem = memo(function MemberGridItem({
               width: ringSize,
               height: ringSize,
               borderRadius: ringSize / 2,
+              backgroundColor: ringBorderColor,
+              borderColor:
+                ringBorderColor == null ? '#EEF2F7' : ringBorderColor,
             },
-            isOnline && styles.avatarRingOnline,
           ]}
         />
 
@@ -355,10 +389,7 @@ const MemberGridItem = memo(function MemberGridItem({
           source={profileSource}
           style={[
             styles.profileImage,
-            {
-              width: profileSize,
-              height: profileSize,
-            },
+            {width: profileSize, height: profileSize},
           ]}
         />
 
@@ -370,6 +401,7 @@ const MemberGridItem = memo(function MemberGridItem({
                 width: profileSize,
                 height: profileSize,
                 borderRadius: profileSize / 2,
+                borderColor: 'transparent',
               },
             ]}>
             <Animated.View
@@ -378,8 +410,7 @@ const MemberGridItem = memo(function MemberGridItem({
                   position: 'absolute',
                   left: -5,
                   right: 0,
-                  // ✅ 폭주 방지: profileSize가 커져도 튀어나옴이 과해지지 않게 살짝 완화
-                  bottom: -(profileSize * 1.05),
+                  bottom: -(profileSize * 1.2) - EMOTION_HIDE_PUSH,
                 },
                 emotionPeekStyle,
               ]}>
@@ -419,10 +450,11 @@ const MemberGridItem = memo(function MemberGridItem({
             },
           ]}
         />
-      </View>
+      </Animated.View>
 
       <View style={styles.infoCol}>
-        <Text allowFontScaling={false}
+        <Text
+          allowFontScaling={false}
           style={styles.userName}
           numberOfLines={1}>
           {safeMember.name ?? ''}
@@ -434,7 +466,8 @@ const MemberGridItem = memo(function MemberGridItem({
               styles.statusPill,
               isOnline ? styles.statusPillOnline : styles.statusPillOffline,
             ]}>
-            <Text allowFontScaling={false}
+            <Text
+              allowFontScaling={false}
               style={[
                 styles.statusText,
                 isOnline ? styles.statusOnline : styles.statusOffline,
@@ -460,6 +493,7 @@ export default function MemberGridSection({
   isRefreshing: isRefreshingProp = null,
 }) {
   const {width: screenWidth, height: screenHeight} = useWindowDimensions();
+  const insets = useSafeAreaInsets();
 
   const marginH = getResponsiveWidth(14);
   const paddingH = getResponsiveWidth(8);
@@ -480,9 +514,7 @@ export default function MemberGridSection({
 
   const [isRefreshingLocal, setIsRefreshingLocal] = useState(false);
   const isRefreshing =
-    typeof isRefreshingProp === 'boolean'
-      ? isRefreshingProp
-      : isRefreshingLocal;
+    typeof isRefreshingProp === 'boolean' ? isRefreshingProp : isRefreshingLocal;
 
   const handleRefresh = useCallback(async () => {
     if (!onRefreshPress) return;
@@ -502,6 +534,51 @@ export default function MemberGridSection({
     onAddPress?.();
   }, [onAddPress]);
 
+  // ✅ 버튼 아래 여백 확보 (absolute 버튼)
+  const safeBottom = Math.max(insets.bottom, getResponsiveHeight(10));
+  const footerPaddingBottom = safeBottom + getResponsiveHeight(8);
+
+  const ADD_BUTTON_H = getResponsiveHeight(48);
+  const ADD_BUTTON_GAP = getResponsiveHeight(14);
+  const bottomSpace = footerPaddingBottom + ADD_BUTTON_H + ADD_BUTTON_GAP;
+
+  // ✅ “6명 초과” 기준으로 내부 스크롤 ON
+  const enableInnerScroll = !isEmptyState && members.length > INTERNAL_SCROLL_THRESHOLD;
+
+  // ✅ 내부 스크롤 최대 높이 (원하면 값만 조절)
+  // - 화면 높이의 일부를 쓰되, 너무 작아지지 않게 min/max로 방어
+  const gridMaxHRaw = screenHeight * 0.33; // 대충 카드 안에서 1/3 정도만 스크롤 영역
+  const gridMaxH = clamp(
+    gridMaxHRaw,
+    getResponsiveHeight(240),
+    getResponsiveHeight(360),
+  );
+
+  const GridContent = (
+    <View
+      style={[
+        styles.wrapRow,
+        {
+          width: innerContentWidth,
+          columnGap: gapX,
+          rowGap: gapY,
+        },
+      ]}>
+      {members.map((m, i) => (
+        <MemberGridItem
+          key={String(m?.userId ?? m?.id ?? m?._id ?? i)}
+          member={m}
+          index={i}
+          itemWidth={itemWidth}
+          onlineSet={onlineSet}
+          lastActiveMap={lastActiveMap}
+          onUserPress={onUserPress}
+          isRefreshing={isRefreshing}
+        />
+      ))}
+    </View>
+  );
+
   return (
     <DropShadow
       style={[
@@ -520,86 +597,66 @@ export default function MemberGridSection({
           {
             width: '100%',
             paddingHorizontal: paddingH,
-            minHeight: screenHeight - getResponsiveHeight(470),
+            minHeight: screenHeight - getResponsiveHeight(490),
+            paddingBottom: bottomSpace,
           },
         ]}>
-        <View style={styles.sectionHeader}>
-          <View>
-            <Text allowFontScaling={false}
-              style={{
-                fontSize: getResponsiveFontSize(16),
-                fontFamily: DEFAULT_STYLE().sectionTitle.fontFamily,
-                color: DEFAULT_STYLE().sectionTitle.color,
-              }}>
-              우리 가족
-            </Text>
-            <Text allowFontScaling={false}
-              style={{
-                fontSize: getResponsiveFontSize(11.5),
-                fontFamily: DEFAULT_STYLE().sectionSubtitle.fontFamily,
-                color: DEFAULT_STYLE().sectionSubtitle.color,
-              }}>
-              실시간 접속 상태
-            </Text>
-          </View>
-
-          <View style={styles.headerButtons}>
-            <TouchableOpacity
-              onPress={handleAddPress}
-              disabled={isRefreshing}
-              hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
-              activeOpacity={0.85}
-              style={[styles.iconButton, isRefreshing && {opacity: 0.6}]}>
-              <Image
-                source={require('../../../assets/icons/sub/one.png')}
-                style={styles.iconButtonIcon}
-              />
-            </TouchableOpacity>
-          </View>
-        </View>
-
         <View style={styles.gridArea}>
           {isEmptyState ? (
             <View style={styles.emptyStateContainer}>
               <Text allowFontScaling={false} style={styles.emptyDesc}>
-                {
-                  '아직 가족 모임이 완성되지 않았어요\n가족을 초대해서 모임을 완성해보세요!'
-                }
+                {'아직 가족 모임이 완성되지 않았어요.\n가족을 초대해서 모임을 완성해보세요!'}
               </Text>
             </View>
-          ) : (
-            <View
-              style={[
-                styles.wrapRow,
-                {
-                  width: innerContentWidth,
-                  columnGap: gapX,
-                  rowGap: gapY,
-                },
-              ]}>
-              {members.map((m, i) => (
-                <MemberGridItem
-                  key={String(m?.userId ?? m?.id ?? m?._id ?? i)}
-                  member={m}
-                  index={i}
-                  itemWidth={itemWidth}
-                  onlineSet={onlineSet}
-                  lastActiveMap={lastActiveMap}
-                  onUserPress={onUserPress}
-                  isRefreshing={isRefreshing}
-                />
-              ))}
+          ) : enableInnerScroll ? (
+            // ✅✅✅ 여기: 6명 초과면 “이 영역만” 스크롤
+            <View style={[styles.innerScrollWrap, {maxHeight: gridMaxH}]}>
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                nestedScrollEnabled
+                contentContainerStyle={styles.innerScrollContent}
+                scrollEventThrottle={16}
+                // ✅ iOS에서 스크롤 위/아래 바운스 느낌(싫으면 false)
+                bounces={true}>
+                {GridContent}
+              </ScrollView>
             </View>
+          ) : (
+            // ✅ 6명 이하: 기존처럼 그냥 렌더
+            GridContent
           )}
 
           {isRefreshing && (
             <View style={styles.loadingOverlay} pointerEvents="auto">
               <View style={styles.loadingCard}>
                 <ActivityIndicator size="small" color="#111827" />
-                <Text allowFontScaling={false} style={styles.loadingText}>로딩중…</Text>
+                <Text allowFontScaling={false} style={styles.loadingText}>
+                  로딩중…
+                </Text>
               </View>
             </View>
           )}
+        </View>
+
+        {/* ✅ 하단 버튼: 카드 바닥 고정 */}
+        <View
+          style={[
+            styles.footerFixed,
+            {
+              left: paddingH * 2,
+              right: paddingH * 2,
+              bottom: paddingH * 2,
+            },
+          ]}>
+          <TouchableOpacity
+            activeOpacity={0.9}
+            onPress={handleAddPress}
+            disabled={isRefreshing}
+            style={[styles.addButton, isRefreshing && {opacity: 0.5}]}>
+            <Text allowFontScaling={false} style={styles.addButtonText}>
+              가족 추가하기
+            </Text>
+          </TouchableOpacity>
         </View>
       </View>
     </DropShadow>
@@ -617,40 +674,7 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: '#FFFFFF',
     borderRadius: getResponsiveIconSize(16),
-    paddingTop: getResponsiveHeight(16),
-    paddingBottom: getResponsiveHeight(22),
-  },
-
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(10),
-    paddingTop: getResponsiveHeight(4),
-  },
-
-  headerButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(8),
-  },
-
-  iconButton: {
-    width: getResponsiveIconSize(34),
-    height: getResponsiveIconSize(34),
-    borderRadius: 14,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#ECEFF3',
-  },
-  iconButtonIcon: {
-    width: '62%',
-    height: '62%',
-    tintColor: '#6B7280',
-    resizeMode: 'contain',
+    paddingTop: getResponsiveHeight(22),
   },
 
   gridArea: {
@@ -662,6 +686,16 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'flex-start',
     alignSelf: 'center',
+  },
+
+  // ✅ 6명 초과 시 내부 스크롤 래퍼
+  innerScrollWrap: {
+    alignSelf: 'center',
+    width: '100%',
+  },
+  innerScrollContent: {
+    // ✅ ScrollView 안에서 wrapRow가 중앙에 오도록
+    paddingBottom: getResponsiveHeight(6),
   },
 
   user: {
@@ -682,13 +716,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#EEF2F7',
   },
-  avatarRingOnline: {
-    borderColor: 'rgba(34,197,94,0.20)',
-  },
 
   profileImage: {
     borderRadius: 999,
     zIndex: 1,
+    borderWidth: 0,
   },
 
   emotionPeekMask: {
@@ -783,17 +815,37 @@ const styles = StyleSheet.create({
   },
 
   emptyStateContainer: {
-    flex: 1,
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: '25%',
     paddingHorizontal: getResponsiveWidth(18),
+    paddingTop: getResponsiveHeight(140),
+    paddingBottom: getResponsiveHeight(140),
   },
   emptyDesc: {
     fontSize: EMPTY_STYLE().emptyFontSize,
     fontFamily: EMPTY_STYLE().emptyFontFamily,
     color: EMPTY_STYLE().emptyColor,
     textAlign: 'center',
+  },
+
+  footerFixed: {
+    position: 'absolute',
+  },
+
+  addButton: {
+    width: '100%',
+    height: getResponsiveHeight(48),
+    borderRadius: getResponsiveIconSize(12),
+    backgroundColor: 'black',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  addButtonText: {
+    fontSize: getResponsiveFontSize(13.5),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
   },
 });

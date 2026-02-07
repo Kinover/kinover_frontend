@@ -1,23 +1,41 @@
-// SetupFinishScreen.tsx - Refined Animated Version
+// SetupFinishScreen.tsx
+import React, {useEffect, useRef, useCallback} from 'react';
+import {
+  View,
+  StyleSheet,
+  Text,
+  Animated,
+  Easing,
+  Platform,
+  Image,
+} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
-import React, {useEffect, useRef} from 'react';
-import {View, StyleSheet, Text, Animated, Easing, Platform} from 'react-native';
+import BottomActionButton from 'components/BottomActionButton';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
 } from '../../../utils/responsive';
-import {useNavigation} from '@react-navigation/native';
-import {SafeAreaView} from 'react-native-safe-area-context';
-import FastImage from '@d11/react-native-fast-image';
-import BottomActionButton from 'components/BottomActionButton';
+
+import {setHasFamily} from 'utils/storage';
+import {emitAuthFlagsChanged} from 'utils/authFlagsEvent';
 
 export default function SetupFinishScreen() {
-  const navigation = useNavigation();
+  const handleButtonClick = useCallback(async () => {
+    try {
+      // ✅ 1) 가족 생성/참가 완료 저장
+      await setHasFamily(true);
 
-  const handleButtonClick = () => {
-    navigation.navigate('Tabs');
-  };
+      // ✅ 2) RootScreen에게 즉시 반영(스토리지 읽기 기다리지 않음)
+      emitAuthFlagsChanged({hasFamily: true});
+
+      // ✅ 보통은 여기서 navigation reset 불필요
+      // RootScreen이 AppFlow로 갈아타며 Tabs로 자연스럽게 이동함
+    } catch (e) {
+      console.log('[SetupFinishScreen] start error:', e);
+    }
+  }, []);
 
   // 애니메이션 값들
   const illustrationScale = useRef(new Animated.Value(0.9)).current;
@@ -30,7 +48,7 @@ export default function SetupFinishScreen() {
   const pulseScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    Animated.parallel([
+    const intro = Animated.parallel([
       Animated.timing(illustrationOpacity, {
         toValue: 1,
         duration: 520,
@@ -66,24 +84,31 @@ export default function SetupFinishScreen() {
           }),
         ]),
       ]),
-    ]).start(() => {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseScale, {
-            toValue: 1.03,
-            duration: 1100,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseScale, {
-            toValue: 1,
-            duration: 1100,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-          }),
-        ]),
-      ).start();
-    });
+    ]);
+
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseScale, {
+          toValue: 1.03,
+          duration: 1100,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseScale, {
+          toValue: 1,
+          duration: 1100,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+
+    intro.start(() => loop.start());
+
+    return () => {
+      intro.stop();
+      loop.stop();
+    };
   }, [
     illustrationOpacity,
     illustrationScale,
@@ -93,13 +118,8 @@ export default function SetupFinishScreen() {
     pulseScale,
   ]);
 
-  const navigationButton = (
-    <BottomActionButton label="시작하기" onPress={handleButtonClick} />
-  );
-
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      {/* 상단 일러스트 영역 */}
       <Animated.View
         style={[
           styles.illustrationArea,
@@ -112,14 +132,12 @@ export default function SetupFinishScreen() {
           },
         ]}>
         <View style={styles.circleBg} />
-        <FastImage
+        <Image
           style={styles.mainImage}
-          resizeMode="contain"
           source={require('@/assets/images/familySetup_kinoFamily.png')}
         />
       </Animated.View>
 
-      {/* 텍스트 영역 */}
       <Animated.View
         style={[
           styles.bottomArea,
@@ -129,15 +147,17 @@ export default function SetupFinishScreen() {
           },
         ]}>
         <View style={styles.textBlock}>
-          <Text allowFontScaling={false} style={styles.headerTitle}>가족 모임 준비 완료!</Text>
+          <Text allowFontScaling={false} style={styles.headerTitle}>
+            가족 모임 준비 완료!
+          </Text>
           <Text allowFontScaling={false} style={styles.headerSubTitle}>
-            이제 키노와 함께 가족의 하루를 나누고,{'\n'}
+            이제 키노와 함께 가족의 하루를 나누고{'\n'}
             소중한 순간들을 편하게 기록해 보세요.
           </Text>
         </View>
       </Animated.View>
 
-      {navigationButton}
+      <BottomActionButton label="시작하기" onPress={handleButtonClick} />
     </SafeAreaView>
   );
 }
@@ -148,7 +168,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingHorizontal: getResponsiveWidth(24),
   },
-
   illustrationArea: {
     flex: 1.15,
     alignItems: 'center',
@@ -169,13 +188,8 @@ const styles = StyleSheet.create({
   },
   mainImage: {
     width: '60%',
-    aspectRatio: 1.05,
-    marginBottom:
-      Platform.OS === 'android'
-        ? getResponsiveHeight(36)
-        : getResponsiveHeight(30),
+    resizeMode: 'contain',
   },
-
   bottomArea: {
     flex: 0.85,
     justifyContent: 'space-between',
@@ -201,4 +215,3 @@ const styles = StyleSheet.create({
     lineHeight: getResponsiveHeight(20),
   },
 });
-

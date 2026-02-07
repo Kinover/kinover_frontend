@@ -88,7 +88,8 @@ export default function SendKinoChat({
         numColumns={3}
         renderItem={({item, index}) => (
           <TouchableOpacity onPress={() => handleImagePress(item, index)}>
-            <FastImage source={{uri: item}} style={styles.imageItem} />
+            <FastImage         fallback={true}
+ source={{uri: item}} style={styles.imageItem} />
           </TouchableOpacity>
         )}
         scrollEnabled={false}
@@ -104,7 +105,8 @@ export default function SendKinoChat({
       {messageType === 'image' ? (
         imageUrls.length === 1 ? (
           <TouchableOpacity onPress={() => handleImagePress(imageUrls[0], 0)}>
-            <FastImage
+            <FastImage         fallback={true}
+
               source={{uri: imageUrls[0]}}
               style={styles.singleImage}
               resizeMode="cover"

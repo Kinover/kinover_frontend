@@ -53,7 +53,7 @@ import {convertPhUriToFileUri} from '../../../utils/photoUriConverter';
 import {getSelectOrder, toggleSelectImage} from '../../../utils/selection';
 import {loadGalleryPhotos} from '../../../utils/gallery';
 import formatDuration from '../../../utils/formatDuration';
-import ToastModal from '../../../components/ToastModal';
+import ToastModal from '../../../components/modal/ToastModal';
 import {addMessageAndUpdateRoom} from '../utils/messageActions';
 
 import {hapticLight, hapticSelection, hapticError} from '../../../utils/haptic';
@@ -79,7 +79,8 @@ const GAP = getResponsiveWidth(2);
 const PADDING_H = getResponsiveWidth(2);
 
 const ICON_SEND = require('../../../assets/icons/sendBt-dark.png');
-const ICON_PLUS = require('../../../assets/icons/optionBt-dark.png');
+
+const ICON_PLUS = require('../../../assets/icons/tabs/2/camera.png');
 
 const INPUT_H = getResponsiveHeight(45);
 const INNER_PAD_V = getResponsiveHeight(10);
@@ -190,7 +191,7 @@ const ChatInput = forwardRef(function ChatInput(
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
 
-  const [showGallery, setShowGallery] = useState(false);
+  const [showGallery, setShowGallery] = useState(false); // (선택) 롱프레스에서만 열리게 유지
   const [photos, setPhotos] = useState([]);
   const [endCursor, setEndCursor] = useState(null);
   const [hasNextPage, setHasNextPage] = useState(true);
@@ -347,7 +348,7 @@ const ChatInput = forwardRef(function ChatInput(
   }, []);
 
   /**
-   * ✅ 시스템 갤러리 멀티 선택
+   * ✅ 시스템 갤러리 멀티 선택 (이걸 +버튼 탭에 연결할 거야!)
    */
   const pickFromSystemGallery = useCallback(async () => {
     try {
@@ -357,7 +358,7 @@ const ChatInput = forwardRef(function ChatInput(
 
       const res = await launchImageLibrary({
         mediaType: 'mixed',
-        selectionLimit: 0,
+        selectionLimit: 0, // 0 = unlimited (라이브러리 정책에 따라 다를 수 있음)
         includeExtra: true,
         quality: 1,
       });
@@ -397,6 +398,7 @@ const ChatInput = forwardRef(function ChatInput(
         return Array.from(map.values());
       });
 
+      // ✅ 시스템 갤러리로 뽑았으면 인앱 갤러리는 닫아주기
       setShowGallery(false);
     } catch (e) {
       console.error(e);
@@ -787,8 +789,6 @@ const ChatInput = forwardRef(function ChatInput(
   }, [insets.bottom, showGallery]);
 
   const bottomSafePadding = useMemo(() => {
-    // 너무 과하게 뜨면 보기 안 좋아서 “조금만” 더해주는 정도로
-    // (홈 인디케이터 기기에서만 의미 있음)
     return Math.max(insets.bottom, getResponsiveHeight(2));
   }, [insets.bottom]);
 
@@ -845,17 +845,32 @@ const ChatInput = forwardRef(function ChatInput(
             <TouchableOpacity
               style={styles.inputPlusButton}
               onPress={() => {
+                // ✅ 여기만 바뀜: “인앱 갤러리 토글” X  → “시스템 갤러리 바로 오픈”
                 hapticLight();
+                Keyboard.dismiss();
+                setShowGallery(false);
+                pickFromSystemGallery();
+              }}
+              onLongPress={() => {
+                // (선택) 롱프레스하면 기존 인앱 그리드 갤러리 열기
+                // 필요 없으면 이 블록째로 지워도 됨!
+                hapticSelection();
                 Keyboard.dismiss();
                 setShowGallery(prev => !prev);
               }}
+              delayLongPress={220}
               disabled={isSending || sendingLockRef.current}>
-              <FastImage
+              <Image
                 source={ICON_PLUS}
                 style={[
                   styles.icon,
+                  {
+                    width: getResponsiveIconSize(17),
+                    height: getResponsiveIconSize(17),
+                  },
                   (isSending || sendingLockRef.current) && {opacity: 0.4},
                 ]}
+                tintColor="white"
               />
             </TouchableOpacity>
           )}
@@ -902,7 +917,7 @@ const ChatInput = forwardRef(function ChatInput(
                 setMessage('');
                 setCursor(0);
               }}>
-              <FastImage
+              <Image
                 source={require('../../../assets/images/clearBt.png')}
                 style={styles.clearIcon}
               />
@@ -937,6 +952,7 @@ const ChatInput = forwardRef(function ChatInput(
         </View>
       </View>
 
+      {/* (선택 유지) 인앱 갤러리: 이제는 롱프레스에서만 열림 */}
       {enableMediaPicker && (
         <Animated.View
           key={showGallery ? 'open' : 'close'}
@@ -950,22 +966,24 @@ const ChatInput = forwardRef(function ChatInput(
             <GestureDetector gesture={pinchGesture}>
               <View style={{flex: 1}}>
                 {/* ✅ 플로팅 버튼 */}
-                <View style={styles.galleryFloatingArea} pointerEvents="box-none">
+                <View
+                  style={styles.galleryFloatingArea}
+                  pointerEvents="box-none">
                   <TouchableOpacity
                     activeOpacity={0.9}
                     onPress={pickFromSystemGallery}
                     style={styles.galleryFloatingButton}
                     disabled={isSending || sendingLockRef.current}>
-                    <FastImage
-                      source={require('../../../assets/icons/2/camera.png')}
+                    <Image
+                      source={require('../../../assets/icons/tabs/2/camera.png')}
                       width={20}
                       height={20}
                       style={{
                         width: getResponsiveIconSize(20),
                         height: getResponsiveIconSize(20),
+                        resizeMode: 'contain',
                       }}
                       tintColor={'#ffffff'}
-                      resizeMode={FastImage.resizeMode.contain}
                     />
                   </TouchableOpacity>
                 </View>
@@ -1083,7 +1101,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(8),
   },
 
-  inputPlusButton: {marginRight: getResponsiveWidth(5)},
+  inputPlusButton: {
+    marginRight: getResponsiveWidth(5),
+    backgroundColor: 'black',
+    borderRadius: 999,
+    padding: getResponsiveIconSize(6),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
   input: {
     flex: 1,
@@ -1107,8 +1132,8 @@ const styles = StyleSheet.create({
   },
 
   icon: {
-    width: getResponsiveIconSize(30),
-    height: getResponsiveIconSize(30),
+    width: getResponsiveIconSize(28),
+    height: getResponsiveIconSize(28),
     resizeMode: 'contain',
   },
 
@@ -1214,6 +1239,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
     backgroundColor: 'rgba(128, 128, 128, 0.6)',
   },
+
   orderBadge: {
     position: 'absolute',
     top: getResponsiveHeight(7),
