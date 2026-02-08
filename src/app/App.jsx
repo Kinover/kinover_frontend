@@ -180,7 +180,7 @@ function AppLockGate({readyForAuth}) {
 }
 
 // ✅ 개발용: rehydration 이후에 “저장소 + redux-persist”까지 싹 정리
-const DEV_FORCE_RESET_LOGIN_ONCE = true;
+const DEV_FORCE_RESET_LOGIN_ONCE = false;
 
 function DevForceResetLogin() {
   const dispatch = useDispatch();

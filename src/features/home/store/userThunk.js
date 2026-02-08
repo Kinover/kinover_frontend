@@ -7,17 +7,24 @@ import {deleteLoginInfo} from '../../../utils/storage';
 import {setUser, setUserLoading, setUserError, updateUser} from './userSlice';
 import {updateFamilyUser} from './userFamilySlice';
 
-export const fetchUserThunk = () => {
-  return async dispatch => {
+export const fetchUserThunk = createAsyncThunk(
+  'user/fetchUser',
+  async (_, {dispatch, rejectWithValue}) => {
     dispatch(setUserLoading(true));
+    dispatch(setUserError(null));
+
     try {
-      // GET /api/user/userinfo
       const res = await apiClient.get('/user/userinfo', {
         headers: {'Content-Type': 'application/json'},
       });
 
-      console.log(res.data);
+      console.log('[fetchUserThunk] dto:', res.data);
+
+      // ✅ store 업데이트 유지
       dispatch(setUser(res.data));
+
+      // ✅✅✅ 핵심: 오토로그인/로그인에서 쓰도록 DTO 반환
+      return res.data;
     } catch (error) {
       const msg =
         error?.response?.data?.message ||
@@ -26,11 +33,12 @@ export const fetchUserThunk = () => {
         '유저 정보 조회 실패';
 
       dispatch(setUserError(msg));
+      return rejectWithValue(msg);
     } finally {
       dispatch(setUserLoading(false));
     }
-  };
-};
+  },
+);
 
 export const modifyUserThunk = updatedUser => {
   return async (dispatch, getState) => {

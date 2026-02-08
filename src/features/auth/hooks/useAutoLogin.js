@@ -8,9 +8,6 @@ import {fetchFamilyThunk} from 'features/home/store/familyThunk';
 import {startChatSocket, stopChatSocket} from 'features/chat/hooks/ChatSocket';
 import {setLoginSuccess, setLogout, setAuthChecked} from '../store/loginSlice';
 
-// ✅ 추가: flags 변경 이벤트 발행(없으면 utils/authFlagsEvent에 만들어야 함)
-import {emitAuthFlagsChanged} from 'utils/authFlagsEvent';
-
 const withTimeout = (promise, ms = 6000) =>
   Promise.race([
     promise,
@@ -62,6 +59,7 @@ export function useAutoLogin(shouldRun = true) {
             typeof r?.unwrap === 'function'
               ? await withTimeout(r.unwrap(), 8000)
               : await withTimeout(r, 8000);
+
           console.log('✅ fetchUser ok');
         } catch (e) {
           console.log('❌ fetchUser fail => logout', e?.message);
@@ -76,16 +74,14 @@ export function useAutoLogin(shouldRun = true) {
         dispatch(setLoginSuccess());
 
         try {
-          const familyId = userResult?.familyId ?? null;
-          const hasFamilyValue = !!familyId;
-
+          // ✅ familyId 추출 보강 (DTO 구조 흔들려도 안전)
+          const raw = userResult?.data ?? userResult;
+          const familyId = raw?.familyId ?? raw?.family?.familyId ?? null;
+          
+          const hasFamilyValue = familyId != null;
+          console.log('🏷️ [AUTOLOGIN] familyId=', familyId, 'hasFamily=', hasFamilyValue);
+          
           await setHasFamily(hasFamilyValue);
-
-          // ✅✅✅ Root가 즉시 refreshAuthFlags 하도록 “이벤트 발행”
-          try {
-            emitAuthFlagsChanged?.();
-          } catch {}
-
           if (hasFamilyValue) {
             const r2 = dispatch(fetchFamilyThunk(familyId));
             if (typeof r2?.unwrap === 'function') await r2.unwrap();
