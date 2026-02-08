@@ -1,55 +1,69 @@
 // src/features/auth/store/loginThunk.js
 import {apiClient} from 'utils/apiClient';
-import {
-  saveToken,
-  setHasFamily,
-  getGuestMode,
-} from 'utils/storage';
+import {saveToken, setHasFamily, getGuestMode} from 'utils/storage';
 import {setLoginLoading, setLoginError, setLoginSuccess} from './loginSlice';
 import {fetchUserThunk} from 'features/home/store/userThunk';
-import {emitAuthFlagsChanged} from 'utils/authFlagsEvent';
 
-// ✅ 게스트 토큰
+// ✅ 게스트 토큰(로컬 전용)
 const GUEST_TOKEN = 'GUEST_TOKEN_LOCAL_ONLY';
 
+/**
+ * ✅ 공통: 로그인 후 userinfo를 가져와서 familyId 기준으로 hasFamily 확정
+ * - SSOT: familyId
+ * - store/home/user 또는 thunk 결과에서 familyId 추출
+ */
+async function finalizeHasFamilyAfterLogin(dispatch, getState) {
+  const r = dispatch(fetchUserThunk());
+  const userResult =
+    typeof r?.unwrap === 'function' ? await r.unwrap() : await r;
+
+  const state = getState?.();
+  const userFromStore = state?.home?.user || state?.user || null;
+
+  const familyId =
+    userResult?.familyId ??
+    userResult?.family?.familyId ??
+    userFromStore?.familyId ??
+    userFromStore?.family?.familyId ??
+    null;
+
+  const finalHasFamily = familyId != null;
+
+  // ✅ setHasFamily 내부에서 emitAuthFlagsChanged()가 나가게 만들었으니, 여기서 emit은 제거 권장
+  await setHasFamily(finalHasFamily);
+
+  return {familyId, finalHasFamily};
+}
+
+/**
+ * ✅ 카카오 로그인 thunk
+ * @param {string|object} kakaoAccessToken - 보통 string(accessToken)
+ */
 export const loginThunk = kakaoAccessToken => {
   return async (dispatch, getState) => {
     dispatch(setLoginLoading(true));
     dispatch(setLoginError(null));
 
     try {
-      // ✅ 0) 게스트 모드면: 카카오/서버 로그인 스킵
       const isGuest = await getGuestMode?.();
       if (isGuest) {
-        const hasFamily = true;
-
         await saveToken(GUEST_TOKEN);
-        await setHasFamily(hasFamily);
-
-        // ✅ RootScreen에 즉시 반영
-        emitAuthFlagsChanged({hasFamily});
 
         dispatch(setLoginSuccess());
+        const {familyId, finalHasFamily} = await finalizeHasFamilyAfterLogin(
+          dispatch,
+          getState,
+        );
 
-        const r = dispatch(fetchUserThunk());
-        if (typeof r?.unwrap === 'function') await r.unwrap();
-        else await r;
-
-        console.log('🟡 [GUEST] loginThunk: server skipped');
-        return {token: GUEST_TOKEN, hasFamily, guest: true};
+        return {token: GUEST_TOKEN, hasFamily: finalHasFamily, familyId, guest: true};
       }
-
-      // ✅ 1) 일반 로그인(서버)
-      const apiUrl = 'https://kinover.shop/api/login/kakao';
 
       const requestBody =
         typeof kakaoAccessToken === 'string'
           ? {accessToken: kakaoAccessToken}
           : kakaoAccessToken;
 
-      console.log('📤 전송할 데이터:', JSON.stringify(requestBody));
-
-      const response = await apiClient.post(apiUrl, requestBody, {
+      const response = await apiClient.post('/login/kakao', requestBody, {
         headers: {
           'Content-Type': 'application/json',
           Accept: 'application/json',
@@ -58,64 +72,114 @@ export const loginThunk = kakaoAccessToken => {
       });
 
       const token = response?.data?.token ?? null;
-      const hasFamilyFromLogin = !!response?.data?.hasFamily;
+      if (!token) throw new Error('서버에서 토큰이 내려오지 않았어요(token 없음)');
 
-      if (!token) {
-        throw new Error('서버에서 토큰이 내려오지 않았어요(token 없음)');
-      }
-
-      // ✅ 2) 토큰 먼저 저장
       await saveToken(token);
 
-      // ✅ 3) 로그인 성공(토큰 인증 성공)
       dispatch(setLoginSuccess());
 
-      // ✅ 4) 유저 조회 (SSOT: familyId)
-      const r = dispatch(fetchUserThunk());
-      let userResult = null;
-
-      if (typeof r?.unwrap === 'function') userResult = await r.unwrap();
-      else userResult = await r;
-
-      const state = getState?.();
-      const userFromStore = state?.home?.user || state?.user || null;
-
-      const familyId =
-        userResult?.familyId ??
-        userFromStore?.familyId ??
-        null;
-
-      const finalHasFamily = familyId != null;
-
-      // ✅ 5) 로컬 저장 + Root 즉시 반영(중요!)
-      await setHasFamily(finalHasFamily);
-      emitAuthFlagsChanged({hasFamily: finalHasFamily});
-
-      console.log('✅ 로그인 완료:', {
-        token: token ? 'OK' : 'NO',
-        hasFamilyFromLogin,
-        familyId,
-        finalHasFamily,
-      });
+      const {familyId, finalHasFamily} = await finalizeHasFamilyAfterLogin(
+        dispatch,
+        getState,
+      );
 
       return {
         ...response.data,
+        token,
         hasFamily: finalHasFamily,
         familyId,
       };
     } catch (error) {
       const message =
         error?.response?.data?.message ||
+        (typeof error?.response?.data === 'string' ? error.response.data : null) ||
         error?.message ||
         '로그인에 실패했어요';
 
-      console.error('❌ 로그인 실패:', {
+      dispatch(setLoginError(String(message)));
+      throw error;
+    } finally {
+      dispatch(setLoginLoading(false));
+    }
+  };
+};
+
+/**
+ * ✅ 애플 로그인 thunk
+ * @param {string} identityToken - Apple에서 받은 identityToken
+ */
+export const appleLoginThunk = identityToken => {
+  return async (dispatch, getState) => {
+    dispatch(setLoginLoading(true));
+    dispatch(setLoginError(null));
+
+    try {
+      // ✅ 0) 게스트 모드면 애플 로그인도 스킵 (정책상 막는 게 맞음)
+      const isGuest = await getGuestMode?.();
+      if (isGuest) {
+        throw new Error('게스트 모드에서는 애플 로그인을 사용할 수 없어요.');
+      }
+
+      if (!identityToken) {
+        throw new Error('identityToken이 없습니다.');
+      }
+
+      console.log('📤 [APPLE] send identityToken...');
+
+      // ⚠️ baseURL이 https://kinover.shop/api 라면 여기서는 '/login/apple'가 맞음
+      const response = await apiClient.post(
+        '/login/apple',
+        {identityToken},
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          timeout: 10000,
+        },
+      );
+
+      const token = response?.data?.token ?? null;
+      if (!token) throw new Error('서버에서 토큰이 내려오지 않았어요(token 없음)');
+
+      // ✅ 1) 토큰 저장
+      await saveToken(token);
+
+      // ✅ 2) 토큰 인증 성공 처리
+      dispatch(setLoginSuccess());
+
+      // ✅ 3) userinfo로 hasFamily 확정(SSOT: familyId)
+      const {familyId, finalHasFamily} = await finalizeHasFamilyAfterLogin(
+        dispatch,
+        getState,
+      );
+
+      console.log('✅ [APPLE] login done:', {
+        token: token ? 'OK' : 'NO',
+        familyId,
+        hasFamily: finalHasFamily,
+      });
+
+      return {
+        ...response.data,
+        token,
+        hasFamily: finalHasFamily,
+        familyId,
+      };
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        (typeof error?.response?.data === 'string' ? error.response.data : null) ||
+        error?.message ||
+        '애플 로그인에 실패했어요';
+
+      console.error('❌ [APPLE] login fail:', {
         message,
         status: error?.response?.status,
         response: error?.response?.data ?? null,
       });
 
-      dispatch(setLoginError(message));
+      dispatch(setLoginError(String(message)));
       throw error;
     } finally {
       dispatch(setLoginLoading(false));
