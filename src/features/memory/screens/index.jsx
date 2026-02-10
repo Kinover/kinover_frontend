@@ -28,6 +28,7 @@ import {useFocusEffect} from '@react-navigation/native';
 import AnimatedRe, {useAnimatedStyle, withTiming} from 'react-native-reanimated';
 import DropShadow from 'react-native-drop-shadow';
 import {BACKGROUND_COLORS} from 'styles/style';
+import MemoryGuideModal from '../components/MemoryGuideModal';
 
 export default function MemoryScreen() {
   const dispatch = useDispatch();
@@ -52,6 +53,8 @@ export default function MemoryScreen() {
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const familyId = useSelector(state => state.family?.familyId);
+  const isLoading = useSelector(state => state.memory?.isLoading); // 너 프로젝트에 맞게
 
   const {tabBarTranslateY} = useTabBarVisibility();
 
@@ -334,6 +337,12 @@ export default function MemoryScreen() {
         onApply={handleApplyPeriod}
         initialStartDate={startDate}
         initialWeeks={1}
+      />
+
+      <MemoryGuideModal
+        enabled={true}
+        ready={!isLoading && !!familyId}
+        forceVisible={false} // ✅ 개발 중이면 true로(계속 뜨게)
       />
     </View>
   );

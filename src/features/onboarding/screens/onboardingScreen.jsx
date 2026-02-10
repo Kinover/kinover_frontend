@@ -1,14 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/features/onboarding/screens/OnboardingScreen.jsx
 
-import React, {
-  useMemo,
-  useCallback,
-  memo,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import React, {useMemo, useCallback, memo, useEffect, useRef, useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -23,26 +16,17 @@ import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import FastImage from '@d11/react-native-fast-image';
 import Svg, {Defs, Rect, RadialGradient, Stop} from 'react-native-svg';
 
-import {
-  getResponsiveFontSize,
-  getResponsiveHeight,
-  getResponsiveWidth,
-} from '../../../utils/responsive';
+import {getResponsiveFontSize, getResponsiveHeight, getResponsiveWidth} from '../../../utils/responsive';
 
 import {useKakaoLogin} from 'features/auth/hooks/useKakaoLogin';
 import {useAppleLogin} from 'features/auth/hooks/useAppleLogin';
 
-// ✅ Apple Button
 import {AppleButton} from '@invertase/react-native-apple-authentication';
-
-// ✅ 추가: 슬라이드별 모션 히어로 컴포넌트
 import OnboardingHeroMotion from '../components/OnboardingHeroMotion';
 
 const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
 
-/**
- * ✅ 은은한 배경 글로우
- */
+/** ✅ 은은한 배경 글로우 */
 const OnboardingSoftGlow = memo(function OnboardingSoftGlow({
   cy = '46%',
   rx = '62%',
@@ -55,40 +39,89 @@ const OnboardingSoftGlow = memo(function OnboardingSoftGlow({
     <View pointerEvents="none" style={StyleSheet.absoluteFillObject}>
       <Svg width="100%" height="100%">
         <Defs>
-          <RadialGradient
-            id="onboardingGlow"
-            cx="50%"
-            cy={cy}
-            rx={rx}
-            ry={ry}
-            fx="50%"
-            fy={cy}>
+          <RadialGradient id="onboardingGlow" cx="50%" cy={cy} rx={rx} ry={ry} fx="50%" fy={cy}>
             <Stop offset="0%" stopColor={color} stopOpacity={op0} />
             <Stop offset="45%" stopColor={color} stopOpacity={opMid} />
             <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.0" />
           </RadialGradient>
         </Defs>
-
-        <Rect
-          x="0"
-          y="0"
-          width="100%"
-          height="100%"
-          fill="url(#onboardingGlow)"
-        />
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#onboardingGlow)" />
       </Svg>
     </View>
   );
 });
 
+/**
+ * ✅ useEnterProgress (원샷 등장 시퀀스)
+ * - isActive=true가 되는 순간 0→1
+ * - isActive=false면 0 리셋 (다음 진입 때 다시 연출)
+ */
+function useEnterProgress(isActive, options = {}) {
+  const {
+    startDelay = 40,
+    duration = 420,
+  } = options;
+
+  const v = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (!isActive) {
+      v.stopAnimation?.();
+      v.setValue(0);
+      return;
+    }
+
+    Animated.sequence([
+      Animated.delay(startDelay),
+      Animated.timing(v, {
+        toValue: 1,
+        duration,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [isActive, v, startDelay, duration]);
+
+  return v;
+}
+
+/**
+ * ✅ useStaggerLines
+ * - 줄(2~3개)을 순차로 등장시키는 값 배열(0→1)
+ */
+function useStaggerLines(isActive, count, options = {}) {
+  const {
+    startDelay = 140,
+    itemDuration = 420,
+    staggerMs = 110,
+  } = options;
+
+  const anims = useMemo(
+    () => Array.from({length: count}, () => new Animated.Value(0)),
+    [count],
+  );
+
+  useEffect(() => {
+    if (!isActive) {
+      anims.forEach(v => v.setValue(0));
+      return;
+    }
+
+    const seq = anims.map(v =>
+      Animated.timing(v, {toValue: 1, duration: itemDuration, useNativeDriver: true}),
+    );
+
+    Animated.sequence([
+      Animated.delay(startDelay),
+      Animated.stagger(staggerMs, seq),
+    ]).start();
+  }, [isActive, anims, startDelay, itemDuration, staggerMs]);
+
+  return anims;
+}
+
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#FFFEFC'},
-
-  slide: {
-    flex: 1,
-    backgroundColor: '#FFFEFC',
-    overflow: 'hidden',
-  },
+  slide: {flex: 1, backgroundColor: '#FFFEFC', overflow: 'hidden'},
 
   topBar: {
     position: 'absolute',
@@ -109,30 +142,21 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
 
-  heroArea: {
-    flex: 4 / 5,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imageBox: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+  heroArea: {flex: 4 / 5, justifyContent: 'center', alignItems: 'center'},
+  imageBox: {justifyContent: 'center', alignItems: 'center'},
 
   textArea: {
     paddingHorizontal: getResponsiveWidth(26),
-    paddingTop: getResponsiveHeight(8),
+    paddingTop: getResponsiveHeight(10),
     paddingBottom: getResponsiveHeight(10),
   },
-  titleText: {
+
+  lineText: {
     fontFamily: 'Pretendard-Bold',
     color: '#333',
     letterSpacing: -0.2,
   },
-  highlight: {
-    color: '#FF8D29',
-    fontFamily: 'Pretendard-Bold',
-  },
+  highlight: {color: '#FF8D29', fontFamily: 'Pretendard-Bold'},
 
   indicatorContainer: {
     flexDirection: 'row',
@@ -187,10 +211,7 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveWidth(10),
     overflow: 'hidden',
   },
-  appleBtn: {
-    width: '100%',
-    height: getResponsiveHeight(51),
-  },
+  appleBtn: {width: '100%', height: getResponsiveHeight(51)},
 
   helper: {
     marginTop: getResponsiveHeight(10),
@@ -201,45 +222,109 @@ const styles = StyleSheet.create({
   },
 });
 
-const SlideItem = memo(function SlideItem({
-  item,
+/**
+ * ✅ CopyLines
+ * - 2~3줄을 “스태거로 순차 등장”
+ * - 동시에 scrollX 기반으로 좌/우 흐림/이동도 합성
+ */
+const CopyLines = memo(function CopyLines({
+  lines,
+  lineSize,
   index,
   width,
   scrollX,
-  imageBoxStyle,
   isActive,
 }) {
   const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
 
+  // ✅ 스와이프 중 자연스러운 흐림/이동(연속)
+  const swipeOpacity = scrollX.interpolate({
+    inputRange,
+    outputRange: [0.18, 1, 0.18],
+    extrapolate: 'clamp',
+  });
+
+  const swipeTranslateY = scrollX.interpolate({
+    inputRange,
+    outputRange: [10, 0, 10],
+    extrapolate: 'clamp',
+  });
+
+  // ✅ 페이지 확정 후: 줄 순차 등장(원샷)
+  const lineAnims = useStaggerLines(isActive, lines.length, {
+    startDelay: 140,
+    itemDuration: 420,
+    staggerMs: 120,
+  });
+
+  return (
+    <View>
+      {lines.map((node, i) => {
+        const v = lineAnims[i];
+
+        const inOpacity = v.interpolate({inputRange: [0, 1], outputRange: [0, 1]});
+        const inTranslateY = v.interpolate({
+          inputRange: [0, 1],
+          outputRange: [getResponsiveHeight(14), 0],
+        });
+        const inScale = v.interpolate({inputRange: [0, 1], outputRange: [0.985, 1]});
+
+        // ✅ 합성: swipe(연속) * in(원샷)
+        const opacity = Animated.multiply(swipeOpacity, inOpacity);
+        const translateY = Animated.add(swipeTranslateY, inTranslateY);
+
+        return (
+          <Animated.Text
+            key={`line-${i}`}
+            allowFontScaling={false}
+            style={[
+              styles.lineText,
+              {
+                fontSize: getResponsiveFontSize(lineSize),
+                opacity,
+                transform: [{translateY}, {scale: inScale}],
+              },
+            ]}>
+            {node}
+          </Animated.Text>
+        );
+      })}
+    </View>
+  );
+});
+
+const SlideItem = memo(function SlideItem({item, index, width, scrollX, imageBoxStyle, isActive}) {
+  const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+
+  // ✅ 히어로(이미지) 기본: scrollX 연속 모션
   const imageOpacity = scrollX.interpolate({
     inputRange,
     outputRange: [0.25, 1, 0.25],
     extrapolate: 'clamp',
   });
-
   const imageTranslateY = scrollX.interpolate({
     inputRange,
     outputRange: [14, 0, 14],
     extrapolate: 'clamp',
   });
-
   const imageScale = scrollX.interpolate({
     inputRange,
     outputRange: [0.985, 1, 0.985],
     extrapolate: 'clamp',
   });
 
-  const textOpacity = scrollX.interpolate({
-    inputRange,
-    outputRange: [0.2, 1, 0.2],
-    extrapolate: 'clamp',
+  // ✅ 히어로 “원샷 등장” (페이지 확정 후: 살짝 더 자연스럽게)
+  const enter = useEnterProgress(isActive, {startDelay: 20, duration: 420});
+  const enterOpacity = enter.interpolate({inputRange: [0, 1], outputRange: [0, 1]});
+  const enterTranslateY = enter.interpolate({
+    inputRange: [0, 1],
+    outputRange: [getResponsiveHeight(10), 0],
   });
+  const enterScale = enter.interpolate({inputRange: [0, 1], outputRange: [0.99, 1]});
 
-  const textTranslateY = scrollX.interpolate({
-    inputRange,
-    outputRange: [10, 0, 10],
-    extrapolate: 'clamp',
-  });
+  // ✅ 합성(연속 + 원샷)
+  const heroOpacity = Animated.multiply(imageOpacity, enterOpacity);
+  const heroTranslateY = Animated.add(imageTranslateY, enterTranslateY);
 
   const effectiveSize =
     Platform.OS === 'ios' ? item.textSize_ios ?? item.textSize : item.textSize;
@@ -251,8 +336,11 @@ const SlideItem = memo(function SlideItem({
       <View style={styles.heroArea}>
         <Animated.View
           style={{
-            opacity: imageOpacity,
-            transform: [{translateY: imageTranslateY}, {scale: imageScale}],
+            opacity: heroOpacity,
+            transform: [
+              {translateY: heroTranslateY},
+              {scale: Animated.multiply(imageScale, enterScale)},
+            ],
           }}>
           <View style={[styles.imageBox, imageBoxStyle]}>
             <OnboardingHeroMotion
@@ -268,18 +356,14 @@ const SlideItem = memo(function SlideItem({
       </View>
 
       <View style={styles.textArea}>
-        <Animated.Text
-          allowFontScaling={false}
-          style={[
-            styles.titleText,
-            {
-              fontSize: getResponsiveFontSize(effectiveSize),
-              opacity: textOpacity,
-              transform: [{translateY: textTranslateY}],
-            },
-          ]}>
-          {item.text}
-        </Animated.Text>
+        <CopyLines
+          lines={item.copyLines}
+          lineSize={getResponsiveFontSize(effectiveSize)}
+          index={index}
+          width={width}
+          scrollX={scrollX}
+          isActive={isActive}
+        />
       </View>
     </View>
   );
@@ -298,6 +382,10 @@ export default function OnboardingScreen() {
   const currentIndexRef = useRef(0);
   const [currentPage, setCurrentPage] = useState(0);
 
+  /**
+   * ✅ copyLines로 “줄 단위 순차 등장” 가능하게 데이터 구조 변경
+   * - 2~3줄 추천(너무 많으면 산만)
+   */
   const slides = useMemo(
     () => [
       {
@@ -306,16 +394,15 @@ export default function OnboardingScreen() {
         textSize: 25,
         textSize_ios: 26,
         glow: {cy: '38%', color: '#F6E3B6', op0: 0.65, opMid: 0.32},
-        text: (
+        copyLines: [
+          <>우리 가족, 오늘은</>,
           <>
-            우리 가족, {'\n'}오늘은
             <Text allowFontScaling={false} style={styles.highlight}>
-              {' '}
               어떤 기분
             </Text>
             일까?
-          </>
-        ),
+          </>,
+        ],
       },
       {
         key: '2',
@@ -323,16 +410,16 @@ export default function OnboardingScreen() {
         textSize: 23,
         textSize_ios: 24.5,
         glow: {cy: '46%', color: '#F5E7C6', op0: 0.5, opMid: 0.18},
-        text: (
+        copyLines: [
+          <>소소한 대화부터 고민 상담까지</>,
           <>
-            소소한 대화부터 고민 상담까지 {'\n'}채팅으로
+            채팅으로{' '}
             <Text allowFontScaling={false} style={styles.highlight}>
-              {' '}
               더 자주, 더 깊게
-            </Text>{' '}
-            소통해요.
-          </>
-        ),
+            </Text>
+          </>,
+          <>소통해요.</>,
+        ],
       },
       {
         key: '3',
@@ -340,20 +427,21 @@ export default function OnboardingScreen() {
         textSize: 25,
         textSize_ios: 26,
         glow: {cy: '44%', color: '#F6E3B6', op0: 0.48, opMid: 0.16},
-        text: (
+        copyLines: [
+          <>가족 일정,</>,
           <>
-            가족 일정, {'\n'}
             <Text allowFontScaling={false} style={styles.highlight}>
-              한눈에{' '}
-            </Text>
+              한눈에
+            </Text>{' '}
             확인하고
+          </>,
+          <>
             <Text allowFontScaling={false} style={styles.highlight}>
-              {' '}
-              함께{' '}
-            </Text>
+              함께
+            </Text>{' '}
             챙겨요!
-          </>
-        ),
+          </>,
+        ],
       },
       {
         key: '4',
@@ -361,18 +449,19 @@ export default function OnboardingScreen() {
         textSize: 23,
         textSize_ios: 24.5,
         glow: {cy: '45%', color: '#F6EBD3', op0: 0.52, opMid: 0.2},
-        text: (
+        copyLines: [
           <>
             <Text allowFontScaling={false} style={styles.highlight}>
               소중한 순간들
             </Text>
-            을 {'\n'}
-            사진으로 남기고 마음으로 간직해요.
-          </>
-        ),
+            을
+          </>,
+          <>사진으로 남기고</>,
+          <>마음으로 간직해요.</>,
+        ],
       },
     ],
-    [],
+    [SCREEN_WIDTH],
   );
 
   const total = slides.length;
@@ -384,10 +473,7 @@ export default function OnboardingScreen() {
   }, [insets.bottom]);
 
   const topBarPaddingTop = useMemo(() => {
-    return (
-      insets.top +
-      (Platform.OS === 'ios' ? getResponsiveHeight(4) : getResponsiveHeight(2))
-    );
+    return insets.top + (Platform.OS === 'ios' ? getResponsiveHeight(4) : getResponsiveHeight(2));
   }, [insets.top]);
 
   const imageBoxByKey = useMemo(
@@ -416,7 +502,7 @@ export default function OnboardingScreen() {
     [SCREEN_WIDTH],
   );
 
-  // ✅ preload (image가 있을 때만)
+  // ✅ preload
   useEffect(() => {
     try {
       const sources = slides
@@ -435,7 +521,7 @@ export default function OnboardingScreen() {
     }
   }, [slides]);
 
-  // ✅ width 변화(리사이즈/회전) 시 현재 페이지로 재정렬
+  // ✅ width 변화 시 현재 페이지로 재정렬
   useEffect(() => {
     const idx = clamp(currentIndexRef.current, 0, total - 1);
     requestAnimationFrame(() => {
@@ -444,15 +530,11 @@ export default function OnboardingScreen() {
   }, [SCREEN_WIDTH, total]);
 
   const getItemLayout = useCallback(
-    (_, index) => ({
-      length: SCREEN_WIDTH,
-      offset: SCREEN_WIDTH * index,
-      index,
-    }),
+    (_, index) => ({length: SCREEN_WIDTH, offset: SCREEN_WIDTH * index, index}),
     [SCREEN_WIDTH],
   );
 
-  // ✅ 페이지 확정은 "스크롤 끝"에서만
+  // ✅ 페이지 확정은 momentum end에서만
   const onMomentumEnd = useCallback(
     e => {
       const x = e?.nativeEvent?.contentOffset?.x ?? 0;
@@ -466,7 +548,6 @@ export default function OnboardingScreen() {
   const handleNext = useCallback(() => {
     const next = clamp(currentIndexRef.current + 1, 0, total - 1);
     listRef.current?.scrollToIndex?.({index: next, animated: true});
-    // ✅ 여기서 setCurrentPage를 "미리" 바꾸지 않음 (스크롤 끝나면 onMomentumEnd에서 확정)
   }, [total]);
 
   const handleSkip = useCallback(() => {
@@ -492,7 +573,6 @@ export default function OnboardingScreen() {
 
   const onScrollToIndexFailed = useCallback(
     info => {
-      // ✅ 안드에서 가끔 레이아웃 측정 전 실패 -> 잠깐 뒤 재시도
       const index = clamp(info?.index ?? 0, 0, total - 1);
       setTimeout(() => {
         listRef.current?.scrollToIndex?.({index, animated: true});
@@ -550,10 +630,9 @@ export default function OnboardingScreen() {
         onScrollToIndexFailed={onScrollToIndexFailed}
         scrollEventThrottle={16}
         style={{flex: 1}}
-        onScroll={Animated.event(
-          [{nativeEvent: {contentOffset: {x: scrollX}}}],
-          {useNativeDriver: true},
-        )}
+        onScroll={Animated.event([{nativeEvent: {contentOffset: {x: scrollX}}}], {
+          useNativeDriver: true,
+        })}
       />
 
       <View style={[styles.bottomArea, {paddingBottom: bottomPadding}]}>
@@ -561,20 +640,14 @@ export default function OnboardingScreen() {
           {slides.map((_, idx) => (
             <View
               key={String(idx)}
-              style={[
-                styles.indicatorDot,
-                currentPage === idx && styles.activeDot,
-              ]}
+              style={[styles.indicatorDot, currentPage === idx && styles.activeDot]}
             />
           ))}
         </View>
 
         {!isLast ? (
           <>
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={handleNext}
-              style={styles.nextBtn}>
+            <TouchableOpacity activeOpacity={0.9} onPress={handleNext} style={styles.nextBtn}>
               <Text allowFontScaling={false} style={styles.nextText}>
                 다음
               </Text>
@@ -585,9 +658,7 @@ export default function OnboardingScreen() {
           </>
         ) : (
           <>
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={handleKakaoLoginPress}>
+            <TouchableOpacity activeOpacity={0.9} onPress={handleKakaoLoginPress}>
               <Image
                 style={styles.kakaoBtnImage}
                 source={require('../../../assets/images/kakao-login-button.jpg')}

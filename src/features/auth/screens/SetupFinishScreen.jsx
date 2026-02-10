@@ -21,17 +21,19 @@ import {
 import {setHasFamily} from 'utils/storage';
 import {emitAuthFlagsChanged} from 'utils/authFlagsEvent';
 
+// ✅✅✅ 추가: 전역 트리거 키 (useGuide에서 쓰는 키와 동일해야 함)
+import AsyncStorage from '@react-native-async-storage/async-storage';
+const KEY_GUIDE_ENTRY_TRIGGER = '@kinover/guide/entry_trigger_v1';
+
 export default function SetupFinishScreen() {
   const handleButtonClick = useCallback(async () => {
     try {
-      // ✅ 1) 가족 생성/참가 완료 저장
       await setHasFamily(true);
-
-      // ✅ 2) RootScreen에게 즉시 반영(스토리지 읽기 기다리지 않음)
+  
+      // ✅ 가족 생성/참가 완료 직후: 가이드 노출 자격 ON
+      await AsyncStorage.setItem(KEY_GUIDE_ENTRY_TRIGGER, '1');
+  
       emitAuthFlagsChanged({hasFamily: true});
-
-      // ✅ 보통은 여기서 navigation reset 불필요
-      // RootScreen이 AppFlow로 갈아타며 Tabs로 자연스럽게 이동함
     } catch (e) {
       console.log('[SetupFinishScreen] start error:', e);
     }

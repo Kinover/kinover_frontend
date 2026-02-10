@@ -18,7 +18,7 @@ function BootLoading({label = ''}) {
       <View style={{height: 8}} />
       {!!label && (
         <Text allowFontScaling={false} style={{color: '#666', fontSize: 12}}>
-          {label}
+          {/* {label} */}
         </Text>
       )}
     </SafeAreaView>

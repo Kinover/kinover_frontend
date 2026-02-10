@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>KAKAO_APP_KEY</key>
-	<string>bce05be0c0a25b65bbb43adf582ff2f8</string>
+	<string>481db040d2e018832f0c8232a8fb7042</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>NSFaceIDUsageDescription</key>
@@ -17,7 +17,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
+	<string>Kinover</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -31,7 +31,7 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>kakaobce05be0c0a25b65bbb43adf582ff2f8</string>
+				<string>kakao481db040d2e018832f0c8232a8fb7042</string>
 			</array>
 		</dict>
 	</array>
