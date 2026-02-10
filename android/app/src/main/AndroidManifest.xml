@@ -50,7 +50,7 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data
                     android:host="oauth"
-                    android:scheme="kakaobce05be0c0a25b65bbb43adf582ff2f8"/>
+                    android:scheme="kakao481db040d2e018832f0c8232a8fb7042"/>
             </intent-filter>
         </activity>
 

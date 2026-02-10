@@ -1,700 +1,1146 @@
+/* eslint-disable react-native/no-inline-styles */
 // src/features/home/components/HomeGuideVisual.jsx
-import React, {useEffect, useMemo, useRef} from 'react';
-import {View, StyleSheet, Animated, Easing} from 'react-native';
+//
+// ✅ HomeGuideModal steps(variant) 전용 비주얼
+// - family_status: 접속중(초록 dot + pill) + 감정 캐릭터 peek
+// - family_edit  : 길게 누름(롱프레스 링) + UserBottomSheet 올라오는 장면
+// - my_mood      : 상단 smile 버튼 강조 + 감정 선택(StateScreen 느낌) 패널 팝
+// - family_invite: "가족 추가하기" 버튼 누름 + FamilyCodeModal(초대코드) 팝 + 복사 피드백
+//
+// ✅ Reanimated Worklet 안전 규칙
+// - useAnimatedStyle 안에서 getResponsiveHeight/Width/IconSize/FontSize 호출 ❌
+// - 필요한 수치는 전부 useMemo로 미리 계산 ✅
+
+import React, {useEffect, useMemo} from 'react';
+import {View, StyleSheet, Platform} from 'react-native';
+
+import Animated, {
+  Easing,
+  cancelAnimation,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+
 import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveIconSize,
-} from 'utils/responsive';
+  getResponsiveFontSize,
+} from '../../../utils/responsive';
 
-/**
- * ✅ HomeGuideVisual (너희 홈 UX 4가지 핵심 액션을 “보이게”)
- *
- * step1: (가족 탭) → 아래에서 위로 감정이 튀어나옴 + 접속 상태(초록 점) 힌트
- * step2: (가족 꾹) → 프로필 편집(UserBottomSheet) 힌트
- * step3: (내 프로필 꾹) → 감정 상태 변경(StateScreen) 힌트
- * step4: (가족 아이콘 탭) → 초대 코드 복사(FamilyCodeModal) 힌트
- *
- * - 실제 HeaderSection / MemberGridSection “느낌”을 닮게:
- *   큰 원형(내 프로필) + 아래 가족 원형들 + 우측 상단에 가족 아이콘(초대) 더미
- *
- * 사용:
- * <HomeGuideVisual variant="step1" />
- *  (기존 호환) status -> step1, edit -> step2, invite -> step4
- */
-export default function HomeGuideVisual({variant = 'step1'}) {
-  // ---------------------------------------------------------
-  // ✅ tokens (Kinover 톤)
-  // ---------------------------------------------------------
-  const KINO_YELLOW = '#FFC84D';
-  const BG_LIGHT = '#F9F9F9';
-  const INK = '#111827';
-  const MUTED = '#E5E7EB';
-  const SOFT = '#F3F4F6';
-  const ONLINE = '#22C55E';
-  const BORDER = 'rgba(17,24,39,0.08)';
+export default function HomeGuideVisual({
+  variant = 'family_status',
+  scale = 0.78,
+}) {
+  /**
+   * =========================================================
+   * ✅ 1) 모든 수치(숫자) 계산: worklet 밖에서만
+   * =========================================================
+   */
+  const m = useMemo(() => {
+    // 캔버스(가이드 모달 안에서 보여줄 “미니 홈 화면”)
+    const W = Math.round(getResponsiveWidth(332));
+    const H = Math.round(getResponsiveHeight(220));
+    const R = Math.round(getResponsiveIconSize(16));
+    const PAD = Math.round(getResponsiveWidth(14));
 
-  // ---------------------------------------------------------
-  // ✅ sizes (너희 HeaderSection 감성: 큰 원형 + 링)
-  // ---------------------------------------------------------
-  const PADDING = getResponsiveWidth(18);
+    // 홈 배경/커브 느낌(대충)
+    const TOP_YELLOW_H = Math.round(getResponsiveHeight(60));
 
-  const BIG_RING = getResponsiveIconSize(140);
-  const BIG_PROFILE = getResponsiveIconSize(124);
+    // HeaderSection 느낌
+    const HEADER_H = Math.round(getResponsiveHeight(90));
+    const AVATAR = Math.round(getResponsiveIconSize(58));
+    const RING = Math.round(AVATAR * 1.22);
+    const RING_BW = 5;
 
-  const SMALL = getResponsiveIconSize(64);
+    const CARD_H = Math.round(getResponsiveHeight(74));
+    const ICON_BTN = Math.round(getResponsiveIconSize(30));
+    const ICON_R = Math.round(getResponsiveIconSize(10));
 
-  const DOT_WRAP = getResponsiveIconSize(18);
-  const DOT = getResponsiveIconSize(10);
-  const DOT_PULSE = getResponsiveIconSize(16);
+    // MemberGridSection 느낌
+    const GRID_TOP = Math.round(getResponsiveHeight(10));
+    const GRID_GAP_X = Math.round(getResponsiveWidth(8));
+    const GRID_GAP_Y = Math.round(getResponsiveHeight(12));
 
-  const FAMILY_ICON = getResponsiveIconSize(42); // “가족 초대” 아이콘 더미
-  const FAMILY_ICON_PULSE = FAMILY_ICON;
+    const GRID_ITEM = Math.round(getResponsiveIconSize(60));
+    const GRID_R = Math.round(GRID_ITEM * 0.28);
 
-  const CARD_H = getResponsiveHeight(82); // “편집” 가이드용 더미 카드
+    const DOT = Math.max(8, Math.min(14, Math.round(GRID_ITEM * 0.22)));
+    const DOT_BORDER = 2;
 
-  // ---------------------------------------------------------
-  // ✅ animations
-  // ---------------------------------------------------------
-  const pulse = useRef(new Animated.Value(0)).current; // dot/icon pulse
-  const tap = useRef(new Animated.Value(0)).current; // tap ripple
-  const hold = useRef(new Animated.Value(0)).current; // long-press hint
-  const emo = useRef(new Animated.Value(0)).current; // emotion pop hint
-  const card = useRef(new Animated.Value(0)).current; // card emphasis
+    const PILL_H = Math.round(getResponsiveHeight(18));
+    const PILL_W = Math.round(getResponsiveWidth(58));
 
-  // ---------------------------------------------------------
-  // ✅ variant normalize (기존 status/edit/invite 호환)
-  // ---------------------------------------------------------
-  const resolved = useMemo(() => {
-    if (variant === 'status') return 'step1';
-    if (variant === 'edit') return 'step2';
-    if (variant === 'invite') return 'step4';
-    return variant; // step1~4
-  }, [variant]);
+    // 하단 “가족 추가하기”
+    const ADD_BTN_H = Math.round(getResponsiveHeight(44));
+    const ADD_BTN_R = Math.round(getResponsiveIconSize(12));
 
-  // ---------------------------------------------------------
-  // ✅ config by step
-  // ---------------------------------------------------------
-  const cfg = useMemo(() => {
-    switch (resolved) {
-      case 'step2':
-        return {
-          // 가족 꾹 → 편집
-          showOnlineDot: true,
-          showEmotionPop: false,
-          showTap: true,
-          tapTarget: 'member1',
-          tapColor: INK,
-          showHold: true,
-          holdTarget: 'member1',
-          showFamilyIconPulse: false,
-          showCard: true,
-          cardEmphasis: 1,
-        };
-      case 'step3':
-        return {
-          // 내 프로필 꾹 → 감정 변경
-          showOnlineDot: false,
-          showEmotionPop: false,
-          showTap: true,
-          tapTarget: 'me',
-          tapColor: INK,
-          showHold: true,
-          holdTarget: 'me',
-          showFamilyIconPulse: false,
-          showCard: false,
-          cardEmphasis: 0,
-        };
-      case 'step4':
-        return {
-          // 가족 아이콘 탭 → 초대 코드 복사
-          showOnlineDot: false,
-          showEmotionPop: false,
-          showTap: true,
-          tapTarget: 'familyIcon',
-          tapColor: INK,
-          showHold: false,
-          holdTarget: null,
-          showFamilyIconPulse: true,
-          showCard: false,
-          cardEmphasis: 0,
-        };
-      case 'step1':
-      default:
-        return {
-          // 가족 탭 → 감정 뿅 + 접속 점
-          showOnlineDot: true,
-          showEmotionPop: true,
-          showTap: true,
-          tapTarget: 'member1',
-          tapColor: INK,
-          showHold: false,
-          holdTarget: null,
-          showFamilyIconPulse: false,
-          showCard: false,
-          cardEmphasis: 0,
-        };
-    }
-  }, [resolved, INK]);
+    // BottomSheet(UserBottomSheet) 미니
+    const SHEET_W = Math.round(W * 0.92);
+    const SHEET_H = Math.round(getResponsiveHeight(150));
+    const SHEET_R = R;
+    const SHEET_TY_START = Math.round(getResponsiveHeight(170));
 
-  // ---------------------------------------------------------
-  // ✅ run loops
-  // ---------------------------------------------------------
+    // FamilyCodeModal 미니
+    const MODAL_W = Math.round(W * 0.86);
+    const MODAL_H = Math.round(getResponsiveHeight(130));
+
+    // 감정 peek (HeaderSection/MemberGrid 참고)
+    const EMO_SIZE = Math.round(AVATAR * 1.06);
+    const EMO_HIDE_Y = Math.round(AVATAR * 1.25);
+    const EMO_RISE = Math.round(AVATAR * 1.05);
+    const EMO_TILT_DEG = 12;
+    const EMO_PIVOT = Math.round(AVATAR * 0.18);
+
+    // my_mood: 감정 선택 패널(StateScreen 느낌)
+    const MOOD_PANEL_W = Math.round(W * 0.88);
+    const MOOD_PANEL_H = Math.round(getResponsiveHeight(150));
+    const MOOD_ITEM = Math.round(getResponsiveIconSize(40));
+    const MOOD_GAP = Math.round(getResponsiveWidth(10));
+    const MOOD_R = Math.round(getResponsiveIconSize(14));
+
+    return {
+      W,
+      H,
+      R,
+      PAD,
+      TOP_YELLOW_H,
+
+      HEADER_H,
+      AVATAR,
+      RING,
+      RING_BW,
+      CARD_H,
+      ICON_BTN,
+      ICON_R,
+
+      GRID_TOP,
+      GRID_GAP_X,
+      GRID_GAP_Y,
+      GRID_ITEM,
+      GRID_R,
+      DOT,
+      DOT_BORDER,
+      PILL_W,
+      PILL_H,
+
+      ADD_BTN_H,
+      ADD_BTN_R,
+
+      SHEET_W,
+      SHEET_H,
+      SHEET_R,
+      SHEET_TY_START,
+
+      MODAL_W,
+      MODAL_H,
+
+      EMO_SIZE,
+      EMO_HIDE_Y,
+      EMO_RISE,
+      EMO_TILT_DEG,
+      EMO_PIVOT,
+
+      MOOD_PANEL_W,
+      MOOD_PANEL_H,
+      MOOD_ITEM,
+      MOOD_GAP,
+      MOOD_R,
+    };
+  }, []);
+
+  /**
+   * =========================================================
+   * ✅ 2) 애니메이션 값
+   * =========================================================
+   */
+  const pulse = useSharedValue(0); // 클릭/롱프레스 링
+  const dotPulse = useSharedValue(0); // 온라인 dot
+  const pillShow = useSharedValue(0); // 접속중 pill
+  const emoPop = useSharedValue(0); // 감정 peek
+  const emoTilt = useSharedValue(0);
+  const emoPivot = useSharedValue(0);
+
+  const sheetUp = useSharedValue(0); // 바텀시트
+  const btnPress = useSharedValue(0); // 가족 추가 버튼 press
+  const modalPop = useSharedValue(0); // 초대코드 모달
+  const copied = useSharedValue(0); // 복사 상태 느낌
+  const moodPop = useSharedValue(0); // 감정 선택 패널
+
+  /**
+   * =========================================================
+   * ✅ 3) variant별 시퀀스
+   * =========================================================
+   */
   useEffect(() => {
-    pulse.stopAnimation();
-    tap.stopAnimation();
-    hold.stopAnimation();
-    emo.stopAnimation();
-    card.stopAnimation();
+    // cancel + reset
+    [
+      pulse,
+      dotPulse,
+      pillShow,
+      emoPop,
+      emoTilt,
+      emoPivot,
+      sheetUp,
+      btnPress,
+      modalPop,
+      copied,
+      moodPop,
+    ].forEach(v => cancelAnimation(v));
 
-    pulse.setValue(0);
-    tap.setValue(0);
-    hold.setValue(0);
-    emo.setValue(0);
-    card.setValue(0);
+    pulse.value = 0;
+    dotPulse.value = 0;
+    pillShow.value = 0;
+    emoPop.value = 0;
+    emoTilt.value = 0;
+    emoPivot.value = 0;
+    sheetUp.value = 0;
+    btnPress.value = 0;
+    modalPop.value = 0;
+    copied.value = 0;
+    moodPop.value = 0;
 
-    // pulse: online dot or family icon
-    const pulseLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 650,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 0,
-          duration: 650,
-          easing: Easing.in(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]),
+    // family_status: 온라인 + pill + emo peek 반복
+    if (variant === 'family_status') {
+      dotPulse.value = withRepeat(
+        withSequence(
+          withTiming(1, {duration: 140}),
+          withTiming(0, {duration: 200}),
+          withDelay(540, withTiming(0, {duration: 10})),
+        ),
+        -1,
+        false,
+      );
+
+      pillShow.value = withRepeat(
+        withSequence(
+          withDelay(180, withTiming(1, {duration: 220})),
+          withDelay(980, withTiming(0, {duration: 1})),
+        ),
+        -1,
+        false,
+      );
+
+      // 프로필 탭 느낌(링) + 감정 튀어나오기
+      pulse.value = withRepeat(
+        withSequence(
+          withDelay(240, withTiming(1, {duration: 140, easing: Easing.out(Easing.cubic)})),
+          withTiming(0, {duration: 240, easing: Easing.out(Easing.cubic)}),
+          withDelay(1100, withTiming(0, {duration: 10})),
+        ),
+        -1,
+        false,
+      );
+
+      const runPeek = () => {
+        // 방향만 살짝 랜덤 느낌(고정 값으로도 충분)
+        const dir = Math.random() > 0.5 ? 1 : -1;
+        emoPop.value = withTiming(1, {duration: 130, easing: Easing.out(Easing.cubic)});
+        emoPivot.value = withTiming(dir, {duration: 120});
+        emoTilt.value = withSequence(
+          withTiming(dir, {duration: 120, easing: Easing.out(Easing.cubic)}),
+          withTiming(-dir * 0.25, {duration: 140, easing: Easing.out(Easing.cubic)}),
+          withTiming(0, {duration: 120, easing: Easing.out(Easing.cubic)}),
+        );
+        emoPop.value = withDelay(
+          520,
+          withSpring(0, {damping: 11, stiffness: 220, mass: 0.65}),
+        );
+        emoPivot.value = withDelay(520, withTiming(0, {duration: 180}));
+      };
+
+      // 1.6초~2.4초 템포로 반복
+      emoPop.value = withRepeat(
+        withSequence(
+          withDelay(260, withTiming(0, {duration: 1})),
+          withTiming(0, {duration: 1}), // 자리 확보
+          withDelay(40, withTiming(0, {duration: 1})),
+        ),
+        -1,
+        false,
+      );
+      // 실제 peek는 타이밍 기반으로 한 번씩 실행(간단히: repeat 안에서 직접 못 부르니까 여기서 별도 타이밍)
+      const t = setInterval(() => runPeek(), 2000);
+      return () => clearInterval(t);
+    }
+
+    // family_edit: 롱프레스 링 + 바텀시트 올라왔다가 리셋 반복
+    if (variant === 'family_edit') {
+      pulse.value = withRepeat(
+        withSequence(
+          withTiming(1, {duration: 260, easing: Easing.out(Easing.cubic)}),
+          withTiming(0, {duration: 220, easing: Easing.out(Easing.cubic)}),
+          withDelay(900, withTiming(0, {duration: 10})),
+        ),
+        -1,
+        false,
+      );
+
+      sheetUp.value = withRepeat(
+        withSequence(
+          withDelay(220, withTiming(1, {duration: 380, easing: Easing.out(Easing.cubic)})),
+          withDelay(980, withTiming(0, {duration: 1})),
+        ),
+        -1,
+        false,
+      );
+
+      return;
+    }
+
+    // my_mood: smile 버튼 강조 + 감정 선택 패널 팝 반복
+    if (variant === 'my_mood') {
+      pulse.value = withRepeat(
+        withSequence(
+          withTiming(1, {duration: 150, easing: Easing.out(Easing.cubic)}),
+          withTiming(0, {duration: 230, easing: Easing.out(Easing.cubic)}),
+          withDelay(660, withTiming(0, {duration: 10})),
+        ),
+        -1,
+        false,
+      );
+
+      moodPop.value = withRepeat(
+        withSequence(
+          withDelay(240, withTiming(1, {duration: 260, easing: Easing.out(Easing.cubic)})),
+          withDelay(980, withTiming(0, {duration: 1})),
+        ),
+        -1,
+        false,
+      );
+
+      return;
+    }
+
+    // family_invite: 버튼 누름 + 모달 팝 + 복사 피드백(복사됨)
+    btnPress.value = withRepeat(
+      withSequence(
+        withDelay(140, withTiming(1, {duration: 120, easing: Easing.out(Easing.cubic)})),
+        withTiming(0, {duration: 180, easing: Easing.out(Easing.cubic)}),
+        withDelay(920, withTiming(0, {duration: 10})),
+      ),
+      -1,
+      false,
     );
 
-    // tap ripple
-    const tapLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(tap, {
-          toValue: 1,
-          duration: 850,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.delay(520),
-        Animated.timing(tap, {
-          toValue: 0,
-          duration: 1,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        }),
-      ]),
+    modalPop.value = withRepeat(
+      withSequence(
+        withDelay(360, withTiming(1, {duration: 260, easing: Easing.out(Easing.cubic)})),
+        withDelay(980, withTiming(0, {duration: 1})),
+      ),
+      -1,
+      false,
     );
 
-    // long press hint (hold ring)
-    const holdLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(hold, {
-          toValue: 1,
-          duration: 520,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(hold, {
-          toValue: 0,
-          duration: 520,
-          easing: Easing.inOut(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.delay(260),
-      ]),
+    copied.value = withRepeat(
+      withSequence(
+        withDelay(620, withTiming(1, {duration: 160, easing: Easing.out(Easing.cubic)})),
+        withDelay(520, withTiming(0, {duration: 220, easing: Easing.out(Easing.cubic)})),
+        withDelay(240, withTiming(0, {duration: 10})),
+      ),
+      -1,
+      false,
     );
+  }, [
+    variant,
+    pulse,
+    dotPulse,
+    pillShow,
+    emoPop,
+    emoTilt,
+    emoPivot,
+    sheetUp,
+    btnPress,
+    modalPop,
+    copied,
+    moodPop,
+  ]);
 
-    // emotion pop hint (아래에서 위로 “뿅”)
-    const emoLoop = Animated.loop(
-      Animated.sequence([
-        Animated.delay(900),
-        Animated.timing(emo, {
-          toValue: 1,
-          duration: 160,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(emo, {
-          toValue: 0,
-          duration: 260,
-          easing: Easing.inOut(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.delay(980),
-      ]),
-    );
+  /**
+   * =========================================================
+   * ✅ 4) Animated styles (숫자만 사용)
+   * =========================================================
+   */
+  const pulseRingStyle = useAnimatedStyle(() => {
+    const s = 1 + pulse.value * 0.06;
+    const o = interpolate(pulse.value, [0, 1], [0, 1]);
+    return {opacity: o, transform: [{scale: s}]};
+  });
 
-    // card emphasis (step2)
-    const upDur = cfg.cardEmphasis ? 340 : 420;
-    const downDur = cfg.cardEmphasis ? 420 : 520;
+  const onlineDotStyle = useAnimatedStyle(() => {
+    const s = 1 + dotPulse.value * 0.22;
+    const o = 0.72 + dotPulse.value * 0.28;
+    return {opacity: o, transform: [{scale: s}]};
+  });
 
-    const cardLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(card, {
-          toValue: 1,
-          duration: upDur,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(card, {
-          toValue: 0,
-          duration: downDur,
-          easing: Easing.inOut(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.delay(cfg.cardEmphasis ? 120 : 240),
-      ]),
-    );
+  const pillStyle = useAnimatedStyle(() => {
+    const o = pillShow.value;
+    const ty = interpolate(pillShow.value, [0, 1], [6, 0]);
+    return {opacity: o, transform: [{translateY: ty}]};
+  });
 
-    // start
-    if (cfg.showOnlineDot || cfg.showFamilyIconPulse) pulseLoop.start();
-    if (cfg.showTap) tapLoop.start();
-    if (cfg.showHold) holdLoop.start();
-    if (cfg.showEmotionPop) emoLoop.start();
-    if (cfg.showCard) cardLoop.start();
+  const emoStyle = useAnimatedStyle(() => {
+    const px = emoPivot.value * m.EMO_PIVOT;
+    const deg = `${emoTilt.value * m.EMO_TILT_DEG}deg`;
+    const ty = m.EMO_HIDE_Y - emoPop.value * m.EMO_RISE;
 
-    return () => {
-      pulseLoop.stop();
-      tapLoop.stop();
-      holdLoop.stop();
-      emoLoop.stop();
-      cardLoop.stop();
-    };
-  }, [cfg, pulse, tap, hold, emo, card]);
-
-  // ---------------------------------------------------------
-  // ✅ interpolations
-  // ---------------------------------------------------------
-  const pulseScale = pulse.interpolate({inputRange: [0, 1], outputRange: [1, 1.7]});
-  const pulseOpacity = pulse.interpolate({inputRange: [0, 1], outputRange: [0.55, 0]});
-
-  const tapScale = tap.interpolate({inputRange: [0, 1], outputRange: [0.7, 2.2]});
-  const tapOpacity = tap.interpolate({inputRange: [0, 1], outputRange: [0.22, 0]});
-
-  const holdScale = hold.interpolate({inputRange: [0, 1], outputRange: [1.0, 1.12]});
-  const holdOpacity = hold.interpolate({inputRange: [0, 1], outputRange: [0.18, 0.06]});
-
-  const emoTranslateY = emo.interpolate({inputRange: [0, 1], outputRange: [18, 0]});
-  const emoOpacity = emo.interpolate({inputRange: [0, 1], outputRange: [0, 1]});
-  const emoScale = emo.interpolate({inputRange: [0, 1], outputRange: [0.92, 1]});
-
-  const cardTranslateY = card.interpolate({inputRange: [0, 1], outputRange: [10, 0]});
-  const cardScale = card.interpolate({inputRange: [0, 1], outputRange: [0.97, 1]});
-
-  // ---------------------------------------------------------
-  // ✅ anchor positions (step별 target)
-  // ---------------------------------------------------------
-  const anchors = useMemo(() => {
-    // 화면 구조:
-    // - 우상단: 가족 아이콘
-    // - 중앙 상단: 내 프로필 큰 원
-    // - 하단: 가족 원형 3개 (member1 = 왼쪽)
-    const topY = PADDING + getResponsiveHeight(20);
+    const sc = interpolate(emoPop.value, [0, 1], [0.98, 1.06]);
+    const op = interpolate(emoPop.value, [0, 0.22, 1], [0, 1, 1]);
 
     return {
-      familyIcon: {
-        right: PADDING,
-        top: topY,
-      },
-      me: {
-        left: '50%',
-        top: topY + getResponsiveHeight(72),
-        // 실제로는 transform으로 중앙 맞출거라 left만 50%로 둠
-      },
-      member1: {
-        left: PADDING + SMALL / 2 - 6,
-        top: topY + getResponsiveHeight(260),
-      },
+      opacity: op,
+      transform: [
+        {translateY: ty},
+        {translateX: px},
+        {rotate: deg},
+        {translateX: -px},
+        {scale: sc},
+      ],
     };
-  }, [PADDING, SMALL]);
+  });
 
-  const tapAnchorStyle = useMemo(() => {
-    const t = cfg.tapTarget;
-    if (t === 'familyIcon') {
-      return {position: 'absolute', ...anchors.familyIcon};
-    }
-    if (t === 'me') {
-      return {
-        position: 'absolute',
-        left: '50%',
-        top: anchors.me.top,
-        transform: [{translateX: -6}],
-      };
-    }
-    // member1
-    return {position: 'absolute', ...anchors.member1};
-  }, [cfg.tapTarget, anchors]);
+  const sheetStyle = useAnimatedStyle(() => {
+    const ty = interpolate(sheetUp.value, [0, 1], [m.SHEET_TY_START, 0]);
+    const o = interpolate(sheetUp.value, [0, 0.35, 1], [0, 1, 1]);
+    return {opacity: o, transform: [{translateY: ty}]};
+  });
 
-  const holdAnchorStyle = useMemo(() => {
-    const t = cfg.holdTarget;
-    if (t === 'me') {
-      return {
-        position: 'absolute',
-        left: '50%',
-        top: anchors.me.top + BIG_RING / 2 - BIG_PROFILE / 2 - 6,
-        transform: [{translateX: -BIG_PROFILE / 2}],
-      };
-    }
-    if (t === 'member1') {
-      return {
-        position: 'absolute',
-        left: PADDING,
-        top: anchors.member1.top - (SMALL / 2 - 6),
-      };
-    }
-    return null;
-  }, [cfg.holdTarget, anchors, BIG_RING, BIG_PROFILE, PADDING, SMALL]);
+  const addBtnPressStyle = useAnimatedStyle(() => {
+    const s = 1 - btnPress.value * 0.03;
+    return {transform: [{scale: s}]};
+  });
 
-  // ---------------------------------------------------------
-  // ✅ emotion pop 위치: “가족 탭하면 아래에서 위로 튀어오름”을 보여주려면
-  // - member1 원형 내부 하단에서 시작해서 위로 올라오게
-  // ---------------------------------------------------------
-  const emoAnchorStyle = useMemo(() => {
-    return {
-      position: 'absolute',
-      left: PADDING,
-      top: anchors.member1.top - (SMALL / 2 - 6),
-      width: SMALL,
-      height: SMALL,
-      borderRadius: 999,
-      overflow: 'hidden',
-      alignItems: 'center',
-      justifyContent: 'flex-end',
-    };
-  }, [PADDING, anchors, SMALL]);
+  const modalStyle = useAnimatedStyle(() => {
+    const o = interpolate(modalPop.value, [0, 0.35, 1], [0, 1, 1]);
+    const ty = interpolate(modalPop.value, [0, 1], [18, 0]);
+    const s = interpolate(modalPop.value, [0, 1], [0.985, 1]);
+    return {opacity: o, transform: [{translateY: ty}, {scale: s}]};
+  });
 
-  // ---------------------------------------------------------
-  // ✅ render
-  // ---------------------------------------------------------
+  const copiedStyle = useAnimatedStyle(() => {
+    const on = copied.value;
+    const o = interpolate(on, [0, 1], [0, 1]);
+    const s = 1 + on * 0.02;
+    return {opacity: o, transform: [{scale: s}]};
+  });
+
+  const moodPanelStyle = useAnimatedStyle(() => {
+    const o = interpolate(moodPop.value, [0, 0.35, 1], [0, 1, 1]);
+    const ty = interpolate(moodPop.value, [0, 1], [16, 0]);
+    const s = interpolate(moodPop.value, [0, 1], [0.985, 1]);
+    return {opacity: o, transform: [{translateY: ty}, {scale: s}]};
+  });
+
+  /**
+   * =========================================================
+   * ✅ 5) variant별로 “필요한 요소만” 노출
+   * =========================================================
+   */
+  const showStatus = variant === 'family_status';
+  const showEdit = variant === 'family_edit';
+  const showMood = variant === 'my_mood';
+  const showInvite = variant === 'family_invite';
+
   return (
-    <View style={[styles.wrap, {padding: PADDING, backgroundColor: BG_LIGHT}]}>
-      {/* ✅ (4) 가족 아이콘: 눌러서 초대 코드 복사 */}
-      <View style={[styles.familyIconWrap, {right: PADDING, top: PADDING}]}>
-        <View
-          style={[
-            styles.familyIcon,
-            {width: FAMILY_ICON, height: FAMILY_ICON, borderRadius: 999, backgroundColor: KINO_YELLOW},
-          ]}
-        />
-        {cfg.showFamilyIconPulse ? (
-          <Animated.View
-            style={[
-              styles.familyIconPulse,
-              {
-                width: FAMILY_ICON_PULSE,
-                height: FAMILY_ICON_PULSE,
-                borderRadius: 999,
-                backgroundColor: KINO_YELLOW,
-                transform: [{scale: pulseScale}],
-                opacity: pulseOpacity,
-              },
-            ]}
-          />
-        ) : null}
-      </View>
+    <View style={[styles.wrap, {transform: [{scale}]}]}>
+      <View style={[styles.canvas, {width: m.W, height: m.H, borderRadius: m.R}]}>
+        {/* 상단 노란 영역(홈 배경 느낌) */}
+        <View style={[styles.topYellow, {height: m.TOP_YELLOW_H}]} />
 
-      {/* ✅ (3) 내 프로필: 꾹 눌러 감정 상태 변경 */}
-      <View style={styles.meWrap}>
-        <View
-          style={[
-            styles.bigRing,
-            {width: BIG_RING, height: BIG_RING, borderRadius: BIG_RING / 2, borderColor: BORDER},
-          ]}>
-          <View
-            style={[
-              styles.bigProfile,
-              {width: BIG_PROFILE, height: BIG_PROFILE, borderRadius: BIG_PROFILE / 2, backgroundColor: MUTED},
-            ]}
-          />
-          {/* 내 감정 힌트(가짜): 링 안쪽에 살짝 오버레이 */}
-          <View style={[styles.meEmotionChip, {backgroundColor: 'rgba(255,200,77,0.18)'}]} />
-        </View>
-      </View>
+        {/* ================= HeaderSection(미니) ================= */}
+        <View style={[styles.headerRow, {height: m.HEADER_H, paddingHorizontal: m.PAD}]}>
+          {/* 왼쪽 프로필 */}
+          <View style={[styles.avatarArea, {width: m.RING, height: m.RING}]}>
+            <View
+              style={[
+                styles.ring,
+                {
+                  width: m.RING,
+                  height: m.RING,
+                  borderRadius: m.RING / 2,
+                  borderWidth: m.RING_BW,
+                },
+              ]}
+            />
+            <View
+              style={[
+                styles.avatar,
+                {
+                  width: m.AVATAR,
+                  height: m.AVATAR,
+                  borderRadius: m.AVATAR / 2,
+                },
+              ]}
+            />
 
-      {/* ✅ (2) 가족 프로필 3개: 탭/롱프레스 액션이 있는 영역 */}
-      <View style={styles.memberRow}>
-        {[0, 1, 2].map(i => (
-          <View key={i} style={[styles.member, {width: SMALL, height: SMALL, borderRadius: SMALL / 2}]}>
-            <View style={[styles.memberInner, {backgroundColor: MUTED}]} />
+            {/* family_status: 감정 peek */}
+            {showStatus && (
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.emo,
+                  {
+                    width: m.EMO_SIZE,
+                    height: m.EMO_SIZE,
+                    left: (m.RING - m.EMO_SIZE) / 2,
+                    top: (m.RING - m.EMO_SIZE) / 2,
+                  },
+                  emoStyle,
+                ]}
+              />
+            )}
 
-            {/* (1) 접속 상태: 초록 점 + 펄스 (첫 번째 멤버에만) */}
-            {cfg.showOnlineDot && i === 0 ? (
-              <View style={[styles.dotWrap, {width: DOT_WRAP, height: DOT_WRAP}]}>
-                <View style={[styles.dotBorder, {width: DOT + 4, height: DOT + 4}]} />
-                <View style={[styles.dot, {width: DOT, height: DOT, backgroundColor: ONLINE}]} />
-                <Animated.View
+            {/* family_status: 탭 링(프로필 쪽) */}
+            {showStatus && (
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.pulseRing,
+                  {
+                    width: m.RING + 10,
+                    height: m.RING + 10,
+                    borderRadius: (m.RING + 10) / 2,
+                  },
+                  pulseRingStyle,
+                ]}
+              />
+            )}
+          </View>
+
+          {/* 오른쪽 카드(이름/한줄소개) */}
+          <View style={[styles.headerCard, {height: m.CARD_H, borderRadius: m.R}]}>
+            {/* 우상단 버튼 2개: invite + smile */}
+            <View style={[styles.topRightBtns, {right: m.PAD, top: m.PAD}]}>
+              <View
+                style={[
+                  styles.iconBtn,
+                  {
+                    width: m.ICON_BTN,
+                    height: m.ICON_BTN,
+                    borderRadius: m.ICON_R,
+                  },
+                ]}
+              />
+              <View style={{width: m.PAD * 0.45}} />
+              <View style={{position: 'relative'}}>
+                <View
                   style={[
-                    styles.dotPulse,
+                    styles.iconBtn,
                     {
-                      width: DOT_PULSE,
-                      height: DOT_PULSE,
-                      backgroundColor: ONLINE,
-                      transform: [{scale: pulseScale}],
-                      opacity: pulseOpacity,
+                      width: m.ICON_BTN,
+                      height: m.ICON_BTN,
+                      borderRadius: m.ICON_R,
                     },
                   ]}
                 />
+                {/* my_mood: smile 버튼 강조 링 */}
+                {showMood && (
+                  <Animated.View
+                    pointerEvents="none"
+                    style={[
+                      styles.pulseRing,
+                      {
+                        width: m.ICON_BTN + 14,
+                        height: m.ICON_BTN + 14,
+                        borderRadius: (m.ICON_BTN + 14) / 2,
+                      },
+                      pulseRingStyle,
+                    ]}
+                  />
+                )}
               </View>
-            ) : null}
-
-            {/* (1) 감정 뿅 힌트: “탭하면 아래에서 위로 튀어나오는” 연출 */}
-            {cfg.showEmotionPop && i === 0 ? (
-              <View style={emoAnchorStyle} pointerEvents="none">
-                <Animated.View
-                  style={[
-                    styles.emotionBubble,
-                    {
-                      transform: [{translateY: emoTranslateY}, {scale: emoScale}],
-                      opacity: emoOpacity,
-                    },
-                  ]}>
-                  <View style={styles.emotionDot} />
-                </Animated.View>
-              </View>
-            ) : null}
-          </View>
-        ))}
-      </View>
-
-      {/* ✅ (2) 가족 꾹 → 편집 힌트용 카드(가짜) */}
-      {cfg.showCard ? (
-        <Animated.View
-          style={[
-            styles.card,
-            {
-              height: CARD_H,
-              transform: [{translateY: cardTranslateY}, {scale: cardScale}],
-            },
-          ]}>
-          <View style={[styles.cardAccent, {backgroundColor: KINO_YELLOW}]} />
-          <View style={styles.cardRow}>
-            <View style={[styles.cardAvatar, {backgroundColor: MUTED}]} />
-            <View style={styles.cardLines}>
-              <View style={[styles.line, {width: '58%', backgroundColor: SOFT}]} />
-              <View style={[styles.line, {width: '78%', marginTop: 8, backgroundColor: SOFT}]} />
             </View>
+
+            <View style={styles.lineStrong} />
+            <View style={styles.lineWeak} />
           </View>
-          <View style={[styles.cardHint, {backgroundColor: '#F9FAFB'}]} />
-        </Animated.View>
-      ) : null}
+        </View>
 
-      {/* ✅ Tap ripple (step1/2/3/4) */}
-      {cfg.showTap ? (
-        <View style={[styles.tapAnchor, tapAnchorStyle]} pointerEvents="none">
+        {/* ================= MemberGridSection(미니) ================= */}
+        <View style={[styles.gridArea, {paddingHorizontal: m.PAD, paddingTop: m.GRID_TOP}]}>
+          {/* 2행 x 3열 */}
+          <View style={[styles.gridRow, {columnGap: m.GRID_GAP_X}]}>
+            {renderGridItem({m, highlight: showEdit, pulseRingStyle, isFirst: true})}
+            {renderGridItem({m})}
+            {renderGridItem({m})}
+          </View>
+
+          <View style={{height: m.GRID_GAP_Y}} />
+
+          <View style={[styles.gridRow, {columnGap: m.GRID_GAP_X}]}>
+            {renderGridItem({m})}
+            {renderGridItem({m})}
+            {renderGridItem({m})}
+          </View>
+
+          {/* family_status: 1번 아이템에 온라인 dot + pill */}
+          {showStatus && (
+            <>
+              {/* dot */}
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.dotBorder,
+                  {
+                    width: m.DOT + m.DOT_BORDER * 2,
+                    height: m.DOT + m.DOT_BORDER * 2,
+                    borderRadius: (m.DOT + m.DOT_BORDER * 2) / 2,
+                    left: m.PAD + m.GRID_ITEM - (m.DOT + m.DOT_BORDER * 2) + 6,
+                    top: m.GRID_TOP + 6,
+                  },
+                ]}
+              />
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.dot,
+                  {
+                    width: m.DOT,
+                    height: m.DOT,
+                    borderRadius: m.DOT / 2,
+                    left: m.PAD + m.GRID_ITEM - m.DOT + 6,
+                    top: m.GRID_TOP + 6 + m.DOT_BORDER,
+                  },
+                  onlineDotStyle,
+                ]}
+              />
+              {/* pill */}
+              <Animated.View
+                pointerEvents="none"
+                style={[
+                  styles.pill,
+                  {
+                    width: m.PILL_W,
+                    height: m.PILL_H,
+                    borderRadius: m.PILL_H / 2,
+                    left: m.PAD + Math.round((m.GRID_ITEM - m.PILL_W) / 2),
+                    top: m.GRID_TOP + m.GRID_ITEM + 6,
+                  },
+                  pillStyle,
+                ]}
+              />
+            </>
+          )}
+        </View>
+
+        {/* ================= Footer add button(미니) ================= */}
+        <View style={[styles.footer, {paddingHorizontal: m.PAD}]}>
           <Animated.View
             style={[
-              styles.ripple,
+              styles.addBtn,
               {
-                backgroundColor: cfg.tapColor,
-                transform: [{scale: tapScale}],
-                opacity: tapOpacity,
+                height: m.ADD_BTN_H,
+                borderRadius: m.ADD_BTN_R,
               },
-            ]}
-          />
-          <View style={[styles.tapCenter, {backgroundColor: cfg.tapColor}]} />
+              showInvite ? addBtnPressStyle : null,
+            ]}>
+            <View style={styles.addBtnBar} />
+          </Animated.View>
         </View>
-      ) : null}
 
-      {/* ✅ Long press ring hint (step2/3) */}
-      {cfg.showHold && holdAnchorStyle ? (
-        <View style={[styles.holdAnchor, holdAnchorStyle]} pointerEvents="none">
+        {/* ================= family_edit: UserBottomSheet(미니) ================= */}
+        {showEdit && (
           <Animated.View
+            pointerEvents="none"
             style={[
-              styles.holdRing,
+              styles.sheet,
               {
-                transform: [{scale: holdScale}],
-                opacity: holdOpacity,
-                borderColor: KINO_YELLOW,
+                width: m.SHEET_W,
+                height: m.SHEET_H,
+                left: (m.W - m.SHEET_W) / 2,
+                borderRadius: m.SHEET_R,
               },
-            ]}
-          />
-        </View>
-      ) : null}
+              sheetStyle,
+            ]}>
+            <View style={styles.sheetHandle} />
+            <View style={styles.sheetTitle} />
+            <View style={styles.sheetSub} />
+            <View style={styles.sheetInput} />
+            <View style={styles.sheetInput} />
+            <View style={styles.sheetBtnRow}>
+              <View style={styles.sheetBtnGhost} />
+              <View style={styles.sheetBtnBlack} />
+            </View>
+          </Animated.View>
+        )}
+
+        {/* ================= my_mood: StateScreen 패널(미니) ================= */}
+        {showMood && (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.moodPanel,
+              {
+                width: m.MOOD_PANEL_W,
+                height: m.MOOD_PANEL_H,
+                left: (m.W - m.MOOD_PANEL_W) / 2,
+                top: m.HEADER_H + m.TOP_YELLOW_H - getResponsiveHeight(14),
+                borderRadius: m.MOOD_R,
+              },
+              moodPanelStyle,
+            ]}>
+            <View style={styles.moodTitle} />
+            <View style={styles.moodGrid}>
+              {Array.from({length: 8}).map((_, i) => (
+                <View
+                  key={`mood-${i}`}
+                  style={[
+                    styles.moodItem,
+                    {
+                      width: m.MOOD_ITEM,
+                      height: m.MOOD_ITEM,
+                      borderRadius: Math.round(m.MOOD_ITEM * 0.35),
+                      marginRight: (i + 1) % 4 === 0 ? 0 : m.MOOD_GAP,
+                      marginBottom: i < 4 ? m.MOOD_GAP : 0,
+                    },
+                    i === 6 ? styles.moodSelected : null, // 하나 선택된 느낌
+                  ]}
+                />
+              ))}
+            </View>
+            <View style={styles.moodBottomBtn} />
+          </Animated.View>
+        )}
+
+        {/* ================= family_invite: FamilyCodeModal(미니) ================= */}
+        {showInvite && (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.inviteModal,
+              {
+                width: m.MODAL_W,
+                height: m.MODAL_H,
+                left: (m.W - m.MODAL_W) / 2,
+                top: Math.round(m.H * 0.33),
+                borderRadius: m.R,
+              },
+              modalStyle,
+            ]}>
+            <View style={styles.modalTitle} />
+            <View style={styles.codeCard}>
+              <View style={styles.codeLeft}>
+                <View style={styles.codeLabel} />
+                <View style={styles.codeValue} />
+              </View>
+
+              <View style={styles.copyPill}>
+                <View style={styles.copyText} />
+                <Animated.View style={[styles.copiedBadge, copiedStyle]} />
+              </View>
+            </View>
+            <View style={styles.modalHint} />
+          </Animated.View>
+        )}
+      </View>
+    </View>
+  );
+}
+
+/**
+ * =========================================================
+ * ✅ Grid item renderer
+ * - family_edit일 때 첫번째 아이템에 롱프레스 링(=pulseRingStyle)
+ * =========================================================
+ */
+function renderGridItem({m, highlight = false, pulseRingStyle, isFirst = false}) {
+  return (
+    <View
+      style={[
+        styles.gridItem,
+        {width: m.GRID_ITEM, height: m.GRID_ITEM, borderRadius: m.GRID_R},
+      ]}>
+      <View
+        style={[
+          styles.gridAvatar,
+          {
+            width: Math.round(m.GRID_ITEM * 0.44),
+            height: Math.round(m.GRID_ITEM * 0.44),
+            borderRadius: 999,
+          },
+        ]}
+      />
+
+      {highlight && isFirst && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.pulseRing,
+            {
+              width: m.GRID_ITEM + 12,
+              height: m.GRID_ITEM + 12,
+              borderRadius: (m.GRID_ITEM + 12) / 2,
+            },
+            pulseRingStyle,
+          ]}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'flex-start',
-    overflow: 'visible',
-  },
+  wrap: {alignSelf: 'center'},
 
-  // family icon (초대)
-  familyIconWrap: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 20,
-  },
-  familyIcon: {
+  canvas: {
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.08)',
-  },
-  familyIconPulse: {
-    position: 'absolute',
+    borderColor: '#EEF2F7',
+    overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
   },
 
-  // me profile
-  meWrap: {
-    marginTop: getResponsiveHeight(44),
-    alignItems: 'center',
-    justifyContent: 'center',
+  topYellow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFC84D',
   },
-  bigRing: {
-    borderWidth: 6,
+
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingTop: getResponsiveHeight(10),
+    columnGap: getResponsiveWidth(12),
+  },
+
+  avatarArea: {
     alignItems: 'center',
     justifyContent: 'center',
+    position: 'relative',
+  },
+
+  ring: {
+    position: 'absolute',
+    borderColor: '#EEF2F7',
     backgroundColor: '#FFFFFF',
   },
-  bigProfile: {},
-  meEmotionChip: {
-    position: 'absolute',
-    width: getResponsiveIconSize(56),
-    height: getResponsiveIconSize(56),
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.08)',
+
+  avatar: {
+    backgroundColor: '#E5E7EB',
   },
 
-  // member row
-  memberRow: {
-    marginTop: getResponsiveHeight(40),
+  emo: {
+    position: 'absolute',
+    backgroundColor: '#FFD36A',
+    borderRadius: 999,
+    opacity: 0,
+  },
+
+  headerCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#EEF2F7',
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingTop: getResponsiveHeight(12),
+    justifyContent: 'center',
+  },
+
+  topRightBtns: {
+    position: 'absolute',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  iconBtn: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#ECEFF3',
+  },
+
+  lineStrong: {
+    width: '56%',
+    height: getResponsiveHeight(10),
+    borderRadius: 999,
+    backgroundColor: '#111827',
+    opacity: 0.12,
+    marginBottom: getResponsiveHeight(8),
+  },
+
+  lineWeak: {
+    width: '78%',
+    height: getResponsiveHeight(9),
+    borderRadius: 999,
+    backgroundColor: '#111827',
+    opacity: 0.08,
+  },
+
+  pulseRing: {
+    position: 'absolute',
+    borderWidth: 2,
+    borderColor: 'rgba(255, 200, 77, 0.75)',
+    backgroundColor: 'transparent',
+  },
+
+  gridArea: {
+    flex: 1,
+  },
+
+  gridRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: getResponsiveWidth(8),
-  },
-  member: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.06)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'visible',
-  },
-  memberInner: {
-    width: '86%',
-    height: '86%',
-    borderRadius: 999,
   },
 
-  // online dot
-  dotWrap: {
-    position: 'absolute',
-    right: -2,
-    top: -2,
-    justifyContent: 'center',
+  gridItem: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#EEF2F7',
     alignItems: 'center',
-    zIndex: 10,
+    justifyContent: 'center',
+    position: 'relative',
   },
+
+  gridAvatar: {
+    backgroundColor: '#D1D5DB',
+  },
+
   dotBorder: {
     position: 'absolute',
-    borderRadius: 999,
     backgroundColor: '#FFFFFF',
-  },
-  dot: {
-    borderRadius: 999,
-  },
-  dotPulse: {
-    position: 'absolute',
-    borderRadius: 999,
   },
 
-  // emotion pop bubble
-  emotionBubble: {
-    width: 26,
-    height: 26,
-    borderRadius: 999,
-    backgroundColor: '#FFFFFF',
+  dot: {
+    position: 'absolute',
+    backgroundColor: '#22C55E',
+  },
+
+  pill: {
+    position: 'absolute',
+    backgroundColor: 'rgba(34,197,94,0.08)',
     borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.08)',
+    borderColor: 'rgba(34,197,94,0.16)',
+    opacity: 0,
+  },
+
+  footer: {
+    paddingTop: getResponsiveHeight(10),
+    paddingBottom: getResponsiveHeight(12),
+  },
+
+  addBtn: {
+    width: '100%',
+    backgroundColor: '#111827',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
-  },
-  emotionDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 999,
-    backgroundColor: '#FF3B30',
   },
 
-  // card (edit guide)
-  card: {
-    marginTop: getResponsiveHeight(22),
-    borderRadius: getResponsiveWidth(16),
+  addBtnBar: {
+    width: '58%',
+    height: getResponsiveHeight(10),
+    borderRadius: 999,
+    backgroundColor: '#FFFFFF',
+    opacity: 0.86,
+  },
+
+  // ===== BottomSheet mini =====
+  sheet: {
+    position: 'absolute',
+    bottom: -getResponsiveHeight(10),
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.06)',
-    padding: getResponsiveWidth(12),
-    justifyContent: 'space-between',
-    overflow: 'hidden',
+    borderColor: '#E5E7EB',
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingTop: getResponsiveHeight(10),
   },
-  cardAccent: {
+
+  sheetHandle: {
+    alignSelf: 'center',
+    width: getResponsiveWidth(40),
+    height: getResponsiveHeight(4),
+    borderRadius: 999,
+    backgroundColor: '#E5E7EB',
+    marginBottom: getResponsiveHeight(10),
+  },
+
+  sheetTitle: {
+    width: '40%',
+    height: getResponsiveHeight(10),
+    borderRadius: 999,
+    backgroundColor: '#111827',
+    opacity: 0.12,
+    marginBottom: getResponsiveHeight(8),
+  },
+
+  sheetSub: {
+    width: '70%',
+    height: getResponsiveHeight(9),
+    borderRadius: 999,
+    backgroundColor: '#111827',
+    opacity: 0.08,
+    marginBottom: getResponsiveHeight(12),
+  },
+
+  sheetInput: {
+    width: '100%',
+    height: getResponsiveHeight(32),
+    borderRadius: getResponsiveIconSize(10),
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    marginBottom: getResponsiveHeight(8),
+  },
+
+  sheetBtnRow: {
+    flexDirection: 'row',
+    columnGap: getResponsiveWidth(10),
+    marginTop: getResponsiveHeight(6),
+  },
+
+  sheetBtnGhost: {
+    flex: 1,
+    height: getResponsiveHeight(38),
+    borderRadius: getResponsiveIconSize(12),
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+
+  sheetBtnBlack: {
+    flex: 1,
+    height: getResponsiveHeight(38),
+    borderRadius: getResponsiveIconSize(12),
+    backgroundColor: '#111827',
+  },
+
+  // ===== Mood panel mini =====
+  moodPanel: {
     position: 'absolute',
-    left: 0,
-    top: 0,
-    width: 6,
-    height: '100%',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingTop: getResponsiveHeight(10),
   },
-  cardRow: {
+
+  moodTitle: {
+    width: '62%',
+    height: getResponsiveHeight(10),
+    borderRadius: 999,
+    backgroundColor: '#111827',
+    opacity: 0.10,
+    marginBottom: getResponsiveHeight(12),
+    alignSelf: 'center',
+  },
+
+  moodGrid: {
+    width: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignSelf: 'center',
+    justifyContent: 'center',
+  },
+
+  moodItem: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#EEF2F7',
+  },
+
+  moodSelected: {
+    backgroundColor: '#FFF8E6',
+    borderColor: '#FFC84D',
+  },
+
+  moodBottomBtn: {
+    marginTop: getResponsiveHeight(12),
+    height: getResponsiveHeight(34),
+    borderRadius: 999,
+    backgroundColor: '#111827',
+    opacity: 0.92,
+    alignSelf: 'center',
+    width: '46%',
+  },
+
+  // ===== Invite modal mini =====
+  inviteModal: {
+    position: 'absolute',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingTop: getResponsiveHeight(10),
+  },
+
+  modalTitle: {
+    width: '44%',
+    height: getResponsiveHeight(10),
+    borderRadius: 999,
+    backgroundColor: '#111827',
+    opacity: 0.10,
+    marginBottom: getResponsiveHeight(10),
+  },
+
+  codeCard: {
+    width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: getResponsiveWidth(10),
-  },
-  cardAvatar: {
-    width: getResponsiveWidth(38),
-    height: getResponsiveWidth(38),
-    borderRadius: getResponsiveWidth(12),
-  },
-  cardLines: {flex: 1},
-  line: {
-    height: 10,
-    borderRadius: 6,
-  },
-  cardHint: {
-    height: 12,
-    borderRadius: 999,
+    justifyContent: 'space-between',
+    backgroundColor: '#F9FAFB',
     borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.06)',
+    borderColor: '#EEF2F7',
+    borderRadius: getResponsiveWidth(14),
+    paddingVertical: getResponsiveHeight(12),
+    paddingHorizontal: getResponsiveWidth(12),
   },
 
-  // tap ripple
-  tapAnchor: {
-    width: 12,
-    height: 12,
-    justifyContent: 'center',
+  codeLeft: {flex: 1, paddingRight: getResponsiveWidth(10)},
+
+  codeLabel: {
+    width: '48%',
+    height: getResponsiveHeight(8),
+    borderRadius: 999,
+    backgroundColor: '#111827',
+    opacity: 0.10,
+    marginBottom: getResponsiveHeight(6),
+  },
+
+  codeValue: {
+    width: '70%',
+    height: getResponsiveHeight(10),
+    borderRadius: 999,
+    backgroundColor: '#111827',
+    opacity: 0.08,
+  },
+
+  copyPill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    zIndex: 30,
-  },
-  ripple: {
-    position: 'absolute',
-    width: 26,
-    height: 26,
+    gap: getResponsiveWidth(6),
+    paddingVertical: getResponsiveHeight(8),
+    paddingHorizontal: getResponsiveWidth(12),
     borderRadius: 999,
-  },
-  tapCenter: {
-    width: 6,
-    height: 6,
-    borderRadius: 999,
+    backgroundColor: '#111827',
   },
 
-  // long press ring hint
-  holdAnchor: {
-    zIndex: 25,
-  },
-  holdRing: {
-    width: getResponsiveIconSize(72),
-    height: getResponsiveIconSize(72),
+  copyText: {
+    width: getResponsiveWidth(22),
+    height: getResponsiveHeight(9),
     borderRadius: 999,
-    borderWidth: 3,
-    backgroundColor: 'rgba(255,200,77,0.08)',
+    backgroundColor: '#FFFFFF',
+    opacity: 0.85,
+  },
+
+  copiedBadge: {
+    width: getResponsiveWidth(34),
+    height: getResponsiveHeight(16),
+    borderRadius: 999,
+    backgroundColor: '#FFC84D',
+    opacity: 0,
+  },
+
+  modalHint: {
+    marginTop: getResponsiveHeight(10),
+    width: '66%',
+    height: getResponsiveHeight(9),
+    borderRadius: 999,
+    backgroundColor: '#111827',
+    opacity: 0.08,
   },
 });

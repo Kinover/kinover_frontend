@@ -238,50 +238,50 @@ export default function PostFilterBar({
         <Pressable style={styles.modalBackdrop} onPress={closeSort} />
 
         <View
-          style={[
-            styles.dropdownWrap,
-            {top: dropdownTop, left: safeLeft, width: dropdownWidth},
-          ]}>
-          <View style={styles.dropdown}>
-            {(sortOptions || []).map(opt => {
-              const active = opt.key === sortKey;
+  style={[
+    styles.dropdownWrap,
+    {top: dropdownTop, left: safeLeft, width: dropdownWidth},
+  ]}>
+  {/* ✅ Android 전용: faux shadow backplate */}
+  {Platform.OS === 'android' ? (
+    <View pointerEvents="none" style={styles.dropdownShadowPlate} />
+  ) : null}
 
-              return (
-                <TouchableOpacity
-                  key={opt.key}
-                  style={[
-                    styles.dropdownItem,
-                    active && styles.dropdownItemActive,
-                  ]}
-                  activeOpacity={0.75}
-                  onPress={() => pickSort(opt.key)}>
-                  <Text
-                    allowFontScaling={false}
-                    style={[
-                      styles.dropdownItemText,
-                      active && styles.dropdownItemTextActive,
-                    ]}
-                    numberOfLines={1}
-                    ellipsizeMode="tail">
-                    {opt.title}
-                  </Text>
+  <View style={styles.dropdown}>
+    {(sortOptions || []).map(opt => {
+      const active = opt.key === sortKey;
 
-                  {active ? (
-                    <Image
-                      style={{
-                        tintColor: 'black',
-                        width: getResponsiveIconSize(9),
-                        height: getResponsiveIconSize(9),
-                        resizeMode: 'contain',
-                      }}
-                      source={require('../../../assets/icons/check-gray.png')}
-                    />
-                  ) : null}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
+      return (
+        <TouchableOpacity
+          key={opt.key}
+          style={[styles.dropdownItem, active && styles.dropdownItemActive]}
+          activeOpacity={0.75}
+          onPress={() => pickSort(opt.key)}>
+          <Text
+            allowFontScaling={false}
+            style={[styles.dropdownItemText, active && styles.dropdownItemTextActive]}
+            numberOfLines={1}
+            ellipsizeMode="tail">
+            {opt.title}
+          </Text>
+
+          {active ? (
+            <Image
+              style={{
+                tintColor: 'black',
+                width: getResponsiveIconSize(9),
+                height: getResponsiveIconSize(9),
+                resizeMode: 'contain',
+              }}
+              source={require('../../../assets/icons/check-gray.png')}
+            />
+          ) : null}
+        </TouchableOpacity>
+      );
+    })}
+  </View>
+</View>
+
       </Modal>
     </>
   );
@@ -386,9 +386,9 @@ const styles = StyleSheet.create({
         shadowRadius: 10,
         shadowOffset: {width: 0, height: 6},
       },
-      android: {
-        elevation: 6,
-      },
+      // android: {
+      //   elevation: 10,
+      // },
     }),
   },
 
@@ -415,6 +415,17 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-SemiBold',
     color: '#111827',
   },
+
+  dropdownShadowPlate: {
+  position: 'absolute',
+  top: getResponsiveHeight(2),              // 살짝 아래로 내려서 그림자 느낌
+  left: getResponsiveWidth(1),              // 살짝 옆으로
+  right: getResponsiveWidth(-1),            // 약간 더 크게(확장)
+  bottom: getResponsiveHeight(-2),          // 약간 더 크게(확장)
+  borderRadius: 14,
+  backgroundColor: '#000',
+  opacity: 0.10,                            // 핵심: 너무 진하면 “검은 박스” 됨
+},
 
   checkMark: {
     marginLeft: getResponsiveWidth(8),

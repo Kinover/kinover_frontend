@@ -94,7 +94,10 @@ export default function CustomModal({
 
   const stopRunningAnim = useCallback(() => {
     try {
-      if (runningAnimRef.current && typeof runningAnimRef.current.stop === 'function') {
+      if (
+        runningAnimRef.current &&
+        typeof runningAnimRef.current.stop === 'function'
+      ) {
         runningAnimRef.current.stop();
       }
     } catch {}
@@ -207,6 +210,9 @@ export default function CustomModal({
     onConfirm?.();
   }, [onConfirm]);
 
+  // ✅✅✅ 핵심: 닫히는 순간(visible=false, mounted=true)에도 backdrop이 터치를 잡지 않게
+  const overlayPointerEvents = visible ? 'auto' : 'none';
+
   if (!mounted) return null;
 
   const renderSubText = placement => {
@@ -233,13 +239,18 @@ export default function CustomModal({
       statusBarTranslucent
       presentationStyle="overFullScreen"
       onRequestClose={requestClose}>
-      <Animated.View style={[styles.overlay, overlayStyle]}>
+      <Animated.View
+        style={[styles.overlay, overlayStyle]}
+        // ✅✅✅ 닫히는 동안 터치 차단 방지
+        pointerEvents={overlayPointerEvents}>
         <View style={styles.dim} />
 
         <Pressable
           style={StyleSheet.absoluteFill}
           onPress={handleBackdropPress}
           disabled={!closeOnBackdropPress}
+          // ✅✅✅ 닫히는 동안(visible=false) backdrop이 터치를 먹지 않게
+          pointerEvents={overlayPointerEvents}
         />
 
         <Animated.View style={modalStyle} pointerEvents="box-none">

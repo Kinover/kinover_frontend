@@ -37,32 +37,11 @@ import {
   deleteScheduleThunk,
 } from '../store/scheduleThunk';
 
-import useGuide from 'hooks/useGuide';
 import {hapticLight} from '../../../utils/haptic';
 import DropShadow from 'react-native-drop-shadow';
 import {BACKGROUND_COLORS, LAYOUT_STYLE} from 'styles/style';
-// import FastImage from '@d11/react-native-fast-image';
-// import ScheduleGuideModal from '../components/ScheduleGuideModal';
 
-const SCHEDULE_GUIDE_STEPS = [
-  {
-    title: '날짜별 일정 한눈에 보기',
-    description:
-      '위쪽 달력에서 날짜를 선택하면, 그날에 등록된 가족 일정이 아래에 정리되어 보여요.',
-  },
-  {
-    title: '바쁜 날 쉽게 알아보기',
-    description: '날짜에 표시된 색이 진해질수록 일정이 많다는 뜻이에요.',
-  },
-  {
-    title: '가족별 일정 확인하기',
-    description: '일정 카드에서 어떤 가족의 일정인지 바로 확인할 수 있어요.',
-  },
-  {
-    title: '일정 추가·수정·삭제',
-    description: '오른쪽 아래 버튼을 눌러 일정을 추가하거나 수정할 수 있어요.',
-  },
-];
+import ScheduleGuideModal from '../components/ScheduleGuideModal';
 
 const toId = v => {
   if (v == null) return null;
@@ -175,17 +154,14 @@ export default function ScheduleScreen() {
   /** =========================
    * ✅ IMPORTANT: openSheet 래핑
    * - Schedule.jsx에서 주입한 __forcedKind를 절대 잃지 않게
-   * - (혹시 useScheduleEditor 내부에서 normalize/clone 하면 빠질 수 있어서 안전장치)
    ========================= */
   const handleOpenSheet = useCallback(
     item => {
-      // item이 null이면 "추가" 모드
       if (!item) {
         openSheet(null);
         return;
       }
 
-      // ✅ forced kind 유지 (없으면 그대로)
       const forced = item?.__forcedKind;
       if (forced) {
         openSheet({...item, __forcedKind: forced});
@@ -196,26 +172,10 @@ export default function ScheduleScreen() {
     [openSheet],
   );
 
-  /** =========================
-   * 가이드
-   ========================= */
-  const guideEnabled = !familyId;
-  const {
-    isGuideVisible,
-    guideStep,
-    currentGuide,
-    totalSteps,
-    nextStep,
-    skipGuide,
-  } = useGuide('SCHEDULE_GUIDE_SHOWN_V1', SCHEDULE_GUIDE_STEPS, guideEnabled);
-
   const birthdayNamesForSelectedDate = birthdayMap?.[selectedDateKey] ?? [];
 
   /** =========================
    * ✅ CRUD: thunk 직접 dispatch
-   * ✅ 핵심 수정:
-   * 1) type이 없으면 scheduleType도 받아서 처리
-   * 2) FAMILY에서 participantIds가 빈 배열이면 "ALL"로 보고 가족 전체로 확장
    ========================= */
   const onSubmit = useCallback(
     async incoming => {
@@ -232,8 +192,6 @@ export default function ScheduleScreen() {
         editingSchedule?.id ??
         undefined;
 
-      // ✅ type 방어: useScheduleBottomSheetModal이 scheduleType으로 줄 수도 있어서
-      // ✅ + __forcedKind도 먼저 먹게(안전)
       const typeRaw =
         incoming?.type ??
         incoming?.scheduleType ??
@@ -244,11 +202,8 @@ export default function ScheduleScreen() {
       const type = typeRaw ? String(typeRaw).toUpperCase() : null;
 
       const rawParticipantIds = incoming?.participantIds;
-
-      // ✅ number[]로 변환
       let participantIds = toLongArray(rawParticipantIds);
 
-      // ✅ FAMILY + 빈 배열 => ALL 로 간주하고 가족 전체로 확장
       if (type === 'FAMILY' && participantIds.length === 0) {
         participantIds = (familyUserList || [])
           .map(u => Number(u?.userId))
@@ -274,7 +229,6 @@ export default function ScheduleScreen() {
         return;
       }
 
-      // ✅ INDIVIDUAL/FAMILY는 1명 이상 필요 (FAMILY ALL은 위에서 확장되므로 통과)
       if (payload.type !== 'ANNIVERSARY') {
         const ids = Array.isArray(payload.participantIds)
           ? payload.participantIds
@@ -389,6 +343,13 @@ export default function ScheduleScreen() {
 
   return (
     <View style={styles.container}>
+      {/* ✅✅✅ 일정 가이드 모달 추가 (화면 로딩 준비되면 표시) */}
+      <ScheduleGuideModal
+        enabled={true}
+        ready={!isLoading && !!familyId}
+        forceVisible={false}
+      />
+
       <ScrollView
         style={styles.mainContainer}
         showsVerticalScrollIndicator={false}
@@ -408,7 +369,7 @@ export default function ScheduleScreen() {
 
         <Schedule
           selectedDate={selectedDate}
-          onOpenSheet={handleOpenSheet} // ✅ 여기만 교체
+          onOpenSheet={handleOpenSheet}
           refreshTrigger={refreshTrigger}
           birthdayNames={birthdayNamesForSelectedDate}
         />

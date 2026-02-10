@@ -1,12 +1,6 @@
 // src/features/home/screens/HomeScreen.jsx
 import React, {useRef, useEffect, useState, useCallback} from 'react';
-import {
-  View,
-  StyleSheet,
-  ScrollView,
-  RefreshControl,
-  Platform,
-} from 'react-native';
+import {View, StyleSheet, ScrollView, RefreshControl, Platform} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -49,27 +43,16 @@ export default function HomeScreen() {
 
   const fontMode = useSelector(state => state.ui.fontMode);
 
-  // ✅ familyId를 "family slice"만 보지 말고 "user"에도 있으면 그걸 우선 활용
-  // (백엔드 UserDTO에 familyId를 넣어둔 경우가 많음)
   const familyId =
-    family?.familyId ||
-    user?.familyId ||
-    user?.family?.familyId ||
-    null;
+    family?.familyId || user?.familyId || user?.family?.familyId || null;
 
-  // ✅ FamilyCodeModal 표시 상태
   const [isVisible, setIsVisible] = useState(false);
-
   const [selectedUser, setSelectedUser] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [didInitialLoad, setDidInitialLoad] = useState(false);
 
-  // ✅ AppAlertModal 상태 (뜩! 알림)
-  const [alertVisible, setAlertVisible] = useState(false);
-  const [alertPayload, setAlertPayload] = useState({
-    title: '가이드 완료!',
-    message: '이제 홈 기능을 편하게 써볼 수 있어요 🙂',
-  });
+  // ✅ AppAlert "실제 표시 여부"를 HomeScreen에서 추적
+  const [isAppAlertVisible, setIsAppAlertVisible] = useState(false);
 
   const activeEvent = useActiveAppEvent({screen: 'home'});
 
@@ -116,26 +99,15 @@ export default function HomeScreen() {
     };
   }, [user?.userId]);
 
-  // ✅ 소켓도 familyId 기준으로
   useWebSocketStatus(user?.userId);
   useFamilyStatusSocket(familyId);
 
-  // ✅ 초기 로딩: userId + familyId가 준비되면 무조건 한 번 로딩하고 didInitialLoad를 true로 바꾼다
   useEffect(() => {
     let mounted = true;
 
     (async () => {
       if (!user?.userId) return;
-
-      // ✅ 가족이 있는 유저인데 familyId가 아직 안 들어온 상태면
-      // 여기서 무한스피너 방지용으로 "상태 확인" 로그를 찍어두면 디버깅이 빨라짐
-      if (!familyId) {
-        // familyId가 늦게 들어오는 구조라면, 여기서 setDidInitialLoad를 true로 해버리면
-        // 화면은 뜨지만 데이터는 비어있을 수 있음.
-        // 지금은 "정상 로딩을 위해 familyId가 필요"하니 일단 기다리되,
-        // 무한 대기를 막고 싶다면 타임아웃 처리도 가능.
-        return;
-      }
+      if (!familyId) return;
 
       try {
         await dispatch(fetchFamilyThunk(familyId));
@@ -213,19 +185,6 @@ export default function HomeScreen() {
     dismissUserSheet();
   };
 
-  const showGuideDoneAlert = useCallback(() => {
-    setAlertPayload({
-      title: '가이드 완료!',
-      message: '프로필을 눌러 편집도 해보고, 가족도 초대해봐요 🙂',
-    });
-    setAlertVisible(true);
-
-    setTimeout(() => {
-      setAlertVisible(false);
-    }, 1200);
-  }, []);
-
-  // ✅ 로딩 조건도 familyId 기준으로
   const isLoading = !familyLoaded || !didInitialLoad;
 
   if (isLoading) {
@@ -243,6 +202,19 @@ export default function HomeScreen() {
       progressViewOffset={Platform.OS === 'ios' ? 0 : 8}
     />
   );
+
+  /**
+   * ✅✅✅ 모달 우선순위:
+   * 1) AppAlert (activeEvent 있고, 실제 visible 중이면)
+   * 2) HomeGuide
+   *
+   * - AppAlert가 떠있는 동안 가이드는 enabled=false로 "절대 못 뜨게" 막기
+   * - AppAlert가 닫히면 다음 렌더에서 가이드가 뜰 수 있음
+   */
+  const canShowGuide =
+    didInitialLoad &&
+    !isAppAlertVisible &&
+    !!familyId; // (원하면 조건 더 추가 가능)
 
   return (
     <View style={styles.container}>
@@ -270,14 +242,19 @@ export default function HomeScreen() {
         />
       </ScrollView>
 
-      <HomeGuideModal
+      {/* ✅ 1) AppAlert가 먼저 뜸 */}
+      <AppAlertHost
         enabled={true}
-        ready={didInitialLoad}
-        forceVisible={false}
-        onDone={showGuideDoneAlert}
+        event={activeEvent}
+        onVisibleChange={setIsAppAlertVisible}
       />
 
-      <AppAlertHost enabled={true} event={activeEvent} />
+      {/* ✅ 2) AppAlert가 안 떠 있을 때만 가이드 모달 허용 */}
+      <HomeGuideModal
+        enabled={canShowGuide}
+        ready={didInitialLoad}
+        forceVisible={false}
+      />
 
       <FamilyCodeModal
         visible={isVisible}

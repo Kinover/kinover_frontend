@@ -81,23 +81,39 @@ export default function BottomSheetLayout({
   const insets = useSafeAreaInsets();
   const WINDOW_H = Dimensions.get('window').height;
 
-  const androidFallback = getResponsiveHeight(20);
+  /**
+   * ✅ Android 하단 여백 정책 (중요)
+   * - 예전: Math.max(insets.bottom, 20)로 "항상 최소 20" 강제 → 전체적으로 떠 보임 유발
+   * - 개선: insets.bottom이 0일 때만 fallback 적용 (0이 아니면 fallback 0)
+   * - 이유: 투명 시스템바/edge-to-edge 환경에서 일부 기기에서 insets.bottom이 0으로 들어오는 케이스 보호
+   */
+  const androidInset = Platform.OS === 'android' ? Number(insets.bottom || 0) : 0;
 
+  const androidFallback =
+    Platform.OS === 'android' && androidInset === 0 ? getResponsiveHeight(20) : 0;
+
+  // ✅ iOS는 기존대로: 최소 10 정도 안전 여백
   const baseBottom =
     Platform.OS === 'android'
-      ? Math.max(insets.bottom || 0, androidFallback)
-      : Math.max(insets.bottom || 0, getResponsiveHeight(10));
+      ? androidInset + androidFallback
+      : Math.max(Number(insets.bottom || 0), getResponsiveHeight(10));
 
+  /**
+   * ✅ contentBottomPad 정책
+   * - disableContentBottomPadding이면 0
+   * - Android에서 androidBottomPadding은 "추가 여백"으로 처리 (예측 가능)
+   *   (기존 max 방식은 baseBottom이 커졌을 때 의도치 않게 중복/상승이 생길 수 있음)
+   */
   const contentBottomPad = useMemo(() => {
     if (disableContentBottomPadding) return 0;
 
     if (Platform.OS === 'android') {
-      return Math.max(
-        baseBottom,
-        typeof androidBottomPadding === 'number' ? androidBottomPadding : 0,
-      );
+      const extra =
+        typeof androidBottomPadding === 'number' ? Number(androidBottomPadding) : 0;
+      return Math.max(0, baseBottom + extra);
     }
-    return baseBottom;
+
+    return Math.max(0, baseBottom);
   }, [disableContentBottomPadding, baseBottom, androidBottomPadding]);
 
   const resolvedSnapPoints = useMemo(() => {
