@@ -57,13 +57,18 @@ export default function AppAlertModal({
     onRequestClose?.();
   }, [onRequestClose]);
 
+  /** 왼쪽 버튼(secondaryText, 예: "오늘 하루 보지 않기") 클릭 시: 저장 후 닫기 */
+  const handleLeftButton = useCallback(() => {
+    if (onSecondary) {
+      onSecondary();
+    } else {
+      onRequestClose?.();
+    }
+  }, [onSecondary, onRequestClose]);
+
   const handlePrimary = useCallback(() => {
     onPrimary?.();
   }, [onPrimary]);
-
-  const handleSecondary = useCallback(() => {
-    onSecondary?.();
-  }, [onSecondary]);
 
   const handleTertiary = useCallback(() => {
     onTertiary?.();
@@ -91,10 +96,10 @@ export default function AppAlertModal({
 
   return (
     <CustomModal
-      // ✅ 여기 버그 고침: visible={!visible} ❌ -> visible={visible} ✅
       visible={visible}
       showCloseButton
-      onClose={handleClose}
+      onRequestClose={handleClose}
+      onClose={handleLeftButton}
       onConfirm={handlePrimary}
       closeText={secondaryText}
       confirmText={primaryText}

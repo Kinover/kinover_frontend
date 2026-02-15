@@ -1,7 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 // SettingScreen.jsx
 
-import React, {useEffect, useState, useCallback, useMemo} from 'react';
+import React, {useEffect, useLayoutEffect, useState, useCallback, useMemo} from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,14 @@ import {
   Pressable,
 } from 'react-native';
 
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useRoute, StackActions, CommonActions} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
+import {
+  getLastFromTabForGlobalScreen,
+  setLastFromTabForGlobalScreen,
+  getResetToTabState,
+} from '../../../app/navigation/navigationService';
+import {RenderHeaderBackButton} from '../../../app/navigation/helpers/tabHeaderHelpers';
 
 import RNRestart from 'react-native-restart';
 
@@ -46,10 +52,40 @@ import {FontModeSliderBlue} from '../components/FontModeSlider';
 
 export default function SettingScreen() {
   const navigation = useNavigation();
+  const route = useRoute();
   const logout = useLogout();
   const dispatch = useDispatch();
 
   useHideTabBar();
+
+  // 진입 시 복귀할 탭 저장 (params 있으면 사용, 없으면 이미 safeNavigate가 저장한 값 유지 — '홈'으로 덮어쓰지 않음)
+  useEffect(() => {
+    if (route?.params?.fromTab) {
+      setLastFromTabForGlobalScreen(route.params.fromTab);
+    } else if (!getLastFromTabForGlobalScreen()) {
+      setLastFromTabForGlobalScreen('홈');
+    }
+  }, [route?.params?.fromTab]);
+
+  // 뒤로가기: pop 사용 → 슬라이드 애니메이션 (detachInactiveScreens: false라 탭 유지)
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <RenderHeaderBackButton
+          navigation={navigation}
+          route={route}
+          onBackPressOverride={() => {
+            if (navigation.canGoBack()) {
+              navigation.dispatch(StackActions.pop(1));
+            } else {
+              const tab = getLastFromTabForGlobalScreen() || route?.params?.fromTab || '홈';
+              navigation.dispatch(CommonActions.reset(getResetToTabState(tab)));
+            }
+          }}
+        />
+      ),
+    });
+  }, [navigation, route]);
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);

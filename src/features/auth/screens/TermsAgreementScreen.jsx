@@ -1,6 +1,6 @@
 // src/screens/auth/TermsAgreementScreen.js
 
-import React, {useState, useEffect, useRef, useMemo} from 'react';
+import React, {useState, useEffect, useRef, useMemo, useCallback} from 'react';
 import {
   View,
   Text,
@@ -15,20 +15,38 @@ import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
 import ToastModal from 'components/modal/ToastModal';
 import {COLORS} from 'styles/style';
 
-// ✅ 추가
+// ✅ Redux / FontMode
 import {useSelector} from 'react-redux';
 import {FONT_MODE} from 'store/uiSlice';
-// import {FONT_MODE} from '../../store/uiSlice'; // 경로는 프로젝트에 맞게 조정해줘
-// 지금 파일 위치가 src/screens/auth 라면 보통 ../../../store/uiSlice 이런 식일 수도 있어.
-// 네 프로젝트에서 SettingScreen은 '../../../store/uiSlice'였으니,
-// 여기선 아마 '../../store/uiSlice'가 아니라 '../../../store/uiSlice'일 확률 높음.
 
-const TERMS_TEXT = `...`;
-const PRIVACY_TEXT = `...`;
-const MARKETING_TEXT = `...`;
+// ✅ 약관/개인정보 data import (경로는 프로젝트 alias에 맞춰져 있어야 함)
+// alias 없으면 상대경로로 바꿔줘: ../../../data/legal
+import {privacyPolicy} from 'data/legal/privacyPolicy';
+import {termsOfService} from 'data/legal/termsOfService';
 
-const TERMS_VERSION = '2025-07-15';
-const PRIVACY_VERSION = '2025-07-15';
+/**
+ * ✅ 마케팅 동의는 별도 문구로 유지 (필요하면 data로 빼도 됨)
+ */
+const MARKETING_TEXT = `마케팅 정보 수신 동의
+- Kinover의 이벤트, 신규 기능, 프로모션 소식을 받아볼 수 있어요.
+- 동의하지 않아도 서비스 이용에는 제한이 없어요.
+- 동의 이후에도 앱 설정에서 언제든지 철회할 수 있어요.
+`;
+
+/**
+ * ✅ 약관/개인정보 본문은 data 파일에서 가져오기
+ */
+const TERMS_TEXT = termsOfService?.content || '';
+const PRIVACY_TEXT = privacyPolicy?.content || '';
+
+/**
+ * ✅ 버전은 data의 publishedAt(=공고일) 또는 version으로 사용
+ * - 서버/DB에 저장할 때 “약관 버전”은 날짜 기반이 관리가 편함
+ */
+const TERMS_VERSION =
+  termsOfService?.publishedAt || termsOfService?.version || 'v1';
+const PRIVACY_VERSION =
+  privacyPolicy?.publishedAt || privacyPolicy?.version || 'v1';
 
 export default function TermsAgreementScreen() {
   const navigateToWhere = useNavigateToWhere();
@@ -56,26 +74,26 @@ export default function TermsAgreementScreen() {
 
   const isRequiredChecked = agreeTerms && agreePrivacy;
 
-  const handleToggleAll = () => {
+  const handleToggleAll = useCallback(() => {
     const next = !agreeAll;
     setAgreeAll(next);
     setAgreeTerms(next);
     setAgreePrivacy(next);
     setAgreeMarketing(next);
-  };
+  }, [agreeAll]);
 
-  const handleToggleItem = type => {
+  const handleToggleItem = useCallback(type => {
     if (type === 'terms') setAgreeTerms(prev => !prev);
     if (type === 'privacy') setAgreePrivacy(prev => !prev);
     if (type === 'marketing') setAgreeMarketing(prev => !prev);
-  };
+  }, []);
 
   useEffect(() => {
     if (agreeTerms && agreePrivacy && agreeMarketing) setAgreeAll(true);
     else setAgreeAll(false);
   }, [agreeTerms, agreePrivacy, agreeMarketing]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (!isRequiredChecked) {
       setToastMessage('필수 약관에 모두 동의해 주세요.');
       setToastVisible(true);
@@ -97,7 +115,13 @@ export default function TermsAgreementScreen() {
         marketingAgreedAt: agreeMarketing ? now : null,
       },
     });
-  };
+  }, [
+    isRequiredChecked,
+    navigateToWhere,
+    agreeTerms,
+    agreePrivacy,
+    agreeMarketing,
+  ]);
 
   const renderCheckBox = checked => (
     <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
@@ -109,27 +133,36 @@ export default function TermsAgreementScreen() {
     </View>
   );
 
-  const handleOpenDetail = type => {
+  const handleOpenDetail = useCallback(type => {
     setDetailType(type);
     bottomSheetRef.current?.present();
-  };
+  }, []);
 
-  const renderDetailContent = () => {
+  /**
+   * ✅ detailType -> title/body 매핑
+   */
+  const DETAIL_MAP = useMemo(
+    () => ({
+      terms: {
+        title: termsOfService?.title || '서비스 이용약관',
+        body: TERMS_TEXT,
+      },
+      privacy: {
+        title: privacyPolicy?.title || '개인정보 처리방침',
+        body: PRIVACY_TEXT,
+      },
+      marketing: {
+        title: '마케팅 정보 수신 동의',
+        body: MARKETING_TEXT,
+      },
+    }),
+    [],
+  );
+
+  const renderDetailContent = useCallback(() => {
     if (!detailType) return null;
 
-    let title = '';
-    let body = '';
-
-    if (detailType === 'terms') {
-      title = '서비스 이용약관';
-      body = TERMS_TEXT;
-    } else if (detailType === 'privacy') {
-      title = '개인정보 처리방침';
-      body = PRIVACY_TEXT;
-    } else {
-      title = '마케팅 정보 수신 동의';
-      body = MARKETING_TEXT;
-    }
+    const {title, body} = DETAIL_MAP[detailType] || {title: '', body: ''};
 
     return (
       <>
@@ -143,15 +176,18 @@ export default function TermsAgreementScreen() {
         </ScrollView>
       </>
     );
-  };
+  }, [detailType, DETAIL_MAP]);
 
-  const renderBackdrop = props => (
-    <BottomSheetBackdrop
-      {...props}
-      appearsOnIndex={0}
-      disappearsOnIndex={-1}
-      pressBehavior="close"
-    />
+  const renderBackdrop = useCallback(
+    props => (
+      <BottomSheetBackdrop
+        {...props}
+        appearsOnIndex={0}
+        disappearsOnIndex={-1}
+        pressBehavior="close"
+      />
+    ),
+    [],
   );
 
   return (
@@ -184,7 +220,7 @@ export default function TermsAgreementScreen() {
 
         <View style={styles.divider} />
 
-        {/* 필수 약관 */}
+        {/* 서비스 이용약관 */}
         <View style={styles.row}>
           <TouchableOpacity
             activeOpacity={0.8}
@@ -240,7 +276,7 @@ export default function TermsAgreementScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* 선택 동의 */}
+        {/* 마케팅 정보 수신 */}
         <View style={styles.row}>
           <TouchableOpacity
             activeOpacity={0.8}
@@ -285,7 +321,7 @@ export default function TermsAgreementScreen() {
       <BottomSheetModal
         ref={bottomSheetRef}
         index={0}
-        snapPoints={snapPoints} // ✅ 폰트모드 반영
+        snapPoints={snapPoints}
         backdropComponent={renderBackdrop}
         handleIndicatorStyle={{backgroundColor: '#D1D5DB'}}>
         <View style={styles.sheetContainer}>{renderDetailContent()}</View>

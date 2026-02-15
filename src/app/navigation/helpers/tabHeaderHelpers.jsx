@@ -20,7 +20,14 @@ import {
 
 import {BUTTON_STYLES, HEADER_STYLES, LAYOUT_STYLE} from 'styles/style';
 import {hapticLight} from 'utils/haptic';
-import {safeNavigate, safeReset} from '../navigationService';
+import {StackActions} from '@react-navigation/native';
+import {
+  navigationRef,
+  safeNavigate,
+  safeReset,
+  resetToTabScreen,
+  getLastFromTabForGlobalScreen,
+} from '../navigationService';
 
 /* =========================================================
  * ✅ 공통: 아이콘 + (알림 뱃지 or 빨간 점)
@@ -407,6 +414,8 @@ export const RenderHeaderBackButton = memo(function RenderHeaderBackButton({
   navigation,
   route,
   tintColor = 'black',
+  /** 화면에서 뒤로가기 동작을 직접 지정할 때 사용 (예: 알림설정화면 → 설정화면) */
+  onBackPressOverride,
 }) {
   const fromTab = route?.params?.fromTab;
   const fromScreen = route?.params?.fromScreen;
@@ -415,51 +424,43 @@ export const RenderHeaderBackButton = memo(function RenderHeaderBackButton({
   const onPress = useCallback(() => {
     hapticLight();
 
+    if (onBackPressOverride) {
+      onBackPressOverride();
+      return;
+    }
+
+    // 1) 알림설정화면 → 루트 스택에서 한 단계 pop (설정화면으로)
+    if (route?.name === '알림설정화면') {
+      if (navigationRef?.isReady?.()) {
+        navigationRef.dispatch(StackActions.pop(1));
+      } else {
+        safeNavigate('설정화면');
+      }
+      return;
+    }
+
+    // 2) 설정화면·알림화면 → Tabs 안의 해당 탭(소통/일정/추억 등)으로만 가야 함. reset으로 정확한 탭 지정.
+    if (route?.name === '설정화면' || route?.name === '알림화면') {
+      const tabToGo = fromTab || getLastFromTabForGlobalScreen() || '홈';
+      resetToTabScreen(tabToGo);
+      return;
+    }
+
+    // 3) 스택에 이전 화면이 있으면 goBack
     if (navigation?.canGoBack?.()) {
       navigation.goBack();
       return;
     }
 
+    // 4) 그 외 fromTab 있으면 해당 탭으로 리셋
     if (fromTab) {
-      const tabRoutes = ['홈', '소통', '일정', '추억'];
-      const tabIndex = Math.max(0, tabRoutes.indexOf(fromTab));
-
-      safeReset({
-        index: 0,
-        routes: [
-          {
-            name: 'Root',
-            state: {
-              index: 0,
-              routes: [
-                {
-                  name: 'Tabs',
-                  state: {
-                    index: tabIndex,
-                    routes: tabRoutes.map(name => {
-                      if (name !== fromTab) return {name};
-                      if (!fromScreen) return {name};
-
-                      return {
-                        name,
-                        state: {
-                          index: 0,
-                          routes: [{name: fromScreen, params: fromParams}],
-                        },
-                      };
-                    }),
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      });
+      resetToTabScreen(fromTab);
       return;
     }
 
-    safeReset({index: 0, routes: [{name: 'Root'}]});
-  }, [navigation, fromTab, fromScreen, fromParams]);
+    // 5) 그 외: 메인 탭으로 리셋
+    safeReset({index: 0, routes: [{name: 'Tabs'}]});
+  }, [navigation, route?.name, fromTab, fromScreen, fromParams, onBackPressOverride]);
 
   return createIconButton(
     onPress,

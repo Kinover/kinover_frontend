@@ -23,10 +23,8 @@ import {
   Keyboard,
   Animated,
   Dimensions,
-  SafeAreaView,
 } from 'react-native';
-
-import {BottomSheetTextInput, BottomSheetView} from '@gorhom/bottom-sheet';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {
   getResponsiveFontSize,
@@ -37,6 +35,7 @@ import {
 import {useScheduleBottomSheetModal} from '../hooks/useScheduleBottomSheetModal';
 import ToastModal from '../../../components/modal/ToastModal';
 import CustomModal from 'components/modal/CustomModal';
+import {BottomSheetTextInput, BottomSheetView} from '@gorhom/bottom-sheet';
 import BottomSheetLayout from 'components/botomSheet/BottomSheetLayout';
 import {BOTTOMSHEET_STYLE} from 'styles/style';
 
@@ -238,6 +237,11 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       );
     }, [editingSchedule]);
 
+    const sheetKey = useMemo(
+      () => `schedule-${editingKey ?? 'new'}`,
+      [editingKey],
+    );
+
     useEffect(() => {
       const es = editingScheduleRef.current;
 
@@ -348,16 +352,13 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       const isLarge = fm.includes('large') && !fm.includes('extra');
       const isXL = fm.includes('extra');
 
-      if (isXL) return ['78%', '99%'];
-      if (isLarge) return ['74%', '98%'];
-      return ['69.6%', '97%'];
+      // 첫 스냅이 기본 열림 높이 → 너무 낮으면 하단 버튼이 잘림
+      if (isXL) return ['74%', '99%'];
+      if (isLarge) return ['72%', '98%'];
+      return ['70%', '97%'];
     }, [fontMode]);
 
     const bottomSafe = 0;
-
-    const sheetKey = useMemo(() => {
-      return `scheduleEditor-flow-${fontMode}-${editingKey ?? 'new'}`;
-    }, [fontMode, editingKey]);
 
     const closeSheet = useCallback(() => {
       if (closingRef.current) return;
@@ -717,7 +718,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
           onTouchInside={handleTouchInsideResetOnly}
           onDismiss={handleSheetDismiss}
         >
-          <SafeAreaView style={{backgroundColor: COLORS.bg}}>
+          <SafeAreaView edges={['bottom']} style={{backgroundColor: COLORS.bg}}>
             <BottomSheetView>
               <Animated.View
                 style={{
@@ -842,7 +843,7 @@ export default ScheduleEditorBottomSheetModal;
 
 const styles = StyleSheet.create({
   content: {
-    paddingTop: getResponsiveHeight(6),
+    paddingTop: getResponsiveHeight(2),
     paddingBottom: getResponsiveHeight(12),
   },
 

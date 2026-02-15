@@ -1,5 +1,12 @@
-// userFamilySlice.js
+/**
+ * @fileoverview 가족 구성원 상태 관리 Slice
+ * 
+ * 가족 구성원 목록과 관련 상태를 관리합니다.
+ */
+
 import {createSlice} from '@reduxjs/toolkit';
+
+// ==================== Initial State ====================
 
 const initialState = {
   userFamily: [],
@@ -8,25 +15,67 @@ const initialState = {
   error: null,
 };
 
+// ==================== Slice ====================
+
 const userFamilySlice = createSlice({
   name: 'userFamily',
   initialState,
   reducers: {
+    /**
+     * 사용자 가족 정보 설정
+     * @param {Object} state - 현재 상태
+     * @param {Object} action - 액션 객체
+     * @param {Array} action.payload - 가족 정보 배열
+     */
     setUserFamily(state, action) {
-      state.userFamily = [...action.payload];
+      state.userFamily = Array.isArray(action.payload)
+        ? [...action.payload]
+        : [];
     },
+
+    /**
+     * 가족 구성원 목록 설정
+     * @param {Object} state - 현재 상태
+     * @param {Object} action - 액션 객체
+     * @param {Array} action.payload - 가족 구성원 배열
+     */
     setFamilyUserList(state, action) {
-      state.familyUserList = [...action.payload];
+      state.familyUserList = Array.isArray(action.payload)
+        ? [...action.payload]
+        : [];
     },
+
+    /**
+     * 로딩 상태 설정
+     * @param {Object} state - 현재 상태
+     * @param {Object} action - 액션 객체
+     * @param {boolean} action.payload - 로딩 여부
+     */
     setUserFamilyLoading(state, action) {
       state.loading = action.payload;
     },
+
+    /**
+     * 에러 상태 설정
+     * @param {Object} state - 현재 상태
+     * @param {Object} action - 액션 객체
+     * @param {string|null} action.payload - 에러 메시지
+     */
     setUserFamilyError(state, action) {
       state.error = action.payload;
     },
-    // ✅ 새로 추가
+
+    /**
+     * 가족 구성원 정보 업데이트
+     * @param {Object} state - 현재 상태
+     * @param {Object} action - 액션 객체
+     * @param {Object} action.payload - 업데이트할 사용자 정보
+     * @param {string|number} action.payload.userId - 사용자 ID
+     */
     updateFamilyUser(state, action) {
       const updatedUser = action.payload;
+      if (!updatedUser?.userId) return;
+
       state.familyUserList = state.familyUserList.map(user =>
         user.userId === updatedUser.userId ? updatedUser : user,
       );
@@ -34,13 +83,14 @@ const userFamilySlice = createSlice({
   },
 });
 
+// ==================== Exports ====================
+
 export const {
   setUserFamily,
   setFamilyUserList,
   setUserFamilyLoading,
   setUserFamilyError,
-  updateFamilyUser, // ✅ 이거 추가
-
+  updateFamilyUser,
 } = userFamilySlice.actions;
 
 export default userFamilySlice.reducer;

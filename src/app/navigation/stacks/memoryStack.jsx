@@ -1,6 +1,6 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
-import {Platform, Text} from 'react-native';
+import { Text} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 
 import MemoryScreen from '../../../features/memory/screens';

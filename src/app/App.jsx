@@ -1,4 +1,13 @@
-// src/app/App.jsx
+/**
+ * @fileoverview 앱 루트 컴포넌트
+ * 
+ * 앱의 최상위 컴포넌트로, 모든 Provider와 네비게이션을 설정합니다.
+ * - Redux Store, PersistGate 설정
+ * - 네비게이션 컨테이너 설정
+ * - 생체인식 잠금 기능
+ * - 스플래시 화면 관리
+ */
+
 import 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
@@ -33,36 +42,66 @@ import {
   setHasFamily,
 } from 'utils/storage';
 import {setLogout, setAuthChecked} from 'features/auth/store/loginSlice';
-
 import store, {persistor} from 'store';
 import {PersistGate} from 'redux-persist/integration/react';
 import RootScreen from './navigation/rootScreen';
-import {navigationRef, flushPendingNavigation} from './navigation/navigationService';
+import {
+  navigationRef,
+  flushPendingNavigation,
+} from './navigation/navigationService';
 import {setResponsiveMode} from 'utils/responsive';
-
 import {
   checkAndAuthBiometric,
   getBiometricAvailability,
 } from '../utils/biometrics';
 import {setBioLockEnabled} from 'store/uiSlice';
 
-if (Text.defaultProps == null) Text.defaultProps = {};
+// ==================== Font Scaling Disable ====================
+
+if (Text.defaultProps == null) {
+  Text.defaultProps = {};
+}
 Text.defaultProps.allowFontScaling = false;
-if (TextInput.defaultProps == null) TextInput.defaultProps = {};
+
+if (TextInput.defaultProps == null) {
+  TextInput.defaultProps = {};
+}
 TextInput.defaultProps.allowFontScaling = false;
-if (GHTextInput?.defaultProps == null) GHTextInput.defaultProps = {};
+
+if (GHTextInput?.defaultProps == null) {
+  GHTextInput.defaultProps = {};
+}
 GHTextInput.defaultProps.allowFontScaling = false;
 
-function ResponsiveModeBridge() {
-  const fontMode = useSelector(state => state.ui?.fontMode);
-  useEffect(() => {
-    if (fontMode != null) setResponsiveMode(fontMode);
-  }, [fontMode]);
-  return null;
-}
+// ==================== Constants ====================
 
 const SPLASH_KEY = 'SPLASH_SHOWN_V1';
 
+// ==================== Sub Components ====================
+
+/**
+ * 반응형 모드 브릿지 컴포넌트
+ * Redux의 fontMode 변경을 반응형 유틸리티에 동기화합니다.
+ */
+function ResponsiveModeBridge() {
+  const fontMode = useSelector(state => state.ui?.fontMode);
+
+  useEffect(() => {
+    if (fontMode != null) {
+      setResponsiveMode(fontMode);
+    }
+  }, [fontMode]);
+
+  return null;
+}
+
+/**
+ * 앱 잠금 게이트 컴포넌트
+ * 생체인식 잠금 기능을 관리합니다.
+ * 
+ * @param {Object} props - 컴포넌트 props
+ * @param {boolean} props.readyForAuth - 인증 준비 완료 여부
+ */
 function AppLockGate({readyForAuth}) {
   const dispatch = useDispatch();
   const bioOn = useSelector(state => !!state.ui?.bioLockEnabled);
@@ -76,27 +115,39 @@ function AppLockGate({readyForAuth}) {
   const authedThisSessionRef = useRef(false);
   const didInitialAuthRef = useRef(false);
 
+  /**
+   * 생체인식 인증 실행
+   */
   const runAuth = useCallback(async () => {
+    // 생체인식 비활성화 시 잠금 해제
     if (!bioOn) {
       setLocked(false);
       authedThisSessionRef.current = true;
       return;
     }
-    if (!rehydrated) return;
-    if (!readyForAuth) return;
 
+    // 조건 확인
+    if (!rehydrated || !readyForAuth) {
+      return;
+    }
+
+    // 이미 인증된 세션인 경우
     if (authedThisSessionRef.current) {
       setLocked(false);
       return;
     }
 
-    if (authInFlightRef.current) return;
+    // 중복 실행 방지
+    if (authInFlightRef.current) {
+      return;
+    }
     authInFlightRef.current = true;
 
     try {
       setLocked(true);
       setAuthing(true);
 
+      // 생체인식 사용 가능 여부 확인
       const avail = await getBiometricAvailability();
       if (!avail?.available) {
         dispatch(setBioLockEnabled(false));
@@ -105,6 +156,7 @@ function AppLockGate({readyForAuth}) {
         return;
       }
 
+      // 생체인식 인증 실행
       const res = await checkAndAuthBiometric();
 
       if (res?.success) {
@@ -225,14 +277,22 @@ function DevForceResetLogin() {
   return null;
 }
 
+// ==================== Main Component ====================
+
+/**
+ * 앱 루트 컴포넌트
+ * @returns {JSX.Element} 앱 루트 컴포넌트
+ */
 export default function App() {
   const [isSplashFinished, setIsSplashFinished] = useState(false);
   const [shouldShowSplash, setShouldShowSplash] = useState(false);
 
-  // ✅ (선택) 다크모드 여부를 상태로 관리하고 있으면 여기에 연결
-  // const isDarkMode = useColorScheme() === 'dark';
+  // 다크모드 여부 (현재는 비활성화)
   const isDarkMode = false;
 
+  /**
+   * 스플래시 화면 표시 여부 확인
+   */
   useEffect(() => {
     (async () => {
       try {
@@ -251,13 +311,16 @@ export default function App() {
     })();
   }, []);
 
+  /**
+   * 스플래시 화면 종료 핸들러
+   */
   const onSplashFinish = async () => {
     setIsSplashFinished(true);
     setShouldShowSplash(false);
     try {
       await AsyncStorage.setItem(SPLASH_KEY, '1');
     } catch {
-      null;
+      // 에러 무시
     }
   };
 
@@ -265,7 +328,7 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={styles.root}>
-      {/* ✅ 요즘 패턴 핵심 1: StatusBar를 투명 + translucent */}
+      {/* Android StatusBar 설정 (투명 + translucent) */}
       {Platform.OS === 'android' && (
         <StatusBar
           translucent
@@ -315,11 +378,12 @@ export default function App() {
   );
 }
 
+// ==================== Styles ====================
+
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    // ✅ 루트 배경을 명확히: 투명 시스템바 뒤로 "하얀 띠" 비치는 걸 줄여줌
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFFFFF', // 투명 시스템바 뒤로 하얀 띠 비치는 것 방지
   },
 
   splashContainer: {
@@ -330,6 +394,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
   },
+
   logo: {
     position: 'absolute',
     width: 180,
@@ -338,7 +403,11 @@ const styles = StyleSheet.create({
     right: '31.5%',
     resizeMode: 'contain',
   },
-  splashAnimation: {width: '100%', height: '100%'},
+
+  splashAnimation: {
+    width: '100%',
+    height: '100%',
+  },
 
   lockOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -346,6 +415,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   lockCard: {
     width: '78%',
     backgroundColor: '#FFFFFF',
@@ -356,12 +426,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(17,24,39,0.08)',
   },
+
   lockTitle: {
     fontFamily: 'Pretendard-SemiBold',
     fontSize: 16,
     color: '#111827',
     letterSpacing: -0.2,
   },
+
   lockDesc: {
     marginTop: 6,
     fontFamily: 'Pretendard-Regular',
@@ -370,6 +442,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
   },
+
   lockHint: {
     fontFamily: 'Pretendard-Medium',
     fontSize: 12.5,

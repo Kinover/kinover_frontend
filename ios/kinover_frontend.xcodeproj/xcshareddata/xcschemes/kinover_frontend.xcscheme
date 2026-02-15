@@ -24,7 +24,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "kinover_frontend.app"
+               BuildableName = "Kinover.app"
                BlueprintName = "kinover_frontend"
                ReferencedContainer = "container:kinover_frontend.xcodeproj">
             </BuildableReference>
@@ -64,7 +64,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "kinover_frontend.app"
+            BuildableName = "Kinover.app"
             BlueprintName = "kinover_frontend"
             ReferencedContainer = "container:kinover_frontend.xcodeproj">
          </BuildableReference>
@@ -81,7 +81,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "kinover_frontend.app"
+            BuildableName = "Kinover.app"
             BlueprintName = "kinover_frontend"
             ReferencedContainer = "container:kinover_frontend.xcodeproj">
          </BuildableReference>

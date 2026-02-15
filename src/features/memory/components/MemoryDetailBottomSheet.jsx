@@ -8,10 +8,10 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
-  Pressable,
   FlatList,
   Image,
   Platform,
+  Pressable,
 } from 'react-native';
 
 import {
@@ -128,7 +128,6 @@ function MentionText({text, familyUsers, textStyle, mentionStyle}) {
 
 /* =========================
  * ✅ Footer (불투명 배경 바)
- * - 핵심: onLayout으로 footerHeight를 부모로 올려줌
  * ========================= */
 function CommentFooter({
   footerProps,
@@ -141,7 +140,6 @@ function CommentFooter({
   disabled = false,
 }) {
   const insets = useSafeAreaInsets();
-
   const draftRef = useRef(initialText || '');
   const inputRef = useRef(null);
 
@@ -231,6 +229,7 @@ function CommentFooter({
   return (
     <BottomSheetFooter
       {...footerProps}
+      // ✅ 하단 제스처 영역만 보정 (키보드 높이는 BottomSheet가 margin으로 처리)
       bottomInset={Math.max(insets.bottom, 0)}>
       <View
         style={styles.footerBar}
@@ -338,10 +337,12 @@ export default function MemoryDetailBottomSheet({
   backgroundColor = '#F9F9F9',
   familyUsers = [],
   myUserId,
-  onSheetChange, // ✅ 추가: 열린/닫힌 상태를 부모가 추적
-  disabled = false, // ✅ 추가: 크롬 숨김/풀스크린이면 입력/제스처 막기
+  onSheetChange,
+  disabled = false,
 }) {
   const snapPoints = useMemo(() => snapPointsProp || ['81%'], [snapPointsProp]);
+  const insets = useSafeAreaInsets();
+  const isAndroid = Platform.OS === 'android';
 
   const listRef = useRef(null);
 
@@ -351,7 +352,6 @@ export default function MemoryDetailBottomSheet({
   const lastFadeRef = useRef({top: false, bottom: false});
   const scrollThrottleRef = useRef(0);
 
-  // ✅ Footer 실측 높이(숫자)로 paddingBottom 처리
   const [footerLayoutH, setFooterLayoutH] = useState(
     INPUT_H + getResponsiveHeight(20),
   );
@@ -499,32 +499,31 @@ export default function MemoryDetailBottomSheet({
       snapPoints={snapPoints}
       enablePanDownToClose={!disabled}
       backdropComponent={renderBackdrop}
-      keyboardBehavior="interactive"
-      keyboardBlurBehavior="restore"
-      android_keyboardInputMode="adjustResize"
-      enableFooterMarginAdjustment
       backgroundStyle={[styles.sheetBackground, {backgroundColor}]}
-      // ✅ 부모가 open/close 추적할 수 있게
       onChange={onSheetChange}
-      // ✅ disabled면 드래그로 내용 끌어내리는 것도 막는게 안정적
       enableContentPanningGesture={!disabled}
       enableHandlePanningGesture={!disabled}
-      footerComponent={props => {
-        return (
-          <CommentFooter
-            footerProps={props}
-            initialText={commentText}
-            onChangeComment={onChangeComment}
-            onSubmitComment={onSubmitComment}
-            familyUsers={familyUsers}
-            myUserId={myUserId ?? user?.userId}
-            disabled={disabled}
-            onFooterLayoutHeight={h => {
-              setFooterLayoutH(prev => (Math.abs(prev - h) > 1 ? h : prev));
-            }}
-          />
-        );
-      }}>
+      // ✅ (선택) 안전한 inset
+      bottomInset={Math.max(insets.bottom, 0)}
+      // ✅ 핵심: Android는 adjustResize + footer margin adjustment ON
+      android_keyboardInputMode="adjustResize"
+      keyboardBehavior="interactive"
+      keyboardBlurBehavior={isAndroid ? 'none' : 'restore'}
+      enableFooterMarginAdjustment={true}
+      footerComponent={props => (
+        <CommentFooter
+          footerProps={props}
+          initialText={commentText}
+          onChangeComment={onChangeComment}
+          onSubmitComment={onSubmitComment}
+          familyUsers={familyUsers}
+          myUserId={myUserId ?? user?.userId}
+          disabled={disabled}
+          onFooterLayoutHeight={h => {
+            setFooterLayoutH(prev => (Math.abs(prev - h) > 1 ? h : prev));
+          }}
+        />
+      )}>
       <BottomSheetView style={{flex: 1, width: '100%'}}>
         <BottomSheetFlatList
           ref={listRef}
@@ -681,9 +680,6 @@ const styles = StyleSheet.create({
     height: getResponsiveHeight(26),
   },
 
-  /* =========================
-   * ✅ 불투명 footer bar
-   * ========================= */
   footerBar: {
     backgroundColor: '#F9F9F9',
     borderTopWidth: 1,

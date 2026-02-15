@@ -83,14 +83,13 @@ export default function BottomSheetLayout({
 
   /**
    * ✅ Android 하단 여백 정책 (중요)
-   * - 예전: Math.max(insets.bottom, 20)로 "항상 최소 20" 강제 → 전체적으로 떠 보임 유발
-   * - 개선: insets.bottom이 0일 때만 fallback 적용 (0이 아니면 fallback 0)
-   * - 이유: 투명 시스템바/edge-to-edge 환경에서 일부 기기에서 insets.bottom이 0으로 들어오는 케이스 보호
+   * - insets.bottom이 0인 경우(시스템 네비게이션바 영역 미보고) fallback으로 네비바 높이만큼 여백 확보
+   * - fallback 48: 일반적인 Android 네비게이션바 높이(48dp) 수준으로 버튼이 가리지 않게
    */
   const androidInset = Platform.OS === 'android' ? Number(insets.bottom || 0) : 0;
 
   const androidFallback =
-    Platform.OS === 'android' && androidInset === 0 ? getResponsiveHeight(20) : 0;
+    Platform.OS === 'android' && androidInset === 0 ? getResponsiveHeight(48) : 0;
 
   // ✅ iOS는 기존대로: 최소 10 정도 안전 여백
   const baseBottom =
@@ -444,7 +443,7 @@ const styles = StyleSheet.create({
   },
 
   header: {
-    paddingBottom: getResponsiveHeight(10),
+    paddingBottom: getResponsiveHeight(6),
   },
   title: {
     fontFamily: BOTTOMSHEET_STYLE()?.title?.fontFamily || 'Pretendard-SemiBold',
@@ -464,7 +463,7 @@ const styles = StyleSheet.create({
 
   scrollWrap: {},
   scrollContent: {
-    paddingTop: getResponsiveHeight(2),
+    paddingTop: 0,
     paddingBottom: 0,
   },
 

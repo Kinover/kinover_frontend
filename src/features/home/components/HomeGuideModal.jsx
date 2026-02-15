@@ -69,8 +69,6 @@ export default function HomeGuideModal({
     <GuideModalCarousel
       visible={visible}
       steps={steps}
-      secondaryText="다시 보지 않기"
-      onSecondaryPress={handleDone}
       onRequestClose={handleDone}
       onDone={handleDone}
     />

@@ -1,6 +1,7 @@
 // NotificationSettingScreen.js
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useLayoutEffect} from 'react';
 import {View, Text, StyleSheet, ScrollView} from 'react-native';
+import {useNavigation, useRoute} from '@react-navigation/native';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -8,6 +9,7 @@ import {
 import CustomSwitch from '../../../components/CustomSwitch';
 import useHideTabBar from '../../../hooks/useHideTabBar';
 import {useDispatch, useSelector} from 'react-redux';
+import {RenderHeaderBackButton} from '../../../app/navigation/helpers/tabHeaderHelpers';
 
 import {toggleAllChatRoomNotificationThunk} from '../../chat/store/chatRoomThunk';
 import {toggleCommentNotificationThunk} from '../../memory/store/commentThunk';
@@ -18,6 +20,8 @@ import ToastModal from '../../../components/modal/ToastModal';
 import {SETTING_STYLES} from 'styles/style';
 
 export default function NotificationSettingScreen() {
+  const navigation = useNavigation();
+  const route = useRoute();
   const dispatch = useDispatch();
   const userId = useSelector(
     state => state.user.userId?.toString?.() || state.user.userId,
@@ -33,6 +37,25 @@ export default function NotificationSettingScreen() {
   const [toastMessage, setToastMessage] = useState('');
 
   useHideTabBar({stayHidden: true});
+
+  // 알림설정화면 뒤로가기 → 한 단계 pop (설정화면으로, 슬라이드 애니메이션)
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerLeft: () => (
+        <RenderHeaderBackButton
+          navigation={navigation}
+          route={route}
+          onBackPressOverride={() => {
+            if (navigation.canGoBack()) {
+              navigation.goBack();
+            } else {
+              navigation.navigate('설정화면');
+            }
+          }}
+        />
+      ),
+    });
+  }, [navigation, route]);
 
   // ✅ 전체 알림 토글
   const handleToggleAllNotification = async () => {

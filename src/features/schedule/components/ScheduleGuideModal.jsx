@@ -59,8 +59,6 @@ export default function ScheduleGuideModal({
     <GuideModalCarousel
       visible={visible}
       steps={steps}
-      secondaryText="다시 보지 않기"
-      onSecondaryPress={closeAndRemember}
       onRequestClose={closeAndRemember}
       onDone={closeAndRemember}
     />

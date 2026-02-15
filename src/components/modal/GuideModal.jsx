@@ -2,7 +2,8 @@
 import React, {useCallback, useMemo, useRef, useState, useEffect} from 'react';
 import {View, Text, StyleSheet, Animated} from 'react-native';
 import CustomModal from './CustomModal';
-import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
+import {getResponsiveHeight, getResponsiveWidth, getResponsiveFontSize} from 'utils/responsive';
+import {COLORS} from 'styles/style';
 
 /**
  * ✅ Wrapper: 여기서는 Hook을 쓰지 않음
@@ -19,7 +20,7 @@ export default function GuideModalCarousel(props) {
  * ✅ Inner: Hook은 항상 동일한 순서로만 실행됨
  */
 function GuideModalCarouselInner({
-  visible,
+  visible: _visible,
   steps = [],
   onRequestClose,
   onDone,
@@ -72,15 +73,20 @@ function GuideModalCarouselInner({
 
   return (
     <CustomModal
-      // ✅ Inner는 visible일 때만 mount되니까, CustomModal은 true 고정해도 됨
       visible={true}
       title={title}
       onRequestClose={onRequestClose}
-      onClose={() => !isFirst && goTo(index - 1)}
-      closeText={isFirst ? null : prevText}
+      onClose={isFirst ? onRequestClose : () => goTo(index - 1)}
+      closeText={isFirst ? '건너뛰기' : prevText}
       onConfirm={() => (isLast ? onDone?.() : goTo(index + 1))}
       confirmText={isLast ? doneText : nextText}
-      showCloseButton>
+      showCloseButton={false}
+      closeButtonStyle={styles.chatSkipBtn}
+      confirmButtonStyle={styles.chatNextBtn}
+      closeTextStyle={styles.chatSkipText}
+      confirmTextStyle={styles.chatNextText}
+      buttonBottomStyle={styles.chatButtonRow}
+      modalWrapperStyle={styles.guideModalWrapper}>
       <View
         style={styles.body}
         onLayout={e => {
@@ -96,16 +102,10 @@ function GuideModalCarouselInner({
             });
           });
         }}>
-        <View style={styles.topMetaRow}>
-          <View style={styles.metaPill}>
-            <Text allowFontScaling={false} style={styles.pageMeta}>
-              {String(index + 1).padStart(2, '0')}
-              <Text allowFontScaling={false} style={styles.pageMetaDim}>
-                {' '}
-                / {String(total).padStart(2, '0')}
-              </Text>
-            </Text>
-          </View>
+        <View style={styles.stepBadge}>
+          <Text allowFontScaling={false} style={styles.stepBadgeText}>
+            {index + 1} / {total}
+          </Text>
         </View>
 
         <Animated.FlatList
@@ -151,57 +151,33 @@ function GuideModalCarouselInner({
             </View>
           )}
         />
-
-        <View style={styles.dots}>
-          {Array.from({length: total}).map((_, i) => (
-            <View
-              key={i}
-              style={[
-                styles.dot,
-                i === index ? styles.dotActive : styles.dotInactive,
-              ]}
-            />
-          ))}
-        </View>
-
-        <View style={{height: getResponsiveHeight(4)}} />
       </View>
     </CustomModal>
   );
 }
 
 const styles = StyleSheet.create({
+  /** 하단 네비/가족 추가하기 바와 겹치지 않도록 모달을 위로 띄움 */
+  guideModalWrapper: {
+    marginBottom: getResponsiveHeight(100),
+  },
   body: {
     alignItems: 'center',
     width: '100%',
   },
 
-  topMetaRow: {
-    width: '100%',
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: getResponsiveHeight(10),
-  },
-
-  metaPill: {
-    paddingHorizontal: getResponsiveWidth(10),
+  stepBadge: {
+    alignSelf: 'center',
+    paddingHorizontal: getResponsiveWidth(12),
     paddingVertical: getResponsiveHeight(6),
     borderRadius: 999,
     backgroundColor: 'rgba(17,24,39,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.06)',
+    marginBottom: getResponsiveHeight(12),
   },
-
-  pageMeta: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    letterSpacing: 0.2,
-    color: '#111827',
-  },
-  pageMetaDim: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: 'rgba(17,24,39,0.35)',
+  stepBadgeText: {
+    fontSize: getResponsiveFontSize(12),
+    fontFamily: 'Pretendard-Medium',
+    color: COLORS.textTertiary,
   },
 
   page: {
@@ -211,36 +187,28 @@ const styles = StyleSheet.create({
 
   card: {
     width: '100%',
-    borderRadius: getResponsiveWidth(18),
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.08)',
-    backgroundColor: 'rgba(249,250,251,1)',
-    paddingHorizontal: getResponsiveWidth(16),
-    paddingVertical: getResponsiveHeight(16),
-    minHeight: getResponsiveHeight(170),
+    backgroundColor: '#FAFAFA',
+    borderRadius: 16,
+    paddingHorizontal: getResponsiveWidth(20),
+    paddingVertical: getResponsiveHeight(20),
+    minHeight: getResponsiveHeight(120),
     justifyContent: 'center',
-
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    shadowOffset: {width: 0, height: 6},
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.04)',
   },
 
   caption: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: 'rgba(17,24,39,0.45)',
-    letterSpacing: 0.3,
-    marginBottom: getResponsiveHeight(8),
+    fontSize: getResponsiveFontSize(11),
+    fontFamily: 'Pretendard-Medium',
+    color: COLORS.textTertiary,
+    marginBottom: getResponsiveHeight(6),
   },
 
   desc: {
-    fontSize: 14.5,
-    fontWeight: '600',
-    color: '#1F2937',
-    lineHeight: 22,
-    letterSpacing: -0.1,
+    fontSize: getResponsiveFontSize(14),
+    fontFamily: 'Pretendard-Regular',
+    color: '#374151',
+    lineHeight: getResponsiveHeight(22),
     textAlign: 'left',
   },
 
@@ -254,40 +222,54 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(4),
     borderRadius: 999,
     backgroundColor: 'rgba(17,24,39,0.06)',
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.06)',
     marginRight: 8,
   },
   hintTagText: {
     fontSize: 11,
-    fontWeight: '800',
-    letterSpacing: 0.4,
+    fontFamily: 'Pretendard-SemiBold',
     color: 'rgba(17,24,39,0.6)',
   },
   hintText: {
     flex: 1,
-    fontSize: 12.5,
-    fontWeight: '600',
-    color: 'rgba(17,24,39,0.55)',
-    lineHeight: 18,
+    fontSize: getResponsiveFontSize(13),
+    fontFamily: 'Pretendard-Regular',
+    color: '#4B5563',
+    lineHeight: getResponsiveHeight(20),
   },
 
-  dots: {
-    flexDirection: 'row',
-    gap: 8,
-    marginTop: 14,
+  chatButtonRow: {
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: getResponsiveHeight(20),
+    paddingBottom: getResponsiveHeight(2),
   },
-
-  dot: {
-    height: 6,
+  chatSkipBtn: {
+    flex: 0,
+    minWidth: undefined,
+    height: undefined,
+    paddingVertical: getResponsiveHeight(8),
+    paddingHorizontal: 0,
+    backgroundColor: 'transparent',
+    borderWidth: 0,
+  },
+  chatSkipText: {
+    fontFamily: 'Pretendard-Regular',
+    fontSize: getResponsiveFontSize(13),
+    color: COLORS.textTertiary,
+  },
+  chatNextBtn: {
+    flex: 0,
+    minWidth: undefined,
+    height: undefined,
+    paddingHorizontal: getResponsiveWidth(16),
+    paddingVertical: getResponsiveHeight(8),
     borderRadius: 999,
+    backgroundColor: '#FFC84D',
+    borderWidth: 0,
   },
-  dotInactive: {
-    width: 6,
-    backgroundColor: 'rgba(17,24,39,0.12)',
-  },
-  dotActive: {
-    width: 18,
-    backgroundColor: '#111827',
+  chatNextText: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(13.5),
+    color: '#111827',
   },
 });

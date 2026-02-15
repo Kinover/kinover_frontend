@@ -4,8 +4,9 @@ import {useCallback, useState} from 'react';
 import {useDispatch} from 'react-redux';
 import {deleteUserThunk} from 'features/home/store/userThunk';
 import {deleteLoginInfo} from 'utils/storage';
-import { setLogout } from '../store/loginSlice';
+import {setLogout} from '../store/loginSlice';
 import {setUserlogout} from 'features/home/store/userSlice';
+import {resetGuideShownKeys} from 'hooks/useGuide';
 
 export function useDeleteUser(onSuccess) {
   const dispatch = useDispatch();
@@ -31,6 +32,9 @@ export function useDeleteUser(onSuccess) {
 
       // ✅ 로컬 저장소 정리 (Keychain + hasFamily)
       await deleteLoginInfo();
+
+      // ✅ 가이드 "봤음" 플래그 삭제 → 재가입 후 탭 진입 시 가이드 다시 노출
+      await resetGuideShownKeys();
 
       // ✅ Redux 상태도 초기화
       dispatch(setLogout());      // loginSlice
