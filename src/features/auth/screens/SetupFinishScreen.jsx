@@ -1,4 +1,4 @@
-// SetupFinishScreen.tsx
+// src/features/onboarding/screens/SetupFinishScreen.js
 import React, {useEffect, useRef, useCallback} from 'react';
 import {
   View,
@@ -10,6 +10,8 @@ import {
   Image,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useDispatch} from 'react-redux';
 
 import BottomActionButton from 'components/BottomActionButton';
 import {
@@ -20,24 +22,74 @@ import {
 
 import {setHasFamily} from 'utils/storage';
 import {emitAuthFlagsChanged} from 'utils/authFlagsEvent';
+import {
+  KEY_GUIDE_ENTRY_TRIGGER,
+  KEY_FIRST_ENTRY_AFTER_SETUP,
+  resetGuideShownKeys,
+} from 'hooks/useGuide';
 
-// ✅✅✅ 추가: 전역 트리거 키 (useGuide에서 쓰는 키와 동일해야 함)
-import AsyncStorage from '@react-native-async-storage/async-storage';
-const KEY_GUIDE_ENTRY_TRIGGER = '@kinover/guide/entry_trigger_v1';
+import {fetchUserThunk} from 'features/home/store/userThunk';
+
+const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+const withTimeout = (promise, ms = 8000) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`timeout ${ms}ms`)), ms),
+    ),
+  ]);
 
 export default function SetupFinishScreen() {
+  const dispatch = useDispatch();
+
+  const fetchUserOnce = useCallback(async () => {
+    const r = dispatch(fetchUserThunk());
+
+    // thunk가 unwrap 지원하는 케이스
+    if (r && typeof r.unwrap === 'function') {
+      await withTimeout(r.unwrap(), 8000);
+      return;
+    }
+
+    // 일반 promise 형태
+    if (r && typeof r.then === 'function') {
+      await withTimeout(r, 8000);
+      return;
+    }
+
+    // 혹시 promise가 아니면 한 프레임 양보
+    await sleep(0);
+  }, [dispatch]);
+
   const handleButtonClick = useCallback(async () => {
     try {
+      // 1) 가족 생성/참가 완료 상태 저장
       await setHasFamily(true);
-  
-      // ✅ 가족 생성/참가 완료 직후: 가이드 노출 자격 ON
+
+      // ✅ 2) 유저 정보 fetch (메인 진입 전에 최신값 확보)
+      // - 저장 반영 타이밍 때문에 “짧게 2번”이 가장 안전
+      try {
+        await fetchUserOnce();
+        await sleep(300);
+        await fetchUserOnce();
+      } catch (e) {
+        console.log('[SetupFinishScreen] fetchUser failed:', e?.message);
+        // fetch 실패해도 아래는 진행 (UX 끊기지 않게)
+      }
+
+      // 3) 가이드 다시 보이게: 각 탭 "봤음" 플래그 전부 삭제 (다음 탭 진입 시 가이드 다시 노출)
+      await resetGuideShownKeys();
       await AsyncStorage.setItem(KEY_GUIDE_ENTRY_TRIGGER, '1');
-  
+      // ✅ 첫 메인 진입 시 이벤트/감정 모달 숨김 (HomeScreen에서 체크 후 삭제)
+      await AsyncStorage.setItem(KEY_FIRST_ENTRY_AFTER_SETUP, '1');
+
+      // 4) 메인 진입 트리거
       emitAuthFlagsChanged({hasFamily: true});
     } catch (e) {
       console.log('[SetupFinishScreen] start error:', e);
     }
-  }, []);
+  }, [fetchUserOnce]);
 
   // 애니메이션 값들
   const illustrationScale = useRef(new Animated.Value(0.9)).current;

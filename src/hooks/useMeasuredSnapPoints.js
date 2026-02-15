@@ -39,10 +39,10 @@ export function useMeasuredSnapPoints({
 }) {
   const insets = useSafeAreaInsets();
 
-  // ✅ Android bottom safe
+  // ✅ Android bottom safe (네비게이션바에 버튼 가리지 않도록 fallback 48dp 수준)
   const bottomSafe = useMemo(() => {
     if (Platform.OS !== 'android') return Math.max(insets.bottom || 0, 0);
-    const fallback = getResponsiveHeight(20);
+    const fallback = getResponsiveHeight(48);
     return Math.max(insets.bottom || 0, fallback);
   }, [insets.bottom]);
 

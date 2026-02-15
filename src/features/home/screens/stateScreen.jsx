@@ -1,14 +1,12 @@
 /* eslint-disable react-native/no-inline-styles */
 /* eslint-disable react/no-unstable-nested-components */
 
-// StateScreen.jsx (DropShadow per-item + No Clipping on Edges)
-import React, {useRef, useMemo} from 'react';
+import React, {useRef, useMemo, useState, useEffect} from 'react';
 import {
   View,
   Text,
   TouchableWithoutFeedback,
   StyleSheet,
-  FlatList,
   Animated,
   Dimensions,
   Platform,
@@ -17,23 +15,21 @@ import {
 
 import DropShadow from 'react-native-drop-shadow';
 import FastImage from '@d11/react-native-fast-image';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useDispatch, useSelector} from 'react-redux';
+import {useNavigation} from '@react-navigation/native';
 
 import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
-  getResponsiveIconSize,
 } from '../../../utils/responsive';
-
 import useHideTabBar from '../../../hooks/useHideTabBar';
-import {useDispatch, useSelector} from 'react-redux';
 import {modifyUserThunk} from '../store/userThunk';
-import {useNavigation} from '@react-navigation/native';
 import BottomActionButton from 'components/BottomActionButton';
-import {COLORS} from 'styles/style';
 
-// ✅ 추가: 재사용 체크 뱃지
-import CheckBadge from 'components/CheckBadge';
+// Android 3버튼 네비게이션 바 높이 대략값 (insets.bottom이 0일 때 대비)
+const ANDROID_NAV_BAR_FALLBACK = 48;
 
 const EMOTIONS = [
   {
@@ -78,21 +74,47 @@ const EMOTIONS = [
   },
 ];
 
-const CARD_H = getResponsiveHeight(115);
+const CARD_H_DEFAULT = getResponsiveHeight(115);
 const RADIUS = 14;
 
 // ✅ 그림자 잘림 방지용 “가장자리 여백”
 const EDGE_GUTTER = getResponsiveWidth(6);
-// ✅ 두 카드 사이 간격
+// ✅ 두 카드 사이 가로 간격
 const GAP = getResponsiveWidth(12);
+// ✅ 행 사이 세로 간격 (카드 위아래)
+const ROW_GAP = getResponsiveHeight(12);
 
-const EmotionItem = ({item, index, isSelected, onPress, itemWidth}) => {
+// ==================== Components ====================
+
+/**
+ * 감정 카드 아이템 컴포넌트
+ * @param {Object} props - 컴포넌트 props
+ * @param {Object} props.item - 감정 데이터 객체
+ * @param {string} props.item.id - 감정 ID
+ * @param {string} props.item.label - 감정 라벨
+ * @param {number} props.item.url - 이미지 리소스
+ * @param {number} props.index - 아이템 인덱스
+ * @param {boolean} props.isSelected - 선택 여부
+ * @param {Function} props.onPress - 클릭 핸들러
+ * @param {number} props.itemWidth - 아이템 너비
+ * @param {number} [props.cardHeight] - 카드 높이 (미주입 시 CARD_H_DEFAULT)
+ */
+const EmotionItem = ({
+  item,
+  index,
+  isSelected,
+  onPress,
+  itemWidth,
+  cardHeight,
+}) => {
+  const cardH = cardHeight ?? CARD_H_DEFAULT;
   const appear = useRef(new Animated.Value(0)).current;
   const press = useRef(new Animated.Value(0)).current;
   const select = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
   const bgAnim = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
 
-  React.useEffect(() => {
+  // 등장 애니메이션
+  useEffect(() => {
     Animated.timing(appear, {
       toValue: 1,
       duration: 360,
@@ -101,7 +123,8 @@ const EmotionItem = ({item, index, isSelected, onPress, itemWidth}) => {
     }).start();
   }, [appear, index]);
 
-  React.useEffect(() => {
+  // 선택 상태 애니메이션
+  useEffect(() => {
     Animated.timing(bgAnim, {
       toValue: isSelected ? 1 : 0,
       duration: 160,
@@ -178,26 +201,13 @@ const EmotionItem = ({item, index, isSelected, onPress, itemWidth}) => {
         <DropShadow
           style={[
             styles.shadow,
-            {
-              width: itemWidth,
-              height: CARD_H,
-              borderRadius: RADIUS,
-            },
+            {width: itemWidth, height: cardH, borderRadius: RADIUS},
           ]}>
           <Animated.View
             style={[
               styles.emotionBox,
-              {
-                backgroundColor,
-                borderColor,
-              },
+              {backgroundColor, borderColor, height: cardH},
             ]}>
-            {/* ✅ CheckBadge 적용: Animated.View는 opacity만 담당 */}
-            <Animated.View
-              style={[styles.checkBadgePos, {opacity: badgeOpacity}]}>
-              
-            </Animated.View>
-
             <Image
               source={item.url}
               style={styles.emotionImage}
@@ -227,30 +237,50 @@ const EmotionItem = ({item, index, isSelected, onPress, itemWidth}) => {
   );
 };
 
+// ==================== Main Component ====================
+
+/**
+ * 감정 선택 화면 메인 컴포넌트
+ * @returns {JSX.Element} 감정 선택 화면
+ */
 export default function StateScreen() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const user = useSelector(state => state.user);
-  const [selectedEmotion, setSelectedEmotion] = React.useState(
+  const [selectedEmotion, setSelectedEmotion] = useState(
     user.emotion || 'NEUTRAL',
   );
 
+  // 하단 탭바 숨김
   useHideTabBar();
 
-  // ✅ “컨테이너 패딩 + 리스트 가장자리 여백(그림자용)”까지 반영해서 width 계산
+  // 카드 너비 계산 (2열 그리드)
   const itemWidth = useMemo(() => {
     const screenW = Dimensions.get('window').width;
-
-    const containerPad = getResponsiveWidth(20) * 2; // container paddingHorizontal
-    const listEdge = EDGE_GUTTER * 2; // ✅ 그림자 잘림 방지 여백
+    const containerPad = getResponsiveWidth(20) * 2;
+    const listEdge = EDGE_GUTTER * 2;
     const available = screenW - containerPad - listEdge - GAP;
-
     return Math.floor(available / 2);
   }, []);
 
+  // 그리드 영역 높이 측정 → 4행으로 나눠 카드 높이 계산
+  const [contentHeight, setContentHeight] = useState(0);
+  const rowHeight =
+    contentHeight > 0 ? (contentHeight - ROW_GAP * 3) / 4 : CARD_H_DEFAULT;
+  const cardHeight = Math.max(getResponsiveHeight(80), rowHeight - ROW_GAP);
+
+  // Android 3버튼 네비게이션 바: insets.bottom이 0이면 fallback 적용
+  const bottomSafe = useMemo(() => {
+    const base =
+      Platform.OS === 'android'
+        ? Math.max(insets.bottom, getResponsiveHeight(ANDROID_NAV_BAR_FALLBACK))
+        : insets.bottom;
+    return base + getResponsiveHeight(16);
+  }, [insets.bottom]);
+
   const handleConfirm = () => {
     if (!selectedEmotion) return;
-
     dispatch(
       modifyUserThunk({
         userId: user.userId,
@@ -262,36 +292,57 @@ export default function StateScreen() {
       .catch(err => console.error('❌ 감정 저장 실패:', err));
   };
 
-  const renderEmotion = ({item, index}) => (
-    <EmotionItem
-      item={item}
-      index={index}
-      itemWidth={itemWidth}
-      isSelected={selectedEmotion === item.id}
-      onPress={setSelectedEmotion}
-    />
-  );
+  // 8개 감정을 2열×4행으로 나눔
+  const rows = useMemo(() => {
+    const list = [...EMOTIONS];
+    const result = [];
+    for (let i = 0; i < 4; i++) {
+      result.push(list.slice(i * 2, i * 2 + 2));
+    }
+    return result;
+  }, []);
 
   return (
     <View style={styles.container}>
-      <Text allowFontScaling={false} style={styles.title}>
-        지금 나의 감정을 골라주세요
-      </Text>
-      <Text allowFontScaling={false} style={styles.subtitle}>
-        {'선택한 감정은 24시간 동안 유지돼요.'}
-      </Text>
+      <View style={styles.header}>
+        <Text allowFontScaling={false} style={styles.title}>
+          지금 나의 감정을 골라주세요
+        </Text>
+        <Text allowFontScaling={false} style={styles.subtitle}>
+          선택한 감정은 24시간 동안 유지돼요.
+        </Text>
+      </View>
 
-      <FlatList
-        data={EMOTIONS}
-        renderItem={renderEmotion}
-        keyExtractor={item => item.id}
-        numColumns={2}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.listContent}
-        columnWrapperStyle={styles.row}
-      />
+      <View
+        style={styles.gridWrap}
+        onLayout={e => {
+          const h = e?.nativeEvent?.layout?.height;
+          if (typeof h === 'number' && h > 0) setContentHeight(h);
+        }}>
+        {rows.map((rowItems, rowIndex) => (
+          <View key={rowIndex} style={styles.row}>
+            {rowItems.map((item, colIndex) => (
+              <EmotionItem
+                key={item.id}
+                item={item}
+                index={rowIndex * 2 + colIndex}
+                itemWidth={itemWidth}
+                cardHeight={cardHeight}
+                isSelected={selectedEmotion === item.id}
+                onPress={setSelectedEmotion}
+              />
+            ))}
+          </View>
+        ))}
+      </View>
 
-      <BottomActionButton label="선택 완료" onPress={handleConfirm} />
+      <View style={[styles.footer, {paddingBottom: bottomSafe}]}>
+        <BottomActionButton
+          variant="fixed"
+          label="선택 완료"
+          onPress={handleConfirm}
+        />
+      </View>
     </View>
   );
 }
@@ -302,6 +353,11 @@ const styles = StyleSheet.create({
     paddingTop: getResponsiveHeight(45),
     paddingHorizontal: getResponsiveWidth(20),
     backgroundColor: '#F9F9F9',
+  },
+
+  header: {
+    paddingHorizontal: EDGE_GUTTER,
+    marginBottom: getResponsiveHeight(16),
   },
 
   title: {
@@ -317,18 +373,18 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Light',
     color: '#6B7280',
     textAlign: 'center',
-    marginBottom: getResponsiveHeight(25),
   },
 
-  listContent: {
-    paddingTop: getResponsiveHeight(5),
-    paddingBottom: getResponsiveHeight(30),
+  gridWrap: {
+    flex: 1,
     paddingHorizontal: EDGE_GUTTER,
+    justifyContent: 'flex-start',
   },
 
   row: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: getResponsiveHeight(14),
+    marginBottom: ROW_GAP,
   },
 
   shadow: {
@@ -339,9 +395,14 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'android' ? {elevation: 4} : null),
   },
 
+  footer: {
+    paddingTop: getResponsiveHeight(16),
+    paddingHorizontal: EDGE_GUTTER,
+    minHeight: getResponsiveHeight(50) + getResponsiveHeight(16),
+  },
+
   emotionBox: {
     width: '100%',
-    height: CARD_H,
     borderRadius: RADIUS,
     justifyContent: 'center',
     alignItems: 'center',
@@ -355,13 +416,6 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS,
     borderWidth: 1,
     opacity: 0,
-  },
-
-  // ✅ 기존 checkBadge 스타일은 “위치만” 남김
-  checkBadgePos: {
-    position: 'absolute',
-    top: getResponsiveHeight(8),
-    right: getResponsiveWidth(8),
   },
 
   emotionImage: {

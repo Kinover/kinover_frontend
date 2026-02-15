@@ -5,6 +5,30 @@ import {useState, useEffect, useCallback, useRef} from 'react';
 // ✅ "가입/가족참가/가족생성 직후"에만 1로 올려주는 전역 트리거
 export const KEY_GUIDE_ENTRY_TRIGGER = '@kinover/guide/entry_trigger_v1';
 
+/** 회원가입/설정 완료 직후 첫 메인 진입 시 이벤트/감정 모달 숨김용 (설정 완료 화면에서 설정) */
+export const KEY_FIRST_ENTRY_AFTER_SETUP = '@kinover/guide/first_entry_after_setup_v1';
+
+/** 회원가입/설정 완료 시 초기화할 가이드 "봤음" 키 목록 (다시 가이드 뜨게) */
+export const GUIDE_SHOWN_KEYS = [
+  '@kinover/guide/home_v2_shown',
+  '@kinover/guide/schedule_v1_shown',
+  '@kinover/guide/memory_v1_shown',
+  '@kinover/guide/chat_v1_shown',
+  '@kinover/guide/chat_room_v1_shown',
+  '@kinover/guide/kino_chat_room_v1_shown',
+];
+
+/**
+ * 가이드 "봤음" 플래그 전부 삭제 (설정 완료 시 호출 → 각 탭 진입 시 가이드 다시 노출)
+ */
+export async function resetGuideShownKeys() {
+  try {
+    await AsyncStorage.multiRemove(GUIDE_SHOWN_KEYS);
+  } catch (e) {
+    // no-op
+  }
+}
+
 /**
  * useGuide(storageKey, enabled, options?)
  * - storageKey: 화면별 shown 키 (예: @kinover/guide/home_v2_shown)
@@ -26,6 +50,14 @@ export default function useGuide(storageKey, enabled = false, options = {}) {
     }
   }, [storageKey]);
 
+  // enabled가 false일 때는 체크 플래그 초기화 → 나중에 true 되면 다시 검사
+  useEffect(() => {
+    if (!enabled) {
+      checkingRef.current = false;
+      return;
+    }
+  }, [enabled]);
+
   useEffect(() => {
     if (!enabled) return;
     if (!storageKey) return;
@@ -41,17 +73,14 @@ export default function useGuide(storageKey, enabled = false, options = {}) {
           return;
         }
 
-        // ✅ 1) "이번 진입에서 가이드를 보여줄 자격"이 있는지 확인
-        const entry = await AsyncStorage.getItem(KEY_GUIDE_ENTRY_TRIGGER);
-        if (entry !== '1') return;
-
-        // ✅ 2) 이 화면 가이드를 이미 봤는지 확인
+        // ✅ 이 화면 가이드를 이미 봤는지만 확인 (봤음=1 이면 안 띄움)
+        // 회원가입 다시 하면 SetupFinishScreen에서 resetGuideShownKeys()로 여기 키 삭제 → 다시 뜸
         const shown = await AsyncStorage.getItem(storageKey);
         if (shown !== '1') {
           requestAnimationFrame(() => setVisible(true));
         }
       } catch (e) {
-        // 보수적으로: entry 확인 실패 시엔 띄우지 않음(원하면 여기서 띄우게 바꿔도 됨)
+        // 읽기 실패 시 보수적으로 안 띄움
       } finally {
         checkingRef.current = false;
       }

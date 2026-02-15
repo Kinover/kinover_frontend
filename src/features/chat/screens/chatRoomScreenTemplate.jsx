@@ -23,6 +23,8 @@ import {
 import {selectRoomMeta} from '../store/messageSlice';
 import useGuide from 'hooks/useGuide';
 import {fetchChatRoomUsersThunk} from '../store/chatRoomThunk';
+import ChatRoomGuideModal from '../components/ChatRoomGuideModal';
+import KinoChatRoomGuideModal from '../components/KinoChatRoomGuideModal';
 
 import ToastModal from '../../../components/modal/ToastModal';
 
@@ -93,6 +95,7 @@ export default function ChatRoomScreenTemplate({
 }) {
   const dispatch = useDispatch();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [guideStep, setGuideStep] = useState(0);
 
   const chatRoomId = chatRoom?.chatRoomId;
 
@@ -281,16 +284,41 @@ export default function ChatRoomScreenTemplate({
 
   const guideSteps = isKino ? KINO_CHAT_GUIDE_STEPS : CHAT_GUIDE_STEPS;
   const guideStorageKey = isKino
-    ? 'KINO_CHAT_GUIDE_SHOWN_V1'
-    : 'CHAT_GUIDE_SHOWN_V1';
-  useGuide(guideStorageKey, guideSteps, !!chatRoomId);
+    ? '@kinover/guide/kino_chat_room_v1_shown'
+    : '@kinover/guide/chat_room_v1_shown';
+  const guide = useGuide(guideStorageKey, !!chatRoomId);
+
+  useEffect(() => {
+    if (guide.visible) setGuideStep(0);
+  }, [guide.visible]);
 
   // =========================================================
   // ✅ 핵심 변경: iOS만 KeyboardAvoidingView 사용
   // - Android는 시스템(adjustResize)에게 맡기고, RN이 padding으로 또 밀지 않게 함
   // =========================================================
+  const guideStepData = guideSteps[guideStep] || guideSteps[0];
+  const ChatRoomGuideComponent = isKino ? KinoChatRoomGuideModal : ChatRoomGuideModal;
+
   const content = (
     <View style={{flex: 1}}>
+      {guideSteps.length > 0 && (
+        <ChatRoomGuideComponent
+          visible={guide.visible}
+          step={guideStep}
+          totalSteps={guideSteps.length}
+          title={guideStepData?.title ?? ''}
+          description={guideStepData?.description ?? ''}
+          onNext={() => {
+            if (guideStep < guideSteps.length - 1) {
+              setGuideStep(s => s + 1);
+            } else {
+              guide.closeAndRemember();
+            }
+          }}
+          onSkip={guide.closeAndRemember}
+        />
+      )}
+
       <MessageFlatList
         flatListRef={flatListRef}
         messageList={messageList}

@@ -69,6 +69,9 @@ export default function CustomModal({
   closeTextStyle,
   confirmTextStyle,
   buttonBottomStyle,
+
+  /** ✅ 모달 래퍼(중앙 정렬된 박스)에 적용 - 가이드 모달 등 하단 여백용 */
+  modalWrapperStyle,
 }) {
   const fontMode = useSelector(state => state.ui.fontMode);
 
@@ -253,7 +256,9 @@ export default function CustomModal({
           pointerEvents={overlayPointerEvents}
         />
 
-        <Animated.View style={modalStyle} pointerEvents="box-none">
+        <Animated.View
+          style={[modalStyle, modalWrapperStyle]}
+          pointerEvents="box-none">
           <DropShadow style={styles.shadow}>
             <View style={[styles.modalBox, modalBoxStyle]} pointerEvents="auto">
               {showCloseButton && (

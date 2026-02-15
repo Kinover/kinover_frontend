@@ -4,7 +4,7 @@ import CommunicationScreen from '../../../features/chat/screens';
 import KinoChatRoom from '../../../features/chat/screens/kinoChatRoomScreen';
 import ChatSettings from '../../../features/chat/screens/chatSetting';
 import {getResponsiveHeight} from '../../../utils/responsive';
-import {Text, Platform} from 'react-native';
+import {Text} from 'react-native';
 import {
   RenderGoBackButton,
   RenderHeaderHome,

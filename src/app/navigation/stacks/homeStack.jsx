@@ -1,6 +1,5 @@
 import React, {useEffect} from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
-import {Platform} from 'react-native';
 
 import HomeScreen from '../../../features/home/screens';
 

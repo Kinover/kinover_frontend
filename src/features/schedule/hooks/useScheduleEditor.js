@@ -80,7 +80,10 @@ export const useScheduleEditor = currentUserId => {
         setSelectedUserId(nextEditing?.userId ?? currentUserId);
       }
 
-      bottomSheetRef.current?.present?.();
+      // ✅ setState 직후 같은 틱에 present() 호출하면 바텀시트가 아직 새 props로 리렌더되기 전에 열려서 2번 눌러야 뜨는 현상 발생 → 리렌더 커밋 후 present 호출
+      setTimeout(() => {
+        bottomSheetRef.current?.present?.();
+      }, 0);
     },
     [currentUserId],
   );
