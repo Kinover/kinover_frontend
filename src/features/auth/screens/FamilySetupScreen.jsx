@@ -12,7 +12,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch} from 'react-redux';
 
-import ToastModal from '../../../components/modal/ToastModal';
+import ToastModal from 'components/modal/ToastModal';
 import BottomActionButton from 'components/BottomActionButton';
 
 // ✅ 변경: addUserToFamily 제거, join/create-and-join 사용
@@ -20,7 +20,7 @@ import {
   fetchFamilyThunk,
   joinFamilyThunk,
   createFamilyAndJoinThunk,
-} from '../../home/store/familyThunk';
+} from 'features/home/store/familyThunk';
 
 import {setHasFamily} from 'utils/storage';
 import {COLORS} from 'styles/style';

@@ -12,8 +12,8 @@ import {
   getResponsiveFontSize,
   getResponsiveWidth,
   getResponsiveHeight,
-} from '../../../utils/responsive';
-import YellowSpinner from '../../../components/YellowSpinner';
+} from 'utils/responsive';
+import YellowSpinner from 'components/YellowSpinner';
 import {useNotificationList} from '../hooks/useNotificationList';
 import {EMPTY_STYLE, LAYOUT_STYLE} from 'styles/style';
 import {useFocusEffect, useNavigation, useRoute, StackActions, CommonActions} from '@react-navigation/native';
@@ -22,8 +22,8 @@ import {
   getLastFromTabForGlobalScreen,
   setLastFromTabForGlobalScreen,
   getResetToTabState,
-} from '../../../app/navigation/navigationService';
-import {RenderHeaderBackButton} from '../../../app/navigation/helpers/tabHeaderHelpers';
+} from 'app/navigation/navigationService';
+import {RenderHeaderBackButton} from 'app/navigation/helpers/tabHeaderHelpers';
 
 import {
   fetchNotificationsThunk,

@@ -1,15 +1,15 @@
 import React, {useEffect} from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 
-import HomeScreen from '../../../features/home/screens';
+import HomeScreen from 'features/home/screens';
 
 import {
   RenderHeaderHome,
   RenderGoBackButton,
   RenderHeaderTitleLogo,
 } from '../helpers/tabHeaderHelpers';
-import {getResponsiveHeight} from '../../../utils/responsive';
-import StateScreen from '../../../features/home/screens/stateScreen';
+import {getResponsiveHeight} from 'utils/responsive';
+import StateScreen from 'features/home/screens/StateScreen';
 
 import {
   fetchHasUnreadThunk,

@@ -1,6 +1,6 @@
 // hooks/useChatWebSocket.js
 import {useEffect, useRef, useCallback} from 'react';
-import {getToken} from '../../../utils/storage';
+import {getToken} from 'utils/storage';
 
 export default function useChatWebSocket({
   // ✅ 서버에서 받은 raw msg를 여기로 올려줌

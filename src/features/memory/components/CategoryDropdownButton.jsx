@@ -2,7 +2,7 @@ import React from 'react';
 import {TouchableOpacity, Text, Image, StyleSheet} from 'react-native';
 import {
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 import {HEADER_STYLES} from 'styles/style';
 
 export default function CategoryDropdownButton({selectedTitle, onPress}) {

@@ -1,7 +1,7 @@
 // src/features/memory/store/categoryThunk.js
 import {createAsyncThunk} from '@reduxjs/toolkit';
-import {apiClient} from '../../../utils/apiClient';
-import {getGuestMode} from '../../../utils/storage'; // ✅ 추가
+import {apiClient} from 'utils/apiClient';
+import {getGuestMode} from 'utils/storage'; // ✅ 추가
 
 // =======================
 // ✅ Guest Dummy

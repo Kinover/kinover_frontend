@@ -20,7 +20,7 @@ import {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveWidth,
-} from '../../utils/responsive';
+} from 'utils/responsive';
 import {COLORS} from 'styles/style';
 
 // ==================== Constants ====================

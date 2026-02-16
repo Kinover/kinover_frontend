@@ -1,6 +1,6 @@
 // src/features/schedule/store/scheduleThunk.js
 import {createAsyncThunk} from '@reduxjs/toolkit';
-import {apiClient} from '../../../utils/apiClient';
+import {apiClient} from 'utils/apiClient';
 import {
   setScheduleList,
   setScheduleLoading,
@@ -9,7 +9,7 @@ import {
 } from '../store/scheduleSlice';
 
 // ✅ 게스트 모드 확인
-import {getGuestMode} from '../../../utils/storage';
+import {getGuestMode} from 'utils/storage';
 
 /**
  * ✅ 로딩 흔들림 방지용

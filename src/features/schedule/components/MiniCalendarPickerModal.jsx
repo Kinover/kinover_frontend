@@ -20,7 +20,7 @@ import {
 } from 'utils/responsive';
 
 import {useSelector} from 'react-redux';
-import {FONT_MODE} from '../../../store/uiSlice';
+import {FONT_MODE} from 'store/uiSlice';
 
 import CustomModal from 'components/modal/CustomModal';
 

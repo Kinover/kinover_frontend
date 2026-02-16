@@ -17,9 +17,9 @@ import {
   getResponsiveHeight,
   getResponsiveFontSize,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
-import formatTime from '../../../utils/formatTime';
-import MediaModal from './mediaModal';
+} from 'utils/responsive';
+import formatTime from 'utils/formatTime';
+import MediaModal from './MediaModal';
 
 import {
   registerTimeLast,
@@ -30,8 +30,8 @@ import {
 import {getSpacingStyle} from '../utils/getSpacingStyle';
 import {CHATROOM_STYLE} from 'styles/style';
 
-import {getVideoThumbnail} from '../../../utils/videoThumbnail';
-import {toCdnUrl} from '../../../utils/mediaUrl';
+import {getVideoThumbnail} from 'utils/videoThumbnail';
+import {toCdnUrl} from 'utils/mediaUrl';
 
 import MentionText from 'components/mention/MentionText';
 

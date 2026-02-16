@@ -1,7 +1,7 @@
-// src/components/botomSheet/MeasuredBottomSheetLayout.jsx
+// src/components/bottomSheet/MeasuredBottomSheetLayout.jsx
 /* eslint-disable react-native/no-inline-styles */
 import React, {useMemo, useEffect} from 'react';
-import BottomSheetLayout from 'components/botomSheet/BottomSheetLayout';
+import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
 import {useMeasuredSnapPoints} from 'hooks/useMeasuredSnapPoints';
 
 export default function MeasuredBottomSheetLayout({

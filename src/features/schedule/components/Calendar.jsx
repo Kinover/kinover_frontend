@@ -21,7 +21,7 @@ import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 import {useCalendarLayout} from '../hooks/useCalendarLayout';
 import {useCalendarMode} from '../hooks/useCalendarMode';

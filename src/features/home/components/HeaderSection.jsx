@@ -13,11 +13,11 @@ import {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 import {useNavigation} from '@react-navigation/native';
 import DropShadow from 'react-native-drop-shadow';
-import {hapticLight} from '../../../utils/haptic';
+import {hapticLight} from 'utils/haptic';
 import {getEmotionImage, getEmotionColor} from '../utils/emotionUtils';
 import {COLORS, DEFAULT_STYLE, LAYOUT_STYLE} from 'styles/style';
 

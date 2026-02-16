@@ -4,7 +4,7 @@
  * 가족 구성원 목록 조회 및 수정 등의 비동기 로직을 관리합니다.
  */
 
-import {apiClient} from '../../../utils/apiClient';
+import {apiClient} from 'utils/apiClient';
 import {
   setFamilyUserList,
   setUserFamilyLoading,

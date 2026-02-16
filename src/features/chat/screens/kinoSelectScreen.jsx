@@ -17,8 +17,8 @@ import Carousel from 'react-native-reanimated-carousel';
 import {useDispatch} from 'react-redux';
 import {useNavigation, useRoute} from '@react-navigation/native';
 
-import KinoConfirmModal from '../components/kinoConfirmModal';
-import useHideTabBar from '../../../hooks/useHideTabBar';
+import KinoConfirmModal from '../components/KinoConfirmModal';
+import useHideTabBar from 'hooks/useHideTabBar';
 import {updateKinoPersonalityThunk} from '../store/chatRoomThunk';
 
 import {
@@ -26,7 +26,7 @@ import {
   getResponsiveWidth,
   getResponsiveFontSize,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 import BottomActionButton from 'components/BottomActionButton';
 import {BACKGROUND_COLORS, BUTTON_STYLES} from 'styles/style';
 

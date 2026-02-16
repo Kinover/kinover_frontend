@@ -15,7 +15,7 @@ import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 import {useYMDPickerState} from '../hooks/useYMDPickerState';
 import {BACKGROUND_COLORS, BUTTON_STYLES, COLORS} from 'styles/style';

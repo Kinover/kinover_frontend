@@ -1,8 +1,8 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
-import ScheduleScreen from '../../../features/schedule/screens';
+import ScheduleScreen from 'features/schedule/screens';
 import {Text} from 'react-native';
-import {getResponsiveHeight} from '../../../utils/responsive';
+import {getResponsiveHeight} from 'utils/responsive';
 import {
   RenderHeaderHome,
 } from '../helpers/tabHeaderHelpers';

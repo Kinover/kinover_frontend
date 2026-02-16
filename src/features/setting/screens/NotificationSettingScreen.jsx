@@ -5,18 +5,18 @@ import {useNavigation, useRoute} from '@react-navigation/native';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
-import CustomSwitch from '../../../components/CustomSwitch';
-import useHideTabBar from '../../../hooks/useHideTabBar';
+} from 'utils/responsive';
+import CustomSwitch from 'components/CustomSwitch';
+import useHideTabBar from 'hooks/useHideTabBar';
 import {useDispatch, useSelector} from 'react-redux';
-import {RenderHeaderBackButton} from '../../../app/navigation/helpers/tabHeaderHelpers';
+import {RenderHeaderBackButton} from 'app/navigation/helpers/tabHeaderHelpers';
 
-import {toggleAllChatRoomNotificationThunk} from '../../chat/store/chatRoomThunk';
-import {toggleCommentNotificationThunk} from '../../memory/store/commentThunk';
-import {togglePostNotificationThunk} from '../../memory/store/memoryThunk';
+import {toggleAllChatRoomNotificationThunk} from 'features/chat/store/chatRoomThunk';
+import {toggleCommentNotificationThunk} from 'features/memory/store/commentThunk';
+import {togglePostNotificationThunk} from 'features/memory/store/memoryThunk';
 
 // ✅ 토스트 모달 import
-import ToastModal from '../../../components/modal/ToastModal';
+import ToastModal from 'components/modal/ToastModal';
 import {SETTING_STYLES} from 'styles/style';
 
 export default function NotificationSettingScreen() {

@@ -37,11 +37,11 @@ import {
   getResponsiveWidth,
   getResponsiveHeight,
   getResponsiveFontSize,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
-import {getPresignedUrls, uploadFileToS3} from '../../../api/imageUrlApi';
-import useHideTabBar from '../../../hooks/useHideTabBar';
-import ToastModal from '../../../components/modal/ToastModal';
+import {getPresignedUrls, uploadFileToS3} from 'api/imageUrlApi';
+import useHideTabBar from 'hooks/useHideTabBar';
+import ToastModal from 'components/modal/ToastModal';
 import {HEADER_STYLES} from 'styles/style';
 
 import {uploadPostApi} from 'api/uploadPostApi';
@@ -49,8 +49,8 @@ import updatePostApi from 'api/updatePostApi';
 
 import {useDispatch, useSelector} from 'react-redux';
 import {createCategoryThunk} from '../store/categoryThunk';
-import formatDuration from '../../../utils/formatDuration';
-import {getVideoThumbnail} from '../../../utils/videoThumbnail';
+import formatDuration from 'utils/formatDuration';
+import {getVideoThumbnail} from 'utils/videoThumbnail';
 
 // ✅ post 단건 조회 thunk
 import {fetchPostByIdThunk, deletePostImageThunk} from '../store/memoryThunk';

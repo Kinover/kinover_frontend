@@ -3,12 +3,12 @@ import {createStackNavigator} from '@react-navigation/stack';
 import { Text} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 
-import MemoryScreen from '../../../features/memory/screens';
-import PostPage from '../../../features/memory/screens/PostScreen';
-import CategoryPage from '../../../features/memory/screens/CategoryPage';
-import CategorySelectPage from '../../../features/memory/screens/CategorySelectScreen';
-import CreatePostPage from '../../../features/memory/screens/CreatePostScreen';
-import ImageSelectPage from '../../../features/memory/screens/ImageSelectScreen';
+import MemoryScreen from 'features/memory/screens';
+import PostPage from 'features/memory/screens/PostScreen';
+import CategoryPage from 'features/memory/screens/CategoryPage';
+import CategorySelectPage from 'features/memory/screens/CategorySelectScreen';
+import CreatePostPage from 'features/memory/screens/CreatePostScreen';
+import ImageSelectPage from 'features/memory/screens/ImageSelectScreen';
 
 import {
   RenderGoBackButton,
@@ -16,7 +16,7 @@ import {
   RenderHeaderHome,
 } from '../helpers/tabHeaderHelpers';
 
-import {getResponsiveHeight} from '../../../utils/responsive';
+import {getResponsiveHeight} from 'utils/responsive';
 
 import {HEADER_STYLES} from 'styles/style';
 

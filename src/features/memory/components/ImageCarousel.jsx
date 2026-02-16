@@ -14,11 +14,11 @@ import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 import FastImage from '@d11/react-native-fast-image';
 import Video from 'react-native-video';
-import {getVideoThumbnail} from '../../../utils/videoThumbnail';
+import {getVideoThumbnail} from 'utils/videoThumbnail';
 
 // ✅ RNGH v2 + Reanimated
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';

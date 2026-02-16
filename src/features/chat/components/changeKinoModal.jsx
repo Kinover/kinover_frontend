@@ -1,11 +1,11 @@
 import React, {useCallback, useEffect, useRef} from 'react';
 import {StyleSheet, Platform} from 'react-native';
-import CustomModal from '../../../components/modal/CustomModal';
+import CustomModal from 'components/modal/CustomModal';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 export default function ChangeKinoModal({visible, onClose, onConfirm}) {
   // ✅ 중복 클릭/연속 호출 방지 + 언마운트 안전 처리

@@ -41,24 +41,24 @@ import {
   fetchChatRoomMediaThunk,
 } from '../store/chatRoomThunk';
 
-import LeaveChatRoomModal from '../components/leaveChatRoomModal';
-import RenameChatRoomModal from '../components/renameChatRoomModal';
+import LeaveChatRoomModal from '../components/LeaveChatRoomModal';
+import RenameChatRoomModal from '../components/RenameChatRoomModal';
 import ChangeKinoModal from '../components/ChangeKinoModal';
-import MediaModal from '../components/mediaModal';
+import MediaModal from '../components/MediaModal';
 
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
   getResponsiveWidth,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 import {
   bumpChatRoomToTop,
   updateChatRoomNameInList,
 } from '../store/chatRoomSlice';
 
-import ToastModal from '../../../components/modal/ToastModal';
+import ToastModal from 'components/modal/ToastModal';
 import {resetRoomMessageList} from '../store/messageSlice';
 import {BACKGROUND_COLORS, COLORS} from 'styles/style';
 import {FONT_MODE} from 'store/uiSlice';

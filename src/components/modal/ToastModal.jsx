@@ -6,7 +6,7 @@ import {
   getResponsiveWidth,
   getResponsiveFontSize,
   getResponsiveIconSize,
-} from '../../utils/responsive';
+} from 'utils/responsive';
 
 export default function ToastModal({
   visible,

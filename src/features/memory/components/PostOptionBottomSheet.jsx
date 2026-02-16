@@ -16,7 +16,7 @@ import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 const {width: SCREEN_W} = Dimensions.get('window');
 

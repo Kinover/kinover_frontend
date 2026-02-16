@@ -14,7 +14,7 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
   getResponsiveFontSize,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 import {useMemoryScreen} from '../hooks/useMemoryScreen';
 import {useTabBarVisibility} from 'app/navigation/animatedTabBar';
@@ -22,7 +22,7 @@ import {useTabBarVisibility} from 'app/navigation/animatedTabBar';
 import {useDispatch, useSelector} from 'react-redux';
 import {setMemorySelectedTab} from '../store/memorySlice';
 
-import {hapticLight} from '../../../utils/haptic';
+import {hapticLight} from 'utils/haptic';
 import {useFocusEffect} from '@react-navigation/native';
 
 import AnimatedRe, {useAnimatedStyle, withTiming} from 'react-native-reanimated';

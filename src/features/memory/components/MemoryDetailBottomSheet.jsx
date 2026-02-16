@@ -32,7 +32,7 @@ import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 import {COLORS, EMPTY_STYLE} from 'styles/style';
 
 const ACTION_W = getResponsiveWidth(70);

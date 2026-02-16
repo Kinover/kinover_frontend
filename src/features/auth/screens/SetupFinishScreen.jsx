@@ -18,7 +18,7 @@ import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 import {setHasFamily} from 'utils/storage';
 import {emitAuthFlagsChanged} from 'utils/authFlagsEvent';

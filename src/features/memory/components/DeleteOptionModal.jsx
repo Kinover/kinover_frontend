@@ -1,11 +1,11 @@
 import React from 'react';
 import {StyleSheet} from 'react-native';
-import CustomModal from '../../../components/modal/CustomModal';
+import CustomModal from 'components/modal/CustomModal';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 export default function ImageDeleteModal({
   visible,

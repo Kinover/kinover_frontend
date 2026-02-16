@@ -20,9 +20,9 @@ import {
   getResponsiveWidth,
   getResponsiveHeight,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
-import {BUTTON_STYLES, COLORS} from '../../../styles/style';
+import {BUTTON_STYLES, COLORS} from 'styles/style';
 
 const {width: SCREEN_W} = Dimensions.get('window');
 

@@ -15,14 +15,14 @@ import {
 import {useDispatch} from 'react-redux';
 
 import {fetchChatRoomMediaThunk} from '../store/chatRoomThunk';
-import MediaModal from '../components/mediaModal';
+import MediaModal from '../components/MediaModal';
 
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
   getResponsiveWidth,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 import {COLORS, LAYOUT_STYLE} from 'styles/style';
 

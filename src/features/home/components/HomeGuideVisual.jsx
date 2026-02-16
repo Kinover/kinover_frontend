@@ -32,7 +32,7 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
   getResponsiveFontSize,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 export default function HomeGuideVisual({
   variant = 'family_status',

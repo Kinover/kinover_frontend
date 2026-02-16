@@ -1,7 +1,7 @@
 // src/features/chat/store/chatRoomSlice.js
 import {createSlice, createAsyncThunk} from '@reduxjs/toolkit';
 import { apiClient } from 'utils/apiClient';
-import {getToken} from '../../../utils/storage';
+import {getToken} from 'utils/storage';
 import { fetchChatRoomMediaThunk } from './chatRoomThunk';
 
 /* =========================

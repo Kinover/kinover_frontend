@@ -6,8 +6,8 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
-import GroupAvatar from './groupAvatar';
+} from 'utils/responsive';
+import GroupAvatar from './GroupAvatar';
 import {useDispatch, useSelector} from 'react-redux';
 import {markRoomRead} from '../store/chatRoomSlice';
 import {getChatRoomTitle} from '../utils/chatRoomTitleHelper';

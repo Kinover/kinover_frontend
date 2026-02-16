@@ -3,7 +3,7 @@ import {View, ActivityIndicator} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 
-import ChatRoomScreenTemplate from './chatRoomScreenTemplate';
+import ChatRoomScreenTemplate from './ChatRoomScreenTemplate';
 import {fetchChatRoomThunk} from '../store/chatRoomThunk';
 import {selectChatRoomById} from '../store/chatRoomSelector';
 

@@ -1,10 +1,10 @@
 // src/features/notification/store/notificationThunk.js
 import {createAsyncThunk} from '@reduxjs/toolkit';
-import {applyAppBadgeCount} from '../../../utils/appBadge';
-import {apiClient} from '../../../utils/apiClient';
+import {applyAppBadgeCount} from 'utils/appBadge';
+import {apiClient} from 'utils/apiClient';
 
 // ✅ 채팅 unread 총합 selector
-import {selectChatUnreadTotal} from '../../chat/store/chatRoomSelector';
+import {selectChatUnreadTotal} from 'features/chat/store/chatRoomSelector';
 
 /**
  * ✅ 알림 목록 조회

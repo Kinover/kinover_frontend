@@ -24,14 +24,14 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
-import BottomSheetLayout from 'components/botomSheet/BottomSheetLayout';
-import {BottomSheetButtons} from 'components/botomSheet/BottomSheetButtons';
+import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
+import {BottomSheetButtons} from 'components/bottomSheet/BottomSheetButtons';
 import {BOTTOMSHEET_STYLE, BUTTON_STYLES, COLORS} from 'styles/style';
 
 import {useSelector} from 'react-redux';
-import {FONT_MODE} from '../../../store/uiSlice';
+import {FONT_MODE} from 'store/uiSlice';
 
 /** ✅ 폰트모드별 UI 스케일(체감용) */
 const getFontScaleLevel = fontMode => {

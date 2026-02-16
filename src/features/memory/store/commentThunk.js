@@ -1,7 +1,7 @@
 // src/features/memory/store/commentThunk.js
 // (파일명은 네 프로젝트에 맞춰 유지/변경하면 돼)
 
-import {apiClient} from '../../../utils/apiClient';
+import {apiClient} from 'utils/apiClient';
 import {
   setCommentList,
   setCommentLoading,

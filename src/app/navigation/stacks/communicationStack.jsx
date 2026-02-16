@@ -1,20 +1,20 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
-import CommunicationScreen from '../../../features/chat/screens';
-import KinoChatRoom from '../../../features/chat/screens/kinoChatRoomScreen';
-import ChatSettings from '../../../features/chat/screens/chatSetting';
-import {getResponsiveHeight} from '../../../utils/responsive';
+import CommunicationScreen from 'features/chat/screens';
+import KinoChatRoom from 'features/chat/screens/KinoChatRoomScreen';
+import ChatSettings from 'features/chat/screens/ChatSetting';
+import {getResponsiveHeight} from 'utils/responsive';
 import {Text} from 'react-native';
 import {
   RenderGoBackButton,
   RenderHeaderHome,
 } from '../helpers/tabHeaderHelpers';
-import AddChatMemeberScreen from '../../../features/chat/screens/addChatMemberScreen';
-import CreateChatRoom from '../../../features/chat/screens/createChatRoomScreen';
-import ChatRoom from '../../../features/chat/screens/chatRoomScreen';
-import KinoSelectScreen from '../../../features/chat/screens/kinoSelectScreen';
+import AddChatMemberScreen from 'features/chat/screens/AddChatMemberScreen';
+import CreateChatRoom from 'features/chat/screens/CreateChatRoomScreen';
+import ChatRoom from 'features/chat/screens/ChatRoomScreen';
+import KinoSelectScreen from 'features/chat/screens/KinoSelectScreen';
 import {HEADER_STYLES} from 'styles/style';
-import ChatRoomMediaScreen from 'features/chat/screens/chatRoomMediaScreen';
+import ChatRoomMediaScreen from 'features/chat/screens/ChatRoomMediaScreen';
 
 const Stack = createStackNavigator();
 
@@ -109,7 +109,7 @@ export default function CommunicationStack() {
 
       <Stack.Screen
         name="채팅방멤버추가화면"
-        component={AddChatMemeberScreen}
+        component={AddChatMemberScreen}
         options={({navigation}) => ({
           gestureEnabled: true,
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
