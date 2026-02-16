@@ -25,20 +25,20 @@ import {fetchUserThunk} from '../store/userThunk';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 import HeaderSection from '../components/HeaderSection';
 import MemberGridSection from '../components/MemberGridSection';
-import YellowSpinner from '../../../components/YellowSpinner';
+import YellowSpinner from 'components/YellowSpinner';
 
 import {
   requestNotificationPermission,
   getFcmTokenAndSend,
   handleNotificationListeners,
-} from '../../notification/utils/requestNotificationPermission';
+} from 'features/notification/utils/requestNotificationPermission';
 
-import useWebSocketStatus from '../../../hooks/useWebSocketStatus';
-import useFamilyStatusSocket from '../../../hooks/useFamilyStatusSocket';
+import useWebSocketStatus from 'hooks/useWebSocketStatus';
+import useFamilyStatusSocket from 'hooks/useFamilyStatusSocket';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import HomeGuideModal from '../components/HomeGuideModal';

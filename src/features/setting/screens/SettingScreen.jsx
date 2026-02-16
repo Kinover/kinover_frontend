@@ -20,12 +20,12 @@ import {
   getLastFromTabForGlobalScreen,
   setLastFromTabForGlobalScreen,
   getResetToTabState,
-} from '../../../app/navigation/navigationService';
-import {RenderHeaderBackButton} from '../../../app/navigation/helpers/tabHeaderHelpers';
+} from 'app/navigation/navigationService';
+import {RenderHeaderBackButton} from 'app/navigation/helpers/tabHeaderHelpers';
 
 import RNRestart from 'react-native-restart';
 
-import LogoutModal from '../../home/components/LogoutModal';
+import LogoutModal from 'features/home/components/LogoutModal';
 import DeleteAccountModal from '../components/DeleteAccountModal';
 
 import {
@@ -33,20 +33,20 @@ import {
   getResponsiveIconSize,
   getResponsiveWidth,
   getResponsiveFontSize,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
-import {useLogout} from '../../auth/hooks/useLogout';
-import useHideTabBar from '../../../hooks/useHideTabBar';
+import {useLogout} from 'features/auth/hooks/useLogout';
+import useHideTabBar from 'hooks/useHideTabBar';
 import {SETTING_STYLES} from 'styles/style';
 
 import {
   checkAndAuthBiometric,
   getBiometricAvailability,
-} from '../../../utils/biometrics';
+} from 'utils/biometrics';
 
-import CustomSwitch from '../../../components/CustomSwitch';
+import CustomSwitch from 'components/CustomSwitch';
 
-import {setFontMode, FONT_MODE, setBioLockEnabled} from '../../../store/uiSlice';
+import {setFontMode, FONT_MODE, setBioLockEnabled} from 'store/uiSlice';
 import {persistor} from 'store';
 import {FontModeSliderBlue} from '../components/FontModeSlider';
 

@@ -1,5 +1,5 @@
 // src/screens/memory/store/memoryThunk.js
-import {apiClient} from '../../../utils/apiClient';
+import {apiClient} from 'utils/apiClient';
 import {
   setMemoryList,
   setMemoryLoading,
@@ -7,7 +7,7 @@ import {
   setPostDetail,
 } from './memorySlice';
 
-import {getGuestMode} from '../../../utils/storage'; // ✅ 추가
+import {getGuestMode} from 'utils/storage'; // ✅ 추가
 
 // =======================
 // ✅ Guest Dummy

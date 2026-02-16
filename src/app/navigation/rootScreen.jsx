@@ -12,8 +12,8 @@ import {ActivityIndicator, View, Text} from 'react-native';
 import {useSelector} from 'react-redux';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import AuthNavigator from './authNavigator';
-import RootNavigator from './rootNavigator';
+import AuthNavigator from './AuthNavigator';
+import RootNavigator from './RootNavigator';
 import {setGuestMode, getHasFamily, getNeedsSignup} from 'utils/storage';
 import {useAutoLogin} from 'features/auth/hooks/useAutoLogin';
 import {onAuthFlagsChanged} from 'utils/authFlagsEvent';

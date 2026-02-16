@@ -12,7 +12,7 @@ import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 
 export default function DescriptionSection({memory, onContentLayout}) {

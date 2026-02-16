@@ -8,7 +8,7 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 
-import {TabNavigator} from '.';
+import TabNavigator from './TabNavigator';
 import SettingScreen from 'features/setting/screens/SettingScreen';
 import NotificationSettingScreen from 'features/setting/screens/NotificationSettingScreen';
 import NotificationScreen from 'features/notification/screens/NotificationScreen';

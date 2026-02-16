@@ -1,5 +1,5 @@
 // utils/chat/getSpacingStyle.js
-import {getResponsiveHeight} from '../../../utils/responsive';
+import {getResponsiveHeight} from 'utils/responsive';
 
 export function getSpacingStyle({isGrouped, isSameSender}) {
   if (isGrouped) return {marginTop: getResponsiveHeight(8)};

@@ -36,23 +36,23 @@ import {useSelector} from 'react-redux';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 import FastImage from '@d11/react-native-fast-image';
 
 import {
   convertPhUriToFileUri,
   convertContentUriToFileUri,
-} from '../../../utils/photoUriConverter';
+} from 'utils/photoUriConverter';
 
-import ToastModal from '../../../components/modal/ToastModal';
+import ToastModal from 'components/modal/ToastModal';
 import {getPresignedUrls, uploadFileToS3} from 'api/imageUrlApi';
 
-import BottomSheetLayout from 'components/botomSheet/BottomSheetLayout';
-import {normalizeImageForSave} from 'utils/normalizeImageforSave';
+import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
+import {normalizeImageForSave} from 'utils/normalizeImageForSave';
 import {BOTTOMSHEET_STYLE, COLORS} from 'styles/style';
 
-import BottomSheetFooterButtons from 'components/botomSheet/BottomSheetFooterButtons';
+import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
 
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 
@@ -63,6 +63,128 @@ function UserBottomSheetModalBase(
   {selectedUser, onSave, onCancel, onDismiss},
   ref,
 ) {
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        body: {
+          paddingTop: getResponsiveHeight(6),
+          paddingBottom: getResponsiveHeight(10),
+        },
+        footerFlow: {
+          paddingTop: getResponsiveHeight(10),
+          paddingBottom: getResponsiveHeight(2),
+        },
+        profileTouchArea: {
+          width: '45%',
+          alignSelf: 'center',
+          alignItems: 'center',
+          marginBottom: getResponsiveHeight(18),
+          marginTop: getResponsiveHeight(6),
+        },
+        profileimageContainer: {
+          width: 88,
+          height: 88,
+          borderRadius: 44,
+          overflow: 'hidden',
+          backgroundColor: '#F3F4F6',
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        profileImage: {width: '100%', height: '100%'},
+        profileRing: {
+          position: 'absolute',
+          borderRadius: 44,
+          borderWidth: 1,
+          borderColor: '#E5E7EB',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+        },
+        profileBadge: {
+          position: 'absolute',
+          width: 24,
+          height: 24,
+          borderRadius: 12,
+          backgroundColor: '#FFFFFF',
+          borderWidth: 1,
+          borderColor: '#E5E7EB',
+          justifyContent: 'center',
+          alignItems: 'center',
+          elevation: 1,
+          shadowColor: '#000',
+          shadowOffset: {width: 0, height: 1},
+          shadowOpacity: 0.12,
+          shadowRadius: 2,
+        },
+        profileBadgeIcon: {width: 14, height: 14},
+        profileEditText: {
+          marginTop: getResponsiveHeight(6),
+          fontSize: getResponsiveFontSize(12.5),
+          fontFamily: 'Pretendard-Medium',
+          color: BOTTOMSHEET_STYLE().sectionLabel.color,
+        },
+        fieldBlock: {marginBottom: getResponsiveHeight(12)},
+        label: {
+          fontSize: BOTTOMSHEET_STYLE().sectionLabel.fontSize,
+          fontFamily: BOTTOMSHEET_STYLE().sectionLabel.fontFamily,
+          color: BOTTOMSHEET_STYLE().sectionLabel.color,
+          marginBottom: BOTTOMSHEET_STYLE().sectionLabel.marginBottom,
+          marginTop: BOTTOMSHEET_STYLE().sectionLabel.marginTop,
+        },
+        input: {
+          backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
+          borderRadius: 10,
+          paddingHorizontal: 12,
+          paddingVertical:
+            Platform.OS === 'android'
+              ? getResponsiveHeight(7)
+              : getResponsiveHeight(9),
+          fontSize: getResponsiveFontSize(14),
+          includeFontPadding: false,
+          fontFamily: 'Pretendard-Regular',
+          borderWidth: 1,
+          borderColor: '#E5E7EB',
+          color: '#111827',
+        },
+        textArea: {
+          height: getResponsiveHeight(96),
+          textAlignVertical: 'top',
+        },
+        profileOverlay: {
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.18)',
+        },
+        loadingOverlay: {
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: getResponsiveHeight(8),
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        loadingBox: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 12,
+          paddingVertical: 6,
+          borderRadius: 999,
+          backgroundColor: '#F3F4F6',
+        },
+        loadingText: {
+          marginLeft: 6,
+          fontSize: getResponsiveFontSize(12),
+          fontFamily: 'Pretendard-Medium',
+          color: '#4B5563',
+        },
+      }),
+    [],
+  );
+
   // ✅ input 데이터는 ref로 (불필요 리렌더 방지)
   const nameRef = useRef('');
   const traitRef = useRef('');
@@ -566,125 +688,3 @@ function UserBottomSheetModalBase(
 const UserBottomSheetModal = forwardRef(UserBottomSheetModalBase);
 UserBottomSheetModal.displayName = 'UserBottomSheetModal';
 export default UserBottomSheetModal;
-
-const styles = StyleSheet.create({
-  body: {
-    paddingTop: getResponsiveHeight(6),
-    paddingBottom: getResponsiveHeight(10),
-  },
-
-  footerFlow: {
-    paddingTop: getResponsiveHeight(10),
-    paddingBottom: getResponsiveHeight(2),
-  },
-
-  profileTouchArea: {
-    width: '45%',
-    alignSelf: 'center',
-    alignItems: 'center',
-    marginBottom: getResponsiveHeight(18),
-    marginTop: getResponsiveHeight(6),
-  },
-  profileimageContainer: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    overflow: 'hidden',
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  profileImage: {width: '100%', height: '100%'},
-  profileRing: {
-    position: 'absolute',
-    borderRadius: 44,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  profileBadge: {
-    position: 'absolute',
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.12,
-    shadowRadius: 2,
-  },
-  profileBadgeIcon: {width: 14, height: 14},
-  profileEditText: {
-    marginTop: getResponsiveHeight(6),
-    fontSize: getResponsiveFontSize(12.5),
-    fontFamily: 'Pretendard-Medium',
-    color: BOTTOMSHEET_STYLE().sectionLabel.color,
-  },
-
-  fieldBlock: {marginBottom: getResponsiveHeight(12)},
-  label: {
-    fontSize: BOTTOMSHEET_STYLE().sectionLabel.fontSize,
-    fontFamily: BOTTOMSHEET_STYLE().sectionLabel.fontFamily,
-    color: BOTTOMSHEET_STYLE().sectionLabel.color,
-    marginBottom: BOTTOMSHEET_STYLE().sectionLabel.marginBottom,
-    marginTop: BOTTOMSHEET_STYLE().sectionLabel.marginTop,
-  },
-  input: {
-    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical:
-      Platform.OS === 'android'
-        ? getResponsiveHeight(7)
-        : getResponsiveHeight(9),
-    fontSize: getResponsiveFontSize(14),
-    includeFontPadding: false,
-    fontFamily: 'Pretendard-Regular',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    color: '#111827',
-  },
-  textArea: {
-    height: getResponsiveHeight(96),
-    textAlignVertical: 'top',
-  },
-  profileOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.18)',
-  },
-
-  loadingOverlay: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: getResponsiveHeight(8),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  loadingBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: '#F3F4F6',
-  },
-  loadingText: {
-    marginLeft: 6,
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-Medium',
-    color: '#4B5563',
-  },
-});

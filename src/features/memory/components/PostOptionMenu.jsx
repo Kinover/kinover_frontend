@@ -21,7 +21,7 @@ import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 function PostOptionsMenu(
   {

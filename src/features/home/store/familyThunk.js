@@ -4,7 +4,7 @@
  * 가족 정보 조회, 수정, 생성, 참여 등의 비동기 로직을 관리합니다.
  */
 
-import {apiClient} from '../../../utils/apiClient';
+import {apiClient} from 'utils/apiClient';
 import {
   setOnlineUserIds,
   setLastActiveMap,

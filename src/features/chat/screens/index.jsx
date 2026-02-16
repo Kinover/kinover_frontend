@@ -17,7 +17,7 @@ import {
   fetchChatRoomListThunk,
   createChatRoomThunk,
 } from '../store/chatRoomThunk';
-import {fetchFamilyUserListThunk} from '../../home/store/familyUserThunk';
+import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
 
 import ChatRoomItem from '../components/ChatRoomItem';
 
@@ -26,13 +26,13 @@ import {
   getResponsiveWidth,
   getResponsiveFontSize,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
-import YellowSpinner from '../../../components/YellowSpinner';
-import ToastModal from '../../../components/modal/ToastModal';
+import YellowSpinner from 'components/YellowSpinner';
+import ToastModal from 'components/modal/ToastModal';
 
 import {BACKGROUND_COLORS, EMPTY_STYLE} from 'styles/style';
-import {hapticLight} from '../../../utils/haptic';
+import {hapticLight} from 'utils/haptic';
 import DropShadow from 'react-native-drop-shadow';
 
 import CreateChatRoomBottomSheet from '../components/CreateChatRoomBottomSheet';

@@ -1,6 +1,6 @@
 // src/features/chat/store/chatRoomThunk.js
 import {createAsyncThunk} from '@reduxjs/toolkit';
-import {apiClient} from '../../../utils/apiClient';
+import {apiClient} from 'utils/apiClient';
 
 import {
   setChatRoomList,
@@ -11,7 +11,7 @@ import {
 } from './chatRoomSlice';
 
 import {markReadThunk} from './chatRoomSlice';
-import {syncAppBadgeThunk} from '../../notification/store/notificationThunk';
+import {syncAppBadgeThunk} from 'features/notification/store/notificationThunk';
 
 const API_BASE = '/chatRoom';
 const toId = v => (v == null ? null : String(v));

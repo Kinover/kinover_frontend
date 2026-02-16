@@ -16,12 +16,12 @@ import {setMemorySelectedTab} from '../store/memorySlice';
 import {fetchCategoryThunk} from '../store/categoryThunk';
 import {deleteCommentThunk} from '../store/commentThunk';
 
-import useHideTabBar from '../../../hooks/useHideTabBar';
+import useHideTabBar from 'hooks/useHideTabBar';
 import usePostPageViewModel from '../hooks/usePostPageViewModel';
 
 import ImageCarousel from '../components/ImageCarousel';
 import MemoryDetailBottomSheet from '../components/MemoryDetailBottomSheet';
-import ToastModal from '../../../components/modal/ToastModal';
+import ToastModal from 'components/modal/ToastModal';
 import ImageDeleteModal from '../components/DeleteOptionModal';
 import PostOptionsMenu from '../components/PostOptionMenu';
 
@@ -30,7 +30,7 @@ import {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 // ✅ 분리 훅들
 import usePostHeaderOptions from '../hooks/usePostHeaderOptions';

@@ -40,23 +40,23 @@ import {
 import {launchImageLibrary} from 'react-native-image-picker';
 
 import {sendChat, isChatSocketOpen} from 'features/chat/hooks/ChatSocket';
-import {getPresignedUrls, uploadFileToS3} from '../../../api/imageUrlApi';
+import {getPresignedUrls, uploadFileToS3} from 'api/imageUrlApi';
 
 import {
   getResponsiveWidth,
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveFontSize,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
-import {convertPhUriToFileUri} from '../../../utils/photoUriConverter';
-import {getSelectOrder, toggleSelectImage} from '../../../utils/selection';
-import {loadGalleryPhotos} from '../../../utils/gallery';
-import formatDuration from '../../../utils/formatDuration';
-import ToastModal from '../../../components/modal/ToastModal';
+import {convertPhUriToFileUri} from 'utils/photoUriConverter';
+import {getSelectOrder, toggleSelectImage} from 'utils/selection';
+import {loadGalleryPhotos} from 'utils/gallery';
+import formatDuration from 'utils/formatDuration';
+import ToastModal from 'components/modal/ToastModal';
 import {addMessageAndUpdateRoom} from '../utils/messageActions';
 
-import {hapticLight, hapticSelection, hapticError} from '../../../utils/haptic';
+import {hapticLight, hapticSelection, hapticError} from 'utils/haptic';
 
 const COLORS = {
   bg: '#F6F7FB',

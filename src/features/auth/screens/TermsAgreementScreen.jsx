@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import BottomActionButton from 'components/BottomActionButton';
-import {useNavigateToWhere} from 'hooks/useNatigateToWhere';
+import {useNavigateToWhere} from 'hooks/useNavigateToWhere';
 import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
 import ToastModal from 'components/modal/ToastModal';
 import {COLORS} from 'styles/style';

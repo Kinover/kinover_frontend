@@ -18,15 +18,15 @@ import {
 import { apiClient } from 'utils/apiClient';
 import {useSelector, useDispatch} from 'react-redux';
 
-import {getToken} from '../../../utils/storage';
+import {getToken} from 'utils/storage';
 import {
   getResponsiveWidth,
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
-import {fetchFamilyUserListThunk} from '../../home/store/familyUserThunk';
-import useHideTabBar from '../../../hooks/useHideTabBar';
+} from 'utils/responsive';
+import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
+import useHideTabBar from 'hooks/useHideTabBar';
 import FastImage from '@d11/react-native-fast-image';
 import {HEADER_STYLES} from 'styles/style';
 

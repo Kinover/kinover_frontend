@@ -6,7 +6,7 @@ import {View, Text, StyleSheet, Image, Animated, Platform} from 'react-native';
 
 import Svg, {Defs, RadialGradient, Stop, Ellipse} from 'react-native-svg';
 
-import {getResponsiveHeight, getResponsiveWidth, getResponsiveFontSize} from '../../../utils/responsive';
+import {getResponsiveHeight, getResponsiveWidth, getResponsiveFontSize} from 'utils/responsive';
 
 const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
 

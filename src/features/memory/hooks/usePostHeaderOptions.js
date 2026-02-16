@@ -1,7 +1,7 @@
 // src/features/post/hooks/usePostHeaderOptions.js
 import React, {useEffect} from 'react';
 import {View, Text, TouchableOpacity, Image} from 'react-native';
-import {getResponsiveIconSize, getResponsiveWidth, getResponsiveHeight} from '../../../utils/responsive';
+import {getResponsiveIconSize, getResponsiveWidth, getResponsiveHeight} from 'utils/responsive';
 import {HEADER_STYLES} from 'styles/style';
 
 export default function usePostHeaderOptions({

@@ -16,13 +16,13 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 
 import CustomModal from 'components/modal/CustomModal';
-import SlideSegment from '../../../components/SlideSegment';
+import SlideSegment from 'components/SlideSegment';
 
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 import {BOTTOMSHEET_STYLE, COLORS} from 'styles/style';
 
 const MODES = [

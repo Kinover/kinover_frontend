@@ -15,13 +15,13 @@ import {
   findActiveMentionQuery,
   applyMention,
   extractMentionUserIds,
-} from '../../utils/mentions';
+} from 'utils/mentions';
 
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../utils/responsive';
+} from 'utils/responsive';
 
 export default function MentionInput({
   value,

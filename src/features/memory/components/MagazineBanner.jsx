@@ -9,7 +9,7 @@ import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 import {BACKGROUND_COLORS} from 'styles/style';
 
 const MagazineBanner = ({

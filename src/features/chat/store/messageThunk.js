@@ -1,6 +1,6 @@
 // src/features/chat/store/messageThunk.js
 
-import {apiClient} from '../../../utils/apiClient';
+import {apiClient} from 'utils/apiClient';
 import {sendChat, sendRead, isChatSocketOpen} from '../hooks/ChatSocket';
 import {
   setMessageList,

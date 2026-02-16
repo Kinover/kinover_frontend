@@ -1,7 +1,7 @@
 // FamilyChatRoom.jsx
 import React from 'react';
 import { useNavigation } from '@react-navigation/native';
-import ChatRoomScreenTemplate from './chatRoomScreenTemplate';
+import ChatRoomScreenTemplate from './ChatRoomScreenTemplate';
 
 export default function KinoChatRoom({ route }) {
   const { chatRoom, userId } = route.params || {};

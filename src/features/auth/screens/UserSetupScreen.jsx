@@ -12,7 +12,7 @@ import {useRoute} from '@react-navigation/native';
 
 import DatePicker from 'react-native-date-picker';
 
-import {useNavigateToWhere} from 'hooks/useNatigateToWhere';
+import {useNavigateToWhere} from 'hooks/useNavigateToWhere';
 import BottomActionButton from 'components/BottomActionButton';
 import {updateUserProfile} from 'api/userProfileApi';
 

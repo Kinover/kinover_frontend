@@ -16,7 +16,7 @@ import {
   getResponsiveIconSize,
   getResponsiveFontSize,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 import {BUTTON_STYLES, HEADER_STYLES, LAYOUT_STYLE} from 'styles/style';
 import {hapticLight} from 'utils/haptic';

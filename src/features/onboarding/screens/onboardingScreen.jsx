@@ -16,7 +16,7 @@ import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import FastImage from '@d11/react-native-fast-image';
 import Svg, {Defs, Rect, RadialGradient, Stop} from 'react-native-svg';
 
-import {getResponsiveFontSize, getResponsiveHeight, getResponsiveWidth} from '../../../utils/responsive';
+import {getResponsiveFontSize, getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
 
 import {useKakaoLogin} from 'features/auth/hooks/useKakaoLogin';
 import {useAppleLogin} from 'features/auth/hooks/useAppleLogin';

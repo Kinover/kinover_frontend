@@ -8,14 +8,14 @@ import {useSelector, useDispatch} from 'react-redux';
 import {CommonActions} from '@react-navigation/native';
 
 import {createChatRoomThunk} from '../store/chatRoomThunk';
-import {fetchFamilyUserListThunk} from '../../home/store/familyUserThunk';
+import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
 
 import {
   getResponsiveWidth,
   getResponsiveHeight,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
-import ToastModal from '../../../components/modal/ToastModal';
+import ToastModal from 'components/modal/ToastModal';
 import {HEADER_STYLES} from 'styles/style';
 
 // ✅ 너가 만든 바텀시트 컴포넌트

@@ -31,16 +31,16 @@ import {
   getResponsiveWidth,
   getResponsiveFontSize,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
-import useHideTabBar from '../../../hooks/useHideTabBar';
-import ToastModal from '../../../components/modal/ToastModal';
+import useHideTabBar from 'hooks/useHideTabBar';
+import ToastModal from 'components/modal/ToastModal';
 import {HEADER_STYLES} from 'styles/style';
 
 import {
   convertPhUriToFileUri,
   convertContentUriToFileUri,
-} from '../../../utils/photoUriConverter';
+} from 'utils/photoUriConverter';
 
 import {requestMediaPermission} from 'utils/requestMediaPermission';
 

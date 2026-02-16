@@ -7,12 +7,12 @@ import {
   getResponsiveIconSize,
   getResponsiveHeight,
   getResponsiveFontSize,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
-import ReceiveChat from './receiveChat';
-import SendChat from './sendChat';
-import ReceiveKinoChat from './receiveKinoChat';
-import SendKinoChat from './sendKinoChat';
+import ReceiveChat from './ReceiveChat';
+import SendChat from './SendChat';
+import ReceiveKinoChat from './ReceiveKinoChat';
+import SendKinoChat from './SendKinoChat';
 
 const getSenderId = message => {
   if (!message) return null;

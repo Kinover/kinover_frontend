@@ -16,9 +16,9 @@ import {
   getResponsiveHeight,
   getResponsiveFontSize,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
-import formatTime from '../../../utils/formatTime';
-import ImageModal from './mediaModal';
+} from 'utils/responsive';
+import formatTime from 'utils/formatTime';
+import ImageModal from './MediaModal';
 
 import {
   registerTimeLast,

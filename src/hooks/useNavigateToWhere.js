@@ -1,4 +1,4 @@
-// src/hooks/navigation/useNavigateToWhere.js
+// src/hooks/useNavigateToWhere.js
 import {useCallback} from 'react';
 import {StackActions, useNavigation} from '@react-navigation/native';
 

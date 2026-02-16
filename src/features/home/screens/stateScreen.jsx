@@ -23,8 +23,8 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
-} from '../../../utils/responsive';
-import useHideTabBar from '../../../hooks/useHideTabBar';
+} from 'utils/responsive';
+import useHideTabBar from 'hooks/useHideTabBar';
 import {modifyUserThunk} from '../store/userThunk';
 import BottomActionButton from 'components/BottomActionButton';
 

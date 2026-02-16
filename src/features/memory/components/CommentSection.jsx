@@ -17,7 +17,7 @@ import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 // eslint-disable-next-line import/named
 import {Swipeable} from 'react-native-gesture-handler';
 import FastImage from '@d11/react-native-fast-image';

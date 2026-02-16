@@ -1,10 +1,10 @@
 import React from 'react';
 import {StyleSheet, Platform} from 'react-native';
-import CustomModal from '../../../components/modal/CustomModal';
+import CustomModal from 'components/modal/CustomModal';
 import {
   getResponsiveFontSize,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 export default function CategoryModal({visible, content, onClose, onConfirm}) {
   return (

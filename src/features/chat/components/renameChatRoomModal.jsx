@@ -1,11 +1,11 @@
 import React from 'react';
 import {TextInput, StyleSheet} from 'react-native';
-import CustomModal from '../../../components/modal/CustomModal';
+import CustomModal from 'components/modal/CustomModal';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 export default function RenameChatRoomModal({
   visible,

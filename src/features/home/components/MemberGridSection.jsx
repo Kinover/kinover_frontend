@@ -24,14 +24,14 @@ import {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 import {formatRelativeKorean} from '../utils/dateUtils';
 import {getEmotionImage, getEmotionColor} from '../utils/emotionUtils';
 import {EMPTY_STYLE, LAYOUT_STYLE} from 'styles/style';
 import DropShadow from 'react-native-drop-shadow';
 
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {hapticLight} from '../../../utils/haptic';
+import {hapticLight} from 'utils/haptic';
 
 import Animated, {
   useSharedValue,

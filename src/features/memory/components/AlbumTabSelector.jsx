@@ -7,7 +7,7 @@ import {View, Text, TouchableOpacity, StyleSheet, Animated} from 'react-native';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 import {DEFAULT_STYLE, LAYOUT_STYLE} from 'styles/style';
 
 const TABS = [

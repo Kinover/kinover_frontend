@@ -5,7 +5,7 @@ import {
   getResponsiveFontSize,
   getResponsiveWidth,
   getResponsiveHeight,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 import {useScheduleListByDate} from '../hooks/useScheduleListByDate';
 import {useFormattedScheduleDate} from '../hooks/useFormattedScheduleDate';

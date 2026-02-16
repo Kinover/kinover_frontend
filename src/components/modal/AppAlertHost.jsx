@@ -2,7 +2,7 @@
 import React, {useCallback, useEffect} from 'react';
 import {Linking} from 'react-native';
 import AppAlertModal from './AppAlertModal';
-import useAppAlertPopup from '../../hooks/useAppAlertPopup';
+import useAppAlertPopup from 'hooks/useAppAlertPopup';
 
 // ✅ 전역 네비
 import {safeNavigate} from 'app/navigation/navigationService';

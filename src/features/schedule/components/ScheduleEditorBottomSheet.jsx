@@ -30,18 +30,18 @@ import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 import {useScheduleBottomSheetModal} from '../hooks/useScheduleBottomSheetModal';
-import ToastModal from '../../../components/modal/ToastModal';
+import ToastModal from 'components/modal/ToastModal';
 import CustomModal from 'components/modal/CustomModal';
 import {BottomSheetTextInput, BottomSheetView} from '@gorhom/bottom-sheet';
-import BottomSheetLayout from 'components/botomSheet/BottomSheetLayout';
+import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
 import {BOTTOMSHEET_STYLE} from 'styles/style';
 
 import {useSelector} from 'react-redux';
 import SlideSegment from 'components/SlideSegment';
-import BottomSheetFooterButtons from 'components/botomSheet/BottomSheetFooterButtons';
+import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
 
 const {height: WINDOW_H} = Dimensions.get('window');
 const SAFE_GAP = 12;

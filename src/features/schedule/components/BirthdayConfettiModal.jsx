@@ -1,13 +1,13 @@
 // src/features/schedule/components/BirthdayModal.jsx
 import React, {useMemo} from 'react';
 import {View, Text, StyleSheet, Platform} from 'react-native';
-import CustomModal from '../../../components/modal/CustomModal';
+import CustomModal from 'components/modal/CustomModal';
 import ScreenConfetti from './ScreenConfetti';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
   getResponsiveFontSize,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 export default function BirthdayModal({visible, onClose, namesText}) {
   const parsed = useMemo(() => {

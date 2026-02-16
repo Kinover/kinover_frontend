@@ -24,8 +24,8 @@ import {CameraRoll} from '@react-native-camera-roll/camera-roll';
 import {
   getResponsiveFontSize,
   getResponsiveWidth,
-} from '../../../utils/responsive';
-import ToastModal from '../../../components/modal/ToastModal';
+} from 'utils/responsive';
+import ToastModal from 'components/modal/ToastModal';
 
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 import Animated, {

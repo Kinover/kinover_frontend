@@ -6,7 +6,7 @@ import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 import { COLORS } from 'styles/style';
 
 export default function ChatRoomGuideModal({

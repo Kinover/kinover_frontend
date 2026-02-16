@@ -36,22 +36,22 @@ import {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
 import SkeletonPhotoGridItem from '../components/SkeletonPhotoGridItem';
 import SkeletonMemoryItem from '../components/SkeletonMemoryItem';
 
-import {filterPostsByDateRange} from '../../../utils/postDateFilter';
+import {filterPostsByDateRange} from 'utils/postDateFilter';
 import {
   BACKGROUND_COLORS,
   COLORS,
   EMPTY_STYLE,
   LAYOUT_STYLE,
-} from '../../../styles/style';
+} from 'styles/style';
 
-import formatDuration from '../../../utils/formatDuration';
-import {getVideoThumbnail} from '../../../utils/videoThumbnail';
-import {toCdnUrl} from '../../../utils/mediaUrl';
+import formatDuration from 'utils/formatDuration';
+import {getVideoThumbnail} from 'utils/videoThumbnail';
+import {toCdnUrl} from 'utils/mediaUrl';
 
 import {setMemorySelectedTab} from '../store/memorySlice';
 import PostFilterBar from '../components/PostFilterBar';

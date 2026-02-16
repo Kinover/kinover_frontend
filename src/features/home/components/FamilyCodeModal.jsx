@@ -5,13 +5,13 @@ import {
   getResponsiveFontSize,
   getResponsiveWidth,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
-import CustomModal from '../../../components/modal/CustomModal';
+} from 'utils/responsive';
+import CustomModal from 'components/modal/CustomModal';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {BUTTON_STYLES, COLORS} from 'styles/style';
 
 // ✅ HAPTIC (경로는 네 프로젝트에 맞게 유지/조정)
-import {hapticLight, hapticSuccess} from '../../../utils/haptic';
+import {hapticLight, hapticSuccess} from 'utils/haptic';
 
 export default function FamilyCodeModal({visible, onClose, familyCode}) {
   const [copied, setCopied] = useState(false);

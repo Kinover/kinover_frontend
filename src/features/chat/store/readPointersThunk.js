@@ -1,6 +1,6 @@
 // store/readPointersThunk.js
 
-import {apiClient} from '../../../utils/apiClient';
+import {apiClient} from 'utils/apiClient';
 import {setReadPointers} from './readPointersSlice';
 
 export const fetchReadPointersThunk = chatRoomId => {

@@ -5,8 +5,8 @@
  */
 
 import {createAsyncThunk} from '@reduxjs/toolkit';
-import {apiClient} from '../../../utils/apiClient';
-import {deleteLoginInfo} from '../../../utils/storage';
+import {apiClient} from 'utils/apiClient';
+import {deleteLoginInfo} from 'utils/storage';
 import {
   setUser,
   resetUser,

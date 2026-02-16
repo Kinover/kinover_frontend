@@ -8,8 +8,8 @@ import {
 } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import { apiClient } from 'utils/apiClient';
-import {getToken as getJWT} from '../../../utils/storage';
-import {navigate, navigationRef} from '../../../app/navigation/navigationRef';
+import {getToken as getJWT} from 'utils/storage';
+import {navigate, navigationRef} from 'app/navigation/navigationRef';
 import {CommonActions} from '@react-navigation/native';
 
 import {
@@ -17,7 +17,7 @@ import {
   fetchHasUnreadThunk,
 } from '../store/notificationThunk';
 
-import {applyAppBadgeCount} from '../../../utils/appBadge';
+import {applyAppBadgeCount} from 'utils/appBadge';
 
 import notifee, {AndroidStyle, EventType} from '@notifee/react-native';
 

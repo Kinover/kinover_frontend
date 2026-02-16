@@ -15,8 +15,8 @@ import {
 
 import {useSelector} from 'react-redux';
 
-import BottomSheetLayout from 'components/botomSheet/BottomSheetLayout';
-import BottomSheetFooterButtons from 'components/botomSheet/BottomSheetFooterButtons';
+import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
+import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
 import {BottomSheetTextInput, BottomSheetView} from '@gorhom/bottom-sheet';
 
 import {

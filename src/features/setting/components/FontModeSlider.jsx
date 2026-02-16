@@ -11,7 +11,7 @@ import Animated, {
 import {
   getResponsiveHeight,
   getResponsiveWidth,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 import {COLORS} from 'styles/style';
 
 /**

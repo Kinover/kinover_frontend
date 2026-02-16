@@ -5,7 +5,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 import DropShadow from 'react-native-drop-shadow';
 
 const AVATAR_RADIUS = getResponsiveWidth(8);

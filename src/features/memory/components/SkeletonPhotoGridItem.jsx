@@ -1,7 +1,7 @@
 import React from 'react';
 import {View, StyleSheet} from 'react-native';
 import {WINDOW_WIDTH} from '@gorhom/bottom-sheet';
-import {getResponsiveWidth} from '../../../utils/responsive';
+import {getResponsiveWidth} from 'utils/responsive';
 
 const ITEM_MARGIN = getResponsiveWidth(2);
 

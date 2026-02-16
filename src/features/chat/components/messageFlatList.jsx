@@ -3,7 +3,7 @@ import React, {useEffect, useState, useMemo, useRef} from 'react';
 import {FlatList, ActivityIndicator, View} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ChatMessageItem from './ChatMessageItem';
-import {getResponsiveHeight} from '../../../utils/responsive';
+import {getResponsiveHeight} from 'utils/responsive';
 
 export default function MessageFlatList({
   flatListRef,

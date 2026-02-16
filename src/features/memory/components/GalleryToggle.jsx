@@ -1,6 +1,6 @@
 import React from 'react';
 import {View, TouchableOpacity, Image, StyleSheet} from 'react-native';
-import {getResponsiveWidth, getResponsiveHeight} from '../../../utils/responsive';
+import {getResponsiveWidth, getResponsiveHeight} from 'utils/responsive';
 
 export default function GalleryToggle({isGalleryView, onToggle}) {
   return (

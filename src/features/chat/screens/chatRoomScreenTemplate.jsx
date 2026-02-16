@@ -1,17 +1,17 @@
-// ChatRoomScreenTemplate.jsx
+// ChatRoomScreenTemplate - 공통 채팅방 화면 템플릿
 import React, {useState, useEffect, useMemo, useRef, useCallback} from 'react';
 import {StyleSheet, KeyboardAvoidingView, Platform, View} from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
 
-import MessageFlatList from '../components/messageFlatList';
+import MessageFlatList from '../components/MessageFlatList';
 import ChatInput from '../components/ChatInput';
-import ChatSettings from './chatSetting';
+import ChatSettings from './ChatSetting';
 
 import useChatRoomScreen from '../hooks/useChatRoomScreen';
-import useHeaderSetting from '../../../hooks/useHeaderSetting';
+import useHeaderSetting from 'hooks/useHeaderSetting';
 import {onLeaveChat} from '../hooks/onLeaveChat';
 import {fetchMessageThunk} from '../store/messageThunk';
-import useHideTabBar from '../../../hooks/useHideTabBar';
+import useHideTabBar from 'hooks/useHideTabBar';
 
 import {
   setActiveChatRoom,
@@ -26,7 +26,7 @@ import {fetchChatRoomUsersThunk} from '../store/chatRoomThunk';
 import ChatRoomGuideModal from '../components/ChatRoomGuideModal';
 import KinoChatRoomGuideModal from '../components/KinoChatRoomGuideModal';
 
-import ToastModal from '../../../components/modal/ToastModal';
+import ToastModal from 'components/modal/ToastModal';
 
 const CHAT_GUIDE_STEPS = [
   {

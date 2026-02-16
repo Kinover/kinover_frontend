@@ -1,8 +1,8 @@
-// src/components/botomSheet/BottomSheetFooterButtons.jsx
+// src/components/bottomSheet/BottomSheetFooterButtons.jsx
 /* eslint-disable react-native/no-inline-styles */
 import React from 'react';
 import {View} from 'react-native';
-import {BottomSheetButtons} from 'components/botomSheet/BottomSheetButtons';
+import {BottomSheetButtons} from 'components/bottomSheet/BottomSheetButtons';
 
 /**
  * ✅ footer 버튼 영역을 통일하기 위한 공통 컴포넌트

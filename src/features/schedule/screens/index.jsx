@@ -20,9 +20,9 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveIconSize,
-} from '../../../utils/responsive';
+} from 'utils/responsive';
 
-import YellowSpinner from '../../../components/YellowSpinner';
+import YellowSpinner from 'components/YellowSpinner';
 
 import {useScheduleDate} from '../hooks/useScheduleDate';
 import {useScheduleCounts} from '../hooks/useScheduleCounts';
@@ -37,7 +37,7 @@ import {
   deleteScheduleThunk,
 } from '../store/scheduleThunk';
 
-import {hapticLight} from '../../../utils/haptic';
+import {hapticLight} from 'utils/haptic';
 import DropShadow from 'react-native-drop-shadow';
 import {BACKGROUND_COLORS, LAYOUT_STYLE} from 'styles/style';
 

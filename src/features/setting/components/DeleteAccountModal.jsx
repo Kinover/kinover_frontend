@@ -5,11 +5,11 @@ import {
   getResponsiveHeight,
   getResponsiveFontSize,
   getResponsiveWidth,
-} from '../../../utils/responsive';
-import CustomModal from '../../../components/modal/CustomModal';
-import ToastModal from '../../../components/modal/ToastModal';
+} from 'utils/responsive';
+import CustomModal from 'components/modal/CustomModal';
+import ToastModal from 'components/modal/ToastModal';
 
-import {useDeleteUser} from '../../auth/hooks/useDeleteUser';
+import {useDeleteUser} from 'features/auth/hooks/useDeleteUser';
 
 const REQUIRED_TEXT = '탈퇴합니다';
 
