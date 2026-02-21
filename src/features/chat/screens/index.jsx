@@ -37,6 +37,7 @@ import DropShadow from 'react-native-drop-shadow';
 
 import CreateChatRoomBottomSheet from '../components/CreateChatRoomBottomSheet';
 import ChatGuideModal from '../components/ChatGuideModal';
+import {STORE_MOCK_ENABLED} from '../../home/utils/storeMockData';
 
 export default function CommunicationScreen({navigation}) {
   const dispatch = useDispatch();
@@ -56,6 +57,9 @@ export default function CommunicationScreen({navigation}) {
    * 데이터 로딩
    ========================= */
   const load = useCallback(async () => {
+    if (STORE_MOCK_ENABLED) {
+      return dispatch(fetchChatRoomListThunk(null, null));
+    }
     if (familyId != null && userId != null) {
       return dispatch(fetchChatRoomListThunk(familyId, userId));
     }

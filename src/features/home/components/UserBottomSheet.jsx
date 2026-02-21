@@ -19,6 +19,7 @@ import {
   Platform,
   View,
   Text,
+  TextInput,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
@@ -29,7 +30,14 @@ import {
   SafeAreaView,
 } from 'react-native';
 
-import {BottomSheetTextInput, BottomSheetView} from '@gorhom/bottom-sheet';
+import {
+  BottomSheetTextInput as GorhomBottomSheetTextInput,
+  BottomSheetView as GorhomBottomSheetView,
+} from '@gorhom/bottom-sheet';
+
+// ✅ @gorhom/bottom-sheet가 Metro 해석 시 undefined일 수 있음 → RN 기본 컴포넌트로 폴백
+const BottomSheetTextInput = GorhomBottomSheetTextInput ?? TextInput;
+const BottomSheetView = GorhomBottomSheetView ?? View;
 import {launchImageLibrary} from 'react-native-image-picker';
 import {useSelector} from 'react-redux';
 
@@ -37,9 +45,7 @@ import {
   getResponsiveFontSize,
   getResponsiveHeight,
 } from 'utils/responsive';
-
 import FastImage from '@d11/react-native-fast-image';
-
 import {
   convertPhUriToFileUri,
   convertContentUriToFileUri,
@@ -58,6 +64,14 @@ const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 
 const {height: WINDOW_H} = Dimensions.get('window');
 const SAFE_GAP = 12;
+
+const IMG_DEFAULT = require('../../../assets/images/default.png');
+let IMG_PENCIL;
+try {
+  IMG_PENCIL = require('../../../assets/images/pencil.png');
+} catch {
+  IMG_PENCIL = IMG_DEFAULT;
+}
 
 function UserBottomSheetModalBase(
   {selectedUser, onSave, onCancel, onDismiss},
@@ -298,7 +312,7 @@ function UserBottomSheetModalBase(
 
     const preview =
       img && img.length > 0
-        ? img.startsWith('http')
+        ? img.startsWith('http') || img.startsWith('file')
           ? img
           : `${CLOUD_FRONT}${img}`
         : '';
@@ -581,7 +595,7 @@ function UserBottomSheetModalBase(
                       source={
                         previewImage
                           ? {uri: previewImage}
-                          : require('../../../assets/images/default.png')
+                          : IMG_DEFAULT
                       }
                       style={styles.profileImage}
                       // ✅ blurRadius는 무거움. 버벅 더 줄이고 싶으면 아래처럼 조건부로 바꿔도 됨:
@@ -593,7 +607,7 @@ function UserBottomSheetModalBase(
                     <View style={styles.profileBadge}>
                       <Image
                         style={styles.profileBadgeIcon}
-                        source={require('../../../assets/images/pencil.png')}
+                        source={IMG_PENCIL ?? IMG_DEFAULT}
                       />
                     </View>
                   </View>

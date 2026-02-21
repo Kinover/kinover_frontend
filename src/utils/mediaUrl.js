@@ -15,6 +15,8 @@ export const toCdnUrl = v => {
 
   const clean = String(v).split('?')[0];
 
+  // 로컬 파일·이미지 URI 그대로 사용
+  if (/^file:\/\//i.test(clean)) return v;
   // 이미 URL이면 그대로 사용 (카카오 프로필 등)
   if (/^https?:\/\//i.test(clean)) return clean;
 

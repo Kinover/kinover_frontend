@@ -9,6 +9,7 @@ import {
   setChatRoomError,
   setChatRoomNotificationState,
 } from './chatRoomSlice';
+import {STORE_MOCK_ENABLED, getStoreMockChatRoomList, getStoreMockChatRoomUsers, isStoreMockChatRoomId} from '../../home/utils/storeMockData';
 
 import {markReadThunk} from './chatRoomSlice';
 import {syncAppBadgeThunk} from 'features/notification/store/notificationThunk';
@@ -24,6 +25,10 @@ export const fetchChatRoomListThunk = (familyId, userId) => {
   return async dispatch => {
     dispatch(setChatRoomLoading(true));
     try {
+      if (STORE_MOCK_ENABLED) {
+        dispatch(setChatRoomList(getStoreMockChatRoomList()));
+        return;
+      }
       const apiUrl = `${API_BASE}/${familyId}/${userId}`;
       const response = await apiClient.post(
         apiUrl,
@@ -47,9 +52,13 @@ export const fetchChatRoomUsersThunk = chatRoomId => {
   return async dispatch => {
     dispatch(setChatRoomLoading(true));
     try {
-      const apiUrl = `${API_BASE}/${chatRoomId}/users/get`;
-      const response = await apiClient.post(apiUrl, {});
-      dispatch(setChatRoomUsers(response.data));
+      if (STORE_MOCK_ENABLED && isStoreMockChatRoomId(chatRoomId)) {
+        dispatch(setChatRoomUsers(getStoreMockChatRoomUsers(chatRoomId)));
+      } else {
+        const apiUrl = `${API_BASE}/${chatRoomId}/users/get`;
+        const response = await apiClient.post(apiUrl, {});
+        dispatch(setChatRoomUsers(response.data));
+      }
     } catch (error) {
       dispatch(setChatRoomError(error?.message || '채팅방 유저 조회 실패'));
     } finally {

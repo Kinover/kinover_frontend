@@ -46,6 +46,13 @@ import AppAlertHost from 'components/modal/AppAlertHost';
 import useActiveAppEvent from 'hooks/useActiveAppEvent';
 import {isEmotionValid} from '../utils/emotionUtils';
 import {KEY_FIRST_ENTRY_AFTER_SETUP} from 'hooks/useGuide';
+import {
+  STORE_MOCK_ENABLED,
+  getStoreMockUser,
+  getStoreMockFamilyMembers,
+  getStoreMockOnlineUserIds,
+  getStoreMockLastActiveMap,
+} from '../utils/storeMockData';
 
 export default function HomeScreen() {
   const dispatch = useDispatch();
@@ -103,8 +110,20 @@ export default function HomeScreen() {
   const familyLoaded = !!familyId;
 
   const familyMembers = (familyUserList || []).filter(
-    m => m.userId !== user.userId,
+    m => m.userId !== user?.userId,
   );
+
+  // 앱스토어 캡처용 더미 (STORE_MOCK_ENABLED 시 표시용 데이터만 치환)
+  const displayUser = STORE_MOCK_ENABLED ? getStoreMockUser() : user;
+  const displayFamilyMembers = STORE_MOCK_ENABLED
+    ? getStoreMockFamilyMembers()
+    : familyMembers;
+  const displayOnlineUserIds = STORE_MOCK_ENABLED
+    ? getStoreMockOnlineUserIds()
+    : onlineUserIds;
+  const displayLastActiveMap = STORE_MOCK_ENABLED
+    ? getStoreMockLastActiveMap()
+    : lastActiveMap;
 
   const scrollPaddingBottom =
     fontMode === FONT_MODE.EXTRA_LARGE
@@ -247,6 +266,10 @@ export default function HomeScreen() {
 
   const handleSave = async (name, trait, imageUrl) => {
     if (!selectedUser) return;
+    if (STORE_MOCK_ENABLED) {
+      dismissUserSheet();
+      return;
+    }
 
     const payload = {
       userId: selectedUser.userId,
@@ -267,7 +290,8 @@ export default function HomeScreen() {
     dismissUserSheet();
   };
 
-  const isLoading = !familyLoaded || !didInitialLoad;
+  const isLoading =
+    !STORE_MOCK_ENABLED && (!familyLoaded || !didInitialLoad);
 
   if (isLoading) {
     return (
@@ -299,15 +323,15 @@ export default function HomeScreen() {
           {paddingBottom: scrollPaddingBottom},
         ]}>
         <HeaderSection
-          user={user}
+          user={displayUser}
           onUserPress={handleUserPress}
           onInvitePress={openInviteCodeModal}
         />
 
         <MemberGridSection
-          members={familyMembers}
-          onlineUserIds={onlineUserIds}
-          lastActiveMap={lastActiveMap}
+          members={displayFamilyMembers}
+          onlineUserIds={displayOnlineUserIds}
+          lastActiveMap={displayLastActiveMap}
           onUserPress={handleUserPress}
           onAddPress={openInviteCodeModal}
         />

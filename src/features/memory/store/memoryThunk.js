@@ -8,6 +8,7 @@ import {
 } from './memorySlice';
 
 import {getGuestMode} from 'utils/storage'; // ✅ 추가
+import {STORE_MOCK_ENABLED, getStoreMockMemoryList} from '../../home/utils/storeMockData';
 
 // =======================
 // ✅ Guest Dummy
@@ -81,6 +82,17 @@ export const fetchMemoryThunk = categoryId => {
     dispatch(setMemoryError(null));
 
     try {
+      // ✅ 스토어 목업이면 더미(부산 광안리 여행) 세팅
+      if (STORE_MOCK_ENABLED) {
+        const mockList = getStoreMockMemoryList();
+        const filtered =
+          categoryId != null && categoryId !== ''
+            ? mockList.filter(p => String(p.categoryId) === String(categoryId))
+            : mockList;
+        dispatch(setMemoryList(filtered));
+        dispatch(setMemoryLoading(false));
+        return filtered;
+      }
       // ✅ 게스트면 서버 호출 X, 더미 list 세팅
       const isGuest = await getGuestMode();
       if (isGuest) {
