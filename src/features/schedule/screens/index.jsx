@@ -42,6 +42,10 @@ import DropShadow from 'react-native-drop-shadow';
 import {BACKGROUND_COLORS, LAYOUT_STYLE} from 'styles/style';
 
 import ScheduleGuideModal from '../components/ScheduleGuideModal';
+import {
+  STORE_MOCK_ENABLED,
+  getStoreMockFamilyUserListForSchedule,
+} from '../../home/utils/storeMockData';
 
 const toId = v => {
   if (v == null) return null;
@@ -64,8 +68,14 @@ const toLongArray = raw => {
 export default function ScheduleScreen() {
   const dispatch = useDispatch();
 
-  const {familyId} = useSelector(state => state.family);
-  const familyUserList = useSelector(state => state.userFamily.familyUserList);
+  const {familyId: reduxFamilyId} = useSelector(state => state.family);
+  const reduxFamilyUserList = useSelector(
+    state => state.userFamily.familyUserList,
+  );
+  const familyId = STORE_MOCK_ENABLED ? 'mock-family' : reduxFamilyId;
+  const familyUserList = STORE_MOCK_ENABLED
+    ? getStoreMockFamilyUserListForSchedule()
+    : reduxFamilyUserList;
   const currentUserId = useSelector(state => state.user.userId);
 
   const [calendarMode, setCalendarMode] = useState('month');
@@ -372,6 +382,8 @@ export default function ScheduleScreen() {
           onOpenSheet={handleOpenSheet}
           refreshTrigger={refreshTrigger}
           birthdayNames={birthdayNamesForSelectedDate}
+          familyId={familyId}
+          familyUserList={familyUserList}
         />
       </ScrollView>
 

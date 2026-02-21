@@ -1,7 +1,14 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/features/onboarding/screens/OnboardingScreen.jsx
 
-import React, {useMemo, useCallback, memo, useEffect, useRef, useState} from 'react';
+import React, {
+  useMemo,
+  useCallback,
+  memo,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   View,
   StyleSheet,
@@ -16,7 +23,11 @@ import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import FastImage from '@d11/react-native-fast-image';
 import Svg, {Defs, Rect, RadialGradient, Stop} from 'react-native-svg';
 
-import {getResponsiveFontSize, getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
+import {
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveWidth,
+} from 'utils/responsive';
 
 import {useKakaoLogin} from 'features/auth/hooks/useKakaoLogin';
 import {useAppleLogin} from 'features/auth/hooks/useAppleLogin';
@@ -26,11 +37,11 @@ import OnboardingHeroMotion from '../components/OnboardingHeroMotion';
 
 const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
 
-/** ✅ 은은한 배경 글로우 */
+/** ✅ 은은한 배경 글로우 - 가운데 진한 영역 넓게, 멀어질수록 연하게 */
 const OnboardingSoftGlow = memo(function OnboardingSoftGlow({
   cy = '46%',
-  rx = '62%',
-  ry = '46%',
+  rx = '55%',
+  ry = '44%',
   color = '#F6E3B6',
   op0 = 0.55,
   opMid = 0.2,
@@ -39,13 +50,26 @@ const OnboardingSoftGlow = memo(function OnboardingSoftGlow({
     <View pointerEvents="none" style={StyleSheet.absoluteFillObject}>
       <Svg width="100%" height="100%">
         <Defs>
-          <RadialGradient id="onboardingGlow" cx="50%" cy={cy} rx={rx} ry={ry} fx="50%" fy={cy}>
+          <RadialGradient
+            id="onboardingGlow"
+            cx="50%"
+            cy={cy}
+            rx={rx}
+            ry={ry}
+            fx="50%"
+            fy={cy}>
             <Stop offset="0%" stopColor={color} stopOpacity={op0} />
-            <Stop offset="45%" stopColor={color} stopOpacity={opMid} />
+            <Stop offset="50%" stopColor={color} stopOpacity={opMid} />
             <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.0" />
           </RadialGradient>
         </Defs>
-        <Rect x="0" y="0" width="100%" height="100%" fill="url(#onboardingGlow)" />
+        <Rect
+          x="0"
+          y="0"
+          width="100%"
+          height="100%"
+          fill="url(#onboardingGlow)"
+        />
       </Svg>
     </View>
   );
@@ -57,10 +81,7 @@ const OnboardingSoftGlow = memo(function OnboardingSoftGlow({
  * - isActive=false면 0 리셋 (다음 진입 때 다시 연출)
  */
 function useEnterProgress(isActive, options = {}) {
-  const {
-    startDelay = 40,
-    duration = 420,
-  } = options;
+  const {startDelay = 40, duration = 420} = options;
 
   const v = useRef(new Animated.Value(0)).current;
 
@@ -89,11 +110,7 @@ function useEnterProgress(isActive, options = {}) {
  * - 줄(2~3개)을 순차로 등장시키는 값 배열(0→1)
  */
 function useStaggerLines(isActive, count, options = {}) {
-  const {
-    startDelay = 140,
-    itemDuration = 420,
-    staggerMs = 110,
-  } = options;
+  const {startDelay = 140, itemDuration = 420, staggerMs = 110} = options;
 
   const anims = useMemo(
     () => Array.from({length: count}, () => new Animated.Value(0)),
@@ -107,7 +124,11 @@ function useStaggerLines(isActive, count, options = {}) {
     }
 
     const seq = anims.map(v =>
-      Animated.timing(v, {toValue: 1, duration: itemDuration, useNativeDriver: true}),
+      Animated.timing(v, {
+        toValue: 1,
+        duration: itemDuration,
+        useNativeDriver: true,
+      }),
     );
 
     Animated.sequence([
@@ -142,13 +163,16 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
 
-  heroArea: {flex: 4 / 5, justifyContent: 'center', alignItems: 'center'},
+  heroArea: {flex: 1, justifyContent: 'center', alignItems: 'center'},
   imageBox: {justifyContent: 'center', alignItems: 'center'},
 
   textArea: {
     paddingHorizontal: getResponsiveWidth(26),
-    paddingTop: getResponsiveHeight(10),
-    paddingBottom: getResponsiveHeight(10),
+    paddingTop: getResponsiveHeight(16),
+    paddingBottom: getResponsiveHeight(16),
+    zIndex: 1,
+    elevation: 1,
+    flexShrink: 0,
   },
 
   lineText: {
@@ -262,12 +286,18 @@ const CopyLines = memo(function CopyLines({
       {lines.map((node, i) => {
         const v = lineAnims[i];
 
-        const inOpacity = v.interpolate({inputRange: [0, 1], outputRange: [0, 1]});
+        const inOpacity = v.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, 1],
+        });
         const inTranslateY = v.interpolate({
           inputRange: [0, 1],
           outputRange: [getResponsiveHeight(14), 0],
         });
-        const inScale = v.interpolate({inputRange: [0, 1], outputRange: [0.985, 1]});
+        const inScale = v.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0.985, 1],
+        });
 
         // ✅ 합성: swipe(연속) * in(원샷)
         const opacity = Animated.multiply(swipeOpacity, inOpacity);
@@ -293,7 +323,14 @@ const CopyLines = memo(function CopyLines({
   );
 });
 
-const SlideItem = memo(function SlideItem({item, index, width, scrollX, imageBoxStyle, isActive}) {
+const SlideItem = memo(function SlideItem({
+  item,
+  index,
+  width,
+  scrollX,
+  imageBoxStyle,
+  isActive,
+}) {
   const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
 
   // ✅ 히어로(이미지) 기본: scrollX 연속 모션
@@ -315,12 +352,18 @@ const SlideItem = memo(function SlideItem({item, index, width, scrollX, imageBox
 
   // ✅ 히어로 “원샷 등장” (페이지 확정 후: 살짝 더 자연스럽게)
   const enter = useEnterProgress(isActive, {startDelay: 20, duration: 420});
-  const enterOpacity = enter.interpolate({inputRange: [0, 1], outputRange: [0, 1]});
+  const enterOpacity = enter.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
   const enterTranslateY = enter.interpolate({
     inputRange: [0, 1],
     outputRange: [getResponsiveHeight(10), 0],
   });
-  const enterScale = enter.interpolate({inputRange: [0, 1], outputRange: [0.99, 1]});
+  const enterScale = enter.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.99, 1],
+  });
 
   // ✅ 합성(연속 + 원샷)
   const heroOpacity = Animated.multiply(imageOpacity, enterOpacity);
@@ -333,7 +376,12 @@ const SlideItem = memo(function SlideItem({item, index, width, scrollX, imageBox
     <View style={[styles.slide, {width}]}>
       <OnboardingSoftGlow {...item.glow} />
 
-      <View style={styles.heroArea}>
+      <View
+        style={[
+          styles.heroArea,
+          item.key === '2' && {marginTop: getResponsiveHeight(-65)},
+          item.key === '3' && {marginTop: getResponsiveHeight(-30)},
+        ]}>
         <Animated.View
           style={{
             opacity: heroOpacity,
@@ -391,12 +439,13 @@ export default function OnboardingScreen() {
       {
         key: '1',
         image: require('../../../assets/onboarding/slide1_yellow.png'),
-        textSize: 25,
-        textSize_ios: 26,
-        glow: {cy: '38%', color: '#F6E3B6', op0: 0.65, opMid: 0.32},
+        textSize: 20.5,
+        textSize_ios: 21.5,
+        glow: {cy: '38%', color: '#EBD4A8', op0: 0.82, opMid: 0.4},
         copyLines: [
-          <>우리 가족, 오늘은</>,
+          <>우리 가족,</>,
           <>
+            <>오늘은 </>
             <Text allowFontScaling={false} style={styles.highlight}>
               어떤 기분
             </Text>
@@ -407,35 +456,33 @@ export default function OnboardingScreen() {
       {
         key: '2',
         image: require('../../../assets/onboarding/slide2.png'),
-        textSize: 23,
-        textSize_ios: 24.5,
-        glow: {cy: '46%', color: '#F5E7C6', op0: 0.5, opMid: 0.18},
+        textSize: 19,
+        textSize_ios: 20,
+        glow: {cy: '46%', rx: '68%', ry: '54%', color: '#E8D9B0', op0: 0.76, opMid: 0.42},
         copyLines: [
           <>소소한 대화부터 고민 상담까지</>,
           <>
             채팅으로{' '}
             <Text allowFontScaling={false} style={styles.highlight}>
               더 자주, 더 깊게
-            </Text>
+            </Text>{' '}
+            소통해요.
           </>,
-          <>소통해요.</>,
         ],
       },
       {
         key: '3',
         image: require('../../../assets/onboarding/slide3.png'),
-        textSize: 25,
-        textSize_ios: 26,
-        glow: {cy: '44%', color: '#F6E3B6', op0: 0.48, opMid: 0.16},
+        textSize: 20.5,
+        textSize_ios: 21.5,
+        glow: {cy: '44%', rx: '68%', ry: '54%', color: '#EBD4A8', op0: 0.74, opMid: 0.4},
         copyLines: [
           <>가족 일정,</>,
           <>
             <Text allowFontScaling={false} style={styles.highlight}>
               한눈에
             </Text>{' '}
-            확인하고
-          </>,
-          <>
+            확인하고{' '}
             <Text allowFontScaling={false} style={styles.highlight}>
               함께
             </Text>{' '}
@@ -446,9 +493,9 @@ export default function OnboardingScreen() {
       {
         key: '4',
         image: require('../../../assets/onboarding/slide4.png'),
-        textSize: 23,
-        textSize_ios: 24.5,
-        glow: {cy: '45%', color: '#F6EBD3', op0: 0.52, opMid: 0.2},
+        textSize: 19,
+        textSize_ios: 20,
+        glow: {cy: '45%', rx: '68%', ry: '54%', color: '#EBD8B8', op0: 0.78, opMid: 0.42},
         copyLines: [
           <>
             <Text allowFontScaling={false} style={styles.highlight}>
@@ -473,7 +520,10 @@ export default function OnboardingScreen() {
   }, [insets.bottom]);
 
   const topBarPaddingTop = useMemo(() => {
-    return insets.top + (Platform.OS === 'ios' ? getResponsiveHeight(4) : getResponsiveHeight(2));
+    return (
+      insets.top +
+      (Platform.OS === 'ios' ? getResponsiveHeight(4) : getResponsiveHeight(2))
+    );
   }, [insets.top]);
 
   const imageBoxByKey = useMemo(
@@ -484,13 +534,13 @@ export default function OnboardingScreen() {
         marginTop: getResponsiveHeight(18),
       },
       2: {
-        width: SCREEN_WIDTH * 0.78,
-        height: getResponsiveHeight(300),
-        marginTop: getResponsiveHeight(8),
+        width: SCREEN_WIDTH * 0.75,
+        height: getResponsiveHeight(310),
+        marginTop: getResponsiveHeight(60),
       },
       3: {
         width: SCREEN_WIDTH * 0.76,
-        height: getResponsiveHeight(340),
+        height: getResponsiveHeight(420),
         marginTop: getResponsiveHeight(10),
       },
       4: {
@@ -630,9 +680,12 @@ export default function OnboardingScreen() {
         onScrollToIndexFailed={onScrollToIndexFailed}
         scrollEventThrottle={16}
         style={{flex: 1}}
-        onScroll={Animated.event([{nativeEvent: {contentOffset: {x: scrollX}}}], {
-          useNativeDriver: true,
-        })}
+        onScroll={Animated.event(
+          [{nativeEvent: {contentOffset: {x: scrollX}}}],
+          {
+            useNativeDriver: true,
+          },
+        )}
       />
 
       <View style={[styles.bottomArea, {paddingBottom: bottomPadding}]}>
@@ -640,14 +693,20 @@ export default function OnboardingScreen() {
           {slides.map((_, idx) => (
             <View
               key={String(idx)}
-              style={[styles.indicatorDot, currentPage === idx && styles.activeDot]}
+              style={[
+                styles.indicatorDot,
+                currentPage === idx && styles.activeDot,
+              ]}
             />
           ))}
         </View>
 
         {!isLast ? (
           <>
-            <TouchableOpacity activeOpacity={0.9} onPress={handleNext} style={styles.nextBtn}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={handleNext}
+              style={styles.nextBtn}>
               <Text allowFontScaling={false} style={styles.nextText}>
                 다음
               </Text>
@@ -658,7 +717,9 @@ export default function OnboardingScreen() {
           </>
         ) : (
           <>
-            <TouchableOpacity activeOpacity={0.9} onPress={handleKakaoLoginPress}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={handleKakaoLoginPress}>
               <Image
                 style={styles.kakaoBtnImage}
                 source={require('../../../assets/images/kakao-login-button.jpg')}

@@ -1,6 +1,6 @@
 // ChatRoomItem.jsx
 import React from 'react';
-import {Pressable, Text, View, StyleSheet} from 'react-native';
+import {Pressable, Text, View, StyleSheet, Image} from 'react-native';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -8,6 +8,8 @@ import {
   getResponsiveIconSize,
 } from 'utils/responsive';
 import GroupAvatar from './GroupAvatar';
+
+const KINO_AVATAR_SOURCE = require('../../../assets/images/kino-yellow.png');
 import {useDispatch, useSelector} from 'react-redux';
 import {markRoomRead} from '../store/chatRoomSlice';
 import {getChatRoomTitle} from '../utils/chatRoomTitleHelper';
@@ -61,7 +63,23 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
               styles.avatarWrap,
               {width: AVATAR_SIZE, height: AVATAR_SIZE},
             ]}>
-            <GroupAvatar images={memberImages} size={AVATAR_SIZE} />
+            {kino && (!memberImages || memberImages.length === 0) ? (
+              <View style={styles.kinoAvatarWrap}>
+                <Image
+                  source={KINO_AVATAR_SOURCE}
+                  style={[
+                    styles.kinoAvatar,
+                    {
+                      width: AVATAR_SIZE * 0.6,
+                      height: AVATAR_SIZE * 0.6,
+                    },
+                  ]}
+                  resizeMode="contain"
+                />
+              </View>
+            ) : (
+              <GroupAvatar images={memberImages} size={AVATAR_SIZE} />
+            )}
 
             {kino && (
               <View
@@ -133,6 +151,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.045)',
   },
   avatarWrap: {position: 'relative'},
+  kinoAvatarWrap: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  kinoAvatar: {},
   aiBadge: {
     position: 'absolute',
     top: -getResponsiveHeight(1.5),

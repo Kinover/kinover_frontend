@@ -2,11 +2,15 @@
 // src/features/onboarding/components/OnboardingHeroMotion.jsx
 
 import React, {memo, useEffect, useMemo, useRef} from 'react';
-import {View, Text, StyleSheet, Image, Animated, Platform} from 'react-native';
+import {View, Text, StyleSheet, Image, Animated} from 'react-native';
 
 import Svg, {Defs, RadialGradient, Stop, Ellipse} from 'react-native-svg';
 
-import {getResponsiveHeight, getResponsiveWidth, getResponsiveFontSize} from 'utils/responsive';
+import {
+  getResponsiveHeight,
+  getResponsiveWidth,
+  getResponsiveFontSize,
+} from 'utils/responsive';
 
 const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
 
@@ -24,17 +28,29 @@ const emotionIcons = {
 
 // ✅ Slide2 키노 캐릭터 3종
 const kinoImages = {
-  blue: require('../../../assets/onboarding/slide2/kino-b.png'),
-  yellow: require('../../../assets/onboarding/slide2/kino-y.png'),
-  pink: require('../../../assets/onboarding/slide2/kino-p.png'),
+  blue: require('../../../assets/onboarding/slide2/blueKino.png'),
+  yellow: require('../../../assets/onboarding/slide2/yellowKino.png'),
+  pink: require('../../../assets/onboarding/slide2/pinkKino.png'),
 };
 
 // ✅ Slide2 말풍선(이미지) 4장
 const bubbleImages = {
-  1: require('../../../assets/onboarding/slide2/1.png'),
-  2: require('../../../assets/onboarding/slide2/2.png'),
-  3: require('../../../assets/onboarding/slide2/3.png'),
-  4: require('../../../assets/onboarding/slide2/4.png'),
+  1: require('../../../assets/onboarding/slide2/1_2.png'),
+  2: require('../../../assets/onboarding/slide2/2_2.png'),
+  3: require('../../../assets/onboarding/slide2/3_2.png'),
+  4: require('../../../assets/onboarding/slide2/4_2.png'),
+};
+
+// ✅ Slide2 배경 스마트폰 이미지
+const phoneBgImage = require('../../../assets/onboarding/slide2/bg.png');
+
+// ✅ Slide3 배경 스마트폰 이미지
+const slide3BgImage = require('../../../assets/onboarding/slide3/bg.png');
+
+// ✅ Slide3 카드 이미지
+const slide3CardImages = {
+  1: require('../../../assets/onboarding/slide3/card1.png'),
+  2: require('../../../assets/onboarding/slide3/card2.png'),
 };
 
 /** ✅ 히어로 전체 “원샷 등장” */
@@ -76,9 +92,23 @@ function useOneShotBounce(isActive) {
     }
 
     Animated.sequence([
-      Animated.timing(scale, {toValue: 0.58, duration: 10, useNativeDriver: true}),
-      Animated.spring(scale, {toValue: 1.02, speed: 25, bounciness: 10, useNativeDriver: true}),
-      Animated.spring(scale, {toValue: 1, speed: 18, bounciness: 8, useNativeDriver: true}),
+      Animated.timing(scale, {
+        toValue: 0.58,
+        duration: 10,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1.02,
+        speed: 25,
+        bounciness: 10,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scale, {
+        toValue: 1,
+        speed: 18,
+        bounciness: 8,
+        useNativeDriver: true,
+      }),
     ]).start();
   }, [isActive, scale]);
 
@@ -95,8 +125,16 @@ function useGentleFloat(isActive) {
     if (isActive) {
       loop = Animated.loop(
         Animated.sequence([
-          Animated.timing(floatY, {toValue: -getResponsiveHeight(3), duration: 900, useNativeDriver: true}),
-          Animated.timing(floatY, {toValue: 0, duration: 900, useNativeDriver: true}),
+          Animated.timing(floatY, {
+            toValue: -getResponsiveHeight(3),
+            duration: 900,
+            useNativeDriver: true,
+          }),
+          Animated.timing(floatY, {
+            toValue: 0,
+            duration: 900,
+            useNativeDriver: true,
+          }),
         ]),
       );
       loop.start();
@@ -121,8 +159,16 @@ function usePulse(isActive) {
     if (isActive) {
       loop = Animated.loop(
         Animated.sequence([
-          Animated.timing(pulse, {toValue: 1, duration: 850, useNativeDriver: true}),
-          Animated.timing(pulse, {toValue: 0, duration: 850, useNativeDriver: true}),
+          Animated.timing(pulse, {
+            toValue: 1,
+            duration: 850,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulse, {
+            toValue: 0,
+            duration: 850,
+            useNativeDriver: true,
+          }),
         ]),
       );
       loop.start();
@@ -135,7 +181,10 @@ function usePulse(isActive) {
   }, [isActive, pulse]);
 
   const scale = pulse.interpolate({inputRange: [0, 1], outputRange: [1, 1.08]});
-  const opacity = pulse.interpolate({inputRange: [0, 1], outputRange: [1, 0.86]});
+  const opacity = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.86],
+  });
 
   return {scale, opacity};
 }
@@ -158,7 +207,11 @@ function useStaggerIn(isActive, count) {
     const START_DELAY = 220;
 
     const seq = anims.map(v =>
-      Animated.timing(v, {toValue: 1, duration: ITEM_DURATION, useNativeDriver: true}),
+      Animated.timing(v, {
+        toValue: 1,
+        duration: ITEM_DURATION,
+        useNativeDriver: true,
+      }),
     );
 
     Animated.sequence([
@@ -183,7 +236,12 @@ function useKinoPop(isActive) {
 
     Animated.sequence([
       Animated.delay(320),
-      Animated.spring(v, {toValue: 1, speed: 20, bounciness: 8, useNativeDriver: true}),
+      Animated.spring(v, {
+        toValue: 1,
+        speed: 20,
+        bounciness: 8,
+        useNativeDriver: true,
+      }),
     ]).start();
   }, [isActive, v]);
 
@@ -261,23 +319,34 @@ const s = StyleSheet.create({
   emotionImg: {width: '100%', height: '100%', resizeMode: 'contain'},
 
   // Slide2
+  slide2Container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   chatWrap: {
-    width: getResponsiveWidth(300),
-    height: getResponsiveHeight(320),
+    width: getResponsiveWidth(290),
+    height: getResponsiveHeight(330),
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: getResponsiveWidth(12),
+    overflow: 'visible',
+  },
+  phoneBg: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
   },
   bubbleWrap: {position: 'absolute'},
   kinoRow: {
     position: 'absolute',
-    bottom: Platform.OS === 'ios' ? getResponsiveHeight(-35) : getResponsiveHeight(-45),
+    bottom: getResponsiveHeight(-62),
     left: 0,
     right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'flex-end',
-    gap: getResponsiveWidth(30),
+    gap: getResponsiveWidth(22),
   },
   kino: {
     width: getResponsiveWidth(66),
@@ -286,22 +355,55 @@ const s = StyleSheet.create({
   },
 
   // Slide3
+  slide3Container: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  slide3PhoneWrap: {
+    width: getResponsiveWidth(290),
+    height: getResponsiveHeight(330),
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: getResponsiveWidth(12),
+    overflow: 'visible',
+  },
+  slide3PhoneBg: {
+    position: 'absolute',
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain',
+  },
   calWrap: {
-    width: getResponsiveWidth(320),
-    paddingTop: getResponsiveHeight(10),
-    paddingBottom: getResponsiveHeight(10),
+    position: 'relative',
+    width: getResponsiveWidth(280),
+    paddingTop: getResponsiveHeight(200),
+    paddingBottom: getResponsiveHeight(4),
     alignSelf: 'center',
+    zIndex: 1,
+  },
+  cardContainer: {
+    position: 'relative',
+    width: '100%',
+    alignSelf: 'center',
+    marginTop: getResponsiveHeight(-30),
+    marginBottom: getResponsiveHeight(-30),
+    zIndex: 1,
+  },
+  cardImage: {
+    width: '100%',
+    height: getResponsiveHeight(140),
+    resizeMode: 'contain',
   },
   weekText: {
     fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(13),
+    fontSize: getResponsiveFontSize(9.5),
     color: '#333',
     textAlign: 'center',
   },
   grid: {flexDirection: 'row', flexWrap: 'wrap'},
   dayText: {
     fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(13),
+    fontSize: getResponsiveFontSize(9.5),
     color: '#111',
     textAlign: 'center',
   },
@@ -315,7 +417,7 @@ const s = StyleSheet.create({
   },
   dotText: {
     fontFamily: 'Pretendard-Bold',
-    fontSize: getResponsiveFontSize(12.5),
+    fontSize: getResponsiveFontSize(9),
     color: '#111',
   },
   dotGhost: {
@@ -341,7 +443,15 @@ const Slide1Emotions = memo(function Slide1Emotions({isActive}) {
 
   const layout = useMemo(() => {
     const centerKey = 'excited';
-    const ringKeys = ['neutral', 'anxious', 'sorry', 'annoyed', 'happy', 'depressed', 'exhausted'];
+    const ringKeys = [
+      'neutral',
+      'anxious',
+      'sorry',
+      'annoyed',
+      'happy',
+      'depressed',
+      'exhausted',
+    ];
 
     const count = ringKeys.length;
     const step = (Math.PI * 2) / count;
@@ -386,7 +496,12 @@ const Slide1Emotions = memo(function Slide1Emotions({isActive}) {
           key={p.key}
           style={[
             s.emotionShadowWrap,
-            {transform: [{translateX: p.x - wrapHalf}, {translateY: p.y - wrapHalf}]},
+            {
+              transform: [
+                {translateX: p.x - wrapHalf},
+                {translateY: p.y - wrapHalf},
+              ],
+            },
           ]}>
           <EmotionShadow wrapSize={EMO_WRAP} />
           <View style={s.emotionCircle}>
@@ -407,7 +522,10 @@ const Slide2Chat = memo(function Slide2Chat({isActive}) {
 
   const bubbleAnimStyle = (v, base) => {
     const opacity = v;
-    const translateY = v.interpolate({inputRange: [0, 1], outputRange: [10, 0]});
+    const translateY = v.interpolate({
+      inputRange: [0, 1],
+      outputRange: [10, 0],
+    });
     return {opacity, transform: [{translateY}], ...base};
   };
 
@@ -417,15 +535,23 @@ const Slide2Chat = memo(function Slide2Chat({isActive}) {
     extrapolate: 'clamp',
   });
 
-  const BUBBLE_H = getResponsiveHeight(38);
-  const EDGE = getResponsiveWidth(0);
+  const BUBBLE_H = getResponsiveHeight(37);
+  const EDGE = getResponsiveWidth(-25); // 좌우 간격 증가
   const EXTRA_INSET = getResponsiveWidth(0);
   const REF_W = getResponsiveWidth(220);
   const MAX_W_FOR_T = getResponsiveWidth(320);
 
+  // ✅ 가져리(노치) 영역을 피하기 위해 시작 위치를 아래로 조정
+  const TOP_OFFSET = getResponsiveHeight(100); // 더 아래로
+  const BUBBLE_SPACING = getResponsiveHeight(52); // 말풍선 간 간격
   const bubbleTop = useMemo(
-    () => [getResponsiveHeight(10), getResponsiveHeight(62), getResponsiveHeight(132), getResponsiveHeight(192)],
-    [],
+    () => [
+      TOP_OFFSET,
+      TOP_OFFSET + BUBBLE_SPACING,
+      TOP_OFFSET + BUBBLE_SPACING * 2,
+      TOP_OFFSET + BUBBLE_SPACING * 3,
+    ],
+    [TOP_OFFSET, BUBBLE_SPACING],
   );
 
   const sources = useMemo(
@@ -452,18 +578,31 @@ const Slide2Chat = memo(function Slide2Chat({isActive}) {
         src,
         width: bubbleW,
         height: BUBBLE_H,
-        pos: isRight ? {top: bubbleTop[i], right: inset} : {top: bubbleTop[i], left: inset},
+        pos: isRight
+          ? {top: bubbleTop[i], right: inset}
+          : {top: bubbleTop[i], left: inset},
       };
     });
   }, [sources, BUBBLE_H, EDGE, EXTRA_INSET, REF_W, MAX_W_FOR_T, bubbleTop]);
 
   return (
     <Animated.View
-      style={{
-        opacity: heroEnter.opacity,
-        transform: [{translateY: heroEnter.translateY}, {scale: heroEnter.scale}],
-      }}>
+      style={[
+        s.slide2Container,
+        {
+          opacity: heroEnter.opacity,
+          transform: [
+            {translateY: heroEnter.translateY},
+            {scale: heroEnter.scale},
+          ],
+        },
+      ]}>
+      {/* 배경 스마트폰 이미지 + 말풍선들 + 키노 캐릭터 */}
       <View style={s.chatWrap}>
+        {/* 배경 스마트폰 이미지 */}
+        <Image source={phoneBgImage} style={s.phoneBg} />
+
+        {/* 말풍선들 */}
         {bubbles.map((b, idx) => (
           <Animated.View
             key={b.key}
@@ -472,10 +611,15 @@ const Slide2Chat = memo(function Slide2Chat({isActive}) {
               bubbleAnimStyle(items[idx], b.pos),
               {width: b.width, height: b.height},
             ]}>
-            <Image source={b.src} style={{width: '100%', height: '100%'}} resizeMode="contain" />
+            <Image
+              source={b.src}
+              style={{width: '100%', height: '100%'}}
+              resizeMode="contain"
+            />
           </Animated.View>
         ))}
 
+        {/* 키노 캐릭터들 (휴대폰 배경 이미지 안, 말풍선 아래) */}
         <Animated.View
           style={[
             s.kinoRow,
@@ -487,18 +631,33 @@ const Slide2Chat = memo(function Slide2Chat({isActive}) {
               ],
             },
           ]}>
-          <Image
-            source={kinoImages.yellow}
-            style={[s.kino, {width: getResponsiveWidth(56), height: getResponsiveWidth(56)}]}
-          />
-          <Image
-            source={kinoImages.blue}
-            style={[s.kino, {width: getResponsiveWidth(87), height: getResponsiveWidth(87)}]}
-          />
-          <Image
-            source={kinoImages.pink}
-            style={[s.kino, {width: getResponsiveWidth(101), height: getResponsiveWidth(101)}]}
-          />
+          <View style={{transform: [{translateY: getResponsiveHeight(-26)}]}}>
+            <Image
+              source={kinoImages.yellow}
+              style={[
+                s.kino,
+                {width: getResponsiveWidth(52), height: getResponsiveWidth(52)},
+              ]}
+            />
+          </View>
+          <View style={{transform: [{translateY: getResponsiveHeight(-2)}]}}>
+            <Image
+              source={kinoImages.blue}
+              style={[
+                s.kino,
+                {width: getResponsiveWidth(80), height: getResponsiveWidth(80)},
+              ]}
+            />
+          </View>
+          <View style={{transform: [{translateY: getResponsiveHeight(-12)}]}}>
+            <Image
+              source={kinoImages.pink}
+              style={[
+                s.kino,
+                {width: getResponsiveWidth(88), height: getResponsiveWidth(88)},
+              ]}
+            />
+          </View>
         </Animated.View>
       </View>
     </Animated.View>
@@ -509,18 +668,33 @@ const Slide2Chat = memo(function Slide2Chat({isActive}) {
 const Slide3Calendar = memo(function Slide3Calendar({isActive}) {
   const heroEnter = useHeroEnter(isActive, {startDelay: 40, duration: 360});
   const {scale, opacity} = usePulse(isActive);
+  const cardAnims = useStaggerIn(isActive, 2);
 
-  const filled = useMemo(() => new Set([2, 6, 17, 23]), []);
-  const outlined = useMemo(() => new Set([25, 27]), []);
+  // 이미지 설명: 2일, 6일은 진한 주황색 / 17일, 23일, 25일, 27일은 연한 노란색 배경 + 주황색 테두리
+  const filled = useMemo(() => new Set([2, 6]), []); // 진한 주황색
+  const outlined = useMemo(() => new Set([17, 23, 25, 27]), []); // 연한 노란색 배경 + 주황색 테두리
   const mutedDays = useMemo(() => new Set([29, 30]), []);
   const week = useMemo(() => ['일', '월', '화', '수', '목', '금', '토'], []);
 
   const filledColorMap = useMemo(
-    () => ({2: '#FFB50E', 6: '#FFD370', 17: '#FFF3D2', 23: '#FFD370'}),
+    () => ({
+      2: '#FFB50E', // 진한 주황색
+      6: '#FFB50E', // 진한 주황색
+    }),
     [],
   );
 
-  const wrapW = getResponsiveWidth(320);
+  const outlinedColorMap = useMemo(
+    () => ({
+      17: '#FFF3D2', // 연한 노란색 배경
+      23: '#FFF3D2',
+      25: '#FFF3D2',
+      27: '#FFF3D2',
+    }),
+    [],
+  );
+
+  const wrapW = getResponsiveWidth(250);
   const padX = getResponsiveWidth(10);
 
   const cellW = useMemo(() => {
@@ -532,72 +706,131 @@ const Slide3Calendar = memo(function Slide3Calendar({isActive}) {
   const extra = wrapW - contentW;
   const adjPadX = Math.floor(extra / 2);
 
-  const cellH = getResponsiveHeight(38);
+  const cellH = getResponsiveHeight(32);
   const days = useMemo(() => Array.from({length: 30}, (_, i) => i + 1), []);
+
+  const cardAnimStyle = v => {
+    const cardOpacity = v.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 1],
+    });
+    const cardTranslateY = v.interpolate({
+      inputRange: [0, 1],
+      outputRange: [10, 0],
+    });
+    return {
+      opacity: cardOpacity,
+      transform: [{translateY: cardTranslateY}, {scale: 1.15}],
+    };
+  };
 
   return (
     <Animated.View
-      style={{
-        opacity: heroEnter.opacity,
-        transform: [{translateY: heroEnter.translateY}, {scale: heroEnter.scale}],
-      }}>
-      <View style={[s.calWrap, {width: wrapW}]}>
-        <View style={[{flexDirection: 'row'}, {paddingHorizontal: adjPadX}]}>
-          {week.map(w => (
-            <View key={w} style={{width: cellW, alignItems: 'center', justifyContent: 'center'}}>
-              <Text allowFontScaling={false} style={s.weekText}>
-                {w}
-              </Text>
-            </View>
-          ))}
-        </View>
+      style={[
+        s.slide3Container,
+        {
+          opacity: heroEnter.opacity,
+          transform: [
+            {translateY: heroEnter.translateY},
+            {scale: heroEnter.scale},
+          ],
+        },
+      ]}>
+      {/* 배경 스마트폰 이미지 */}
+      <View style={s.slide3PhoneWrap}>
+        <Image source={slide3BgImage} style={s.slide3PhoneBg} />
 
-        <View style={[s.grid, {paddingHorizontal: adjPadX}]}>
-          {days.map(d => {
-            const isFilled = filled.has(d);
-            const isOutlined = outlined.has(d);
-            const isMuted = mutedDays.has(d);
-
-            const baseCellStyle = {
-              width: cellW,
-              height: cellH,
-              justifyContent: 'center',
-              alignItems: 'center',
-            };
-
-            if (isFilled) {
-              const bg = filledColorMap?.[d] ?? '#FFB50E';
-              return (
-                <View key={d} style={baseCellStyle}>
-                  <Animated.View style={[s.dot, {backgroundColor: bg}, {transform: [{scale}], opacity}]}>
-                    <Text allowFontScaling={false} style={s.dotText}>
-                      {d}
-                    </Text>
-                  </Animated.View>
-                </View>
-              );
-            }
-
-            if (isOutlined) {
-              return (
-                <View key={d} style={baseCellStyle}>
-                  <View style={s.dotGhost}>
-                    <Text allowFontScaling={false} style={s.dayText}>
-                      {d}
-                    </Text>
-                  </View>
-                </View>
-              );
-            }
-
-            return (
-              <View key={d} style={baseCellStyle}>
-                <Text allowFontScaling={false} style={[s.dayText, isMuted ? s.muted : null]}>
-                  {d}
+        {/* 달력 */}
+        <View style={[s.calWrap, {width: wrapW}]}>
+          <View style={[{flexDirection: 'row'}, {paddingHorizontal: adjPadX}]}>
+            {week.map(w => (
+              <View
+                key={w}
+                style={{
+                  width: cellW,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <Text allowFontScaling={false} style={s.weekText}>
+                  {w}
                 </Text>
               </View>
-            );
-          })}
+            ))}
+          </View>
+
+          <View style={[s.grid, {paddingHorizontal: adjPadX}]}>
+            {days.map(d => {
+              const isFilled = filled.has(d);
+              const isOutlined = outlined.has(d);
+              const isMuted = mutedDays.has(d);
+
+              const baseCellStyle = {
+                width: cellW,
+                height: cellH,
+                justifyContent: 'center',
+                alignItems: 'center',
+              };
+
+              if (isFilled) {
+                const bg = filledColorMap?.[d] ?? '#FFB50E';
+                return (
+                  <View key={d} style={baseCellStyle}>
+                    <Animated.View
+                      style={[
+                        s.dot,
+                        {backgroundColor: bg},
+                        {transform: [{scale}], opacity},
+                      ]}>
+                      <Text allowFontScaling={false} style={s.dotText}>
+                        {d}
+                      </Text>
+                    </Animated.View>
+                  </View>
+                );
+              }
+
+              if (isOutlined) {
+                const bg = outlinedColorMap?.[d] ?? '#FFF3D2';
+                return (
+                  <View key={d} style={baseCellStyle}>
+                    <View
+                      style={[
+                        s.dotGhost,
+                        {
+                          backgroundColor: bg,
+                          borderColor: '#FFB50E',
+                          borderWidth: 1,
+                        },
+                      ]}>
+                      <Text allowFontScaling={false} style={s.dayText}>
+                        {d}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              }
+
+              return (
+                <View key={d} style={baseCellStyle}>
+                  <Text
+                    allowFontScaling={false}
+                    style={[s.dayText, isMuted ? s.muted : null]}>
+                    {d}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* 카드들 */}
+        <View style={{width: '100%', alignItems: 'center'}}>
+          <Animated.View style={[s.cardContainer, cardAnimStyle(cardAnims[0])]}>
+            <Image source={slide3CardImages[1]} style={s.cardImage} />
+          </Animated.View>
+          <Animated.View style={[s.cardContainer, cardAnimStyle(cardAnims[1])]}>
+            <Image source={slide3CardImages[2]} style={s.cardImage} />
+          </Animated.View>
         </View>
       </View>
     </Animated.View>
@@ -605,7 +838,13 @@ const Slide3Calendar = memo(function Slide3Calendar({isActive}) {
 });
 
 /** ✅ Slide4 */
-const Slide4Photo = memo(function Slide4Photo({scrollX, index, width, imageSource, isActive}) {
+const Slide4Photo = memo(function Slide4Photo({
+  scrollX,
+  index,
+  width,
+  imageSource,
+  isActive,
+}) {
   const heroEnter = useHeroEnter(isActive, {startDelay: 30, duration: 360});
 
   const inputRange = [(index - 1) * width, index * width, (index + 1) * width];

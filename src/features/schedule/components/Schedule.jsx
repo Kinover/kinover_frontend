@@ -79,8 +79,11 @@ function Schedule({
   onOpenSheet,
   refreshTrigger,
   birthdayNames = [],
+  familyId: familyIdProp,
+  familyUserList = [],
 }) {
-  const hookResult = useScheduleListByDate(selectedDate, refreshTrigger) || {};
+  const hookResult =
+    useScheduleListByDate(selectedDate, refreshTrigger, familyIdProp) || {};
 
   const individual = hookResult.individual ?? hookResult.personal ?? [];
   const family = hookResult.family ?? hookResult.shared ?? [];
@@ -149,7 +152,7 @@ function Schedule({
       return {
         type: TYPE.ANNIVERSARY,
         pillText: '기념일',
-        icon: '🎈',
+        icon: '🎂',
         iconBg: COLOR.YELLOW_BG,
         pillBg: COLOR.YELLOW_PILL,
         pillTextColor: COLOR.YELLOW_TEXT,
@@ -167,10 +170,31 @@ function Schedule({
       };
     }
 
+    // 개별 일정: 해당 일정 수행 유저 이름의 앞글자만 원 안에 표시
+    const names = Array.isArray(item?.participantNames)
+      ? item.participantNames.filter(Boolean)
+      : [];
+    let performerName = names.length >= 1 ? names[0] : (item?.userName ?? null);
+    if (
+      !performerName &&
+      Array.isArray(item?.participantIds) &&
+      item.participantIds.length > 0 &&
+      familyUserList?.length
+    ) {
+      const firstId = item.participantIds[0];
+      const user = familyUserList.find(
+        u =>
+          String(u?.userId) === String(firstId) ||
+          String(u?.id) === String(firstId),
+      );
+      performerName = user?.name ?? user?.nickname ?? null;
+    }
+    const initial = String(performerName || '가족').slice(0, 1);
+
     return {
       type: TYPE.INDIVIDUAL,
       pillText: '개별',
-      icon: String(item?.userName || '가족').slice(0, 1),
+      icon: initial,
       iconBg: COLOR.GRAY_BG,
       pillBg: COLOR.GRAY_PILL,
       pillTextColor: COLOR.GRAY_TEXT,
@@ -400,7 +424,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(14.5),
     color: '#111827',
-    lineHeight: getResponsiveFontSize(15.5),
+    lineHeight: getResponsiveFontSize(20),
+    paddingTop: 2,
   },
   pill: {
     paddingVertical: getResponsiveHeight(5),

@@ -11,6 +11,13 @@ import useChatRoomScreen from '../hooks/useChatRoomScreen';
 import useHeaderSetting from 'hooks/useHeaderSetting';
 import {onLeaveChat} from '../hooks/onLeaveChat';
 import {fetchMessageThunk} from '../store/messageThunk';
+import {setMessageList, setMessageFetched} from '../store/messageSlice';
+import {
+  STORE_MOCK_ENABLED,
+  getStoreMockKinoMessages,
+  getStoreMockChatMessages,
+  isStoreMockChatRoomId,
+} from '../../home/utils/storeMockData';
 import useHideTabBar from 'hooks/useHideTabBar';
 
 import {
@@ -186,9 +193,23 @@ export default function ChatRoomScreenTemplate({
     setNoMoreMessages(false);
 
     if (!isMessageFetched) {
-      dispatch(fetchMessageThunk(chatRoomId));
+      if (STORE_MOCK_ENABLED && isKino) {
+        const messages = getStoreMockKinoMessages(myUserId);
+        dispatch(setMessageList({chatRoomId, messages}));
+        dispatch(setMessageFetched({chatRoomId, isFetched: true}));
+      } else if (
+        STORE_MOCK_ENABLED &&
+        isStoreMockChatRoomId(chatRoomId) &&
+        !isKino
+      ) {
+        const messages = getStoreMockChatMessages(chatRoomId, myUserId);
+        dispatch(setMessageList({chatRoomId, messages}));
+        dispatch(setMessageFetched({chatRoomId, isFetched: true}));
+      } else {
+        dispatch(fetchMessageThunk(chatRoomId));
+      }
     }
-  }, [chatRoomId, isMessageFetched, dispatch, setNoMoreMessages]);
+  }, [chatRoomId, isMessageFetched, dispatch, setNoMoreMessages, isKino, myUserId]);
 
   // ✅ activeChatRoomId는 화면에서만
   useEffect(() => {

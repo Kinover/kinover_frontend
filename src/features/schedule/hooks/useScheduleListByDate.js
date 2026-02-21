@@ -3,9 +3,14 @@ import {useEffect, useMemo} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchSchedulesForFamilyAndDateThunk} from '../store/scheduleThunk';
 
-export const useScheduleListByDate = (selectedDate, refreshTrigger) => {
+export const useScheduleListByDate = (
+  selectedDate,
+  refreshTrigger,
+  familyIdOverride,
+) => {
   const dispatch = useDispatch();
-  const {familyId} = useSelector(state => state.family);
+  const {familyId: reduxFamilyId} = useSelector(state => state.family);
+  const familyId = familyIdOverride ?? reduxFamilyId;
   const {scheduleList = []} = useSelector(state => state.schedule);
 
   const formatLocalYMD = d => {

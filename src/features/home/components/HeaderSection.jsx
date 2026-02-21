@@ -96,13 +96,12 @@ export default function HeaderSection({user, onUserPress, onInvitePress}) {
   }, [emotionColor]);
 
   const profileSource = useMemo(() => {
-    return user?.image
-      ? {
-          uri: String(user.image).startsWith('https')
-            ? user.image
-            : CLOUD_FRONT + user.image,
-        }
-      : require('../../../assets/images/default.png');
+    const img = user?.image;
+    if (!img) return require('../../../assets/images/default.png');
+    const s = String(img);
+    const isFullUri =
+      s.startsWith('https') || s.startsWith('http') || s.startsWith('file');
+    return { uri: isFullUri ? img : CLOUD_FRONT + img };
   }, [user?.image]);
 
   /**

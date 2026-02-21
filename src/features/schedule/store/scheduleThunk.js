@@ -10,6 +10,12 @@ import {
 
 // ✅ 게스트 모드 확인
 import {getGuestMode} from 'utils/storage';
+// ✅ 앱스토어 캡처용 더미 (STORE_MOCK_ENABLED 시)
+import {
+  STORE_MOCK_ENABLED,
+  getStoreMockScheduleList,
+  getStoreMockScheduleCountPerDay,
+} from '../../home/utils/storeMockData';
 
 /**
  * ✅ 로딩 흔들림 방지용
@@ -143,6 +149,18 @@ const refreshAfterMutation = async (dispatch, refresh) => {
 
   const {familyId, date, year, month, userId, mode} = refresh;
 
+  // ✅ 스토어 목업이면: API 안 타고 더미로 리프레시
+  if (STORE_MOCK_ENABLED) {
+    if (familyId && date) {
+      const list = getStoreMockScheduleList(date);
+      dispatch(setScheduleList(list));
+    }
+    if (familyId && year && month) {
+      dispatch(setScheduleCountPerDay(getStoreMockScheduleCountPerDay(year, month)));
+    }
+    return;
+  }
+
   // ✅ 게스트 모드면: API 안 타고 더미로 리프레시
   const isGuest = await getGuestMode().catch(() => false);
   if (isGuest) {
@@ -220,6 +238,11 @@ const refreshAfterMutation = async (dispatch, refresh) => {
 /* ---------------------- 가족별 스케줄 (화면에서 직접 호출용) ---------------------- */
 export const fetchSchedulesForFamilyAndDateThunk = (familyId, date) => {
   return async dispatch => {
+    if (STORE_MOCK_ENABLED) {
+      const list = getStoreMockScheduleList(date);
+      dispatch(setScheduleList(list));
+      return list;
+    }
     // ✅ 게스트 모드 분기
     const isGuest = await getGuestMode().catch(() => false);
     if (isGuest) {
@@ -256,6 +279,11 @@ export const fetchSchedulesForFamilyAndDateThunk = (familyId, date) => {
 /* ---------------------- 유저별 스케줄 (화면에서 직접 호출용) ---------------------- */
 export const fetchSchedulesForUserAndDateThunk = (familyId, userId, date) => {
   return async dispatch => {
+    if (STORE_MOCK_ENABLED) {
+      const list = getStoreMockScheduleList(date);
+      dispatch(setScheduleList(list));
+      return list;
+    }
     // ✅ 게스트 모드 분기
     const isGuest = await getGuestMode().catch(() => false);
     if (isGuest) {
@@ -295,6 +323,18 @@ export const fetchSchedulesForUserAndDateThunk = (familyId, userId, date) => {
 /* ---------------------- 일정 추가 ---------------------- */
 export const addScheduleThunk = (scheduleData, refresh) => {
   return async dispatch => {
+    if (STORE_MOCK_ENABLED) {
+      const date = scheduleData?.date ?? refresh?.date;
+      if (date) dispatch(setScheduleList(getStoreMockScheduleList(date)));
+      if (refresh?.year && refresh?.month) {
+        dispatch(
+          setScheduleCountPerDay(
+            getStoreMockScheduleCountPerDay(refresh.year, refresh.month),
+          ),
+        );
+      }
+      return {ok: true, mock: true};
+    }
     // ✅ 게스트 모드 분기: 서버 저장 금지, 대신 UI용 더미 반영
     const isGuest = await getGuestMode().catch(() => false);
     if (isGuest) {
@@ -358,6 +398,19 @@ export const addScheduleThunk = (scheduleData, refresh) => {
 /* ---------------------- 일정 수정 ---------------------- */
 export const updateScheduleThunk = (updatedScheduleData, refresh) => {
   return async dispatch => {
+    if (STORE_MOCK_ENABLED) {
+      const date =
+        updatedScheduleData?.date ?? refresh?.date;
+      if (date) dispatch(setScheduleList(getStoreMockScheduleList(date)));
+      if (refresh?.year && refresh?.month) {
+        dispatch(
+          setScheduleCountPerDay(
+            getStoreMockScheduleCountPerDay(refresh.year, refresh.month),
+          ),
+        );
+      }
+      return {ok: true, mock: true};
+    }
     // ✅ 게스트 모드 분기: 서버 저장 금지, 대신 리스트에서 해당 항목만 수정
     const isGuest = await getGuestMode().catch(() => false);
     if (isGuest) {
@@ -417,6 +470,18 @@ export const updateScheduleThunk = (updatedScheduleData, refresh) => {
 /* ---------------------- 일정 삭제 ---------------------- */
 export const deleteScheduleThunk = (scheduleId, refresh) => {
   return async dispatch => {
+    if (STORE_MOCK_ENABLED) {
+      const date = refresh?.date;
+      if (date) dispatch(setScheduleList(getStoreMockScheduleList(date)));
+      if (refresh?.year && refresh?.month) {
+        dispatch(
+          setScheduleCountPerDay(
+            getStoreMockScheduleCountPerDay(refresh.year, refresh.month),
+          ),
+        );
+      }
+      return {ok: true, mock: true};
+    }
     // ✅ 게스트 모드 분기: 서버 삭제 금지, 대신 리스트에서 제거한 것처럼 보이기
     const isGuest = await getGuestMode().catch(() => false);
     if (isGuest) {
@@ -469,6 +534,9 @@ export const deleteScheduleThunk = (scheduleId, refresh) => {
 export const getScheduleCountPerDayThunk = createAsyncThunk(
   'schedule/getCountPerDay',
   async ({familyId, year, month}, thunkAPI) => {
+    if (STORE_MOCK_ENABLED) {
+      return getStoreMockScheduleCountPerDay(year, month);
+    }
     // ✅ 게스트 모드면 더미 리턴
     const isGuest = await getGuestMode().catch(() => false);
     if (isGuest) {
