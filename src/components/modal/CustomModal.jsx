@@ -72,6 +72,9 @@ export default function CustomModal({
 
   /** ✅ 모달 래퍼(중앙 정렬된 박스)에 적용 - 가이드 모달 등 하단 여백용 */
   modalWrapperStyle,
+
+  /** ✅ false면 DropShadow 대신 View 사용 (가이드 모달 등 성능 이슈 시) */
+  useShadow = true,
 }) {
   const fontMode = useSelector(state => state.ui.fontMode);
 
@@ -259,6 +262,7 @@ export default function CustomModal({
         <Animated.View
           style={[modalStyle, modalWrapperStyle]}
           pointerEvents="box-none">
+          {useShadow ? (
           <DropShadow style={styles.shadow}>
             <View style={[styles.modalBox, modalBoxStyle]} pointerEvents="auto">
               {showCloseButton && (
@@ -328,6 +332,75 @@ export default function CustomModal({
               </View>
             </View>
           </DropShadow>
+          ) : (
+            <View style={[styles.modalBox, modalBoxStyle]} pointerEvents="auto">
+              {showCloseButton && (
+                <TouchableOpacity
+                  onPress={requestClose}
+                  style={styles.closeIconBtn}
+                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+                  activeOpacity={0.85}>
+                  <Image
+                    source={require('@/assets/modal/closeX.png')}
+                    style={styles.closeIcon}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
+              )}
+
+              {!!titleImage && (
+                <Image
+                  source={titleImage}
+                  style={[styles.titleImage, titleImageStyle]}
+                  resizeMode="contain"
+                />
+              )}
+
+              {!!title && (
+                <Text style={styles.title} allowFontScaling={false}>
+                  {title}
+                </Text>
+              )}
+
+              {renderSubText('title')}
+
+              {!!children && (
+                <View style={[styles.content, contentStyle]} pointerEvents="auto">
+                  {children}
+                </View>
+              )}
+
+              {renderSubText('content')}
+
+              <View style={[styles.buttonRow, buttonBottomStyle]}>
+                {!!closeText && (
+                  <TouchableOpacity
+                    onPress={handleLeftPress}
+                    style={[styles.leftBtn, closeButtonStyle]}
+                    activeOpacity={0.9}>
+                    <Text
+                      style={[styles.leftText, closeTextStyle]}
+                      allowFontScaling={false}>
+                      {closeText}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {!!onConfirm && (
+                  <TouchableOpacity
+                    onPress={handleRightPress}
+                    style={[styles.rightBtn, confirmButtonStyle]}
+                    activeOpacity={0.9}>
+                    <Text
+                      style={[styles.rightText, confirmTextStyle]}
+                      allowFontScaling={false}>
+                      {confirmText}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          )}
         </Animated.View>
 
         {!!overlayChildren && (

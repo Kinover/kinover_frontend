@@ -42,9 +42,9 @@ export default function ReceiveKinoChat({
   kinoType = 'YELLOW_KINO',
 }) {
   const KINO_PROFILE_MAP = {
-    YELLOW_KINO: require('../../../assets/images/kino-yellow.png'),
-    BLUE_KINO: require('../../../assets/images/kino-blue.png'),
-    PINK_KINO: require('../../../assets/images/kino-pink.png'),
+    YELLOW_KINO: require('../../../assets/kinos/yellowKino.png'),
+    BLUE_KINO: require('../../../assets/kinos/blueKino.png'),
+    PINK_KINO: require('../../../assets/kinos/pinkKino.png'),
   };
 
   // ✅ 말풍선 색상 팔레트 (kinoType별)

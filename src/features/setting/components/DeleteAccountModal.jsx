@@ -1,6 +1,12 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, {useState, useCallback, useMemo} from 'react';
-import {StyleSheet, TextInput, Platform} from 'react-native';
+import {
+  StyleSheet,
+  TextInput,
+  Platform,
+  View,
+  Text,
+} from 'react-native';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
@@ -59,7 +65,7 @@ export default function DeleteAccountModal({visible, onClose}) {
         onConfirm={handleConfirm}
         closeOnBackdropPress
         closeText="취소"
-        confirmText={step === 1 ? '탈퇴하기' : '확인'}
+        confirmText={step === 1 ? '탈퇴하기' : '탈퇴하기'}
         closeButtonStyle={styles.cancelBtn}
         confirmButtonStyle={[
           styles.dangerBtn,
@@ -71,7 +77,7 @@ export default function DeleteAccountModal({visible, onClose}) {
         title={
           step === 1
             ? '탈퇴할까요?'
-            : `탈퇴하시려면 아래에\n‘${REQUIRED_TEXT}’를 입력해주세요`
+            : '탈퇴 확인'
         }
         titleImage={
           step === 1
@@ -79,20 +85,44 @@ export default function DeleteAccountModal({visible, onClose}) {
             : undefined
         }
         subText={
-          step === 1 ? '가족과의 모든 연결과 기록이 함께 사라집니다.' : null
+          step === 1
+            ? '가족과의 모든 연결과 기록이 함께 사라집니다.'
+            : '아래 문구를 정확히 입력하면 탈퇴가 진행됩니다.'
         }>
         {step === 2 && (
-          <TextInput
-            allowFontScaling={false}
-            autoFocus
-            placeholder={REQUIRED_TEXT}
-            placeholderTextColor="#C7C7C7"
-            value={confirmationText}
-            onChangeText={setConfirmationText}
-            style={styles.input}
-            returnKeyType="done"
-            onSubmitEditing={handleConfirm}
-          />
+          <View style={styles.step2Content}>
+            <View style={styles.requiredTextBox}>
+              <Text allowFontScaling={false} style={styles.requiredTextLabel}>
+                입력할 문구
+              </Text>
+              <Text allowFontScaling={false} style={styles.requiredText}>
+                {REQUIRED_TEXT}
+              </Text>
+            </View>
+            <Text allowFontScaling={false} style={styles.inputLabel}>
+              입력
+            </Text>
+            <TextInput
+              allowFontScaling={false}
+              autoFocus
+              placeholder={`"${REQUIRED_TEXT}" 입력`}
+              placeholderTextColor="#9CA3AF"
+              value={confirmationText}
+              onChangeText={setConfirmationText}
+              style={[
+                styles.input,
+                confirmationText.length > 0 && !isMatch && styles.inputError,
+                isMatch && styles.inputSuccess,
+              ]}
+              returnKeyType="done"
+              onSubmitEditing={handleConfirm}
+            />
+            {confirmationText.length > 0 && !isMatch && (
+              <Text allowFontScaling={false} style={styles.helperText}>
+                문구가 일치하지 않아요. 위와 똑같이 입력해주세요.
+              </Text>
+            )}
+          </View>
         )}
       </CustomModal>
 
@@ -141,21 +171,66 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
 
+  step2Content: {
+    marginTop: getResponsiveHeight(4),
+    marginBottom: getResponsiveHeight(4),
+  },
+  requiredTextBox: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: getResponsiveWidth(10),
+    paddingVertical: getResponsiveHeight(12),
+    paddingHorizontal: getResponsiveWidth(14),
+    marginBottom: getResponsiveHeight(14),
+  },
+  requiredTextLabel: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(12),
+    color: '#6B7280',
+    marginBottom: getResponsiveHeight(6),
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+  requiredText: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(16),
+    color: '#111827',
+    letterSpacing: 0.3,
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+  inputLabel: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(13),
+    color: '#374151',
+    marginBottom: getResponsiveHeight(6),
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
   input: {
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: '#E5E7EB',
     borderRadius: getResponsiveWidth(10),
     paddingVertical:
       Platform.OS === 'android'
-        ? getResponsiveHeight(10)
-        : getResponsiveHeight(12),
-    paddingHorizontal: getResponsiveWidth(12),
+        ? getResponsiveHeight(12)
+        : getResponsiveHeight(14),
+    paddingHorizontal: getResponsiveWidth(14),
     fontSize: getResponsiveFontSize(16),
     fontFamily: 'Pretendard-Regular',
     color: '#111827',
     backgroundColor: '#FFFFFF',
-    marginTop: getResponsiveHeight(8),
-    marginBottom: getResponsiveHeight(4),
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+  inputError: {
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FEF2F2',
+  },
+  inputSuccess: {
+    borderColor: '#86EFAC',
+    backgroundColor: '#F0FDF4',
+  },
+  helperText: {
+    fontFamily: 'Pretendard-Regular',
+    fontSize: getResponsiveFontSize(12),
+    color: '#DC2626',
+    marginTop: getResponsiveHeight(6),
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
 });

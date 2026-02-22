@@ -28,47 +28,10 @@ import {
 } from '../store/chatRoomSlice';
 
 import {selectRoomMeta} from '../store/messageSlice';
-import useGuide from 'hooks/useGuide';
 import {fetchChatRoomUsersThunk} from '../store/chatRoomThunk';
-import ChatRoomGuideModal from '../components/ChatRoomGuideModal';
-import KinoChatRoomGuideModal from '../components/KinoChatRoomGuideModal';
 
 import ToastModal from 'components/modal/ToastModal';
 
-const CHAT_GUIDE_STEPS = [
-  {
-    title: '대화 나누기',
-    description:
-      '메세지로 가볍게 안부를 묻거나 사진으로 하루의 순간들을 나누며 가족과 소통해보세요.',
-  },
-  {
-    title: '채팅방 이름 꾸미기',
-    description:
-      '설정창에서 채팅방 이름을 바꿔 가족만의 분위기를 만들어보세요.',
-  },
-  {
-    title: '대화 멤버 관리',
-    description: '필요할 때 설정창에서 가족을 채팅방에 추가할 수 있어요.',
-  },
-];
-
-const KINO_CHAT_GUIDE_STEPS = [
-  {
-    title: '키노와 고민을 나눠요',
-    description:
-      '지금 느끼는 감정이나 고민을 키노에게 가볍게 털어놓아보세요. 가족에게 건네면 좋을 말들도 함께 생각해줘요.',
-  },
-  {
-    title: '키노 성격 선택하기',
-    description:
-      '설정창에서 “키노 선택하기”를 누르면 3가지 성격 유형 중 원하는 키노를 선택해 대화를 이어갈 수 있어요.',
-  },
-  {
-    title: '가볍게, 자주 이야기하기',
-    description:
-      '거창한 얘기가 아니어도 괜찮아요. 오늘 있었던 일들을 짧게 남겨두는 것도 충분히 의미 있어요.',
-  },
-];
 
 // ✅ LocalDateTime 문자열 생성 (Z 없음)
 function pad2(n) {
@@ -102,7 +65,6 @@ export default function ChatRoomScreenTemplate({
 }) {
   const dispatch = useDispatch();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [guideStep, setGuideStep] = useState(0);
 
   const chatRoomId = chatRoom?.chatRoomId;
 
@@ -303,43 +265,12 @@ export default function ChatRoomScreenTemplate({
     }
   }, [messageList.length, isUserScrolling, scrollToBottom]);
 
-  const guideSteps = isKino ? KINO_CHAT_GUIDE_STEPS : CHAT_GUIDE_STEPS;
-  const guideStorageKey = isKino
-    ? '@kinover/guide/kino_chat_room_v1_shown'
-    : '@kinover/guide/chat_room_v1_shown';
-  const guide = useGuide(guideStorageKey, !!chatRoomId);
-
-  useEffect(() => {
-    if (guide.visible) setGuideStep(0);
-  }, [guide.visible]);
-
   // =========================================================
   // ✅ 핵심 변경: iOS만 KeyboardAvoidingView 사용
   // - Android는 시스템(adjustResize)에게 맡기고, RN이 padding으로 또 밀지 않게 함
   // =========================================================
-  const guideStepData = guideSteps[guideStep] || guideSteps[0];
-  const ChatRoomGuideComponent = isKino ? KinoChatRoomGuideModal : ChatRoomGuideModal;
-
   const content = (
     <View style={{flex: 1}}>
-      {guideSteps.length > 0 && (
-        <ChatRoomGuideComponent
-          visible={guide.visible}
-          step={guideStep}
-          totalSteps={guideSteps.length}
-          title={guideStepData?.title ?? ''}
-          description={guideStepData?.description ?? ''}
-          onNext={() => {
-            if (guideStep < guideSteps.length - 1) {
-              setGuideStep(s => s + 1);
-            } else {
-              guide.closeAndRemember();
-            }
-          }}
-          onSkip={guide.closeAndRemember}
-        />
-      )}
-
       <MessageFlatList
         flatListRef={flatListRef}
         messageList={messageList}

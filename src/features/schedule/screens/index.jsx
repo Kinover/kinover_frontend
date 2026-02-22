@@ -45,6 +45,7 @@ import ScheduleGuideModal from '../components/ScheduleGuideModal';
 import {
   STORE_MOCK_ENABLED,
   getStoreMockFamilyUserListForSchedule,
+  getStoreMockUser,
 } from '../../home/utils/storeMockData';
 
 const toId = v => {
@@ -76,7 +77,10 @@ export default function ScheduleScreen() {
   const familyUserList = STORE_MOCK_ENABLED
     ? getStoreMockFamilyUserListForSchedule()
     : reduxFamilyUserList;
-  const currentUserId = useSelector(state => state.user.userId);
+  const reduxUserId = useSelector(state => state.user.userId);
+  const currentUserId = STORE_MOCK_ENABLED
+    ? getStoreMockUser()?.userId ?? reduxUserId
+    : reduxUserId;
 
   const [calendarMode, setCalendarMode] = useState('month');
 
@@ -384,6 +388,7 @@ export default function ScheduleScreen() {
           birthdayNames={birthdayNamesForSelectedDate}
           familyId={familyId}
           familyUserList={familyUserList}
+          currentUserId={currentUserId}
         />
       </ScrollView>
 
