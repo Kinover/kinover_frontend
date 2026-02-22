@@ -1,5 +1,12 @@
 import React, {useMemo, useState, useCallback, useRef} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, Animated} from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+  Image,
+} from 'react-native';
 
 import {
   getResponsiveFontSize,
@@ -33,6 +40,81 @@ const TYPE = {
   FAMILY: 'FAMILY',
   ANNIVERSARY: 'ANNIVERSARY',
 };
+
+const AVATAR_SIZE = getResponsiveWidth(36);
+const AVATAR_OVERLAP = getResponsiveWidth(-10);
+const MAX_VISIBLE_AVATARS = 2; // 3명 이상부터 +1, +2… 로 표시
+
+/** 겹쳐진 아바타: 왼쪽부터 1번째, 2번째… 순서로 겹치고, 3명 이상이면 +N을 오른쪽에 */
+function StackedAvatar({participants = [], size = AVATAR_SIZE}) {
+  const list =
+    participants.length > 0 ? participants : [{id: '_', name: '가족', imageUri: null}];
+  const visible = list.slice(0, MAX_VISIBLE_AVATARS);
+  const rest = list.length - MAX_VISIBLE_AVATARS;
+
+  return (
+    <View style={styles.stackedAvatarWrap}>
+      {visible.map((p, i) => (
+        <View
+          key={p.id || i}
+          style={[
+            styles.stackedAvatarCircle,
+            {
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              marginLeft: i === 0 ? 0 : AVATAR_OVERLAP,
+              borderWidth: 1.5,
+              borderColor: '#FFFFFF',
+              zIndex: visible.length - i,
+            },
+          ]}>
+          {p.imageUri ? (
+            <Image
+              source={{uri: String(p.imageUri)}}
+              style={[
+                styles.stackedAvatarImage,
+                {width: size, height: size, borderRadius: size / 2},
+              ]}
+              resizeMode="cover"
+            />
+          ) : (
+            <View
+              style={[
+                styles.stackedAvatarFallback,
+                {width: size, height: size, borderRadius: size / 2},
+              ]}>
+              <Text
+                allowFontScaling={false}
+                style={[styles.stackedAvatarInitial, {fontSize: size * 0.4}]}>
+                {String(p.name || '가족').slice(0, 1)}
+              </Text>
+            </View>
+          )}
+        </View>
+      ))}
+      {rest > 0 && (
+        <View
+          style={[
+            styles.stackedAvatarPlus,
+            {
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              marginLeft: AVATAR_OVERLAP,
+              zIndex: 0,
+            },
+          ]}>
+          <Text
+            allowFontScaling={false}
+            style={[styles.stackedAvatarPlusText, {fontSize: size * 0.35}]}>
+            +{rest}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
 
 /* =========================================================
  * 카드 컴포넌트: 눌렀을 때 살짝 작아지는 효과
@@ -81,6 +163,7 @@ function Schedule({
   birthdayNames = [],
   familyId: familyIdProp,
   familyUserList = [],
+  currentUserId,
 }) {
   const hookResult =
     useScheduleListByDate(selectedDate, refreshTrigger, familyIdProp) || {};
@@ -170,46 +253,108 @@ function Schedule({
       };
     }
 
-    // 개별 일정: 해당 일정 수행 유저 이름의 앞글자만 원 안에 표시
-    const names = Array.isArray(item?.participantNames)
-      ? item.participantNames.filter(Boolean)
-      : [];
-    let performerName = names.length >= 1 ? names[0] : (item?.userName ?? null);
-    if (
-      !performerName &&
-      Array.isArray(item?.participantIds) &&
-      item.participantIds.length > 0 &&
-      familyUserList?.length
-    ) {
-      const firstId = item.participantIds[0];
-      const user = familyUserList.find(
-        u =>
-          String(u?.userId) === String(firstId) ||
-          String(u?.id) === String(firstId),
-      );
-      performerName = user?.name ?? user?.nickname ?? null;
-    }
-    const initial = String(performerName || '가족').slice(0, 1);
-
     return {
       type: TYPE.INDIVIDUAL,
       pillText: '개별',
-      icon: initial,
+      icon: '',
       iconBg: COLOR.GRAY_BG,
       pillBg: COLOR.GRAY_PILL,
       pillTextColor: COLOR.GRAY_TEXT,
     };
   };
 
-  const getMemberLabel = useCallback(item => {
-    const names = Array.isArray(item?.participantNames)
-      ? item.participantNames.filter(Boolean)
-      : [];
+  /** 개별 일정 참여자 목록 (프로필 사진·이름). 앱 사용자가 있으면 맨 앞에 배치 */
+  const getIndividualParticipants = useCallback(
+    item => {
+      const ids = Array.isArray(item?.participantIds)
+        ? item.participantIds
+        : item?.userId != null
+          ? [item.userId]
+          : [];
+      const names = Array.isArray(item?.participantNames)
+        ? item.participantNames.filter(Boolean)
+        : [];
+      const list = [];
+      ids.forEach((id, i) => {
+        const user = familyUserList?.find(
+          u =>
+            String(u?.userId) === String(id) || String(u?.id) === String(id),
+        );
+        const name =
+          user?.name ?? user?.nickname ?? names[i] ?? item?.userName ?? '가족';
+        const imageUri =
+          user?.image ?? user?.profileImage ?? user?.profileImageUrl ?? null;
+        list.push({id: String(id), name, imageUri});
+      });
+      if (list.length === 0 && (item?.userName || names[0])) {
+        list.push({
+          id: 'single',
+          name: item?.userName || names[0],
+          imageUri: null,
+        });
+      }
+      const me =
+        currentUserId != null && currentUserId !== ''
+          ? String(currentUserId)
+          : null;
+      if (me && list.length >= 1) {
+        const meIndex = list.findIndex(
+          p => String(p.id) === String(me) || p.id === currentUserId,
+        );
+        if (meIndex > 0) {
+          const [meItem] = list.splice(meIndex, 1);
+          list.unshift(meItem);
+        }
+      }
+      return list;
+    },
+    [familyUserList, currentUserId],
+  );
 
-    if (names.length === 1) return names[0];
-    if (names.length > 1) return `${names[0]} 외 ${names.length - 1}명`;
-    return item?.userName || '가족';
-  }, []);
+  const getMemberLabel = useCallback(
+    item => {
+      const totalFamilyCount = familyUserList?.length ?? 0;
+      const names = Array.isArray(item?.participantNames)
+        ? item.participantNames.filter(Boolean)
+        : [];
+
+      if (names.length === 1) return names[0];
+      if (names.length > 1) {
+        if (totalFamilyCount > 0 && names.length >= totalFamilyCount)
+          return '가족';
+        if (names.length === 2) return `${names[0]}, ${names[1]}`;
+        return `${names[0]} 외 ${names.length - 1}명`;
+      }
+      if (item?.userName) return item.userName;
+
+      const ids = Array.isArray(item?.participantIds)
+        ? item.participantIds
+        : item?.userId != null
+          ? [item.userId]
+          : [];
+      if (ids.length > 0 && familyUserList?.length) {
+        const resolved = ids
+          .map(id => {
+            const u = familyUserList.find(
+              x =>
+                String(x?.userId) === String(id) ||
+                String(x?.id) === String(id),
+            );
+            return u?.name ?? u?.nickname ?? null;
+          })
+          .filter(Boolean);
+        if (resolved.length === 1) return resolved[0];
+        if (resolved.length > 1) {
+          if (ids.length >= totalFamilyCount) return '가족';
+          if (resolved.length === 2) return `${resolved[0]}, ${resolved[1]}`;
+          return `${resolved[0]} 외 ${resolved.length - 1}명`;
+        }
+      }
+
+      return '가족';
+    },
+    [familyUserList],
+  );
 
   const mergedForRender = useMemo(() => {
     return [...anniversary, ...family, ...individual];
@@ -241,7 +386,7 @@ function Schedule({
 
                 <View style={styles.texts}>
                   <Text allowFontScaling={false} style={styles.subtitle}>
-                    오늘
+                    {displayNames}
                   </Text>
                   <Text
                     allowFontScaling={false}
@@ -291,15 +436,23 @@ function Schedule({
                 }>
                 <View style={styles.cardHeaderRow}>
                   <View style={styles.cardLeft}>
-                    <View
-                      style={[
-                        styles.iconCircle,
-                        {backgroundColor: preset.iconBg},
-                      ]}>
-                      <Text allowFontScaling={false} style={styles.iconText}>
-                        {preset.icon}
-                      </Text>
-                    </View>
+                    {preset.type === TYPE.ANNIVERSARY ? (
+                      <View
+                        style={[
+                          styles.iconCircle,
+                          {backgroundColor: preset.iconBg},
+                        ]}>
+                        <Text
+                          allowFontScaling={false}
+                          style={styles.iconText}>
+                          {preset.icon}
+                        </Text>
+                      </View>
+                    ) : (
+                      <StackedAvatar
+                        participants={getIndividualParticipants(item)}
+                      />
+                    )}
 
                     <View style={styles.texts}>
                       <Text allowFontScaling={false} style={styles.subtitle}>
@@ -395,6 +548,35 @@ const styles = StyleSheet.create({
     gap: getResponsiveWidth(10),
     flex: 1,
     minWidth: 0,
+  },
+  stackedAvatarWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stackedAvatarCircle: {
+    overflow: 'hidden',
+    backgroundColor: COLOR.GRAY_BG,
+  },
+  stackedAvatarImage: {
+    backgroundColor: '#f3f4f6',
+  },
+  stackedAvatarFallback: {
+    backgroundColor: COLOR.GRAY_BG,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stackedAvatarInitial: {
+    fontFamily: 'Pretendard-SemiBold',
+    color: COLOR.GRAY_TEXT,
+  },
+  stackedAvatarPlus: {
+    backgroundColor: COLOR.GRAY_BG,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stackedAvatarPlusText: {
+    fontFamily: 'Pretendard-SemiBold',
+    color: COLOR.GRAY_TEXT,
   },
   iconCircle: {
     width: getResponsiveWidth(36),

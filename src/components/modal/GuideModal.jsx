@@ -1,24 +1,42 @@
 // src/components/GuideModalCarousel.jsx
-import React, {useCallback, useMemo, useRef, useState, useEffect} from 'react';
-import {View, Text, StyleSheet, Animated} from 'react-native';
-import CustomModal from './CustomModal';
+// 채팅방 가이드 모달(ChatRoomGuideModal)과 동일한 스타일 적용
+import React, {useCallback, useMemo, useState, useEffect} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Modal,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+} from 'react-native';
 import {getResponsiveHeight, getResponsiveWidth, getResponsiveFontSize} from 'utils/responsive';
 import {COLORS} from 'styles/style';
 
-/**
- * ✅ Wrapper: 여기서는 Hook을 쓰지 않음
- * - visible=false면 아예 언마운트(return null)
- * - visible=true일 때만 Inner를 렌더 (Inner에서 Hook 사용)
- */
-export default function GuideModalCarousel(props) {
-  const {visible} = props;
-  if (!visible) return null; // ✅ 여기서는 Hook이 없으니 안전
-  return <GuideModalCarouselInner {...props} />;
+/** description 안의 **텍스트** 를 굵게 파싱해서 반환 [{ type: 'text'|'bold', value }] */
+function parseDescription(desc) {
+  if (!desc || typeof desc !== 'string') return [];
+  const parts = [];
+  let lastEnd = 0;
+  const re = /\*\*([^*]+)\*\*/g;
+  let m;
+  while ((m = re.exec(desc)) !== null) {
+    if (m.index > lastEnd) parts.push({ type: 'text', value: desc.slice(lastEnd, m.index) });
+    parts.push({ type: 'bold', value: m[1] });
+    lastEnd = re.lastIndex;
+  }
+  if (lastEnd < desc.length) parts.push({ type: 'text', value: desc.slice(lastEnd) });
+  return parts;
 }
 
 /**
- * ✅ Inner: Hook은 항상 동일한 순서로만 실행됨
+ * ✅ Wrapper: visible=false면 언마운트
  */
+export default function GuideModalCarousel(props) {
+  const {visible} = props;
+  if (!visible) return null;
+  return <GuideModalCarouselInner {...props} />;
+}
+
 function GuideModalCarouselInner({
   visible: _visible,
   steps = [],
@@ -29,193 +47,157 @@ function GuideModalCarouselInner({
   nextText = '다음',
   doneText = '확인',
 }) {
-  const flatRef = useRef(null);
   const [index, setIndex] = useState(0);
-  const [pageWidth, setPageWidth] = useState(0);
-
   const total = steps.length || 1;
   const isFirst = index === 0;
   const isLast = index === total - 1;
 
-  // ✅ 컴포넌트 mount 시점(visible이 true일 때만 mount됨) 초기화
   useEffect(() => {
     setIndex(0);
-    setPageWidth(0);
-
-    requestAnimationFrame(() => {
-      flatRef.current?.scrollToOffset?.({offset: 0, animated: false});
-    });
   }, []);
 
-  const title = useMemo(
-    () => titleFixed || steps[index]?.title || '',
-    [titleFixed, steps, index],
+  const step = steps[index] || {};
+  const title = titleFixed || step.title || '';
+  const caption = step.subtitle ?? step.caption ?? '';
+  const descParts = useMemo(
+    () => (step.description ? parseDescription(step.description) : []),
+    [step.description],
   );
 
-  const goTo = useCallback(
-    i => {
-      const next = Math.max(0, Math.min(i, total - 1));
-      setIndex(next);
+  const handleNext = useCallback(() => {
+    if (isLast) {
+      onDone?.();
+    } else {
+      setIndex(i => Math.min(i + 1, total - 1));
+    }
+  }, [isLast, onDone, total]);
 
-      if (!pageWidth) return;
-      flatRef.current?.scrollToOffset?.({
-        offset: next * pageWidth,
-        animated: true,
-      });
-    },
-    [pageWidth, total],
-  );
+  const handleSkip = useCallback(() => {
+    onRequestClose?.();
+  }, [onRequestClose]);
 
-  const subtitle = useMemo(() => {
-    const step = steps[index] || {};
-    return step.subtitle || step.caption || '';
-  }, [steps, index]);
+  if (total === 0) return null;
 
   return (
-    <CustomModal
-      visible={true}
-      title={title}
-      onRequestClose={onRequestClose}
-      onClose={isFirst ? onRequestClose : () => goTo(index - 1)}
-      closeText={isFirst ? '건너뛰기' : prevText}
-      onConfirm={() => (isLast ? onDone?.() : goTo(index + 1))}
-      confirmText={isLast ? doneText : nextText}
-      showCloseButton={false}
-      closeButtonStyle={styles.chatSkipBtn}
-      confirmButtonStyle={styles.chatNextBtn}
-      closeTextStyle={styles.chatSkipText}
-      confirmTextStyle={styles.chatNextText}
-      buttonBottomStyle={styles.chatButtonRow}
-      modalWrapperStyle={styles.guideModalWrapper}>
-      <View
-        style={styles.body}
-        onLayout={e => {
-          const w = e?.nativeEvent?.layout?.width ?? 0;
-          if (!w) return;
+    <Modal transparent visible={true} animationType="fade" onRequestClose={handleSkip}>
+      <TouchableWithoutFeedback onPress={handleSkip}>
+        <View style={styles.overlay}>
+          <TouchableWithoutFeedback onPress={() => {}}>
+            <View style={styles.content}>
+              {total > 1 && (
+                <Text allowFontScaling={false} style={styles.stepText}>
+                  {index + 1}/{total}
+                </Text>
+              )}
 
-          setPageWidth(prev => (prev === w ? prev : w));
-
-          requestAnimationFrame(() => {
-            flatRef.current?.scrollToOffset?.({
-              offset: index * w,
-              animated: false,
-            });
-          });
-        }}>
-        <View style={styles.stepBadge}>
-          <Text allowFontScaling={false} style={styles.stepBadgeText}>
-            {index + 1} / {total}
-          </Text>
-        </View>
-
-        <Animated.FlatList
-          ref={flatRef}
-          data={steps}
-          keyExtractor={(_, i) => String(i)}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onMomentumScrollEnd={e => {
-            if (!pageWidth) return;
-            const i = Math.round(e.nativeEvent.contentOffset.x / pageWidth);
-            setIndex(i);
-          }}
-          renderItem={({item}) => (
-            <View style={[styles.page, {width: pageWidth || '100%'}]}>
-              <View style={styles.card}>
-                {!!subtitle && (
-                  <Text allowFontScaling={false} style={styles.caption}>
-                    {subtitle}
-                  </Text>
-                )}
-
-                {!!item.description && (
-                  <Text allowFontScaling={false} style={styles.desc}>
-                    {item.description}
-                  </Text>
-                )}
-
-                {!!item.hint && (
-                  <View style={styles.hintRow}>
-                    <View style={styles.hintTag}>
-                      <Text allowFontScaling={false} style={styles.hintTagText}>
-                        TIP
+              {!!title && (
+                <Text allowFontScaling={false} style={styles.title}>
+                  {title}
+                </Text>
+              )}
+              {!!caption && (
+                <Text allowFontScaling={false} style={styles.caption}>
+                  {caption}
+                </Text>
+              )}
+              {descParts.length > 0 && (
+                <Text allowFontScaling={false} style={styles.description}>
+                  {descParts.map((part, i) =>
+                    part.type === 'bold' ? (
+                      <Text
+                        key={i}
+                        allowFontScaling={false}
+                        style={[styles.description, styles.descriptionBold]}>
+                        {part.value}
                       </Text>
-                    </View>
-                    <Text allowFontScaling={false} style={styles.hintText}>
-                      {item.hint}
+                    ) : (
+                      part.value
+                    ),
+                  )}
+                </Text>
+              )}
+              {!!step.hint && (
+                <View style={styles.hintRow}>
+                  <View style={styles.hintTag}>
+                    <Text allowFontScaling={false} style={styles.hintTagText}>
+                      TIP
                     </Text>
                   </View>
-                )}
+                  <Text allowFontScaling={false} style={styles.hintText}>
+                    {step.hint}
+                  </Text>
+                </View>
+              )}
+
+              <View style={styles.buttonRow}>
+                <TouchableOpacity onPress={handleSkip}>
+                  <Text allowFontScaling={false} style={styles.skipText}>
+                    건너뛰기
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+                  <Text allowFontScaling={false} style={styles.nextButtonText}>
+                    {isLast ? doneText : nextText}
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
-          )}
-        />
-      </View>
-    </CustomModal>
+          </TouchableWithoutFeedback>
+        </View>
+      </TouchableWithoutFeedback>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  /** 하단 네비/가족 추가하기 바와 겹치지 않도록 모달을 위로 띄움 */
-  guideModalWrapper: {
-    marginBottom: getResponsiveHeight(100),
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    paddingHorizontal: getResponsiveWidth(20),
+    paddingBottom: getResponsiveHeight(26),
+    justifyContent: 'center',
   },
-  body: {
-    alignItems: 'center',
-    width: '100%',
+  content: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    paddingHorizontal: getResponsiveWidth(18),
+    paddingVertical: getResponsiveHeight(18),
   },
-
-  stepBadge: {
-    alignSelf: 'center',
-    paddingHorizontal: getResponsiveWidth(12),
-    paddingVertical: getResponsiveHeight(6),
-    borderRadius: 999,
-    backgroundColor: 'rgba(17,24,39,0.06)',
-    marginBottom: getResponsiveHeight(12),
-  },
-  stepBadgeText: {
-    fontSize: getResponsiveFontSize(12),
+  stepText: {
+    fontSize: getResponsiveFontSize(11),
     fontFamily: 'Pretendard-Medium',
     color: COLORS.textTertiary,
+    marginBottom: getResponsiveHeight(4),
   },
-
-  page: {
-    alignItems: 'center',
-    width: '100%',
+  title: {
+    fontSize: getResponsiveFontSize(17),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#111827',
+    marginBottom: getResponsiveHeight(6),
   },
-
-  card: {
-    width: '100%',
-    backgroundColor: '#FAFAFA',
-    borderRadius: 16,
-    paddingHorizontal: getResponsiveWidth(20),
-    paddingVertical: getResponsiveHeight(20),
-    minHeight: getResponsiveHeight(120),
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.04)',
-  },
-
   caption: {
     fontSize: getResponsiveFontSize(11),
     fontFamily: 'Pretendard-Medium',
     color: COLORS.textTertiary,
-    marginBottom: getResponsiveHeight(6),
+    marginBottom: getResponsiveHeight(4),
   },
-
-  desc: {
-    fontSize: getResponsiveFontSize(14),
+  description: {
+    fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-Regular',
-    color: '#374151',
-    lineHeight: getResponsiveHeight(22),
-    textAlign: 'left',
+    color: '#4B5563',
+    lineHeight: getResponsiveHeight(20),
+    marginBottom: getResponsiveHeight(14),
+    textAlign: 'center',
   },
-
+  descriptionBold: {
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#111827',
+  },
   hintRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: getResponsiveHeight(14),
+    marginBottom: getResponsiveHeight(14),
   },
   hintTag: {
     paddingHorizontal: getResponsiveWidth(8),
@@ -236,40 +218,25 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     lineHeight: getResponsiveHeight(20),
   },
-
-  chatButtonRow: {
+  buttonRow: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: getResponsiveHeight(20),
-    paddingBottom: getResponsiveHeight(2),
   },
-  chatSkipBtn: {
-    flex: 0,
-    minWidth: undefined,
-    height: undefined,
-    paddingVertical: getResponsiveHeight(8),
-    paddingHorizontal: 0,
-    backgroundColor: 'transparent',
-    borderWidth: 0,
-  },
-  chatSkipText: {
-    fontFamily: 'Pretendard-Regular',
+  skipText: {
     fontSize: getResponsiveFontSize(13),
+    fontFamily: 'Pretendard-Regular',
     color: COLORS.textTertiary,
   },
-  chatNextBtn: {
-    flex: 0,
-    minWidth: undefined,
-    height: undefined,
+  nextButton: {
     paddingHorizontal: getResponsiveWidth(16),
     paddingVertical: getResponsiveHeight(8),
     borderRadius: 999,
     backgroundColor: '#FFC84D',
-    borderWidth: 0,
   },
-  chatNextText: {
-    fontFamily: 'Pretendard-Medium',
+  nextButtonText: {
     fontSize: getResponsiveFontSize(13.5),
+    fontFamily: 'Pretendard-Medium',
     color: '#111827',
   },
 });

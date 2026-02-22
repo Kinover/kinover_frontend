@@ -40,6 +40,8 @@ export default function FamilySetupScreen() {
     setToastVisible(true);
   }, []);
 
+  const isJoinDisabled = !familyCode.trim();
+
   // ✅ 가족 코드로 기존 가족 참여하기
   const handleSubmit = async () => {
     const trimmed = familyCode.trim();
@@ -150,7 +152,11 @@ export default function FamilySetupScreen() {
         </Text>
       ) : null}
 
-      <BottomActionButton label="참여하기" onPress={handleSubmit} />
+      <BottomActionButton
+        label="참여하기"
+        onPress={handleSubmit}
+        disabled={isJoinDisabled}
+      />
 
       <View style={styles.dividerRow}>
         <View style={styles.divider} />

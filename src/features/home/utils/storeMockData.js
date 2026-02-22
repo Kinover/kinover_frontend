@@ -5,7 +5,7 @@
 
 import {Image} from 'react-native';
 
-export const STORE_MOCK_ENABLED = false;
+export const STORE_MOCK_ENABLED = true;
 
 // 1-엄마 2-아빠 3-둘째 4-첫째(나) 5-셋째
 const getAssetUri = module => Image.resolveAssetSource(module)?.uri ?? null;
@@ -106,100 +106,145 @@ export function getStoreMockFamilyUserListForSchedule() {
 
 const pad2 = n => String(n).padStart(2, '0');
 
-/** 날짜별 일정 더미: 가족만 있는 날, 개인만 있는 날, 둘 다 있는 날, 없는 날 섞어서 */
+/** 날짜별 일정 더미: 가족(전체/일부) + 개별(1명/2명/3명) 다양하게 */
 export function getStoreMockScheduleList(dateYMD) {
   const familyId = 'mock-family';
   const day = dateYMD ? parseInt(String(dateYMD).slice(-2), 10) : 0;
 
-  const familyOnly = [
-    {
-      scheduleId: 80001,
-      id: 80001,
-      familyId,
-      date: dateYMD,
-      title: '가족 외식',
-      type: 'FAMILY',
-      participantIds: [
-        'mock-mom',
-        'mock-dad',
-        'mock-first',
-        'mock-second',
-        'mock-third',
-      ],
-      memo: '',
-      __forcedKind: 'FAMILY',
-    },
+  const [mom, dad, first, second, third] = [
+    'mock-mom',
+    'mock-dad',
+    'mock-first',
+    'mock-second',
+    'mock-third',
   ];
-  const individualOnly = [
-    {
-      scheduleId: 80002,
-      id: 80002,
-      familyId,
-      date: dateYMD,
-      title: '병원 예약',
-      type: 'INDIVIDUAL',
-      participantIds: ['mock-mom'],
-      memo: '',
-      __forcedKind: 'INDIVIDUAL',
-    },
-    {
-      scheduleId: 80003,
-      id: 80003,
-      familyId,
-      date: dateYMD,
-      title: 'PT 수업',
-      type: 'INDIVIDUAL',
-      participantIds: ['mock-dad'],
-      memo: '',
-      __forcedKind: 'INDIVIDUAL',
-    },
-  ];
+  const all = [mom, dad, first, second, third];
 
-  if ([7, 24].includes(day)) return familyOnly;
-  if (day === 26) {
+  const fam = (id, title, participantIds, memo = '') => ({
+    scheduleId: id,
+    id,
+    familyId,
+    date: dateYMD,
+    title,
+    type: 'FAMILY',
+    participantIds: [...participantIds],
+    memo,
+    __forcedKind: 'FAMILY',
+  });
+
+  const ind = (id, title, ...participantIds) => ({
+    scheduleId: id,
+    id,
+    familyId,
+    date: dateYMD,
+    title,
+    type: 'INDIVIDUAL',
+    participantIds: participantIds.length ? participantIds : [first],
+    memo: '',
+    __forcedKind: 'INDIVIDUAL',
+  });
+
+  // 3일: 개별만 - 1명씩 + 2명 같이
+  if (day === 3) {
     return [
-      {
-        scheduleId: 80010,
-        id: 80010,
-        familyId,
-        date: dateYMD,
-        title: '엄마 생신 기념 외식 🍽️',
-        type: 'FAMILY',
-        participantIds: [
-          'mock-mom',
-          'mock-dad',
-          'mock-first',
-          'mock-second',
-          'mock-third',
-        ],
-        memo: '엄마 생신 26일',
-        __forcedKind: 'FAMILY',
-      },
+      ind(80002, '병원 예약', mom),
+      ind(80003, 'PT 수업', dad),
+      ind(80030, '부부 건강검진', mom, dad),
     ];
   }
-  if ([3, 12, 18].includes(day)) return individualOnly;
-  if ([15, 28].includes(day)) return [...familyOnly, ...individualOnly];
+
+  // 7일: 가족 5명 전체
+  if (day === 7) return [fam(80001, '가족 외식', all)];
+
+  // 10일: 개별만 - 1명, 1명, 2명, 3명
+  if (day === 10) {
+    return [
+      ind(80020, '치과 예약', first),
+      ind(80021, '수영 수업', second),
+      ind(80031, '도서관 스터디', first, second),
+      ind(80032, '형제 자매 영화', first, second, third),
+    ];
+  }
+
+  // 12일: 개별만 - 1명, 2명
+  if (day === 12) {
+    return [
+      ind(80004, '건강검진', mom),
+      ind(80005, '스터디 모임', first),
+      ind(80033, '엄마·첫째 쇼핑', mom, first),
+    ];
+  }
+
+  // 15일: 가족(4명) + 개별 1명, 개별 2명
+  if (day === 15) {
+    return [
+      fam(80006, '가족 외식 (아빠 제외)', [mom, first, second, third]),
+      ind(80007, '병원 정기검진', mom),
+      ind(80008, '회의', dad),
+      ind(80034, '첫째·둘째 학원', first, second),
+    ];
+  }
+
+  // 18일: 개별만 - 1명, 2명
+  if (day === 18) {
+    return [
+      ind(80009, '학원', second),
+      ind(80010, '친구 만남', third),
+      ind(80035, '둘째·셋째 놀이공원', second, third),
+    ];
+  }
+
+  // 24일: 가족 5명 + 가족 4명 (다른 일정)
+  if (day === 24) {
+    return [
+      fam(80011, '가족 영화 관람 🎬', all),
+      fam(80012, '맛집 탐방 (셋째 제외)', [mom, dad, first, second]),
+    ];
+  }
+
+  // 26일: 엄마 생신 - 가족 전체
+  if (day === 26) return [fam(80013, '엄마 생신 기념 외식 🍽️', all, '엄마 생신 26일')];
+
+  // 28일: 가족 + 개별 1명, 2명, 3명
+  if (day === 28) {
+    return [
+      fam(80001, '가족 외식', all),
+      ind(80014, '약 복용 체크', mom),
+      ind(80015, '스터디', first),
+      ind(80036, '엄마·아빠 약속', mom, dad),
+      ind(80037, '삼남매 독서 모임', first, second, third),
+    ];
+  }
+
   return [];
 }
 
-/** 달력 날짜별 일정 개수 더미 (가족만 / 개인만 / 둘 다 / 없는 날 구분) */
+/** 달력 날짜별 일정 개수 더미 (가족/개별 개수에 맞게) */
 export function getStoreMockScheduleCountPerDay(year, month) {
   const map = {};
   const m = pad2(month);
-  const familyOnlyDays = [7, 24, 26];
-  const individualOnlyDays = [3, 12, 18];
-  const bothDays = [15, 28];
 
-  [...familyOnlyDays, ...individualOnlyDays, ...bothDays].forEach(day => {
+  const dayCounts = [
+    [3, 0, 3],
+    [7, 1, 0],
+    [10, 0, 4],
+    [12, 0, 3],
+    [15, 1, 4],
+    [18, 0, 3],
+    [24, 2, 0],
+    [26, 1, 0],
+    [28, 1, 5],
+  ];
+
+  dayCounts.forEach(([day, family, individual]) => {
     const key = `${year}-${m}-${pad2(day)}`;
-    if (familyOnlyDays.includes(day)) {
-      map[key] = {total: 1, family: 1};
-    } else if (individualOnlyDays.includes(day)) {
-      map[key] = {total: 2, individual: 2};
-    } else {
-      map[key] = {total: 2, family: 1, individual: 1};
-    }
+    map[key] = {
+      total: family + individual,
+      family: family || 0,
+      individual: individual || 0,
+    };
   });
+
   return map;
 }
 

@@ -15,10 +15,12 @@ export default function BottomActionButton({
   label,
   onPress,
   variant = 'fixed', // 'fixed' | 'scroll'
+  disabled = false,
 }) {
   const insets = useSafeAreaInsets();
 
   const handlePress = () => {
+    if (disabled) return;
     hapticLight();
     onPress?.();
   };
@@ -42,10 +44,13 @@ export default function BottomActionButton({
         isFixed ? {bottom: bottomOffset} : {paddingBottom: insets.bottom},
       ]}>
       <TouchableOpacity
-        style={styles.button}
+        style={[styles.button, disabled && styles.buttonDisabled]}
         onPress={handlePress}
-        activeOpacity={0.85}>
-        <Text allowFontScaling={false} style={styles.buttonText}>
+        activeOpacity={0.85}
+        disabled={disabled}>
+        <Text
+          allowFontScaling={false}
+          style={[styles.buttonText, disabled && styles.buttonTextDisabled]}>
           {label}
         </Text>
       </TouchableOpacity>
@@ -78,11 +83,17 @@ const styles = StyleSheet.create({
     borderRadius: BUTTON_STYLES().border_radius,
     justifyContent: 'center',
   },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
   buttonText: {
     fontSize: BUTTON_STYLES().fontSize,
     lineHeight: getResponsiveHeight(30),
     textAlign: 'center',
     fontFamily: BUTTON_STYLES().fontFamily,
     color: 'white',
+  },
+  buttonTextDisabled: {
+    color: 'rgba(255,255,255,0.9)',
   },
 });
