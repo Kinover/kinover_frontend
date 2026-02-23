@@ -5,6 +5,8 @@ import {getToken} from 'utils/storage';
 import {receiveMessageThunk} from '../store/messageThunk';
 import {applyReadPointer} from '../store/chatRoomSlice';
 
+const BATCH_DEBOUNCE_MS = 80;
+
 let ws = null;
 let reconnectTimer = null;
 let reconnectAttempt = 0;
@@ -13,6 +15,30 @@ let isManuallyClosed = false;
 
 let dispatchRef = null;
 let getStateRef = null;
+
+// ✅ 메시지 배칭: 짧은 시간에 여러 건 들어오면 한 번에 디스패치
+let messageBatch = [];
+let batchTimer = null;
+
+function flushMessageBatch() {
+  if (batchTimer) {
+    clearTimeout(batchTimer);
+    batchTimer = null;
+  }
+  if (messageBatch.length === 0 || !dispatchRef || !getStateRef) return;
+  const state = getStateRef();
+  const myId = state?.user?.userId ?? state?.auth?.userId ?? null;
+  const toFlush = messageBatch;
+  messageBatch = [];
+  toFlush.forEach(data => {
+    dispatchRef(receiveMessageThunk(data, myId));
+  });
+}
+
+function scheduleFlush() {
+  if (batchTimer) return;
+  batchTimer = setTimeout(flushMessageBatch, BATCH_DEBOUNCE_MS);
+}
 
 function clearReconnectTimer() {
   if (reconnectTimer) {
@@ -23,6 +49,11 @@ function clearReconnectTimer() {
 
 function cleanupWsOnly() {
   clearReconnectTimer();
+  if (batchTimer) {
+    clearTimeout(batchTimer);
+    batchTimer = null;
+  }
+  flushMessageBatch();
 
   if (ws) {
     try {
@@ -86,15 +117,13 @@ async function openSocket() {
       }
 
       // =========================
-      // B) 일반 메시지 처리
+      // B) 일반 메시지 처리 (배칭)
       // =========================
       const incomingRoomId = String(data?.chatRoomId ?? '');
       if (!incomingRoomId) return;
 
-      const state = getStateRef ? getStateRef() : null;
-      const myId = state?.user?.userId ?? state?.auth?.userId ?? null;
-
-      dispatchRef(receiveMessageThunk(data, myId));
+      messageBatch.push(data);
+      scheduleFlush();
     } catch (err) {
       console.log('❌ [GLOBAL WS] parse fail', err);
     }

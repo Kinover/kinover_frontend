@@ -8,7 +8,13 @@ import rootReducer from './rootReducer';
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['ui'], // ✅ 글씨 모드 저장할 slice 이름
+  whitelist: ['ui'], // ✅ persist할 slice만 명시
+  // ✅ 보안·실시간·일시 UI는 저장 제외 (나중에 whitelist 확장 시 참고)
+  blacklist: [
+    'login', // 토큰 등 인증 정보
+    'message', // 실시간 채팅 메시지
+    // 필요 시 일시적 UI 상태 slice 추가
+  ],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

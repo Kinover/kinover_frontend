@@ -10,27 +10,8 @@ import {name as appName} from './app.json';
 import App from './src/app/App';
 import {registerBackgroundMessageHandler} from './src/features/notification/utils/requestNotificationPermission';
 
-// ✅ polyfill
-if (!Array.prototype.findLastIndex) {
-  // eslint-disable-next-line no-extend-native
-  Object.defineProperty(Array.prototype, 'findLastIndex', {
-    value: function (predicate, thisArg) {
-      if (this == null) throw new TypeError('"this" is null or not defined');
-      const o = Object(this);
-      const len = o.length >>> 0;
-      if (typeof predicate !== 'function') {
-        throw new TypeError('predicate must be a function');
-      }
-      for (let k = len - 1; k >= 0; k--) {
-        const kValue = o[k];
-        if (predicate.call(thisArg, kValue, k, o)) {
-          return k;
-        }
-      }
-      return -1;
-    },
-  });
-}
+// ✅ 폴리필은 별도 모듈에서 적용 (표준 방식)
+import './src/utils/polyfills';
 
 // ✅ FCM 백그라운드 핸들러 등록 (한 번만)
 registerBackgroundMessageHandler();
