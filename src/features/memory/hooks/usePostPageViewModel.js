@@ -36,16 +36,16 @@ export default function usePostPageViewModel(memory) {
   const [deleteTarget, setDeleteTarget] = useState('');
   const [showDeleteOptions, setShowDeleteOptions] = useState(false);
 
-  // ✅ 댓글 삭제 모달 상태
+ // 댓글 삭제 모달 상태
   const [commentDeleteModalVisible, setCommentDeleteModalVisible] =
     useState(false);
   const [commentToDelete, setCommentToDelete] = useState(null);
 
-  // ✅ 토스트
+ // 토스트
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  // ✅ 멘션 후보용: familyUsers에서 "본인" 제거 + 최소 필드만 정리
+ // 멘션 후보용: familyUsers에서 "본인" 제거 + 최소 필드만 정리
   const familyUsers = useMemo(() => {
     const me = user?.userId;
     const list = Array.isArray(rawFamilyUsers) ? rawFamilyUsers : [];
@@ -60,7 +60,7 @@ export default function usePostPageViewModel(memory) {
       }));
   }, [rawFamilyUsers, user?.userId]);
 
-  // ✅ 로컬 이미지 동기화
+ // 로컬 이미지 동기화
   useEffect(() => {
     setLocalImages(safeImages);
     setCurrentImageIndex(idx => {
@@ -69,22 +69,22 @@ export default function usePostPageViewModel(memory) {
     });
   }, [safeImages]);
 
-  // ✅ 댓글 목록 fetch
+ // 댓글 목록 fetch
   useEffect(() => {
     if (safePostId) dispatch(fetchCommentsThunk(safePostId));
   }, [dispatch, safePostId]);
 
-  /**
-   * ✅ 댓글 전송 (멘션 확장)
-   * - 기존: handleSendComment()
-   * - 변경: handleSendComment(payload?) 도 가능
-   *
-   * BottomSheet에서 이렇게 호출할 거야:
-   * onSubmitComment({ content, mentionUserIds })
-   *
-   * 혹시 다른 곳에서 예전처럼 handleSendComment()로 부르더라도
-   * commentText 기반으로 동작하게 호환 유지.
-   */
+ /**
+ * 댓글 전송 (멘션 확장)
+ * - 기존: handleSendComment()
+ * - 변경: handleSendComment(payload?) 도 가능
+ *
+ * BottomSheet에서 이렇게 호출할 거야:
+ * onSubmitComment({ content, mentionUserIds })
+ *
+ * 혹시 다른 곳에서 예전처럼 handleSendComment()로 부르더라도
+ * commentText 기반으로 동작하게 호환 유지.
+ */
   const handleSendComment = useCallback(
     payload => {
       const contentFromPayload = payload?.content;
@@ -102,13 +102,12 @@ export default function usePostPageViewModel(memory) {
           content: text,
           authorId: user.userId,
 
-          // ✅ 서버가 받게 만들고 싶으면 DTO/Entity도 같이 확장 필요
-          // 지금은 프론트에서만 넘기고, 백에서 무시해도 에러는 안 나게 설계 권장
+ // 서버가 받게 만들고 싶으면 DTO/Entity도 같이 확장 필요
           mentionUserIds,
         }),
       );
 
-      // 입력창 초기화는 ViewModel 기준으로도 처리
+ // 입력창 초기화는 ViewModel 기준으로도 처리
       setCommentText('');
 
       setToastMessage('댓글을 추가했어요');
@@ -117,7 +116,7 @@ export default function usePostPageViewModel(memory) {
     [commentText, dispatch, safePostId, user?.userId],
   );
 
-  // ✅ 삭제 모달 오픈
+ // 삭제 모달 오픈
   const openDeleteCommentModal = useCallback(commentId => {
     setCommentToDelete(commentId);
     setCommentDeleteModalVisible(true);
@@ -130,13 +129,13 @@ export default function usePostPageViewModel(memory) {
 
   const [isDeletingComment, setIsDeletingComment] = useState(false);
 
-  // ✅ 모달 "확인" 눌렀을 때만 실제 삭제
+ // 모달 "확인" 눌렀을 때만 실제 삭제
   const confirmDeleteComment = useCallback(async () => {
     if (!commentToDelete || !safePostId || isDeletingComment) return;
 
     setIsDeletingComment(true);
     try {
-      // ✅ 너의 thunk 시그니처: (commentId, postId)
+ // 너의 thunk 시그니처: (commentId, postId)
       await dispatch(deleteCommentThunk(commentToDelete, safePostId));
 
       setToastMessage('댓글을 삭제했어요');
@@ -200,7 +199,7 @@ export default function usePostPageViewModel(memory) {
 
   return {
     user,
-    familyUsers, // ✅ "본인 제외된" 멘션 후보 리스트로 정리됨
+    familyUsers, // "본인 제외된" 멘션 후보 리스트로 정리됨
     commentList,
     commentText,
     setCommentText,
@@ -222,7 +221,7 @@ export default function usePostPageViewModel(memory) {
     handleDeletePost,
     handleDeleteImage,
 
-    // ✅ 댓글 삭제 모달
+ // 댓글 삭제 모달
     commentDeleteModalVisible,
     setCommentDeleteModalVisible,
     commentToDelete,
@@ -231,7 +230,7 @@ export default function usePostPageViewModel(memory) {
     confirmDeleteComment,
     isDeletingComment,
 
-    // ✅ 토스트
+ // 토스트
     toastVisible,
     setToastVisible,
     toastMessage,

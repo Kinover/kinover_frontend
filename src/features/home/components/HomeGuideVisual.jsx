@@ -1,16 +1,12 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/features/home/components/HomeGuideVisual.jsx
 //
-// ✅ HomeGuideModal steps(variant) 전용 비주얼
+// HomeGuideModal steps(variant) 전용 비주얼
 // - family_status: 접속중(초록 dot + pill) + 감정 캐릭터 peek
-// - family_edit  : 길게 누름(롱프레스 링) + UserBottomSheet 올라오는 장면
-// - my_mood      : 상단 smile 버튼 강조 + 감정 선택(StateScreen 느낌) 패널 팝
-// - family_invite: "가족 추가하기" 버튼 누름 + FamilyCodeModal(초대코드) 팝 + 복사 피드백
+// - family_edit : 길게 누름(롱프레스 링) + UserBottomSheet 올라오는 장면
 //
-// ✅ Reanimated Worklet 안전 규칙
-// - useAnimatedStyle 안에서 getResponsiveHeight/Width/IconSize/FontSize 호출 ❌
-// - 필요한 수치는 전부 useMemo로 미리 계산 ✅
-
+// Reanimated Worklet 안전 규칙
+// - useAnimatedStyle 안에서 getResponsiveHeight/Width/IconSize/FontSize 호출 // - 필요한 수치는 전부 useMemo로 미리 계산 
 import React, {useEffect, useMemo} from 'react';
 import {View, StyleSheet, Platform} from 'react-native';
 
@@ -34,26 +30,29 @@ import {
   getResponsiveFontSize,
 } from 'utils/responsive';
 
+import {CalloutBubble} from 'components/modal/GuideModal';
+
 export default function HomeGuideVisual({
   variant = 'family_status',
   scale = 0.78,
+  step,
 }) {
-  /**
-   * =========================================================
-   * ✅ 1) 모든 수치(숫자) 계산: worklet 밖에서만
-   * =========================================================
-   */
+ /**
+ * =========================================================
+ * 1) 모든 수치(숫자) 계산: worklet 밖에서만
+ * =========================================================
+ */
   const m = useMemo(() => {
-    // 캔버스(가이드 모달 안에서 보여줄 “미니 홈 화면”)
+ // 캔버스(가이드 모달 안에서 보여줄 “미니 홈 화면”)
     const W = Math.round(getResponsiveWidth(332));
     const H = Math.round(getResponsiveHeight(220));
     const R = Math.round(getResponsiveIconSize(16));
     const PAD = Math.round(getResponsiveWidth(14));
 
-    // 홈 배경/커브 느낌(대충)
+ // 홈 배경/커브 느낌(대충)
     const TOP_YELLOW_H = Math.round(getResponsiveHeight(60));
 
-    // HeaderSection 느낌
+ // HeaderSection 느낌
     const HEADER_H = Math.round(getResponsiveHeight(90));
     const AVATAR = Math.round(getResponsiveIconSize(58));
     const RING = Math.round(AVATAR * 1.22);
@@ -63,7 +62,7 @@ export default function HomeGuideVisual({
     const ICON_BTN = Math.round(getResponsiveIconSize(30));
     const ICON_R = Math.round(getResponsiveIconSize(10));
 
-    // MemberGridSection 느낌
+ // MemberGridSection 느낌
     const GRID_TOP = Math.round(getResponsiveHeight(10));
     const GRID_GAP_X = Math.round(getResponsiveWidth(8));
     const GRID_GAP_Y = Math.round(getResponsiveHeight(12));
@@ -77,28 +76,26 @@ export default function HomeGuideVisual({
     const PILL_H = Math.round(getResponsiveHeight(18));
     const PILL_W = Math.round(getResponsiveWidth(58));
 
-    // 하단 “가족 추가하기”
     const ADD_BTN_H = Math.round(getResponsiveHeight(44));
     const ADD_BTN_R = Math.round(getResponsiveIconSize(12));
 
-    // BottomSheet(UserBottomSheet) 미니
+ // BottomSheet(UserBottomSheet) 미니
     const SHEET_W = Math.round(W * 0.92);
     const SHEET_H = Math.round(getResponsiveHeight(150));
     const SHEET_R = R;
     const SHEET_TY_START = Math.round(getResponsiveHeight(170));
 
-    // FamilyCodeModal 미니
+ // FamilyCodeModal 미니
     const MODAL_W = Math.round(W * 0.86);
     const MODAL_H = Math.round(getResponsiveHeight(130));
 
-    // 감정 peek (HeaderSection/MemberGrid 참고)
+ // 감정 peek (HeaderSection/MemberGrid 참고)
     const EMO_SIZE = Math.round(AVATAR * 1.06);
     const EMO_HIDE_Y = Math.round(AVATAR * 1.25);
     const EMO_RISE = Math.round(AVATAR * 1.05);
     const EMO_TILT_DEG = 12;
     const EMO_PIVOT = Math.round(AVATAR * 0.18);
 
-    // my_mood: 감정 선택 패널(StateScreen 느낌)
     const MOOD_PANEL_W = Math.round(W * 0.88);
     const MOOD_PANEL_H = Math.round(getResponsiveHeight(150));
     const MOOD_ITEM = Math.round(getResponsiveIconSize(40));
@@ -155,11 +152,11 @@ export default function HomeGuideVisual({
     };
   }, []);
 
-  /**
-   * =========================================================
-   * ✅ 2) 애니메이션 값
-   * =========================================================
-   */
+ /**
+ * =========================================================
+ * 2) 애니메이션 값
+ * =========================================================
+ */
   const pulse = useSharedValue(0); // 클릭/롱프레스 링
   const dotPulse = useSharedValue(0); // 온라인 dot
   const pillShow = useSharedValue(0); // 접속중 pill
@@ -173,13 +170,13 @@ export default function HomeGuideVisual({
   const copied = useSharedValue(0); // 복사 상태 느낌
   const moodPop = useSharedValue(0); // 감정 선택 패널
 
-  /**
-   * =========================================================
-   * ✅ 3) variant별 시퀀스
-   * =========================================================
-   */
+ /**
+ * =========================================================
+ * 3) variant별 시퀀스
+ * =========================================================
+ */
   useEffect(() => {
-    // cancel + reset
+ // cancel + reset
     [
       pulse,
       dotPulse,
@@ -206,7 +203,7 @@ export default function HomeGuideVisual({
     copied.value = 0;
     moodPop.value = 0;
 
-    // family_status: 온라인 + pill + emo peek 반복
+ // family_status: 온라인 + pill + emo peek 반복
     if (variant === 'family_status') {
       dotPulse.value = withRepeat(
         withSequence(
@@ -227,7 +224,7 @@ export default function HomeGuideVisual({
         false,
       );
 
-      // 프로필 탭 느낌(링) + 감정 튀어나오기
+ // 프로필 탭 느낌(링) + 감정 튀어나오기
       pulse.value = withRepeat(
         withSequence(
           withDelay(240, withTiming(1, {duration: 140, easing: Easing.out(Easing.cubic)})),
@@ -239,7 +236,7 @@ export default function HomeGuideVisual({
       );
 
       const runPeek = () => {
-        // 방향만 살짝 랜덤 느낌(고정 값으로도 충분)
+ // 방향만 살짝 랜덤 느낌(고정 값으로도 충분)
         const dir = Math.random() > 0.5 ? 1 : -1;
         emoPop.value = withTiming(1, {duration: 130, easing: Easing.out(Easing.cubic)});
         emoPivot.value = withTiming(dir, {duration: 120});
@@ -255,7 +252,7 @@ export default function HomeGuideVisual({
         emoPivot.value = withDelay(520, withTiming(0, {duration: 180}));
       };
 
-      // 1.6초~2.4초 템포로 반복
+ // 1.6초~2.4초 템포로 반복
       emoPop.value = withRepeat(
         withSequence(
           withDelay(260, withTiming(0, {duration: 1})),
@@ -265,12 +262,12 @@ export default function HomeGuideVisual({
         -1,
         false,
       );
-      // 실제 peek는 타이밍 기반으로 한 번씩 실행(간단히: repeat 안에서 직접 못 부르니까 여기서 별도 타이밍)
+ // 실제 peek는 타이밍 기반으로 한 번씩 실행(간단히: repeat 안에서 직접 못 부르니까 여기서 별도 타이밍)
       const t = setInterval(() => runPeek(), 2000);
       return () => clearInterval(t);
     }
 
-    // family_edit: 롱프레스 링 + 바텀시트 올라왔다가 리셋 반복
+ // family_edit: 롱프레스 링 + 바텀시트 올라왔다가 리셋 반복
     if (variant === 'family_edit') {
       pulse.value = withRepeat(
         withSequence(
@@ -294,7 +291,6 @@ export default function HomeGuideVisual({
       return;
     }
 
-    // my_mood: smile 버튼 강조 + 감정 선택 패널 팝 반복
     if (variant === 'my_mood') {
       pulse.value = withRepeat(
         withSequence(
@@ -318,7 +314,7 @@ export default function HomeGuideVisual({
       return;
     }
 
-    // family_invite: 버튼 누름 + 모달 팝 + 복사 피드백(복사됨)
+ // family_invite: 버튼 누름 + 모달 팝 + 복사 피드백(복사됨)
     btnPress.value = withRepeat(
       withSequence(
         withDelay(140, withTiming(1, {duration: 120, easing: Easing.out(Easing.cubic)})),
@@ -362,11 +358,11 @@ export default function HomeGuideVisual({
     moodPop,
   ]);
 
-  /**
-   * =========================================================
-   * ✅ 4) Animated styles (숫자만 사용)
-   * =========================================================
-   */
+ /**
+ * =========================================================
+ * 4) Animated styles (숫자만 사용)
+ * =========================================================
+ */
   const pulseRingStyle = useAnimatedStyle(() => {
     const s = 1 + pulse.value * 0.06;
     const o = interpolate(pulse.value, [0, 1], [0, 1]);
@@ -437,11 +433,11 @@ export default function HomeGuideVisual({
     return {opacity: o, transform: [{translateY: ty}, {scale: s}]};
   });
 
-  /**
-   * =========================================================
-   * ✅ 5) variant별로 “필요한 요소만” 노출
-   * =========================================================
-   */
+ /**
+ * =========================================================
+ * 5) variant별로 “필요한 요소만” 노출
+ * =========================================================
+ */
   const showStatus = variant === 'family_status';
   const showEdit = variant === 'family_edit';
   const showMood = variant === 'my_mood';
@@ -739,13 +735,22 @@ export default function HomeGuideVisual({
           </Animated.View>
         )}
       </View>
+
+      {/* 말풍선: step이 있으면 캔버스 아래에 표시 */}
+      {step?.title != null || step?.description != null ? (
+        <CalloutBubble
+          title={step.title}
+          description={step.description}
+          style={styles.calloutWrap}
+        />
+      ) : null}
     </View>
   );
 }
 
 /**
  * =========================================================
- * ✅ Grid item renderer
+ * Grid item renderer
  * - family_edit일 때 첫번째 아이템에 롱프레스 링(=pulseRingStyle)
  * =========================================================
  */
@@ -793,6 +798,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#EEF2F7',
     overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
+  },
+
+  calloutWrap: {
+    marginTop: getResponsiveHeight(20),
+    alignSelf: 'stretch',
   },
 
   topYellow: {
@@ -939,7 +949,7 @@ const styles = StyleSheet.create({
     opacity: 0.86,
   },
 
-  // ===== BottomSheet mini =====
+ // ===== BottomSheet mini =====
   sheet: {
     position: 'absolute',
     bottom: -getResponsiveHeight(10),
@@ -1009,7 +1019,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#111827',
   },
 
-  // ===== Mood panel mini =====
+ // ===== Mood panel mini =====
   moodPanel: {
     position: 'absolute',
     backgroundColor: '#FFFFFF',
@@ -1058,7 +1068,7 @@ const styles = StyleSheet.create({
     width: '46%',
   },
 
-  // ===== Invite modal mini =====
+ // ===== Invite modal mini =====
   inviteModal: {
     position: 'absolute',
     backgroundColor: '#FFFFFF',

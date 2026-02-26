@@ -9,10 +9,10 @@ import {
 } from 'utils/responsive';
 
 /**
- * ✅ AppAlertModal
+ * AppAlertModal
  * - CustomModal 기반 “앱 내 이벤트/공지 팝업”
  * - Primary/Secondary + 아래 작은 링크(Tertiary) 지원
- * - ✅ 이미지 지원(image / imageUri)
+ * - 이미지 지원(image / imageUri)
  */
 export default function AppAlertModal({
   visible,
@@ -20,9 +20,9 @@ export default function AppAlertModal({
   subTitle,
   message,
 
-  // ✅ 이미지
-  // - image: require(...) 또는 {uri:'https://...'} 또는 { source, width, height, resizeMode }
-  // - imageUri: 'https://...' (간편)
+ // 이미지
+ // - image: require(...) 또는 {uri:'https://...'} 또는 { source, width, height, resizeMode }
+ // - imageUri: 'https://...' (간편)
   image = null,
   imageUri = null,
 
@@ -37,7 +37,7 @@ export default function AppAlertModal({
 
   autoDismissMs = null,
 }) {
-  // ✅ 자동 닫힘
+ // 자동 닫힘
   useEffect(() => {
     if (!visible) return;
     if (!autoDismissMs) return;
@@ -57,7 +57,7 @@ export default function AppAlertModal({
     onRequestClose?.();
   }, [onRequestClose]);
 
-  /** 왼쪽 버튼(secondaryText, 예: "오늘 하루 보지 않기") 클릭 시: 저장 후 닫기 */
+ /** 왼쪽 버튼(secondaryText, 예: "오늘 하루 보지 않기") 클릭 시: 저장 후 닫기 */
   const handleLeftButton = useCallback(() => {
     if (onSecondary) {
       onSecondary();
@@ -74,10 +74,10 @@ export default function AppAlertModal({
     onTertiary?.();
   }, [onTertiary]);
 
-  // ✅ 이미지 source 정규화
-  // 1) image가 {source: ...} 형태면 그걸 우선
-  // 2) image가 require(...) 또는 {uri:...}면 그대로
-  // 3) imageUri만 있으면 {uri:imageUri}
+ // 이미지 source 정규화
+ // 1) image가 {source: ...} 형태면 그걸 우선
+ // 2) image가 require(...) 또는 {uri:...}면 그대로
+ // 3) imageUri만 있으면 {uri:imageUri}
   const resolvedImage = useMemo(() => {
     if (image?.source) return image.source;
     if (image) return image;
@@ -111,6 +111,7 @@ export default function AppAlertModal({
       buttonBottomStyle={styles.buttonRow}
       confirmTextStyle={styles.confirmText}
       closeTextStyle={styles.closeText}
+      useViewOverlayOnIOS
       footerOutside={
         tertiaryText ? (
           <TouchableOpacity activeOpacity={0.85} onPress={handleTertiary}>
@@ -158,8 +159,8 @@ const styles = StyleSheet.create({
   },
 
   image: {
-    // 필요하면 둥글게
-    // borderRadius: getResponsiveWidth(14),
+ // 필요하면 둥글게
+ // borderRadius: getResponsiveWidth(14),
     marginVertical: -getResponsiveHeight(13),
   },
 

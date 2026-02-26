@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/features/schedule/screens/ScheduleScreen.jsx
-import React, {useMemo, useState, useCallback} from 'react';
+import React, {useMemo, useState, useCallback, useRef} from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -22,7 +22,7 @@ import {
   getResponsiveIconSize,
 } from 'utils/responsive';
 
-import YellowSpinner from 'components/YellowSpinner';
+import YellowSpinner from 'components/yellowSpinner';
 
 import {useScheduleDate} from '../hooks/useScheduleDate';
 import {useScheduleCounts} from '../hooks/useScheduleCounts';
@@ -54,7 +54,7 @@ const toId = v => {
   return s.length ? s : null;
 };
 
-// ✅ participantIds를 서버 DTO(List<Long>)에 맞게 number[]로 강제 변환
+// participantIds를 서버 DTO(List<Long>)에 맞게 number[]로 강제 변환
 const toLongArray = raw => {
   if (!Array.isArray(raw)) return [];
   return raw
@@ -68,6 +68,8 @@ const toLongArray = raw => {
 
 export default function ScheduleScreen() {
   const dispatch = useDispatch();
+  const guideCalendarRef = useRef(null);
+  const guideFabRef = useRef(null);
 
   const {familyId: reduxFamilyId} = useSelector(state => state.family);
   const reduxFamilyUserList = useSelector(
@@ -84,11 +86,10 @@ export default function ScheduleScreen() {
 
   const [calendarMode, setCalendarMode] = useState('month');
 
-  // ✅ 바텀시트(일정 편집) 전용: 다중 선택 배열
   const [selectedUserIds, setSelectedUserIds] = useState([]);
 
-  /** =========================
-   * 날짜 관련
+ /** =========================
+ * 날짜 관련
    ========================= */
   const {selectedDate, setSelectedDate, formattedDate, year, month} =
     useScheduleDate();
@@ -97,8 +98,8 @@ export default function ScheduleScreen() {
   const getLocalDateKey = useLocalDateKey();
   const selectedDateKey = getLocalDateKey(selectedDate);
 
-  /** =========================
-   * 생일 맵
+ /** =========================
+ * 생일 맵
    ========================= */
   const birthdayMap = useMemo(() => {
     const map = {};
@@ -123,8 +124,8 @@ export default function ScheduleScreen() {
     return map;
   }, [familyUserList, year, getLocalDateKey]);
 
-  /** =========================
-   * 일정 개수 / 로딩
+ /** =========================
+ * 일정 개수 / 로딩
    ========================= */
   const {
     scheduleCountPerDay,
@@ -134,8 +135,8 @@ export default function ScheduleScreen() {
     bumpCount,
   } = useScheduleCounts(familyId, year, month);
 
-  /** =========================
-   * Pull to Refresh
+ /** =========================
+ * Pull to Refresh
    ========================= */
   const [refreshing, setRefreshing] = useState(false);
 
@@ -150,12 +151,12 @@ export default function ScheduleScreen() {
     }, 500);
   }, [isLoading, setRefreshTrigger]);
 
-  /** =========================
-   * 바텀시트 / 편집 상태
+ /** =========================
+ * 바텀시트 / 편집 상태
    ========================= */
   const {
     editingSchedule,
-    selectedUserId, // ✅ 조회/필터용(단일)
+    selectedUserId, // 조회/필터용(단일)
     setSelectedUserId,
     title,
     setTitle,
@@ -165,9 +166,9 @@ export default function ScheduleScreen() {
     handleCancelEdit,
   } = useScheduleEditor(currentUserId);
 
-  /** =========================
-   * ✅ IMPORTANT: openSheet 래핑
-   * - Schedule.jsx에서 주입한 __forcedKind를 절대 잃지 않게
+ /** =========================
+ * IMPORTANT: openSheet 래핑
+ * - Schedule.jsx에서 주입한 __forcedKind를 절대 잃지 않게
    ========================= */
   const handleOpenSheet = useCallback(
     item => {
@@ -188,8 +189,8 @@ export default function ScheduleScreen() {
 
   const birthdayNamesForSelectedDate = birthdayMap?.[selectedDateKey] ?? [];
 
-  /** =========================
-   * ✅ CRUD: thunk 직접 dispatch
+ /** =========================
+ * CRUD: thunk 직접 dispatch
    ========================= */
   const onSubmit = useCallback(
     async incoming => {
@@ -216,12 +217,16 @@ export default function ScheduleScreen() {
       const type = typeRaw ? String(typeRaw).toUpperCase() : null;
 
       const rawParticipantIds = incoming?.participantIds;
-      let participantIds = toLongArray(rawParticipantIds);
+      let participantIds = STORE_MOCK_ENABLED
+        ? Array.isArray(rawParticipantIds)
+          ? [...rawParticipantIds]
+          : []
+        : toLongArray(rawParticipantIds);
 
       if (type === 'FAMILY' && participantIds.length === 0) {
         participantIds = (familyUserList || [])
-          .map(u => Number(u?.userId))
-          .filter(n => Number.isFinite(n));
+          .map(u => u?.userId)
+          .filter(id => id != null && id !== '');
       }
 
       const payload = {
@@ -273,13 +278,14 @@ export default function ScheduleScreen() {
           }
         }
       } catch (e) {
-        console.log('=== [Schedule submit error] ===');
-        console.log('status:', e?.response?.status);
-        console.log('data:', e?.response?.data);
-        console.log('url:', e?.config?.url);
-        console.log('method:', e?.config?.method);
-        console.log('request payload:', e?.config?.data);
-        console.log('request headers:', e?.config?.headers);
+ // config.headers는 로깅하지 말 것 (토큰 등 민감 정보 포함)
+        if (__DEV__) {
+          console.log('=== [Schedule submit error] ===');
+          console.log('status:', e?.response?.status);
+          console.log('data:', e?.response?.data);
+          console.log('url:', e?.config?.url);
+          console.log('method:', e?.config?.method);
+        }
         throw e;
       } finally {
         setRefreshTrigger(prev => prev + 1);
@@ -355,31 +361,43 @@ export default function ScheduleScreen() {
     openSheet(null);
   }, [isLoading, openSheet, currentUserId]);
 
+ // iOS: 가이드 모달 닫은 뒤 터치 복구용
+  const [contentKey, setContentKey] = useState(0);
+  const handleGuideAfterClose = useCallback(() => setContentKey(k => k + 1), []);
+
   return (
     <View style={styles.container}>
-      {/* ✅✅✅ 일정 가이드 모달 추가 (화면 로딩 준비되면 표시) */}
       <ScheduleGuideModal
         enabled={true}
         ready={!isLoading && !!familyId}
         forceVisible={false}
+        onAfterClose={handleGuideAfterClose}
+        targetRef={guideCalendarRef}
+        targetRefsByKey={{
+          pick_date: guideCalendarRef,
+          add: guideFabRef,
+        }}
       />
 
-      <ScrollView
-        style={styles.mainContainer}
-        showsVerticalScrollIndicator={false}
-        scrollEnabled={!isLoading}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
-        }>
-        <CalendarToggle
-          selectedDate={selectedDate}
-          setSelectedDate={setSelectedDate}
-          scheduleCountPerDay={scheduleCountPerDay}
-          holidayMap={holidayMap}
-          birthdayMap={birthdayMap}
-          mode={calendarMode}
-          setMode={setCalendarMode}
-        />
+      <View key={contentKey} style={styles.mainContentWrap}>
+        <ScrollView
+          style={styles.mainContainer}
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={!isLoading}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          }>
+        <View ref={guideCalendarRef} collapsable={false}>
+          <CalendarToggle
+            selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
+            scheduleCountPerDay={scheduleCountPerDay}
+            holidayMap={holidayMap}
+            birthdayMap={birthdayMap}
+            mode={calendarMode}
+            setMode={setCalendarMode}
+          />
+        </View>
 
         <Schedule
           selectedDate={selectedDate}
@@ -391,6 +409,7 @@ export default function ScheduleScreen() {
           currentUserId={currentUserId}
         />
       </ScrollView>
+      </View>
 
       <ScheduleEditorBottomSheetModal
         ref={bottomSheetRef}
@@ -407,29 +426,43 @@ export default function ScheduleScreen() {
         onRefresh={handleRefresh}
       />
 
-      <DropShadow
-        style={{
-          shadowColor: '#000',
-          shadowOffset: {width: 0, height: 3},
-          shadowOpacity: 0.08,
-          shadowRadius: 3,
-        }}>
-        <TouchableOpacity
-          style={[styles.fab, isLoading && {opacity: 0.4}]}
-          onPress={handleFabPress}
-          activeOpacity={0.8}>
-          <Image
-            source={require('../../../assets/icons/tabs/3/three.png')}
-            style={{
-              alignSelf: 'center',
-              width: '45%',
-              height: '45%',
-              resizeMode: 'contain',
-            }}
-            tintColor={'white'}
+      {/* FAB를 화면 하단 고정하려면, 레이아웃 기준을 줄 수 있는 절대 위치 래퍼 필요 */}
+      <View style={styles.fabContainer} pointerEvents="box-none">
+        <DropShadow
+          pointerEvents="box-none"
+          style={[
+            styles.fabShadow,
+            {
+              shadowColor: '#000',
+              shadowOffset: {width: 0, height: 3},
+              shadowOpacity: 0.08,
+              shadowRadius: 3,
+            },
+          ]}>
+          {/* 가이드 측정용: 버튼과 동일 위치/크기 (터치 통과) */}
+          <View
+            ref={guideFabRef}
+            collapsable={false}
+            pointerEvents="none"
+            style={styles.fabMeasure}
           />
-        </TouchableOpacity>
-      </DropShadow>
+          <TouchableOpacity
+            style={[styles.fab, isLoading && {opacity: 0.4}]}
+            onPress={handleFabPress}
+            activeOpacity={0.8}>
+            <Image
+              source={require('../../../assets/icons/tabs/3/three.png')}
+              style={{
+                alignSelf: 'center',
+                width: '45%',
+                height: '45%',
+                resizeMode: 'contain',
+              }}
+              tintColor={'white'}
+            />
+          </TouchableOpacity>
+        </DropShadow>
+      </View>
 
       {isLoading && (
         <View style={styles.loadingOverlay} pointerEvents="auto">
@@ -442,17 +475,29 @@ export default function ScheduleScreen() {
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#F9F9F9'},
+  mainContentWrap: {flex: 1},
   mainContainer: {
     flex: 1,
     paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal,
     paddingTop: getResponsiveHeight(5),
   },
-  fab: {
+  fabContainer: {
     position: 'absolute',
     bottom: getResponsiveHeight(110),
     right: getResponsiveWidth(13),
     width: getResponsiveIconSize(65),
     height: getResponsiveIconSize(65),
+  },
+  fabShadow: {
+    width: '100%',
+    height: '100%',
+  },
+  fabMeasure: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  fab: {
+    width: '100%',
+    height: '100%',
     backgroundColor: BACKGROUND_COLORS.primaryBg,
     borderRadius: 999,
     justifyContent: 'center',

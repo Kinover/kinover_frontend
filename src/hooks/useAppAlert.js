@@ -3,7 +3,7 @@ import React, {useCallback, useMemo, useState} from 'react';
 import AppAlertModal from 'components/modal/AppAlertModal';
 
 /**
- * ✅ useAppAlert
+ * useAppAlert
  * - showAlert({type,title,message,primaryText,secondaryText,autoDismissMs,onPrimary,onSecondary})
  * - AlertHost 컴포넌트를 JSX에 한번만 꽂아두면 끝
  */
@@ -41,7 +41,7 @@ export function useAppAlert() {
     });
   }, []);
 
-  // ✅ 모달에서 버튼 눌렀을 때
+ // 모달에서 버튼 눌렀을 때
   const handlePrimary = useCallback(() => {
     const fn = state.onPrimary;
     hide();
@@ -55,7 +55,7 @@ export function useAppAlert() {
   }, [state.onSecondary, hide]);
 
   const AlertHost = useMemo(() => {
-    // 컴포넌트로 쓰기 좋게 반환
+ // 컴포넌트로 쓰기 좋게 반환
     return function AlertHostComponent() {
       return (
         <AppAlertModal

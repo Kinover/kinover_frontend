@@ -4,7 +4,7 @@ import {
   fetchNotificationsThunk,
   fetchHasUnreadThunk,
   fetchUnreadCountThunk,
-  markNotificationsReadThunk, // ✅ 추가
+  markNotificationsReadThunk, // 추가
 } from './notificationThunk';
 
 const initialState = {
@@ -13,7 +13,7 @@ const initialState = {
   isLoading: false,
   error: null,
 
-  // ✅ bell(종) 전용
+ // bell(종) 전용
   hasUnread: false,
   unreadCount: 0,
 };
@@ -37,10 +37,10 @@ const notificationSlice = createSlice({
       state.error = null;
     },
 
-    // ✅ bell(종) 직접 제어
+ // bell(종) 직접 제어
     setHasUnread: (state, action) => {
       state.hasUnread = !!action.payload;
-      // bell hasUnread가 true인데 count가 0으로 오는 경우 UX 보정(원치 않으면 삭제해도 됨)
+ // bell hasUnread가 true인데 count가 0으로 오는 경우 UX 보정(원치 않으면 삭제해도 됨)
       if (state.hasUnread && state.unreadCount < 1) state.unreadCount = 1;
       if (!state.hasUnread) state.unreadCount = 0;
     },
@@ -54,7 +54,7 @@ const notificationSlice = createSlice({
 
   extraReducers: builder => {
     builder
-      // ✅ 알림 리스트 조회(조회만)
+ // 알림 리스트 조회(조회만)
       .addCase(fetchNotificationsThunk.pending, state => {
         state.isLoading = true;
         state.error = null;
@@ -66,20 +66,19 @@ const notificationSlice = createSlice({
         state.lastCheckedAt = payload.lastCheckedAt ?? state.lastCheckedAt;
         state.notifications = payload.notifications || [];
 
-        // ❌ 여기서 읽음 확정(0 처리)하면 서버와 불일치 가능
-        // ✅ 읽음 확정은 markNotificationsReadThunk.fulfilled에서만 처리
+ // 여기서 읽음 확정(0 처리)하면 서버와 불일치 가능
+ // 읽음 확정은 markNotificationsReadThunk.fulfilled에서만 처리
       })
       .addCase(fetchNotificationsThunk.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload || '알림 조회 실패';
       })
 
-      // ✅ 알림 읽음 확정(서버 mark-read 성공 시점)
+ // 알림 읽음 확정(서버 mark-read 성공 시점)
       .addCase(markNotificationsReadThunk.fulfilled, (state, action) => {
         const payload = action.payload || {};
 
-        // 서버가 lastCheckedAt 문자열을 주는 구조라면 그대로 저장
-        // (원하면 Date 변환은 selector에서 처리 추천)
+ // 서버가 lastCheckedAt 문자열을 주는 구조라면 그대로 저장
         state.lastCheckedAt = payload.lastCheckedAt ?? state.lastCheckedAt;
 
         state.hasUnread = false;
@@ -87,7 +86,7 @@ const notificationSlice = createSlice({
       })
       .addCase(markNotificationsReadThunk.rejected, () => {})
 
-      // ✅ bell 빨간점 여부 조회
+ // bell 빨간점 여부 조회
       .addCase(fetchHasUnreadThunk.fulfilled, (state, action) => {
         const hasUnread = !!action.payload;
         state.hasUnread = hasUnread;
@@ -96,7 +95,7 @@ const notificationSlice = createSlice({
       })
       .addCase(fetchHasUnreadThunk.rejected, () => {})
 
-      // ✅ bell 숫자 뱃지(unreadCount) 조회
+ // bell 숫자 뱃지(unreadCount) 조회
       .addCase(fetchUnreadCountThunk.fulfilled, (state, action) => {
         const n = toInt(action.payload);
         state.unreadCount = n;

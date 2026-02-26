@@ -16,14 +16,14 @@ export const useLogout = () => {
   const dispatch = useDispatch();
 
   const logout = useCallback(async () => {
-    // 0) 소켓 끊기
+ // 0) 소켓 끊기
     try {
       stopChatSocket();
     } catch (e) {
       null;
     }
 
-    // 1) 외부/서버 정리(실패해도 진행)
+ // 1) 외부/서버 정리(실패해도 진행)
     try {
       await deleteFcmToken();
     } catch (e) {
@@ -36,14 +36,14 @@ export const useLogout = () => {
       console.log('⚠️ Kakao logout 실패(무시):', e);
     }
 
-    // 2) 로컬 로그인정보 삭제 (needsSignup 포함)
+ // 2) 로컬 로그인정보 삭제 (needsSignup 포함)
     try {
       await deleteLoginInfo();
     } catch (e) {
       console.log('⚠️ deleteLoginInfo 실패:', e);
     }
 
-    // 3) persist 완전 초기화
+ // 3) persist 완전 초기화
     try {
       await persistor.purge();
       await persistor.flush();
@@ -51,7 +51,7 @@ export const useLogout = () => {
       console.log('⚠️ purge/flush 실패:', e);
     }
 
-    // 4) 타이밍 안정화
+ // 4) 타이밍 안정화
     await nextTick();
     dispatch(setLogout());
     dispatch(setAuthChecked(true));

@@ -32,17 +32,17 @@ export default function ScheduleStack() {
             style={{
               fontFamily: HEADER_STYLES().mainTitleFontFamily,
               fontWeight: HEADER_STYLES().mainTitleFontWeight,
-              fontSize: HEADER_STYLES().mainTitleFontSize, // ✅ 24 → 16 (다른 앱이랑 비슷한 크기)
+              fontSize: HEADER_STYLES().mainTitleFontSize, // 24 → 16 (다른 앱이랑 비슷한 크기)
               color: 'black',
-              lineHeight: HEADER_STYLES().mainTitleLineHeight, // ✅ 너무 크지 않게 살짝만
+              lineHeight: HEADER_STYLES().mainTitleLineHeight, // 너무 크지 않게 살짝만
               textAlignVertical: 'center',
             }}>
             일정
           </Text>
         ),
-        // headerTitleContainerStyle: {
-        //   paddingLeft: getResponsiveWidth(6),
-        // },
+ // headerTitleContainerStyle: {
+ // paddingLeft: getResponsiveWidth(6),
+ // },
         headerRight: () => (
           <RenderHeaderHome navigation={navigation} currentScreen="일정" />
         ),

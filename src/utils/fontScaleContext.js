@@ -23,8 +23,8 @@ export function FontScaleProvider({children}) {
   const setFontScaleValue = useCallback(async (scale) => {
     const n = Number(scale);
     const clamped = Number.isNaN(n) ? 1 : Math.max(1, Math.min(n, 1.3));
-    setFontScaleState(clamped);     // ✅ 앱 전체 리렌더 트리거
-    await setFontScale(clamped);    // ✅ 저장
+    setFontScaleState(clamped);     // 앱 전체 리렌더 트리거
+    await setFontScale(clamped);    // 저장
   }, []);
 
   return (

@@ -2,7 +2,7 @@ import React, {useState, useEffect} from 'react';
 import {View, TouchableOpacity, Animated} from 'react-native';
 import {getResponsiveWidth} from '../utils/responsive';
 
-// ✅ 햅틱 유틸 import
+// 햅틱 유틸 import
 import {hapticSelection} from '../utils/haptic';
 
 export default function CustomSwitch({isEnabled, toggleSwitch}) {
@@ -20,7 +20,7 @@ export default function CustomSwitch({isEnabled, toggleSwitch}) {
   }, [isEnabled, thumbPosition]);
 
   const handlePress = () => {
-    // ✅ 스위치 토글용 햅틱 (가볍게)
+ // 스위치 토글용 햅틱 (가볍게)
     hapticSelection();
     toggleSwitch?.();
   };

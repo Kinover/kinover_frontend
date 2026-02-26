@@ -13,7 +13,7 @@ export const onLeaveChat = (dispatch, navigation, chatRoomId, showToast) => {
   dispatch(leaveChatRoomThunk(chatRoomId))
     .unwrap()
     .then(() => {
-      // ✅ 리스트에서 해당 채팅방 제거
+ // 리스트에서 해당 채팅방 제거
       dispatch(removeChatRoomFromList(chatRoomId));
       if (showToast) {
         showToast('채팅방을 나갔습니다.');

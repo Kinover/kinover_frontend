@@ -184,7 +184,7 @@ export default function CalendarToggle({
   const weekDates = useWeekDates(selectedDate, getLocalDateKey);
   const {getCountColorStyle} = useScheduleCountStyle(cellSize);
 
-  // ✅ showYMD가 source of truth
+ // showYMD가 source of truth
   const {showYMD, openYMD, closeYMD} = useYMDPicker();
 
   const birthdayMap = useMemo(() => {
@@ -199,9 +199,9 @@ export default function CalendarToggle({
     return day === 0 || !!holidayMap?.[key];
   };
 
-  // =========================
-  // ✅ 좌우 스와이프
-  // =========================
+ // =========================
+ // 좌우 스와이프
+ // =========================
   const SWIPE_THRESHOLD = getResponsiveWidth(40);
   const SWIPE_VS_SCROLL_SLOP = 6;
 
@@ -222,7 +222,7 @@ export default function CalendarToggle({
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, g) => {
-        // ✅ 모달이 열려있으면 뒤에서 스와이프 판정 금지
+ // 모달이 열려있으면 뒤에서 스와이프 판정 금지
         if (showYMD) return false;
 
         const absDx = Math.abs(g.dx);
@@ -241,9 +241,9 @@ export default function CalendarToggle({
     }),
   ).current;
 
-  // =========================
-  // ✅ 월<->주 애니메이션
-  // =========================
+ // =========================
+ // 월<->주 애니메이션
+ // =========================
   const monthH = useSharedValue(0);
   const weekH = useSharedValue(0);
 
@@ -426,7 +426,7 @@ export default function CalendarToggle({
             shadowRadius: 3,
           },
         ]}>
-        {/* ✅ 모달 열리면 panHandlers 자체를 안 붙임 (더 안전) */}
+        {/* 모달 열리면 panHandlers 자체를 안 붙임 (더 안전) */}
         <View
           {...(!showYMD ? panResponder.panHandlers : {})}
           style={styles.calendarTouchWrap}>
@@ -579,14 +579,14 @@ export default function CalendarToggle({
         </View>
       </DropShadow>
 
-      {/* ✅ 날짜 피커: visible은 showYMD가 단일 진실 */}
+      {/* 날짜 피커: visible은 showYMD가 단일 진실 */}
       <MiniCalendarPickerModal
         visible={showYMD}
         onRequestClose={closeYMD}
         onClose={closeYMD}
         onConfirm={date => {
           setSelectedDate(date);
-          closeYMD(); // ✅ 닫기는 여기서만
+          closeYMD(); // 닫기는 여기서만
         }}
         initialDate={selectedDate}
         minYear={1950}

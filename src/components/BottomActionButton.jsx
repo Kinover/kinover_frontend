@@ -7,7 +7,7 @@ import {getResponsiveHeight} from 'utils/responsive';
 import {hapticLight} from 'utils/haptic';
 
 /**
- * ✅ BottomActionButton
+ * BottomActionButton
  * - variant="fixed"(기본): 기존처럼 화면 하단 고정(absolute) + Android insets.bottom 반영
  * - variant="scroll": FlatList/ScrollView footer에 넣어도 되는 일반 레이아웃(absolute 없음) + insets.bottom padding
  */
@@ -25,7 +25,7 @@ export default function BottomActionButton({
     onPress?.();
   };
 
-  // ✅ fixed 모드에서만 bottom 오프셋 계산
+ // fixed 모드에서만 bottom 오프셋 계산
   const bottomOffset = useMemo(() => {
     const base =
       Platform.OS === 'ios' ? getResponsiveHeight(40) : getResponsiveHeight(25);
@@ -59,19 +59,18 @@ export default function BottomActionButton({
 }
 
 const styles = StyleSheet.create({
-  // ✅ 공통
+ // 공통
   buttonContainer: {
     width: '100%',
     alignSelf: 'center',
     gap: getResponsiveHeight(10),
   },
 
-  // ✅ 기존 방식(하단 고정)
   fixedContainer: {
     position: 'absolute',
   },
 
-  // ✅ 옵션 A용(스크롤 컨텐츠에 포함)
+ // 옵션 A용(스크롤 컨텐츠에 포함)
   scrollContainer: {
     position: 'relative',
   },

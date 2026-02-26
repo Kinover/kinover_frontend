@@ -1,30 +1,14 @@
-/**
- * @fileoverview 루트 화면 컴포넌트
- * 
- * 앱의 초기 라우팅을 결정하는 컴포넌트입니다.
- * - Redux persist rehydration 대기
- * - 자동 로그인 처리
- * - 인증 상태에 따른 네비게이션 분기
- */
-
-import React, {useEffect, useMemo, useState, useCallback} from 'react';
+import React, {useEffect, useState} from 'react';
 import {ActivityIndicator, View, Text} from 'react-native';
 import {useSelector} from 'react-redux';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import AuthNavigator from './AuthNavigator';
-import RootNavigator from './RootNavigator';
+import AuthNavigator from './authNavigator';
+import RootNavigator from './rootNavigator';
 import {setGuestMode, getHasFamily, getNeedsSignup} from 'utils/storage';
 import {useAutoLogin} from 'features/auth/hooks/useAutoLogin';
 import {onAuthFlagsChanged} from 'utils/authFlagsEvent';
 
-// ==================== Components ====================
-
-/**
- * 부팅 로딩 컴포넌트
- * @param {Object} props - 컴포넌트 props
- * @param {string} props.label - 로딩 라벨 텍스트
- */
 function BootLoading({label = ''}) {
   return (
     <SafeAreaView
@@ -40,28 +24,19 @@ function BootLoading({label = ''}) {
   );
 }
 
-// ==================== Main Component ====================
-
-/**
- * 루트 화면 메인 컴포넌트
- * @returns {JSX.Element} 루트 화면 컴포넌트
- */
 export default function RootScreen() {
   const rehydrated = useSelector(state => !!state?._persist?.rehydrated);
   const authChecked = useSelector(state => state.login?.authChecked);
-  const isLoggedIn = useSelector(state => state.login?.isLoggedIn);
+  const isLogin = useSelector(state => state.login?.isLoggedIn);
   const loginLoading = useSelector(state => !!state.login?.loading);
 
-  const [bootChecked, setBootChecked] = useState(false);
+  const [bootDone, setBootDone] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [hasFamily, setHasFamily] = useState(null);
   const [needsSignup, setNeedsSignup] = useState(false);
-  const [authWaitTimedOut, setAuthWaitTimedOut] = useState(false);
+  const [authTimeout, setAuthTimeout] = useState(false);
 
-  /**
-   * 인증 플래그 새로고침
-   */
-  const refreshAuthFlags = useCallback(async () => {
+  async function refreshAuthFlags() {
     try {
       const [hf, ns] = await Promise.all([getHasFamily(), getNeedsSignup()]);
       setHasFamily(hf);
@@ -70,14 +45,12 @@ export default function RootScreen() {
       setHasFamily(null);
       setNeedsSignup(false);
     }
-  }, []);
+  }
 
   useEffect(() => {
-    const unsub = onAuthFlagsChanged(() => {
-      refreshAuthFlags();
-    });
+    const unsub = onAuthFlagsChanged(() => refreshAuthFlags());
     return unsub;
-  }, [refreshAuthFlags]);
+  }, []);
 
   useEffect(() => {
     if (!rehydrated) return;
@@ -95,104 +68,64 @@ export default function RootScreen() {
       await refreshAuthFlags();
 
       if (!mounted) return;
-      setBootChecked(true);
+      setBootDone(true);
     })();
 
     return () => {
       mounted = false;
     };
-  }, [rehydrated, refreshAuthFlags]);
+  }, [rehydrated]);
 
-  // ✅ authChecked true가 되면 flags를 한 번 더 강제 재조회
   useEffect(() => {
     if (!rehydrated) return;
     if (!authChecked) return;
     refreshAuthFlags();
-  }, [rehydrated, authChecked, refreshAuthFlags]);
+  }, [rehydrated, authChecked]);
 
-  // ✅ (추가) authChecked가 false인 상태가 너무 길면 fallback
   useEffect(() => {
-    if (!rehydrated || !bootChecked) return;
+    if (!rehydrated || !bootDone) return;
 
-    // 이미 체크 끝났으면 타임아웃 필요 없음
     if (authChecked) {
-      setAuthWaitTimedOut(false);
+      setAuthTimeout(false);
       return;
     }
 
-    setAuthWaitTimedOut(false);
-    const t = setTimeout(() => {
-      setAuthWaitTimedOut(true);
-    }, 5500);
+    setAuthTimeout(false);
+    const t = setTimeout(() => setAuthTimeout(true), 5500);
 
     return () => clearTimeout(t);
-  }, [rehydrated, bootChecked, authChecked]);
+  }, [rehydrated, bootDone, authChecked]);
 
-  /**
-   * 자동 로그인 실행 조건
-   * loginLoading을 포함하여 경합 방지
-   */
   const shouldRunAutoLogin =
-    rehydrated && bootChecked && !isGuest && !authChecked && !loginLoading;
+    rehydrated && bootDone && !isGuest && !authChecked && !loginLoading;
 
   useAutoLogin(shouldRunAutoLogin);
 
-  /**
-   * 타겟 네비게이션 결정
-   * 인증 상태와 가족 정보에 따라 적절한 네비게이터와 초기 라우트를 반환합니다.
-   */
-  const target = useMemo(() => {
-    if (!rehydrated || !bootChecked) {
-      return null;
-    }
-
-    // 게스트 모드
+  // 어디로 갈지 결정
+  let target = null;
+  if (rehydrated && bootDone) {
     if (isGuest) {
-      return {flow: 'AppFlow', initialRouteName: 'Tabs'};
-    }
-
-    // 인증 체크 대기 중
-    if (!authChecked) {
-      // 타임아웃 시 온보딩으로 fallback (무한 로딩 방지)
-      if (authWaitTimedOut) {
-        return {flow: 'AuthFlow', initialRouteName: '온보딩화면'};
+      target = {flow: 'AppFlow', initialRouteName: 'Tabs'};
+    } else if (!authChecked) {
+      if (authTimeout) {
+        target = {flow: 'AuthFlow', initialRouteName: '온보딩화면'};
       }
-      return null;
+    } else if (!isLogin) {
+      target = {flow: 'AuthFlow', initialRouteName: '온보딩화면'};
+    } else if (hasFamily === true) {
+      target = {flow: 'AppFlow', initialRouteName: 'Tabs'};
+    } else if (hasFamily === false) {
+      target = {flow: 'AuthFlow', initialRouteName: '약관동의화면'};
+    } else {
+      target = {flow: 'AppFlow', initialRouteName: 'Tabs'};
     }
+  }
 
-    // 로그인되지 않음
-    if (!isLoggedIn) {
-      return {flow: 'AuthFlow', initialRouteName: '온보딩화면'};
-    }
-
-    // 가족이 있는 경우
-    if (hasFamily === true) {
-      return {flow: 'AppFlow', initialRouteName: 'Tabs'};
-    }
-
-    // 가족이 없는 경우 (회원가입 필요)
-    if (hasFamily === false) {
-      return {flow: 'AuthFlow', initialRouteName: '약관동의화면'};
-    }
-
-    // 기본값: 앱 플로우
-    return {flow: 'AppFlow', initialRouteName: 'Tabs'};
-  }, [
-    rehydrated,
-    bootChecked,
-    isGuest,
-    authChecked,
-    isLoggedIn,
-    hasFamily,
-    authWaitTimedOut,
-  ]);
-
-  // 타겟이 결정되지 않았으면 로딩 표시
   if (!target) {
     const label = !rehydrated
       ? 'rehydrated 대기'
-      : !bootChecked
-      ? 'bootChecked 대기'
+      : !bootDone
+      ? 'bootDone 대기'
       : loginLoading
       ? 'loginLoading...'
       : !authChecked
@@ -201,7 +134,6 @@ export default function RootScreen() {
     return <BootLoading label={label} />;
   }
 
-  // 인증 플로우 또는 앱 플로우로 분기
   if (target.flow === 'AuthFlow') {
     return <AuthNavigator initialRouteName={target.initialRouteName} />;
   }

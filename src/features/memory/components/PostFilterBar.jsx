@@ -51,7 +51,7 @@ const formatPeriodLabel = raw => {
   return formatDate(segments[0]);
 };
 
-export default function PostFilterBar({
+export default React.forwardRef(function PostFilterBar({
   categoryTitle = '전체',
   onPressCategory,
   periodLabel,
@@ -59,7 +59,7 @@ export default function PostFilterBar({
   sortKey = 'latest',
   onChangeSort,
   sortOptions = DEFAULT_SORT_OPTIONS,
-}) {
+}, ref) {
   const [sortModalOpen, setSortModalOpen] = useState(false);
 
   const sortBtnRef = useRef(null);
@@ -101,7 +101,7 @@ export default function PostFilterBar({
     });
   }, []);
 
-  // ✅ Dropdown position clamp
+ // Dropdown position clamp
   const DROPDOWN_MIN_W = getResponsiveWidth(120);
   const dropdownWidth = Math.max(DROPDOWN_MIN_W, sortAnchor.w);
   const dropdownTop = sortAnchor.y + sortAnchor.h + getResponsiveHeight(6);
@@ -112,7 +112,7 @@ export default function PostFilterBar({
     return clamp(sortAnchor.x, margin, maxLeft);
   }, [dropdownWidth, sortAnchor.x]);
 
-  // ✅ caret rotate (sort open)
+ // caret rotate (sort open)
   const sortArrow = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -137,15 +137,15 @@ export default function PostFilterBar({
     [sortArrow],
   );
 
-  // ✅ tone
+ // tone
   const ACTIVE_BORDER = BUTTON_STYLES()?.backgroundColor ?? '#111827';
   const TEXT_MAIN = '#111827';
   const TEXT_SUB = COLORS.textTertiary;
 
   return (
     <>
-      <View style={styles.container}>
-        {/* ✅ Category: pill로 “통일”하지 말고, 드롭다운 트리거처럼 자연스럽게 */}
+      <View ref={ref} style={styles.container}>
+        {/* Category: pill로 “통일”하지 말고, 드롭다운 트리거처럼 자연스럽게 */}
         <TouchableOpacity
           style={styles.categoryButton}
           onPress={onPressCategory}
@@ -169,7 +169,7 @@ export default function PostFilterBar({
           />
         </TouchableOpacity>
 
-        {/* ✅ Filters */}
+        {/* Filters */}
         <View style={styles.rightControls}>
           {/* Period */}
           <TouchableOpacity
@@ -229,7 +229,7 @@ export default function PostFilterBar({
         </View>
       </View>
 
-      {/* ✅ Sort dropdown */}
+      {/* Sort dropdown */}
       <Modal
         visible={sortModalOpen}
         transparent
@@ -242,7 +242,7 @@ export default function PostFilterBar({
     styles.dropdownWrap,
     {top: dropdownTop, left: safeLeft, width: dropdownWidth},
   ]}>
-  {/* ✅ Android 전용: faux shadow backplate */}
+  {/* Android 전용: faux shadow backplate */}
   {Platform.OS === 'android' ? (
     <View pointerEvents="none" style={styles.dropdownShadowPlate} />
   ) : null}
@@ -285,7 +285,7 @@ export default function PostFilterBar({
       </Modal>
     </>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     paddingBottom: getResponsiveHeight(5),
   },
 
-  /* ✅ Category = 트리거 느낌 */
+ /* Category = 트리거 느낌 */
   categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
     gap: getResponsiveWidth(10),
   },
 
-  /* ✅ Filter pill = 가벼운 칩 */
+ /* Filter pill = 가벼운 칩 */
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     height: getResponsiveWidth(14),
   },
 
-  /* Modal */
+ /* Modal */
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
@@ -386,9 +386,9 @@ const styles = StyleSheet.create({
         shadowRadius: 10,
         shadowOffset: {width: 0, height: 6},
       },
-      // android: {
-      //   elevation: 10,
-      // },
+ // android: {
+ // elevation: 10,
+ // },
     }),
   },
 

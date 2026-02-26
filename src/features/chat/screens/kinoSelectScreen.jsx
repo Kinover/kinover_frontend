@@ -17,7 +17,7 @@ import Carousel from 'react-native-reanimated-carousel';
 import {useDispatch} from 'react-redux';
 import {useNavigation, useRoute} from '@react-navigation/native';
 
-import KinoConfirmModal from '../components/KinoConfirmModal';
+import KinoConfirmModal from '../components/kinoConfirmModal';
 import useHideTabBar from 'hooks/useHideTabBar';
 import {updateKinoPersonalityThunk} from '../store/chatRoomThunk';
 
@@ -36,7 +36,7 @@ const KINO_TYPE_TO_PERSONALITY = {
   PINK_KINO: 'SNUGGLE',
 };
 
-// ✅ kinoType 기준으로 통일
+// kinoType 기준으로 통일
 const KINOS = [
   {
     kinoType: 'YELLOW_KINO',
@@ -60,14 +60,14 @@ const KINOS = [
 
 const mod = (n, m) => ((n % m) + m) % m;
 
-// ✅ 배경 원 팔레트 (kinoType)
+// 배경 원 팔레트 (kinoType)
 const CIRCLE_PALETTE = {
   YELLOW_KINO: {soft: '#FFF3DE', strong: '#FFE7C4'},
   BLUE_KINO: {soft: '#EAF4FF', strong: '#D7E9FF'},
   PINK_KINO: {soft: '#FFF8FB', strong: '#FFEAF2'},
 };
 
-// ✅ 설명 카드 팔레트 (kinoType)
+// 설명 카드 팔레트 (kinoType)
 const CARD_PALETTE = {
   YELLOW_KINO: {
     bg: '#FFFBF3',
@@ -104,7 +104,7 @@ export default function KinoSelectScreen() {
   const carouselRef = useRef(null);
   const floatAnim = useRef(new Animated.Value(0)).current;
 
-  // ✅ 배경 원 애니메이션 값들 (슬라이드업 + 페이드)
+ // 배경 원 애니메이션 값들 (슬라이드업 + 페이드)
   const circleSoftY = useRef(new Animated.Value(getResponsiveHeight(44))).current;
   const circleSoftOpacity = useRef(new Animated.Value(0)).current;
 
@@ -136,7 +136,7 @@ export default function KinoSelectScreen() {
     dispatch(
       updateKinoPersonalityThunk({
         chatRoomId,
-        personality: selectedPersonality, // ✅ 이걸로 보내야 서버가 바뀜
+        personality: selectedPersonality, // 이걸로 보내야 서버가 바뀜
       }),
     )
       .unwrap()
@@ -149,26 +149,23 @@ export default function KinoSelectScreen() {
       .catch(err => console.error('🚨 키노 변경 실패:', err));
   };
 
-  // ✅ 현재 선택 kinoType
   const currentKinoType = useMemo(() => {
     return KINOS[currentIndex]?.kinoType || 'YELLOW_KINO';
   }, [currentIndex]);
 
-  // ✅ 현재 선택 kinoType에 따른 원 색상
   const circleColors = useMemo(() => {
     return CIRCLE_PALETTE[currentKinoType] || CIRCLE_PALETTE.YELLOW_KINO;
   }, [currentKinoType]);
 
-  // ✅ 현재 선택 kinoType에 따른 카드 색상
   const cardColors = useMemo(() => {
     return CARD_PALETTE[currentKinoType] || CARD_PALETTE.YELLOW_KINO;
   }, [currentKinoType]);
 
-  /**
-   * ✅ 줄바꿈 안정화 + 하이라이트(키노) 유지:
-   * - "한 줄"만 받아서 하이라이트 처리
-   * - 전체 텍스트는 split('\n') 후, 하나의 Text 컨테이너 안에서 렌더
-   */
+ /**
+ * 줄바꿈 안정화 + 하이라이트(키노) 유지:
+ * - "한 줄"만 받아서 하이라이트 처리
+ * - 전체 텍스트는 split('\n') 후, 하나의 Text 컨테이너 안에서 렌더
+ */
   const renderHighlightedLine = useCallback(
     line => {
       if (!line) return null;
@@ -192,7 +189,7 @@ export default function KinoSelectScreen() {
     [cardColors.highlight],
   );
 
-  // 둥둥 모션(캐릭터)
+ // 둥둥 모션(캐릭터)
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -227,7 +224,7 @@ export default function KinoSelectScreen() {
     ],
   };
 
-  // ✅ 캐릭터(키노)가 바뀔 때마다: 원 2개가 아래에서 위로 올라오며 깔리기
+ // 캐릭터(키노)가 바뀔 때마다: 원 2개가 아래에서 위로 올라오며 깔리기
   useEffect(() => {
     circleSoftY.setValue(getResponsiveHeight(54));
     circleSoftOpacity.setValue(0);
@@ -281,7 +278,7 @@ export default function KinoSelectScreen() {
         각기 다른 성격의 키노를 만나보세요
       </Text>
 
-      {/* ✅ 카드도 키노 색에 맞게 변경 */}
+      {/* 카드도 키노 색에 맞게 변경 */}
       <View
         style={[
           styles.textCard,
@@ -409,7 +406,7 @@ export default function KinoSelectScreen() {
 }
 
 /**
- * ✅ 줄바꿈을 확실히 먹이면서 애니메이션 페이드 유지
+ * 줄바꿈을 확실히 먹이면서 애니메이션 페이드 유지
  * - 텍스트를 lines로 나눈 뒤
  * - "단일 Text 컨테이너" 안에서 줄별 렌더
  * - 줄 사이에는 '\n'을 그대로 넣어 RN이 라인 레이아웃을 안정적으로 계산하게 함
@@ -498,7 +495,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(18),
     borderRadius: getResponsiveWidth(20),
 
-    // ✅ 기본값(혹시 모를 fallback)
+ // 기본값(혹시 모를 fallback)
     backgroundColor: BACKGROUND_COLORS.primaryBg,
     borderWidth: 1,
     borderColor: 'rgba(244,226,208,0.9)',
@@ -519,7 +516,7 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSize(15),
     fontFamily:
       Platform.OS === 'android' ? 'Pretendard-Regular' : 'Pretendard-Light',
-    // ✅ 줄바꿈/줄간격 안정화: height 기반보다 fontSize 기반이 흔들림 적음
+ // 줄바꿈/줄간격 안정화: height 기반보다 fontSize 기반이 흔들림 적음
     lineHeight: getResponsiveFontSize(21),
     color: '#18181B',
   },

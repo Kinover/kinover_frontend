@@ -6,12 +6,12 @@ import {
   getResponsiveWidth,
 } from '../utils/responsive';
 
-// ✅ 햅틱 유틸
+// 햅틱 유틸
 import {hapticLight} from '../utils/haptic';
 
 export default function FloatingButton({type, navigation}) {
   const handleClick = () => {
-    // ✅ 플로팅 버튼은 가볍게
+ // 플로팅 버튼은 가볍게
     hapticLight();
 
     if (type === 'communication') {
@@ -51,10 +51,10 @@ const styles = StyleSheet.create({
     right: getResponsiveWidth(23),
     zIndex: 9,
 
-    // Android
+ // Android
     elevation: 10,
 
-    // iOS
+ // iOS
     shadowOffset: {width: 0, height: 2.5},
     shadowRadius: 4,
     shadowColor: '#000',

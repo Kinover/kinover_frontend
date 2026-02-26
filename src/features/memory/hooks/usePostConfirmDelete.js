@@ -2,7 +2,7 @@
 import {useCallback, useState} from 'react';
 
 /**
- * ✅ 삭제 확인 모달 전담
+ * 삭제 확인 모달 전담
  * - image / post / comment 3종 지원
  */
 export default function usePostConfirmDelete({
@@ -55,7 +55,6 @@ export default function usePostConfirmDelete({
         toast?.('게시글을 삭제했어요');
       } else if (pendingDeleteType === 'comment') {
         if (pendingCommentId && postId) {
-          // 네 기존 형태: dispatch(deleteCommentThunk(pendingCommentId, postId))
           await dispatch(deleteCommentThunk(pendingCommentId, postId));
           toast?.('댓글을 삭제했어요');
         }

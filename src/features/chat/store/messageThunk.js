@@ -65,7 +65,7 @@ const normalizePreviewMessage = (msg, fallbackBody = null) => {
 };
 
 const genClientId = () => {
-  // 가볍게 유니크만 보장하면 OK
+ // 가볍게 유니크만 보장하면 OK
   return `c_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 };
 
@@ -149,12 +149,12 @@ export const fetchMoreMessagesThunk = (chatRoomId, beforeTime) => {
 /**
  * messageBody 최소 권장:
  * {
- *   chatRoomId,
- *   senderId,
- *   content,
- *   messageType: 'text' | 'image' | 'video',
- *   imageUrls?: [],
- *   mediaUrls?: [],
+ * chatRoomId,
+ * senderId,
+ * content,
+ * messageType: 'text' | 'image' | 'video',
+ * imageUrls?: [],
+ * mediaUrls?: [],
  * }
  */
 export const sendMessageWsThunk = (messageBody, chatRoomId, userId) => {
@@ -164,7 +164,7 @@ export const sendMessageWsThunk = (messageBody, chatRoomId, userId) => {
     const clientMessageId = genClientId();
     const nowIso = new Date().toISOString();
 
-    // ✅ optimistic (messageSlice의 upsert 로직과 맞춤)
+ // optimistic (messageSlice의 upsert 로직과 맞춤)
     const optimistic = {
       ...messageBody,
       chatRoomId: String(chatRoomId),
@@ -175,10 +175,10 @@ export const sendMessageWsThunk = (messageBody, chatRoomId, userId) => {
       localStatus: 'sending',
     };
 
-    // 1) 화면에 먼저 꽂기
+ // 1) 화면에 먼저 꽂기
     dispatch(addMessage({chatRoomId: String(chatRoomId), message: optimistic}));
 
-    // 2) preview도 먼저 갱신
+ // 2) preview도 먼저 갱신
     const previewPayload = normalizePreviewMessage(optimistic, messageBody);
     dispatch(
       applyMessagePreview({
@@ -189,15 +189,15 @@ export const sendMessageWsThunk = (messageBody, chatRoomId, userId) => {
     );
     dispatch(bumpListRevision());
 
-    // 3) WS 전송 (백엔드 WebSocketMessageHandler는 MessageDTO로 파싱)
+ // 3) WS 전송 (백엔드 WebSocketMessageHandler는 MessageDTO로 파싱)
     try {
       const payloadToSend = {
         ...messageBody,
         chatRoomId,
         senderId: userId,
-        clientMessageId, // ✅ 서버가 그대로 저장/브로드캐스트하면 매칭이 깔끔해짐
+        clientMessageId, // 서버가 그대로 저장/브로드캐스트하면 매칭이 깔끔해짐
         createdAt: nowIso,
-        // type은 안 넣어도 서버 default가 message:new라 OK
+ // type은 안 넣어도 서버 default가 message:new라 OK
       };
 
       const ok = sendChat(payloadToSend);
@@ -210,8 +210,7 @@ export const sendMessageWsThunk = (messageBody, chatRoomId, userId) => {
     } catch (e) {
       dispatch(setMessageError({chatRoomId, error: e.message}));
 
-      // 실패 표시가 필요하면 localStatus 바꿔치기 하고 싶겠지만
-      // 지금 messageSlice에 update reducer가 없으니, 최소는 에러만 저장
+ // 실패 표시가 필요하면 localStatus 바꿔치기 하고 싶겠지만
       return {ok: false, clientMessageId};
     } finally {
       dispatch(setMessageLoading({chatRoomId, isLoading: false}));
@@ -258,7 +257,7 @@ export const receiveMessageThunk = (incomingMessage, userId) => {
 };
 
 /**
- * ✅ WS에서 오는 room:read 브로드캐스트 처리
+ * WS에서 오는 room:read 브로드캐스트 처리
  * payload: { type:'room:read', chatRoomId, userId, lastReadAt }
  */
 export const receiveReadPointerThunk = payload => {
@@ -269,7 +268,7 @@ export const receiveReadPointerThunk = payload => {
 
     if (!rid || readerId == null || !lastReadAt) return;
 
-    // 1) 포인터 저장
+ // 1) 포인터 저장
     dispatch(
       applyReadPointer({
         chatRoomId: rid,
@@ -278,7 +277,7 @@ export const receiveReadPointerThunk = payload => {
       }),
     );
 
-    // 2) "내가 읽었다" 이벤트면 unreadCount 0으로
+ // 2) "내가 읽었다" 이벤트면 unreadCount 0으로
     const state = getState?.();
     const myId = state?.user?.userId ?? state?.auth?.userId ?? null;
 
@@ -292,7 +291,7 @@ export const receiveReadPointerThunk = payload => {
  * 4) 읽음 처리 (REST + WS)
  * ========================= */
 /**
- * ✅ REST 저장
+ * REST 저장
  * POST /api/chatRoom/{chatRoomId}/read
  * body: { lastReadAt: LocalDateTime }
  */
@@ -321,7 +320,7 @@ export const markReadRestThunk = (chatRoomId, lastReadAt) => {
 };
 
 /**
- * ✅ WS 읽음 전송: type=room:read
+ * WS 읽음 전송: type=room:read
  * - 서버가 markRead 처리 + room 멤버들에게 브로드캐스트
  */
 export const markReadWsThunk = (chatRoomId, lastReadAt) => {
@@ -332,7 +331,7 @@ export const markReadWsThunk = (chatRoomId, lastReadAt) => {
     const sent = sendRead(chatRoomId, lastReadAt);
     if (!sent) return {ok: false};
 
-    // 내가 보낸 read는 UI에서도 즉시 반영
+ // 내가 보낸 read는 UI에서도 즉시 반영
     const state = getState?.();
     const myId = state?.user?.userId ?? state?.auth?.userId ?? null;
 
@@ -352,7 +351,7 @@ export const markReadWsThunk = (chatRoomId, lastReadAt) => {
 };
 
 /**
- * ✅ 포인터 조회 (REST)
+ * 포인터 조회 (REST)
  * GET /api/chatRoom/{chatRoomId}/readPointers
  * 읽음표시(누가 어디까지 읽었는지) 초기 세팅용
  */
@@ -361,7 +360,7 @@ export const fetchReadPointersThunk = chatRoomId => {
     try {
       const res = await apiClient.get(`/chatRoom/${chatRoomId}/readPointers`);
 
-      // res.data: { chatRoomId, pointers: [{userId,lastReadAt}, ...] }
+ // res.data: { chatRoomId, pointers: [{userId,lastReadAt}, ...] }
       dispatch(
         setReadPointers({
           chatRoomId: String(chatRoomId),

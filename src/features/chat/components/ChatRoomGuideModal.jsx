@@ -26,8 +26,13 @@ export default function ChatRoomGuideModal({
             {step + 1}/{totalSteps}
           </Text>
 
-          <Text  allowFontScaling={false} style={styles.title}>{title}</Text>
-          <Text allowFontScaling={false} style={styles.description}>{description}</Text>
+          {!!title && (
+            <Text allowFontScaling={false} style={styles.title}>{title}</Text>
+          )}
+
+          <View style={styles.contentBody}>
+            <Text allowFontScaling={false} style={styles.description}>{description}</Text>
+          </View>
 
           <View style={styles.buttonRow}>
             <TouchableOpacity onPress={onSkip}>
@@ -59,6 +64,13 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     paddingHorizontal: getResponsiveWidth(18),
     paddingVertical: getResponsiveHeight(18),
+  },
+  contentBody: {
+    backgroundColor: 'rgba(17, 24, 39, 0.06)',
+    borderRadius: 12,
+    paddingHorizontal: getResponsiveWidth(14),
+    paddingVertical: getResponsiveHeight(14),
+    marginBottom: getResponsiveHeight(16),
   },
   stepText: {
     fontSize: getResponsiveFontSize(11),

@@ -35,7 +35,6 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 
-// ✅ 추가: 폰트모드 구독
 import {useSelector} from 'react-redux';
 import {FONT_MODE} from 'store/uiSlice';
 
@@ -145,7 +144,7 @@ function ZoomableImage({uri, isActive, styles}) {
 
 /* ================= MediaModal ================= */
 /**
- * ✅ 지원 형태
+ * 지원 형태
  * 1) (신규) mediaItems: [{ kind: 'IMAGE'|'VIDEO', url: string, thumb?: string }]
  * 2) (기존) mediaUrls: string[], mediaType: 'image'|'video'
  */
@@ -157,23 +156,22 @@ export default function MediaModal({
   initialIndex = 0,
   onClose,
 }) {
-  // ✅ 폰트모드 구독 (이게 있어야 “모드 변경 → 리렌더” 확정)
   const fontMode = useSelector(state => state.ui.fontMode);
 
-  // ✅ multiplier
+ // multiplier
   const fontMul = useMemo(() => {
     if (fontMode === FONT_MODE.EXTRA_LARGE) return 1.22;
     if (fontMode === FONT_MODE.LARGE) return 1.12;
     return 1.0;
   }, [fontMode]);
 
-  // ✅ 폰트 사이즈 함수
+ // 폰트 사이즈 함수
   const rf = useCallback(
     n => Math.round(getResponsiveFontSize(n) * fontMul),
     [fontMul],
   );
 
-  // ✅ styles 재생성
+ // styles 재생성
   const styles = useMemo(() => makeStyles(rf), [rf]);
 
   const cancelRequestedRef = useRef(false);
@@ -338,7 +336,7 @@ export default function MediaModal({
             );
         }
       } catch (e) {
-        // 실패/취소는 조용히 종료
+ // 실패/취소는 조용히 종료
       } finally {
         setTimeout(() => {
           setSaving(false);
@@ -406,7 +404,7 @@ export default function MediaModal({
           <Image
             source={require('../../../assets/images/dots_white.png')}
             style={styles.dotsIcon}
-            // resizeMode={FastImage.resizeMode.contain}
+ // resizeMode={FastImage.resizeMode.contain}
           />
         </TouchableOpacity>
       </View>

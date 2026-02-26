@@ -17,7 +17,7 @@ export const useScheduleCrud = ({
   bumpCount,        // 날짜별 일정 개수 낙관적 업데이트
   setRefreshTrigger,
   closeSheet,
-  selectedDateKey,  // ✅ "YYYY-MM-DD" 포맷 (달력 key랑 동일)
+  selectedDateKey,  // "YYYY-MM-DD" 포맷 (달력 key랑 동일)
 }) => {
   const dispatch = useDispatch();
 
@@ -35,7 +35,7 @@ export const useScheduleCrud = ({
 
       try {
         if (editingSchedule) {
-          // ✏️ 일정 수정
+ // 일정 수정
           await dispatch(
             updateScheduleThunk(
               {
@@ -52,11 +52,10 @@ export const useScheduleCrud = ({
             ),
           ).unwrap();
 
-          // 수정은 보통 같은 날짜 안에서 내용만 바꾸니까
-          // 날짜가 바뀌지 않는 한 bumpCount 필요 없음
-          // (날짜 이동 기능 넣으면 oldKey/newKey 비교해서 -1/+1 해주면 됨)
+ // 수정은 보통 같은 날짜 안에서 내용만 바꾸니까
+ // 날짜가 바뀌지 않는 한 bumpCount 필요 없음
+ // (날짜 이동 기능 넣으면 oldKey/newKey 비교해서 -1/+1 해주면 됨)
         } else {
-          // ➕ 일정 추가 시: 선택된 날짜에 일정 +1 (달력 색 즉시 반영)
           bumpCount(selectedDateKey, 1);
 
           await dispatch(
@@ -70,7 +69,7 @@ export const useScheduleCrud = ({
           ).unwrap();
         }
       } finally {
-        // 서버 데이터도 다시 불러와서 정합성 맞추기
+ // 서버 데이터도 다시 불러와서 정합성 맞추기
         setRefreshTrigger(prev => prev + 1);
         closeSheet();
       }
@@ -94,15 +93,14 @@ export const useScheduleCrud = ({
     if (!editingSchedule?.scheduleId) return;
 
     try {
-      // 삭제되는 일정의 날짜 key 결정
-      // editingSchedule.date가 "YYYY-MM-DD"라면 그걸 우선 사용
-      // 없거나 포맷이 다르면 현재 선택된 날짜 key로 fallback
+ // 삭제되는 일정의 날짜 key 결정
+ // editingSchedule.date가 "YYYY-MM-DD"라면 그걸 우선 사용
       const deleteKey =
         editingSchedule.date && editingSchedule.date.includes('-')
           ? editingSchedule.date
           : selectedDateKey;
 
-      // 🔻 낙관적 -1 (달력 색 바로 반영)
+ // 낙관적 -1 (달력 색 바로 반영)
       bumpCount(deleteKey, -1);
 
       await dispatch(

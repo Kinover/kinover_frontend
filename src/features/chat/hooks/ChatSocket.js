@@ -1,22 +1,28 @@
-// src/features/chat/socket/chatSocket.js
+// src/features/chat/hooks/ChatSocket.js
 import {AppState} from 'react-native';
 import {getToken} from 'utils/storage';
-
+import {
+  WS_CHAT_BASE_URL,
+  WS_CHAT_PATH,
+  CHAT_BATCH_DEBOUNCE_MS,
+  RECONNECT_DELAY_BASE_MS,
+  RECONNECT_DELAY_MAX_MS,
+} from 'config/constants';
 import {receiveMessageThunk} from '../store/messageThunk';
 import {applyReadPointer} from '../store/chatRoomSlice';
-
-const BATCH_DEBOUNCE_MS = 80;
 
 let ws = null;
 let reconnectTimer = null;
 let reconnectAttempt = 0;
 let connectedToken = null;
 let isManuallyClosed = false;
+/** background 진입으로 인한 일시 해제 시, active 시 자동 재연결 */
+let isPausedByBackground = false;
 
 let dispatchRef = null;
 let getStateRef = null;
 
-// ✅ 메시지 배칭: 짧은 시간에 여러 건 들어오면 한 번에 디스패치
+// 메시지 배칭: 짧은 시간에 여러 건 들어오면 한 번에 디스패치
 let messageBatch = [];
 let batchTimer = null;
 
@@ -37,7 +43,7 @@ function flushMessageBatch() {
 
 function scheduleFlush() {
   if (batchTimer) return;
-  batchTimer = setTimeout(flushMessageBatch, BATCH_DEBOUNCE_MS);
+  batchTimer = setTimeout(flushMessageBatch, CHAT_BATCH_DEBOUNCE_MS);
 }
 
 function clearReconnectTimer() {
@@ -83,7 +89,7 @@ async function openSocket() {
   connectedToken = token;
   isManuallyClosed = false;
 
-  ws = new WebSocket(`ws://kinover.shop:9090/chat?token=${token}`);
+  ws = new WebSocket(`${WS_CHAT_BASE_URL}${WS_CHAT_PATH}?token=${token}`);
 
   ws.onopen = () => {
     reconnectAttempt = 0;
@@ -95,11 +101,11 @@ async function openSocket() {
       const data = JSON.parse(e.data);
       const type = data?.type ?? 'message:new';
 
-      // =========================
-      // A) 읽음 브로드캐스트 처리 (실시간 unreadCount 갱신용)
-      // =========================
+ // =========================
+ // A) 읽음 브로드캐스트 처리 (실시간 unreadCount 갱신용)
+ // =========================
       if (type === 'room:read') {
-        // payload: { type:'room:read', chatRoomId, userId, lastReadAt }
+ // payload: { type:'room:read', chatRoomId, userId, lastReadAt }
         const chatRoomId = data?.chatRoomId;
         const userId = data?.userId;
         const lastReadAt = data?.lastReadAt;
@@ -116,9 +122,9 @@ async function openSocket() {
         return;
       }
 
-      // =========================
-      // B) 일반 메시지 처리 (배칭)
-      // =========================
+ // =========================
+ // B) 일반 메시지 처리 (배칭)
+ // =========================
       const incomingRoomId = String(data?.chatRoomId ?? '');
       if (!incomingRoomId) return;
 
@@ -139,8 +145,12 @@ async function openSocket() {
     console.log('🔌 [GLOBAL WS] close', e?.code, e?.reason);
 
     if (isManuallyClosed) return;
+    if (isPausedByBackground) return;
 
-    const delay = Math.min(1000 * (reconnectAttempt + 1), 5000);
+    const delay = Math.min(
+      RECONNECT_DELAY_BASE_MS * (reconnectAttempt + 1),
+      RECONNECT_DELAY_MAX_MS,
+    );
     reconnectAttempt += 1;
 
     clearReconnectTimer();
@@ -148,6 +158,25 @@ async function openSocket() {
       openSocket();
     }, delay);
   };
+}
+
+/**
+ * 백그라운드 진입 시 소켓만 해제. active 시 resumeFromBackground()로 재연결.
+ */
+export function pauseForBackground() {
+  isPausedByBackground = true;
+  cleanupWsOnly();
+}
+
+/**
+ * 포그라운드 복귀 시 재연결.
+ */
+export function resumeFromBackground() {
+  if (!dispatchRef || !getStateRef || isManuallyClosed) return;
+  isPausedByBackground = false;
+  clearReconnectTimer();
+  reconnectAttempt = 0;
+  openSocket();
 }
 
 /**
@@ -162,7 +191,9 @@ export function startChatSocket(dispatch, getState) {
 
   const sub = AppState.addEventListener('change', state => {
     if (state === 'active') {
-      openSocket();
+      resumeFromBackground();
+    } else if (state === 'background' || state === 'inactive') {
+      pauseForBackground();
     }
   });
 
@@ -173,6 +204,7 @@ export function startChatSocket(dispatch, getState) {
 
 export function stopChatSocket() {
   isManuallyClosed = true;
+  isPausedByBackground = false;
   connectedToken = null;
   dispatchRef = null;
   getStateRef = null;
@@ -181,6 +213,20 @@ export function stopChatSocket() {
 
 export function isChatSocketOpen() {
   return ws && ws.readyState === WebSocket.OPEN;
+}
+
+/**
+ * 네트워크 재연결 시 즉시 소켓 재연결용 (useNetworkStatus에서 호출)
+ * 앱이 background면 재연결하지 않고, active일 때만 재연결합니다.
+ */
+export function reconnectIfNeeded() {
+  if (!dispatchRef || !getStateRef || isManuallyClosed) return;
+  if (isPausedByBackground) return;
+  const current = AppState?.currentState;
+  if (current && current !== 'active') return;
+  clearReconnectTimer();
+  reconnectAttempt = 0;
+  openSocket();
 }
 
 export function sendChat(payload) {
@@ -195,7 +241,7 @@ export function sendChat(payload) {
 }
 
 /**
- * ✅ 백엔드 WebSocketMessageHandler의 read 이벤트 스펙에 맞춘 전송
+ * 백엔드 WebSocketMessageHandler의 read 이벤트 스펙에 맞춘 전송
  * type: "room:read"
  * chatRoomId: UUID
  * lastReadAt: ISO string or LocalDateTime string

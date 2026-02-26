@@ -77,11 +77,11 @@ const EMOTIONS = [
 const CARD_H_DEFAULT = getResponsiveHeight(115);
 const RADIUS = 14;
 
-// ✅ 그림자 잘림 방지용 “가장자리 여백”
+// 그림자 잘림 방지용 “가장자리 여백”
 const EDGE_GUTTER = getResponsiveWidth(6);
-// ✅ 두 카드 사이 가로 간격
+// 두 카드 사이 가로 간격
 const GAP = getResponsiveWidth(12);
-// ✅ 행 사이 세로 간격 (카드 위아래)
+// 행 사이 세로 간격 (카드 위아래)
 const ROW_GAP = getResponsiveHeight(12);
 
 // ==================== Components ====================
@@ -113,7 +113,7 @@ const EmotionItem = ({
   const select = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
   const bgAnim = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
 
-  // 등장 애니메이션
+ // 등장 애니메이션
   useEffect(() => {
     Animated.timing(appear, {
       toValue: 1,
@@ -123,7 +123,6 @@ const EmotionItem = ({
     }).start();
   }, [appear, index]);
 
-  // 선택 상태 애니메이션
   useEffect(() => {
     Animated.timing(bgAnim, {
       toValue: isSelected ? 1 : 0,
@@ -252,10 +251,10 @@ export default function StateScreen() {
     user.emotion || 'NEUTRAL',
   );
 
-  // 하단 탭바 숨김
+ // 하단 탭바 숨김
   useHideTabBar();
 
-  // 카드 너비 계산 (2열 그리드)
+ // 카드 너비 계산 (2열 그리드)
   const itemWidth = useMemo(() => {
     const screenW = Dimensions.get('window').width;
     const containerPad = getResponsiveWidth(20) * 2;
@@ -264,13 +263,13 @@ export default function StateScreen() {
     return Math.floor(available / 2);
   }, []);
 
-  // 그리드 영역 높이 측정 → 4행으로 나눠 카드 높이 계산
+ // 그리드 영역 높이 측정 → 4행으로 나눠 카드 높이 계산
   const [contentHeight, setContentHeight] = useState(0);
   const rowHeight =
     contentHeight > 0 ? (contentHeight - ROW_GAP * 3) / 4 : CARD_H_DEFAULT;
   const cardHeight = Math.max(getResponsiveHeight(80), rowHeight - ROW_GAP);
 
-  // Android 3버튼 네비게이션 바: insets.bottom이 0이면 fallback 적용
+ // Android 3버튼 네비게이션 바: insets.bottom이 0이면 fallback 적용
   const bottomSafe = useMemo(() => {
     const base =
       Platform.OS === 'android'
@@ -292,7 +291,7 @@ export default function StateScreen() {
       .catch(err => console.error('❌ 감정 저장 실패:', err));
   };
 
-  // 8개 감정을 2열×4행으로 나눔
+ // 8개 감정을 2열×4행으로 나눔
   const rows = useMemo(() => {
     const list = [...EMOTIONS];
     const result = [];

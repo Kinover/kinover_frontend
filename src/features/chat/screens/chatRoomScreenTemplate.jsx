@@ -7,7 +7,7 @@ import {onLeaveChat} from '../hooks/onLeaveChat';
 
 import ChatRoomMessageList from '../components/ChatRoomMessageList';
 import ChatRoomInputArea from '../components/ChatRoomInputArea';
-import ChatSettings from './ChatSetting';
+import ChatSettings from './chatSetting';
 import ToastModal from 'components/modal/ToastModal';
 
 export default function ChatRoomScreenTemplate({

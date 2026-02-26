@@ -6,7 +6,7 @@ import {
   getResponsiveHeight,
 } from '../utils/responsive';
 
-// ✅ TabNavigator를 찾는 유틸
+// TabNavigator를 찾는 유틸
 function findTabNavigator(nav) {
   let currentNav = nav;
   for (let i = 0; i < 5; i++) {
@@ -18,7 +18,7 @@ function findTabNavigator(nav) {
   return null;
 }
 
-// ✅ 옵션을 받는 커스텀 훅
+// 옵션을 받는 커스텀 훅
 export default function useHideTabBar({stayHidden = false} = {}) {
   const navigation = useNavigation();
 
@@ -31,7 +31,7 @@ export default function useHideTabBar({stayHidden = false} = {}) {
         return;
       }
 
-      // 탭바 숨김
+ // 탭바 숨김
       tabNavigation.setOptions({
         tabBarStyle: {
           display: 'none',
@@ -39,7 +39,7 @@ export default function useHideTabBar({stayHidden = false} = {}) {
       });
 
       return () => {
-        // 🟡 조건에 따라 복원 여부 결정
+ // 조건에 따라 복원 여부 결정
         if (!stayHidden) {
           tabNavigation.setOptions({
             tabBarStyle: {

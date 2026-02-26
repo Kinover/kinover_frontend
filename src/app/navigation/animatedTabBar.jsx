@@ -54,11 +54,11 @@ function AnimatedTabButton({
   const renderIcon = options.tabBarIcon;
   const renderLabel = options.tabBarLabel;
 
-  // ✅ press 애니메이션
+ // press 애니메이션
   const pressScale = useSharedValue(1);
   const pressOpacity = useSharedValue(1);
 
-  // ✅ focused 상태 애니메이션(항상 살짝 강조)
+ // focused 상태 애니메이션(항상 살짝 강조)
   const focusedScale = useSharedValue(focused ? 1.025 : 1);
 
   useEffect(() => {
@@ -96,22 +96,21 @@ function AnimatedTabButton({
 
     if (event.defaultPrevented) return;
 
-    // ✅ 핵심: 이미 그 탭에 있는 상태에서 탭 아이콘을 다시 누르면 "해당 탭의 기본 화면"으로 이동
-    // - 각 탭이 Stack을 품고 있다는 전제
-    // - rootScreenName(예: '홈', '소통', '일정', '추억')으로 스택의 initial screen으로 보내기
+ // - 각 탭이 Stack을 품고 있다는 전제
+ // - rootScreenName(예: '홈', '소통', '일정', '추억')으로 스택의 initial screen으로 보내기
     if (focused) {
       const root = rootScreenName || route.name;
 
-      // (1) 보통 케이스: "탭 route + 내부 stack screen" 지정
-      // => navigation.navigate('홈', { screen: '홈' }) 같은 형태
+ // (1) 보통 케이스: "탭 route + 내부 stack screen" 지정
+ // => navigation.navigate('홈', { screen: '홈' }) 같은 형태
       try {
         navigation.navigate(route.name, {screen: root});
         return;
       } catch {
-        // ignore
+ // ignore
       }
 
-      // (2) fallback: 그래도 안 되면 탭만 다시 네비게이트 (구조가 다를 때)
+ // (2) fallback: 그래도 안 되면 탭만 다시 네비게이트 (구조가 다를 때)
       try {
         navigation.navigate(route.name);
       } catch {
@@ -120,7 +119,7 @@ function AnimatedTabButton({
       return;
     }
 
-    // ✅ 다른 탭으로 이동
+ // 다른 탭으로 이동
     navigation.navigate(route.name);
   };
 
@@ -162,14 +161,14 @@ export function AnimatedTabBar(props) {
   const activeTabState = props?.state?.routes?.[props.state.index]?.state;
   const focusedScreenName = getFocusedRouteName(activeTabState);
 
-  // ✅ "각 탭의 기본(루트) 스크린 이름"
-  // - 여기 값은 "각 탭 Stack.Navigator의 initialRouteName" 과 같아야 함
+ // "각 탭의 기본(루트) 스크린 이름"
+ // - 여기 값은 "각 탭 Stack.Navigator의 initialRouteName" 과 같아야 함
   const ROOT_SCREENS = {
     홈: '홈',
     소통: '소통',
     일정: '일정',
     추억: '추억',
-    // 만약 탭 이름/스택 initialRouteName이 다르면 여기만 맞춰주면 됨
+ // 만약 탭 이름/스택 initialRouteName이 다르면 여기만 맞춰주면 됨
   };
 
   const root = ROOT_SCREENS[activeTabName];
@@ -213,7 +212,7 @@ export function AnimatedTabBar(props) {
               descriptor={descriptor}
               navigation={props.navigation}
               onHaptic={onHaptic}
-              rootScreenName={ROOT_SCREENS[route.name]} // ✅ 여기!
+              rootScreenName={ROOT_SCREENS[route.name]} // 여기!
             />
           );
         })}

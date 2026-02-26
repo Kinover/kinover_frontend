@@ -1,16 +1,17 @@
 // src/features/schedule/store/scheduleThunk.js
 import {createAsyncThunk} from '@reduxjs/toolkit';
 import {apiClient} from 'utils/apiClient';
+import {SCHEDULES} from 'config/apiEndpoints';
 import {
   setScheduleList,
   setScheduleLoading,
   setScheduleError,
-  setScheduleCountPerDay, // ✅ 추가: count를 reducer로 직접 넣기용
-} from '../store/scheduleSlice';
+  setScheduleCountPerDay, // 추가: count를 reducer로 직접 넣기용
+} from './scheduleSlice';
 
-// ✅ 게스트 모드 확인
+// 게스트 모드 확인
 import {getGuestMode} from 'utils/storage';
-// ✅ 앱스토어 캡처용 더미 (STORE_MOCK_ENABLED 시)
+// 앱스토어 캡처용 더미 (STORE_MOCK_ENABLED 시)
 import {
   STORE_MOCK_ENABLED,
   getStoreMockScheduleList,
@@ -18,15 +19,13 @@ import {
 } from '../../home/utils/storeMockData';
 
 /**
- * ✅ 로딩 흔들림 방지용
+ * 로딩 흔들림 방지용
  * - CRUD(add/modify/remove)에서만 setScheduleLoading(true/false)를 건드리고,
  * - refresh로 태우는 "조회" thunks는 로딩을 건드리지 않도록 분리
  */
 const fetchSchedulesForFamilyAndDateCore = async (familyId, date) => {
-  const apiUrl = `/schedules/get`;
-
   const res = await apiClient.post(
-    apiUrl,
+    SCHEDULES.get,
     {familyId, date},
     {
       headers: {'Content-Type': 'application/json'},
@@ -37,10 +36,8 @@ const fetchSchedulesForFamilyAndDateCore = async (familyId, date) => {
 };
 
 const fetchSchedulesForUserAndDateCore = async (familyId, userId, date) => {
-  const apiUrl = `/schedules/get`;
-
   const res = await apiClient.post(
-    apiUrl,
+    SCHEDULES.get,
     {familyId, userId, date},
     {
       headers: {'Content-Type': 'application/json'},
@@ -51,7 +48,7 @@ const fetchSchedulesForUserAndDateCore = async (familyId, userId, date) => {
 };
 
 /** =========================
- * ✅ 더미 생성 유틸
+ * 더미 생성 유틸
  ========================= */
 
 // YYYY-MM-DD 인지 가볍게 체크
@@ -61,7 +58,7 @@ const pad2 = n => String(n).padStart(2, '0');
 
 // "2026-02-01" 같은 date로 더미 스케줄 리스트 생성
 const makeDummyScheduleList = ({familyId, date, userId}) => {
-  // date가 이상하면 오늘 기준으로라도 만들기
+ // date가 이상하면 오늘 기준으로라도 만들기
   let base = null;
   if (isYMD(date)) {
     const [y, m, d] = date.split('-').map(Number);
@@ -75,7 +72,7 @@ const makeDummyScheduleList = ({familyId, date, userId}) => {
   const d = base.getDate();
   const ymd = `${y}-${pad2(m)}-${pad2(d)}`;
 
-  // 간단히 타입을 섞어 줌(서버 스키마랑 최대한 비슷하게)
+ // 간단히 타입을 섞어 줌(서버 스키마랑 최대한 비슷하게)
   const list = [
     {
       scheduleId: 90001,
@@ -136,7 +133,7 @@ const makeDummyCountPerDay = ({year, month}) => {
     map[key] = (idx % 4) + 1; // 1~4
   });
 
-  // 1일도 살짝
+ // 1일도 살짝
   const key1 = `${year}-${pad2(month)}-01`;
   map[key1] = map[key1] ?? 2;
 
@@ -149,7 +146,7 @@ const refreshAfterMutation = async (dispatch, refresh) => {
 
   const {familyId, date, year, month, userId, mode} = refresh;
 
-  // ✅ 스토어 목업이면: API 안 타고 더미로 리프레시
+ // 스토어 목업이면: API 안 타고 더미로 리프레시
   if (STORE_MOCK_ENABLED) {
     if (familyId && date) {
       const list = getStoreMockScheduleList(date);
@@ -161,7 +158,7 @@ const refreshAfterMutation = async (dispatch, refresh) => {
     return;
   }
 
-  // ✅ 게스트 모드면: API 안 타고 더미로 리프레시
+ // 게스트 모드면: API 안 타고 더미로 리프레시
   const isGuest = await getGuestMode().catch(() => false);
   if (isGuest) {
     const dummyList = makeDummyScheduleList({familyId, date, userId});
@@ -177,7 +174,7 @@ const refreshAfterMutation = async (dispatch, refresh) => {
 
   const jobs = [];
 
-  // ✅ 기본은 가족 전체 조회 (ANNIVERSARY/FAMILY ALL 누락 방지)
+ // 기본은 가족 전체 조회 (ANNIVERSARY/FAMILY ALL 누락 방지)
   if (familyId && date) {
     jobs.push(
       (async () => {
@@ -199,7 +196,6 @@ const refreshAfterMutation = async (dispatch, refresh) => {
     );
   }
 
-  // ✅ 유저 필터 모드일 때만 유저 조회를 추가로
   if (mode === 'USER' && familyId && date && userId != null) {
     jobs.push(
       (async () => {
@@ -225,7 +221,7 @@ const refreshAfterMutation = async (dispatch, refresh) => {
     );
   }
 
-  // ✅ 달력 카운트
+ // 달력 카운트
   if (familyId && year && month) {
     jobs.push(
       dispatch(getScheduleCountPerDayThunk({familyId, year, month})).unwrap?.(),
@@ -243,10 +239,10 @@ export const fetchSchedulesForFamilyAndDateThunk = (familyId, date) => {
       dispatch(setScheduleList(list));
       return list;
     }
-    // ✅ 게스트 모드 분기
+ // 게스트 모드 분기
     const isGuest = await getGuestMode().catch(() => false);
     if (isGuest) {
-      // 로딩 흔들림 없이 더미만 세팅
+ // 로딩 흔들림 없이 더미만 세팅
       const dummy = makeDummyScheduleList({familyId, date, userId: null});
       dispatch(setScheduleList(dummy));
       return dummy;
@@ -284,7 +280,7 @@ export const fetchSchedulesForUserAndDateThunk = (familyId, userId, date) => {
       dispatch(setScheduleList(list));
       return list;
     }
-    // ✅ 게스트 모드 분기
+ // 게스트 모드 분기
     const isGuest = await getGuestMode().catch(() => false);
     if (isGuest) {
       const dummy = makeDummyScheduleList({familyId, date, userId});
@@ -335,17 +331,15 @@ export const addScheduleThunk = (scheduleData, refresh) => {
       }
       return {ok: true, mock: true};
     }
-    // ✅ 게스트 모드 분기: 서버 저장 금지, 대신 UI용 더미 반영
+ // 게스트 모드 분기: 서버 저장 금지, 대신 UI용 더미 반영
     const isGuest = await getGuestMode().catch(() => false);
     if (isGuest) {
-      // 로딩 켜면 UX가 이상할 수 있어(빠르게 끝나니까)
-      // 그래도 통일 원하면 true/false 넣어도 됨
+ // 로딩 켜면 UX가 이상할 수 있어(빠르게 끝나니까)
       const familyId = scheduleData?.familyId ?? refresh?.familyId;
       const date = scheduleData?.date ?? refresh?.date;
       const userId = refresh?.userId;
 
       const dummy = makeDummyScheduleList({familyId, date, userId});
-      // "추가" 느낌 나게 맨 앞에 새 항목 하나 붙이기
       const newItem = {
         scheduleId: Date.now(),
         id: Date.now(),
@@ -369,9 +363,7 @@ export const addScheduleThunk = (scheduleData, refresh) => {
     console.log('📝 [스케줄 추가] 요청 시작:', scheduleData);
 
     try {
-      const apiUrl = `/schedules/add`;
-
-      const res = await apiClient.post(apiUrl, scheduleData, {
+      const res = await apiClient.post(SCHEDULES.add, scheduleData, {
         headers: {'Content-Type': 'application/json'},
       });
 
@@ -411,7 +403,7 @@ export const updateScheduleThunk = (updatedScheduleData, refresh) => {
       }
       return {ok: true, mock: true};
     }
-    // ✅ 게스트 모드 분기: 서버 저장 금지, 대신 리스트에서 해당 항목만 수정
+ // 게스트 모드 분기: 서버 저장 금지, 대신 리스트에서 해당 항목만 수정
     const isGuest = await getGuestMode().catch(() => false);
     if (isGuest) {
       const familyId = updatedScheduleData?.familyId ?? refresh?.familyId;
@@ -441,9 +433,7 @@ export const updateScheduleThunk = (updatedScheduleData, refresh) => {
     console.log('✏️ [스케줄 수정] 요청 시작:', updatedScheduleData);
 
     try {
-      const apiUrl = `/schedules/modify`;
-
-      const res = await apiClient.put(apiUrl, updatedScheduleData, {
+      const res = await apiClient.put(SCHEDULES.modify, updatedScheduleData, {
         headers: {'Content-Type': 'application/json'},
       });
 
@@ -482,7 +472,7 @@ export const deleteScheduleThunk = (scheduleId, refresh) => {
       }
       return {ok: true, mock: true};
     }
-    // ✅ 게스트 모드 분기: 서버 삭제 금지, 대신 리스트에서 제거한 것처럼 보이기
+ // 게스트 모드 분기: 서버 삭제 금지, 대신 리스트에서 제거한 것처럼 보이기
     const isGuest = await getGuestMode().catch(() => false);
     if (isGuest) {
       const familyId = refresh?.familyId;
@@ -506,9 +496,7 @@ export const deleteScheduleThunk = (scheduleId, refresh) => {
     console.log('🗑️ [스케줄 삭제] 요청 시작:', scheduleId);
 
     try {
-      const apiUrl = `/schedules/remove/${scheduleId}`;
-
-      const res = await apiClient.delete(apiUrl);
+      const res = await apiClient.delete(SCHEDULES.remove(scheduleId));
 
       console.log('✅ [스케줄 삭제] 성공:', res.data);
 
@@ -537,23 +525,21 @@ export const getScheduleCountPerDayThunk = createAsyncThunk(
     if (STORE_MOCK_ENABLED) {
       return getStoreMockScheduleCountPerDay(year, month);
     }
-    // ✅ 게스트 모드면 더미 리턴
+ // 게스트 모드면 더미 리턴
     const isGuest = await getGuestMode().catch(() => false);
     if (isGuest) {
       return makeDummyCountPerDay({year, month});
     }
 
     try {
-      const apiUrl = `/schedules/count-per-day`;
-
-      const res = await apiClient.get(apiUrl, {
+      const res = await apiClient.get(SCHEDULES.countPerDay, {
         params: {familyId, year, month},
       });
 
       const originalData = res.data; // { "2025-06-26": 1, ... }
       const normalized = {};
 
-      // ✅ 문자열 키는 그대로 사용
+ // 문자열 키는 그대로 사용
       Object.keys(originalData || {}).forEach(key => {
         normalized[key] = originalData[key];
       });

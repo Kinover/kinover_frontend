@@ -19,7 +19,7 @@ const buildPreviewPayload = (msg, fallbackText = '') => {
 };
 
 /**
- * ✅ 메시지 추가 + 채팅방 리스트 미리보기 갱신을 한 번에
+ * 메시지 추가 + 채팅방 리스트 미리보기 갱신을 한 번에
  * - optimistic/서버 echo/상대 메시지 모두 여기로 넣으면 리스트가 항상 최신화됨
  */
 export const addMessageAndUpdateRoom =

@@ -76,11 +76,10 @@ function ZoomableImage({
   const lastTx = useSharedValue(0);
   const lastTy = useSharedValue(0);
 
-  // ✅ “진짜 확대가 시작됐을 때만” 페이징 끄기 위한 플래그
+ // “진짜 확대가 시작됐을 때만” 페이징 끄기 위한 플래그
   const disabledPagingOnceRef = useRef(false);
 
-  // ✅ 핵심: 확대 전(=scale 1)에는 Pan 제스처를 아예 비활성화해서
-  // FlatList 가로 스와이프를 막지 않게 함
+ // FlatList 가로 스와이프를 막지 않게 함
   const [zoomed, setZoomed] = useState(false);
 
   const setPaging = useCallback(
@@ -122,7 +121,7 @@ function ZoomableImage({
           setPaging(false);
         }
       } else {
-        // 아직 확대가 아닌 상태면 스와이프 가능해야 함
+ // 아직 확대가 아닌 상태면 스와이프 가능해야 함
         if (!disabledPagingOnceRef.current) {
           setPaging(true);
         }
@@ -136,7 +135,7 @@ function ZoomableImage({
       }
     });
 
-  // ✅ zoomed일 때만 pan이 켜짐 -> 기본 상태에서는 FlatList 스와이프가 자연스럽게 동작
+ // zoomed일 때만 pan이 켜짐 -> 기본 상태에서는 FlatList 스와이프가 자연스럽게 동작
   const pan = Gesture.Pan()
     .enabled(zoomed)
     .runOnJS(true)
@@ -185,12 +184,12 @@ function ZoomableImage({
     .numberOfTaps(1)
     .runOnJS(true)
     .onEnd(() => {
-      // 필요하면 UI 토글
+ // 필요하면 UI 토글
     });
 
   const taps = Gesture.Exclusive(doubleTap, singleTap);
 
-  // ✅ pan은 zoomed일 때만 켜지므로, 기본 상태에서 가로 스와이프가 FlatList로 잘 넘어감
+ // pan은 zoomed일 때만 켜지므로, 기본 상태에서 가로 스와이프가 FlatList로 잘 넘어감
   const composed = Gesture.Simultaneous(pinch, pan, taps);
 
   const style = useAnimatedStyle(() => ({
@@ -305,7 +304,7 @@ export default function MediaViewer({
         });
       }
     } catch (e) {
-      // 실패/취소는 조용히 종료
+ // 실패/취소는 조용히 종료
     } finally {
       setTimeout(() => {
         setSaving(false);
@@ -314,11 +313,20 @@ export default function MediaViewer({
     }
   }, [media, saving]);
 
+ // OOM 방지: 활성 페이지만 미디어 마운트
   const renderItem = useCallback(
     ({item, index: idx}) => {
       const isVideo = String(item?.type) === 'video';
-      const uri = item?.uri;
+      const uri = item?.uri ?? '';
       const isActive = safeIndex === idx;
+
+      if (!isActive) {
+        return (
+          <View style={styles.page}>
+            <View style={styles.mediaPlaceholder} />
+          </View>
+        );
+      }
 
       return (
         <View style={styles.page}>
@@ -328,8 +336,9 @@ export default function MediaViewer({
               style={styles.video}
               resizeMode="contain"
               controls
-              paused={!isActive}
+              paused={false}
               onError={e => console.log('❌ MediaViewer video error:', uri, e)}
+              ignoreSilentSwitch="ignore"
             />
           ) : (
             <ZoomableImage
@@ -508,6 +517,12 @@ const styles = StyleSheet.create({
   video: {
     width: screenWidth,
     height: screenHeight,
+  },
+
+  mediaPlaceholder: {
+    width: screenWidth,
+    height: screenHeight,
+    backgroundColor: 'rgba(30,30,30,0.6)',
   },
 
   progressOverlay: {

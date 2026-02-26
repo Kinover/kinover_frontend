@@ -17,10 +17,12 @@ const isWithinWindow = (startAt, endAt) => {
  * @param {Object} opts
  * @param {string} [opts.screen] - 화면 구분 (나중에 이벤트 노출 화면 필터용)
  * @param {boolean} [opts.hideEmotionPickWhenHasEmotion] - true면 감정 선택 이벤트가 있어도, 이미 감정이 선택된 경우 해당 이벤트 제외
+ * @param {boolean} [opts.hideEmotionPickOnFirstEntry] - true면 감정 선택 이벤트 제외 (첫 진입 시 가이드만 뜨게)
  */
 export default function useActiveAppEvent({
   screen = 'home',
   hideEmotionPickWhenHasEmotion = false,
+  hideEmotionPickOnFirstEntry = false,
 } = {}) {
   return useMemo(() => {
     const list = Array.isArray(APP_EVENTS) ? APP_EVENTS : [];
@@ -29,8 +31,13 @@ export default function useActiveAppEvent({
       .filter(e => e && e.enabled !== false)
       .filter(e => isWithinWindow(e.startAt, e.endAt));
 
-    // 감정 선택 모달: 이미 감정이 선택된 상태면 이벤트 목록에서 제외
     if (hideEmotionPickWhenHasEmotion) {
+      candidates = candidates.filter(
+        e => e?.id !== 'emotion_pick_today_2026_01',
+      );
+    }
+
+    if (hideEmotionPickOnFirstEntry) {
       candidates = candidates.filter(
         e => e?.id !== 'emotion_pick_today_2026_01',
       );
@@ -38,5 +45,5 @@ export default function useActiveAppEvent({
 
     candidates.sort((a, b) => (b.priority || 0) - (a.priority || 0));
     return candidates[0] || null;
-  }, [screen, hideEmotionPickWhenHasEmotion]);
+  }, [screen, hideEmotionPickWhenHasEmotion, hideEmotionPickOnFirstEntry]);
 }

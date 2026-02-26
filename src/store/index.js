@@ -8,12 +8,11 @@ import rootReducer from './rootReducer';
 const persistConfig = {
   key: 'root',
   storage: AsyncStorage,
-  whitelist: ['ui'], // ✅ persist할 slice만 명시
-  // ✅ 보안·실시간·일시 UI는 저장 제외 (나중에 whitelist 확장 시 참고)
+  whitelist: ['ui'], // persist할 slice만 명시 (auth/실시간 데이터는 제외 후 서버에서 강제 새로고침)
+ // rehydrate 직후: useAutoLogin에서 토큰 유효 시 fetchUser → fetchFamily → fetchChatRoomList 등으로 서버 강제 새로고침
   blacklist: [
     'login', // 토큰 등 인증 정보
     'message', // 실시간 채팅 메시지
-    // 필요 시 일시적 UI 상태 slice 추가
   ],
 };
 
@@ -23,13 +22,12 @@ export const store = configureStore({
   reducer: persistedReducer,
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
-      serializableCheck: false, // ✅ redux-persist 때문에 끄는 게 일반적
+      serializableCheck: false, // redux-persist 때문에 끄는 게 일반적
     }),
 });
 
 export const persistor = persistStore(store);
 
 
-// ✅ 기존 코드 호환(기존처럼 default import 가능)
 export default store;
 

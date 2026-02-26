@@ -1,6 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/screens/memory/components/AlbumTabSelector.js
-// ✅ "기간선택" 버튼 제거 버전 (탭만 남김)
 
 import React, {useEffect, useRef, useState, useCallback} from 'react';
 import {View, Text, TouchableOpacity, StyleSheet, Animated} from 'react-native';
@@ -35,7 +34,7 @@ export default function AnimatedAlbumTabSelector({selected, onSelect}) {
 
     const {x, width} = positions[selected];
 
-    // width가 0이면 애니메이션 계산이 깨질 수 있어서 가드
+ // width가 0이면 애니메이션 계산이 깨질 수 있어서 가드
     if (!width || width <= 0) return;
 
     const targetTranslateX = x + width / 2 - BASE_UNDERLINE_WIDTH / 2;

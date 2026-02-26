@@ -42,7 +42,6 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
 
-  // 오른쪽: 추가
   confirmBtn: {
     backgroundColor: '#FFC84D',
     borderWidth: 1,

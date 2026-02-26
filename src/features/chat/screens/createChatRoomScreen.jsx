@@ -18,7 +18,7 @@ import {
 import ToastModal from 'components/modal/ToastModal';
 import {HEADER_STYLES} from 'styles/style';
 
-// ✅ 너가 만든 바텀시트 컴포넌트
+// 너가 만든 바텀시트 컴포넌트
 import CreateChatRoomBottomSheet from '../components/CreateChatRoomBottomSheet';
 
 export default function CreateChatRoom({navigation}) {
@@ -32,10 +32,10 @@ export default function CreateChatRoom({navigation}) {
 
   const [toastVisible, setToastVisible] = useState(false);
 
-  /**
-   * 1) 헤더는 타이틀만(체크버튼 제거)
-   * - 저장은 바텀시트 내부 "저장하기"로 처리하니까
-   */
+ /**
+ * 1) 헤더는 타이틀만(체크버튼 제거)
+ * - 저장은 바텀시트 내부 "저장하기"로 처리하니까
+ */
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
@@ -47,18 +47,18 @@ export default function CreateChatRoom({navigation}) {
     });
   }, [navigation]);
 
-  /**
-   * 2) 가족 유저 목록 가져오기 (기존 코드 그대로)
-   */
+ /**
+ * 2) 가족 유저 목록 가져오기 (기존 코드 그대로)
+ */
   useEffect(() => {
     if (family.familyId) {
       dispatch(fetchFamilyUserListThunk(family.familyId));
     }
   }, [dispatch, family.familyId]);
 
-  /**
-   * 3) 이 화면 들어오면 바텀시트 자동으로 열기
-   */
+ /**
+ * 3) 이 화면 들어오면 바텀시트 자동으로 열기
+ */
   useEffect(() => {
     const t = setTimeout(() => {
       modalRef.current?.present?.();
@@ -67,11 +67,11 @@ export default function CreateChatRoom({navigation}) {
     return () => clearTimeout(t);
   }, []);
 
-  /**
-   * 4) 바텀시트 칩용 members 만들기
-   * - 네 바텀시트는 members: [{id, name, disabled?}] 형태
-   * - 여기서는 본인 제외
-   */
+ /**
+ * 4) 바텀시트 칩용 members 만들기
+ * - 네 바텀시트는 members: [{id, name, disabled?}] 형태
+ * - 여기서는 본인 제외
+ */
   const members = (familyUserList || [])
     .filter(u => u.userId !== currentUserId)
     .map(u => ({
@@ -80,13 +80,13 @@ export default function CreateChatRoom({navigation}) {
       disabled: false,
     }));
 
-  /**
-   * 5) 바텀시트 저장(onSubmit) → 기존 createChatRoomThunk 로직 이식
-   * - roomName이 빈 값이면: 기존처럼 선택된 사람들 이름으로 자동 생성
-   */
+ /**
+ * 5) 바텀시트 저장(onSubmit) → 기존 createChatRoomThunk 로직 이식
+ * - roomName이 빈 값이면: 기존처럼 선택된 사람들 이름으로 자동 생성
+ */
   const handleSubmit = useCallback(
     async ({roomName, userIds}) => {
-      // userIds: 배열 형태로 들어옴
+ // userIds: 배열 형태로 들어옴
       if (!Array.isArray(userIds) || userIds.length === 0) return;
 
       const idsStr = userIds.join(',');
@@ -107,10 +107,10 @@ export default function CreateChatRoom({navigation}) {
         }),
       ).unwrap();
 
-      // ✅ 성공 토스트
+ // 성공 토스트
       setToastVisible(true);
 
-      // ✅ 잠깐 뒤 소통 탭으로 이동
+ // 잠깐 뒤 소통 탭으로 이동
       setTimeout(() => {
         navigation.dispatch(
           CommonActions.reset({
@@ -132,7 +132,7 @@ export default function CreateChatRoom({navigation}) {
         </View>
       )}
 
-      {/* ✅ 너가 만든 바텀시트 적용 */}
+      {/* 너가 만든 바텀시트 적용 */}
       <CreateChatRoomBottomSheet
         modalRef={modalRef}
         members={members}
@@ -144,7 +144,7 @@ export default function CreateChatRoom({navigation}) {
         snapPoints={['92%']}
       />
 
-      {/* ✅ 채팅방 생성 완료 토스트(기존 그대로) */}
+      {/* 채팅방 생성 완료 토스트(기존 그대로) */}
       <ToastModal
         visible={toastVisible}
         message="채팅방을 생성했어요"

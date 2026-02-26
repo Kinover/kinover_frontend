@@ -27,6 +27,7 @@ import {
 import {BOTTOMSHEET_STYLE} from 'styles/style';
 
 import ToastModal from 'components/modal/ToastModal';
+import {validateLength} from 'utils/validation';
 
 export default function CreateChatRoomBottomSheet({
   modalRef,
@@ -40,7 +41,7 @@ export default function CreateChatRoomBottomSheet({
 }) {
   const fontMode = useSelector(state => state.ui.fontMode);
 
-  // ✅ roomName: ref로만 관리
+ // roomName: ref로만 관리
   const roomNameRef = useRef(String(initialRoomName ?? ''));
   const [roomNameKey, setRoomNameKey] = useState(0);
 
@@ -48,17 +49,17 @@ export default function CreateChatRoomBottomSheet({
     Array.isArray(initialSelectedIds) ? initialSelectedIds : [],
   );
 
-  // ✅ Toast
+ // Toast
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const toastTimerRef = useRef(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // ✅ 키보드 열림 추적
+ // 키보드 열림 추적
   const keyboardOpenRef = useRef(false);
 
-  // ✅ inside tap throttle
+ // inside tap throttle
   const touchLockRef = useRef(false);
   const touchLockTimerRef = useRef(null);
   const lockTouchBriefly = useCallback(() => {
@@ -69,10 +70,9 @@ export default function CreateChatRoomBottomSheet({
     }, 180);
   }, []);
 
-  // ✅ 키보드 닫힘 이후 실행할 지연 액션
+ // 키보드 닫힘 이후 실행할 지연 액션
   const pendingActionRef = useRef(null);
 
-  // ✅✅✅ 추가: 인터랙션 대기 핸들 (중복 예약/취소)
   const pendingInteractionRef = useRef(null);
 
   const showToast = useCallback(msg => {
@@ -92,7 +92,7 @@ export default function CreateChatRoomBottomSheet({
     setToastVisible(false);
   }, []);
 
-  // ✅ initialRoomName 변경 시 ref 갱신 + input 리마운트
+ // initialRoomName 변경 시 ref 갱신 + input 리마운트
   useEffect(() => {
     roomNameRef.current = String(initialRoomName ?? '');
     setRoomNameKey(k => k + 1);
@@ -102,7 +102,7 @@ export default function CreateChatRoomBottomSheet({
     setSelectedIds(Array.isArray(initialSelectedIds) ? initialSelectedIds : []);
   }, [initialSelectedIds]);
 
-  // ✅ 키보드 상태 tracking + pending flush
+ // 키보드 상태 tracking + pending flush
   useEffect(() => {
     const onShow = () => {
       keyboardOpenRef.current = true;
@@ -115,7 +115,6 @@ export default function CreateChatRoomBottomSheet({
         const fn = pendingActionRef.current;
         pendingActionRef.current = null;
 
-        // ✅✅✅ 핵심: 키보드/바텀시트 애니메이션(인터랙션) 끝난 뒤 실행
         if (pendingInteractionRef.current) {
           try {
             pendingInteractionRef.current.cancel?.();
@@ -151,7 +150,7 @@ export default function CreateChatRoomBottomSheet({
     };
   }, []);
 
-  // ✅ cleanup
+ // cleanup
   useEffect(() => {
     return () => {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -168,7 +167,7 @@ export default function CreateChatRoomBottomSheet({
     };
   }, []);
 
-  // ✅ enabledMembers / enabledIds
+ // enabledMembers / enabledIds
   const enabledMembers = useMemo(
     () => (members || []).filter(m => !m?.disabled),
     [members],
@@ -179,7 +178,6 @@ export default function CreateChatRoomBottomSheet({
     [enabledMembers],
   );
 
-  // ✅ members 변동 시 selectedIds 정리(유령 선택 제거)
   useEffect(() => {
     const valid = new Set(
       (members || []).filter(m => m?.id != null && !m?.disabled).map(m => m.id),
@@ -209,7 +207,7 @@ export default function CreateChatRoomBottomSheet({
 
   const canSave = useMemo(() => selectedIds.length > 0, [selectedIds.length]);
 
-  // ✅ snapPoints
+ // snapPoints
   const resolvedSnapPoints = useMemo(() => {
     if (Array.isArray(externalSnapPoints) && externalSnapPoints.length >= 2) {
       return externalSnapPoints;
@@ -231,7 +229,7 @@ export default function CreateChatRoomBottomSheet({
     return `create-room-fixed-${String(fontMode ?? '')}`;
   }, [fontMode]);
 
-  // ✅ 키보드 열려있을 때 상태 변경 지연
+ // 키보드 열려있을 때 상태 변경 지연
   const runAfterKeyboardHide = useCallback(fn => {
     if (keyboardOpenRef.current) {
       pendingActionRef.current = fn;
@@ -282,9 +280,15 @@ export default function CreateChatRoomBottomSheet({
       return;
     }
 
+    const trimmed = String(roomNameRef.current ?? '').trim();
+    const lengthResult = validateLength(trimmed, {max: maxRoomNameLength});
+    if (trimmed.length > 0 && !lengthResult.valid) {
+      showToast(lengthResult.message);
+      return;
+    }
+
     setIsSubmitting(true);
 
-    const trimmed = String(roomNameRef.current ?? '').trim();
     const safeUserIds = Array.from(new Set(selectedIds)).filter(v => v != null);
 
     const payload =
@@ -391,7 +395,7 @@ export default function CreateChatRoomBottomSheet({
     }
   }, [hideToast]);
 
-  // ✅ 내부 탭: 토스트만 닫기(키보드 dismiss/snap은 Layout)
+ // 내부 탭: 토스트만 닫기(키보드 dismiss/snap은 Layout)
   const handleTouchInside = useCallback(() => {
     if (!keyboardOpenRef.current) return;
     if (touchLockRef.current) return;
@@ -419,7 +423,6 @@ export default function CreateChatRoomBottomSheet({
         dismissKeyboardOnPress={true}
         onTouchInside={handleTouchInside}
         onDismiss={handleDismiss}
-        // ✅✅✅ 핵심: 바깥(Backdrop) 눌러도 시트 닫히지 않게
       >
         <SafeAreaView style={{backgroundColor: '#fff'}}>
           <BottomSheetView>

@@ -1,17 +1,7 @@
-/**
- * @fileoverview 앱 루트 컴포넌트
- * 
- * 앱의 최상위 컴포넌트로, 모든 Provider와 네비게이션을 설정합니다.
- * - Redux Store, PersistGate 설정
- * - 네비게이션 컨테이너 설정
- * - 생체인식 잠금 기능
- * - 스플래시 화면 관리
- */
-
 import 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
-import React, {useEffect, useRef, useState, useCallback} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
   StyleSheet,
@@ -55,6 +45,13 @@ import {
   getBiometricAvailability,
 } from '../utils/biometrics';
 import {setBioLockEnabled} from 'store/uiSlice';
+import useNetworkStatus, {registerReconnectCallback} from 'hooks/useNetworkStatus';
+import {reconnectIfNeeded} from 'features/chat/hooks/ChatSocket';
+import {AppStateResourceBridge} from './AppStateResourceBridge';
+import {
+  GuideOverlayProvider,
+  GuideOverlayRoot,
+} from '../contexts/GuideOverlayContext';
 
 // ==================== Font Scaling Disable ====================
 
@@ -73,16 +70,8 @@ if (GHTextInput?.defaultProps == null) {
 }
 GHTextInput.defaultProps.allowFontScaling = false;
 
-// ==================== Constants ====================
-
 const SPLASH_KEY = 'SPLASH_SHOWN_V1';
 
-// ==================== Sub Components ====================
-
-/**
- * 반응형 모드 브릿지 컴포넌트
- * Redux의 fontMode 변경을 반응형 유틸리티에 동기화합니다.
- */
 function ResponsiveModeBridge() {
   const fontMode = useSelector(state => state.ui?.fontMode);
 
@@ -95,14 +84,10 @@ function ResponsiveModeBridge() {
   return null;
 }
 
-/**
- * 앱 잠금 게이트 컴포넌트
- * 생체인식 잠금 기능을 관리합니다.
- * 
- * @param {Object} props - 컴포넌트 props
- * @param {boolean} props.readyForAuth - 인증 준비 완료 여부
- */
+// 생체인식 잠금 — 백그라운드 갔다 오면 다시 인증 요구
 function AppLockGate({readyForAuth}) {
+  return null;
+
   const dispatch = useDispatch();
   const bioOn = useSelector(state => !!state.ui?.bioLockEnabled);
   const rehydrated = useSelector(state => !!state?._persist?.rehydrated);
@@ -115,39 +100,25 @@ function AppLockGate({readyForAuth}) {
   const authedThisSessionRef = useRef(false);
   const didInitialAuthRef = useRef(false);
 
-  /**
-   * 생체인식 인증 실행
-   */
-  const runAuth = useCallback(async () => {
-    // 생체인식 비활성화 시 잠금 해제
+  async function runAuth() {
     if (!bioOn) {
       setLocked(false);
       authedThisSessionRef.current = true;
       return;
     }
 
-    // 조건 확인
-    if (!rehydrated || !readyForAuth) {
-      return;
-    }
-
-    // 이미 인증된 세션인 경우
+    if (!rehydrated || !readyForAuth) return;
     if (authedThisSessionRef.current) {
       setLocked(false);
       return;
     }
-
-    // 중복 실행 방지
-    if (authInFlightRef.current) {
-      return;
-    }
+    if (authInFlightRef.current) return;
     authInFlightRef.current = true;
 
     try {
       setLocked(true);
       setAuthing(true);
 
-      // 생체인식 사용 가능 여부 확인
       const avail = await getBiometricAvailability();
       if (!avail?.available) {
         dispatch(setBioLockEnabled(false));
@@ -156,7 +127,6 @@ function AppLockGate({readyForAuth}) {
         return;
       }
 
-      // 생체인식 인증 실행
       const res = await checkAndAuthBiometric();
 
       if (res?.success) {
@@ -170,13 +140,13 @@ function AppLockGate({readyForAuth}) {
       setAuthing(false);
       authInFlightRef.current = false;
     }
-  }, [bioOn, rehydrated, readyForAuth, dispatch]);
+  }
 
   useEffect(() => {
     if (didInitialAuthRef.current) return;
     didInitialAuthRef.current = true;
     runAuth();
-  }, [runAuth]);
+  }, [bioOn, rehydrated, readyForAuth]);
 
   useEffect(() => {
     const sub = AppState.addEventListener('change', nextState => {
@@ -194,7 +164,7 @@ function AppLockGate({readyForAuth}) {
     });
 
     return () => sub?.remove?.();
-  }, [runAuth]);
+  }, [bioOn, rehydrated, readyForAuth]);
 
   if (!bioOn) return null;
   if (!rehydrated) return null;
@@ -231,7 +201,19 @@ function AppLockGate({readyForAuth}) {
   );
 }
 
-// ✅ 개발용: rehydration 이후에 “저장소 + redux-persist”까지 싹 정리
+function NetworkStatusBridge() {
+  const dispatch = useDispatch();
+  useNetworkStatus({alertWhenOffline: true, alertWhenReconnected: true});
+  useEffect(() => {
+    const unregister = registerReconnectCallback(() => {
+      reconnectIfNeeded();
+    });
+    return unregister;
+  }, [dispatch]);
+  return null;
+}
+
+// 개발용: rehydration 이후에 “저장소 + redux-persist”까지 싹 정리
 const DEV_FORCE_RESET_LOGIN_ONCE = false;
 
 function DevForceResetLogin() {
@@ -245,23 +227,22 @@ function DevForceResetLogin() {
     if (!rehydrated) return;
     if (didRef.current) return;
     didRef.current = true;
-
+ // 로그인 초기화 테스트할 때 위 플래그 true로 바꿔서 씀
     (async () => {
       try {
         console.log('🧹 [DEV] force reset start');
 
-        // ✅ 0) redux-persist 저장 자체 purge (핵심!)
         await persistor.purge();
 
-        // ✅ 1) Keychain/AsyncStorage login 관련 제거
+ // 1) Keychain/AsyncStorage login 관련 제거
         await deleteLoginInfo();
 
-        // ✅ 2) guest/signup 플래그 정리
+ // 2) guest/signup 플래그 정리
         await disableGuestMode();
         await setNeedsSignup(false);
         await setHasFamily(null);
 
-        // ✅ 3) redux state 정리
+ // 3) redux state 정리
         dispatch(setLogout());
         dispatch(setAuthChecked(true));
 
@@ -277,54 +258,41 @@ function DevForceResetLogin() {
   return null;
 }
 
-// ==================== Main Component ====================
+// ==================== Main ====================
 
-/**
- * 앱 루트 컴포넌트
- * @returns {JSX.Element} 앱 루트 컴포넌트
- */
+// 나중에 다크모드 켜면 여기서 바꿀 거
 export default function App() {
-  const [isSplashFinished, setIsSplashFinished] = useState(false);
-  const [shouldShowSplash, setShouldShowSplash] = useState(false);
-
-  // 다크모드 여부 (현재는 비활성화)
+  const [splashDone, setSplashDone] = useState(false);
+  const [showSplash, setShowSplash] = useState(false);
   const isDarkMode = false;
 
-  /**
-   * 스플래시 화면 표시 여부 확인
-   */
   useEffect(() => {
     (async () => {
       try {
         const shown = await AsyncStorage.getItem(SPLASH_KEY);
         if (shown === '1') {
-          setShouldShowSplash(false);
-          setIsSplashFinished(true);
+          setShowSplash(false);
+          setSplashDone(true);
         } else {
-          setShouldShowSplash(true);
-          setIsSplashFinished(false);
+          setShowSplash(true);
+          setSplashDone(false);
         }
       } catch {
-        setShouldShowSplash(false);
-        setIsSplashFinished(true);
+        setShowSplash(false);
+        setSplashDone(true);
       }
     })();
   }, []);
 
-  /**
-   * 스플래시 화면 종료 핸들러
-   */
   const onSplashFinish = async () => {
-    setIsSplashFinished(true);
-    setShouldShowSplash(false);
+    setSplashDone(true);
+    setShowSplash(false);
     try {
       await AsyncStorage.setItem(SPLASH_KEY, '1');
-    } catch {
-      // 에러 무시
-    }
+    } catch {}
   };
 
-  const readyForAuth = !shouldShowSplash || isSplashFinished;
+  const readyForAuth = !showSplash || splashDone;
 
   return (
     <GestureHandlerRootView style={styles.root}>
@@ -343,12 +311,14 @@ export default function App() {
             <PersistGate loading={null} persistor={persistor}>
               <DevForceResetLogin />
               <ResponsiveModeBridge />
+              <NetworkStatusBridge />
+              <AppStateResourceBridge />
 
               <MenuProvider>
                 <NavigationContainer
                   ref={navigationRef}
                   onReady={() => flushPendingNavigation()}>
-                  {shouldShowSplash && !isSplashFinished ? (
+                  {showSplash && !splashDone ? (
                     <View style={styles.splashContainer}>
                       <Image
                         source={require('../assets/images/kinover!!.png')}
@@ -364,10 +334,16 @@ export default function App() {
                       />
                     </View>
                   ) : (
-                    <RootScreen />
+                    <GuideOverlayProvider>
+                      <View style={styles.guideRootWrap}>
+                        <View style={styles.mainContent}>
+                          <RootScreen />
+                        </View>
+                        <GuideOverlayRoot />
+                      </View>
+                    </GuideOverlayProvider>
                   )}
 
-                  <AppLockGate readyForAuth={readyForAuth} />
                 </NavigationContainer>
               </MenuProvider>
             </PersistGate>
@@ -384,6 +360,12 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: '#FFFFFF', // 투명 시스템바 뒤로 하얀 띠 비치는 것 방지
+  },
+  guideRootWrap: {
+    flex: 1,
+  },
+  mainContent: {
+    flex: 1,
   },
 
   splashContainer: {

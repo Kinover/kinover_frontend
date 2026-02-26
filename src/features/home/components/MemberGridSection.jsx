@@ -65,7 +65,7 @@ const PROFILE_MAX = getResponsiveIconSize(70);
 const DOT_MIN = 8;
 const DOT_MAX = 14;
 
-// ✅ 6명 초과면 “그리드 영역만” 내부 스크롤
+// 6명 초과면 “그리드 영역만” 내부 스크롤
 const INTERNAL_SCROLL_THRESHOLD = 6;
 
 const MemberGridItem = memo(function MemberGridItem({
@@ -491,6 +491,7 @@ export default function MemberGridSection({
   lastActiveMap = {},
   chunkSize = 3,
   isRefreshing: isRefreshingProp = null,
+  guideInviteRef,
 }) {
   const {width: screenWidth, height: screenHeight} = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -534,7 +535,7 @@ export default function MemberGridSection({
     onAddPress?.();
   }, [onAddPress]);
 
-  // ✅ 버튼 아래 여백 확보 (absolute 버튼)
+ // 버튼 아래 여백 확보 (absolute 버튼)
   const safeBottom = Math.max(insets.bottom, getResponsiveHeight(10));
   const footerPaddingBottom = safeBottom + getResponsiveHeight(8);
 
@@ -542,11 +543,9 @@ export default function MemberGridSection({
   const ADD_BUTTON_GAP = getResponsiveHeight(14);
   const bottomSpace = footerPaddingBottom + ADD_BUTTON_H + ADD_BUTTON_GAP;
 
-  // ✅ “6명 초과” 기준으로 내부 스크롤 ON
+ // ��6명 초과” 기준으로 내부 스크롤 ON
   const enableInnerScroll = !isEmptyState && members.length > INTERNAL_SCROLL_THRESHOLD;
 
-  // ✅ 내부 스크롤 최대 높이 (원하면 값만 조절)
-  // - 화면 높이의 일부를 쓰되, 너무 작아지지 않게 min/max로 방어
   const gridMaxHRaw = screenHeight * 0.33; // 대충 카드 안에서 1/3 정도만 스크롤 영역
   const gridMaxH = clamp(
     gridMaxHRaw,
@@ -609,20 +608,19 @@ export default function MemberGridSection({
               </Text>
             </View>
           ) : enableInnerScroll ? (
-            // ✅✅✅ 여기: 6명 초과면 “이 영역만” 스크롤
+ // 여기: 6명 초과면 “이 영역만” 스크롤
             <View style={[styles.innerScrollWrap, {maxHeight: gridMaxH}]}>
               <ScrollView
                 showsVerticalScrollIndicator={false}
                 nestedScrollEnabled
                 contentContainerStyle={styles.innerScrollContent}
                 scrollEventThrottle={16}
-                // ✅ iOS에서 스크롤 위/아래 바운스 느낌(싫으면 false)
+ // iOS에서 스크롤 위/아래 바운스 느낌(싫으면 false)
                 bounces={true}>
                 {GridContent}
               </ScrollView>
             </View>
           ) : (
-            // ✅ 6명 이하: 기존처럼 그냥 렌더
             GridContent
           )}
 
@@ -638,7 +636,7 @@ export default function MemberGridSection({
           )}
         </View>
 
-        {/* ✅ 하단 버튼: 카드 바닥 고정 */}
+        {/* 하단 버튼: 카드 바닥 고정 */}
         <View
           style={[
             styles.footerFixed,
@@ -649,6 +647,7 @@ export default function MemberGridSection({
             },
           ]}>
           <TouchableOpacity
+            ref={guideInviteRef}
             activeOpacity={0.9}
             onPress={handleAddPress}
             disabled={isRefreshing}
@@ -688,13 +687,13 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
 
-  // ✅ 6명 초과 시 내부 스크롤 래퍼
+ // 6명 초과 시 내부 스크롤 래퍼
   innerScrollWrap: {
     alignSelf: 'center',
     width: '100%',
   },
   innerScrollContent: {
-    // ✅ ScrollView 안에서 wrapRow가 중앙에 오도록
+ // ScrollView 안에서 wrapRow가 중앙에 오도록
     paddingBottom: getResponsiveHeight(6),
   },
 

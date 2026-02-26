@@ -15,6 +15,7 @@ import {
   markReadThunk,
 } from '../store/chatRoomSlice';
 import {selectRoomMeta} from '../store/messageSlice';
+import {selectRoomMessagesSorted} from '../store/messageSelectors';
 import {fetchChatRoomUsersThunk} from '../store/chatRoomThunk';
 
 import {
@@ -49,7 +50,9 @@ export default function useChatRoomTemplate({
 
   const roomMeta = useSelector(state => selectRoomMeta(state, chatRoomId));
   const isMessageFetched = !!roomMeta?.isFetched;
-  const messageList = roomMeta?.messageList ?? [];
+  const messageList = useSelector(state =>
+    selectRoomMessagesSorted(state, chatRoomId),
+  );
 
   const roomUsers = useSelector(state => state.chatRoom.chatRoomUsers) || [];
   const readPointersMap = useSelector(state =>

@@ -51,7 +51,7 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth()); // 0~11
 
-  // ✅ 직접 기간: 시간 유지(09:00 / 18:00)
+ // 직접 기간: 시간 유지(09:00 / 18:00)
   const [customStart, setCustomStart] = useState(
     new Date(today.getFullYear(), today.getMonth(), today.getDate(), 9, 0, 0),
   );
@@ -62,9 +62,9 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
   const [target, setTarget] = useState('start'); // 'start' | 'end'
   const cardOpacity = useRef(new Animated.Value(1)).current;
 
-  // -------------------------
-  // ✅ iOS: overlayChildren로 띄우는 액션시트 피커 상태/애니메이션
-  // -------------------------
+ // -------------------------
+ // iOS: overlayChildren로 띄우는 액션시트 피커 상태/애니메이션
+ // -------------------------
   const [iosPickerVisible, setIosPickerVisible] = useState(false);
   const [iosPickerWhich, setIosPickerWhich] = useState('start'); // 'start' | 'end'
   const [iosTempDate, setIosTempDate] = useState(today);
@@ -95,7 +95,7 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
 
       setIosPickerVisible(true);
 
-      // 시작 상태
+ // 시작 상태
       sheetY.setValue(SHEET_H);
       backdropOpacity.setValue(0);
 
@@ -152,9 +152,9 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
     closeIOSActionSheet();
   }, [iosTempDate, iosPickerWhich, closeIOSActionSheet, mergeDateKeepTime]);
 
-  // -------------------------
-  // ✅ range 계산
-  // -------------------------
+ // -------------------------
+ // range 계산
+ // -------------------------
   const range = useMemo(() => {
     if (mode === 'ALL') return {startDate: '', endDate: ''};
 
@@ -164,7 +164,7 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
       return {startDate: formatYMD(s), endDate: formatYMD(e)};
     }
 
-    // CUSTOM
+ // CUSTOM
     const s = customStart;
     const e = customEnd;
 
@@ -251,7 +251,7 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
 
     cardOpacity.setValue(1);
 
-    // iOS sheet reset
+ // iOS sheet reset
     setIosPickerVisible(false);
     setIosPickerWhich('start');
     setIosTempDate(today);
@@ -263,9 +263,9 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
     onApply?.(range);
   }, [onApply, range]);
 
-  // -------------------------
-  // ✅ Android: 다이얼로그 오픈
-  // -------------------------
+ // -------------------------
+ // Android: 다이얼로그 오픈
+ // -------------------------
   const openAndroidDatePicker = useCallback(
     which => {
       const current = which === 'start' ? customStart : customEnd;
@@ -345,7 +345,7 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
       );
     }
 
-    // CUSTOM
+ // CUSTOM
     return (
       <View
         style={{
@@ -403,10 +403,9 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
     );
   };
 
-  // -------------------------
-  // ✅ iOS ActionSheet UI (overlayChildren로 올릴 내용)
-  // - 중요: backdrop은 sheet만 닫고, 모달은 안 닫게 함
-  // -------------------------
+ // -------------------------
+ // iOS ActionSheet UI (overlayChildren로 올릴 내용)
+ // -------------------------
   const iosOverlay = Platform.OS === 'ios' && iosPickerVisible && (
     <View style={[StyleSheet.absoluteFill, {justifyContent: 'flex-end'}]}>
       {/* 백드롭 */}
@@ -477,7 +476,7 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
       showCloseButton
       visible={visible}
       onClose={() => {
-        // ✅ 시트가 떠있으면 먼저 닫고 모달 닫기
+ // 시트가 떠있으면 먼저 닫고 모달 닫기
         if (iosPickerVisible) closeIOSActionSheet();
         onClose?.();
       }}
@@ -630,9 +629,9 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(15),
   },
 
-  // -------------------------
-  // ✅ iOS ActionSheet styles (overlayChildren)
-  // -------------------------
+ // -------------------------
+ // iOS ActionSheet styles (overlayChildren)
+ // -------------------------
   sheetBackdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'rgba(0,0,0,0.35)',

@@ -8,11 +8,11 @@ export const useCalendarLayout = () => {
   const {width: screenWidth} = useWindowDimensions();
 
   const OUTER_HPAD = LAYOUT_STYLE().screenPaddingHorizontal;
-  const CARD_HPAD = getResponsiveWidth(10); // ✅ Calendar.jsx의 calendarCard paddingHorizontal과 반드시 동일
+  const CARD_HPAD = getResponsiveWidth(10); // Calendar.jsx의 calendarCard paddingHorizontal과 반드시 동일
   const GAP = getResponsiveWidth(0);
 
   const {cellSize, gridWidth, cardWidth} = useMemo(() => {
-    // ✅ 카드 내부 “콘텐츠 영역” 기준으로 cell 계산
+ // 카드 내부 “콘텐츠 영역” 기준으로 cell 계산
     const contentWidth = screenWidth - OUTER_HPAD * 2 - CARD_HPAD * 2;
 
     const rawCell = (contentWidth - GAP * 6) / 7;

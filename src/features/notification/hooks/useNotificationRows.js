@@ -2,7 +2,7 @@
 import {useMemo} from 'react';
 
 /* =========================================================
- * ✅ 유틸
+ * 유틸
  * ========================================================= */
 
 const formatWhen = iso => {
@@ -51,14 +51,14 @@ const sectionTitleFor = date => {
 const safeStr = v => (typeof v === 'string' ? v : v == null ? '' : String(v));
 
 /**
- * ✅ 백엔드 기준: pushType / notificationType 둘 다 올 수 있음
+ * 백엔드 기준: pushType / notificationType 둘 다 올 수 있음
  * - 서버에서 putPushType()로 둘 다 넣어주고 있음
  */
 const resolveType = n =>
   n?.pushType || n?.notificationType || n?.type || 'DEFAULT';
 
 /* =========================================================
- * ✅ 타입 메타 (백엔드 PushType 기준)
+ * 타입 메타 (백엔드 PushType 기준)
  * - CHAT, POST, COMMENT, MENTION_COMMENT, MENTION_CHAT
  * - (SCHEDULE은 백엔드 코드에 현재 없음. 있으면 여기 추가하면 됨)
  * ========================================================= */
@@ -78,7 +78,7 @@ const TYPE_META = {
 const getTypeMeta = t => TYPE_META[t] || TYPE_META.DEFAULT;
 
 /* =========================================================
- * ✅ title/summary: 백엔드 payload에 맞춤
+ * title/summary: 백엔드 payload에 맞춤
  *
  * 백엔드에서 들어오는 대표 필드들:
  * - authorName, authorImage
@@ -116,16 +116,16 @@ const buildSummary = (type, n) => {
 
   switch (type) {
     case 'CHAT': {
-      // 백엔드 채팅 바디는 이미 "sender: ..." 로 만들어 보내고 있지만
-      // 알림 리스트 요약은 더 짧게 유지하는 게 보통 보기 좋음
+ // 백엔드 채팅 바디는 이미 "sender: ..." 로 만들어 보내고 있지만
+ // 알림 리스트 요약은 더 짧게 유지하는 게 보통 보기 좋음
       if (messageType === 'image') return `${author}이 사진을 보냈어요.`;
       if (messageType === 'video') return `${author}이 동영상을 보냈어요.`;
       return `${author}이 메시지를 보냈어요.`;
     }
 
     case 'MENTION_CHAT': {
-      // 백엔드 푸시 바디는 "당신을 언급했어요 · ..." 형태
-      // 리스트에서는 멘션 강조
+ // 백엔드 푸시 바디는 "당신을 언급했어요 · ..." 형태
+ // 리스트에서는 멘션 강조
       if (roomName) return `${author}이 ${roomName}에서 당신을 언급했어요.`;
       return `${author}이 채팅에서 당신을 언급했어요.`;
     }
@@ -140,7 +140,7 @@ const buildSummary = (type, n) => {
       return `${author}이 댓글에서 당신을 언급했어요.`;
 
     case 'SCHEDULE':
-      // 서버 스펙에 맞춰 titleText 같은 게 오면 그걸 쓰면 됨
+ // 서버 스펙에 맞춰 titleText 같은 게 오면 그걸 쓰면 됨
       return `새 일정이 추가되었어요.`;
 
     default:
@@ -149,7 +149,7 @@ const buildSummary = (type, n) => {
 };
 
 /**
- * ✅ preview: 백엔드가 contentPreview 내려주면 그걸 사용
+ * preview: 백엔드가 contentPreview 내려주면 그걸 사용
  * - 채팅은 contentPreview가 없을 수 있음(있어도 body랑 중복될 수 있음)
  */
 const buildPreview = (type, n) => {
@@ -159,13 +159,12 @@ const buildPreview = (type, n) => {
     return preview;
   }
 
-  // 채팅은 굳이 preview를 두 줄로 또 보여주면 지저분해질 수 있어서 비우는 걸 추천
-  // (원하면 여기서 message body를 내려주게 하고 보여주면 됨)
+ // 채팅은 굳이 preview를 두 줄로 또 보여주면 지저분해질 수 있어서 비우는 걸 추천
   return preview;
 };
 
 /* =========================================================
- * ✅ 메인 훅
+ * 메인 훅
  * ========================================================= */
 
 export const useNotificationRows = (notifications = [], lastChecked) => {
@@ -206,12 +205,12 @@ export const useNotificationRows = (notifications = [], lastChecked) => {
           ? new Date(n.createdAt).getTime() > lastChecked.getTime()
           : false;
 
-      /**
-       * ✅ 좌측 이미지 정책(백엔드 기준)
-       * - POST/COMMENT/MENTION_COMMENT: firstImageUrl 우선(게시글 이미지)
-       * - CHAT/MENTION_CHAT: authorImage
-       * - 없으면 authorImage fallback
-       */
+ /**
+ * 좌측 이미지 정책(백엔드 기준)
+ * - POST/COMMENT/MENTION_COMMENT: firstImageUrl 우선(게시글 이미지)
+ * - CHAT/MENTION_CHAT: authorImage
+ * - 없으면 authorImage fallback
+ */
       let leftImageUrl = authorImage;
 
       if (type === 'POST' || type === 'COMMENT' || type === 'MENTION_COMMENT') {

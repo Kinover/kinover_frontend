@@ -26,7 +26,7 @@ export default function ImageDeleteModal({
       confirmText="삭제하기"
       title={title}
       subText={subText}
-      // buttonBottomStyle={styles.buttonRow}
+ // buttonBottomStyle={styles.buttonRow}
     >
       {children}
     </CustomModal>
@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(320),
     maxWidth: '90%',
     alignSelf: 'center',
-    position: 'relative', // ✅ zIndex 적용되도록 position 추가
+    position: 'relative', // zIndex 적용되도록 position 추가
   },
   buttonRow: {
     flexDirection: 'row',

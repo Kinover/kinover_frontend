@@ -110,7 +110,7 @@ export const getBottomSheetStyle = () => ({
     marginTop: getResponsiveHeight(10),
   },
   inactive: {
-    // color: ' #F6F7FB',
+ // color: ' #F6F7FB',
     color: '#F3F4F6',
   },
 });
@@ -135,7 +135,7 @@ export const getLayoutStyle = () => ({
 });
 
 /**
- * ✅ "진짜 호환" 유틸
+ * "진짜 호환" 유틸
  * - token() 호출도 되고
  * - token.xxx 접근도 되게(기존 코드 안 깨짐)
  */
@@ -143,16 +143,13 @@ const makeToken = getter => {
   const fn = () => getter();
   const value = getter();
 
-  // 기존 코드 호환: TOKEN.xxx
   Object.assign(fn, value);
 
-  // 혹시라도 값이 갱신되길 원하면 TOKEN.get()으로도 꺼낼 수 있게
   fn.get = getter;
 
   return fn;
 };
 
-// ✅ 호환형 토큰 exports
 export const BACKGROUND_COLORS = makeToken(getBackgroundColors);
 export const BUTTON_STYLES = makeToken(getButtonStyles);
 export const HEADER_STYLES = makeToken(getHeaderStyles);

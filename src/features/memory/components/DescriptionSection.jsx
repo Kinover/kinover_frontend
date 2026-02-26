@@ -16,7 +16,7 @@ import {
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 
 export default function DescriptionSection({memory, onContentLayout}) {
-  const insets = useSafeAreaInsets(); // ✅ 하단 inset 가져오기
+  const insets = useSafeAreaInsets(); // 하단 inset 가져오기
 
   if (!memory) return null;
 
@@ -34,7 +34,7 @@ export default function DescriptionSection({memory, onContentLayout}) {
         </View>
       </TouchableWithoutFeedback>
 
-      {/* ✅ SafeAreaView + paddingBottom */}
+      {/* SafeAreaView + paddingBottom */}
       <SafeAreaView
         edges={['bottom']}
         style={[

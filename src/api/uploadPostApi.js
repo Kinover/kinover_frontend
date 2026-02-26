@@ -1,4 +1,4 @@
-// 📁 /api/uploadPostApi.js
+// /api/uploadPostApi.js
 import { apiClient } from 'utils/apiClient';
 import { getToken } from '../utils/storage';
 

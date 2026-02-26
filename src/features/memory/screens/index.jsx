@@ -32,19 +32,22 @@ import MemoryGuideModal from '../components/MemoryGuideModal';
 
 export default function MemoryScreen() {
   const dispatch = useDispatch();
+  const guideRootRef = useRef(null);
+  const guideFilterBarRef = useRef(null);
+  const guideFabRef = useRef(null);
 
   const selectedTab = useSelector(state => state.memory.ui.selectedTab);
 
   const {
     selectedCategory,
-    // ✅ 여기서 selectedCategoryTitle은 "안 받는다" (stale 가능성 제거)
+ // 여기서 selectedCategoryTitle은 "안 받는다" (stale 가능성 제거)
     categoryList,
     categorySheetRef,
     handleSelectCategory,
     navigateToImageSelect,
   } = useMemoryScreen();
 
-  // ✅ title은 항상 selectedCategory에서 즉시 계산 (단일 소스)
+ // title은 항상 selectedCategory에서 즉시 계산 (단일 소스)
   const computedSelectedCategoryTitle = useMemo(() => {
     const t = selectedCategory?.title;
     return t && String(t).trim().length > 0 ? t : '전체';
@@ -58,9 +61,9 @@ export default function MemoryScreen() {
 
   const {tabBarTranslateY} = useTabBarVisibility();
 
-  // =========================
-  // ✅ 상단 탭셀렉터 숨김 애니메이션 (RN Animated)
-  // =========================
+ // =========================
+ // 상단 탭셀렉터 숨김 애니메이션 (RN Animated)
+ // =========================
   const lastYRef = useRef(0);
   const lastToggleTsRef = useRef(0);
 
@@ -118,9 +121,9 @@ export default function MemoryScreen() {
     tabBarTranslateY.value = 1;
   }, [tabBarTranslateY]);
 
-  // =========================
-  // ✅ FAB도 탭바랑 "동시에" 숨김/등장
-  // =========================
+ // =========================
+ // FAB도 탭바랑 "동시에" 숨김/등장
+ // =========================
   const FAB_RIGHT = getResponsiveWidth(13);
   const FAB_BOTTOM = getResponsiveHeight(110);
 
@@ -222,8 +225,8 @@ export default function MemoryScreen() {
 
   const handleSelectCategoryWithReset = useCallback(
     cat => {
-      // ✅ 여기서 cat이 들어오는지부터 확인하면 디버깅 끝남
-      // console.log('[MemoryScreen] onSelectCategory:', cat);
+ // 여기서 cat이 들어오는지부터 확인하면 디버깅 끝남
+ // console.log('[MemoryScreen] onSelectCategory:', cat);
 
       handleSelectCategory?.(cat);
       requestAnimationFrame(() => forceShowHeaderAndTabBar(true));
@@ -287,8 +290,13 @@ export default function MemoryScreen() {
     setIsFilterVisible(true);
   }, []);
 
+ // iOS: 가이드 모달 닫은 뒤 터치 복구용
+  const [contentKey, setContentKey] = useState(0);
+  const handleGuideAfterClose = useCallback(() => setContentKey(k => k + 1), []);
+
   return (
-    <View style={styles.container}>
+    <View ref={guideRootRef} style={styles.container}>
+      <View key={contentKey} style={styles.guideContentWrap}>
       <Animated.View style={headerAnimatedStyle}>
         <View onLayout={onHeaderContentLayout}>
           <AnimatedAlbumTabSelector selected={selectedTab} onSelect={onSelectTab} />
@@ -296,14 +304,16 @@ export default function MemoryScreen() {
       </Animated.View>
 
       <MemoryFeed
-        // ✅ 여기만 바뀜: 훅에서 온 title 말고 "selectedCategory 기반 title"
+ // 여기만 바뀜: 훅에서 온 title 말고 "selectedCategory 기반 title"
         selectedCategoryTitle={computedSelectedCategoryTitle}
         startDate={startDate}
         endDate={endDate}
         onScroll={handleFeedScroll}
         onPressCategoryFilter={openCategorySheet}
         onPressPeriodFilter={openPeriodModal}
+        filterBarRef={guideFilterBarRef}
       />
+      </View>
 
       <CategoryBottomSheetModal
         ref={categorySheetRef}
@@ -314,6 +324,7 @@ export default function MemoryScreen() {
       />
 
       <AnimatedRe.View
+        ref={guideFabRef}
         pointerEvents={fabHidden ? 'none' : 'auto'}
         style={[
           styles.fabWrap,
@@ -342,7 +353,13 @@ export default function MemoryScreen() {
       <MemoryGuideModal
         enabled={true}
         ready={!isLoading && !!familyId}
-        forceVisible={false} // ✅ 개발 중이면 true로(계속 뜨게)
+        forceVisible={false}
+        onAfterClose={handleGuideAfterClose}
+        targetRef={guideRootRef}
+        targetRefsByKey={{
+          filter: guideFilterBarRef,
+          upload: guideFabRef,
+        }}
       />
     </View>
   );
@@ -354,6 +371,7 @@ const styles = StyleSheet.create({
     backgroundColor: BACKGROUND_COLORS.secondaryBg,
     width: '100%',
   },
+  guideContentWrap: { flex: 1 },
   rangeBar: {
     paddingHorizontal: getResponsiveWidth(24),
     paddingBottom: getResponsiveHeight(4),

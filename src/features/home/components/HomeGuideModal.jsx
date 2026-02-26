@@ -1,16 +1,18 @@
 // src/features/home/components/HomeGuideModal.jsx
-import React, {useCallback} from 'react';
-import GuideModalCarousel from 'components/modal/GuideModal';
+import React, {useCallback, useEffect} from 'react';
+import {Platform, InteractionManager} from 'react-native';
+import HomeGuideVisual from './HomeGuideVisual';
 import useGuide from 'hooks/useGuide';
+import {useGuideOverlay} from 'contexts/GuideOverlayContext';
 
 const KEY_HOME_GUIDE_SHOWN = '@kinover/guide/home_v3_shown';
 
-/** 행동 유도형: 이 화면에서 뭘 누르면 되는지 안내 */
+/** 행동 유도형: 실제 탭 화면 위 하이라이트 + 말풍선 */
 const steps = [
   {
     key: 'family_status',
-    title: '홈',
-    description: '**가족 프로필**을 눌러 접속 상태를 확인해보세요.\n프로필을 **길게 누르면** 별명·한마디를 수정할 수 있어요.',
+    title: '가족 프로필',
+    description: '프로필을 눌러 가족의 상태를 확인해보세요.\n**길게 누르면** 별명·한마디를 수정할 수 있어요.',
   },
   {
     key: 'my_mood',
@@ -29,27 +31,52 @@ export default function HomeGuideModal({
   ready = true,
   forceVisible = false,
   storageKey = KEY_HOME_GUIDE_SHOWN,
-  onDone, // ✅ HomeScreen 후처리 알럿
+  onDone,
+  onAfterClose,
+  targetRefsByKey,
 }) {
   const {visible, closeAndRemember} = useGuide(
     storageKey,
     enabled && ready,
     {forceVisible},
   );
+  const {showGuide, hideGuide, setAnyGuideVisible} = useGuideOverlay() || {};
 
   const handleDone = useCallback(async () => {
     await closeAndRemember();
     onDone?.();
   }, [closeAndRemember, onDone]);
 
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !setAnyGuideVisible) return;
+    if (visible) setAnyGuideVisible(true);
+    return () => setAnyGuideVisible(false);
+  }, [visible, setAnyGuideVisible]);
+
+  useEffect(() => {
+    if (!showGuide || !hideGuide) return;
+    if (visible) {
+      const closeAndHide = () => {
+        handleDone();
+        InteractionManager.runAfterInteractions(() => {
+          hideGuide();
+        });
+      };
+      showGuide({
+        visible: true,
+        steps,
+        onRequestClose: closeAndHide,
+        onDone: closeAndHide,
+        VisualComponent: HomeGuideVisual,
+        targetRefsByKey,
+      });
+    } else {
+      hideGuide();
+    }
+    return () => hideGuide();
+  }, [visible, showGuide, hideGuide, handleDone]);
+
   if (!enabled) return null;
 
-  return (
-    <GuideModalCarousel
-      visible={visible}
-      steps={steps}
-      onRequestClose={handleDone}
-      onDone={handleDone}
-    />
-  );
+  return null;
 }

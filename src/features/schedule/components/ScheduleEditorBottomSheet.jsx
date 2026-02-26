@@ -1,6 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
 // ScheduleEditorBottomSheetModal.jsx
-// ✅ 흐름형 footer(1번) 버전 - 버벅 개선
 // - 내부 탭에서 snapToIndex 제거(키보드 정책에 맡김)
 // - 탭 연타 방지
 // - Layout은 dismissKeyboardOnPress=true로 “키보드 열려있을 때만” dismiss 하도록
@@ -24,7 +23,7 @@ import {
   Animated,
   Dimensions,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {
   getResponsiveFontSize,
@@ -35,6 +34,7 @@ import {
 import {useScheduleBottomSheetModal} from '../hooks/useScheduleBottomSheetModal';
 import ToastModal from 'components/modal/ToastModal';
 import CustomModal from 'components/modal/CustomModal';
+import {validateLength} from 'utils/validation';
 import {BottomSheetTextInput, BottomSheetView} from '@gorhom/bottom-sheet';
 import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
 import {BOTTOMSHEET_STYLE} from 'styles/style';
@@ -73,6 +73,19 @@ const toNumId = v => {
 
 const uniqNums = arr =>
   Array.from(new Set((arr || []).map(toNumId).filter(v => v != null)));
+
+/** 숫자·문자 ID 모두 유지 (더미 mock-mom 등 문자열 ID 지원) */
+const uniqIds = arr =>
+  Array.from(
+    new Set(
+      (arr || [])
+        .map(v => (v != null && String(v).trim() !== '' ? v : null))
+        .filter(v => v != null),
+    ),
+  );
+
+const idEq = (a, b) => a === b || String(a) === String(b);
+const hasId = (ids, id) => (Array.isArray(ids) ? ids : []).some(x => idEq(x, id));
 
 const COLORS = {
   bg: '#FFFFFF',
@@ -157,7 +170,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
     const closingRef = useRef(false);
 
-    // ✅ shift는 “입력/콘텐츠 영역”만 올릴거라 contentWrapRef를 따로 둠
+ // shift는 “입력/콘텐츠 영역”만 올릴거라 contentWrapRef를 따로 둠
     const shiftAnim = useRef(new Animated.Value(0)).current;
     const keyboardHeightRef = useRef(0);
     const inputRef = useRef(null);
@@ -165,7 +178,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const tapToResetRef = useRef(false);
     const keyboardOpenRef = useRef(false);
 
-    // ✅ 내부 탭 연타 방지
+ // 내부 탭 연타 방지
     const touchLockRef = useRef(false);
     const touchLockTimerRef = useRef(null);
     const lockTouchBriefly = useCallback(() => {
@@ -192,21 +205,21 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const setSelectedUserIdsSafe = next => {
       if (isClosing) return;
       const setter = setSelectedUserIdsProp ?? setLocalSelectedUserIds;
-      setter(Array.isArray(next) ? uniqNums(next) : []);
+      setter(Array.isArray(next) ? uniqIds(next) : []);
     };
 
     const safeSelectedIds = useMemo(() => {
-      return Array.isArray(selectedUserIds) ? uniqNums(selectedUserIds) : [];
+      return Array.isArray(selectedUserIds) ? uniqIds(selectedUserIds) : [];
     }, [selectedUserIds]);
 
     const allFamilyUserIds = useMemo(() => {
-      return uniqNums((familyUserList || []).map(u => u?.userId));
+      return uniqIds((familyUserList || []).map(u => u?.userId));
     }, [familyUserList]);
 
     const isAllSelected =
       currentKind === KIND.FAMILY &&
       allFamilyUserIds.length > 0 &&
-      safeSelectedIds.length === allFamilyUserIds.length;
+      allFamilyUserIds.every(id => hasId(safeSelectedIds, id));
 
     const isAllSelectedUI = isAnniversaryMode ? true : isAllSelected;
 
@@ -222,7 +235,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       [setKindProp, setSelectedUserIdsProp],
     );
 
-    // ✅ 안정 키
+ // 안정 키
     const editingScheduleRef = useRef(editingSchedule);
     useEffect(() => {
       editingScheduleRef.current = editingSchedule;
@@ -283,7 +296,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         ? [es.userId]
         : null;
 
-      const normalizedCandidates = candidateArr ? uniqNums(candidateArr) : null;
+      const normalizedCandidates = candidateArr ? uniqIds(candidateArr) : null;
 
       if (initialKind === KIND.ANNIVERSARY) {
         (setSelectedUserIdsProp ?? setLocalSelectedUserIds)([]);
@@ -292,12 +305,12 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
       if (normalizedCandidates && normalizedCandidates.length > 0) {
         (setSelectedUserIdsProp ?? setLocalSelectedUserIds)(
-          uniqNums(normalizedCandidates),
+          uniqIds(normalizedCandidates),
         );
       } else {
         (setSelectedUserIdsProp ?? setLocalSelectedUserIds)([]);
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+ // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [editingKey]);
 
     const scheduleType = useMemo(
@@ -352,13 +365,17 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       const isLarge = fm.includes('large') && !fm.includes('extra');
       const isXL = fm.includes('extra');
 
-      // 첫 스냅이 기본 열림 높이 → 너무 낮으면 하단 버튼이 잘림
       if (isXL) return ['74%', '99%'];
       if (isLarge) return ['72%', '98%'];
       return ['70%', '97%'];
     }, [fontMode]);
 
-    const bottomSafe = 0;
+    const insets = useSafeAreaInsets();
+ // 안드로이드 실물 기기에서 insets.bottom이 0이어도 최소 24dp 여백 확보
+    const bottomSafe = Math.max(
+      Number(insets.bottom || 0),
+      getResponsiveHeight(24),
+    );
 
     const closeSheet = useCallback(() => {
       if (closingRef.current) return;
@@ -412,7 +429,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       dismiss: () => closeSheet(),
     }));
 
-    // ✅ 키보드 이벤트: 높이 추적 + shift 리셋만
+ // 키보드 이벤트: 높이 추적 + shift 리셋만
     useEffect(() => {
       const onShow = e => {
         keyboardOpenRef.current = true;
@@ -488,12 +505,12 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       [shiftAnim],
     );
 
-    /**
-     * ✅✅✅ 버벅 제거 핵심:
-     * - 내부 탭에서는 “snapToIndex(0)” 하지 말고
-     * - shift만 0으로 리셋 + (키보드 닫기는 Layout이 담당)
-     * - 탭 연타 방지
-     */
+ /**
+ * 버벅 제거 핵심:
+ * - 내부 탭에서는 “snapToIndex(0)” 하지 말고
+ * - shift만 0으로 리셋 + (키보드 닫기는 Layout이 담당)
+ * - 탭 연타 방지
+ */
     const handleTouchInsideResetOnly = useCallback(() => {
       if (touchLockRef.current) return;
       lockTouchBriefly();
@@ -512,12 +529,11 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const toggleUser = userId => {
       if (isClosing) return;
       if (isAnniversaryMode) return;
+      if (userId == null || String(userId).trim() === '') return;
 
-      const id = toNumId(userId);
-      if (id == null) return;
-
-      if (safeSelectedIds.includes(id)) {
-        setSelectedUserIdsSafe(safeSelectedIds.filter(x => x !== id));
+      const id = userId;
+      if (hasId(safeSelectedIds, id)) {
+        setSelectedUserIdsSafe(safeSelectedIds.filter(x => !idEq(x, id)));
       } else {
         setSelectedUserIdsSafe([...safeSelectedIds, id]);
       }
@@ -547,11 +563,17 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const handlePressSave = async () => {
       if (isClosing) return;
 
-      const text = scheduleRef.current || '';
-      if (!text.trim()) {
-        showToast('일정 내용을 입력해주세요.');
-        return;
-      }
+    const text = scheduleRef.current || '';
+    if (!text.trim()) {
+      showToast('일정 내용을 입력해주세요.');
+      return;
+    }
+
+    const lengthResult = validateLength(text.trim(), {max: 200});
+    if (!lengthResult.valid) {
+      showToast(lengthResult.message);
+      return;
+    }
 
       const count = safeSelectedIds.length;
 
@@ -622,10 +644,10 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       const normalized = (familyUserList || [])
         .map(u => ({
           type: 'USER',
-          userId: toNumId(u?.userId),
+          userId: u?.userId,
           name: u?.name ?? '',
         }))
-        .filter(x => x.userId != null);
+        .filter(x => x.userId != null && x.userId !== '');
 
       return [{type: 'ALL', userId: -1, name: '전체'}, ...normalized];
     }, [familyUserList]);
@@ -652,7 +674,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
           ? isAllSelectedUI
           : isAnniversaryMode
           ? false
-          : safeSelectedIds.includes(id);
+          : hasId(safeSelectedIds, id);
 
         const onPress = () => {
           if (isAnniversaryMode) return;
@@ -712,13 +734,13 @@ const ScheduleEditorBottomSheetModal = forwardRef(
           keyboardOpenSnapIndex={1}
           keyboardCloseSnapIndex={0}
           useTouchOverlay={true}
-          // ✅✅✅ 여기 중요: Layout이 “키보드 열려있을 때만” dismiss 하게
           dismissKeyboardOnPress={true}
-          // ✅ 내부 탭 추가 동작은 shift 리셋만
           onTouchInside={handleTouchInsideResetOnly}
           onDismiss={handleSheetDismiss}
+          disableContentBottomPadding={true}
         >
-          <SafeAreaView edges={['bottom']} style={{backgroundColor: COLORS.bg}}>
+          {/* 하단 여백은 BottomSheetFooterButtons의 bottomSafe만 사용(중복 방지) */}
+          <SafeAreaView edges={[]} style={{backgroundColor: COLORS.bg}}>
             <BottomSheetView>
               <Animated.View
                 style={{

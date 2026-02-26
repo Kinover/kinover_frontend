@@ -44,7 +44,7 @@ import {
   getBiometricAvailability,
 } from 'utils/biometrics';
 
-import CustomSwitch from 'components/CustomSwitch';
+import CustomSwitch from 'components/customSwitch';
 
 import {setFontMode, FONT_MODE, setBioLockEnabled} from 'store/uiSlice';
 import {persistor} from 'store';
@@ -284,13 +284,16 @@ export default function SettingScreen() {
       <View style={styles.section}>
         <TouchableOpacity
           style={styles.row}
-          onPress={() => navigation.navigate('알림설정화면')}>
+          onPress={() => navigation.navigate('알림설정화면')}
+          accessibilityLabel="알림 설정"
+          accessibilityRole="button">
           <Text allowFontScaling={false} style={styles.label}>
             알림
           </Text>
           <Image
             style={styles.arrow}
             source={require('../../../assets/images/rightArrow-gray.png')}
+            accessibilityIgnoresInvertColors
           />
         </TouchableOpacity>
       </View>
@@ -316,7 +319,10 @@ export default function SettingScreen() {
           <Pressable
             onPress={handlePressCustomSwitch}
             disabled={bioLoading}
-            style={{opacity: bioLoading ? 0.5 : 1}}>
+            style={{opacity: bioLoading ? 0.5 : 1}}
+            accessibilityLabel={bioOn ? '생체인식 잠금 사용 중' : '생체인식 잠금 끔'}
+            accessibilityRole="switch"
+            accessibilityState={{checked: !!bioOn}}>
             <CustomSwitch
               isEnabled={!!bioOn}
               toggleSwitch={handlePressCustomSwitch}

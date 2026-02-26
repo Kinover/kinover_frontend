@@ -16,7 +16,7 @@ import {
   getResponsiveIconSize,
 } from 'utils/responsive';
 import formatTime from 'utils/formatTime';
-import ImageModal from './MediaModal';
+import ImageModal from './mediaModal';
 
 import {
   registerTimeLast,
@@ -39,7 +39,7 @@ export default function SendKinoChat({
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
-  // === 마지막만 시간 표시 ===
+ // === 마지막만 시간 표시 ===
   const [showTime, setShowTime] = useState(false);
   const idRef = useRef(Math.random().toString(36).slice(2));
   const key = `KINO_ME|${minuteKey(chatTime)}`;
@@ -50,7 +50,7 @@ export default function SendKinoChat({
     return () => unregisterTimeLast(key, idRef.current);
   }, [key, timeMs]);
 
-  // === 간격 계산 ===
+ // === 간격 계산 ===
   const spacingStyle = getSpacingStyle({isGrouped, isSameSender});
 
   const handleImagePress = (uri, index) => {
@@ -58,15 +58,15 @@ export default function SendKinoChat({
     setModalVisible(true);
   };
 
-  // ✅ 키노 타입별 "보내는 말풍선" 팔레트
-  // 조건: ReceiveKinoChat의 bubble(진한 말풍선)보다 "연한" 톤
+ // 키노 타입별 "보내는 말풍선" 팔레트
+ // 조건: ReceiveKinoChat의 bubble(진한 말풍선)보다 "연한" 톤
   const KINO_SEND_BUBBLE_PALETTE = useMemo(
     () => ({
-      // Receive: #FFC84D
+ // Receive: #FFC84D
       YELLOW_KINO: {bubble: '#FFECC3', text: 'black'},
-      // Receive: #334EA7
+ // Receive: #334EA7
       BLUE_KINO: {bubble: '#D7E9FF', text: '#0F172A'},
-      // Receive: #FFC3DE
+ // Receive: #FFC3DE
       PINK_KINO: {bubble: '#FFEAF2', text: '#111827'},
     }),
     [],
@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sendBubble: {
-    backgroundColor: '#FFECC3', // ✅ 기본값(동적으로 override 됨)
+    backgroundColor: '#FFECC3', // 기본값(동적으로 override 됨)
     borderRadius: getResponsiveIconSize(20),
     maxWidth: getResponsiveWidth(260),
     flexShrink: 1,
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
   sendText: {
     fontFamily: CHATROOM_STYLE().messageFontFamily,
     fontSize: CHATROOM_STYLE().KinoMessageFontSize,
-    color: 'black', // ✅ 기본값(동적으로 override 됨)
+    color: 'black', // 기본값(동적으로 override 됨)
     flexWrap: 'wrap',
     lineHeight: getResponsiveFontSize(18),
   },

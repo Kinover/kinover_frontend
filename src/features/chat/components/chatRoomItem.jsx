@@ -7,7 +7,7 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import GroupAvatar from './GroupAvatar';
+import GroupAvatar from './groupAvatar';
 
 const KINO_AVATAR_SOURCE = require('../../../assets/images/kino-yellow.png');
 import {useDispatch, useSelector} from 'react-redux';
@@ -43,7 +43,7 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
     latestMessageContent || '지금 첫 메시지를 보내 대화를 시작해보세요!';
 
   const onPress = () => {
-    // ✅ UX: 눌렀을 때 즉시 뱃지 0 (서버 read는 "채팅방 화면"에서 확실히 처리)
+ // UX: 눌렀을 때 즉시 뱃지 0 (서버 read는 "채팅방 화면"에서 확실히 처리)
     dispatch(markRoomRead(chatRoomId));
 
     navigation.navigate(screen, {chatRoom, title, userId});
@@ -53,7 +53,12 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
   const AI_BADGE_SIZE = getResponsiveIconSize(16);
 
   return (
-    <Pressable onPress={onPress} android_ripple={null} style={styles.pressable}>
+    <Pressable
+      onPress={onPress}
+      android_ripple={null}
+      style={styles.pressable}
+      accessibilityLabel={`${title || '채팅방'}${unreadCount > 0 ? `. 읽지 않은 메시지 ${unreadCount}개` : ''}`}
+      accessibilityRole="button">
       {({pressed}) => (
         <View style={styles.container}>
           {pressed && <View style={styles.pressOverlay} />}

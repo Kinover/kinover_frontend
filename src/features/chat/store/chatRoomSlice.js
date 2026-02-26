@@ -45,24 +45,25 @@ const previewText = msg => {
 };
 
 const findRoomIndex = (state, rid) =>
-  state.chatRoomList.findIndex(r => toId(r.chatRoomId) === rid);
+  (state?.chatRoomList ?? []).findIndex(r => toId(r?.chatRoomId) === rid);
 
 const finalizeList = state => {
-  state.chatRoomList = sortByLatest(state.chatRoomList);
-  state.listRevision += 1;
+  const list = state?.chatRoomList ?? [];
+  state.chatRoomList = Array.isArray(list) ? sortByLatest(list) : [];
+  state.listRevision = (state.listRevision ?? 0) + 1;
 };
 
 /* =========================
- * ✅ API
+ * API
  * ========================= */
 const API_BASE = 'https://kinover.shop/api/chatRoom';
 
 /**
- * ✅ markReadThunk
+ * markReadThunk
  * - 서버에 lastReadAt 저장 (POST /{chatRoomId}/read)
  * - 성공 시: (1) 내 포인터 저장 (2) 목록 unreadCount 0
  *
- * ⚠️ userId가 화면에서 undefined로 올 수 있어서:
+ * userId가 화면에서 undefined로 올 수 있어서:
  * - userId가 없으면 slice에서 포인터 저장은 스킵(에러 X)
  * - 그래도 unreadCount 0 / 서버 저장은 정상
  */
@@ -74,8 +75,7 @@ export const markReadThunk = createAsyncThunk(
       const rid = toId(chatRoomId);
       if (!rid) return rejectWithValue('chatRoomId가 없습니다.');
 
-      // ✅ 여기 중요: 서버가 LocalDateTime(= Z 없음) 기대하면 그대로 보낸다
-      // lastReadAt이 Date/ISO 등으로 들어오면, 최종적으로 "Z 없는 LocalDateTime"으로 맞춰서 보냄
+ // lastReadAt이 Date/ISO 등으로 들어오면, 최종적으로 "Z 없는 LocalDateTime"으로 맞춰서 보냄
       const normalized =
         typeof lastReadAt === 'string'
           ? lastReadAt
@@ -110,7 +110,7 @@ export const markReadThunk = createAsyncThunk(
 );
 
 /**
- * ✅ fetchReadPointersThunk
+ * fetchReadPointersThunk
  * - 채팅방 참여자별 포인터 조회 (GET /{chatRoomId}/readPointers)
  */
 export const fetchReadPointersThunk = createAsyncThunk(
@@ -156,16 +156,16 @@ const initialChatRoomState = {
   mediaByRoom: {},
 
 
-  /**
-   * ✅ 읽음 포인터 저장
-   * readPointersByRoom[rid][userId] = lastReadAt (ISO string)
-   */
+ /**
+ * 읽음 포인터 저장
+ * readPointersByRoom[rid][userId] = lastReadAt (ISO string)
+ */
   readPointersByRoom: {},
 
-  /**
-   * ✅ 내 read 요청 상태(선택)
-   * markReadStatusByRoom[rid] = 'idle'|'pending'|'fulfilled'|'rejected'
-   */
+ /**
+ * 내 read 요청 상태(선택)
+ * markReadStatusByRoom[rid] = 'idle'|'pending'|'fulfilled'|'rejected'
+ */
   markReadStatusByRoom: {},
 };
 
@@ -185,6 +185,7 @@ const chatRoomSlice = createSlice({
       if (!rid) return;
 
       state.pendingTopRoomId = rid;
+      if (!Array.isArray(state.chatRoomList)) state.chatRoomList = [];
 
       const idx = findRoomIndex(state, rid);
       if (idx === -1) {
@@ -212,29 +213,30 @@ const chatRoomSlice = createSlice({
     },
 
     setChatRoomList(state, action) {
-      const src = Array.isArray(action.payload) ? action.payload : [];
+      const src = Array.isArray(action?.payload) ? action.payload : [];
 
       const mapped = src.map(r => {
-        const rid = toId(r.chatRoomId);
+        const raw = r ?? {};
+        const rid = toId(raw.chatRoomId);
 
         const latestRaw =
-          r.latestMessageTime ??
-          r.updatedAt ??
-          r.createdAt ??
+          raw.latestMessageTime ??
+          raw.updatedAt ??
+          raw.createdAt ??
           new Date().toISOString();
 
         return {
-          ...r,
+          ...raw,
           chatRoomId: rid,
-          roomName: r.roomName ?? `채팅방 ${rid ?? ''}`,
-          latestMessageContent: r.latestMessageContent ?? '',
+          roomName: raw.roomName ?? `채팅방 ${rid ?? ''}`,
+          latestMessageContent: raw.latestMessageContent ?? '',
           latestMessageTime: toIso(latestRaw),
 
-          unreadCount: Number.isFinite(r.unreadCount) ? r.unreadCount : 0,
+          unreadCount: Number.isFinite(raw.unreadCount) ? raw.unreadCount : 0,
 
           notificationOn:
-            typeof r.notificationOn === 'boolean' ? r.notificationOn : true,
-          userChatRooms: Array.isArray(r.userChatRooms) ? r.userChatRooms : [],
+            typeof raw.notificationOn === 'boolean' ? raw.notificationOn : true,
+          userChatRooms: Array.isArray(raw.userChatRooms) ? raw.userChatRooms : [],
         };
       });
 
@@ -397,9 +399,9 @@ const chatRoomSlice = createSlice({
       state.listRevision += 1;
     },
 
-    /* =========================
-     * ✅ 읽음 포인터 reducers
-     * ========================= */
+ /* =========================
+ * 읽음 포인터 reducers
+ * ========================= */
     setReadPointers(state, action) {
       const {chatRoomId, pointers} = action.payload || {};
       const rid = toId(chatRoomId);
@@ -445,13 +447,13 @@ const chatRoomSlice = createSlice({
 
         state.markReadStatusByRoom[rid] = 'fulfilled';
 
-        // ✅ 내 포인터 즉시 반영 (userId 없으면 스킵)
+ // 내 포인터 즉시 반영 (userId 없으면 스킵)
         if (userId != null && lastReadAt) {
           if (!state.readPointersByRoom[rid]) state.readPointersByRoom[rid] = {};
           state.readPointersByRoom[rid][String(userId)] = toIso(lastReadAt);
         }
 
-        // ✅ 목록 unreadCount 0
+ // 목록 unreadCount 0
         const idx = findRoomIndex(state, rid);
         if (idx !== -1) {
           state.chatRoomList[idx] = {
@@ -524,13 +526,13 @@ const chatRoomSlice = createSlice({
 
         const prev = state.mediaByRoom[rid];
 
-        // ✅ 타입이 바뀌었으면 강제 리셋 (혼합 방지)
+ // 타입이 바뀌었으면 강제 리셋 (혼합 방지)
         const nextType = String(type || 'ALL').toUpperCase();
         const typeChanged = prev.type && prev.type !== nextType;
 
         const nextItems = Array.isArray(items) ? items : [];
 
-        // ✅ messageId + url + orderInMessage 로 대충 유니크키 만들어 중복 제거
+ // messageId + url + orderInMessage 로 대충 유니크키 만들어 중복 제거
         const keyOf = x =>
           `${x?.messageId || ''}|${x?.url || ''}|${x?.orderInMessage ?? ''}`;
 
@@ -588,17 +590,17 @@ const chatRoomSlice = createSlice({
 });
 
 /* =========================
- * ✅ Selectors (여기가 에러 주범 1순위)
+ * Selectors (여기가 에러 주범 1순위)
  * ========================= */
 
-// ✅ 방별 readPointers map
+// 방별 readPointers map
 export const selectReadPointers = (state, chatRoomId) => {
   const rid = toId(chatRoomId);
   if (!rid) return {};
   return state?.chatRoom?.readPointersByRoom?.[rid] || {};
 };
 
-// ✅ 채팅 unread 총합 (앱 뱃지 합산용)
+// 채팅 unread 총합 (앱 뱃지 합산용)
 export const selectChatUnreadTotal = state => {
   const list = state?.chatRoom?.chatRoomList || [];
   return list.reduce((sum, r) => {

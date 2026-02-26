@@ -31,7 +31,7 @@ export async function updatePostApi(postId, payload) {
 
   const raw = {
     authorId: payload.authorId,
-    familyId: payload.familyId, // ✅ 추가 (이게 지금 빠지고 있었음)
+    familyId: payload.familyId, // 추가 (이게 지금 빠지고 있었음)
     content: payload.content,
     categoryId: payload.categoryId,
     imageUrls: payload.imageUrls,
@@ -40,7 +40,7 @@ export async function updatePostApi(postId, payload) {
 
   let body = cleanUndefined(raw);
 
-  // postTypes 정규화
+ // postTypes 정규화
   if (body.postTypes !== undefined) {
     if (!Array.isArray(body.postTypes)) {
       throw new Error('postTypes must be an array');
@@ -48,7 +48,7 @@ export async function updatePostApi(postId, payload) {
     body.postTypes = body.postTypes.map(toServerPostType);
   }
 
-  // imageUrls/postTypes 둘 중 하나라도 있으면 둘 다 배열로 강제 + 길이 동일 체크
+ // imageUrls/postTypes 둘 중 하나라도 있으면 둘 다 배열로 강제 + 길이 동일 체크
   const hasUrls = body.imageUrls !== undefined;
   const hasTypes = body.postTypes !== undefined;
 

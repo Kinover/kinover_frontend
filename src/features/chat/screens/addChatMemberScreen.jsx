@@ -1,5 +1,5 @@
 /* =========================================================
- * ✅ src/features/chat/screens/AddChatMemberScreen.jsx
+ * src/features/chat/screens/AddChatMemberScreen.jsx
  * - 초대 성공 시: route.params.onInvited 콜백 호출 → goBack
  * - 네비 이름/merge 필요 없음
  * ========================================================= */
@@ -16,9 +16,9 @@ import {
 } from 'react-native';
 
 import { apiClient } from 'utils/apiClient';
+import {CHAT_ROOM} from 'config/apiEndpoints';
 import {useSelector, useDispatch} from 'react-redux';
 
-import {getToken} from 'utils/storage';
 import {
   getResponsiveWidth,
   getResponsiveFontSize,
@@ -31,7 +31,7 @@ import FastImage from '@d11/react-native-fast-image';
 import {HEADER_STYLES} from 'styles/style';
 
 export default function AddChatMemberScreen({navigation, route}) {
-  const {chatRoomId, onInvited} = route.params; // ✅ 콜백 받기
+  const {chatRoomId, onInvited} = route.params; // 콜백 받기
 
   const dispatch = useDispatch();
   const family = useSelector(state => state.family);
@@ -64,28 +64,18 @@ export default function AddChatMemberScreen({navigation, route}) {
     if (selected.length === 0) return;
 
     try {
-      const token = await getToken();
       const idsStr = selected.join(',');
 
-      await apiClient.post(
-        `http://43.200.47.242:9090/api/chatRoom/${chatRoomId}/addUsers/${idsStr}`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
+      await apiClient.post(CHAT_ROOM.addUsers(chatRoomId, idsStr), null);
 
-      // ✅ 핵심: 콜백 호출로 "이전 화면(채팅방)"이 직접 처리하게 함
       if (typeof onInvited === 'function') {
         onInvited({
           count: selected.length,
-          // message: '멤버를 초대했어요.' // 필요하면 커스텀
+ // message: '멤버를 초대했어요.' // 필요하면 커스텀
         });
       }
 
-      // ✅ goBack으로 자연스럽게 복귀
+ // goBack으로 자연스럽게 복귀
       navigation.goBack();
     } catch (err) {
       console.error('유저 초대 실패:', err?.response?.data || err?.message || err);

@@ -24,10 +24,8 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {EMPTY_STYLE, HEADER_STYLES, COLORS} from 'styles/style';
 import uuid from 'react-native-uuid';
 
-// ✅ 추가: post 단건 조회 thunk
 import {fetchPostByIdThunk} from '../store/memoryThunk';
 
-// ✅ 추가: 재사용 체크 뱃지
 import CheckBadge from 'components/CheckBadge';
 
 export default function CategorySelectPage({route}) {
@@ -42,13 +40,13 @@ export default function CategorySelectPage({route}) {
   const removedUrls = route?.params?.removedUrls ?? [];
   const isEditMode = mode === '수정';
 
-  /** ✅ ImageSelectPage에서 넘어오는 값들 */
+ /** ImageSelectPage에서 넘어오는 값들 */
   const selectedImagesFromRoute = useMemo(
     () => route?.params?.selectedImages ?? [],
     [route?.params?.selectedImages],
   );
 
-  /** ✅ 수정모드: 게시글 원본 데이터(스토어) */
+ /** 수정모드: 게시글 원본 데이터(스토어) */
   const postFromStore = useSelector(state =>
     postId ? state.memory?.postsById?.[postId] : null,
   );
@@ -59,36 +57,36 @@ export default function CategorySelectPage({route}) {
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [newCategory, setNewCategory] = useState('');
 
-  /** -----------------------
-   * ✅ 수정모드면 post fetch
-   * ---------------------- */
+ /** -----------------------
+ * 수정모드면 post fetch
+ * ---------------------- */
   useEffect(() => {
     if (!isEditMode) return;
     if (!postId) return;
     if (!postFromStore) dispatch(fetchPostByIdThunk(postId));
   }, [dispatch, isEditMode, postId, postFromStore]);
 
-  /** -----------------------
-   * 카테고리 목록 조회
-   * ---------------------- */
-  // ✅ 카테고리 목록 조회 (A안: 토큰 기반)
+ /** -----------------------
+ * 카테고리 목록 조회
+ * ---------------------- */
+ // 카테고리 목록 조회 (A안: 토큰 기반)
   useEffect(() => {
     dispatch(fetchCategoryThunk());
   }, [dispatch]);
-  /** -----------------------
-   * ✅ 기본 선택 세팅
-   * - 수정모드면 "게시글의 카테고리"를 우선으로 선택
-   * - 없으면 첫번째 선택
-   * ---------------------- */
+ /** -----------------------
+ * 기본 선택 세팅
+ * - 수정모드면 "게시글의 카테고리"를 우선으로 선택
+ * - 없으면 첫번째 선택
+ * ---------------------- */
   const didInitRef = React.useRef(false);
 
   useEffect(() => {
     if (!categoryList || categoryList.length === 0) return;
 
-    // 이미 한번 초기화 했으면(사용자가 눌러서 바꿨을 수도) 더 안 건드림
+ // 이미 한번 초기화 했으면(사용자가 눌러서 바꿨을 수도) 더 안 건드림
     if (didInitRef.current) return;
 
-    // ✅ 수정모드: 게시글의 categoryId로 맞추기
+ // 수정모드: 게시글의 categoryId로 맞추기
     if (isEditMode && postFromStore?.categoryId) {
       const idx = categoryList.findIndex(
         c => c.categoryId === postFromStore.categoryId,
@@ -101,20 +99,20 @@ export default function CategorySelectPage({route}) {
       }
     }
 
-    // ✅ 그 외: 첫번째로
+ // 그 외: 첫번째로
     setSelectedCategory(categoryList[0]);
     setSelectedIndex(0);
     didInitRef.current = true;
   }, [categoryList, isEditMode, postFromStore]);
 
-  // postId 바뀌면 초기화 다시
+ // postId 바뀌면 초기화 다시
   useEffect(() => {
     didInitRef.current = false;
   }, [postId]);
 
-  /** -----------------------
-   * 임시 카테고리 추가
-   * ---------------------- */
+ /** -----------------------
+ * 임시 카테고리 추가
+ * ---------------------- */
   const handleAddCategory = () => {
     const title = newCategory.trim();
     if (!title) return;
@@ -138,9 +136,9 @@ export default function CategorySelectPage({route}) {
     dispatch({type: 'category/setTempCategoryList', payload: updated});
   };
 
-  /** -----------------------
-   * 헤더 설정
-   * ---------------------- */
+ /** -----------------------
+ * 헤더 설정
+ * ---------------------- */
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
@@ -161,7 +159,6 @@ export default function CategorySelectPage({route}) {
               postId,
               removedUrls,
 
-              // ✅ 핵심: 수정모드면 원래 글내용을 미리 채우기 위해 전달
               initialContent: isEditMode ? postFromStore?.content ?? '' : '',
             });
           }}
@@ -186,9 +183,9 @@ export default function CategorySelectPage({route}) {
     postFromStore,
   ]);
 
-  /** -----------------------
-   * 리스트 아이템
-   * ---------------------- */
+ /** -----------------------
+ * 리스트 아이템
+ * ---------------------- */
   const renderItem = ({item, index}) => {
     const isSelected = selectedIndex === index;
 
@@ -204,7 +201,7 @@ export default function CategorySelectPage({route}) {
           {item.title}
         </Text>
 
-        {/* ✅ 기존 라디오 이미지 제거 → 체크뱃지로 통일 */}
+        {/* 기존 라디오 이미지 제거 → 체크뱃지로 통일 */}
         <View style={styles.rightArea}>
           {isSelected ? (
             <CheckBadge
@@ -216,7 +213,6 @@ export default function CategorySelectPage({route}) {
               dotColor={COLORS.brandPrimary}
             />
           ) : (
-            // 비선택일 때 자리 흔들림 방지용(옵션)
             <View style={styles.badgePlaceholder} />
           )}
         </View>
@@ -311,13 +307,12 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center',
   },
 
-  // ✅ 오른쪽 영역(체크뱃지 자리)
+ // 오른쪽 영역(체크뱃지 자리)
   rightArea: {
     width: getResponsiveWidth(18),
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
-  // ✅ 비선택일 때도 높이/레이아웃 흔들림 방지용
   badgePlaceholder: {
     width: getResponsiveWidth(16),
     height: getResponsiveWidth(16),

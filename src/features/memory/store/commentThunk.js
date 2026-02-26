@@ -10,7 +10,7 @@ import {
 
 const BASE_URL = '/comments';
 
-// ✅ 댓글 조회
+// 댓글 조회
 export const fetchCommentsThunk = postId => {
   return async dispatch => {
     dispatch(setCommentLoading(true));
@@ -38,7 +38,6 @@ export const fetchCommentsThunk = postId => {
   };
 };
 
-// ✅ 댓글 추가
 export const createCommentThunk = commentData => {
   return async dispatch => {
     dispatch(setCommentLoading(true));
@@ -51,7 +50,6 @@ export const createCommentThunk = commentData => {
 
       console.log('✅ 댓글 추가 성공');
 
-      // 댓글 추가 후 목록 재조회
       dispatch(fetchCommentsThunk(commentData.postId));
     } catch (error) {
       const msg =
@@ -68,7 +66,7 @@ export const createCommentThunk = commentData => {
   };
 };
 
-// ✅ 댓글 삭제
+// 댓글 삭제
 export const deleteCommentThunk = (commentId, postId) => {
   return async dispatch => {
     dispatch(setCommentLoading(true));
@@ -81,7 +79,7 @@ export const deleteCommentThunk = (commentId, postId) => {
 
       console.log('✅ 댓글 삭제 성공');
 
-      // 삭제 후 목록 다시 조회
+ // 삭제 후 목록 다시 조회
       dispatch(fetchCommentsThunk(postId));
     } catch (error) {
       const msg =
@@ -98,7 +96,7 @@ export const deleteCommentThunk = (commentId, postId) => {
   };
 };
 
-// ✅ 댓글 알림 ON/OFF
+// 댓글 알림 ON/OFF
 export const toggleCommentNotificationThunk = ({userId, isOn}) => {
   return async dispatch => {
     try {

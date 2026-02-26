@@ -30,7 +30,7 @@ export function useAppleLogin() {
   const socketUnsubRef = useRef(null);
 
   const login = useCallback(async () => {
-    // ✅ iOS만
+ // iOS만
     if (Platform.OS !== 'ios') {
       const msg = '애플 로그인은 iOS에서만 지원돼요.';
       dispatch(setLoginError(msg));
@@ -38,7 +38,7 @@ export function useAppleLogin() {
       return;
     }
 
-    // ✅ 지원 여부 체크
+ // 지원 여부 체크
     const supported = appleAuth.isSupported;
     if (!supported) {
       const msg =
@@ -54,7 +54,7 @@ export function useAppleLogin() {
     try {
       console.log('🍎 Apple login pressed');
 
-      // ✅ 1) 애플 로그인 요청
+ // 1) 애플 로그인 요청
       const res = await appleAuth.performRequest({
         requestedOperation: appleAuth.Operation.LOGIN,
         requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
@@ -69,23 +69,23 @@ export function useAppleLogin() {
         );
       }
 
-      // ✅ 2) 서버 로그인은 thunk에서 처리 (카카오랑 동일)
+ // 2) 서버 로그인은 thunk에서 처리 (카카오랑 동일)
       const r = dispatch(appleLoginThunk(identityToken));
       const loginResult =
         typeof r?.unwrap === 'function'
           ? await withTimeout(r.unwrap(), 12000)
           : await withTimeout(r, 12000);
 
-      // ✅ 3) 카카오 흐름이랑 동일하게 “로그인 성공 확정” 한 번 더 박아도 됨(중복이어도 안전)
+ // 3) 카카오 흐름이랑 동일하게 “로그인 성공 확정” 한 번 더 박아도 됨(중복이어도 안전)
       dispatch(setLoginSuccess());
 
-      // ✅ 4) 소켓은 가족 있을 때만
+ // 4) 소켓은 가족 있을 때만
       const hasFamily = !!loginResult?.hasFamily;
       if (hasFamily && !socketUnsubRef.current) {
         socketUnsubRef.current = startChatSocket(dispatch);
       }
 
-      // ✅ 5) 마지막에 authChecked true
+ // 5) 마지막에 authChecked true
       dispatch(setAuthChecked(true));
 
       console.log('🍎 Apple login success:', {

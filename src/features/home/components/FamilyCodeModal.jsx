@@ -10,7 +10,7 @@ import CustomModal from 'components/modal/CustomModal';
 import Clipboard from '@react-native-clipboard/clipboard';
 import {BUTTON_STYLES, COLORS} from 'styles/style';
 
-// ✅ HAPTIC (경로는 네 프로젝트에 맞게 유지/조정)
+// HAPTIC (경로는 네 프로젝트에 맞게 유지/조정)
 import {hapticLight, hapticSuccess} from 'utils/haptic';
 
 export default function FamilyCodeModal({visible, onClose, familyCode}) {
@@ -19,13 +19,13 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
   const handleCopy = useCallback(() => {
     if (!familyCode) return;
 
-    // ✅ 누르는 순간 가볍게
+ // 누르는 순간 가볍게
     hapticLight();
 
     Clipboard.setString(familyCode);
     setCopied(true);
 
-    // ✅ 복사 성공 느낌
+ // 복사 성공 느낌
     hapticSuccess();
   }, [familyCode]);
 
@@ -47,7 +47,7 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
       title="가족 초대 코드"
       subText={subText}>
       <View style={styles.innerWrapper}>
-        {/* ✅ 카드 전체(=코드 영역)를 누르면 복사 */}
+        {/* 카드 전체(=코드 영역)를 누르면 복사 */}
         <Pressable
           onPress={handleCopy}
           disabled={!familyCode}
@@ -71,7 +71,7 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
             </Text>
           </View>
 
-          {/* ✅ 오른쪽은 "복사" 힌트용 (아이콘/텍스트만 표시, 눌러도 카드 onPress로 복사됨) */}
+          {/* 오른쪽은 "복사" 힌트용 (아이콘/텍스트만 표시, 눌러도 카드 onPress로 복사됨) */}
           <View style={[styles.copyBtn, copied && styles.copyBtnCopied]}>
             {/* <FastImage
               source={require('../../../assets/icons/copy.png')}
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
   },
 
-  // ✅ 이제 오른쪽은 "버튼"처럼 보이기만 하고 실제 클릭 처리는 카드 전체가 함
+ // 이제 오른쪽은 "버튼"처럼 보이기만 하고 실제 클릭 처리는 카드 전체가 함
   copyBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -180,6 +180,6 @@ const styles = StyleSheet.create({
   modalButtonRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    // marginTop: getResponsiveHeight(10),
+ // marginTop: getResponsiveHeight(10),
   },
 });

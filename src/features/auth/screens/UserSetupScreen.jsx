@@ -15,6 +15,7 @@ import DatePicker from 'react-native-date-picker';
 import {useNavigateToWhere} from 'hooks/useNavigateToWhere';
 import BottomActionButton from 'components/BottomActionButton';
 import {updateUserProfile} from 'api/userProfileApi';
+import {required, validateLength} from 'utils/validation';
 
 export default function UserSetupScreen() {
   const [name, setName] = useState('');
@@ -37,7 +38,7 @@ export default function UserSetupScreen() {
     marketingAgreedAt,
   } = route.params || {};
 
-  // ✅ 버튼 활성/비활성 조건
+ // 버튼 활성/비활성 조건
   const isFormValid = name.trim().length > 0 && !!birthDate;
   const isButtonDisabled = loading || !isFormValid;
 
@@ -56,8 +57,20 @@ export default function UserSetupScreen() {
       return;
     }
 
-    if (!isFormValid) {
-      setError('필수 항목을 모두 입력해 주세요.');
+    const nameTrimmed = name.trim();
+    const requiredResult = required(nameTrimmed, '이름');
+    if (!requiredResult.valid) {
+      setError(requiredResult.message);
+      return;
+    }
+    const lengthResult = validateLength(nameTrimmed, {min: 1, max: 30});
+    if (!lengthResult.valid) {
+      setError(lengthResult.message);
+      return;
+    }
+
+    if (!birthDate) {
+      setError('생년월일을 선택해 주세요.');
       return;
     }
 
@@ -66,7 +79,7 @@ export default function UserSetupScreen() {
 
     try {
       const payload = {
-        name: name.trim(),
+        name: nameTrimmed,
         birth: formatDate(birthDate), // YYYY-MM-DD
         termsAgreed,
         privacyAgreed,
@@ -107,7 +120,7 @@ export default function UserSetupScreen() {
     navigateToWhere,
   ]);
 
-  // ✅ 진입 자체를 막기
+ // 진입 자체를 막기
   useEffect(() => {
     if (!termsAgreed || !privacyAgreed) {
       Alert.alert(
@@ -129,7 +142,7 @@ export default function UserSetupScreen() {
     }
   }, [termsAgreed, privacyAgreed, navigateToWhere]);
 
-  // ✅ DatePicker 범위
+ // DatePicker 범위
   const maxDate = new Date();
   const minDate = new Date(1900, 0, 1);
 
@@ -147,7 +160,7 @@ export default function UserSetupScreen() {
           이름 <Text allowFontScaling={false} style={styles.star}>*</Text>
         </Text>
 
-        {/* ✅ 이름 입력: TextInput 유지 */}
+        {/* 이름 입력: TextInput 유지 */}
         <TextInput
           allowFontScaling={false}
           style={styles.input}
@@ -169,7 +182,7 @@ export default function UserSetupScreen() {
           생년월일 <Text allowFontScaling={false} style={styles.star}>*</Text>
         </Text>
 
-        {/* ✅ 생년월일: 누르면 DatePicker 모달 */}
+        {/* 생년월일: 누르면 DatePicker 모달 */}
         <TouchableOpacity activeOpacity={0.9} onPress={openBirthPicker}>
           <View style={styles.birthBox}>
             <Text
@@ -196,7 +209,7 @@ export default function UserSetupScreen() {
         disabled={isButtonDisabled}
       />
 
-      {/* ✅ DatePicker Modal */}
+      {/* DatePicker Modal */}
       <DatePicker
         modal
         open={isBirthPickerOpen}
@@ -253,7 +266,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // ✅ 이름 input
+ // 이름 input
   input: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -264,7 +277,7 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
 
-  // ✅ 생년월일 박스
+ // 생년월일 박스
   birthBox: {
     borderWidth: 1,
     borderColor: '#E5E7EB',

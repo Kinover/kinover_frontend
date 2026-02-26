@@ -19,7 +19,6 @@ import {fetchFamilyThunk, fetchFamilyStatusThunk} from '../store/familyThunk';
 import {fetchFamilyUserListThunk} from '../store/familyUserThunk';
 import {modifyUserThunk} from '../store/userThunk';
 
-// ✅✅✅ 여기 추가 (경로는 너 프로젝트에 맞게)
 import {fetchUserThunk} from '../store/userThunk';
 
 import {
@@ -29,7 +28,7 @@ import {
 
 import HeaderSection from '../components/HeaderSection';
 import MemberGridSection from '../components/MemberGridSection';
-import YellowSpinner from 'components/YellowSpinner';
+import YellowSpinner from 'components/yellowSpinner';
 
 import {
   requestNotificationPermission,
@@ -39,6 +38,7 @@ import {
 
 import useWebSocketStatus from 'hooks/useWebSocketStatus';
 import useFamilyStatusSocket from 'hooks/useFamilyStatusSocket';
+import {useDoubleBackToExit} from 'hooks/useDoubleBackToExit';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import HomeGuideModal from '../components/HomeGuideModal';
@@ -46,6 +46,7 @@ import AppAlertHost from 'components/modal/AppAlertHost';
 import useActiveAppEvent from 'hooks/useActiveAppEvent';
 import {isEmotionValid} from '../utils/emotionUtils';
 import {KEY_FIRST_ENTRY_AFTER_SETUP} from 'hooks/useGuide';
+import {useGuideOverlay} from 'contexts/GuideOverlayContext';
 import {
   STORE_MOCK_ENABLED,
   getStoreMockUser,
@@ -57,6 +58,9 @@ import {
 export default function HomeScreen() {
   const dispatch = useDispatch();
   const userSheetRef = useRef(null);
+  const guideProfileRef = useRef(null);
+  const guideMoodRef = useRef(null);
+  const guideInviteRef = useRef(null);
 
   const user = useSelector(state => state.user);
   const family = useSelector(state => state.family);
@@ -73,19 +77,22 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [didInitialLoad, setDidInitialLoad] = useState(false);
 
-  // ✅ AppAlert "실제 표시 여부"를 HomeScreen에서 추적
+ // AppAlert "실제 표시 여부"를 HomeScreen에서 추적
   const [isAppAlertVisible, setIsAppAlertVisible] = useState(false);
-  // ✅ 회원가입/설정 완료 직후 첫 진입 시에는 이벤트·감정 모달 숨김 (null = 아직 미확인)
+ // 회원가입/설정 완료 직후 첫 진입 시에는 이벤트·감정 모달 숨김 (null = 아직 미확인)
   const [skipAppAlertForFirstEntry, setSkipAppAlertForFirstEntry] = useState(null);
 
-  // 감정이 이미 선택된 상태(24h 유효)면 감정 선택 모달 이벤트는 제외
   const hasValidEmotion = isEmotionValid(user?.emotion, user?.emotionUpdatedAt);
   const activeEvent = useActiveAppEvent({
     screen: 'home',
     hideEmotionPickWhenHasEmotion: hasValidEmotion,
+    hideEmotionPickOnFirstEntry: skipAppAlertForFirstEntry !== false,
   });
 
-  // ✅ 첫 진입 여부 확인 후 skip 플래그 설정 & 스토리지 키 삭제 (확인 전에는 미노출)
+ // 가이드 모달이 떠 있는 동안에는 이벤트 모달 숨김 (iOS: guideProps, Android: setAnyGuideVisible)
+  const {isGuideVisible} = useGuideOverlay() || {};
+
+ // 첫 진입 여부 확인 후 skip 플래그 설정 & 스토리지 키 삭제 (확인 전에는 미노출)
   useEffect(() => {
     if (!familyId) return;
     let mounted = true;
@@ -113,7 +120,7 @@ export default function HomeScreen() {
     m => m.userId !== user?.userId,
   );
 
-  // 앱스토어 캡처용 더미 (STORE_MOCK_ENABLED 시 표시용 데이터만 치환)
+ // 앱스토어 캡처용 더미 (STORE_MOCK_ENABLED 시 표시용 데이터만 치환)
   const displayUser = STORE_MOCK_ENABLED ? getStoreMockUser() : user;
   const displayFamilyMembers = STORE_MOCK_ENABLED
     ? getStoreMockFamilyMembers()
@@ -132,6 +139,10 @@ export default function HomeScreen() {
       ? getResponsiveHeight(110)
       : getResponsiveHeight(100);
 
+ // iOS: 가이드 모달 닫은 뒤 터치 복구용 — early return 앞에 두어 훅 개수 고정
+  const [contentKey, setContentKey] = useState(0);
+  const handleGuideAfterClose = useCallback(() => setContentKey(k => k + 1), []);
+
   const openInviteCodeModal = useCallback(() => {
     setIsVisible(true);
   }, []);
@@ -140,7 +151,6 @@ export default function HomeScreen() {
     setIsVisible(false);
   }, []);
 
-  // ✅ 디버깅 로그(원하면 유지)
   useEffect(() => {
     console.log('[HomeScreen] user snapshot:', {
       userId: user?.userId,
@@ -175,13 +185,14 @@ export default function HomeScreen() {
 
   useWebSocketStatus(user?.userId);
   useFamilyStatusSocket(familyId);
+  useDoubleBackToExit(true);
 
-  /**
-   * ✅✅✅ 핵심 수정:
-   * Home 진입 시
-   * 1) fetchUserThunk로 내 상태를 먼저 최신화
-   * 2) 그 다음 family 관련 3개 fetch
-   */
+ /**
+ * 핵심 수정:
+ * Home 진입 시
+ * 1) fetchUserThunk로 내 상태를 먼저 최신화
+ * 2) 그 다음 family 관련 3개 fetch
+ */
   useEffect(() => {
     let mounted = true;
 
@@ -190,7 +201,7 @@ export default function HomeScreen() {
       if (!familyId) return;
 
       try {
-        // ✅ 1) 유저 최신화 먼저
+ // 1) 유저 최신화 먼저
         const r = dispatch(fetchUserThunk());
         if (r && typeof r.unwrap === 'function') {
           await r.unwrap();
@@ -198,13 +209,13 @@ export default function HomeScreen() {
           await r;
         }
 
-        // ✅ 2) 그 다음 가족 데이터
+ // 2) 그 다음 가족 데이터
         await dispatch(fetchFamilyThunk(familyId));
         await dispatch(fetchFamilyUserListThunk(familyId));
         await dispatch(fetchFamilyStatusThunk(familyId));
       } catch (e) {
         console.log('[HomeScreen] initial load error:', e);
-        // 에러 나도 로딩 막지 말고 화면은 뜨게
+ // 에러 나도 로딩 막지 말고 화면은 뜨게
       } finally {
         if (mounted) setDidInitialLoad(true);
       }
@@ -218,7 +229,7 @@ export default function HomeScreen() {
   const doRefreshMembers = useCallback(async () => {
     if (!familyId) return;
 
-    // ✅ 새로고침 때도 유저 최신화 한번 섞어주면 더 튼튼함
+ // 새로고침 때도 유저 최신화 한번 섞어주면 더 튼튼함
     try {
       const r = dispatch(fetchUserThunk());
       if (r && typeof r.unwrap === 'function') await r.unwrap();
@@ -309,36 +320,44 @@ export default function HomeScreen() {
     />
   );
 
-  const canShowGuide = didInitialLoad && !isAppAlertVisible && !!familyId;
+  const canShowGuide = didInitialLoad && !!familyId;
 
   return (
     <View style={styles.container}>
-      <View style={styles.backgroundCurve} />
+      <View key={contentKey} style={styles.contentWrap}>
+        <View style={styles.backgroundCurve} />
 
-      <ScrollView
-        refreshControl={refreshControl}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.scrollContent,
-          {paddingBottom: scrollPaddingBottom},
-        ]}>
-        <HeaderSection
-          user={displayUser}
-          onUserPress={handleUserPress}
-          onInvitePress={openInviteCodeModal}
-        />
+        <ScrollView
+          refreshControl={refreshControl}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.scrollContent,
+            {paddingBottom: scrollPaddingBottom},
+          ]}>
+          <HeaderSection
+            user={displayUser}
+            onUserPress={handleUserPress}
+            onInvitePress={openInviteCodeModal}
+            guideRefs={{
+              family_status: guideProfileRef,
+              my_mood: guideMoodRef,
+            }}
+          />
 
-        <MemberGridSection
-          members={displayFamilyMembers}
-          onlineUserIds={displayOnlineUserIds}
-          lastActiveMap={displayLastActiveMap}
-          onUserPress={handleUserPress}
-          onAddPress={openInviteCodeModal}
-        />
-      </ScrollView>
+          <MemberGridSection
+            members={displayFamilyMembers}
+            onlineUserIds={displayOnlineUserIds}
+            lastActiveMap={displayLastActiveMap}
+            onUserPress={handleUserPress}
+            onAddPress={openInviteCodeModal}
+            guideInviteRef={guideInviteRef}
+          />
+        </ScrollView>
+      </View>
 
+      {/* 이벤트 모달이 탭 터치를 막는지 확인하기 위해 임시로 비활성화 */}
       <AppAlertHost
-        enabled={skipAppAlertForFirstEntry === false}
+        enabled={false}
         event={activeEvent}
         onVisibleChange={setIsAppAlertVisible}
       />
@@ -347,6 +366,12 @@ export default function HomeScreen() {
         enabled={canShowGuide}
         ready={didInitialLoad}
         forceVisible={false}
+        onAfterClose={handleGuideAfterClose}
+        targetRefsByKey={{
+          family_status: guideProfileRef,
+          my_mood: guideMoodRef,
+          family_invite: guideInviteRef,
+        }}
       />
 
       <FamilyCodeModal
@@ -371,6 +396,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFC84D',
     overflow: 'visible',
+  },
+  contentWrap: {
+    flex: 1,
   },
   scrollContent: {
     width: '100%',

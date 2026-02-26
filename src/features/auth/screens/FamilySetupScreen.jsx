@@ -15,14 +15,17 @@ import {useDispatch} from 'react-redux';
 import ToastModal from 'components/modal/ToastModal';
 import BottomActionButton from 'components/BottomActionButton';
 
-// ✅ 변경: addUserToFamily 제거, join/create-and-join 사용
+// 변경: addUserToFamily 제거, join/create-and-join 사용
 import {
   fetchFamilyThunk,
   joinFamilyThunk,
   createFamilyAndJoinThunk,
 } from 'features/home/store/familyThunk';
 
-import {setHasFamily} from 'utils/storage';
+import {
+  validateLength,
+  required,
+} from 'utils/validation';
 import {COLORS} from 'styles/style';
 
 export default function FamilySetupScreen() {
@@ -42,27 +45,30 @@ export default function FamilySetupScreen() {
 
   const isJoinDisabled = !familyCode.trim();
 
-  // ✅ 가족 코드로 기존 가족 참여하기
   const handleSubmit = async () => {
     const trimmed = familyCode.trim();
 
-    if (!trimmed) {
-      const msg = '가족 코드를 입력해 주세요.';
-      setFieldError(msg);
-      showToast(msg);
+    const requiredResult = required(trimmed, '가족 코드');
+    if (!requiredResult.valid) {
+      setFieldError(requiredResult.message);
+      showToast(requiredResult.message);
+      return;
+    }
+
+    const lengthResult = validateLength(trimmed, {min: 1, max: 50});
+    if (!lengthResult.valid) {
+      setFieldError(lengthResult.message);
+      showToast(lengthResult.message);
       return;
     }
 
     setFieldError('');
 
     try {
-      // 1) 가족 존재 확인(선택이지만 유지하면 UX 좋아짐)
       await dispatch(fetchFamilyThunk(trimmed));
 
-      // 2) 참여 (✅ 토큰 유저로 서버가 처리)
+ // 2) 참여 (토큰 유저로 서버가 처리)
       await dispatch(joinFamilyThunk(trimmed));
-
-      await setHasFamily(true);
 
       console.log('🎉 가족 참여 성공');
       navigation.navigate('설정완료화면', {familyId: trimmed});
@@ -78,7 +84,7 @@ export default function FamilySetupScreen() {
     }
   };
 
-  // ✅ 새 가족 생성 + 자동 참여 (한 방)
+ // 새 가족 생성 + 자동 참여 (한 방)
   const handleCreateFamily = async () => {
     if (creating) return;
     setCreating(true);
@@ -86,7 +92,7 @@ export default function FamilySetupScreen() {
     try {
       const newFamilyId = await dispatch(createFamilyAndJoinThunk());
 
-      // thunk 구현에 따라 familyId가 문자열로 오거나, 객체로 올 수도 있으니 안전 처리
+ // thunk 구현에 따라 familyId가 문자열로 오거나, 객체로 올 수도 있으니 안전 처리
       const id =
         typeof newFamilyId === 'string'
           ? newFamilyId
@@ -98,13 +104,11 @@ export default function FamilySetupScreen() {
         return;
       }
 
-      await setHasFamily(true);
-
       console.log('🎉 새 가족 생성+참여 성공, familyId:', id);
 
-      // create-and-join에서 이미 setFamily까지 했으면 fetchFamily는 굳이 안 해도 됨
-      // 그래도 확실히 하고 싶으면 아래 주석 해제
-      // await dispatch(fetchFamilyThunk(id));
+ // create-and-join에서 이미 setFamily까지 했으면 fetchFamily는 굳이 안 해도 됨
+ // 그래도 확실히 하고 싶으면 아래 주석 해제
+ // await dispatch(fetchFamilyThunk(id));
 
       navigation.navigate('설정완료화면', {familyId: id});
     } catch (err) {
@@ -132,7 +136,7 @@ export default function FamilySetupScreen() {
         <Text allowFontScaling={false} style={styles.label}>
           가족 코드{' '}
           <Text allowFontScaling={false} style={styles.star}>
-            *
+ *
           </Text>
         </Text>
         <TextInput

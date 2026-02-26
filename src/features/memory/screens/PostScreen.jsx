@@ -32,7 +32,7 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 
-// ✅ 분리 훅들
+// 분리 훅들
 import usePostHeaderOptions from '../hooks/usePostHeaderOptions';
 import usePostMediaSaver from '../hooks/usePostMediaSaver';
 import usePostConfirmDelete from '../hooks/usePostConfirmDelete';
@@ -78,15 +78,15 @@ export default function PostPage({route}) {
     [vm],
   );
 
-  /** ---------------- 크롬 토글 ---------------- */
+ /** ---------------- 크롬 토글 ---------------- */
   const [isChromeHidden, setIsChromeHidden] = useState(false);
 
-  /** ---------------- 옵션 메뉴 ---------------- */
+ /** ---------------- 옵션 메뉴 ---------------- */
   const [menuVisible, setMenuVisible] = useState(false);
   const menuRef = useRef(null);
   const closeMenu = useCallback(() => menuRef.current?.close?.(), []);
 
-  /** ---------------- headerCategoryTitle (훅 인자로 넣기 전에 먼저 계산!) ---------------- */
+ /** ---------------- headerCategoryTitle (훅 인자로 넣기 전에 먼저 계산!) ---------------- */
   const headerCategoryTitle = useMemo(() => {
     const cid = safeMemory?.categoryId;
     if (!cid) return '게시물';
@@ -96,7 +96,7 @@ export default function PostPage({route}) {
     return matched?.title || matched?.name || '게시물';
   }, [categoryList, safeMemory?.categoryId]);
 
-  /** ---------------- desc sheet 분리 ---------------- */
+ /** ---------------- desc sheet 분리 ---------------- */
   const {
     descIndex,
     descExpanded,
@@ -114,7 +114,7 @@ export default function PostPage({route}) {
     descSheetRef,
   });
 
-  /** ---------------- comment sheet 분리 ---------------- */
+ /** ---------------- comment sheet 분리 ---------------- */
   const {
     commentOpenRef,
     presentingCommentRef,
@@ -130,7 +130,7 @@ export default function PostPage({route}) {
     commentSheetRef,
   });
 
-  /** ---------------- 삭제 confirm 분리 ---------------- */
+ /** ---------------- 삭제 confirm 분리 ---------------- */
   const {
     confirmVisible,
     pendingDeleteType,
@@ -148,10 +148,10 @@ export default function PostPage({route}) {
     deleteCommentThunk,
   });
 
-  /** ---------------- 저장 로직 분리 (훅 내부 busy만 사용하도록 정리) ---------------- */
+ /** ---------------- 저장 로직 분리 (훅 내부 busy만 사용하도록 정리) ---------------- */
   const {isOptionBusy, saveOneToGallery, saveAllToGallery} = usePostMediaSaver({toast});
 
-  /** ---------------- 현재 미디어 helper ---------------- */
+ /** ---------------- 현재 미디어 helper ---------------- */
   const currentMediaUri = useMemo(() => {
     const list = Array.isArray(vm.localImages) ? vm.localImages : [];
     const idx = Number.isInteger(vm.currentImageIndex) ? vm.currentImageIndex : 0;
@@ -171,7 +171,7 @@ export default function PostPage({route}) {
     return `${Math.min(i + 1, total)}/${total}`;
   }, [vm.currentImageIndex, mediaCount]);
 
-  /** ---------------- fetch ---------------- */
+ /** ---------------- fetch ---------------- */
   useEffect(() => {
     if (postId && !postFromStore) dispatch(fetchPostByIdThunk(postId));
   }, [postId, postFromStore, dispatch]);
@@ -186,22 +186,22 @@ export default function PostPage({route}) {
     if (!categoryList?.length && familyId) dispatch(fetchCategoryThunk(familyId));
   }, [categoryList?.length, familyId, dispatch]);
 
-  /** ✅ 데이터 로드 후 desc 기본값 0 동기화 */
+ /** 데이터 로드 후 desc 기본값 0 동기화 */
   useEffect(() => {
     if (!postFromStore) return;
     if (vm.isImageFullScreen) return;
     syncDescOnLoaded();
   }, [postFromStore, vm.isImageFullScreen, syncDescOnLoaded]);
 
-  /** ✅ 풀스크린 진입 시 desc 닫기 (안전) */
+ /** 풀스크린 진입 시 desc 닫기 (안전) */
   useEffect(() => {
     if (!vm.isImageFullScreen) return;
-    // desc는 showDescSheet 조건에서 언마운트 되지만,
-    // 상태가 남는 걸 방지하려고 최소 collapse 해둠
+ // desc는 showDescSheet 조건에서 언마운트 되지만,
+ // 상태가 남는 걸 방지하려고 최소 collapse 해둠
     collapseDesc();
   }, [vm.isImageFullScreen, collapseDesc]);
 
-  /** ---------------- focus/blur 정리 ---------------- */
+ /** ---------------- focus/blur 정리 ---------------- */
   useFocusEffect(
     useCallback(() => {
       isLeavingRef.current = false;
@@ -214,7 +214,7 @@ export default function PostPage({route}) {
         commentOpenRef.current = false;
         presentingCommentRef.current = false;
 
-        // desc도 초기화 성격으로 닫아주기
+ // desc도 초기화 성격으로 닫아주기
         try {
           descSheetRef.current?.snapToIndex?.(0);
         } catch {}
@@ -229,7 +229,7 @@ export default function PostPage({route}) {
     ]),
   );
 
-  /** ---------------- 헤더 옵션 분리 ---------------- */
+ /** ---------------- 헤더 옵션 분리 ---------------- */
   usePostHeaderOptions({
     navigation,
     isChromeHidden,
@@ -241,7 +241,7 @@ export default function PostPage({route}) {
     closeMenu,
   });
 
-  /** ---------------- 액션들 ---------------- */
+ /** ---------------- 액션들 ---------------- */
   const actionSaveCurrent = useCallback(() => {
     saveOneToGallery(currentMediaUri);
   }, [saveOneToGallery, currentMediaUri]);
@@ -262,13 +262,13 @@ export default function PostPage({route}) {
     navigation.goBack();
   }, [dispatch, navigation, vm.isImageFullScreen]);
 
-  /** ✅ 화면(이미지) 탭: 헤더+desc 동시에 토글 */
+ /** 화면(이미지) 탭: 헤더+desc 동시에 토글 */
   const toggleChrome = useCallback(() => {
     setIsChromeHidden(prev => {
       const next = !prev;
 
       if (next) {
-        // 숨김으로 갈 때: 메뉴 닫고 댓글 닫기
+ // 숨김으로 갈 때: 메뉴 닫고 댓글 닫기
         if (menuVisible) closeMenu();
         try {
           commentSheetRef.current?.dismiss?.();
@@ -276,7 +276,7 @@ export default function PostPage({route}) {
         commentOpenRef.current = false;
         presentingCommentRef.current = false;
       } else {
-        // 다시 보일 때: desc를 마지막 상태로 복원(가능하면)
+ // 다시 보일 때: desc를 마지막 상태로 복원(가능하면)
         requestAnimationFrame(() => {
           try {
             const idx = lastDescIndexRef.current ?? 0;

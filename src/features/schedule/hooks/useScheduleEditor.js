@@ -7,7 +7,7 @@ const TYPE = {
   ANNIVERSARY: 'ANNIVERSARY',
 };
 
-// ✅ 어떤 입력이 와도 TYPE으로 정규화
+// 어떤 입력이 와도 TYPE으로 정규화
 const normalizeType = raw => {
   const t = String(raw ?? '').toUpperCase();
 
@@ -33,7 +33,6 @@ const normalizeType = raw => {
 export const useScheduleEditor = currentUserId => {
   const [editingSchedule, setEditingSchedule] = useState(null);
 
-  // ✅ 조회/필터용 단일 선택(기존 유지)
   const [selectedUserId, setSelectedUserId] = useState(null);
 
   const [title, setTitle] = useState('');
@@ -43,21 +42,20 @@ export const useScheduleEditor = currentUserId => {
     schedule => {
       const s = schedule || null;
 
-      // ✅ 카드에서 확정해준 타입이 있으면 최우선
+ // 카드에서 확정해준 타입이 있으면 최우선
       const forced =
         s?.__forcedKind ?? s?.__forcedType ?? s?.forcedType ?? null;
 
-      // ✅ 기존 서버 필드들도 함께 흡수
       const rawType = forced ?? s?.type ?? s?.scheduleType ?? s?.kind ?? null;
       const finalType = normalizeType(rawType);
 
-      // ✅ 편집용 schedule 객체를 "일관된 형태"로 보정
+ // 편집용 schedule 객체를 "일관된 형태"로 보정
       const nextEditing =
         s == null
           ? null
           : {
               ...s,
-              // ✅ 이후 로직이 type/scheduleType 어느 걸 보더라도 안정적으로
+ // 이후 로직이 type/scheduleType 어느 걸 보더라도 안정적으로
               type: finalType,
               scheduleType: finalType,
               __forcedKind: forced ?? finalType, // 디버깅/추적용
@@ -66,10 +64,10 @@ export const useScheduleEditor = currentUserId => {
       setEditingSchedule(nextEditing);
       setTitle(nextEditing?.title || '');
 
-      // ✅ selectedUserId는 "조회/필터용"이라 타입별로 보정
-      // - ANNIVERSARY: 의미 없으니 null (필요하면 familyId 기반 조회로)
-      // - FAMILY: userId가 없을 수 있으니 null
-      // - INDIVIDUAL: userId가 있으면 그걸, 없으면 currentUserId
+ // selectedUserId는 "조회/필터용"이라 타입별로 보정
+ // - ANNIVERSARY: 의미 없으니 null (필요하면 familyId 기반 조회로)
+ // - FAMILY: userId가 없을 수 있으니 null
+ // - INDIVIDUAL: userId가 있으면 그걸, 없으면 currentUserId
       if (!nextEditing) {
         setSelectedUserId(null);
       } else if (finalType === TYPE.ANNIVERSARY) {
@@ -80,7 +78,7 @@ export const useScheduleEditor = currentUserId => {
         setSelectedUserId(nextEditing?.userId ?? currentUserId);
       }
 
-      // ✅ setState 직후 같은 틱에 present() 호출하면 바텀시트가 아직 새 props로 리렌더되기 전에 열려서 2번 눌러야 뜨는 현상 발생 → 리렌더 커밋 후 present 호출
+ // setState 직후 같은 틱에 present() 호출하면 바텀시트가 아직 새 props로 리렌더되기 전에 열려서 2번 눌러야 뜨는 현상 발생 → 리렌더 커밋 후 present 호출
       setTimeout(() => {
         bottomSheetRef.current?.present?.();
       }, 0);
@@ -99,7 +97,7 @@ export const useScheduleEditor = currentUserId => {
     if (!editingSchedule) return;
     setTitle(editingSchedule.title);
 
-    // ✅ 취소도 타입별로 동일한 규칙 적용
+ // 취소도 타입별로 동일한 규칙 적용
     const rawType =
       editingSchedule?.__forcedKind ??
       editingSchedule?.type ??

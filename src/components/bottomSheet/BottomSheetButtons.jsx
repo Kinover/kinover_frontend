@@ -7,7 +7,7 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 
-// ✅ 햅틱 유틸 (아까 만든/쓰는 파일)
+// 햅틱 유틸 (아까 만든/쓰는 파일)
 import {hapticLight, hapticSuccess, hapticError} from 'utils/haptic';
 
 export function BottomSheetButtons({
@@ -32,14 +32,14 @@ export function BottomSheetButtons({
     try {
       setSaving(true);
 
-      // ✅ 저장 버튼 누르는 순간(터치 피드백)
+ // 저장 버튼 누르는 순간(터치 피드백)
       hapticLight();
 
       if (onSave) {
         await onSave();
       }
 
-      // ✅ 저장 성공 피드백
+ // 저장 성공 피드백
       hapticSuccess();
 
       if (autoCloseOnSave && bottomSheetRef?.current) {
@@ -51,7 +51,7 @@ export function BottomSheetButtons({
       }
     } catch (e) {
       console.log('BottomSheetButtons save error:', e);
-      // ✅ 저장 실패 피드백
+ // 저장 실패 피드백
       hapticError();
     } finally {
       setSaving(false);
@@ -62,7 +62,7 @@ export function BottomSheetButtons({
     <View style={styles.buttonRow}>
       {showCancel && (
         <TouchableOpacity
-          style={[styles.button, styles.cancelButton,    cancelLabel === '삭제하기' && {borderColor: '#EF4444'}, // ✅ 추가
+          style={[styles.button, styles.cancelButton,    cancelLabel === '삭제하기' && {borderColor: '#EF4444'}, // 추가
         ]}
           onPress={handleCancelPress}
           disabled={saving}
@@ -72,7 +72,7 @@ export function BottomSheetButtons({
             style={[
               styles.buttonText,
               styles.cancelButtonText,
-              cancelLabel === '삭제하기' && {color: '#EF4444'}, // ✅ 추가
+              cancelLabel === '삭제하기' && {color: '#EF4444'}, // 추가
             ]}>
             {cancelLabel}
           </Text>

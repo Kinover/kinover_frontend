@@ -36,26 +36,25 @@ export function useKakaoLogin() {
       const kakao = await KakaoLogin.login();
       console.log('✅ Kakao Login:', kakao);
 
-      // 1) 서버 로그인
+ // 1) 서버 로그인
       const r = dispatch(loginThunk(kakao.accessToken));
       const loginResult =
         typeof r?.unwrap === 'function'
           ? await withTimeout(r.unwrap(), 12000)
           : await withTimeout(r, 12000);
 
-      // ✅ 로그인 성공은 무조건 확정 (중요)
       dispatch(setLoginSuccess());
 
-      // ✅ hasFamily 판단은 "로그인 성공 후" 플로우 분기용
+ // hasFamily 판단은 "로그인 성공 후" 플로우 분기용
       const hasFamilyFromLogin = !!loginResult?.hasFamily;
-      // await setHasFamily(hasFamilyFromLogin);
+ // await setHasFamily(hasFamilyFromLogin);
 
-      // ✅ 소켓은 '메인 진입'에서만 필요하면 hasFamily일 때만 시작
+ // 소켓은 '메인 진입'에서만 필요하면 hasFamily일 때만 시작
       if (hasFamilyFromLogin && !socketUnsubRef.current) {
         socketUnsubRef.current = startChatSocket(dispatch);
       }
 
-      // 2) 유저 fetch(권장: 로그인 성공 후)
+ // 2) 유저 fetch(권장: 로그인 성공 후)
       try {
         const r2 = dispatch(fetchUserThunk());
         if (r2 && typeof r2.then === 'function') {
@@ -67,7 +66,7 @@ export function useKakaoLogin() {
         console.log('⚠️ fetchUser during login failed:', e?.message);
       }
 
-      // ✅ 마지막에 authChecked true
+ // 마지막에 authChecked true
       dispatch(setAuthChecked(true));
     } catch (e) {
       console.log('❌ Kakao login fail:', e);

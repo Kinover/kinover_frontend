@@ -109,7 +109,6 @@ const userSlice = createSlice({
     updateUser(state, action) {
       const next = {...state, ...action.payload};
 
-      // 이미지가 null이거나 빈 문자열이면 기존 이미지 유지
       if (
         Object.prototype.hasOwnProperty.call(action.payload, 'image') &&
         (action.payload.image === null || action.payload.image === '')

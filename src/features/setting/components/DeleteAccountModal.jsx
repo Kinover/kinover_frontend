@@ -40,12 +40,12 @@ export default function DeleteAccountModal({visible, onClose}) {
 
   const handleConfirm = useCallback(() => {
     if (step === 1) {
-      // 1단계 → 2단계
+ // 1단계 → 2단계
       setStep(2);
       return;
     }
 
-    // step === 2
+ // step === 2
     if (!isMatch) {
       showToast(`정확히 “${REQUIRED_TEXT}”를 입력해주세요.`);
       return;
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 
-  // ✅ 왼쪽(취소) 버튼
+ // 왼쪽(취소) 버튼
   cancelBtn: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
 
-  // ✅ 오른쪽(위험) 버튼
+ // 오른쪽(위험) 버튼
   dangerBtn: {
     backgroundColor: '#FF4D4D',
     borderWidth: 1,

@@ -19,7 +19,7 @@ export async function getVideoThumbnail(uri) {
 
   try {
     const res = await createThumbnail({
-      url: key, // ✅ 원격 URL 그대로
+      url: key, // 원격 URL 그대로
       timeStamp: 1000,
       format: 'jpeg',
       cacheName: `kino_thumb_${hash(key)}`,

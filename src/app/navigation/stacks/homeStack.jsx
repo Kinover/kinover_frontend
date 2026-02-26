@@ -9,7 +9,7 @@ import {
   RenderHeaderTitleLogo,
 } from '../helpers/tabHeaderHelpers';
 import {getResponsiveHeight} from 'utils/responsive';
-import StateScreen from 'features/home/screens/StateScreen';
+import StateScreen from 'features/home/screens/stateScreen';
 
 import {
   fetchHasUnreadThunk,
@@ -35,8 +35,8 @@ const HomeStack = ({route}) => {
   const isFocused = useIsFocused();
   const userId = useSelector(state => state.user.userId);
 
-  // ✅ 현재 HomeStack 안에서 "활성화된 화면 이름" 구하기
-  // (알림화면일 때는 hasUnread 체크를 스킵하려고)
+ // 현재 HomeStack 안에서 "활성화된 화면 이름" 구하기
+ // (알림화면일 때는 hasUnread 체크를 스킵하려고)
   const currentRouteName =
     route?.state?.routes?.[route.state.index]?.name ?? '홈';
 
@@ -44,8 +44,8 @@ const HomeStack = ({route}) => {
     if (!userId) return;
     if (!isFocused) return;
 
-    // ✅ 알림화면에서는 목록 조회(fetchNotificationsThunk)로 읽음 처리할 거라서
-    // 여기서 hasUnread 조회는 하지 않음(중복 호출/깜빡임 방지)
+ // 알림화면에서는 목록 조회(fetchNotificationsThunk)로 읽음 처리할 거라서
+ // 여기서 hasUnread 조회는 하지 않음(중복 호출/깜빡임 방지)
     if (currentRouteName === '알림화면') return;
 
     dispatch(fetchUnreadCountThunk());
@@ -61,7 +61,7 @@ const HomeStack = ({route}) => {
         headerTitleAlign: 'bottom',
         headerShown: true,
         headerLeft: () => <RenderHeaderTitleLogo />,
-        // headerLeft: null,
+ // headerLeft: null,
         headerTitle: '',
       }}>
       <Stack.Screen

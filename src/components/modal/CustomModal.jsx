@@ -30,13 +30,13 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 export default function CustomModal({
   visible,
 
-  /** 왼쪽 버튼(취소/이전 등) */
+ /** 왼쪽 버튼(취소/이전 등) */
   onClose,
 
-  /** 오른쪽 버튼(확인/다음 등) */
+ /** 오른쪽 버튼(확인/다음 등) */
   onConfirm,
 
-  /** ✅ 진짜 닫기: X 버튼 / 바깥 탭 / Android back */
+ /** 진짜 닫기: X 버튼 / 바깥 탭 / Android back */
   onRequestClose,
 
   children,
@@ -49,32 +49,35 @@ export default function CustomModal({
   showCloseButton = true,
   closeOnBackdropPress = true,
 
-  /** ✅ 추가: 타이틀 아이콘 */
+ /** 추가: 타이틀 아이콘 */
   titleImage,
   titleImageStyle,
 
-  /** ✅ 추가: 버튼 컨테이너 스타일 오버라이드 */
+ /** 추가: 버튼 컨테이너 스타일 오버라이드 */
   closeButtonStyle,
   confirmButtonStyle,
 
-  /** ✅ subText 위치 */
+ /** subText 위치 */
   subTextPlacement = 'title',
 
-  /** ✅ overlay 레벨 요소 */
+ /** overlay 레벨 요소 */
   overlayChildren,
 
-  /** 기존 오버라이드 */
+ /** 기존 오버라이드 */
   modalBoxStyle,
   contentStyle,
   closeTextStyle,
   confirmTextStyle,
   buttonBottomStyle,
 
-  /** ✅ 모달 래퍼(중앙 정렬된 박스)에 적용 - 가이드 모달 등 하단 여백용 */
+ /** 모달 래퍼(중앙 정렬된 박스)에 적용 - 가이드 모달 등 하단 여백용 */
   modalWrapperStyle,
 
-  /** ✅ false면 DropShadow 대신 View 사용 (가이드 모달 등 성능 이슈 시) */
+ /** false면 DropShadow 대신 View 사용 (가이드 모달 등 성능 이슈 시) */
   useShadow = true,
+
+ /** true면 Modal 대신 View 오버레이 사용 (iOS/Android 닫은 뒤 탭 터치 막힘 방지) */
+  useViewOverlayOnIOS = false,
 }) {
   const fontMode = useSelector(state => state.ui.fontMode);
 
@@ -86,7 +89,7 @@ export default function CustomModal({
 
   const styles = useMemo(() => makeStyles(fontScale), [fontScale]);
 
-  // ✅ Animated.Value는 "한 번만" 만들기 (불필요한 new 방지)
+ // Animated.Value는 "한 번만" 만들기 (불필요한 new 방지)
   const animRef = useRef(null);
   if (!animRef.current) {
     animRef.current = new Animated.Value(0);
@@ -95,7 +98,7 @@ export default function CustomModal({
 
   const [mounted, setMounted] = useState(false);
 
-  // ✅ 현재 실행 중 애니메이션 핸들 관리 (중복 start 방지)
+ // 현재 실행 중 애니메이션 핸들 관리 (중복 start 방지)
   const runningAnimRef = useRef(null);
 
   const stopRunningAnim = useCallback(() => {
@@ -110,17 +113,17 @@ export default function CustomModal({
     runningAnimRef.current = null;
   }, []);
 
-  // ✅ visible 변화에만 반응 (mounted deps 제거)
+ // visible 변화에만 반응 (mounted deps 제거)
   useEffect(() => {
     let cancelled = false;
 
     stopRunningAnim();
 
     if (visible) {
-      // 열기: 먼저 mount → 애니메이션
+ // 열기: 먼저 mount → 애니메이션
       setMounted(true);
 
-      // 다음 tick에서 애니메이션(레이아웃/삽입 타이밍과 충돌 줄임)
+ // 다음 tick에서 애니메이션(레이아웃/삽입 타이밍과 충돌 줄임)
       const id = setTimeout(() => {
         if (cancelled) return;
 
@@ -144,7 +147,7 @@ export default function CustomModal({
       };
     }
 
-    // 닫기: mounted 되어있을 때만 닫기 애니메이션
+ // 닫기: mounted 되어있을 때만 닫기 애니메이션
     if (mounted) {
       const a = Animated.timing(anim, {
         toValue: 0,
@@ -160,7 +163,7 @@ export default function CustomModal({
         setMounted(false);
       });
     } else {
-      // mounted가 아니면 애니메이션 필요 없음
+ // mounted가 아니면 애니메이션 필요 없음
       anim.setValue(0);
     }
 
@@ -168,8 +171,8 @@ export default function CustomModal({
       cancelled = true;
       stopRunningAnim();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, stopRunningAnim]); // ✅ mounted를 deps에 넣지 않음
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, stopRunningAnim]); // mounted를 deps에 넣지 않음
 
   const overlayStyle = useMemo(() => ({opacity: anim}), [anim]);
 
@@ -194,7 +197,7 @@ export default function CustomModal({
     [anim],
   );
 
-  /** ✅ 진짜 닫기 */
+ /** 진짜 닫기 */
   const requestClose = useCallback(() => {
     hapticLight();
     if (onRequestClose) return onRequestClose();
@@ -216,8 +219,9 @@ export default function CustomModal({
     onConfirm?.();
   }, [onConfirm]);
 
-  // ✅✅✅ 핵심: 닫히는 순간(visible=false, mounted=true)에도 backdrop이 터치를 잡지 않게
   const overlayPointerEvents = visible ? 'auto' : 'none';
+
+  const useViewOverlay = !!useViewOverlayOnIOS;
 
   if (!mounted) return null;
 
@@ -237,32 +241,23 @@ export default function CustomModal({
     );
   };
 
-  return (
-    <Modal
-      transparent
-      visible={mounted}
-      animationType="none"
-      statusBarTranslucent
-      presentationStyle="overFullScreen"
-      onRequestClose={requestClose}>
+  const innerContent = (
+    <Animated.View
+      style={[styles.overlay, overlayStyle]}
+      pointerEvents={overlayPointerEvents}>
+      <View style={styles.dim} />
+
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={handleBackdropPress}
+        disabled={!closeOnBackdropPress}
+        pointerEvents={overlayPointerEvents}
+      />
+
       <Animated.View
-        style={[styles.overlay, overlayStyle]}
-        // ✅✅✅ 닫히는 동안 터치 차단 방지
-        pointerEvents={overlayPointerEvents}>
-        <View style={styles.dim} />
-
-        <Pressable
-          style={StyleSheet.absoluteFill}
-          onPress={handleBackdropPress}
-          disabled={!closeOnBackdropPress}
-          // ✅✅✅ 닫히는 동안(visible=false) backdrop이 터치를 먹지 않게
-          pointerEvents={overlayPointerEvents}
-        />
-
-        <Animated.View
-          style={[modalStyle, modalWrapperStyle]}
-          pointerEvents="box-none">
-          {useShadow ? (
+        style={[modalStyle, modalWrapperStyle]}
+        pointerEvents="box-none">
+        {useShadow ? (
           <DropShadow style={styles.shadow}>
             <View style={[styles.modalBox, modalBoxStyle]} pointerEvents="auto">
               {showCloseButton && (
@@ -332,83 +327,107 @@ export default function CustomModal({
               </View>
             </View>
           </DropShadow>
-          ) : (
-            <View style={[styles.modalBox, modalBoxStyle]} pointerEvents="auto">
-              {showCloseButton && (
+        ) : (
+          <View style={[styles.modalBox, modalBoxStyle]} pointerEvents="auto">
+            {showCloseButton && (
+              <TouchableOpacity
+                onPress={requestClose}
+                style={styles.closeIconBtn}
+                hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+                activeOpacity={0.85}>
+                <Image
+                  source={require('@/assets/modal/closeX.png')}
+                  style={styles.closeIcon}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
+            )}
+
+            {!!titleImage && (
+              <Image
+                source={titleImage}
+                style={[styles.titleImage, titleImageStyle]}
+                resizeMode="contain"
+              />
+            )}
+
+            {!!title && (
+              <Text style={styles.title} allowFontScaling={false}>
+                {title}
+              </Text>
+            )}
+
+            {renderSubText('title')}
+
+            {!!children && (
+              <View style={[styles.content, contentStyle]} pointerEvents="auto">
+                {children}
+              </View>
+            )}
+
+            {renderSubText('content')}
+
+            <View style={[styles.buttonRow, buttonBottomStyle]}>
+              {!!closeText && (
                 <TouchableOpacity
-                  onPress={requestClose}
-                  style={styles.closeIconBtn}
-                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
-                  activeOpacity={0.85}>
-                  <Image
-                    source={require('@/assets/modal/closeX.png')}
-                    style={styles.closeIcon}
-                    resizeMode="contain"
-                  />
+                  onPress={handleLeftPress}
+                  style={[styles.leftBtn, closeButtonStyle]}
+                  activeOpacity={0.9}>
+                  <Text
+                    style={[styles.leftText, closeTextStyle]}
+                    allowFontScaling={false}>
+                    {closeText}
+                  </Text>
                 </TouchableOpacity>
               )}
 
-              {!!titleImage && (
-                <Image
-                  source={titleImage}
-                  style={[styles.titleImage, titleImageStyle]}
-                  resizeMode="contain"
-                />
+              {!!onConfirm && (
+                <TouchableOpacity
+                  onPress={handleRightPress}
+                  style={[styles.rightBtn, confirmButtonStyle]}
+                  activeOpacity={0.9}>
+                  <Text
+                    style={[styles.rightText, confirmTextStyle]}
+                    allowFontScaling={false}>
+                    {confirmText}
+                  </Text>
+                </TouchableOpacity>
               )}
-
-              {!!title && (
-                <Text style={styles.title} allowFontScaling={false}>
-                  {title}
-                </Text>
-              )}
-
-              {renderSubText('title')}
-
-              {!!children && (
-                <View style={[styles.content, contentStyle]} pointerEvents="auto">
-                  {children}
-                </View>
-              )}
-
-              {renderSubText('content')}
-
-              <View style={[styles.buttonRow, buttonBottomStyle]}>
-                {!!closeText && (
-                  <TouchableOpacity
-                    onPress={handleLeftPress}
-                    style={[styles.leftBtn, closeButtonStyle]}
-                    activeOpacity={0.9}>
-                    <Text
-                      style={[styles.leftText, closeTextStyle]}
-                      allowFontScaling={false}>
-                      {closeText}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-
-                {!!onConfirm && (
-                  <TouchableOpacity
-                    onPress={handleRightPress}
-                    style={[styles.rightBtn, confirmButtonStyle]}
-                    activeOpacity={0.9}>
-                    <Text
-                      style={[styles.rightText, confirmTextStyle]}
-                      allowFontScaling={false}>
-                      {confirmText}
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </View>
             </View>
-          )}
-        </Animated.View>
-
-        {!!overlayChildren && (
-          <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-            {overlayChildren}
           </View>
         )}
       </Animated.View>
+
+      {!!overlayChildren && (
+        <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+          {overlayChildren}
+        </View>
+      )}
+    </Animated.View>
+  );
+
+  if (useViewOverlay) {
+    return (
+      <View
+        style={[
+          StyleSheet.absoluteFillObject,
+          {zIndex: 99999, elevation: 99999},
+        ]}
+        pointerEvents="box-none">
+        {innerContent}
+      </View>
+    );
+  }
+
+  return (
+    <Modal
+      transparent
+      visible={mounted}
+      animationType="none"
+      statusBarTranslucent
+      presentationStyle="overFullScreen"
+      onRequestClose={requestClose}>
+      {innerContent}
     </Modal>
   );
 }

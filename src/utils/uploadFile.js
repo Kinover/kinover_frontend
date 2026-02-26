@@ -20,7 +20,7 @@ export async function uploadFileToS3(uploadUrl, fileUri, fileName) {
     );
     const arrayBuffer = base64ToArrayBuffer(base64Data);
 
-    // Content-Type 자동 지정
+ // Content-Type 자동 지정
     let contentType = 'application/octet-stream';
     if (fileName.match(/\.(jpg|jpeg)$/i)) contentType = 'image/jpeg';
     else if (fileName.match(/\.png$/i)) contentType = 'image/png';

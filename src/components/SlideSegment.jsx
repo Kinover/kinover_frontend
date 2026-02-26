@@ -11,7 +11,7 @@ import {
 } from 'utils/responsive';
 
 /**
- * ✅ SlideSegment (재사용 슬라이드 탭)
+ * SlideSegment (재사용 슬라이드 탭)
  *
  * props
  * - items: [{ key: string, label: string }]
@@ -51,7 +51,6 @@ export default function SlideSegment({
 
   const tabW = useMemo(() => {
     if (!segmentW) return 0;
-    // padding 좌우가 1번만 들어가게, 기존 로직 유지
     return (segmentW - padding * 2) / count;
   }, [segmentW, padding, count]);
 
@@ -76,7 +75,7 @@ export default function SlideSegment({
     [tabW, thumbX, springConfig],
   );
 
-  // ✅ 레이아웃 잡힌 뒤 처음 위치
+ // 레이아웃 잡힌 뒤 처음 위치
   const onLayout = useCallback(
     e => {
       const w = e?.nativeEvent?.layout?.width ?? 0;
@@ -87,7 +86,7 @@ export default function SlideSegment({
     [runMove, activeIndex],
   );
 
-  // ✅ 외부 value가 바뀌면 thumb도 따라가게
+ // 외부 value가 바뀌면 thumb도 따라가게
   useEffect(() => {
     if (!animateOnValueChange) return;
     if (!segmentW || !tabW) return;
@@ -110,7 +109,7 @@ export default function SlideSegment({
     key => {
       if (key === value) return;
       onChange?.(key);
-      // value 업데이트가 부모에서 일어나도, 체감상 바로 움직이는 게 좋음
+ // value 업데이트가 부모에서 일어나도, 체감상 바로 움직이는 게 좋음
       const idx = items.findIndex(v => v.key === key);
       runMove(idx < 0 ? 0 : idx);
     },

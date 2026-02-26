@@ -9,7 +9,7 @@ export default function MeasuredBottomSheetLayout({
   title,
   subtitle,
 
-  // snap 계산 옵션
+ // snap 계산 옵션
   windowH,
   fontModeKey,
   extraResetKeys = [],
@@ -19,13 +19,13 @@ export default function MeasuredBottomSheetLayout({
   maxPct,
   includeAndroidBottomSafeInFooter = true,
 
-  // 외부 강제 snap (있으면 우선)
+ // 외부 강제 snap (있으면 우선)
   externalSnapPoints,
 
-  // sheetKey prefix
+ // sheetKey prefix
   sheetKeyPrefix = 'sheet',
 
-  // BottomSheetLayout props passthrough
+ // BottomSheetLayout props passthrough
   children,
   onDismiss,
   useInternalScroll = false,
@@ -94,7 +94,7 @@ export default function MeasuredBottomSheetLayout({
       disableContentBottomPadding={disableContentBottomPadding}
       useTouchOverlay={useTouchOverlay}
       onDismiss={handleDismiss}
-      // ✅ header 실측은 여기서 자동 연결
+ // header 실측은 여기서 자동 연결
       onHeaderLayout={measureHandlers.onHeaderLayout}>
       {/* children 쪽에서 content/footer 실측만 연결하면 됨 */}
       {typeof children === 'function'
