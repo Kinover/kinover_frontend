@@ -15,11 +15,10 @@ import categoryReducer from '../features/memory/store/categorySlice';
 import statusReducer from '../features/home/store/statusSlice';
 import notificationReducer from '../features/notification/store/notificationSlice';
 
-// ✅ 추가
 import uiReducer from './uiSlice';
 
 const rootReducer = combineReducers({
-  ui: uiReducer, // ✅ 추가 (맨 위든 아래든 상관 없음)
+  ui: uiReducer, // 추가 (맨 위든 아래든 상관 없음)
 
   family: familyReducer,
   memory: memoryReducer,

@@ -14,7 +14,7 @@ import {
 
 const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
 
-// ✅ Slide1 감정 아이콘 이미지 맵
+// Slide1 감정 아이콘 이미지 맵
 const emotionIcons = {
   annoyed: require('../../../assets/icons/state_v2/annoyed.png'),
   anxious: require('../../../assets/icons/state_v2/anxious.png'),
@@ -26,14 +26,14 @@ const emotionIcons = {
   sorry: require('../../../assets/icons/state_v2/sorry.png'),
 };
 
-// ✅ Slide2 키노 캐릭터 3종
+// Slide2 키노 캐릭터 3종
 const kinoImages = {
   blue: require('../../../assets/onboarding/slide2/blueKino.png'),
   yellow: require('../../../assets/onboarding/slide2/yellowKino.png'),
   pink: require('../../../assets/onboarding/slide2/pinkKino.png'),
 };
 
-// ✅ Slide2 말풍선(이미지) 4장
+// Slide2 말풍선(이미지) 4장
 const bubbleImages = {
   1: require('../../../assets/onboarding/slide2/1_2.png'),
   2: require('../../../assets/onboarding/slide2/2_2.png'),
@@ -41,19 +41,19 @@ const bubbleImages = {
   4: require('../../../assets/onboarding/slide2/4_2.png'),
 };
 
-// ✅ Slide2 배경 스마트폰 이미지
+// Slide2 배경 스마트폰 이미지
 const phoneBgImage = require('../../../assets/onboarding/slide2/bg.png');
 
-// ✅ Slide3 배경 스마트폰 이미지
+// Slide3 배경 스마트폰 이미지
 const slide3BgImage = require('../../../assets/onboarding/slide3/bg.png');
 
-// ✅ Slide3 카드 이미지
+// Slide3 카드 이미지
 const slide3CardImages = {
   1: require('../../../assets/onboarding/slide3/card1.png'),
   2: require('../../../assets/onboarding/slide3/card2.png'),
 };
 
-/** ✅ 히어로 전체 “원샷 등장” */
+/** 히어로 전체 “원샷 등장” */
 function useHeroEnter(isActive, options = {}) {
   const {startDelay = 40, duration = 380} = options;
   const v = useRef(new Animated.Value(0)).current;
@@ -81,7 +81,7 @@ function useHeroEnter(isActive, options = {}) {
   return {opacity, translateY, scale};
 }
 
-/** ✅ Slide1 그룹 “통통” */
+/** Slide1 그룹 “통통” */
 function useOneShotBounce(isActive) {
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -115,7 +115,7 @@ function useOneShotBounce(isActive) {
   return scale;
 }
 
-/** ✅ 살짝 떠다님 */
+/** 살짝 떠다님 */
 function useGentleFloat(isActive) {
   const floatY = useRef(new Animated.Value(0)).current;
 
@@ -149,7 +149,7 @@ function useGentleFloat(isActive) {
   return floatY;
 }
 
-/** ✅ 펄스 */
+/** 펄스 */
 function usePulse(isActive) {
   const pulse = useRef(new Animated.Value(0)).current;
 
@@ -189,7 +189,7 @@ function usePulse(isActive) {
   return {scale, opacity};
 }
 
-/** ✅ Slide2 말풍선 스태거 */
+/** Slide2 말풍선 스태거 */
 function useStaggerIn(isActive, count) {
   const anims = useMemo(
     () => Array.from({length: count}, () => new Animated.Value(0)),
@@ -223,7 +223,7 @@ function useStaggerIn(isActive, count) {
   return anims;
 }
 
-/** ✅ Slide2 키노 라인 “팝” */
+/** Slide2 키노 라인 “팝” */
 function useKinoPop(isActive) {
   const v = useRef(new Animated.Value(0)).current;
 
@@ -255,7 +255,7 @@ function useKinoPop(isActive) {
   return {opacity, translateY, scale};
 }
 
-/** ✅ 부드러운 그림자 */
+/** 부드러운 그림자 */
 const EmotionShadow = memo(function EmotionShadow({wrapSize}) {
   const w = wrapSize;
   const h = wrapSize;
@@ -291,7 +291,7 @@ const SHADOW_PAD = getResponsiveWidth(10);
 const EMO_WRAP = EMO_SIZE + SHADOW_PAD * 3;
 
 const s = StyleSheet.create({
-  // Slide1
+ // Slide1
   emotionsWrap: {
     width: getResponsiveWidth(280),
     height: getResponsiveWidth(280),
@@ -318,7 +318,7 @@ const s = StyleSheet.create({
   },
   emotionImg: {width: '100%', height: '100%', resizeMode: 'contain'},
 
-  // Slide2
+ // Slide2
   slide2Container: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -354,7 +354,7 @@ const s = StyleSheet.create({
     resizeMode: 'contain',
   },
 
-  // Slide3
+ // Slide3
   slide3Container: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -431,11 +431,11 @@ const s = StyleSheet.create({
     backgroundColor: '#FFFEFC',
   },
 
-  // Slide4
+ // Slide4
   photo: {width: '100%', height: '105%', resizeMode: 'cover'},
 });
 
-/** ✅ Slide1 */
+/** Slide1 */
 const Slide1Emotions = memo(function Slide1Emotions({isActive}) {
   const heroEnter = useHeroEnter(isActive, {startDelay: 30, duration: 360});
   const bounceScale = useOneShotBounce(isActive);
@@ -513,7 +513,7 @@ const Slide1Emotions = memo(function Slide1Emotions({isActive}) {
   );
 });
 
-/** ✅ Slide2 */
+/** Slide2 */
 const Slide2Chat = memo(function Slide2Chat({isActive}) {
   const heroEnter = useHeroEnter(isActive, {startDelay: 40, duration: 360});
   const floatY = useGentleFloat(isActive);
@@ -541,7 +541,7 @@ const Slide2Chat = memo(function Slide2Chat({isActive}) {
   const REF_W = getResponsiveWidth(220);
   const MAX_W_FOR_T = getResponsiveWidth(320);
 
-  // ✅ 가져리(노치) 영역을 피하기 위해 시작 위치를 아래로 조정
+ // 가져리(노치) 영역을 피하기 위해 시작 위치를 아래로 조정
   const TOP_OFFSET = getResponsiveHeight(100); // 더 아래로
   const BUBBLE_SPACING = getResponsiveHeight(52); // 말풍선 간 간격
   const bubbleTop = useMemo(
@@ -664,13 +664,13 @@ const Slide2Chat = memo(function Slide2Chat({isActive}) {
   );
 });
 
-/** ✅ Slide3 */
+/** Slide3 */
 const Slide3Calendar = memo(function Slide3Calendar({isActive}) {
   const heroEnter = useHeroEnter(isActive, {startDelay: 40, duration: 360});
   const {scale, opacity} = usePulse(isActive);
   const cardAnims = useStaggerIn(isActive, 2);
 
-  // 이미지 설명: 2일, 6일은 진한 주황색 / 17일, 23일, 25일, 27일은 연한 노란색 배경 + 주황색 테두리
+ // 이미지 설명: 2일, 6일은 진한 주황색 / 17일, 23일, 25일, 27일은 연한 노란색 배경 + 주황색 테두리
   const filled = useMemo(() => new Set([2, 6]), []); // 진한 주황색
   const outlined = useMemo(() => new Set([17, 23, 25, 27]), []); // 연한 노란색 배경 + 주황색 테두리
   const mutedDays = useMemo(() => new Set([29, 30]), []);
@@ -837,7 +837,7 @@ const Slide3Calendar = memo(function Slide3Calendar({isActive}) {
   );
 });
 
-/** ✅ Slide4 */
+/** Slide4 */
 const Slide4Photo = memo(function Slide4Photo({
   scrollX,
   index,

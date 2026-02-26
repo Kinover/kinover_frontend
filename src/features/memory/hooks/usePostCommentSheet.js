@@ -2,7 +2,7 @@
 import {useCallback, useRef} from 'react';
 
 /**
- * ✅ 댓글 sheet 열기/닫기 + 타이머/중복 방지 + cleanup 전담
+ * 댓글 sheet 열기/닫기 + 타이머/중복 방지 + cleanup 전담
  */
 export default function usePostCommentSheet({
   isChromeHidden,
@@ -67,7 +67,7 @@ export default function usePostCommentSheet({
   ]);
 
   const onCommentSheetChange = useCallback(index => {
-    // MemoryDetailBottomSheet가 index < 0 이면 닫힘
+ // MemoryDetailBottomSheet가 index < 0 이면 닫힘
     commentOpenRef.current = index >= 0;
     if (index < 0) presentingCommentRef.current = false;
   }, []);

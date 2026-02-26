@@ -28,9 +28,8 @@ const userFamilySlice = createSlice({
      * @param {Array} action.payload - 가족 정보 배열
      */
     setUserFamily(state, action) {
-      state.userFamily = Array.isArray(action.payload)
-        ? [...action.payload]
-        : [];
+      const payload = action?.payload;
+      state.userFamily = Array.isArray(payload) ? [...payload] : [];
     },
 
     /**
@@ -40,9 +39,8 @@ const userFamilySlice = createSlice({
      * @param {Array} action.payload - 가족 구성원 배열
      */
     setFamilyUserList(state, action) {
-      state.familyUserList = Array.isArray(action.payload)
-        ? [...action.payload]
-        : [];
+      const payload = action?.payload;
+      state.familyUserList = Array.isArray(payload) ? [...payload] : [];
     },
 
     /**
@@ -73,12 +71,16 @@ const userFamilySlice = createSlice({
      * @param {string|number} action.payload.userId - 사용자 ID
      */
     updateFamilyUser(state, action) {
-      const updatedUser = action.payload;
+      const updatedUser = action?.payload;
       if (!updatedUser?.userId) return;
-
-      state.familyUserList = state.familyUserList.map(user =>
-        user.userId === updatedUser.userId ? updatedUser : user,
-      );
+      const list = state?.familyUserList ?? [];
+      state.familyUserList = Array.isArray(list)
+        ? list.map(user =>
+            String(user?.userId) === String(updatedUser.userId)
+              ? updatedUser
+              : user,
+          )
+        : [];
     },
   },
 });

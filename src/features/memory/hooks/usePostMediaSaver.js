@@ -5,7 +5,7 @@ import RNBlobUtil from 'react-native-blob-util';
 import {CameraRoll} from '@react-native-camera-roll/camera-roll';
 
 /**
- * ✅ 갤러리 저장 로직만 전담
+ * 갤러리 저장 로직만 전담
  * - PostPage는 saveOneToGallery(uri), saveAllToGallery(list) 호출만 하면 됨
  */
 export default function usePostMediaSaver({toast}) {
@@ -60,7 +60,7 @@ export default function usePostMediaSaver({toast}) {
     const src = String(urlOrUri || '');
     if (!src) throw new Error('empty uri');
 
-    // 이미 로컬 파일이면 그대로 사용
+ // 이미 로컬 파일이면 그대로 사용
     if (src.startsWith('file://')) return src.replace('file://', '');
 
     const safeExt = extGuess || 'jpg';
@@ -148,7 +148,7 @@ export default function usePostMediaSaver({toast}) {
           try {
             const ext = inferExt(uri);
             const localPath = await downloadToLocalFile(uri, ext);
-            // eslint-disable-next-line no-await-in-loop
+ // eslint-disable-next-line no-await-in-loop
             const saved = await CameraRoll.save(`file://${localPath}`, {
               type: ext === 'mp4' || ext === 'mov' ? 'video' : 'photo',
             });

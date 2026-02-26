@@ -84,7 +84,7 @@ function PostOptionsMenu(
     closingRef.current = false;
   }, [visible, anim]);
 
-  // ✅ dim만 투명도 조절 (검정 잔상 방지)
+ // dim만 투명도 조절 (검정 잔상 방지)
   const dimStyle = useAnimatedStyle(() => ({
     opacity: anim.value * 0.12, // 필요하면 0.08~0.18 조절
   }));
@@ -99,10 +99,10 @@ function PostOptionsMenu(
 
   return (
     <View style={styles.root} pointerEvents="box-none">
-      {/* ✅ dim */}
+      {/* dim */}
       <Animated.View style={[styles.dim, dimStyle]} pointerEvents="none" />
 
-      {/* ✅ 바깥 클릭 닫기 */}
+      {/* 바깥 클릭 닫기 */}
       <Pressable style={StyleSheet.absoluteFillObject} onPress={close} />
 
       <Animated.View style={[styles.menuBox, boxStyle]}>

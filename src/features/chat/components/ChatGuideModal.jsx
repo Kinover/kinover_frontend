@@ -1,16 +1,23 @@
 // src/features/chat/components/ChatGuideModal.jsx
-import React from 'react';
-import GuideModalCarousel from 'components/modal/GuideModal';
+import React, {useEffect} from 'react';
+import {Platform} from 'react-native';
 import useGuide from 'hooks/useGuide';
+import {useGuideOverlay} from 'contexts/GuideOverlayContext';
 
-const KEY_CHAT_GUIDE_SHOWN = '@kinover/guide/chat_v2_shown';
+const KEY_CHAT_GUIDE_SHOWN = '@kinover/guide/chat_v3_shown';
 
-/** 행동 유도형 1페이지 가이드: 이 화면에서 뭘 하면 되는지만 안내 */
+/** 시안 구조: 실제 탭 화면 위 하이라이트 + 말풍선 + 하단바 */
 const steps = [
   {
+    key: 'kino_counseling',
+    title: '키노상담소',
+    description:
+      '**키노**랑 가족에 대한 고민, 일상 이야기 등 하고 싶은 말을 편하게 나눠보세요.',
+  },
+  {
     key: 'chat_action',
-    title: '소통',
-    description: '새 채팅방은 **오른쪽 아래 + 버튼**에서 만들 수 있어요.\n만들어진 **채팅방을 눌러** 가족과 대화를 시작해보세요.',
+    title: '채팅방 만들기',
+    description: '**+ 버튼**을 눌러 가족과 새 채팅방을 만들어보세요.',
   },
 ];
 
@@ -19,21 +26,45 @@ export default function ChatGuideModal({
   ready = true,
   forceVisible = false,
   storageKey = KEY_CHAT_GUIDE_SHOWN,
+  targetRef,
+  targetRefsByKey,
+  onAfterClose,
 }) {
   const {visible, closeAndRemember} = useGuide(
     storageKey,
     enabled && ready,
     {forceVisible},
   );
+  const {showGuide, hideGuide, setAnyGuideVisible} = useGuideOverlay() || {};
+
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !setAnyGuideVisible) return;
+    if (visible) setAnyGuideVisible(true);
+    return () => setAnyGuideVisible(false);
+  }, [visible, setAnyGuideVisible]);
+
+  useEffect(() => {
+    if (!showGuide || !hideGuide) return;
+    if (visible) {
+      const closeAndHide = () => {
+        closeAndRemember();
+        hideGuide();
+      };
+      showGuide({
+        visible: true,
+        steps,
+        onRequestClose: closeAndHide,
+        onDone: closeAndHide,
+        targetRef,
+        targetRefsByKey,
+      });
+    } else {
+      hideGuide();
+    }
+    return () => hideGuide();
+  }, [visible, showGuide, hideGuide, closeAndRemember]);
 
   if (!enabled) return null;
 
-  return (
-    <GuideModalCarousel
-      visible={visible}
-      steps={steps}
-      onRequestClose={closeAndRemember}
-      onDone={closeAndRemember}
-    />
-  );
+  return null;
 }

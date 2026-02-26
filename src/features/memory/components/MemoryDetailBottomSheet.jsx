@@ -40,7 +40,7 @@ const INPUT_H = getResponsiveHeight(46);
 const INPUT_SIDE_PAD = getResponsiveWidth(16);
 
 /* =========================
- * ✅ Mention Utils
+ * Mention Utils
  * ========================= */
 function escapeRegExp(str) {
   return String(str || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -83,7 +83,7 @@ function applyMention(text, atIndex, cursor, name) {
 }
 
 /* =========================
- * ✅ MentionText
+ * MentionText
  * ========================= */
 function MentionText({text, familyUsers, textStyle, mentionStyle}) {
   const nameMap = useMemo(() => {
@@ -127,7 +127,7 @@ function MentionText({text, familyUsers, textStyle, mentionStyle}) {
 }
 
 /* =========================
- * ✅ Footer (불투명 배경 바)
+ * Footer (불투명 배경 바)
  * ========================= */
 function CommentFooter({
   footerProps,
@@ -229,7 +229,7 @@ function CommentFooter({
   return (
     <BottomSheetFooter
       {...footerProps}
-      // ✅ 하단 제스처 영역만 보정 (키보드 높이는 BottomSheet가 margin으로 처리)
+ // 하단 제스처 영역만 보정 (키보드 높이는 BottomSheet가 margin으로 처리)
       bottomInset={Math.max(insets.bottom, 0)}>
       <View
         style={styles.footerBar}
@@ -503,9 +503,7 @@ export default function MemoryDetailBottomSheet({
       onChange={onSheetChange}
       enableContentPanningGesture={!disabled}
       enableHandlePanningGesture={!disabled}
-      // ✅ (선택) 안전한 inset
       bottomInset={Math.max(insets.bottom, 0)}
-      // ✅ 핵심: Android는 adjustResize + footer margin adjustment ON
       android_keyboardInputMode="adjustResize"
       keyboardBehavior="interactive"
       keyboardBlurBehavior={isAndroid ? 'none' : 'restore'}

@@ -18,7 +18,7 @@ import {
   getResponsiveIconSize,
 } from 'utils/responsive';
 import formatTime from 'utils/formatTime';
-import ImageModal from './MediaModal';
+import ImageModal from './mediaModal';
 
 import {
   registerTimeLast,
@@ -47,16 +47,16 @@ export default function ReceiveKinoChat({
     PINK_KINO: require('../../../assets/kinos/pinkKino.png'),
   };
 
-  // ✅ 말풍선 색상 팔레트 (kinoType별)
-  // - bubble: 말풍선 배경
-  // - dot: 타이핑 점 색
-  // - text: 말풍선 텍스트 색
+ // 말풍선 색상 팔레트 (kinoType별)
+ // - bubble: 말풍선 배경
+ // - dot: 타이핑 점 색
+ // - text: 말풍선 텍스트 색
   const KINO_BUBBLE_PALETTE = {
     YELLOW_KINO: {bubble: '#FFC84D', dot: '#2A2A2A', text: 'black'},
     BLUE_KINO: {bubble: '#334EA7', dot: '#1F2A44', text: 'white'},
     PINK_KINO: {bubble: '#FFC3DE', dot: '#3A1F2A', text: 'black'},
-    // BLUE_KINO: {bubble: '#D7E9FF', dot: '#1F2A44', text: '#0F172A'},
-    // PINK_KINO: {bubble: '#FFEAF2', dot: '#3A1F2A', text: '#111827'},
+ // BLUE_KINO: {bubble: '#D7E9FF', dot: '#1F2A44', text: '#0F172A'},
+ // PINK_KINO: {bubble: '#FFEAF2', dot: '#3A1F2A', text: '#111827'},
   };
   const getKinoProfileSource = type =>
     KINO_PROFILE_MAP[type] ?? KINO_PROFILE_MAP.YELLOW_KINO;
@@ -73,7 +73,7 @@ export default function ReceiveKinoChat({
   const key = chatTime ? `KINO|${minuteKey(chatTime)}` : null;
   const timeMs = chatTime ? toEpochMs(chatTime) : 0;
 
-  // 일반 메시지일 때만 "마지막 메시지만 시간 표시" 레지스트리 등록
+ // 일반 메시지일 때만 "마지막 메시지만 시간 표시" 레지스트리 등록
   useEffect(() => {
     if (isTyping || !chatTime || !key) return;
 
@@ -83,7 +83,7 @@ export default function ReceiveKinoChat({
 
   const spacingStyle = getSpacingStyle({isGrouped, isSameSender});
 
-  // ✅ 타이핑 점 애니메이션용 값
+ // 타이핑 점 애니메이션용 값
   const dot1 = useRef(new Animated.Value(0)).current;
   const dot2 = useRef(new Animated.Value(0)).current;
   const dot3 = useRef(new Animated.Value(0)).current;
@@ -93,7 +93,7 @@ export default function ReceiveKinoChat({
     setModalVisible(true);
   };
 
-  // ✅ 점 3개 통통 튀는 애니메이션
+ // 점 3개 통통 튀는 애니메이션
   useEffect(() => {
     if (!isTyping) return;
 
@@ -144,7 +144,7 @@ export default function ReceiveKinoChat({
     />
   );
 
-  // ✅ 입력 중 전용 UI (. . . 말풍선)
+ // 입력 중 전용 UI (. . . 말풍선)
   if (isTyping) {
     return (
       <View style={[styles.receivedContainer, spacingStyle]}>
@@ -196,7 +196,7 @@ export default function ReceiveKinoChat({
     );
   }
 
-  // ✅ 평소 메시지 버전
+ // 평소 메시지 버전
   return (
     <View style={[styles.receivedContainer, spacingStyle]}>
       <Image source={kinoProfileSource} style={styles.kinoProfileImage} />
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
   messageContainer: {flexDirection: 'row', alignItems: 'flex-end'},
 
   receivedBubble: {
-    backgroundColor: '#FFC84D', // ✅ 기본값(동적으로 override 됨)
+    backgroundColor: '#FFC84D', // 기본값(동적으로 override 됨)
     borderRadius: getResponsiveIconSize(20),
     paddingVertical: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveWidth(14.5),
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
   receivedText: {
     fontFamily: CHATROOM_STYLE().messageFontFamily,
     fontSize: CHATROOM_STYLE().KinoMessageFontSize,
-    color: 'black', // ✅ 기본값(동적으로 override 됨)
+    color: 'black', // 기본값(동적으로 override 됨)
     flexWrap: 'wrap',
     lineHeight: getResponsiveFontSize(18),
   },
@@ -317,9 +317,9 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
 
-  // ✅ typing 전용 스타일
+ // typing 전용 스타일
   typingBubble: {
-    backgroundColor: '#FFC84D', // ✅ 기본값(동적으로 override 됨)
+    backgroundColor: '#FFC84D', // 기본값(동적으로 override 됨)
     paddingHorizontal: getResponsiveWidth(20),
     paddingVertical: getResponsiveHeight(12),
     borderRadius: getResponsiveIconSize(24),
@@ -336,6 +336,6 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(7),
     height: getResponsiveWidth(7),
     borderRadius: 999,
-    backgroundColor: '#2A2A2A', // ✅ 기본값(동적으로 override 됨)
+    backgroundColor: '#2A2A2A', // 기본값(동적으로 override 됨)
   },
 });

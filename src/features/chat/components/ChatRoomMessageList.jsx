@@ -1,7 +1,7 @@
 // 채팅방 메시지 리스트 영역 (MessageFlatList 래퍼)
 import React from 'react';
 import {View} from 'react-native';
-import MessageFlatList from './MessageFlatList';
+import MessageFlatList from './messageFlatList';
 
 export default function ChatRoomMessageList({
   flatListRef,

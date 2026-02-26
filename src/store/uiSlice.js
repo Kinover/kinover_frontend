@@ -9,7 +9,7 @@ export const FONT_MODE = {
 
 const initialState = {
   fontMode: FONT_MODE.NORMAL,
-  bioLockEnabled: false, // ✅ 추가
+  bioLockEnabled: false, // 추가
 };
 
 const uiSlice = createSlice({

@@ -46,52 +46,52 @@ export default function SetupFinishScreen() {
   const fetchUserOnce = useCallback(async () => {
     const r = dispatch(fetchUserThunk());
 
-    // thunk가 unwrap 지원하는 케이스
+ // thunk가 unwrap 지원하는 케이스
     if (r && typeof r.unwrap === 'function') {
       await withTimeout(r.unwrap(), 8000);
       return;
     }
 
-    // 일반 promise 형태
+ // 일반 promise 형태
     if (r && typeof r.then === 'function') {
       await withTimeout(r, 8000);
       return;
     }
 
-    // 혹시 promise가 아니면 한 프레임 양보
+ // 혹시 promise가 아니면 한 프레임 양보
     await sleep(0);
   }, [dispatch]);
 
   const handleButtonClick = useCallback(async () => {
     try {
-      // 1) 가족 생성/참가 완료 상태 저장
+ // 0) 첫 진입 플래그 먼저 설정 (홈 마운트 전에 있어야 감정 모달 안 뜨고 가이드만 뜸)
+      await AsyncStorage.setItem(KEY_FIRST_ENTRY_AFTER_SETUP, '1');
+
+ // 1) 가족 생성/참가 완료 상태 저장
       await setHasFamily(true);
 
-      // ✅ 2) 유저 정보 fetch (메인 진입 전에 최신값 확보)
-      // - 저장 반영 타이밍 때문에 “짧게 2번”이 가장 안전
+ // 2) 유저 정보 fetch (메인 진입 전에 최신값 확보)
+ // - 저장 반영 타이밍 때문에 “짧게 2번”이 가장 안전
       try {
         await fetchUserOnce();
         await sleep(300);
         await fetchUserOnce();
       } catch (e) {
         console.log('[SetupFinishScreen] fetchUser failed:', e?.message);
-        // fetch 실패해도 아래는 진행 (UX 끊기지 않게)
+ // fetch 실패해도 아래는 진행 (UX 끊기지 않게)
       }
 
-      // 3) 가이드 다시 보이게: 각 탭 "봤음" 플래그 전부 삭제 (다음 탭 진입 시 가이드 다시 노출)
       await resetGuideShownKeys();
       await AsyncStorage.setItem(KEY_GUIDE_ENTRY_TRIGGER, '1');
-      // ✅ 첫 메인 진입 시 이벤트/감정 모달 숨김 (HomeScreen에서 체크 후 삭제)
-      await AsyncStorage.setItem(KEY_FIRST_ENTRY_AFTER_SETUP, '1');
 
-      // 4) 메인 진입 트리거
+ // 4) 메인 진입 트리거
       emitAuthFlagsChanged({hasFamily: true});
     } catch (e) {
       console.log('[SetupFinishScreen] start error:', e);
     }
   }, [fetchUserOnce]);
 
-  // 애니메이션 값들
+ // 애니메이션 값들
   const illustrationScale = useRef(new Animated.Value(0.9)).current;
   const illustrationOpacity = useRef(new Animated.Value(0)).current;
   const illustrationTranslateY = useRef(new Animated.Value(24)).current;
@@ -100,6 +100,15 @@ export default function SetupFinishScreen() {
   const bottomTranslateY = useRef(new Animated.Value(24)).current;
 
   const pulseScale = useRef(new Animated.Value(1)).current;
+
+ // 첫 진입 플래그를 화면 마운트 시 미리 설정 (홈 진입 시 레이스 방지)
+  useEffect(() => {
+    (async () => {
+      try {
+        await AsyncStorage.setItem(KEY_FIRST_ENTRY_AFTER_SETUP, '1');
+      } catch (_) {}
+    })();
+  }, []);
 
   useEffect(() => {
     const intro = Animated.parallel([

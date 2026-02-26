@@ -1,16 +1,22 @@
 // src/features/memory/components/MemoryGuideModal.jsx
-import React from 'react';
-import GuideModalCarousel from 'components/modal/GuideModal';
+import React, {useEffect} from 'react';
+import {Platform} from 'react-native';
 import useGuide from 'hooks/useGuide';
+import {useGuideOverlay} from 'contexts/GuideOverlayContext';
 
 const KEY_MEMORY_GUIDE_SHOWN = '@kinover/guide/memory_v1_shown';
 
-/** 행동 유도형: 이 화면에서 뭘 누르면 되는지 안내 */
+/** 시안 구조: 하이라이트 + 말풍선 + 하단바 (1/3 스텝) */
 const steps = [
   {
     key: 'timeline',
-    title: '추억',
-    description: '**스크롤**해서 가족 추억을 시간순으로 보세요.\n**상단 기간·카테고리**를 눌러 골라볼 수 있어요.',
+    title: '추억 둘러보기',
+    description: '게시물을 탭하면 사진과 영상을 자세히 볼 수 있어요.',
+  },
+  {
+    key: 'filter',
+    title: '기간·카테고리',
+    description: '**상단 기간·카테고리**를 눌러 추억을 골라볼 수 있어요.',
   },
   {
     key: 'upload',
@@ -24,21 +30,45 @@ export default function MemoryGuideModal({
   ready = true,
   forceVisible = false,
   storageKey = KEY_MEMORY_GUIDE_SHOWN,
+  targetRef,
+  targetRefsByKey,
+  onAfterClose,
 }) {
   const {visible, closeAndRemember} = useGuide(
     storageKey,
     enabled && ready,
     {forceVisible},
   );
+  const {showGuide, hideGuide, setAnyGuideVisible} = useGuideOverlay() || {};
+
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !setAnyGuideVisible) return;
+    if (visible) setAnyGuideVisible(true);
+    return () => setAnyGuideVisible(false);
+  }, [visible, setAnyGuideVisible]);
+
+  useEffect(() => {
+    if (!showGuide || !hideGuide) return;
+    if (visible) {
+      const closeAndHide = () => {
+        closeAndRemember();
+        hideGuide();
+      };
+      showGuide({
+        visible: true,
+        steps,
+        onRequestClose: closeAndHide,
+        onDone: closeAndHide,
+        targetRef,
+        targetRefsByKey,
+      });
+    } else {
+      hideGuide();
+    }
+    return () => hideGuide();
+  }, [visible, showGuide, hideGuide, closeAndRemember]);
 
   if (!enabled) return null;
 
-  return (
-    <GuideModalCarousel
-      visible={visible}
-      steps={steps}
-      onRequestClose={closeAndRemember}
-      onDone={closeAndRemember}
-    />
-  );
+  return null;
 }

@@ -68,7 +68,7 @@ const CARD_RADIUS = getResponsiveIconSize(18);
 const BG = BACKGROUND_COLORS.secondaryBg;
 const SURFACE = '#FFFFFF';
 
-// ✅ FastImage 공통 정책
+// FastImage 공통 정책
 const FASTIMAGE_DEFAULTS = {
   priority: FastImage.priority.normal,
   cache: FastImage.cacheControl.immutable,
@@ -102,7 +102,7 @@ const Bullet = memo(function Bullet() {
   return <View style={styles.bullet} />;
 });
 
-// ✅ id/categoryId 혼용 대비 유틸
+// id/categoryId 혼용 대비 유틸
 const getCatId = cat => {
   const v = cat?.categoryId ?? cat?.id ?? null;
   return v != null ? String(v) : null;
@@ -118,13 +118,14 @@ export default function MemoryFeed({
   onScroll,
   onPressCategoryFilter,
   onPressPeriodFilter,
+  filterBarRef,
 }) {
   const dispatch = useDispatch();
   const navigation = useNavigation();
 
-  /* -------------------------
-   * Redux States
-   * ------------------------- */
+ /* -------------------------
+ * Redux States
+ * ------------------------- */
   const memoryState = useSelector(state => state.memory || {});
   const memoryList = memoryState.memoryList || [];
   const memoryLoading = !!memoryState.loading;
@@ -135,9 +136,9 @@ export default function MemoryFeed({
     state => state.memory?.ui?.selectedTab ?? 'feed',
   );
 
-  /* -------------------------
-   * Local States
-   * ------------------------- */
+ /* -------------------------
+ * Local States
+ * ------------------------- */
   const [gridColumns, setGridColumns] = useState(4);
   const [videoThumbMap, setVideoThumbMap] = useState({});
   const thumbLoadingRef = useRef(new Set());
@@ -147,7 +148,7 @@ export default function MemoryFeed({
 
   const listRef = useRef(null);
 
-  // ✅ 카드 scale 애니메이션 값 저장소
+ // 카드 scale 애니메이션 값 저장소
   const cardScaleMapRef = useRef(new Map());
 
   const getCardScale = useCallback(scaleKey => {
@@ -189,9 +190,9 @@ export default function MemoryFeed({
     [getCardScale],
   );
 
-  /* -------------------------
-   * Helpers
-   * ------------------------- */
+ /* -------------------------
+ * Helpers
+ * ------------------------- */
   const onChangeTab = useCallback(
     tab => dispatch(setMemorySelectedTab(tab)),
     [dispatch],
@@ -246,28 +247,27 @@ export default function MemoryFeed({
     [normalizeMediaUrl, videoThumbMap, refreshing],
   );
 
-  // ✅ 선택 카테고리 id 찾기: categoryId / id 혼용 대응
   const selectedCategoryId = useMemo(() => {
     if (!selectedCategoryTitle || selectedCategoryTitle === '전체') return null;
 
     const found = categoryList.find(c => c?.title === selectedCategoryTitle);
     if (!found) return null;
 
-    // 서버/리덕스가 categoryId로 주든 id로 주든 OK
+ // 서버/리덕스가 categoryId로 주든 id로 주든 OK
     const id = getCatId(found);
     return id != null ? id : null;
   }, [selectedCategoryTitle, categoryList]);
 
   const doFetch = useCallback(() => {
     dispatch(fetchCategoryThunk());
-    // ✅ fetchMemoryThunk가 number를 기대하면 여기서 Number로 변환 필요
-    // 일단 안전하게 원본 그대로 넘김(서버 로직에 맞춰)
+ // fetchMemoryThunk가 number를 기대하면 여기서 Number로 변환 필요
+ // 일단 안전하게 원본 그대로 넘김(서버 로직에 맞춰)
     dispatch(fetchMemoryThunk(selectedCategoryId));
   }, [dispatch, selectedCategoryId]);
 
-  /* -------------------------
-   * Effects
-   * ------------------------- */
+ /* -------------------------
+ * Effects
+ * ------------------------- */
   useFocusEffect(
     useCallback(() => {
       doFetch();
@@ -336,9 +336,9 @@ export default function MemoryFeed({
     [inferIsVideo, normalizeMediaUrl],
   );
 
-  /* -------------------------
-   * Filtering / Sorting
-   * ------------------------- */
+ /* -------------------------
+ * Filtering / Sorting
+ * ------------------------- */
   const filteredMemoryList = useMemo(() => {
     let list =
       selectedCategoryTitle === '전체'
@@ -396,9 +396,9 @@ export default function MemoryFeed({
   const isAllPhotos = selectedTab === 'album';
   const data = isAllPhotos ? allMedia : sortedMemoryList;
 
-  /* -------------------------
-   * Tile Size
-   * ------------------------- */
+ /* -------------------------
+ * Tile Size
+ * ------------------------- */
   const tileWidth = useMemo(() => {
     const columns = gridColumns;
     const totalMargin = ITEM_MARGIN * (columns + 1);
@@ -418,9 +418,9 @@ export default function MemoryFeed({
     resetScrollToTop,
   ]);
 
-  /* -------------------------
-   * Gestures
-   * ------------------------- */
+ /* -------------------------
+ * Gestures
+ * ------------------------- */
   const pinch = Gesture.Pinch()
     .runOnJS(true)
     .onEnd(event => {
@@ -479,9 +479,9 @@ export default function MemoryFeed({
     );
   }, [isAllPhotos, data, ensureVideoThumbByUri, refreshing]);
 
-  /* =========================
-   * Render: Feed Card
-   * ========================= */
+ /* =========================
+ * Render: Feed Card
+ * ========================= */
   const renderListItem = useCallback(
     (memory, index) => {
       const {mediaCount, videoCount} = getMediaStats(memory);
@@ -614,9 +614,9 @@ export default function MemoryFeed({
     ],
   );
 
-  /* =========================
-   * Render: Album Tile
-   * ========================= */
+ /* =========================
+ * Render: Album Tile
+ * ========================= */
   const renderMediaItem = useCallback(
     ({item, index}) => {
       const uri = item?.uri;
@@ -685,9 +685,9 @@ export default function MemoryFeed({
     [ensureVideoThumbByUri, navigation, refreshing, tileWidth, videoThumbMap],
   );
 
-  /* =========================
-   * Loading UI (Skeleton)
-   * ========================= */
+ /* =========================
+ * Loading UI (Skeleton)
+ * ========================= */
   if (isLoading) {
     if (isAllPhotos) {
       const skeletonData = Array.from({length: 12}, (_, i) => i.toString());
@@ -742,9 +742,9 @@ export default function MemoryFeed({
     );
   }
 
-  /* =========================
-   * Header UI (FilterBar)
-   * ========================= */
+ /* =========================
+ * Header UI (FilterBar)
+ * ========================= */
   const refreshControl = (
     <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
   );
@@ -766,6 +766,7 @@ export default function MemoryFeed({
       }}>
       <MagazineBanner />
       <PostFilterBar
+        ref={filterBarRef}
         categoryTitle={headerCategoryTitle}
         onPressCategory={onPressCategoryFilter}
         periodLabel={headerPeriodLabel}
@@ -776,9 +777,9 @@ export default function MemoryFeed({
     </View>
   );
 
-  /* =========================
-   * Render
-   * ========================= */
+ /* =========================
+ * Render
+ * ========================= */
   return (
     <View style={[styles.container, !isAllPhotos && styles.postContainer]}>
       {isAllPhotos ? (
@@ -795,6 +796,10 @@ export default function MemoryFeed({
             renderItem={renderMediaItem}
             refreshControl={refreshControl}
             ListHeaderComponent={listHeader}
+            initialNumToRender={12}
+            maxToRenderPerBatch={8}
+            windowSize={7}
+            removeClippedSubviews={true}
             columnWrapperStyle={{
               justifyContent: 'flex-start',
               gap: ITEM_MARGIN,
@@ -825,6 +830,10 @@ export default function MemoryFeed({
             renderItem={({item, index}) => renderListItem(item, index)}
             refreshControl={refreshControl}
             ListHeaderComponent={listHeader}
+            initialNumToRender={8}
+            maxToRenderPerBatch={6}
+            windowSize={7}
+            removeClippedSubviews={true}
             ListEmptyComponent={
               <View style={styles.emptyWrapper}>
                 <Text allowFontScaling={false} style={styles.emptyText}>

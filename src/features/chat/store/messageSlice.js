@@ -8,6 +8,7 @@ const ensureRoom = (state, chatRoomId) => {
   const rid = toId(chatRoomId);
   if (!rid) return null;
 
+  if (!state?.rooms) state.rooms = {};
   if (!state.rooms[rid]) {
     state.rooms[rid] = {
       messageList: [], // DESC(최신 -> 과거)
@@ -16,7 +17,7 @@ const ensureRoom = (state, chatRoomId) => {
       isFetched: false,
       hasMore: true,
       cursor: null, // "가장 과거" createdAt
-      clearedAt: null, // ✅ UI 리셋 기준 시각 (이 시각 이전 메시지는 무시)
+      clearedAt: null, // UI 리셋 기준 시각 (이 시각 이전 메시지는 무시)
     };
   }
   return state.rooms[rid];
@@ -55,7 +56,7 @@ const normalizeDesc = arr => {
   return list;
 };
 
-// ✅ clearedAt 이후 메시지만 남기기
+// clearedAt 이후 메시지만 남기기
 const filterByClearedAt = (list, clearedAt) => {
   if (!clearedAt) return list;
   const t0 = new Date(clearedAt).getTime();
@@ -89,7 +90,7 @@ const looksLikeSameMyMessage = (optimistic, incoming) => {
     return oc === ic;
   }
 
-  // ✅ image + video 공통 처리
+ // image + video 공통 처리
   if (oType === 'image' || oType === 'video') {
     const oa =
       optimistic.imageUrls ??
@@ -191,16 +192,18 @@ const messageSlice = createSlice({
 
     clearRoomMessages(state, action) {
       const rid = toId(action.payload);
-      if (rid && state.rooms[rid]) delete state.rooms[rid];
+      if (!rid) return;
+      if (!state?.rooms) state.rooms = {};
+      if (state.rooms[rid]) delete state.rooms[rid];
     },
 
     setMessageList(state, action) {
-      const {chatRoomId, messages} = action.payload || {};
+      const {chatRoomId, messages} = action.payload ?? {};
       const room = ensureRoom(state, chatRoomId);
       if (!room) return;
 
-      const arr0 = normalizeDesc(messages);
-      const arr = filterByClearedAt(arr0, room.clearedAt); // ✅ 핵심
+      const arr0 = normalizeDesc(Array.isArray(messages) ? messages : []);
+      const arr = filterByClearedAt(arr0, room.clearedAt); // 핵심
 
       room.messageList = arr;
       room.isFetched = true;
@@ -213,12 +216,12 @@ const messageSlice = createSlice({
     },
 
     appendMessageList(state, action) {
-      const {chatRoomId, messages} = action.payload || {};
+      const {chatRoomId, messages} = action.payload ?? {};
       const room = ensureRoom(state, chatRoomId);
       if (!room) return;
 
-      const incoming0 = normalizeDesc(messages);
-      const incoming = filterByClearedAt(incoming0, room.clearedAt); // ✅ 핵심
+      const incoming0 = normalizeDesc(Array.isArray(messages) ? messages : []);
+      const incoming = filterByClearedAt(incoming0, room.clearedAt); // 핵심
 
       const existingIds = new Set(
         room.messageList
@@ -239,11 +242,11 @@ const messageSlice = createSlice({
     },
 
     addMessage(state, action) {
-      const {chatRoomId, message} = action.payload || {};
+      const {chatRoomId, message} = action.payload ?? {};
       const room = ensureRoom(state, chatRoomId);
       if (!room) return;
 
-      // ✅ clearedAt 이전 메시지는 소켓으로 와도 무시
+ // clearedAt 이전 메시지는 소켓으로 와도 무시
       if (room.clearedAt) {
         const t0 = new Date(room.clearedAt).getTime();
         const t = new Date(message?.createdAt ?? 0).getTime();
@@ -261,27 +264,26 @@ const messageSlice = createSlice({
     },
 
     setMessageFetched(state, action) {
-      const {chatRoomId, isFetched} = action.payload || {};
+      const {chatRoomId, isFetched} = action.payload ?? {};
       const room = ensureRoom(state, chatRoomId);
       if (!room) return;
       room.isFetched = !!isFetched;
     },
 
     setMessageLoading(state, action) {
-      const {chatRoomId, isLoading} = action.payload || {};
+      const {chatRoomId, isLoading} = action.payload ?? {};
       const room = ensureRoom(state, chatRoomId);
       if (!room) return;
       room.isLoading = !!isLoading;
     },
 
     setMessageError(state, action) {
-      const {chatRoomId, error} = action.payload || {};
+      const {chatRoomId, error} = action.payload ?? {};
       const room = ensureRoom(state, chatRoomId);
       if (!room) return;
       room.error = error || null;
     },
 
-    // ✅ 키노 변경 시: UI 리셋(서버 데이터는 남아있어도 UI에는 안 보이게)
     resetRoomMessageList(state, action) {
       const rid = toId(action.payload);
       if (!rid) return;
@@ -296,7 +298,7 @@ const messageSlice = createSlice({
       room.error = null;
       room.isFetched = false;
 
-      room.clearedAt = nowIso; // ✅ 핵심: 이 시각 이전 메시지 다시 안 보이게
+      room.clearedAt = nowIso; // 핵심: 이 시각 이전 메시지 다시 안 보이게
     },
   },
 });
@@ -316,10 +318,10 @@ export const {
 export default messageSlice.reducer;
 
 export const selectRoomMessages = (state, chatRoomId) =>
-  state.message.rooms[String(chatRoomId)]?.messageList ?? [];
+  state?.message?.rooms?.[String(chatRoomId)]?.messageList ?? [];
 
 export const selectRoomMeta = (state, chatRoomId) =>
-  state.message.rooms[String(chatRoomId)] ?? {
+  state?.message?.rooms?.[String(chatRoomId)] ?? {
     messageList: [],
     isLoading: false,
     error: null,

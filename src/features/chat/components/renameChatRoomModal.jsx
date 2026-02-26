@@ -1,11 +1,14 @@
-import React from 'react';
-import {TextInput, StyleSheet} from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {TextInput, StyleSheet, Text} from 'react-native';
 import CustomModal from 'components/modal/CustomModal';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
   getResponsiveWidth,
 } from 'utils/responsive';
+import {required, validateLength} from 'utils/validation';
+
+const ROOM_NAME_MAX = 50;
 
 export default function RenameChatRoomModal({
   visible,
@@ -15,28 +18,54 @@ export default function RenameChatRoomModal({
   setNewRoomName,
   currentRoomName,
 }) {
+  const [fieldError, setFieldError] = useState('');
+
+  useEffect(() => {
+    if (visible) setFieldError('');
+  }, [visible]);
+
+  const handleConfirm = () => {
+    const trimmed = (newRoomName ?? '').trim();
+    const requiredResult = required(trimmed, '채팅방 이름');
+    if (!requiredResult.valid) {
+      setFieldError(requiredResult.message);
+      return;
+    }
+    const lengthResult = validateLength(trimmed, {min: 1, max: ROOM_NAME_MAX});
+    if (!lengthResult.valid) {
+      setFieldError(lengthResult.message);
+      return;
+    }
+    setFieldError('');
+    onClose();
+    setTimeout(() => onConfirm(), 100);
+  };
+
   return (
     <CustomModal
       showCloseButton
       visible={visible}
       onClose={onClose}
-      onConfirm={() => {
-        onClose(); // 먼저 모달 닫기
-        setTimeout(() => {
-          onConfirm(); // 그 다음 변경 로직
-        }, 100);
-      }}
+      onConfirm={handleConfirm}
       confirmText="변경"
       closeText="취소"
       title="채팅방 이름 변경"
       subText={
         '이름을 바꿔도 다른 참여자에게는 보이지 않아요.\n나만 쓰는 채팅방 이름이에요.'
       }>
+      {fieldError ? (
+        <Text allowFontScaling={false} style={styles.errorText}>
+          {fieldError}
+        </Text>
+      ) : null}
       <TextInput
         allowFontScaling={false}
         placeholder={currentRoomName || '채팅방 이름'}
         value={newRoomName}
-        onChangeText={setNewRoomName}
+        onChangeText={t => {
+          setNewRoomName(t);
+          if (fieldError) setFieldError('');
+        }}
         style={styles.textInput}
         placeholderTextColor="#999"
       />
@@ -56,6 +85,12 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Regular',
     marginTop: getResponsiveHeight(4),
     marginBottom: getResponsiveHeight(10),
+  },
+
+  errorText: {
+    color: '#DC2626',
+    fontSize: getResponsiveFontSize(12),
+    marginBottom: getResponsiveHeight(4),
   },
 
   noticeText: {

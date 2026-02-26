@@ -30,7 +30,7 @@ import {
 } from '../navigationService';
 
 /* =========================================================
- * ✅ 공통: 아이콘 + (알림 뱃지 or 빨간 점)
+ * 공통: 아이콘 + (알림 뱃지 or 빨간 점)
  * - “갉아먹는” 2겹 배지 + 이너 pill padding 지원
  * ========================================================= */
 const IconWithBadge = memo(function IconWithBadge({
@@ -43,18 +43,18 @@ const IconWithBadge = memo(function IconWithBadge({
   imageStyle,
   tintColor,
 
-  // 큰 원(노치)
+ // 큰 원(노치)
   badgeBaseColor = '#FFFFFF',
   badgeBaseSize = 15,
   badgeBaseBorderWidth = 8,
   badgeBaseBorderColor = '#FFFFFF',
 
-  // 이너 뱃지(pill)
+ // 이너 뱃지(pill)
   badgeInnerHeight = 12,
   badgeInnerMinWidth = 12,
-  badgeInnerHPadding = 5, // ✅ 여기 올리면 “좌우 여백” 확실히 늘어남
+  badgeInnerHPadding = 5, // 여기 올리면 “좌우 여백” 확실히 늘어남
 }) {
-  const count = Number(badgeCount || 0); // ✅ 절대 20 같은 하드코딩 하면 안 됨
+  const count = Number(badgeCount || 0); // 절대 20 같은 하드코딩 하면 안 됨
   const showBadge = count > 0;
 
   const iconPx = getResponsiveIconSize(size);
@@ -107,7 +107,7 @@ const IconWithBadge = memo(function IconWithBadge({
 });
 
 /* =========================================================
- * ✅ 탭바 아이콘
+ * 탭바 아이콘
  * ========================================================= */
 export const TabBarIcon = memo(function TabBarIcon({
   focused,
@@ -141,7 +141,7 @@ export const TabBarIcon = memo(function TabBarIcon({
 });
 
 /* =========================================================
- * ✅ 탭바 라벨 (이게 없어서 지금 터진 거임)
+ * 탭바 라벨 (이게 없어서 지금 터진 거임)
  * ========================================================= */
 export const renderTabBarLabel = (label, focused) => {
   const fontSize = getResponsiveFontSize(Platform.OS === 'ios' ? 11 : 12);
@@ -166,7 +166,7 @@ export const renderTabBarLabel = (label, focused) => {
 };
 
 /* =========================================================
- * ✅ 공통: 헤더 아이콘 버튼 (햅틱 포함)
+ * 공통: 헤더 아이콘 버튼 (햅틱 포함)
  * ========================================================= */
 const createIconButton = (
   onPress,
@@ -201,7 +201,7 @@ const createIconButton = (
 };
 
 /* =========================================================
- * ✅ 헤더: 타이틀 로고(아이콘만)
+ * 헤더: 타이틀 로고(아이콘만)
  * ========================================================= */
 export const RenderHeaderTitleLogo = memo(function RenderHeaderTitleLogo() {
   return (
@@ -220,7 +220,7 @@ export const RenderHeaderTitleLogo = memo(function RenderHeaderTitleLogo() {
 });
 
 /* =========================================================
- * ✅ 헤더: 매거진 아이콘
+ * 헤더: 매거진 아이콘
  * ========================================================= */
 export const RenderHeaderBook = memo(function RenderHeaderBook({
   navigation,
@@ -261,7 +261,7 @@ export const RenderHeaderBook = memo(function RenderHeaderBook({
 });
 
 /* =========================================================
- * ✅ 헤더: 홈(종 + 설정)
+ * 헤더: 홈(종 + 설정)
  * - 홈: 큰 원 배경 = #FFC84D
  * - 다른 화면: 큰 원 배경 = #FFFFFF
  * ========================================================= */
@@ -311,7 +311,7 @@ export const RenderHeaderHome = memo(function RenderHeaderHome({
           badgeBaseBorderWidth={7.5}
           badgeInnerHeight={9}
           badgeInnerMinWidth={9}
-          badgeInnerHPadding={0} // ✅ 홈에서는 살짝 더 여유 주기
+          badgeInnerHPadding={0} // 홈에서는 살짝 더 여유 주기
         />
       </TouchableOpacity>
 
@@ -330,7 +330,7 @@ export const RenderHeaderHome = memo(function RenderHeaderHome({
 });
 
 /* =========================================================
- * ✅ 나머지 헤더 버튼들
+ * 나머지 헤더 버튼들
  * ========================================================= */
 export const RenderHeaderLeft1 = memo(function RenderHeaderLeft1() {
   return createIconButton(
@@ -414,7 +414,7 @@ export const RenderHeaderBackButton = memo(function RenderHeaderBackButton({
   navigation,
   route,
   tintColor = 'black',
-  /** 화면에서 뒤로가기 동작을 직접 지정할 때 사용 (예: 알림설정화면 → 설정화면) */
+ /** 화면에서 뒤로가기 동작을 직접 지정할 때 사용 (예: 알림설정화면 → 설정화면) */
   onBackPressOverride,
 }) {
   const fromTab = route?.params?.fromTab;
@@ -429,7 +429,7 @@ export const RenderHeaderBackButton = memo(function RenderHeaderBackButton({
       return;
     }
 
-    // 1) 알림설정화면 → 루트 스택에서 한 단계 pop (설정화면으로)
+ // 1) 알림설정화면 → 루트 스택에서 한 단계 pop (설정화면으로)
     if (route?.name === '알림설정화면') {
       if (navigationRef?.isReady?.()) {
         navigationRef.dispatch(StackActions.pop(1));
@@ -439,26 +439,26 @@ export const RenderHeaderBackButton = memo(function RenderHeaderBackButton({
       return;
     }
 
-    // 2) 설정화면·알림화면 → Tabs 안의 해당 탭(소통/일정/추억 등)으로만 가야 함. reset으로 정확한 탭 지정.
+ // 2) 설정화면·알림화면 → Tabs 안의 해당 탭(소통/일정/추억 등)으로만 가야 함. reset으로 정확한 탭 지정.
     if (route?.name === '설정화면' || route?.name === '알림화면') {
       const tabToGo = fromTab || getLastFromTabForGlobalScreen() || '홈';
       resetToTabScreen(tabToGo);
       return;
     }
 
-    // 3) 스택에 이전 화면이 있으면 goBack
+ // 3) 스택에 이전 화면이 있으면 goBack
     if (navigation?.canGoBack?.()) {
       navigation.goBack();
       return;
     }
 
-    // 4) 그 외 fromTab 있으면 해당 탭으로 리셋
+ // 4) 그 외 fromTab 있으면 해당 탭으로 리셋
     if (fromTab) {
       resetToTabScreen(fromTab);
       return;
     }
 
-    // 5) 그 외: 메인 탭으로 리셋
+ // 5) 그 외: 메인 탭으로 리셋
     safeReset({index: 0, routes: [{name: 'Tabs'}]});
   }, [navigation, route?.name, fromTab, fromScreen, fromParams, onBackPressOverride]);
 
@@ -519,7 +519,7 @@ export const RenderHeaderLogo = memo(function RenderHeaderLogo({
 });
 
 /* =========================================================
- * ✅ styles
+ * styles
  * ========================================================= */
 const styles = StyleSheet.create({
   iconWrap: {position: 'relative'},
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
   headerDot: {top: -2.5, right: -2.5},
   tabDot: {top: -2.5, right: -2.5},
 
-  // ✅ “갉아먹는” 큰 원(노치) — 위치는 여기만
+ // ��갉아먹는” 큰 원(노치) — 위치는 여기만
   badgeBase: {
     position: 'absolute',
     top: -2,
@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // ✅ 이너 pill
+ // 이너 pill
   badgeInner: {
     backgroundColor: '#FF3B30',
     alignItems: 'center',

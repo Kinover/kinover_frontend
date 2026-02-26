@@ -2,21 +2,28 @@
 import React, {useEffect, useMemo, useRef} from 'react';
 import {View, StyleSheet, Animated, Easing} from 'react-native';
 import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
+import {CalloutBubble} from 'components/modal/GuideModal';
 
 /**
- * ✅ ScheduleGuideVisual (로티 없이 Animated)
- * variant:
- * - add  : 플로팅 + 버튼 펄스 + 탭 힌트
- * - type : 3개 타입 칩(가족/개인/기념일) 강조(스캔/하이라이트)
- * - edit : 카드 살짝 떠오름 + 탭 리플(카드 선택)
+ * ScheduleGuideVisual - 시안 구조: 달력/카드/FAB 하이라이트 + 말풍선
+ * variant: pick_date(날짜 강조), add(FAB 강조)
  */
-export default function ScheduleGuideVisual({variant = 'add'}) {
+export default function ScheduleGuideVisual({variant = 'add', step}) {
   const pulse = useRef(new Animated.Value(0)).current; // fab pulse / highlight pulse
   const tap = useRef(new Animated.Value(0)).current;   // tap ripple
   const float = useRef(new Animated.Value(0)).current; // card float / scan
 
   const cfg = useMemo(() => {
     switch (variant) {
+      case 'pick_date':
+        return {
+          showFab: false,
+          showTap: true,
+          showCard: true,
+          showChips: false,
+          tapAnchor: 'card',
+          emphasis: 1,
+        };
       case 'type':
         return {
           showFab: false,
@@ -124,15 +131,15 @@ export default function ScheduleGuideVisual({variant = 'add'}) {
     };
   }, [cfg, pulse, tap, float]);
 
-  // pulse
+ // pulse
   const pulseScale = pulse.interpolate({inputRange: [0, 1], outputRange: [1, 1.55]});
   const pulseOpacity = pulse.interpolate({inputRange: [0, 1], outputRange: [0.55, 0]});
 
-  // tap ripple
+ // tap ripple
   const tapScale = tap.interpolate({inputRange: [0, 1], outputRange: [0.7, 2.2]});
   const tapOpacity = tap.interpolate({inputRange: [0, 1], outputRange: [0.28, 0]});
 
-  // float (card / scan)
+ // float (card / scan)
   const translateY = float.interpolate({
     inputRange: [0, 1],
     outputRange: [cfg.emphasis ? 8 : 6, 0],
@@ -142,7 +149,7 @@ export default function ScheduleGuideVisual({variant = 'add'}) {
     outputRange: [cfg.emphasis ? 0.975 : 0.985, 1],
   });
 
-  // tap anchor
+ // tap anchor
   const tapAnchorStyle = useMemo(() => {
     if (cfg.tapAnchor === 'fab') {
       return {
@@ -163,7 +170,7 @@ export default function ScheduleGuideVisual({variant = 'add'}) {
     return {};
   }, [cfg.tapAnchor]);
 
-  return (
+  const scene = (
     <View style={styles.wrap}>
       {/* 상단: 타입 칩(variant=type) */}
       {cfg.showChips ? (
@@ -271,9 +278,30 @@ export default function ScheduleGuideVisual({variant = 'add'}) {
       ) : null}
     </View>
   );
+
+  return (
+    <View style={styles.outerWrap}>
+      {scene}
+      {(step?.title != null || step?.description != null) && (
+        <CalloutBubble
+          title={step.title}
+          description={step.description}
+          style={styles.calloutWrap}
+        />
+      )}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
+  outerWrap: {
+    width: '100%',
+    alignSelf: 'center',
+  },
+  calloutWrap: {
+    marginTop: getResponsiveHeight(16),
+    alignSelf: 'stretch',
+  },
   wrap: {
     width: '100%',
     height: '100%',
@@ -281,7 +309,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 
-  // fake header (type가 아니면)
+ // fake header (type가 아니면)
   topFakeHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -300,7 +328,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
   },
 
-  // chips (type)
+ // chips (type)
   chipsRow: {
     flexDirection: 'row',
     gap: getResponsiveWidth(10),
@@ -335,7 +363,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
   },
 
-  // calendar box
+ // calendar box
   calendarBox: {
     width: '100%',
     borderRadius: getResponsiveWidth(16),
@@ -386,7 +414,7 @@ const styles = StyleSheet.create({
     top: getResponsiveHeight(46),
   },
 
-  // card
+ // card
   card: {
     height: getResponsiveHeight(86),
     borderRadius: getResponsiveWidth(16),
@@ -419,7 +447,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F3F4F6',
   },
 
-  // FAB
+ // FAB
   fabWrap: {
     position: 'absolute',
     right: getResponsiveWidth(18),
@@ -456,7 +484,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#111827',
   },
 
-  // tap ripple
+ // tap ripple
   tapAnchor: {
     position: 'absolute',
     width: 12,

@@ -29,10 +29,9 @@ export default function MentionInput({
 
   users = [],
 
-  // ✅ 추가: 내 유저 id (멘션 후보에서 제외)
   myUserId,
 
-  // 전송 버튼 누를 때: {text, mentionUserIds} 형태로 반환
+ // 전송 버튼 누를 때: {text, mentionUserIds} 형태로 반환
   onSubmit,
 
   placeholder = '댓글을 입력하세요',
@@ -54,7 +53,7 @@ export default function MentionInput({
     [value, cursor],
   );
 
-  // ✅ 멘션 후보 목록: 본인 제외
+ // 멘션 후보 목록: 본인 제외
   const filtered = useMemo(() => {
     if (!active) return [];
 
@@ -104,7 +103,7 @@ export default function MentionInput({
     const text = (value || '').trim();
     if (!text) return;
 
-    // ✅ 혹시 몰라서 여기서도 본인 제거(백업)
+ // 혹시 몰라서 여기서도 본인 제거(백업)
     const me = myUserId == null ? null : String(myUserId);
     const mentionUserIds = extractMentionUserIds(text, users).filter(id =>
       me ? String(id) !== me : true,
@@ -121,7 +120,7 @@ export default function MentionInput({
           const h = e?.nativeEvent?.layout?.height ?? inputH;
           setInputH(h);
         }}>
-        {/* ✅ 입력창 자체에서 멘션만 스타일 바꾸는 건 TextInput 단독으론 불가능
+        {/* 입력창 자체에서 멘션만 스타일 바꾸는 건 TextInput 단독으론 불가능
             (부분 스타일링 X). 아래 "해결 옵션" 참고! */}
         <TextInput
           ref={inputRef}
@@ -149,7 +148,7 @@ export default function MentionInput({
         )}
       </View>
 
-      {/* ✅ 멘션 추천 드롭다운 */}
+      {/* 멘션 추천 드롭다운 */}
       {!!active && filtered.length > 0 && (
         <View
           style={[styles.dropdown, {bottom: inputH + getResponsiveHeight(6)}]}

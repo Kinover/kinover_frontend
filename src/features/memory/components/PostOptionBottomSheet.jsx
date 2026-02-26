@@ -156,19 +156,19 @@ export default function PostOptionBottomSheet({
 
         {!CameraRollAvailable && (
           <Text allowFontScaling={false} style={styles.optionHint}>
-            * 저장 기능을 쓰려면 @react-native-camera-roll/camera-roll 설치가 필요해요.
+ * 저장 기능을 쓰려면 @react-native-camera-roll/camera-roll 설치가 필요해요.
           </Text>
         )}
 
         <Text allowFontScaling={false} style={styles.optionHint}>
-          * 저장은 네트워크/권한 상태에 따라 조금 걸릴 수 있어요.
+ * 저장은 네트워크/권한 상태에 따라 조금 걸릴 수 있어요.
         </Text>
       </BottomSheetScrollView>
     </BottomSheetModal>
   );
 }
 
-/** ✅ 퀵액션 카드 (2x2) */
+/** 퀵액션 카드 (2x2) */
 function QuickAction({title, sub, icon, onPress, disabled, tone = 'primary'}) {
   const danger = tone === 'danger';
   return (
@@ -201,7 +201,7 @@ function QuickAction({title, sub, icon, onPress, disabled, tone = 'primary'}) {
   );
 }
 
-/** ✅ 리스트형 옵션 Row */
+/** 리스트형 옵션 Row */
 function OptionRow({
   title,
   subTitle,
@@ -250,7 +250,7 @@ function OptionRow({
 }
 
 const styles = StyleSheet.create({
-  /** 옵션 시트 */
+ /** 옵션 시트 */
   optionSheetBg: {
     backgroundColor: '#F9FAFB',
     borderTopLeftRadius: getResponsiveWidth(22),

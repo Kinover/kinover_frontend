@@ -5,6 +5,8 @@ import {useDispatch, useSelector} from 'react-redux';
 import {getToken, deleteLoginInfo, setHasFamily} from 'utils/storage';
 import {fetchUserThunk} from 'features/home/store/userThunk';
 import {fetchFamilyThunk} from 'features/home/store/familyThunk';
+import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
+import {fetchChatRoomListThunk} from 'features/chat/store/chatRoomThunk';
 import {startChatSocket, stopChatSocket} from 'features/chat/hooks/ChatSocket';
 import {setLoginSuccess, setLogout, setAuthChecked} from '../store/loginSlice';
 
@@ -74,7 +76,7 @@ export function useAutoLogin(shouldRun = true) {
         dispatch(setLoginSuccess());
 
         try {
-          // ✅ familyId 추출 보강 (DTO 구조 흔들려도 안전)
+ // familyId 추출 보강 (DTO 구조 흔들려도 안전)
           const raw = userResult?.data ?? userResult;
           const familyId = raw?.familyId ?? raw?.family?.familyId ?? null;
           
@@ -87,6 +89,12 @@ export function useAutoLogin(shouldRun = true) {
             if (typeof r2?.unwrap === 'function') await r2.unwrap();
             else await r2;
             console.log('✅ fetchFamily ok');
+
+            const userId = raw?.userId ?? raw?.id ?? null;
+            if (userId) {
+              dispatch(fetchFamilyUserListThunk(familyId));
+              dispatch(fetchChatRoomListThunk(familyId, userId));
+            }
           } else {
             console.log('👀 familyId is null -> no family (create/join flow)');
           }
@@ -120,7 +128,7 @@ export function useAutoLogin(shouldRun = true) {
     return () => {
       cancelled = true;
 
-      // ✅ shouldRun 변동으로 cleanup이 타더라도, 소켓 끊기는 게 싫으면 여기 제거 가능
+ // shouldRun 변동으로 cleanup이 타더라도, 소켓 끊기는 게 싫으면 여기 제거 가능
       if (socketUnsubRef.current) {
         socketUnsubRef.current();
         socketUnsubRef.current = null;

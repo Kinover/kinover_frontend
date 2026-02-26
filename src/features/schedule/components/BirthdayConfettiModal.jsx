@@ -13,7 +13,7 @@ export default function BirthdayModal({visible, onClose, namesText}) {
   const parsed = useMemo(() => {
     const raw = String(namesText || '').trim();
 
-    // "OO, OO 외" / "OO님의 생일..." 등 들어와도 최대한 이름만 뽑기
+ // "OO, OO 외" / "OO님의 생일..." 등 들어와도 최대한 이름만 뽑기
     const cleaned = raw
       .replace(/님의\s*생일.*$/g, '')
       .replace(/\s*생일.*$/g, '')
@@ -36,13 +36,13 @@ export default function BirthdayModal({visible, onClose, namesText}) {
     return {raw, heroNames};
   }, [namesText]);
 
-  // subText는 "상황 설명"만 짧게
+ // subText는 "상황 설명"만 짧게
   const subtitle =
     parsed.raw && parsed.raw.length > 0
       ? '오늘 일정에 생일이 있어요.'
       : '오늘 일정에 생일이 등록되어 있어요.';
 
-  // 메시지는 1개만, 짧고 자연스럽게
+ // 메시지는 1개만, 짧고 자연스럽게
   const messageText = `생일 축하해요! 🎉
 오늘 하루 기분 좋은 일만 가득하길 바라요.
 항상 고마워요 💛`;
@@ -61,7 +61,7 @@ export default function BirthdayModal({visible, onClose, namesText}) {
       overlayChildren={
         <ScreenConfetti visible={visible} originX={0.5} originY={0.52} />
       }>
-      {/* ✅ 내용은 딱 2덩어리: 안내 1줄 + 메시지 박스 */}
+      {/* 내용은 딱 2덩어리: 안내 1줄 + 메시지 박스 */}
       <View style={styles.content}>
         <Text style={styles.noticeText}>
           짧게라도 한마디 전하면 좋아요.

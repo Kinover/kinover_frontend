@@ -1,20 +1,20 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import CommunicationScreen from 'features/chat/screens';
-import KinoChatRoom from 'features/chat/screens/KinoChatRoomScreen';
-import ChatSettings from 'features/chat/screens/ChatSetting';
+import KinoChatRoom from 'features/chat/screens/kinoChatRoomScreen';
+import ChatSettings from 'features/chat/screens/chatSetting';
 import {getResponsiveHeight} from 'utils/responsive';
 import {Text} from 'react-native';
 import {
   RenderGoBackButton,
   RenderHeaderHome,
 } from '../helpers/tabHeaderHelpers';
-import AddChatMemberScreen from 'features/chat/screens/AddChatMemberScreen';
-import CreateChatRoom from 'features/chat/screens/CreateChatRoomScreen';
-import ChatRoom from 'features/chat/screens/ChatRoomScreen';
-import KinoSelectScreen from 'features/chat/screens/KinoSelectScreen';
+import AddChatMemberScreen from 'features/chat/screens/addChatMemberScreen';
+import CreateChatRoom from 'features/chat/screens/createChatRoomScreen';
+import ChatRoom from 'features/chat/screens/chatRoomScreen';
+import KinoSelectScreen from 'features/chat/screens/kinoSelectScreen';
 import {HEADER_STYLES} from 'styles/style';
-import ChatRoomMediaScreen from 'features/chat/screens/ChatRoomMediaScreen';
+import ChatRoomMediaScreen from 'features/chat/screens/chatRoomMediaScreen';
 
 const Stack = createStackNavigator();
 
@@ -49,7 +49,7 @@ export default function CommunicationStack() {
               style={{
                 fontFamily: HEADER_STYLES().mainTitleFontFamily,
                 fontWeight: HEADER_STYLES().mainTitleFontWeight,
-                fontSize: HEADER_STYLES().mainTitleFontSize, // ✅ 24 → 16 (다른 앱이랑 비슷한 크기)
+                fontSize: HEADER_STYLES().mainTitleFontSize, // 24 → 16 (다른 앱이랑 비슷한 크기)
                 color: HEADER_STYLES().mainTitleFontColor,
                 textAlign: 'center',
                 lineHeight: HEADER_STYLES().mainTitleLineHeight, // 살짝만
@@ -59,9 +59,9 @@ export default function CommunicationStack() {
             </Text>
           ),
           headerTitleAlign: 'bottom',
-          // headerTitleContainerStyle: {
-          //   paddingLeft: getResponsiveWidth(6),
-          // },
+ // headerTitleContainerStyle: {
+ // paddingLeft: getResponsiveWidth(6),
+ // },
           headerRight: () => (
             <RenderHeaderHome navigation={navigation} currentScreen="소통" />
           ),

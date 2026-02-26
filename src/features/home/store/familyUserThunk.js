@@ -1,7 +1,6 @@
 /**
  * @fileoverview 가족 구성원 관련 비동기 액션 Thunk
- * 
- * 가족 구성원 목록 조회 및 수정 등의 비동기 로직을 관리합니다.
+ *  * 가족 구성원 목록 조회 및 수정 등의 비동기 로직을 관리합니다.
  */
 
 import {apiClient} from 'utils/apiClient';
@@ -32,11 +31,9 @@ const extractErrorMessage = (error, defaultMsg) => {
 
 /**
  * 가족 구성원 목록 조회
- * 
- * @param {string|number} familyId - 가족 ID
+ *  * @param {string|number} familyId - 가족 ID
  * @returns {Function} Redux thunk 함수
- * 
- * @example
+ *  * @example
  * dispatch(fetchFamilyUserListThunk('family-123'));
  */
 export const fetchFamilyUserListThunk = familyId => {
@@ -67,19 +64,17 @@ export const fetchFamilyUserListThunk = familyId => {
 
 /**
  * 가족 구성원 정보 수정
- * 
- * @param {Object} user - 수정할 사용자 정보
+ *  * @param {Object} user - 수정할 사용자 정보
  * @param {string|number} user.userId - 사용자 ID
  * @param {string} [user.name] - 이름
  * @param {string} [user.birth] - 생년월일
  * @param {string} [user.image] - 프로필 이미지 URL
  * @returns {Function} Redux thunk 함수
- * 
- * @example
+ *  * @example
  * dispatch(modifyFamilyUserThunk({
- *   userId: 'user-1',
- *   name: '홍길동',
- *   birth: '1990-01-01'
+ * userId: 'user-1',
+ * name: '홍길동',
+ * birth: '1990-01-01'
  * }));
  */
 export const modifyFamilyUserThunk = user => {
@@ -93,7 +88,6 @@ export const modifyFamilyUserThunk = user => {
       const updatedUser = res.data;
       const {familyUserList} = getState().userFamily;
 
-      // 기존 리스트에서 해당 유저만 업데이트
       const updatedList = (familyUserList || []).map(member =>
         member.userId === updatedUser.userId
           ? {

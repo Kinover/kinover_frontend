@@ -22,7 +22,6 @@ export function useNavigateToWhere() {
       // 0) root가 "진짜 존재하는지"부터 확인
       const hasRoot = !!root && routeNames.includes(root);
 
-      // 1) root reset이 가능한 구조면: 기존 로직대로 reset (단, 존재할 때만)
       if (hasRoot) {
         let rootRoute = {name: root};
 

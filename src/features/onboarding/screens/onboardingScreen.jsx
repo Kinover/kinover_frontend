@@ -37,7 +37,7 @@ import OnboardingHeroMotion from '../components/OnboardingHeroMotion';
 
 const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
 
-/** ✅ 은은한 배경 글로우 - 가운데 진한 영역 넓게, 멀어질수록 연하게 */
+/** 은은한 배경 글로우 - 가운데 진한 영역 넓게, 멀어질수록 연하게 */
 const OnboardingSoftGlow = memo(function OnboardingSoftGlow({
   cy = '46%',
   rx = '55%',
@@ -76,7 +76,7 @@ const OnboardingSoftGlow = memo(function OnboardingSoftGlow({
 });
 
 /**
- * ✅ useEnterProgress (원샷 등장 시퀀스)
+ * useEnterProgress (원샷 등장 시퀀스)
  * - isActive=true가 되는 순간 0→1
  * - isActive=false면 0 리셋 (다음 진입 때 다시 연출)
  */
@@ -106,7 +106,7 @@ function useEnterProgress(isActive, options = {}) {
 }
 
 /**
- * ✅ useStaggerLines
+ * useStaggerLines
  * - 줄(2~3개)을 순차로 등장시키는 값 배열(0→1)
  */
 function useStaggerLines(isActive, count, options = {}) {
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
 });
 
 /**
- * ✅ CopyLines
+ * CopyLines
  * - 2~3줄을 “스태거로 순차 등장”
  * - 동시에 scrollX 기반으로 좌/우 흐림/이동도 합성
  */
@@ -261,7 +261,7 @@ const CopyLines = memo(function CopyLines({
 }) {
   const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
 
-  // ✅ 스와이프 중 자연스러운 흐림/이동(연속)
+ // 스와이프 중 자연스러운 흐림/이동(연속)
   const swipeOpacity = scrollX.interpolate({
     inputRange,
     outputRange: [0.18, 1, 0.18],
@@ -274,7 +274,7 @@ const CopyLines = memo(function CopyLines({
     extrapolate: 'clamp',
   });
 
-  // ✅ 페이지 확정 후: 줄 순차 등장(원샷)
+ // 페이지 확정 후: 줄 순차 등장(원샷)
   const lineAnims = useStaggerLines(isActive, lines.length, {
     startDelay: 140,
     itemDuration: 420,
@@ -299,7 +299,7 @@ const CopyLines = memo(function CopyLines({
           outputRange: [0.985, 1],
         });
 
-        // ✅ 합성: swipe(연속) * in(원샷)
+ // 합성: swipe(연속) * in(원샷)
         const opacity = Animated.multiply(swipeOpacity, inOpacity);
         const translateY = Animated.add(swipeTranslateY, inTranslateY);
 
@@ -333,7 +333,7 @@ const SlideItem = memo(function SlideItem({
 }) {
   const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
 
-  // ✅ 히어로(이미지) 기본: scrollX 연속 모션
+ // 히어로(이미지) 기본: scrollX 연속 모션
   const imageOpacity = scrollX.interpolate({
     inputRange,
     outputRange: [0.25, 1, 0.25],
@@ -350,7 +350,7 @@ const SlideItem = memo(function SlideItem({
     extrapolate: 'clamp',
   });
 
-  // ✅ 히어로 “원샷 등장” (페이지 확정 후: 살짝 더 자연스럽게)
+ // 히어로 “원샷 등장” (페이지 확정 후: 살짝 더 자연스럽게)
   const enter = useEnterProgress(isActive, {startDelay: 20, duration: 420});
   const enterOpacity = enter.interpolate({
     inputRange: [0, 1],
@@ -365,7 +365,7 @@ const SlideItem = memo(function SlideItem({
     outputRange: [0.99, 1],
   });
 
-  // ✅ 합성(연속 + 원샷)
+ // 합성(연속 + 원샷)
   const heroOpacity = Animated.multiply(imageOpacity, enterOpacity);
   const heroTranslateY = Animated.add(imageTranslateY, enterTranslateY);
 
@@ -430,10 +430,10 @@ export default function OnboardingScreen() {
   const currentIndexRef = useRef(0);
   const [currentPage, setCurrentPage] = useState(0);
 
-  /**
-   * ✅ copyLines로 “줄 단위 순차 등장” 가능하게 데이터 구조 변경
-   * - 2~3줄 추천(너무 많으면 산만)
-   */
+ /**
+ * copyLines로 “줄 단위 순차 등장” 가능하게 데이터 구조 변경
+ * - 2~3줄 추천(너무 많으면 산만)
+ */
   const slides = useMemo(
     () => [
       {
@@ -552,7 +552,7 @@ export default function OnboardingScreen() {
     [SCREEN_WIDTH],
   );
 
-  // ✅ preload
+ // preload
   useEffect(() => {
     try {
       const sources = slides
@@ -571,7 +571,7 @@ export default function OnboardingScreen() {
     }
   }, [slides]);
 
-  // ✅ width 변화 시 현재 페이지로 재정렬
+ // width 변화 시 현재 페이지로 재정렬
   useEffect(() => {
     const idx = clamp(currentIndexRef.current, 0, total - 1);
     requestAnimationFrame(() => {
@@ -584,7 +584,7 @@ export default function OnboardingScreen() {
     [SCREEN_WIDTH],
   );
 
-  // ✅ 페이지 확정은 momentum end에서만
+ // 페이지 확정은 momentum end에서만
   const onMomentumEnd = useCallback(
     e => {
       const x = e?.nativeEvent?.contentOffset?.x ?? 0;

@@ -9,10 +9,10 @@ import {
   getResponsiveFontSize,
 } from 'utils/responsive';
 
-import ReceiveChat from './ReceiveChat';
-import SendChat from './SendChat';
-import ReceiveKinoChat from './ReceiveKinoChat';
-import SendKinoChat from './SendKinoChat';
+import ReceiveChat from './receiveChat';
+import SendChat from './sendChat';
+import ReceiveKinoChat from './receiveKinoChat';
+import SendKinoChat from './sendKinoChat';
 
 const getSenderId = message => {
   if (!message) return null;
@@ -54,10 +54,9 @@ export default function ChatMessageItem({
   isGrouped,
   kinoType,
 
-  // ✅ 멘션 하이라이트용
+ // 멘션 하이라이트용
   mentionUsers = [],
 
-  // ✅ 추가: 이 메시지를 안읽은 사람 수(보낸사람 제외 기준)
   unreadCount = 0,
 }) {
   const navigation = useNavigation();
@@ -115,8 +114,7 @@ export default function ChatMessageItem({
         imageUrls={imageUrls}
         mentionUsers={mentionUsers}
         kinoType={kinoType}
-        // (원하면 키노에도 unreadCount 달 수 있음)
-        // unreadCount={unreadCount}
+ // unreadCount={unreadCount}
       />
     ) : (
       <SendChat
@@ -140,7 +138,7 @@ export default function ChatMessageItem({
         messageType={messageType}
         imageUrls={imageUrls}
         mentionUsers={mentionUsers}
-        // unreadCount={unreadCount}
+ // unreadCount={unreadCount}
       />
     ) : (
       <ReceiveChat

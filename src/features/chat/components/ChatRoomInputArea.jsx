@@ -1,6 +1,6 @@
 // 채팅방 입력창 영역 (ChatInput 래퍼)
 import React from 'react';
-import ChatInput from './ChatInput';
+import ChatInput from './chatInput';
 
 export default function ChatRoomInputArea({
   chatRoom,

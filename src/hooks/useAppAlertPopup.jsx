@@ -30,7 +30,6 @@ const isDismissed = stored => {
   return false;
 };
 
-// ✅ 이벤트 유효기간 체크(선택)
 const isWithinWindow = (startAt, endAt) => {
   const n = nowMs();
   const s = startAt ? new Date(startAt).getTime() : null;
@@ -61,7 +60,7 @@ export default function useAppAlertPopup(event, {enabled = true} = {}) {
     if (!eventId) return false;
     if (event?.enabled === false) return false;
 
-    // 기간 제한
+ // 기간 제한
     if (!isWithinWindow(event?.startAt, event?.endAt)) return false;
 
     try {
@@ -70,7 +69,7 @@ export default function useAppAlertPopup(event, {enabled = true} = {}) {
       if (isDismissed(stored)) return false;
       return true;
     } catch (e) {
-      // 읽기 실패면 보여주는 편이 낫다
+ // 읽기 실패면 보여주는 편이 낫다
       return true;
     }
   }, [enabled, eventId, event?.enabled, event?.startAt, event?.endAt, storageKey]);
@@ -113,7 +112,7 @@ export default function useAppAlertPopup(event, {enabled = true} = {}) {
     setVisible(false);
   }, [saveValue]);
 
-  // ✅ event 바뀌거나(새 이벤트), enabled/기간 변동 시 자동 체크
+ // event 바뀌거나(새 이벤트), enabled/기간 변동 시 자동 체크
   useEffect(() => {
     let mounted = true;
 

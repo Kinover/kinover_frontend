@@ -15,17 +15,17 @@ import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
 import ToastModal from 'components/modal/ToastModal';
 import {COLORS} from 'styles/style';
 
-// ✅ Redux / FontMode
+// Redux / FontMode
 import {useSelector} from 'react-redux';
 import {FONT_MODE} from 'store/uiSlice';
 
-// ✅ 약관/개인정보 data import (경로는 프로젝트 alias에 맞춰져 있어야 함)
+// 약관/개인정보 data import (경로는 프로젝트 alias에 맞춰져 있어야 함)
 // alias 없으면 상대경로로 바꿔줘: ../../../data/legal
 import {privacyPolicy} from 'data/legal/privacyPolicy';
 import {termsOfService} from 'data/legal/termsOfService';
 
 /**
- * ✅ 마케팅 동의는 별도 문구로 유지 (필요하면 data로 빼도 됨)
+ * 마케팅 동의는 별도 문구로 유지 (필요하면 data로 빼도 됨)
  */
 const MARKETING_TEXT = `마케팅 정보 수신 동의
 - Kinover의 이벤트, 신규 기능, 프로모션 소식을 받아볼 수 있어요.
@@ -34,13 +34,13 @@ const MARKETING_TEXT = `마케팅 정보 수신 동의
 `;
 
 /**
- * ✅ 약관/개인정보 본문은 data 파일에서 가져오기
+ * 약관/개인정보 본문은 data 파일에서 가져오기
  */
 const TERMS_TEXT = termsOfService?.content || '';
 const PRIVACY_TEXT = privacyPolicy?.content || '';
 
 /**
- * ✅ 버전은 data의 publishedAt(=공고일) 또는 version으로 사용
+ * 버전은 data의 publishedAt(=공고일) 또는 version으로 사용
  * - 서버/DB에 저장할 때 “약관 버전”은 날짜 기반이 관리가 편함
  */
 const TERMS_VERSION =
@@ -59,10 +59,10 @@ export default function TermsAgreementScreen() {
   const bottomSheetRef = useRef(null);
   const [detailType, setDetailType] = useState(null);
 
-  // ✅ fontMode 가져오기
+ // fontMode 가져오기
   const fontMode = useSelector(state => state.ui.fontMode);
 
-  // ✅ 폰트모드에 따른 바텀시트 높이
+ // 폰트모드에 따른 바텀시트 높이
   const snapPoints = useMemo(() => {
     if (fontMode === FONT_MODE.EXTRA_LARGE) return ['87%'];
     if (fontMode === FONT_MODE.LARGE) return ['81%'];
@@ -138,9 +138,9 @@ export default function TermsAgreementScreen() {
     bottomSheetRef.current?.present();
   }, []);
 
-  /**
-   * ✅ detailType -> title/body 매핑
-   */
+ /**
+ * detailType -> title/body 매핑
+ */
   const DETAIL_MAP = useMemo(
     () => ({
       terms: {

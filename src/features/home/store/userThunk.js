@@ -1,7 +1,6 @@
 /**
  * @fileoverview 사용자 관련 비동기 액션 Thunk
- * 
- * 사용자 정보 조회, 수정, 삭제 등의 비동기 로직을 관리합니다.
+ *  * 사용자 정보 조회, 수정, 삭제 등의 비동기 로직을 관리합니다.
  */
 
 import {createAsyncThunk} from '@reduxjs/toolkit';
@@ -47,11 +46,9 @@ const getCurrentUserId = getState => {
 
 /**
  * 사용자 정보 조회
- * 
- * @returns {Function} Redux thunk 함수
+ *  * @returns {Function} Redux thunk 함수
  * @returns {Promise<Object>} 사용자 정보 객체
- * 
- * @example
+ *  * @example
  * dispatch(fetchUserThunk()).then(user => console.log(user));
  */
 export const fetchUserThunk = createAsyncThunk(
@@ -67,10 +64,10 @@ export const fetchUserThunk = createAsyncThunk(
 
       console.log('[fetchUserThunk] dto:', res.data);
 
-      // Redux store 업데이트
+ // Redux store 업데이트
       dispatch(setUser(res.data));
 
-      // 호출부에서 사용할 수 있도록 DTO 반환
+ // 호출부에서 사용할 수 있도록 DTO 반환
       return res.data;
     } catch (error) {
       const msg = extractErrorMessage(error, '유저 정보 조회 실패');
@@ -85,19 +82,17 @@ export const fetchUserThunk = createAsyncThunk(
 
 /**
  * 사용자 정보 수정
- * 
- * @param {Object} updatedUser - 수정할 사용자 정보
+ *  * @param {Object} updatedUser - 수정할 사용자 정보
  * @param {string|number} updatedUser.userId - 사용자 ID
  * @param {string} [updatedUser.name] - 이름
  * @param {string} [updatedUser.emotion] - 감정
  * @param {string} [updatedUser.trait] - 특성
  * @returns {Function} Redux thunk 함수
- * 
- * @example
+ *  * @example
  * dispatch(modifyUserThunk({
- *   userId: 'user-1',
- *   emotion: 'HAPPY',
- *   trait: '친절함'
+ * userId: 'user-1',
+ * emotion: 'HAPPY',
+ * trait: '친절함'
  * }));
  */
 export const modifyUserThunk = updatedUser => {
@@ -108,7 +103,7 @@ export const modifyUserThunk = updatedUser => {
         headers: {'Content-Type': 'application/json'},
       });
 
-      // 본인 정보 수정인 경우 본인 상태도 업데이트
+ // 본인 정보 수정인 경우 본인 상태도 업데이트
       const currentUserId = getCurrentUserId(getState);
 
       if (
@@ -117,7 +112,7 @@ export const modifyUserThunk = updatedUser => {
       ) {
         dispatch(updateUser(res.data));
       } else {
-        // 가족 구성원 정보 수정인 경우
+ // 가족 구성원 정보 수정인 경우
         dispatch(updateFamilyUser(res.data));
       }
 
@@ -135,13 +130,11 @@ export const modifyUserThunk = updatedUser => {
 
 /**
  * 사용자 삭제 (회원 탈퇴)
- * 
- * @returns {Function} Redux thunk 함수
+ *  * @returns {Function} Redux thunk 함수
  * @returns {Promise<Object>} 삭제 결과 객체
- * 
- * @example
+ *  * @example
  * dispatch(deleteUserThunk()).then(() => {
- *   // 탈퇴 완료 처리
+ * // 탈퇴 완료 처리
  * });
  */
 export const deleteUserThunk = createAsyncThunk(
@@ -152,7 +145,7 @@ export const deleteUserThunk = createAsyncThunk(
 
       console.log('✅ 회원 탈퇴 성공:', res.data);
 
-      // 사용자 상태 완전 초기화
+ // 사용자 상태 완전 초기화
       dispatch(resetUser());
       await deleteLoginInfo();
 

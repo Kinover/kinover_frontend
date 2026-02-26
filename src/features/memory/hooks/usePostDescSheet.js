@@ -2,7 +2,7 @@
 import {useCallback, useMemo, useRef, useState} from 'react';
 
 /**
- * ✅ desc bottom sheet 상태/동작 전담
+ * desc bottom sheet 상태/동작 전담
  * - index(0/1), expanded, lastIndexRef 관리
  * - 화면 로드 후 기본값(0) 동기화까지 지원
  */

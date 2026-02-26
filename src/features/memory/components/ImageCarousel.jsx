@@ -8,6 +8,7 @@ import {
   View,
   Pressable,
 } from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Carousel from 'react-native-reanimated-carousel';
 
 import {
@@ -20,7 +21,7 @@ import FastImage from '@d11/react-native-fast-image';
 import Video from 'react-native-video';
 import {getVideoThumbnail} from 'utils/videoThumbnail';
 
-// ✅ RNGH v2 + Reanimated
+// RNGH v2 + Reanimated
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
@@ -61,13 +62,13 @@ function normalizeMedia(localImages = [], localMedia = []) {
 }
 
 /**
- * ✅ 요구사항 반영
- * 1) MediaViewer 진입 제거 (더블탭/풀스크린 없음)  -> (※ 아래는 더블탭 줌만 유지)
+ * 요구사항 반영
+ * 1) MediaViewer 진입 제거 (더블탭/풀스크린 없음) -> (※ 아래는 더블탭 줌만 유지)
  * 2) 이 캐러셀 안에서 이미지/영상 줌인/줌아웃 (pinch)
  * 3) 이 캐러셀 안에서 영상 재생 (thumbnail + play overlay -> 재생)
  * 4) 줌 상태에서 스와이프 충돌 최소화:
- *    - scale > 1이면 캐러셀 스크롤 비활성
- *    - scale === 1이면 pan 제스처 자체가 캐러셀 스와이프를 가로채지 않게 구성(핵심 수정)
+ * - scale > 1이면 캐러셀 스크롤 비활성
+ * - scale === 1이면 pan 제스처 자체가 캐러셀 스와이프를 가로채지 않게 구성(핵심 수정)
  */
 
 export default function ImageCarousel({
@@ -77,7 +78,6 @@ export default function ImageCarousel({
   currentIndex = 0,
   setCurrentIndex,
 
-  // ✅ isFullScreen / setIsFullScreen는 이제 사용 안 함 (호환 때문에 prop은 받아도 무시)
   isFullScreen = false, // eslint-disable-line no-unused-vars
   setIsFullScreen, // eslint-disable-line no-unused-vars
 
@@ -86,13 +86,19 @@ export default function ImageCarousel({
   isChromeHidden = false,
 }) {
   const mainCarouselRef = useRef(null);
+  const insets = useSafeAreaInsets();
+ // 안드로이드에서 인디케이터가 헤더에 가리지 않도록: safe top + 네비 헤더 높이
+  const indicatorTop =
+    Platform.OS === 'android'
+      ? (insets?.top ?? 0) + getResponsiveHeight(48)
+      : undefined;
 
   const mediaList = useMemo(
     () => normalizeMedia(localImages, localMedia),
     [localImages, localMedia],
   );
 
-  // ✅ currentIndex 동기화
+ // currentIndex 동기화
   const lastSyncedRef = useRef(-1);
   useEffect(() => {
     const idx = Number.isInteger(currentIndex) ? currentIndex : 0;
@@ -104,7 +110,7 @@ export default function ImageCarousel({
     });
   }, [currentIndex]);
 
-  // ✅ 영상 썸네일 캐시
+ // 영상 썸네일 캐시
   const [videoThumbMap, setVideoThumbMap] = useState({});
   const loadingRef = useRef(new Set());
 
@@ -138,19 +144,19 @@ export default function ImageCarousel({
     })();
   }, [mediaList, ensureThumb]);
 
-  // =========================
-  // ✅ 재생 상태: 인덱스별 관리
-  // =========================
+ // =========================
+ // 재생 상태: 인덱스별 관리
+ // =========================
   const [playingIndex, setPlayingIndex] = useState(-1);
 
-  // 인덱스 바뀌면 재생 끄기
+ // 인덱스 바뀌면 재생 끄기
   useEffect(() => {
     setPlayingIndex(-1);
   }, [currentIndex]);
 
-  // =========================
-  // ✅ 줌 상태
-  // =========================
+ // =========================
+ // 줌 상태
+ // =========================
   const scale = useSharedValue(1);
   const baseScale = useSharedValue(1);
 
@@ -178,7 +184,7 @@ export default function ImageCarousel({
     runOnJS(setIsCarouselEnabled)(true);
   }, [scale, baseScale, tx, ty, lastTx, lastTy]);
 
-  // 인덱스 바뀌면 줌 리셋
+ // 인덱스 바뀌면 줌 리셋
   useEffect(() => {
     resetZoom();
   }, [currentIndex, resetZoom]);
@@ -193,7 +199,7 @@ export default function ImageCarousel({
     };
   }, []);
 
-  // ✅ pinch (줌)
+ // pinch (줌)
   const pinchGesture = useMemo(() => {
     return Gesture.Pinch()
       .onUpdate(e => {
@@ -223,8 +229,7 @@ export default function ImageCarousel({
       });
   }, [baseScale, scale, tx, ty, lastTx, lastTy]);
 
-  // ✅ pan (줌 상태에서만 이동)  ← 핵심 수정 포인트
-  // - scale <= 1일 때는 pan 제스처를 'fail' 시켜서 캐러셀이 스와이프를 가져가게 함
+ // - scale <= 1일 때는 pan 제스처를 'fail' 시켜서 캐러셀이 스와이프를 가져가게 함
   const panGesture = useMemo(() => {
     const PAN_SLOP = 2;
 
@@ -232,14 +237,14 @@ export default function ImageCarousel({
       .minDistance(PAN_SLOP)
       .onBegin(() => {
         'worklet';
-        // ✅ 줌이 아니면 pan이 스와이프를 먹지 않게 즉시 fail 처리
+ // 줌이 아니면 pan이 스와이프를 먹지 않게 즉시 fail 처리
         if (scale.value <= 1.01) {
-          // 실패시키면 하위(캐러셀) 스크롤이 정상 동작
-          // RNGH v2에서는 fail() 호출 가능
-          // eslint-disable-next-line no-undef
-          // (worklet context)
-          // @ts-ignore
-          // eslint-disable-next-line
+ // 실패시키면 하위(캐러셀) 스크롤이 정상 동작
+ // RNGH v2에서는 fail() 호출 가능
+ // eslint-disable-next-line no-undef
+ // (worklet context)
+ // @ts-ignore
+ // eslint-disable-next-line
           Gesture.fail();
         }
       })
@@ -261,10 +266,10 @@ export default function ImageCarousel({
       });
   }, [scale, tx, ty, lastTx, lastTy]);
 
-  // 위 방식에서 Gesture.fail()이 환경에 따라 불안하면(타입/번들)
-  // 아래 "조건부 제스처 합성" 방식이 제일 안정적이라 render 쪽에서 사용함.
+ // 위 방식에서 Gesture.fail()이 환경에 따라 불안하면(타입/번들)
+ // 아래 "조건부 제스처 합성" 방식이 제일 안정적이라 render 쪽에서 사용함.
 
-  // ✅ tap: 단일 탭은 chrome 토글 / 더블탭은 줌 토글(1 <-> 2)
+ // tap: 단일 탭은 chrome 토글 / 더블탭은 줌 토글(1 <-> 2)
   const singleTapHandler = useCallback(() => {
     if (typeof onSingleTap === 'function') onSingleTap();
   }, [onSingleTap]);
@@ -297,17 +302,16 @@ export default function ImageCarousel({
     return Gesture.Exclusive(doubleTap, singleTap);
   }, [scale, baseScale, resetZoom, singleTapHandler]);
 
-  // ✅ 핵심: 줌 상태일 때만 pan을 실제로 합성해서 스와이프 충돌을 원천 차단
   const composedGesture = useMemo(() => {
     if (isCarouselEnabled) {
-      // 평상시: tap만 (캐러셀 스와이프 방해 X)
+ // 평상시: tap만 (캐러셀 스와이프 방해 X)
       return Gesture.Simultaneous(tapGesture);
     }
-    // 줌 상태: pinch + pan + tap
+ // 줌 상태: pinch + pan + tap
     return Gesture.Simultaneous(pinchGesture, panGesture, tapGesture);
   }, [isCarouselEnabled, pinchGesture, panGesture, tapGesture]);
 
-  // ✅ “엣지 스와이프” (첫 장에서 오른쪽으로 크게 드래그하면 뒤로가기)
+ // ��엣지 스와이프” (첫 장에서 오른쪽으로 크게 드래그하면 뒤로가기)
   const edgeSwipeGesture = useMemo(() => {
     const THRESHOLD = 70;
 
@@ -329,9 +333,9 @@ export default function ImageCarousel({
       });
   }, [currentIndex, onSwipeFromFirstToRight, isCarouselEnabled]);
 
-  // =========================
-  // ✅ 아이템 렌더
-  // =========================
+ // =========================
+ // 아이템 렌더
+ // =========================
   const renderMainItem = ({item, index}) => {
     const uri = item?.uri;
     const isV = item?.type === 'video';
@@ -342,6 +346,8 @@ export default function ImageCarousel({
     }
 
     const isPlaying = playingIndex === index;
+ // OOM 방지: 현재 슬라이드이면서 재생 중일 때만 Video 마운트
+    const mountVideo = isV && index === currentIndex && isPlaying;
 
     return (
       <View style={styles.fullItem}>
@@ -349,7 +355,7 @@ export default function ImageCarousel({
           <Animated.View style={styles.fullTouch}>
             {isV ? (
               <>
-                {isPlaying ? (
+                {mountVideo ? (
                   <Animated.View style={[styles.fullMedia, animatedMediaStyle]}>
                     <Video
                       source={{uri}}
@@ -362,6 +368,7 @@ export default function ImageCarousel({
                         console.error('Video error:', e);
                         setPlayingIndex(-1);
                       }}
+                      ignoreSilentSwitch="ignore"
                     />
                   </Animated.View>
                 ) : (
@@ -420,9 +427,14 @@ export default function ImageCarousel({
 
   return (
     <View style={styles.container}>
-      {/* ✅ 상단 중앙 고정 인덱스 */}
+      {/* 상단 중앙 고정 인덱스 (안드로이드: 헤더 아래로 배치) */}
       {!isChromeHidden && (
-        <View pointerEvents="none" style={styles.fixedTopBar}>
+        <View
+          pointerEvents="none"
+          style={[
+            styles.fixedTopBar,
+            indicatorTop != null && {top: indicatorTop},
+          ]}>
           <View style={styles.indexPill}>
             <Text allowFontScaling={false} style={styles.headerIndex}>
               <Text allowFontScaling={false} style={styles.headerIndexCurrent}>{currentIndex + 1}</Text>
@@ -448,10 +460,10 @@ export default function ImageCarousel({
           loop={false}
           scrollAnimationDuration={320}
           renderItem={renderMainItem}
-          enabled={isCarouselEnabled} // ✅ 줌 중이면 캐러셀 스와이프 막기
+          enabled={isCarouselEnabled} // 줌 중이면 캐러셀 스와이프 막기
         />
 
-        {/* ✅ 왼쪽 “엣지 스와이프” 투명 레이어 */}
+        {/* 왼쪽 “엣지 스와이프” 투명 레이어 */}
         <GestureDetector gesture={edgeSwipeGesture}>
           <View pointerEvents="box-only" style={styles.edgeSwipeZone} />
         </GestureDetector>

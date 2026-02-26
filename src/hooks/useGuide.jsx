@@ -2,7 +2,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useState, useEffect, useCallback, useRef} from 'react';
 
-// ✅ "가입/가족참가/가족생성 직후"에만 1로 올려주는 전역 트리거
+// 가입/가족 참가/가족 생성 직후에만 올리는 전역 트리거
 export const KEY_GUIDE_ENTRY_TRIGGER = '@kinover/guide/entry_trigger_v1';
 
 /** 회원가입/설정 완료 직후 첫 메인 진입 시 이벤트/감정 모달 숨김용 (설정 완료 화면에서 설정) */
@@ -11,9 +11,12 @@ export const KEY_FIRST_ENTRY_AFTER_SETUP = '@kinover/guide/first_entry_after_set
 /** 회원가입/설정 완료 시 초기화할 가이드 "봤음" 키 목록 (다시 가이드 뜨게) */
 export const GUIDE_SHOWN_KEYS = [
   '@kinover/guide/home_v2_shown',
+  '@kinover/guide/home_v3_shown',
   '@kinover/guide/schedule_v1_shown',
   '@kinover/guide/memory_v1_shown',
   '@kinover/guide/chat_v1_shown',
+  '@kinover/guide/chat_v2_shown',
+  '@kinover/guide/chat_v3_shown',
   '@kinover/guide/chat_room_v1_shown',
   '@kinover/guide/kino_chat_room_v1_shown',
 ];
@@ -44,7 +47,7 @@ export default function useGuide(storageKey, enabled = false, options = {}) {
   const closeAndRemember = useCallback(async () => {
     setVisible(false);
     try {
-      await AsyncStorage.setItem(storageKey, '1'); // ✅ 이 화면 가이드 1회 처리
+      await AsyncStorage.setItem(storageKey, '1');
     } catch (e) {
       // no-op
     }
@@ -67,18 +70,22 @@ export default function useGuide(storageKey, enabled = false, options = {}) {
 
     (async () => {
       try {
-        // ✅ 개발용: 강제 노출
+        // 개발용 강제 노출
         if (forceVisible) {
           requestAnimationFrame(() => setVisible(true));
           return;
         }
 
-        // ✅ 이 화면 가이드를 이미 봤는지만 확인 (봤음=1 이면 안 띄움)
-        // 회원가입 다시 하면 SetupFinishScreen에서 resetGuideShownKeys()로 여기 키 삭제 → 다시 뜸
+        // 이미 본 가이드는 다시 띄우지 않는다.
         const shown = await AsyncStorage.getItem(storageKey);
-        if (shown !== '1') {
-          requestAnimationFrame(() => setVisible(true));
-        }
+        if (shown === '1') return;
+
+        // 회원가입/설정 완료 직후에만 가이드를 띄운다.
+        const entryTrigger = await AsyncStorage.getItem(KEY_GUIDE_ENTRY_TRIGGER);
+        const firstEntry = await AsyncStorage.getItem(KEY_FIRST_ENTRY_AFTER_SETUP);
+        if (entryTrigger !== '1' && firstEntry !== '1') return;
+
+        requestAnimationFrame(() => setVisible(true));
       } catch (e) {
         // 읽기 실패 시 보수적으로 안 띄움
       } finally {
@@ -89,7 +96,7 @@ export default function useGuide(storageKey, enabled = false, options = {}) {
 
   return {
     visible,
-    closeAndRemember, // ✅ onDone / onRequestClose / secondary 버튼에 그대로 연결
-    setVisible,       // 필요하면 외부에서 강제 제어
+    closeAndRemember,
+    setVisible,
   };
 }

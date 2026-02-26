@@ -62,7 +62,7 @@ export async function loadGalleryPhotos(after = null, pageSize = 60) {
 export function getFileNameWithExtension(file, index) {
   const id = uuid.v4();
 
-  // ✅ 0) isVideo 최우선
+ // 0) isVideo 최우선
   if (file?.isVideo) {
     const mime = String(file?.type || '').toLowerCase();
     if (mime.includes('quicktime') || mime.includes('mov')) {

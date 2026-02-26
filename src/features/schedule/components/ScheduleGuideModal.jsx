@@ -1,16 +1,21 @@
 // src/features/schedule/components/ScheduleGuideModal.jsx
-import React, {useMemo} from 'react';
-import GuideModalCarousel from 'components/modal/GuideModal';
+import React, {useMemo, useEffect} from 'react';
+import {Platform} from 'react-native';
 import useGuide from 'hooks/useGuide';
+import {useGuideOverlay} from 'contexts/GuideOverlayContext';
 
 const KEY_SCHEDULE_GUIDE_SHOWN = '@kinover/guide/schedule_v1_shown';
 
-/** 행동 유도형: 이 화면에서 뭘 누르면 되는지 안내 */
 const defaultSteps = [
   {
     key: 'pick_date',
-    title: '일정',
-    description: '**날짜를 누르면** 그날 일정만 보여요.\n**오른쪽 아래 추가 버튼**으로 새 일정을 만드세요.',
+    title: '날짜 선택',
+    description: '캘린더에서 **날짜를 선택하면** 그날 일정을 확인할 수 있어요.',
+  },
+  {
+    key: 'add',
+    title: '일정 추가',
+    description: '**오른쪽 아래 + 버튼**을 눌러 새 일정을 추가해보세요.',
   },
 ];
 
@@ -20,6 +25,9 @@ export default function ScheduleGuideModal({
   forceVisible = false,
   storageKey = KEY_SCHEDULE_GUIDE_SHOWN,
   steps: stepsProp,
+  targetRef,
+  targetRefsByKey,
+  onAfterClose,
 }) {
   const steps = useMemo(() => {
     if (Array.isArray(stepsProp) && stepsProp.length) return stepsProp;
@@ -31,15 +39,36 @@ export default function ScheduleGuideModal({
     enabled && ready,
     {forceVisible},
   );
+  const {showGuide, hideGuide, setAnyGuideVisible} = useGuideOverlay() || {};
+
+  useEffect(() => {
+    if (Platform.OS !== 'android' || !setAnyGuideVisible) return;
+    if (visible) setAnyGuideVisible(true);
+    return () => setAnyGuideVisible(false);
+  }, [visible, setAnyGuideVisible]);
+
+  useEffect(() => {
+    if (!showGuide || !hideGuide) return;
+    if (visible) {
+      const closeAndHide = () => {
+        closeAndRemember();
+        hideGuide();
+      };
+      showGuide({
+        visible: true,
+        steps,
+        onRequestClose: closeAndHide,
+        onDone: closeAndHide,
+        targetRef,
+        targetRefsByKey,
+      });
+    } else {
+      hideGuide();
+    }
+    return () => hideGuide();
+  }, [visible, showGuide, hideGuide, steps, closeAndRemember]);
 
   if (!enabled) return null;
 
-  return (
-    <GuideModalCarousel
-      visible={visible}
-      steps={steps}
-      onRequestClose={closeAndRemember}
-      onDone={closeAndRemember}
-    />
-  );
+  return null;
 }

@@ -9,6 +9,9 @@
   <!-- ✅ 시스템바 배경을 OS가 정상 처리 -->
   <item name="android:windowDrawsSystemBarBackgrounds">true</item>
 
+  <!-- ✅ 하단 네비게이션 바 영역 침범 방지: 투명/침범 금지 → JS에서 수동 패딩만으로 맞추면 됨 -->
+  <item name="android:windowTranslucentNavigation">false</item>
+
   <!-- (선택) 대비 강제는 일단 기본값으로 두는 게 안정적 -->
   <!-- <item name="android:enforceNavigationBarContrast">true</item> -->
   <!-- <item name="android:enforceStatusBarContrast">true</item> -->
@@ -21,5 +24,8 @@
   <item name="android:statusBarColor">@android:color/white</item>
   <item name="android:navigationBarColor">@android:color/white</item>
   <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+
+  <!-- ✅ 하단바 침범 방지 -->
+  <item name="android:windowTranslucentNavigation">false</item>
 </style>
 </resources>

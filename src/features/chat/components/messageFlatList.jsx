@@ -2,7 +2,7 @@
 import React, {useEffect, useState, useMemo, useRef} from 'react';
 import {FlatList, ActivityIndicator, View} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import ChatMessageItem from './ChatMessageItem';
+import ChatMessageItem from './chatMessageItem';
 import {getResponsiveHeight} from 'utils/responsive';
 
 export default function MessageFlatList({
@@ -20,7 +20,6 @@ export default function MessageFlatList({
 
   mentionUsers,
 
-  // ✅ 추가: { [userId]: lastReadAt }
   readPointersMap,
 }) {
   const [showKinoTyping, setShowKinoTyping] = useState(false);
@@ -47,7 +46,7 @@ export default function MessageFlatList({
     if (isMessageFetched) setIsInitialLoaded(true);
   }, [chatRoom?.chatRoomId, isMessageFetched]);
 
-  // "YYYY-MM-DD HH:mm:ss" / "YYYY-MM-DDTHH:mm:ss" / ISO 전부 최대한 로컬로 파싱
+ // "YYYY-MM-DD HH:mm:ss" / "YYYY-MM-DDTHH:mm:ss" / ISO 전부 최대한 로컬로 파싱
   const toMsLocal = v => {
     if (!v) return 0;
     const s = String(v).trim().replace(' ', 'T');
@@ -56,7 +55,7 @@ export default function MessageFlatList({
     return Number.isNaN(t) ? 0 : t;
   };
 
-  // ✅ 메시지별 “안읽은 사람 수”
+ // 메시지별 “안읽은 사람 수”
   const calcUnreadCount = message => {
     if (!message) return 0;
 
@@ -80,12 +79,12 @@ export default function MessageFlatList({
       const uid = u?.userId ?? u?.id ?? null;
       if (uid == null) continue;
 
-      // ✅ 보낸 사람 제외
+ // 보낸 사람 제외
       if (senderId != null && String(uid) === String(senderId)) continue;
 
       const lastReadAt = map?.[String(uid)] ?? null;
 
-      // lastReadAt이 없으면 = 안읽음
+ // lastReadAt이 없으면 = 안읽음
       if (!lastReadAt) {
         count += 1;
         continue;
@@ -99,9 +98,9 @@ export default function MessageFlatList({
     return count;
   };
 
-  // =========================
-  // 1) 키노 인트로
-  // =========================
+ // =========================
+ // 1) 키노 인트로
+ // =========================
   useEffect(() => {
     if (!isKino || !chatRoom?.chatRoomId) return;
     if (!isInitialLoaded) return;
@@ -142,9 +141,9 @@ export default function MessageFlatList({
     };
   }, [isKino, chatRoom?.chatRoomId, isInitialLoaded]);
 
-  // =========================
-  // 2) 유저 메시지 이후 키노 타이핑
-  // =========================
+ // =========================
+ // 2) 유저 메시지 이후 키노 타이핑
+ // =========================
   useEffect(() => {
     if (!isKino) return;
     if (!isInitialLoaded) return;
@@ -197,7 +196,7 @@ export default function MessageFlatList({
   };
 
   const finalMessages = useMemo(() => {
-    let result = [...(messageList ?? [])]; // ✅ DESC 유지
+    let result = [...(messageList ?? [])]; // DESC 유지
 
     if (isKino && isInitialLoaded) {
       if (showIntroMessage) result = [...result, kinoIntroMessage];
@@ -217,6 +216,10 @@ export default function MessageFlatList({
         if (item?.localType) return `${item.localType}_${item.createdAt ?? index}`;
         return `${item?.senderId ?? 'x'}_${item?.createdAt ?? 't'}_${index}`;
       }}
+      initialNumToRender={12}
+      maxToRenderPerBatch={10}
+      windowSize={9}
+      removeClippedSubviews={true}
       renderItem={({item, index}) => {
         const prev = finalMessages[index + 1];
 
@@ -231,7 +234,7 @@ export default function MessageFlatList({
         const shouldShowDate = curDate !== prevDate;
         const isGrouped = String(prev?.senderId) === String(item?.senderId);
 
-        // ✅ 키노 인트로/타이핑은 읽음 숫자 붙이지 않기
+ // 키노 인트로/타이핑은 읽음 숫자 붙이지 않기
         const isLocalKino =
           item?.localType === 'kinoTyping' || item?.localType === 'kinoIntro';
 
@@ -258,19 +261,18 @@ export default function MessageFlatList({
         isFetchingMore ? <ActivityIndicator size="small" color="#aaa" /> : null
       }
       ListHeaderComponent={<View style={{height: getResponsiveHeight(20)}} />}
-      removeClippedSubviews={false}
       onScroll={handleScroll}
 
-      // ✅✅ 변경 1) 스크롤 이벤트 촘촘하게(부드러움 + 바닥판단 안정)
+ // 변경 1) 스크롤 이벤트 촘촘하게(부드러움 + 바닥판단 안정)
       scrollEventThrottle={16}
 
-      // ✅✅ 변경 2) 키보드 열린 채로 스크롤 가능하게 (터치가 키보드로 빨려가지 않게)
+ // 변경 2) 키보드 열린 채로 스크롤 가능하게 (터치가 키보드로 빨려가지 않게)
       keyboardShouldPersistTaps="handled"
 
-      // ✅✅ 변경 3) 스크롤 드래그로 키보드가 내려가며 제스처가 뻣뻣해지는 걸 방지
+ // 변경 3) 스크롤 드래그로 키보드가 내려가며 제스처가 뻣뻣해지는 걸 방지
       keyboardDismissMode="none"
 
-      // ✅✅ 변경 4) 안드로이드 중첩/제스처 충돌 완화
+ // 변경 4) 안드로이드 중첩/제스처 충돌 완화
       nestedScrollEnabled
     />
   );

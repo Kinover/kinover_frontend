@@ -6,7 +6,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
-import CustomSwitch from 'components/CustomSwitch';
+import CustomSwitch from 'components/customSwitch';
 import useHideTabBar from 'hooks/useHideTabBar';
 import {useDispatch, useSelector} from 'react-redux';
 import {RenderHeaderBackButton} from 'app/navigation/helpers/tabHeaderHelpers';
@@ -15,7 +15,7 @@ import {toggleAllChatRoomNotificationThunk} from 'features/chat/store/chatRoomTh
 import {toggleCommentNotificationThunk} from 'features/memory/store/commentThunk';
 import {togglePostNotificationThunk} from 'features/memory/store/memoryThunk';
 
-// ✅ 토스트 모달 import
+// 토스트 모달 import
 import ToastModal from 'components/modal/ToastModal';
 import {SETTING_STYLES} from 'styles/style';
 
@@ -32,13 +32,13 @@ export default function NotificationSettingScreen() {
   const [postNotification, setPostNotification] = useState(true);
   const [commentNotification, setCommentNotification] = useState(true);
 
-  // ✅ 토스트 상태
+ // 토스트 상태
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
   useHideTabBar({stayHidden: true});
 
-  // 알림설정화면 뒤로가기 → 한 단계 pop (설정화면으로, 슬라이드 애니메이션)
+ // 알림설정화면 뒤로가기 → 한 단계 pop (설정화면으로, 슬라이드 애니메이션)
   useLayoutEffect(() => {
     navigation.setOptions({
       headerLeft: () => (
@@ -57,7 +57,7 @@ export default function NotificationSettingScreen() {
     });
   }, [navigation, route]);
 
-  // ✅ 전체 알림 토글
+ // 전체 알림 토글
   const handleToggleAllNotification = async () => {
     const newValue = !allNotification;
     setAllNotification(newValue);
@@ -77,14 +77,13 @@ export default function NotificationSettingScreen() {
       await dispatch(togglePostNotificationThunk({userId, isOn: newValue}));
       await dispatch(toggleCommentNotificationThunk({userId, isOn: newValue}));
 
-      // ✅ 성공 시 토스트
+ // 성공 시 토스트
       setToastMessage(
         newValue ? '전체 알림이 켜졌어요' : '전체 알림이 꺼졌어요',
       );
       setToastVisible(true);
     } catch (e) {
       console.log('❌ 전체 알림 토글 실패:', e);
-      // 필요하면 실패 토스트도 추가 가능
     }
   };
 
@@ -141,7 +140,7 @@ export default function NotificationSettingScreen() {
     }
   };
 
-  // ✅ 하위 알림 상태 → 전체 알림 동기화
+ // 하위 알림 상태 → 전체 알림 동기화
   useEffect(() => {
     if (chatNotification && postNotification && commentNotification) {
       setAllNotification(true);
@@ -196,12 +195,12 @@ export default function NotificationSettingScreen() {
         </View>
       </ScrollView>
 
-      {/* ✅ 토스트 모달 */}
+      {/* 토스트 모달 */}
       <ToastModal
         visible={toastVisible}
         onClose={() => setToastVisible(false)}
         message={toastMessage}
-        // 여긴 일반 화면이라 useNativeModal 안 넘겨도 됨 (기본 true)
+ // 여긴 일반 화면이라 useNativeModal 안 넘겨도 됨 (기본 true)
       />
     </>
   );

@@ -15,7 +15,7 @@ import {
 import {useDispatch} from 'react-redux';
 
 import {fetchChatRoomMediaThunk} from '../store/chatRoomThunk';
-import MediaModal from '../components/MediaModal';
+import MediaModal from '../components/mediaModal';
 
 import {
   getResponsiveHeight,
@@ -32,14 +32,14 @@ export default function ChatRoomMediaScreen({navigation, route}) {
   const chatRoomId = route?.params?.chatRoomId ?? null;
   const initialType = String(route?.params?.initialType ?? 'ALL').toUpperCase(); // ALL | IMAGE | VIDEO
 
-  // =========================================================
-  // ✅ 상태
-  // =========================================================
+ // =========================================================
+ // 상태
+ // =========================================================
   const [type, setType] = useState(
     ['ALL', 'IMAGE', 'VIDEO'].includes(initialType) ? initialType : 'ALL',
   );
 
-  // ✅ 2~4 열 조절
+ // 2~4 열 조절
   const [columns, setColumns] = useState(3); // 2 | 3 | 4
 
   const [items, setItems] = useState([]);
@@ -48,16 +48,16 @@ export default function ChatRoomMediaScreen({navigation, route}) {
   const [moreLoading, setMoreLoading] = useState(false);
   const [nextBefore, setNextBefore] = useState(null);
 
-  // ✅ MediaModal
+ // MediaModal
   const [mediaModalVisible, setMediaModalVisible] = useState(false);
   const [modalMediaItems, setModalMediaItems] = useState([]); // [{kind,url,thumb}]
   const [modalInitialIndex, setModalInitialIndex] = useState(0);
 
   const fetchingFirstRef = useRef(false);
 
-  // =========================================================
-  // ✅ 유틸
-  // =========================================================
+ // =========================================================
+ // 유틸
+ // =========================================================
   const pickThumbUri = item =>
     item?.thumbnailUrl ||
     item?.thumbUrl ||
@@ -91,9 +91,9 @@ export default function ChatRoomMediaScreen({navigation, route}) {
     pickMediaUri(item) ||
     null;
 
-  // =========================================================
-  // ✅ API
-  // =========================================================
+ // =========================================================
+ // API
+ // =========================================================
   const fetchFirst = useCallback(
     async (nextType = type) => {
       if (!chatRoomId) return;
@@ -153,9 +153,9 @@ export default function ChatRoomMediaScreen({navigation, route}) {
     }
   }, [dispatch, chatRoomId, nextBefore, moreLoading, type]);
 
-  // =========================================================
-  // ✅ 탭 변경
-  // =========================================================
+ // =========================================================
+ // 탭 변경
+ // =========================================================
   const onChangeType = useCallback(
     async next => {
       const upper = String(next).toUpperCase();
@@ -166,18 +166,18 @@ export default function ChatRoomMediaScreen({navigation, route}) {
     [type, fetchFirst],
   );
 
-  // =========================================================
-  // ✅ 최초 로드
-  // =========================================================
+ // =========================================================
+ // 최초 로드
+ // =========================================================
   useEffect(() => {
     if (!chatRoomId) return;
     fetchFirst(type);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+ // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatRoomId]);
 
-  // =========================================================
-  // ✅ 모달 열기
-  // =========================================================
+ // =========================================================
+ // 모달 열기
+ // =========================================================
   const openMediaModal = useCallback(
     (pressedItem, pressedIndex) => {
       const pressedKind = normalizeMediaType(pressedItem);
@@ -224,16 +224,16 @@ export default function ChatRoomMediaScreen({navigation, route}) {
     }, 0);
   }, []);
 
-  // =========================================================
-  // ✅ 레이아웃: 화면 실제 width 기반 + 가운데 정렬
-  // =========================================================
+ // =========================================================
+ // 레이아웃: 화면 실제 width 기반 + 가운데 정렬
+ // =========================================================
   const windowW = Dimensions.get('window').width;
 
-  // “보기 좋게” 패딩/간격 고정
+ // ��보기 좋게” 패딩/간격 고정
   const screenPaddingH = getResponsiveWidth(18);
   const gridGap = getResponsiveWidth(8);
 
-  // ✅ cellSize = (실제 사용가능 폭 - gap*(columns-1)) / columns
+ // cellSize = (실제 사용가능 폭 - gap*(columns-1)) / columns
   const cellSize = useMemo(() => {
     const usableW = windowW - screenPaddingH * 2;
     const totalGap = gridGap * (columns - 1);
@@ -241,7 +241,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
     return Math.floor(raw);
   }, [windowW, screenPaddingH, gridGap, columns]);
 
-  // ✅ 그리드 전체 폭(셀 + gap) → 남는 여백을 좌우로 나눠서 가운데 정렬
+ // 그리드 전체 폭(셀 + gap) → 남는 여백을 좌우로 나눠서 가운데 정렬
   const gridWidth = useMemo(() => {
     return cellSize * columns + gridGap * (columns - 1);
   }, [cellSize, columns, gridGap]);
@@ -293,9 +293,9 @@ export default function ChatRoomMediaScreen({navigation, route}) {
     [cellSize, gridGap, openMediaModal, columns],
   );
 
-  // =========================================================
-  // ✅ 그리드 크기(2~4) 조절 UI
-  // =========================================================
+ // =========================================================
+ // 그리드 크기(2~4) 조절 UI
+ // =========================================================
   const GridSizePicker = useMemo(() => {
     return (
       <View style={[styles.sizeRow, {paddingHorizontal: screenPaddingH}]}>
@@ -325,7 +325,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
 
   return (
     <View style={styles.page}>
-      {/* ✅ 탭 */}
+      {/* 탭 */}
       <View style={[styles.tabs, {paddingHorizontal: screenPaddingH}]}>
         {['ALL', 'IMAGE', 'VIDEO'].map(t => {
           const active = type === t;
@@ -343,10 +343,10 @@ export default function ChatRoomMediaScreen({navigation, route}) {
         })}
       </View>
 
-      {/* ✅ 그리드 크기 조절 */}
+      {/* 그리드 크기 조절 */}
       {GridSizePicker}
 
-      {/* ✅ 컨텐츠 */}
+      {/* 컨텐츠 */}
       {loading ? (
         <View style={styles.centerBox}>
           <ActivityIndicator />
@@ -364,7 +364,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
             `${String(getMediaKey(item) ?? 'noid')}_${idx}`
           }
           numColumns={columns}
-          // ✅ columns 변경 시 레이아웃 재구성되게 key를 컬럼 수에 의존
+ // columns 변경 시 레이아웃 재구성되게 key를 컬럼 수에 의존
           key={`media-grid-${columns}`}
           showsVerticalScrollIndicator={false}
           removeClippedSubviews={false}
@@ -373,7 +373,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
             paddingBottom: getResponsiveHeight(30),
             paddingHorizontal: screenPaddingH,
           }}
-          // ✅ row(줄) 자체를 가운데 정렬
+ // row(줄) 자체를 가운데 정렬
           columnWrapperStyle={{
             justifyContent: 'flex-start',
             paddingLeft: sideInset,
@@ -401,7 +401,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
         />
       )}
 
-      {/* ✅ 뷰어 모달 */}
+      {/* 뷰어 모달 */}
       <MediaModal
         visible={mediaModalVisible}
         mediaItems={modalMediaItems}
@@ -442,7 +442,6 @@ const styles = StyleSheet.create({
     color: '#B45309',
   },
 
-  // ✅ 그리드 사이즈 선택
   sizeRow: {
     flexDirection: 'row',
     alignItems: 'center',

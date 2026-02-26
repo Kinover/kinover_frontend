@@ -3,12 +3,12 @@ import {useEffect, useRef, useCallback} from 'react';
 import {getToken} from 'utils/storage';
 
 export default function useChatWebSocket({
-  // ✅ 서버에서 받은 raw msg를 여기로 올려줌
+ // 서버에서 받은 raw msg를 여기로 올려줌
   onMessage, // (msg) => void
   onOpen,
   onClose,
 
-  // ✅ 옵션: 재연결
+ // 옵션: 재연결
   enableReconnect = true,
   maxBackoffMs = 5000,
 }) {
@@ -38,7 +38,7 @@ export default function useChatWebSocket({
   }, []);
 
   const connect = useCallback(async () => {
-    // ✅ 토큰을 먼저 검사하고 encode는 나중에
+ // 토큰을 먼저 검사하고 encode는 나중에
     const raw = await getToken();
     if (!raw) {
       console.warn('[WebSocket] No token found');
@@ -46,11 +46,10 @@ export default function useChatWebSocket({
     }
     const token = encodeURIComponent(raw);
 
-    // ✅ 이미 OPEN이면 재연결 금지
+ // 이미 OPEN이면 재연결 금지
     const existing = socketRef.current;
     if (existing && existing.readyState === WebSocket.OPEN) return;
 
-    // ✅ 기존 소켓 정리 (중복 연결 방지)
     cleanup();
 
     const ws = new WebSocket(`ws://kinover.shop:9090/chat?token=${token}`);
@@ -71,14 +70,13 @@ export default function useChatWebSocket({
     };
 
     ws.onerror = e => {
-      // RN에서 e.message가 없을 때도 많아서 그대로 출력
+ // RN에서 e.message가 없을 때도 많아서 그대로 출력
       console.error('[WebSocket] Error:', e);
     };
 
     ws.onclose = event => {
       onClose?.(event);
 
-      // ✅ 재연결 (선택)
       if (!enableReconnect) return;
 
       const attempt = reconnectAttemptRef.current++;
@@ -106,7 +104,7 @@ export default function useChatWebSocket({
   }, [connect, cleanup]);
 
   return {
-    socketRef, // ✅ 필요하면 밖에서 readyState 체크 가능
+    socketRef, // 필요하면 밖에서 readyState 체크 가능
     sendMessage,
     reconnect: connect,
     disconnect: cleanup,

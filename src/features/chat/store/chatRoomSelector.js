@@ -13,7 +13,7 @@ export const selectMarkReadStatus = (state, chatRoomId) => {
   return state.chatRoom?.markReadStatusByRoom?.[rid] || 'idle';
 };
 
-// ✅ chatRoomList에서 chatRoomId로 단건 찾기
+// chatRoomList에서 chatRoomId로 단건 찾기
 export const selectChatRoomById = (state, chatRoomId) => {
   const rid = toId(chatRoomId);
   if (!rid) return null;
@@ -25,7 +25,7 @@ export const selectChatRoomById = (state, chatRoomId) => {
   return list.find(r => toId(r?.chatRoomId) === rid) || null;
 };
 
-// ✅ 채팅 unread 총합 selector (앱 뱃지용)
+// 채팅 unread 총합 selector (앱 뱃지용)
 export const selectChatUnreadTotal = state => {
   const list = Array.isArray(state?.chatRoom?.chatRoomList)
     ? state.chatRoom.chatRoomList
@@ -33,7 +33,7 @@ export const selectChatUnreadTotal = state => {
   return list.reduce((sum, r) => sum + (Number(r?.unreadCount) || 0), 0);
 };
 
-// ✅ 채팅방 미디어 상태 selector
+// 채팅방 미디어 상태 selector
 export const selectChatRoomMediaState = (state, chatRoomId) => {
   const rid = toId(chatRoomId);
   const empty = {

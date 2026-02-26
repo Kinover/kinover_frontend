@@ -14,8 +14,6 @@ export const fetchReadPointersThunk = chatRoomId => {
     } catch (e) {
       // 401은 apiClient가 공통 처리(로그아웃+reset)하니까 여기선 최소 방어만
       const msg = e?.response?.data || e?.message || 'readPointers 조회 실패';
-      // slice에 에러 저장 로직이 없어서 일단 throw/return 선택지인데,
-      // 기존 패턴 유지하려고 return null로 두는 게 덜 터짐.
       return {error: msg};
     }
   };

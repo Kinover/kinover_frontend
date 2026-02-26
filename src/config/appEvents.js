@@ -10,7 +10,7 @@ export const APP_EVENTS = [
     startAt: null,
     endAt: null,
 
-    // ✅ 예시: 원격 이미지
+ // 예시: 원격 이미지
     imageUri: 'https://your-cdn.com/kinover/event_invite.png',
 
     primary: {
@@ -29,10 +29,10 @@ export const APP_EVENTS = [
     subTitle: '가족들과 오늘의 감정을 공유해보세요.',
     message: '',
 
-    // ✅ 예시: 로컬 정적 이미지 (프로젝트 경로에 맞게 수정)
-    // image: require('../assets/images/emotionPopup.png'),
-    // 또는 원격이면:
-    // imageUri: "https~..",
+ // 예시: 로컬 정적 이미지 (프로젝트 경로에 맞게 수정)
+ // image: require('../assets/images/emotionPopup.png'),
+ // 또는 원격이면:
+ // imageUri: "https~..",
     image: require('../assets/modal/emotion.png'),
 
     startAt: null,

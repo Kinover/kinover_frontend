@@ -13,9 +13,9 @@ export default function ToastModal({
   onClose,
   message,
   duration = 1000,
-  useNativeModal = true, // ✅ 추가: 기본은 기존처럼 Modal 사용
+  useNativeModal = true, // 추가: 기본은 기존처럼 Modal 사용
 }) {
-  // 일정 시간 뒤 자동 닫기
+ // 일정 시간 뒤 자동 닫기
   useEffect(() => {
     if (visible) {
       const timer = setTimeout(() => {
@@ -37,7 +37,6 @@ export default function ToastModal({
     </View>
   );
 
-  // ✅ 일반 화면에서는 기존처럼 Modal 사용
   if (useNativeModal) {
     return (
       <Modal
@@ -51,7 +50,7 @@ export default function ToastModal({
     );
   }
 
-  // ✅ 다른 Modal 안에서 쓸 때: 그냥 오버레이 뷰만 리턴
+ // 다른 Modal 안에서 쓸 때: 그냥 오버레이 뷰만 리턴
   return content;
 }
 
@@ -68,7 +67,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     pointerEvents: 'box-none',
 
-    // 맨 위로 올리기
+ // 맨 위로 올리기
     zIndex: 99999,
     elevation: 99999,
   },

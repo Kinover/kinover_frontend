@@ -11,10 +11,10 @@ export default function useHeaderSetting(
   title,
   isKino,
 ) {
-  // ✅ 폰트모드 구독: "옵션 갱신 트리거" 역할
+ // 폰트모드 구독: "옵션 갱신 트리거" 역할
   const fontMode = useSelector(state => state.ui.fontMode);
 
-  // ✅ 스타일은 1번만 계산
+ // 스타일은 1번만 계산
   const headerStyle = useMemo(() => {
     const base = HEADER_STYLES();
     return {
@@ -22,7 +22,7 @@ export default function useHeaderSetting(
       fontSize: base.defaultTitleFontSize,
       color: base.defaultTitleFontColor,
     };
-  }, [fontMode]); // ✅ fontMode 바뀌면 HEADER_STYLES() 재평가
+  }, [fontMode]); // fontMode 바뀌면 HEADER_STYLES() 재평가
 
   useLayoutEffect(() => {
     navigation.setOptions({

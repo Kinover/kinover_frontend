@@ -1,4 +1,3 @@
-// ✅ utils/storage.js (중요 부분만 보여주는 게 아니라, 관련 함수는 통째로)
 import * as Keychain from 'react-native-keychain';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {emitAuthFlagsChanged} from 'utils/authFlagsEvent';
@@ -27,7 +26,7 @@ export const getNeedsSignup = async () => {
   }
 };
 
-// ✅ A 방식: 로그인 세션 저장은 "토큰 중심"으로!
+// A 방식: 로그인 세션 저장은 "토큰 중심"으로!
 // hasFamily는 여기서 저장하지 말고, 로그인 성공 후 fetchUser로 확정해서 setHasFamily로 저장
 export const saveLoginSession = async ({token, needsSignup}) => {
   try {

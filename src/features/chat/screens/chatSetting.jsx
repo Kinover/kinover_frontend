@@ -1,11 +1,11 @@
 /* =========================================================
- * ✅ src/features/chat/components/ChatSettings.jsx
+ * src/features/chat/components/ChatSettings.jsx
  * - AddChatMemberScreen에서 “채팅방 화면 route params”에 merge로 심은
- *   invitedToast / invitedCount / invitedMessage 를 읽어서 토스트 띄움
+ * invitedToast / invitedCount / invitedMessage 를 읽어서 토스트 띄움
  * - 읽은 뒤에는 “채팅방 화면 params”에서 제거(중복 방지)
  * - (중요) ChatSettings는 Screen이 아닌 “패널 컴포넌트”일 수 있어
- *   useRoute/useFocusEffect 사용 시 "Couldn't find a route object" 크래시 가능
- *   → navigation.getState()로 현재 route를 직접 찾아 params 처리
+ * useRoute/useFocusEffect 사용 시 "Couldn't find a route object" 크래시 가능
+ * → navigation.getState()로 현재 route를 직접 찾아 params 처리
  * ========================================================= */
 
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
@@ -41,10 +41,10 @@ import {
   fetchChatRoomMediaThunk,
 } from '../store/chatRoomThunk';
 
-import LeaveChatRoomModal from '../components/LeaveChatRoomModal';
-import RenameChatRoomModal from '../components/RenameChatRoomModal';
-import ChangeKinoModal from '../components/ChangeKinoModal';
-import MediaModal from '../components/MediaModal';
+import LeaveChatRoomModal from '../components/leaveChatRoomModal';
+import RenameChatRoomModal from '../components/renameChatRoomModal';
+import ChangeKinoModal from '../components/changeKinoModal';
+import MediaModal from '../components/mediaModal';
 
 import {
   getResponsiveHeight,
@@ -63,7 +63,7 @@ import {resetRoomMessageList} from '../store/messageSlice';
 import {BACKGROUND_COLORS, COLORS} from 'styles/style';
 import {FONT_MODE} from 'store/uiSlice';
 
-/** ✅ 섹션 row 공용 버튼 */
+/** 섹션 row 공용 버튼 */
 const SectionRowButton = React.memo(function SectionRowButton({
   onPress,
   children,
@@ -92,7 +92,7 @@ export default function ChatSettings({
   chatRoomId,
   navigation,
   isKino,
-  onOpenAddMember, // ✅ 추가
+  onOpenAddMember, // 추가
 }) {
   const tint_color = 'black';
   const dispatch = useDispatch();
@@ -146,9 +146,9 @@ export default function ChatSettings({
     Array.isArray(chatRoomUsers) &&
     chatRoomUsers.length >= familyMembers.length;
 
-  // =========================================================
-  // ✅ 패널 슬라이드
-  // =========================================================
+ // =========================================================
+ // 패널 슬라이드
+ // =========================================================
   const panelW = getResponsiveWidth(310);
   const translateX = useSharedValue(panelW);
 
@@ -182,11 +182,10 @@ export default function ChatSettings({
 
   useEffect(() => () => clearCloseTimer(), []);
 
-  // =========================================================
-  // ✅ 핵심: 현재 “채팅방 화면 route params” 읽기 (useRoute 금지)
-  // =========================================================
+ // =========================================================
+ // =========================================================
   const getCurrentRouteInfo = useCallback(() => {
-    // navigation이 없거나 getState 없으면 안전하게 null 처리
+ // navigation이 없거나 getState 없으면 안전하게 null 처리
     const state = navigation?.getState?.();
     const routes = state?.routes || [];
     const index =
@@ -200,8 +199,8 @@ export default function ChatSettings({
   }, [navigation]);
 
   const clearInvitedToastParams = useCallback(() => {
-    // ✅ “현재 화면(=채팅방 화면)” params 제거
-    // setParams는 현재 route에 걸리므로 여기서는 가장 정확한 제거 방식
+ // ��현재 화면(=채팅방 화면)” params 제거
+ // setParams는 현재 route에 걸리므로 여기서는 가장 정확한 제거 방식
     try {
       navigation?.setParams?.({
         invitedToast: undefined,
@@ -209,7 +208,7 @@ export default function ChatSettings({
         invitedMessage: undefined,
       });
     } catch (e) {
-      // 혹시 setParams가 안 먹는 특수 구조면 merge navigate로 한번 더
+ // 혹시 setParams가 안 먹는 특수 구조면 merge navigate로 한번 더
       const {currentRouteName} = getCurrentRouteInfo();
       if (!currentRouteName) return;
       try {
@@ -228,7 +227,7 @@ export default function ChatSettings({
     }
   }, [navigation, getCurrentRouteInfo]);
 
-  // ✅ 패널이 “열릴 때” 한 번 체크해서 토스트 띄우는 구조
+ // 패널이 “열릴 때” 한 번 체크해서 토스트 띄우는 구조
   useEffect(() => {
     if (!isOpen) return;
 
@@ -261,9 +260,9 @@ export default function ChatSettings({
     clearInvitedToastParams,
   ]);
 
-  // =========================================================
-  // ✅ 미디어 상태
-  // =========================================================
+ // =========================================================
+ // 미디어 상태
+ // =========================================================
   const [mediaType, setMediaType] = useState('ALL');
   const [mediaItems, setMediaItems] = useState([]);
   const [mediaLoading, setMediaLoading] = useState(false);
@@ -423,9 +422,8 @@ export default function ChatSettings({
     }, 220);
   }, [chatRoomId, navigation, mediaType, onClose]);
 
-  // =========================================================
-  // 기존 로직
-  // =========================================================
+ // =========================================================
+ // =========================================================
   useEffect(() => {
     if (isOpen && chatRoomId) dispatch(fetchChatRoomUsersThunk(chatRoomId));
   }, [isOpen, chatRoomId, dispatch]);
@@ -446,7 +444,7 @@ export default function ChatSettings({
     if (!chatRoomId) return;
     if (!mediaOpened) return;
     fetchMediaFirst(mediaType);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+ // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, chatRoomId, mediaOpened]);
 
   const handleToggleAlarm = () => {
@@ -498,21 +496,20 @@ export default function ChatSettings({
         setToastVisible(true);
       });
   };
-  // 채팅방 Screen 내부 (예: header 버튼, 설정 패널에서 멤버추가 누르는 트리거 등)
 
   const openAddMember = () => {
     navigation.navigate('채팅방멤버추가화면', {
       chatRoomId,
       onInvited: ({count, message}) => {
-        // ✅ 1) 채팅방 Screen의 route params에 토스트 트리거를 "직접" 박기 (가장 안전)
+ // 1) 채팅방 Screen의 route params에 토스트 트리거를 "직접" 박기 (가장 안전)
         navigation.setParams({
           invitedToast: true,
           invitedCount: count,
           invitedMessage: message,
         });
 
-        // ✅ 2) 필요하면 여기서 바로 목록 갱신도 가능 (채팅방 users 재조회)
-        // dispatch(fetchChatRoomUsersThunk(chatRoomId));
+ // 2) 필요하면 여기서 바로 목록 갱신도 가능 (채팅방 users 재조회)
+ // dispatch(fetchChatRoomUsersThunk(chatRoomId));
       },
     });
   };
@@ -520,7 +517,7 @@ export default function ChatSettings({
   const handleShowMembers = () => {
     onClose();
 
-    // ✅ AddChatMemberScreen이 “채팅방 Screen name”을 알 수 있게 현재 route.name 넘김
+ // AddChatMemberScreen이 “채팅방 Screen name”을 알 수 있게 현재 route.name 넘김
     const {currentRouteName} = getCurrentRouteInfo();
     const chatRoomScreenName = currentRouteName || '채팅방화면';
 
@@ -735,7 +732,7 @@ export default function ChatSettings({
                     <TouchableOpacity
                       onPress={() => {
                         onClose(); // 설정창 닫고
-                        onOpenAddMember?.(); // ✅ 부모(스크린)에서 이동 + 토스트 처리
+                        onOpenAddMember?.(); // 부모(스크린)에서 이동 + 토스트 처리
                       }}
                       style={styles.inviteBtn}
                       activeOpacity={0.9}>
@@ -1167,7 +1164,7 @@ const makeStyles = rf =>
 
     inviteText: {
       fontSize: rf(13),
-      // color: '#F59E0B',
+ // color: '#F59E0B',
       color: 'black',
 
       fontFamily: 'Pretendard-Medium',

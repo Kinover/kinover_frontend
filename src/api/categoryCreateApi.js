@@ -18,7 +18,7 @@ export const createCategory = async (title, familyId) => {
       {
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`, // ✅ 반드시 포함
+          Authorization: `Bearer ${token}`, // 반드시 포함
         },
       },
     );

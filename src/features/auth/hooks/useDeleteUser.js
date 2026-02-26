@@ -30,13 +30,13 @@ export function useDeleteUser(onSuccess) {
 
       const result = await dispatch(deleteUserThunk()).unwrap();
 
-      // ✅ 로컬 저장소 정리 (Keychain + hasFamily)
+ // 로컬 저장소 정리 (Keychain + hasFamily)
       await deleteLoginInfo();
 
-      // ✅ 가이드 "봤음" 플래그 삭제 → 재가입 후 탭 진입 시 가이드 다시 노출
+ // 가이드 "봤음" 플래그 삭제 → 재가입 후 탭 진입 시 가이드 다시 노출
       await resetGuideShownKeys();
 
-      // ✅ Redux 상태도 초기화
+ // Redux 상태도 초기화
       dispatch(setLogout());      // loginSlice
       dispatch(setUserlogout());  // userSlice
 

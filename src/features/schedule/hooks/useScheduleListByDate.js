@@ -2,6 +2,8 @@
 import {useEffect, useMemo} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchSchedulesForFamilyAndDateThunk} from '../store/scheduleThunk';
+import {selectScheduleList, selectSchedulesByDate} from '../store/scheduleSelectors';
+import {selectFamilyId} from 'store/selectors';
 
 export const useScheduleListByDate = (
   selectedDate,
@@ -9,9 +11,11 @@ export const useScheduleListByDate = (
   familyIdOverride,
 ) => {
   const dispatch = useDispatch();
-  const {familyId: reduxFamilyId} = useSelector(state => state.family);
+  const reduxFamilyId = useSelector(selectFamilyId);
   const familyId = familyIdOverride ?? reduxFamilyId;
-  const {scheduleList = []} = useSelector(state => state.schedule);
+  const scheduleList = useSelector(state =>
+    selectSchedulesByDate(state, selectedDate),
+  );
 
   const formatLocalYMD = d => {
     const y = d.getFullYear();
@@ -30,16 +34,16 @@ export const useScheduleListByDate = (
     dispatch(fetchSchedulesForFamilyAndDateThunk(familyId, selectedYMD));
   }, [dispatch, familyId, selectedYMD, refreshTrigger]);
 
-  // ----------------------------
-  // ✅ 더미 데이터 (UI 테스트용)
-  // - scheduleList가 비어있을 때만 주입
-  // - selectedYMD에 맞춰 날짜 일관성 유지
-  // ----------------------------
+ // ----------------------------
+ // 더미 데이터 (UI 테스트용)
+ // - scheduleList가 비어있을 때만 주입
+ // - selectedYMD에 맞춰 날짜 일관성 유지
+ // ----------------------------
   const dummyList = useMemo(() => {
     if (!selectedYMD) return [];
 
-    // ⚠️ userId / userName / kind(type) 만 UI 확인에 충분
-    // kind: 'personal' | 'shared' | 'anniversary'
+ // userId / userName / kind(type) 만 UI 확인에 충분
+ // kind: 'personal' | 'shared' | 'anniversary'
     return [
       {
         scheduleId: `dummy-${selectedYMD}-1`,
@@ -80,15 +84,15 @@ export const useScheduleListByDate = (
 
   const effectiveScheduleList = useMemo(() => {
     const base = Array.isArray(scheduleList) ? scheduleList : [];
-    // ✅ 서버 데이터 있으면 서버 데이터 우선, 없으면 더미
-    // return base.length > 0 ? base : dummyList;
+ // 서버 데이터 있으면 서버 데이터 우선, 없으면 더미
+ // return base.length > 0 ? base : dummyList;
     return base;
 
   }, [scheduleList, dummyList]);
 
-  // ----------------------------
-  // ✅ 타입 분류(백엔드 필드가 뭐든 최대한 흡수)
-  // ----------------------------
+ // ----------------------------
+ // 타입 분류(백엔드 필드가 뭐든 최대한 흡수)
+ // ----------------------------
   const getKind = item => {
     const raw =
       item?.kind ??
@@ -136,7 +140,7 @@ export const useScheduleListByDate = (
   }, [effectiveScheduleList]);
 
   return {
-    scheduleList: effectiveScheduleList, // ✅ 이제 화면은 이걸 쓰면 더미까지 포함됨
+    scheduleList: effectiveScheduleList, // 이제 화면은 이걸 쓰면 더미까지 포함됨
     selectedYMD,
     ...grouped,
   };

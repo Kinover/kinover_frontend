@@ -44,7 +44,7 @@ export default function MemoryStack() {
 
         headerStyle: defaultHeaderStyle,
         headerTitleAlign: 'left',
-        // headerTitle: '',
+ // headerTitle: '',
         headerRight: () => (
           <RenderHeaderHome navigation={navigation} currentScreen="추억" />
         ),
@@ -55,9 +55,9 @@ export default function MemoryStack() {
             style={{
               fontFamily: HEADER_STYLES().mainTitleFontFamily,
               fontWeight: HEADER_STYLES().mainTitleFontWeight,
-              fontSize: HEADER_STYLES().mainTitleFontSize, // ✅ 24 → 16 (다른 앱이랑 비슷한 크기)
+              fontSize: HEADER_STYLES().mainTitleFontSize, // 24 → 16 (다른 앱이랑 비슷한 크기)
               color: 'black',
-              lineHeight: HEADER_STYLES().mainTitleLineHeight, // ✅ 너무 크지 않게 살짝만
+              lineHeight: HEADER_STYLES().mainTitleLineHeight, // 너무 크지 않게 살짝만
               textAlignVertical: 'center',
             }}>
             추억

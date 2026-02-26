@@ -13,7 +13,7 @@ import {
   getResponsiveWidth,
   getResponsiveHeight,
 } from 'utils/responsive';
-import YellowSpinner from 'components/YellowSpinner';
+import YellowSpinner from 'components/yellowSpinner';
 import {useNotificationList} from '../hooks/useNotificationList';
 import {EMPTY_STYLE, LAYOUT_STYLE} from 'styles/style';
 import {useFocusEffect, useNavigation, useRoute, StackActions, CommonActions} from '@react-navigation/native';

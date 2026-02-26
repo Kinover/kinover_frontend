@@ -6,9 +6,11 @@
  */
 
 import React from 'react';
+import {View} from 'react-native';
 import {createStackNavigator} from '@react-navigation/stack';
 
-import TabNavigator from './TabNavigator';
+import TabNavigator from './tabNavigator';
+import {TabsWithOptionalGuideHost} from 'contexts/GuideOverlayContext';
 import SettingScreen from 'features/setting/screens/SettingScreen';
 import NotificationSettingScreen from 'features/setting/screens/NotificationSettingScreen';
 import NotificationScreen from 'features/notification/screens/NotificationScreen';
@@ -18,6 +20,18 @@ import {getResponsiveHeight} from 'utils/responsive';
 // ==================== Constants ====================
 
 const Stack = createStackNavigator();
+
+/** 탭 화면 (가이드 오버레이는 App 루트 GuideOverlayRoot에서 렌더) */
+function TabsWithGuideOverlay(props) {
+  return (
+    <View style={{flex: 1}}>
+      <TabsWithOptionalGuideHost
+        TabNavigatorComponent={TabNavigator}
+        tabNavigatorProps={props}
+      />
+    </View>
+  );
+}
 
 /**
  * 공통 헤더 옵션 생성 함수
@@ -56,8 +70,8 @@ export default function RootNavigator({initialRouteName = 'Tabs'}) {
         // 설정/알림 갔다 와도 Tabs 언마운트 안 하게 → goBack() 시 탭 상태 유지
         detachInactiveScreens: false,
       }}>
-      {/* 메인 탭 네비게이터 */}
-      <Stack.Screen name="Tabs" component={TabNavigator} />
+      {/* 메인 탭 네비게이터 + iOS 가이드 오버레이 호스트 */}
+      <Stack.Screen name="Tabs" component={TabsWithGuideOverlay} />
 
       {/* 전역 화면들 */}
       <Stack.Screen

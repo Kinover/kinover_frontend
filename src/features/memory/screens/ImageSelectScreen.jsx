@@ -1,8 +1,6 @@
-// ✅ 수정본: src/features/memory/screens/ImageSelectPage.jsx
 // 변경 포인트
 // 1) 순서칩(orderChip) : 투명 검정 알약 -> "글래스(반투명)+화이트 보더+살짝 블러 느낌" 스타일
 // 2) X 버튼(removeBtn) : 더 작고, 깔끔한 라운드+보더, "×" 위치/두께 정리
-// 3) 기존 태그(remoteTag) : 너무 투박한 흰 알약 -> "연한 배경+얇은 보더+텍스트 톤 다운"
 
 import React, {
   useCallback,
@@ -256,7 +254,6 @@ export default function ImageSelectPage() {
       const prevArr = Array.isArray(prev) ? prev : [];
       const next = [...prevArr, ...converted];
 
-      // ✅ 중복 제거(선택한 uri 기준) - 필요 없으면 이 블록 삭제해도 됨
       const seen = new Set();
       const dedup = [];
       for (const it of next) {
@@ -267,7 +264,7 @@ export default function ImageSelectPage() {
         dedup.push(it);
       }
 
-      // ✅ 최대 30개 제한도 한 번 더 안전장치
+ // 최대 30개 제한도 한 번 더 안전장치
       return dedup.slice(0, MAX_SELECTION);
     });
   }, [extToMime, getExt, navigation, selectedFiles, showToast, isEditMode]);
@@ -398,14 +395,14 @@ export default function ImageSelectPage() {
             resizeMode="cover"
           />
 
-          {/* ✅ 순서칩(예쁘게) */}
+          {/* 순서칩(예쁘게) */}
           <View style={styles.orderChip}>
             <Text allowFontScaling={false} style={styles.orderChipText}>
               {order}
             </Text>
           </View>
 
-          {/* ✅ 비디오 칩 */}
+          {/* 비디오 칩 */}
           {item.isVideo ? (
             <View style={styles.videoPill}>
               <Text allowFontScaling={false} style={styles.videoPillText}>
@@ -414,7 +411,7 @@ export default function ImageSelectPage() {
             </View>
           ) : null}
 
-          {/* ✅ X 버튼(예쁘게) */}
+          {/* X 버튼(예쁘게) */}
           <TouchableOpacity
             onPress={() => {
               setSelectedFiles(prev => prev.filter(x => x.id !== item.id));
@@ -582,9 +579,9 @@ const styles = StyleSheet.create({
     color: COLORS.sub,
   },
 
-  /* =================== 여기부터 “꾸민” 부분 =================== */
+ /* =================== 여기부터 “꾸민” 부분 =================== */
 
-  // ✅ 순서칩: 글래스 알약 + 얇은 화이트 보더
+ // 순서칩: 글래스 알약 + 얇은 화이트 보더
   orderChip: {
     position: 'absolute',
     top: getResponsiveHeight(7),
@@ -599,13 +596,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
-      // ios: {
-      //   shadowColor: '#000',
-      //   shadowOpacity: 0.14,
-      //   shadowRadius: 8,
-      //   shadowOffset: {width: 0, height: 4},
-      // },
-      // android: {elevation: 2},
+ // ios: {
+ // shadowColor: '#000',
+ // shadowOpacity: 0.14,
+ // shadowRadius: 8,
+ // shadowOffset: {width: 0, height: 4},
+ // },
+ // android: {elevation: 2},
     }),
   },
   orderChipText: {
@@ -617,7 +614,6 @@ const styles = StyleSheet.create({
     textAlignVertical: 'center',
   },
 
-  // ✅ 기존 태그: 너무 하얗지 않게, 살짝 톤 다운
   remoteTag: {
     position: 'absolute',
     left: getResponsiveWidth(7),
@@ -639,7 +635,6 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
 
-  // ✅ 비디오 pill도 같이 톤 맞춤 (너무 진하지 않게)
   videoPill: {
     position: 'absolute',
     bottom: getResponsiveHeight(7),
@@ -661,7 +656,7 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
 
-  // ✅ X 버튼: 크기/보더/텍스트 정렬 “깔끔”
+ // X 버튼: 크기/보더/텍스트 정렬 “깔끔”
   removeBtn: {
     position: 'absolute',
     right: getResponsiveWidth(7),
@@ -675,13 +670,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
-      // ios: {
-      //   shadowColor: '#000',
-      //   shadowOpacity: 0.18,
-      //   shadowRadius: 8,
-      //   shadowOffset: {width: 0, height: 4},
-      // },
-      // android: {elevation: 2},
+ // ios: {
+ // shadowColor: '#000',
+ // shadowOpacity: 0.18,
+ // shadowRadius: 8,
+ // shadowOffset: {width: 0, height: 4},
+ // },
+ // android: {elevation: 2},
     }),
   },
   removeBtnText: {
@@ -691,10 +686,10 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
     textAlignVertical: 'center',
     lineHeight: getResponsiveFontSize(13),
-    // ✅ 폰트 렌더링 때문에 살짝 위로 뜨는 경우가 있어서 보정
+ // 폰트 렌더링 때문에 살짝 위로 뜨는 경우가 있어서 보정
   },
 
-  /* =================== 여기까지 =================== */
+ /* =================== 여기까지 =================== */
 
   helperBox: {
     marginTop: getResponsiveHeight(12),

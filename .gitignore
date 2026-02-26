@@ -79,6 +79,11 @@ android.zip
 # 🔐 Keystore
 android/keystore.properties
 android/app/my-release-key.keystore
+# 환경 변수 (민감 정보 포함 가능 — .env.example만 커밋)
+.env
+.env.local
+.env.*.local
+
 # Expo
 .expo
 dist/

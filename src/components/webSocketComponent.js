@@ -19,7 +19,7 @@ const WebSocketComponent = ({token, chatRoomId, userId}) => {
       try {
         const raw = JSON.parse(event.data);
 
-        // 1) 정규화
+ // 1) 정규화
         const rid = String(raw?.chatRoom?.chatRoomId ?? chatRoomId);
         const createdAt = raw?.createdAt
           ? new Date(raw.createdAt).toISOString()
@@ -30,9 +30,9 @@ const WebSocketComponent = ({token, chatRoomId, userId}) => {
 
         setMessages(prev => [...prev, msg]);
 
-        // 2) 목록 프리뷰 갱신 (시간/텍스트/정렬)
+ // 2) 목록 프리뷰 갱신 (시간/텍스트/정렬)
         dispatch(applyMessagePreview({ chatRoomId: rid, message: msg, isSelf }));
-        dispatch(bumpListRevision()); // ✅ 바로 렌더 트리거
+        dispatch(bumpListRevision()); // 바로 렌더 트리거
 
       } catch (err) {
         console.error('❌ 메시지 파싱 오류:', err);
@@ -49,7 +49,7 @@ const WebSocketComponent = ({token, chatRoomId, userId}) => {
   const sendMessage = () => {
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
-    // 3) 송신도 동일 포맷(ISO 시간, 문자열 ID)
+ // 3) 송신도 동일 포맷(ISO 시간, 문자열 ID)
     const now = new Date().toISOString();
     const rid = String(chatRoomId);
 
@@ -63,11 +63,11 @@ const WebSocketComponent = ({token, chatRoomId, userId}) => {
 
     socket.send(JSON.stringify(messageData));
     setMessages(prev => [...prev, messageData]);
-    // fetchChatRoomListThunk(familyId,userId);
+ // fetchChatRoomListThunk(familyId,userId);
 
-    // 낙관적 프리뷰
+ // 낙관적 프리뷰
     dispatch(applyMessagePreview({ chatRoomId: rid, message: messageData, isSelf: true }));
-    dispatch(bumpListRevision()); // ✅ 바로 렌더 트리거
+    dispatch(bumpListRevision()); // 바로 렌더 트리거
 
   };
 

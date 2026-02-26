@@ -4,15 +4,15 @@ import {Linking} from 'react-native';
 import AppAlertModal from './AppAlertModal';
 import useAppAlertPopup from 'hooks/useAppAlertPopup';
 
-// ✅ 전역 네비
+// 전역 네비
 import {safeNavigate} from 'app/navigation/navigationService';
 
 /**
- * ✅ AppAlertHost
+ * AppAlertHost
  * props:
  * - event: useActiveAppEvent() 결과
  * - enabled: 호스트 활성화
- * - onVisibleChange?: (isVisible:boolean) => void   ✅ 추가: "지금 앱얼럿이 떠있는지" 바깥에 알려줌
+ * - onVisibleChange?: (isVisible:boolean) => void 추가: "지금 앱얼럿이 떠있는지" 바깥에 알려줌
  */
 export default function AppAlertHost({
   event,
@@ -22,7 +22,7 @@ export default function AppAlertHost({
   const popup = useAppAlertPopup(event, {enabled});
   const e = popup.event;
 
-  // ✅ 현재 popup.visible 변화를 외부(HomeScreen)에 알려줌
+ // 현재 popup.visible 변화를 외부(HomeScreen)에 알려줌
   useEffect(() => {
     onVisibleChange?.(!!popup.visible);
   }, [popup.visible, onVisibleChange]);
@@ -73,7 +73,7 @@ export default function AppAlertHost({
   if (!enabled) return null;
   if (!e) return null;
 
-  // ✅ visible 아닐 땐 아예 렌더링하지 않기(오버레이 잔상 방지)
+ // visible 아닐 땐 아예 렌더링하지 않기(오버레이 잔상 방지)
   if (!popup.visible) return null;
 
   return (

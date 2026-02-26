@@ -11,10 +11,10 @@ export async function convertPhUriToFileUri(phUri, index, isVideo = false) {
 
   try {
     if (isVideo) {
-      // 🎥 영상 변환
+ // 영상 변환
       await RNFS.copyAssetsVideoIOS(phUri, destPath);
     } else {
-      // 🖼️ 사진 변환
+ // 사진 변환
       await RNFS.copyAssetsFileIOS(phUri, destPath, 0, 0);
     }
     return 'file://' + destPath;

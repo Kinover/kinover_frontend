@@ -1,9 +1,9 @@
-// 📁 /api/imageUrlApi.js
+// /api/imageUrlApi.js
 import {apiClient} from 'utils/apiClient';
 import {getToken} from '../utils/storage';
 import RNBlobUtil from 'react-native-blob-util';
 
-// 🔑 확장자 기반 Content-Type
+// 확장자 기반 Content-Type
 const inferContentTypeByName = fileName => {
   const lower = (fileName || '').toLowerCase();
   if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
@@ -14,7 +14,7 @@ const inferContentTypeByName = fileName => {
   return 'application/octet-stream';
 };
 
-// ✅ 여러 Presigned URL 요청
+// 여러 Presigned URL 요청
 export const getPresignedUrls = async filesOrNames => {
   try {
     const token = await getToken();
@@ -54,7 +54,6 @@ export const getPresignedUrls = async filesOrNames => {
   }
 };
 
-// ✅ S3 PUT 업로드 (핵심: Content-Length 추가 + S3 에러 바디 로그)
 export const uploadFileToS3 = async (
   uploadUrl,
   fileUri,
@@ -65,7 +64,7 @@ export const uploadFileToS3 = async (
     let fileName = maybeFileName;
     let contentType = contentTypeOrFileName;
 
-    // (uploadUrl, fileUri, fileName) 형태
+ // (uploadUrl, fileUri, fileName) 형태
     if (!maybeFileName) {
       fileName = contentTypeOrFileName;
       contentType = inferContentTypeByName(fileName);
@@ -73,12 +72,11 @@ export const uploadFileToS3 = async (
       contentType = contentType || inferContentTypeByName(fileName);
     }
 
-    // file:// 제거
+ // file:// 제거
     const path = String(fileUri || '').startsWith('file://')
       ? String(fileUri).replace('file://', '')
       : String(fileUri);
 
-    // ✅ Content-Length (영상 403 방지 핵심)
     const stat = await RNBlobUtil.fs.stat(path);
     const contentLength = Number(stat?.size || 0);
 
@@ -102,7 +100,7 @@ export const uploadFileToS3 = async (
     const info = res?.info?.() || {};
     const status = info.status;
 
-    // ✅ 403일 때 S3가 XML로 이유를 줌 (SignatureDoesNotMatch / AccessDenied 등)
+ // 403일 때 S3가 XML로 이유를 줌 (SignatureDoesNotMatch / AccessDenied 등)
     if (status !== 200 && status !== 204) {
       const bodyText = res?.data || '';
       console.error('🚨 S3 응답 바디:', bodyText);

@@ -1,6 +1,5 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/features/home/components/UserBottomSheet.jsx
-// ✅ ScheduleEditor 패턴 통일 버전 (버벅 제거)
 // - snapToIndex 금지(키보드/스냅 정책은 Layout에 맡김)
 // - shiftAnim으로 콘텐츠만 위로 올림(ensureVisible)
 // - 내부 탭: shift 리셋만 + 연타 방지
@@ -35,7 +34,7 @@ import {
   BottomSheetView as GorhomBottomSheetView,
 } from '@gorhom/bottom-sheet';
 
-// ✅ @gorhom/bottom-sheet가 Metro 해석 시 undefined일 수 있음 → RN 기본 컴포넌트로 폴백
+// @gorhom/bottom-sheet가 Metro 해석 시 undefined일 수 있음 → RN 기본 컴포넌트로 폴백
 const BottomSheetTextInput = GorhomBottomSheetTextInput ?? TextInput;
 const BottomSheetView = GorhomBottomSheetView ?? View;
 import {launchImageLibrary} from 'react-native-image-picker';
@@ -199,7 +198,7 @@ function UserBottomSheetModalBase(
     [],
   );
 
-  // ✅ input 데이터는 ref로 (불필요 리렌더 방지)
+ // input 데이터는 ref로 (불필요 리렌더 방지)
   const nameRef = useRef('');
   const traitRef = useRef('');
   const imageUrlRef = useRef('');
@@ -221,13 +220,13 @@ function UserBottomSheetModalBase(
 
   const fontMode = useSelector(state => state.ui.fontMode);
 
-  // ✅ “콘텐츠 영역만” 올릴 shift
+ // ��콘텐츠 영역만” 올릴 shift
   const shiftAnim = useRef(new Animated.Value(0)).current;
   const keyboardHeightRef = useRef(0);
   const keyboardOpenRef = useRef(false);
   const tapToResetRef = useRef(false);
 
-  // ✅ 내부 탭 연타 방지
+ // 내부 탭 연타 방지
   const touchLockRef = useRef(false);
   const touchLockTimerRef = useRef(null);
   const lockTouchBriefly = useCallback(() => {
@@ -245,14 +244,13 @@ function UserBottomSheetModalBase(
 
   const hideToast = useCallback(() => setToastVisible(false), []);
 
-  // ✅ cleanup
+ // cleanup
   useEffect(() => {
     return () => {
       if (touchLockTimerRef.current) clearTimeout(touchLockTimerRef.current);
     };
   }, []);
 
-  // ✅ snapPoints는 기존 유지
   const snapPoints = useMemo(() => {
     const fm = String(fontMode ?? '').toLowerCase();
     const isLarge = fm.includes('large') && !fm.includes('extra');
@@ -289,13 +287,12 @@ function UserBottomSheetModalBase(
         useNativeDriver: true,
       }).start();
 
-      // ✅ present만. snapToIndex 절대 금지.
       modalRef.current?.present?.();
     },
     dismiss: () => closeSheet(),
   }));
 
-  // ✅ selectedUser 바뀔 때 입력 초기화 (snap 금지)
+ // selectedUser 바뀔 때 입력 초기화 (snap 금지)
   useEffect(() => {
     if (!selectedUser) return;
     if (isClosing) return;
@@ -321,17 +318,17 @@ function UserBottomSheetModalBase(
     setNameKey(k => k + 1);
     setTraitKey(k => k + 1);
 
-    // ✅ shift도 0으로 리셋
+ // shift도 0으로 리셋
     Animated.timing(shiftAnim, {
       toValue: 0,
       duration: 120,
       useNativeDriver: true,
     }).start();
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+ // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedUser]);
 
-  // ✅ 키보드 이벤트: 높이 추적 + shift 리셋만
+ // 키보드 이벤트: 높이 추적 + shift 리셋만
   useEffect(() => {
     const onShow = e => {
       keyboardOpenRef.current = true;
@@ -366,7 +363,7 @@ function UserBottomSheetModalBase(
     };
   }, [shiftAnim]);
 
-  // ✅ 입력이 키보드에 가리면 “콘텐츠만” 올리기
+ // 입력이 키보드에 가리면 “콘텐츠만” 올리기
   const ensureVisible = useCallback(
     refNode => {
       if (tapToResetRef.current) return;
@@ -408,12 +405,12 @@ function UserBottomSheetModalBase(
     [shiftAnim],
   );
 
-  /**
-   * ✅✅✅ 버벅 제거 핵심:
-   * - 내부 탭에서는 snapToIndex 절대 금지
-   * - shift만 0으로 리셋
-   * - 키보드 dismiss는 Layout이 담당(dismissKeyboardOnPress=true)
-   */
+ /**
+ * 버벅 제거 핵심:
+ * - 내부 탭에서는 snapToIndex 절대 금지
+ * - shift만 0으로 리셋
+ * - 키보드 dismiss는 Layout이 담당(dismissKeyboardOnPress=true)
+ */
   const handleTouchInsideResetOnly = useCallback(() => {
     if (!keyboardOpenRef.current) return; // 키보드 없으면 굳이 할 게 없음
     if (touchLockRef.current) return;
@@ -525,7 +522,7 @@ function UserBottomSheetModalBase(
 
     hideToast();
 
-    // ✅ snap/keyboard 건드리지 말기
+ // snap/keyboard 건드리지 말기
     onCancel?.();
   }, [onCancel, hideToast]);
 
@@ -575,8 +572,8 @@ function UserBottomSheetModalBase(
         keyboardOpenSnapIndex={1}
         keyboardCloseSnapIndex={0}
         useTouchOverlay={true}
-        dismissKeyboardOnPress={true} // ✅ Layout이 키보드 내림 담당
-        onTouchInside={handleTouchInsideResetOnly} // ✅ 내부 탭은 shift만 리셋
+        dismissKeyboardOnPress={true} // Layout이 키보드 내림 담당
+        onTouchInside={handleTouchInsideResetOnly} // 내부 탭은 shift만 리셋
         onDismiss={handleDismiss}
       >
         <SafeAreaView style={{backgroundColor: '#fff'}}>
@@ -598,8 +595,7 @@ function UserBottomSheetModalBase(
                           : IMG_DEFAULT
                       }
                       style={styles.profileImage}
-                      // ✅ blurRadius는 무거움. 버벅 더 줄이고 싶으면 아래처럼 조건부로 바꿔도 됨:
-                      // blurRadius={keyboardOpenRef.current ? 0 : 4}
+ // blurRadius={keyboardOpenRef.current ? 0 : 4}
                       blurRadius={4}
                     />
                     <View style={styles.profileOverlay} />

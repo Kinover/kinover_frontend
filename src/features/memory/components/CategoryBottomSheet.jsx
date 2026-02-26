@@ -33,7 +33,7 @@ import {BOTTOMSHEET_STYLE, BUTTON_STYLES, COLORS} from 'styles/style';
 import {useSelector} from 'react-redux';
 import {FONT_MODE} from 'store/uiSlice';
 
-/** ✅ 폰트모드별 UI 스케일(체감용) */
+/** 폰트모드별 UI 스케일(체감용) */
 const getFontScaleLevel = fontMode => {
   if (fontMode === FONT_MODE.EXTRA_LARGE) return 'XL';
   if (fontMode === FONT_MODE.LARGE) return 'L';
@@ -42,16 +42,16 @@ const getFontScaleLevel = fontMode => {
 
 const MAX_VISIBLE_ITEMS_BASE = 8;
 
-// ✅ "전체"도 id를 확실히 가짐
+// "전체"도 id를 확실히 가짐
 const ALL_CATEGORY = {id: 'ALL', title: '전체'};
 
-// ✅ id 키 통일: id / categoryId 둘 다 지원
+// id 키 통일: id / categoryId 둘 다 지원
 const getCatId = cat => {
   const v = cat?.id ?? cat?.categoryId ?? null;
   return v != null ? String(v) : null;
 };
 
-// ✅ 밖으로 내보낼 때는 항상 id를 박아줌(훅이 id 기반으로 안정적으로 비교 가능)
+// 밖으로 내보낼 때는 항상 id를 박아줌(훅이 id 기반으로 안정적으로 비교 가능)
 const normalizeCategory = cat => {
   if (!cat) return null;
   const id = getCatId(cat);
@@ -91,7 +91,10 @@ const UI = {
 const shadow = Platform.select({});
 
 const CategoryBottomSheetModal = forwardRef(
-  ({categoryList = [], selectedCategory, onSelectCategory}, ref) => {
+  (
+    {categoryList = [], selectedCategory, onSelectCategory, guideListRef},
+    ref,
+  ) => {
     const modalRef = useRef(null);
 
     const [tempSelected, setTempSelected] = useState(selectedCategory);
@@ -100,7 +103,7 @@ const CategoryBottomSheetModal = forwardRef(
     const fontMode = useSelector(state => state.ui.fontMode);
     const level = useMemo(() => getFontScaleLevel(fontMode), [fontMode]);
 
-    // ✅ 폰트모드에 따른 레이아웃 계산
+ // 폰트모드에 따른 레이아웃 계산
     const layout = useMemo(() => {
       const itemH =
         level === 'XL'
@@ -137,7 +140,7 @@ const CategoryBottomSheetModal = forwardRef(
       };
     }, [level]);
 
-    // ✅ 데이터 구성: [전체 + 카테고리들]
+ // 데이터 구성: [전체 + 카테고리들]
     const data = useMemo(
       () => [ALL_CATEGORY, ...(categoryList || [])],
       [categoryList],
@@ -200,7 +203,6 @@ const CategoryBottomSheetModal = forwardRef(
       });
     }, [fontMode, sheetKey]);
 
-    // ✅ 핵심: id/categoryId 통일 비교
     const isSameCategory = useCallback((a, b) => {
       if (!a && !b) return true;
       if (!a || !b) return false;
@@ -210,7 +212,7 @@ const CategoryBottomSheetModal = forwardRef(
 
       if (aId && bId) return aId === bId;
 
-      // fallback
+ // fallback
       return (a?.title ?? '') === (b?.title ?? '');
     }, []);
 
@@ -223,7 +225,7 @@ const CategoryBottomSheetModal = forwardRef(
       closeSheet();
     }, [closeSheet, selectedCategory]);
 
-    // ✅ Apply: 밖으로 나갈 때 normalize 해서 id를 박아줌
+ // Apply: 밖으로 나갈 때 normalize 해서 id를 박아줌
     const handleApply = useCallback(() => {
       const next = normalizeCategory(tempSelected || ALL_CATEGORY);
       onSelectCategory?.(next);
@@ -279,7 +281,10 @@ const CategoryBottomSheetModal = forwardRef(
                 </Text>
               </View>
             ) : (
-              <View style={[styles.listViewport, {maxHeight: maxListHeight}]}>
+              <View
+                style={[styles.listViewport, {maxHeight: maxListHeight}]}
+                ref={guideListRef}
+                collapsable={false}>
                 <ScrollView
                   bounces={false}
                   showsVerticalScrollIndicator={true}
@@ -287,7 +292,7 @@ const CategoryBottomSheetModal = forwardRef(
                   {data.map((cat, index) => {
                     const isSelected = isSameCategory(cat, tempSelected);
 
-                    // ✅ key도 id/categoryId 둘 다 지원
+ // key도 id/categoryId 둘 다 지원
                     const idKey = getCatId(cat);
                     const key = idKey != null ? idKey : `${cat.title}-${index}`;
 

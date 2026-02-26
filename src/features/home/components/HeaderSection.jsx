@@ -63,18 +63,18 @@ const AREA_MAX = getResponsiveIconSize(160);
 const OVERLAP_MIN = -getResponsiveIconSize(86);
 const OVERLAP_MAX = -getResponsiveIconSize(56);
 
-export default function HeaderSection({user, onUserPress, onInvitePress}) {
+export default function HeaderSection({user, onUserPress, onInvitePress, guideRefs}) {
   const navigation = useNavigation();
   const {width: screenWidth} = useWindowDimensions();
 
   const containerWidth =
     screenWidth - LAYOUT_STYLE().screenPaddingHorizontal * 2;
 
-  /**
-   * =========================
-   * ✅ Emotion (valid 24h)
-   * =========================
-   */
+ /**
+ * =========================
+ * Emotion (valid 24h)
+ * =========================
+ */
   const emotionKey = useMemo(() => {
     if (!isEmotionValid(user?.emotion, user?.emotionUpdatedAt)) return null;
     return String(user?.emotion ?? '').toUpperCase();
@@ -104,11 +104,11 @@ export default function HeaderSection({user, onUserPress, onInvitePress}) {
     return { uri: isFullUri ? img : CLOUD_FRONT + img };
   }, [user?.image]);
 
-  /**
-   * =========================
-   * ✅ Sizes (clamped)
-   * =========================
-   */
+ /**
+ * =========================
+ * Sizes (clamped)
+ * =========================
+ */
   const ringSize = clamp(BASE_RING, RING_MIN, RING_MAX);
   const areaSize = clamp(BASE_AREA, AREA_MIN, AREA_MAX);
   const overlap = clamp(BASE_OVERLAP, OVERLAP_MIN, OVERLAP_MAX);
@@ -117,11 +117,11 @@ export default function HeaderSection({user, onUserPress, onInvitePress}) {
   const profileSize = Math.round(ringSize * PROFILE_SCALE);
   const profileRadius = profileSize / 2;
 
-  /**
-   * =========================================================
-   * ✅ Emotion Peek (튀어나오는 연출)
-   * =========================================================
-   */
+ /**
+ * =========================================================
+ * Emotion Peek (튀어나오는 연출)
+ * =========================================================
+ */
   const popY = useSharedValue(0); // 0~1
   const tilt = useSharedValue(0);
   const pivotX = useSharedValue(0);
@@ -149,11 +149,11 @@ export default function HeaderSection({user, onUserPress, onInvitePress}) {
     };
   }, [HIDDEN_Y, RISE_Y, pivotShift, tiltDeg]);
 
-  /**
-   * =========================================================
-   * ✅ Press feedback
-   * =========================================================
-   */
+ /**
+ * =========================================================
+ * Press feedback
+ * =========================================================
+ */
   const pressScale = useSharedValue(1);
   const ringPulse = useSharedValue(0);
   const glow = useSharedValue(0);
@@ -173,11 +173,11 @@ export default function HeaderSection({user, onUserPress, onInvitePress}) {
 
   const longPressedRef = useRef(false);
 
-  /**
-   * =========================================================
-   * ✅ Random peek loop (only when emotion exists)
-   * =========================================================
-   */
+ /**
+ * =========================================================
+ * Random peek loop (only when emotion exists)
+ * =========================================================
+ */
   useEffect(() => {
     if (!hasEmotion) return;
 
@@ -252,11 +252,11 @@ export default function HeaderSection({user, onUserPress, onInvitePress}) {
     };
   }, [hasEmotion, popY, tilt, pivotX, peekScale]);
 
-  /**
-   * =========================================================
-   * ✅ Tap peek once (프로필 탭 시 살짝 장난만)
-   * =========================================================
-   */
+ /**
+ * =========================================================
+ * Tap peek once (프로필 탭 시 살짝 장난만)
+ * =========================================================
+ */
   const tapTimerRef = useRef(null);
 
   const clearTapTimer = useCallback(() => {
@@ -311,32 +311,32 @@ export default function HeaderSection({user, onUserPress, onInvitePress}) {
     }, 520);
   }, [hasEmotion, clearTapTimer, popY, tilt, pivotX, peekScale]);
 
-  /**
-   * =========================================================
-   * ✅ Navigation
-   * =========================================================
-   */
+ /**
+ * =========================================================
+ * Navigation
+ * =========================================================
+ */
   const goEmotionSetting = useCallback(() => {
     hapticLight();
     navigation.navigate('감정상태화면');
   }, [navigation]);
 
 
-  /**
-   * =========================================================
-   * ✅ BottomSheet open (프로필 탭)
-   * =========================================================
-   */
+ /**
+ * =========================================================
+ * BottomSheet open (프로필 탭)
+ * =========================================================
+ */
   const openUserBottomSheet = useCallback(() => {
     hapticLight();
     onUserPress?.(user);
   }, [onUserPress, user]);
 
-  /**
-   * =========================================================
-   * ✅ Press Handlers
-   * =========================================================
-   */
+ /**
+ * =========================================================
+ * Press Handlers
+ * =========================================================
+ */
   const handleAvatarPressIn = useCallback(() => {
     if (longPressedRef.current) return;
 
@@ -405,6 +405,7 @@ export default function HeaderSection({user, onUserPress, onInvitePress}) {
   return (
     <View style={[styles.headerContainer, {width: containerWidth}]}>
       <TouchableOpacity
+        ref={guideRefs?.family_status}
         activeOpacity={1}
         onPressIn={handleAvatarPressIn}
         onPress={handleAvatarPress}
@@ -517,12 +518,13 @@ export default function HeaderSection({user, onUserPress, onInvitePress}) {
           activeOpacity={0.92}
           onPress={handleCardPress}
           style={styles.headerCard}>
-          {/* ✅ 우측 상단: 버튼 2개 (초대코드 + 감정) */}
+          {/* 우측 상단: 버튼 2개 (초대코드 + 감정) */}
           <View style={styles.topRightButtons}>
        
 
-            {/* ✅ 감정 설정 버튼 (기존) */}
+            {/* 감정 설정 버튼 (기존) */}
             <TouchableOpacity
+              ref={guideRefs?.my_mood}
               onPress={goEmotionSetting}
               hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
               activeOpacity={0.85}
@@ -563,7 +565,7 @@ const styles = StyleSheet.create({
     tintColor: '#6B7280', // MemberGridSection 톤 참고
   },
 
-  // ✅ 두 버튼 묶어서 우상단 정렬
+ // 두 버튼 묶어서 우상단 정렬
   topRightButtons: {
     position: 'absolute',
     right: getResponsiveWidth(14),
@@ -584,7 +586,7 @@ const styles = StyleSheet.create({
     borderColor: '#ECEFF3',
   },
 
-  // ✅ 초대 버튼은 같은 톤으로(살짝만 키워도 됨)
+ // 초대 버튼은 같은 톤으로(살짝만 키워도 됨)
   inviteBtn: {
     width: getResponsiveIconSize(30),
     height: getResponsiveIconSize(30),

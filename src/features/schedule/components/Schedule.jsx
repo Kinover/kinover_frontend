@@ -200,7 +200,7 @@ function Schedule({
     return `${displayNames} 🎉`;
   }, [hasBirthday, displayNames]);
 
-  // ✅ type 판별 로직
+ // type 판별 로직
   const getCardPreset = item => {
     const raw =
       item?.type ??
@@ -263,7 +263,7 @@ function Schedule({
     };
   };
 
-  /** 개별 일정 참여자 목록 (프로필 사진·이름). 앱 사용자가 있으면 맨 앞에 배치 */
+ /** 개별 일정 참여자 목록 (프로필 사진·이름). 앱 사용자가 있으면 맨 앞에 배치 */
   const getIndividualParticipants = useCallback(
     item => {
       const ids = Array.isArray(item?.participantIds)
@@ -427,7 +427,7 @@ function Schedule({
             return (
               <ScheduleCard
                 key={item.scheduleId ?? `${preset.type}-${item.title}`}
-                // ✅ FIX: 카드에서 판별한 type을 강제로 전달
+ // FIX: 카드에서 판별한 type을 강제로 전달
                 onPress={() =>
                   onOpenSheet({
                     ...item,

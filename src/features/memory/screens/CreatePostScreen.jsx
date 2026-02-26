@@ -27,10 +27,10 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
-  BackHandler, // ✅ ADD
+  BackHandler, // ADD
 } from 'react-native';
 
-import {useFocusEffect} from '@react-navigation/native'; // ✅ ADD
+import {useFocusEffect} from '@react-navigation/native'; // ADD
 import FastImage from '@d11/react-native-fast-image';
 
 import {
@@ -52,10 +52,10 @@ import {createCategoryThunk} from '../store/categoryThunk';
 import formatDuration from 'utils/formatDuration';
 import {getVideoThumbnail} from 'utils/videoThumbnail';
 
-// ✅ post 단건 조회 thunk
+// post 단건 조회 thunk
 import {fetchPostByIdThunk, deletePostImageThunk} from '../store/memoryThunk';
 
-// ✅ MediaViewer 적용
+// MediaViewer 적용
 import MediaViewer from '../components/MediaViewer';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
@@ -76,24 +76,23 @@ const extractFileNameFromUrl = url => {
 const logAxiosError = (tag, e) => {
   const status = e?.response?.status;
   const data = e?.response?.data;
-
   const method = e?.config?.method;
   const url = e?.config?.url;
   const baseURL = e?.config?.baseURL;
-
   let reqData = e?.config?.data;
   try {
     if (typeof reqData === 'string') reqData = JSON.parse(reqData);
   } catch {}
-
-  console.log(`\n❌ [${tag}] AxiosError`);
-  console.log('status:', status);
-  console.log('url:', baseURL ? `${baseURL}${url}` : url);
-  console.log('method:', method);
-  console.log('request data:', reqData);
-  console.log('response data:', data);
-  console.log('raw message:', e?.message);
-  console.log('raw:', e, '\n');
+ // config.headers는 로깅하지 말 것 (Authorization 등 민감 정보)
+  if (__DEV__) {
+    console.log(`\n❌ [${tag}] AxiosError`);
+    console.log('status:', status);
+    console.log('url:', baseURL ? `${baseURL}${url}` : url);
+    console.log('method:', method);
+    console.log('request data:', reqData);
+    console.log('response data:', data);
+    console.log('raw message:', e?.message);
+  }
 };
 
 export default function CreatePostPage({navigation, route}) {
@@ -103,7 +102,7 @@ export default function CreatePostPage({navigation, route}) {
 
   useHideTabBar({stayHidden: true});
 
-  /** ✅ route params */
+ /** route params */
   const {
     selectedImages: initImages = [],
     selectedCategory: routeSelectedCategory = null,
@@ -112,33 +111,32 @@ export default function CreatePostPage({navigation, route}) {
     postId = null,
     removedUrls: removedUrlsFromRoute = [],
 
-    // (선택) 수정모드에서 내용 미리 채우고 싶으면 넘겨줘
     initialContent = '',
   } = route?.params ?? {};
 
   const isEditMode = mode === '수정';
 
-  /** ✅ 수정모드: 게시글 원본 데이터(스토어) */
+ /** 수정모드: 게시글 원본 데이터(스토어) */
   const postFromStore = useSelector(state =>
     postId ? state.memory?.postsById?.[postId] : null,
   );
 
-  /** -----------------------------
-   * ✅ 수정모드면 post fetch
-   * ---------------------------- */
+ /** -----------------------------
+ * 수정모드면 post fetch
+ * ---------------------------- */
   useEffect(() => {
     if (!isEditMode) return;
     if (!postId) return;
     if (!postFromStore) dispatch(fetchPostByIdThunk(postId));
   }, [dispatch, isEditMode, postId, postFromStore]);
 
-  /** -----------------------------
-   * ✅ 초기값(글/미디어) 세팅
-   * ---------------------------- */
+ /** -----------------------------
+ * 초기값(글/미디어) 세팅
+ * ---------------------------- */
   const didInitTextRef = useRef(false);
   const didInitMediaRef = useRef(false);
 
-  /** state */
+ /** state */
   const [text, setText] = useState(initialContent || '');
   const [isUploading, setIsUploading] = useState(false);
 
@@ -211,9 +209,9 @@ export default function CreatePostPage({navigation, route}) {
     setToastVisible(true);
   }, []);
 
-  /* =========================
-   * ✅ MediaViewer state
-   * ========================= */
+ /* =========================
+ * MediaViewer state
+ * ========================= */
 
   const [viewerIndex, setViewerIndex] = useState(null);
 
@@ -233,9 +231,9 @@ export default function CreatePostPage({navigation, route}) {
     }));
   }, [selectedImages]);
 
-  /* =========================
-   * helpers
-   * ========================= */
+ /* =========================
+ * helpers
+ * ========================= */
 
   const getItemUri = useCallback(item => {
     return typeof item === 'string' ? item : item?.uri || item?.path;
@@ -293,9 +291,9 @@ export default function CreatePostPage({navigation, route}) {
     [getItemUri],
   );
 
-  /* =========================
-   * ✅ video thumbnail cache
-   * ========================= */
+ /* =========================
+ * video thumbnail cache
+ * ========================= */
 
   const [videoThumbMap, setVideoThumbMap] = useState({});
   const thumbLoadingRef = useRef(new Set());
@@ -320,7 +318,7 @@ export default function CreatePostPage({navigation, route}) {
           setVideoThumbMap(prev => ({...prev, [uri]: thumbUri}));
         }
       } catch {
-        // ignore
+ // ignore
       } finally {
         const uri = getItemUri(item);
         if (uri) thumbLoadingRef.current.delete(uri);
@@ -343,9 +341,9 @@ export default function CreatePostPage({navigation, route}) {
     })();
   }, [gridImages, isVideoItem, ensureVideoThumb]);
 
-  /* =========================
-   * ✅ compress
-   * ========================= */
+ /* =========================
+ * compress
+ * ========================= */
 
   const compressIfNeeded = useCallback(
     async item => {
@@ -377,9 +375,9 @@ export default function CreatePostPage({navigation, route}) {
     [getItemUri, getExtFromUri, isVideoItem, isRemoteItem],
   );
 
-  /* =========================
-   * upload / update
-   * ========================= */
+ /* =========================
+ * upload / update
+ * ========================= */
 
   const handleUpload = useCallback(async () => {
     if (isUploading) return;
@@ -591,11 +589,11 @@ export default function CreatePostPage({navigation, route}) {
     removedUrlsFromRoute,
   ]);
 
-  /* =========================
-   * ✅ 뒤로가기 완전 차단 (헤더 + 제스처 + 안드 물리)
-   * ========================= */
+ /* =========================
+ * 뒤로가기 완전 차단 (헤더 + 제스처 + 안드 물리)
+ * ========================= */
 
-  // ✅ ADD: 안드 물리 뒤로가기 막기
+ // ADD: 안드 물리 뒤로가기 막기
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => true; // true = 뒤로가기 먹어버림
@@ -607,9 +605,9 @@ export default function CreatePostPage({navigation, route}) {
     }, []),
   );
 
-  /* =========================
-   * header
-   * ========================= */
+ /* =========================
+ * header
+ * ========================= */
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -631,17 +629,17 @@ export default function CreatePostPage({navigation, route}) {
         </TouchableOpacity>
       ),
 
-      // ✅ ADD: 헤더 뒤로 버튼 제거
+ // ADD: 헤더 뒤로 버튼 제거
       headerBackVisible: false,
 
-      // ✅ ADD: iOS 스와이프 뒤로(gesture)도 차단
+ // ADD: iOS 스와이프 뒤로(gesture)도 차단
       gestureEnabled: false,
     });
   }, [navigation, handleUpload, isUploading, isEditMode]);
 
-  /* =========================
-   * UI
-   * ========================= */
+ /* =========================
+ * UI
+ * ========================= */
 
   return (
     <KeyboardAvoidingView

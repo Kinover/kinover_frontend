@@ -26,4 +26,12 @@ module.exports = {
       {relativeSourceLocation: true},
     ],
   ],
+  env: {
+    production: {
+      plugins: [
+        ['transform-remove-console', {exclude: ['error', 'warn']}],
+      ],
+    },
+  },
 };
+

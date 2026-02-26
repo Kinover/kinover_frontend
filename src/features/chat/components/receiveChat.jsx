@@ -18,7 +18,7 @@ import {
   getResponsiveIconSize,
 } from 'utils/responsive';
 import formatTime from 'utils/formatTime';
-import MediaModal from './MediaModal';
+import MediaModal from './mediaModal';
 
 import {
   registerTimeLast,
@@ -50,7 +50,7 @@ export default function ReceiveChat({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
 
-  // ✅ 타입 먼저 계산 (useEffect보다 위에 있어야 함)
+ // 타입 먼저 계산 (useEffect보다 위에 있어야 함)
   const normalizedType = useMemo(
     () => String(messageType ?? 'text').toLowerCase(),
     [messageType],
@@ -59,7 +59,7 @@ export default function ReceiveChat({
   const isVideo = normalizedType === 'video';
   const isMedia = isImage || isVideo;
 
-  // ✅ 미디어 url 정리도 먼저 (ratio 계산에서 쓰니까 위로)
+ // 미디어 url 정리도 먼저 (ratio 계산에서 쓰니까 위로)
   const safeMediaRaw = useMemo(() => {
     if (Array.isArray(mediaUrls)) return mediaUrls.filter(Boolean);
     if (mediaUrls) return [mediaUrls].filter(Boolean);
@@ -78,7 +78,7 @@ export default function ReceiveChat({
   const hasExtra = safeMediaUrls.length > 9;
   const displayMedia = hasExtra ? safeMediaUrls.slice(0, 9) : safeMediaUrls;
 
-  // ✅ videoThumbMap을 ratio effect보다 먼저 선언해야 함
+ // videoThumbMap을 ratio effect보다 먼저 선언해야 함
   const [videoThumbMap, setVideoThumbMap] = useState({});
 
   useEffect(() => {
@@ -115,12 +115,12 @@ export default function ReceiveChat({
     };
   }, [isVideo, safeMediaUrls]);
 
-  // ✅ 단건 비율 상태
+ // 단건 비율 상태
   const SINGLE_W = getResponsiveWidth(200);
   const SINGLE_MAX_H = getResponsiveWidth(500);
   const [singleRatio, setSingleRatio] = useState(null);
 
-  // ✅ 단건 비율 계산 (선언 순서 정리 완료)
+ // 단건 비율 계산 (선언 순서 정리 완료)
   useEffect(() => {
     if (!isMedia) return;
     if (safeMediaUrls.length !== 1) return;
@@ -130,7 +130,7 @@ export default function ReceiveChat({
 
     let alive = true;
 
-    // uri 바뀌면 일단 초기화 (레이아웃 점프/잔상 방지)
+ // uri 바뀌면 일단 초기화 (레이아웃 점프/잔상 방지)
     setSingleRatio(null);
 
     if (isImage) {
@@ -163,7 +163,7 @@ export default function ReceiveChat({
           },
         );
       } else {
-        // 썸네일 아직 없으면 기본값으로 먼저 렌더
+ // 썸네일 아직 없으면 기본값으로 먼저 렌더
         setSingleRatio(16 / 9);
       }
     }
@@ -173,7 +173,7 @@ export default function ReceiveChat({
     };
   }, [isMedia, isImage, isVideo, safeMediaUrls, videoThumbMap]);
 
-  // ✅ 시간 표시 로직
+ // 시간 표시 로직
   const [showTime, setShowTime] = useState(false);
   const idRef = useRef(Math.random().toString(36).slice(2));
 
@@ -186,7 +186,7 @@ export default function ReceiveChat({
     return () => unregisterTimeLast(key, idRef.current);
   }, [key, timeMs]);
 
-  // ✅ preload
+ // preload
   useEffect(() => {
     if (!isImage) return;
     if (!displayMedia.length) return;

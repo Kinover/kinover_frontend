@@ -17,9 +17,9 @@ import {makeSnapWithFooterPx} from 'utils/makeSnapWithFooterPx';
  * @property {number=} maxPct
  * @property {boolean=} includeAndroidBottomSafeInFooter
  *
- * ✅ NEW
- * @property {boolean=} lockMeasureToFontMode   // 기본 true: 폰트모드 변경 때만 측정값 갱신
- * @property {boolean=} resetOnExtraKeys        // 기본 false: extraResetKeys로 reset 안 함
+ * NEW
+ * @property {boolean=} lockMeasureToFontMode // 기본 true: 폰트모드 변경 때만 측정값 갱신
+ * @property {boolean=} resetOnExtraKeys // 기본 false: extraResetKeys로 reset 안 함
  */
 
 export function useMeasuredSnapPoints({
@@ -33,20 +33,20 @@ export function useMeasuredSnapPoints({
   maxPct = 92,
   includeAndroidBottomSafeInFooter = true,
 
-  // ✅ NEW defaults
+ // NEW defaults
   lockMeasureToFontMode = true,
   resetOnExtraKeys = false,
 }) {
   const insets = useSafeAreaInsets();
 
-  // ✅ Android bottom safe (네비게이션바에 버튼 가리지 않도록 fallback 48dp 수준)
+ // Android bottom safe (네비게이션바에 버튼 가리지 않도록 fallback 48dp 수준)
   const bottomSafe = useMemo(() => {
     if (Platform.OS !== 'android') return Math.max(insets.bottom || 0, 0);
     const fallback = getResponsiveHeight(48);
     return Math.max(insets.bottom || 0, fallback);
   }, [insets.bottom]);
 
-  // ✅ 실측 ref/state
+ // 실측 ref/state
   const headerHRef = useRef(0);
   const contentHRef = useRef(0);
   const footerHRef = useRef(0);
@@ -55,7 +55,7 @@ export function useMeasuredSnapPoints({
   const [contentH, setContentH] = useState(0);
   const [footerH, setFooterH] = useState(0);
 
-  // ✅ 측정 업데이트 허용 플래그
+ // 측정 업데이트 허용 플래그
   const allowMeasureRef = useRef(true);
 
   const resetMeasures = useCallback(() => {
@@ -67,12 +67,12 @@ export function useMeasuredSnapPoints({
     setFooterH(0);
   }, []);
 
-  /**
-   * ✅ 폰트모드 변경 시에만 reset + 재측정 허용
-   * - 지윤 요구사항 핵심: 폰트모드에만 높이 반응
-   */
+ /**
+ * 폰트모드 변경 시에만 reset + 재측정 허용
+ * - 지윤 요구사항 핵심: 폰트모드에만 높이 반응
+ */
   useEffect(() => {
-    // 외부 snapPoints 강제면 측정 자체 의미 없음 → 그냥 잠그기
+ // 외부 snapPoints 강제면 측정 자체 의미 없음 → 그냥 잠그기
     if (Array.isArray(externalSnapPoints) && externalSnapPoints.length) {
       allowMeasureRef.current = false;
       return;
@@ -82,20 +82,20 @@ export function useMeasuredSnapPoints({
     resetMeasures();
   }, [fontModeKey, resetMeasures, externalSnapPoints]);
 
-  /**
-   * ✅ extraResetKeys는 기본적으로 "reset 트리거"가 아님
-   * - 진짜 필요한 화면만 resetOnExtraKeys=true로 사용
-   */
+ /**
+ * extraResetKeys는 기본적으로 "reset 트리거"가 아님
+ * - 진짜 필요한 화면만 resetOnExtraKeys=true로 사용
+ */
   useEffect(() => {
     if (!resetOnExtraKeys) return;
     if (Array.isArray(externalSnapPoints) && externalSnapPoints.length) return;
 
     allowMeasureRef.current = true;
     resetMeasures();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+ // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetOnExtraKeys, resetMeasures, externalSnapPoints, ...extraResetKeys]);
 
-  // ✅ “한 번만” 실측 핸들러들 (락 반영)
+ // “한 번만” 실측 핸들러들 (락 반영)
   const onHeaderLayout = useCallback(h => {
     if (lockMeasureToFontMode && !allowMeasureRef.current) return;
 
@@ -134,9 +134,9 @@ export function useMeasuredSnapPoints({
     [bottomSafe, includeAndroidBottomSafeInFooter, lockMeasureToFontMode],
   );
 
-  // ✅ snapPoints 결정
+ // snapPoints 결정
   const snapPoints = useMemo(() => {
-    // 외부 스냅 우선
+ // 외부 스냅 우선
     if (Array.isArray(externalSnapPoints) && externalSnapPoints.length >= 2) {
       return externalSnapPoints;
     }
@@ -144,7 +144,7 @@ export function useMeasuredSnapPoints({
       return [externalSnapPoints[0], '99%'];
     }
 
-    // 실측 전
+ // 실측 전
     if (!headerH || !contentH || !footerH) return fallbackSnapPoints;
 
     return makeSnapWithFooterPx({
@@ -171,9 +171,9 @@ export function useMeasuredSnapPoints({
 
   const measuredReady = !!(headerH && contentH && footerH);
 
-  /**
-   * ✅ 측정이 끝나면 잠금(폰트모드 변경 전까지 유지)
-   */
+ /**
+ * 측정이 끝나면 잠금(폰트모드 변경 전까지 유지)
+ */
   useEffect(() => {
     if (!lockMeasureToFontMode) return;
     if (!measuredReady) return;

@@ -97,7 +97,7 @@ if (
 }
 
 /* =========================
- * ✅ Mention Utils
+ * Mention Utils
  * ========================= */
 function escapeRegExp(str) {
   return String(str || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -140,7 +140,7 @@ function extractMentionUserIds(text, users) {
 }
 
 /* =========================
- * ✅ 파일명 기반 content-type
+ * 파일명 기반 content-type
  * ========================= */
 const inferContentTypeByName = fileName => {
   const lower = String(fileName || '').toLowerCase();
@@ -187,7 +187,7 @@ const ChatInput = forwardRef(function ChatInput(
 
   const sendingLockRef = useRef(false);
 
-  // ====== state ======
+ // ====== state ======
   const [message, setMessage] = useState('');
   const [isSending, setIsSending] = useState(false);
 
@@ -204,17 +204,17 @@ const ChatInput = forwardRef(function ChatInput(
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  // ✅ mention state
+ // mention state
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef(null);
 
-  // ✅ 커서 안정화용
+ // 커서 안정화용
   const cursorRef = useRef(0);
   useEffect(() => {
     cursorRef.current = cursor;
   }, [cursor]);
 
-  // ====== derived ======
+ // ====== derived ======
   const trimmed = message.trim();
   const hasSelection = selectedImages.length > 0;
   const canSend = !isSending && (trimmed.length > 0 || hasSelection);
@@ -225,9 +225,9 @@ const ChatInput = forwardRef(function ChatInput(
     return (SCREEN_WIDTH - totalPad - totalGap) / gridColumns;
   }, [gridColumns]);
 
-  /**
-   * ✅ 멘션 후보 원본
-   */
+ /**
+ * 멘션 후보 원본
+ */
   const chatUsersRaw = useMemo(() => {
     if (Array.isArray(mentionUsersProp) && mentionUsersProp.length > 0) {
       return mentionUsersProp;
@@ -235,7 +235,7 @@ const ChatInput = forwardRef(function ChatInput(
     return chatRoom?.users || chatRoom?.participants || chatRoom?.members || [];
   }, [mentionUsersProp, chatRoom]);
 
-  // ✅ 멘션 후보에서 "본인" 제외
+ // 멘션 후보에서 "본인" 제외
   const mentionUsers = useMemo(() => {
     const me = String(userId ?? '');
     return (chatUsersRaw || [])
@@ -283,21 +283,21 @@ const ChatInput = forwardRef(function ChatInput(
     [activeMention, cursor, message],
   );
 
-  // ====== imperative handle ======
+ // ====== imperative handle ======
   useImperativeHandle(ref, () => ({
     closeGallery: () => setShowGallery(false),
     openGallery: () => setShowGallery(true),
     toggleGallery: () => setShowGallery(prev => !prev),
   }));
 
-  // ====== toast ======
+ // ====== toast ======
   const showToastFn = useCallback(msg => {
     setToastMessage(msg);
     setToastVisible(true);
   }, []);
   const hideToast = useCallback(() => setToastVisible(false), []);
 
-  // ====== gallery load (인앱 그리드용) ======
+ // ====== gallery load (인앱 그리드용) ======
   const loadPhotos = useCallback(
     async (after = null) => {
       if (!enableMediaPicker) return;
@@ -341,15 +341,15 @@ const ChatInput = forwardRef(function ChatInput(
     setIsRefreshing(false);
   }, [showGallery, loadPhotos]);
 
-  // ====== actions ======
+ // ====== actions ======
   const handleToggleImage = useCallback(item => {
     hapticSelection();
     setSelectedImages(prev => toggleSelectImage(prev, item));
   }, []);
 
-  /**
-   * ✅ 시스템 갤러리 멀티 선택 (이걸 +버튼 탭에 연결할 거야!)
-   */
+ /**
+ * 시스템 갤러리 멀티 선택 (이걸 +버튼 탭에 연결할 거야!)
+ */
   const pickFromSystemGallery = useCallback(async () => {
     try {
       if (isSending || sendingLockRef.current) return;
@@ -398,7 +398,7 @@ const ChatInput = forwardRef(function ChatInput(
         return Array.from(map.values());
       });
 
-      // ✅ 시스템 갤러리로 뽑았으면 인앱 갤러리는 닫아주기
+ // 시스템 갤러리로 뽑았으면 인앱 갤러리는 닫아주기
       setShowGallery(false);
     } catch (e) {
       console.error(e);
@@ -462,7 +462,7 @@ const ChatInput = forwardRef(function ChatInput(
     return {uri: compressed, ext};
   }, []);
 
-  // ====== send ======
+ // ====== send ======
   const handleSend = useCallback(async () => {
     if (sendingLockRef.current) return;
     sendingLockRef.current = true;
@@ -511,7 +511,7 @@ const ChatInput = forwardRef(function ChatInput(
     try {
       setIsSending(true);
 
-      // ===== 1) TEXT =====
+ // ===== 1) TEXT =====
       if (text) {
         const mentionUserIds = extractMentionUserIds(text, mentionUsers);
 
@@ -554,7 +554,7 @@ const ChatInput = forwardRef(function ChatInput(
         setCursor(0);
       }
 
-      // ===== 2) MEDIA =====
+ // ===== 2) MEDIA =====
       if (!hasMedia) return;
 
       setShowGallery(false);
@@ -708,7 +708,7 @@ const ChatInput = forwardRef(function ChatInput(
     mentionUsers,
   ]);
 
-  // ====== pinch gesture (grid columns) ======
+ // ====== pinch gesture (grid columns) ======
   const pinchGesture = useMemo(() => {
     return Gesture.Pinch()
       .runOnJS(true)
@@ -771,20 +771,20 @@ const ChatInput = forwardRef(function ChatInput(
     [selectedImages, handleToggleImage, imageSize],
   );
 
-  /**
-   * ✅ “육안 간격 일정”을 위한 핵심:
-   * - SafeArea 하단 inset을 ChatInput 바닥에만 반영(부모/키보드와 중복 방지)
-   * - 멘션 드롭다운은 top/bottom 혼용 금지 → bottom 기준 하나로 고정
-   */
+ /**
+ * “육안 간격 일정”을 위한 핵심:
+ * - SafeArea 하단 inset을 ChatInput 바닥에만 반영(부모/키보드와 중복 방지)
+ * - 멘션 드롭다운은 top/bottom 혼용 금지 → bottom 기준 하나로 고정
+ */
   const mentionBottom = useMemo(() => {
     const gap = getResponsiveHeight(8);
     const gallery = showGallery ? GALLERY_H : 0;
 
-    // 입력바(내부 패딩 포함) 전체 높이
+ // 입력바(내부 패딩 포함) 전체 높이
     const inputBarH = INNER_PAD_V * 2 + INPUT_H;
 
-    // 드롭다운은 “입력바 위”에 떠야 하므로:
-    // 하단 = (safe bottom padding) + (갤러리 높이) + (입력바 높이) + gap
+ // 드롭다운은 “입력바 위”에 떠야 하므로:
+ // 하단 = (safe bottom padding) + (갤러리 높이) + (입력바 높이) + gap
     return insets.bottom + gallery + inputBarH + gap;
   }, [insets.bottom, showGallery]);
 
@@ -794,7 +794,7 @@ const ChatInput = forwardRef(function ChatInput(
 
   return (
     <View style={[styles.root, {paddingBottom: bottomSafePadding}]}>
-      {/* ✅ 멘션 드롭다운 (bottom 기준만 사용) */}
+      {/* 멘션 드롭다운 (bottom 기준만 사용) */}
       {!!activeMention && mentionCandidates.length > 0 && (
         <View
           style={[styles.mentionDropdown, {bottom: mentionBottom}]}
@@ -845,15 +845,14 @@ const ChatInput = forwardRef(function ChatInput(
             <TouchableOpacity
               style={styles.inputPlusButton}
               onPress={() => {
-                // ✅ 여기만 바뀜: “인앱 갤러리 토글” X  → “시스템 갤러리 바로 오픈”
+ // 여기만 바뀜: “인앱 갤러리 토글” X → “시스템 갤러리 바로 오픈”
                 hapticLight();
                 Keyboard.dismiss();
                 setShowGallery(false);
                 pickFromSystemGallery();
               }}
               onLongPress={() => {
-                // (선택) 롱프레스하면 기존 인앱 그리드 갤러리 열기
-                // 필요 없으면 이 블록째로 지워도 됨!
+ // 필요 없으면 이 블록째로 지워도 됨!
                 hapticSelection();
                 Keyboard.dismiss();
                 setShowGallery(prev => !prev);
@@ -965,7 +964,7 @@ const ChatInput = forwardRef(function ChatInput(
           {showGallery && (
             <GestureDetector gesture={pinchGesture}>
               <View style={{flex: 1}}>
-                {/* ✅ 플로팅 버튼 */}
+                {/* 플로팅 버튼 */}
                 <View
                   style={styles.galleryFloatingArea}
                   pointerEvents="box-none">
@@ -1033,7 +1032,7 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
 
-  // ✅ 멘션 드롭다운: bottom만 사용(간격 흔들림 방지)
+ // 멘션 드롭다운: bottom만 사용(간격 흔들림 방지)
   mentionDropdown: {
     position: 'absolute',
     left: getResponsiveWidth(14),

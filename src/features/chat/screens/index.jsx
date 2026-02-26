@@ -19,7 +19,8 @@ import {
 } from '../store/chatRoomThunk';
 import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
 
-import ChatRoomItem from '../components/ChatRoomItem';
+import ChatRoomItem from '../components/chatRoomItem';
+import SkeletonChatRoomItem from '../components/SkeletonChatRoomItem';
 
 import {
   getResponsiveHeight,
@@ -28,7 +29,7 @@ import {
   getResponsiveIconSize,
 } from 'utils/responsive';
 
-import YellowSpinner from 'components/YellowSpinner';
+import YellowSpinner from 'components/yellowSpinner';
 import ToastModal from 'components/modal/ToastModal';
 
 import {BACKGROUND_COLORS, EMPTY_STYLE} from 'styles/style';
@@ -53,8 +54,8 @@ export default function CommunicationScreen({navigation}) {
   const [refreshing, setRefreshing] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
 
-  /** =========================
-   * 데이터 로딩
+ /** =========================
+ * 데이터 로딩
    ========================= */
   const load = useCallback(async () => {
     if (STORE_MOCK_ENABLED) {
@@ -85,18 +86,33 @@ export default function CommunicationScreen({navigation}) {
     }
   }, [load]);
 
-  /** =========================
-   * 리스트 렌더
+ /** =========================
+ * 리스트 렌더
    ========================= */
   const renderItem = useCallback(
-    ({item}) => (
-      <ChatRoomItem chatRoom={item} userId={userId} navigation={navigation} />
-    ),
+    ({item}) => {
+      const isKino = !!item?.kino;
+      const content = (
+        <ChatRoomItem
+          chatRoom={item}
+          userId={userId}
+          navigation={navigation}
+        />
+      );
+      if (isKino) {
+        return (
+          <View ref={guideKinoRef} collapsable={false}>
+            {content}
+          </View>
+        );
+      }
+      return content;
+    },
     [navigation, userId],
   );
 
-  /** =========================
-   * 바텀시트용 멤버
+ /** =========================
+ * 바텀시트용 멤버
    ========================= */
   const members = useMemo(() => {
     return (familyUserList || [])
@@ -112,6 +128,9 @@ export default function CommunicationScreen({navigation}) {
     hapticLight?.();
     modalRef.current?.present?.();
   }, []);
+
+  const guideTargetRef = useRef(null);
+  const guideKinoRef = useRef(null);
 
   const handleSubmit = useCallback(
     async ({roomName, userIds}) => {
@@ -141,28 +160,47 @@ export default function CommunicationScreen({navigation}) {
     [dispatch, familyId, familyUserList, load],
   );
 
-  /** =========================
-   * 렌더
+ /** =========================
+ * 렌더
    ========================= */
+ // iOS: 가이드 모달 닫은 뒤 터치 복구용
+  const [contentKey, setContentKey] = useState(0);
+  const handleGuideAfterClose = useCallback(() => setContentKey(k => k + 1), []);
+
   return (
     <View style={styles.container}>
-      {/* ✅ 소통 가이드 모달 */}
+      {/* 소통 가이드 모달: 실제 화면 위 오버레이 */}
       <ChatGuideModal
         enabled={true}
         ready={!loading && !!familyId}
-        forceVisible={false} // ✅ 개발 중엔 항상 노출
+        forceVisible={false}
+        onAfterClose={handleGuideAfterClose}
+        targetRef={guideTargetRef}
+        targetRefsByKey={{
+          kino_counseling: guideKinoRef,
+          chat_action: guideTargetRef,
+        }}
       />
 
+      <View key={contentKey} style={styles.listWrap}>
       {loading && chatRoomList.length === 0 ? (
-        <View style={styles.loaderWrapper}>
-          <YellowSpinner />
-        </View>
+        <FlatList
+          data={Array.from({length: 6}, (_, i) => `skeleton-${i}`)}
+          keyExtractor={item => item}
+          renderItem={() => <SkeletonChatRoomItem />}
+          contentContainerStyle={styles.listContent}
+          scrollEnabled={false}
+        />
       ) : (
         <FlatList
           data={chatRoomList}
           renderItem={renderItem}
           extraData={listRevision}
           contentContainerStyle={styles.listContent}
+          initialNumToRender={10}
+          maxToRenderPerBatch={8}
+          windowSize={7}
+          removeClippedSubviews={true}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
@@ -174,6 +212,7 @@ export default function CommunicationScreen({navigation}) {
           keyExtractor={item => String(item?.chatRoomId)}
         />
       )}
+      </View>
 
       <CreateChatRoomBottomSheet
         modalRef={modalRef}
@@ -192,18 +231,30 @@ export default function CommunicationScreen({navigation}) {
         duration={1000}
       />
 
-      <DropShadow style={styles.shadow}>
-        <TouchableOpacity
-          onPress={openCreateChatRoomSheet}
-          style={styles.fab}
-          activeOpacity={0.8}>
-          <Image
-            source={require('../../../assets/icons/tabs/2/two.png')}
-            style={styles.fabIcon}
-            tintColor="white"
+      {/* FAB를 화면 하단 고정 + 가이드 측정 정확도를 위한 절대 위치 래퍼 */}
+      <View style={styles.fabContainer} pointerEvents="box-none">
+        <DropShadow style={[styles.shadow, styles.fabShadow]} pointerEvents="box-none">
+          <View
+            ref={guideTargetRef}
+            collapsable={false}
+            pointerEvents="none"
+            style={styles.fabMeasure}
           />
-        </TouchableOpacity>
-      </DropShadow>
+          <TouchableOpacity
+            onPress={openCreateChatRoomSheet}
+            style={styles.fab}
+            activeOpacity={0.8}
+            accessibilityLabel="새 채팅방 만들기"
+            accessibilityRole="button">
+            <Image
+              source={require('../../../assets/icons/tabs/2/two.png')}
+              style={styles.fabIcon}
+              tintColor="white"
+              accessibilityIgnoresInvertColors
+            />
+          </TouchableOpacity>
+        </DropShadow>
+      </View>
     </View>
   );
 }
@@ -213,6 +264,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F9F9F9',
   },
+  listWrap: { flex: 1 },
   listContent: {
     paddingTop: getResponsiveHeight(4),
     paddingBottom: getResponsiveHeight(150),
@@ -232,12 +284,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  fab: {
+  fabContainer: {
     position: 'absolute',
     bottom: getResponsiveHeight(110),
     right: getResponsiveWidth(13),
     width: getResponsiveIconSize(65),
     height: getResponsiveIconSize(65),
+  },
+  fabShadow: {
+    width: '100%',
+    height: '100%',
+  },
+  fabMeasure: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  fab: {
+    width: '100%',
+    height: '100%',
     backgroundColor: BACKGROUND_COLORS.primaryBg,
     borderRadius: 999,
     justifyContent: 'center',

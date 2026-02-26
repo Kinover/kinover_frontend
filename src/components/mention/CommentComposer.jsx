@@ -1,4 +1,4 @@
-// ✅ 사용 예시 (댓글 전송 payload에 mentionUserIds 포함)
+// 사용 예시 (댓글 전송 payload에 mentionUserIds 포함)
 // 예: MemoryDetailBottomSheet에서 입력 영역 대체
 import React, {useMemo, useState} from 'react';
 import {View} from 'react-native';

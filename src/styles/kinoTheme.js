@@ -1,4 +1,5 @@
-// styles/kinoTheme.ts
+// styles/kinoTheme.js
+// 시스템 테마 감지는 hooks/useAppTheme.js 사용
 
 export const KINO_THEME = {
   YELLOW_KINO: {
@@ -15,7 +16,6 @@ export const KINO_THEME = {
     sendBtnBg: '#F59E0B',
     sendBtnIcon: '#FFFFFF',
 
-    // (선택) 배경 원도 같이 쓰고 싶으면
     circleSoft: '#FFF3DE',
     circleStrong: '#FFE7C4',
   },
@@ -62,3 +62,6 @@ export const getKinoThemeByType = (kinoType) => {
   if (kinoType === 'PINK_KINO') return KINO_THEME.PINK_KINO;
   return KINO_THEME.YELLOW_KINO; // 기본
 };
+
+/** 시스템 다크모드 확장 시 사용할 테마 키 (useAppTheme().isDark 와 함께 사용) */
+export const SYSTEM_THEME_KEYS = { light: 'light', dark: 'dark' };

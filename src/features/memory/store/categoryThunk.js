@@ -1,36 +1,30 @@
 // src/features/memory/store/categoryThunk.js
 import {createAsyncThunk} from '@reduxjs/toolkit';
 import {apiClient} from 'utils/apiClient';
-import {getGuestMode} from 'utils/storage'; // ✅ 추가
+import {CATEGORIES} from 'config/apiEndpoints';
+import {getGuestMode} from 'utils/storage'; // 추가
 import {STORE_MOCK_ENABLED} from '../../home/utils/storeMockData';
 
 // =======================
-// ✅ Guest Dummy
+// Guest Dummy
 // =======================
 const GUEST_CATEGORY_ID_ALL = 'GUEST_ALL';
 const makeGuestCategories = () => [
-  // 네 UI가 "전체"를 따로 만들 수도 있어서, 여기서는 실제로는 2~3개만 주는 게 안전
+ // 네 UI가 "전체"를 따로 만들 수도 있어서, 여기서는 실제로는 2~3개만 주는 게 안전
   {categoryId: 'GUEST_CAT_1', title: '일상'},
   {categoryId: 'GUEST_CAT_2', title: '기념일'},
   {categoryId: 'GUEST_CAT_3', title: '기록'},
 ];
 
-// ✅ A안: 토큰 기반
+// A안: 토큰 기반
 const getCategoryApi = async () => {
-  const url = '/categories';
-  console.log('🌐 [GET] URL:', url);
-
-  const res = await apiClient.get(url);
+  const res = await apiClient.get(CATEGORIES.list);
   return res.data;
 };
 
 const createCategoryApi = async title => {
-  const url = '/categories';
   const body = {title};
-
-  console.log('🌐 [POST] URL:', url, 'BODY:', body);
-
-  const res = await apiClient.post(url, body, {
+  const res = await apiClient.post(CATEGORIES.create, body, {
     headers: {'Content-Type': 'application/json'},
   });
   return res.data;
@@ -42,14 +36,14 @@ export const fetchCategoryThunk = createAsyncThunk(
     try {
       console.log('📥 [fetchCategoryThunk] start');
 
-      // ✅ 스토어 목업: 여행 카테고리 포함 (부산 광안리 포스트용)
+ // 스토어 목업: 여행 카테고리 포함 (부산 광안리 포스트용)
       if (STORE_MOCK_ENABLED) {
         return [
           {categoryId: 'mock-cat-travel', title: '여행'},
           {categoryId: 'mock-cat-daily', title: '일상'},
         ];
       }
-      // ✅ 게스트면 서버 호출 X, 더미 반환
+ // 게스트면 서버 호출 X, 더미 반환
       const isGuest = await getGuestMode();
       if (isGuest) {
         const dummy = makeGuestCategories();
@@ -73,7 +67,7 @@ export const createCategoryThunk = createAsyncThunk(
     try {
       console.log('📥 [createCategoryThunk] 요청:', {title});
 
-      // ✅ 게스트면 서버 호출 X, "생성된 척" 더미 반환
+ // 게스트면 서버 호출 X, "생성된 척" 더미 반환
       const isGuest = await getGuestMode();
       if (isGuest) {
         const newCategory = {

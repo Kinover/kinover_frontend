@@ -9,14 +9,13 @@ export const useScheduleBottomSheetModal = ({
   onDelete,
   onRefresh,
 
-  // ✅ 추가
   scheduleType, // 'INDIVIDUAL' | 'FAMILY' | 'ANNIVERSARY'
   participantIds, // number[] | undefined
   basePayload, // { familyId, date, memo?, scheduleId? }
 }) => {
   const modalRef = useRef(null);
 
-  // (참고) 너는 BottomSheetLayout에서 dynamicSnap 쓰니까 snapPoints는 여기서 안 써도 됨
+ // (참고) 너는 BottomSheetLayout에서 dynamicSnap 쓰니까 snapPoints는 여기서 안 써도 됨
   const scheduleRef = useRef(title ?? '');
   const [inputKey, setInputKey] = useState(0);
 
@@ -32,7 +31,7 @@ export const useScheduleBottomSheetModal = ({
     return {
       ...(basePayload ?? {}),
       title: finalTitle,
-      type: scheduleType, // ✅ ScheduleScreen이 payload.type을 봄
+      type: scheduleType, // ScheduleScreen이 payload.type을 봄
       ...(participantIds !== undefined ? {participantIds} : {}),
     };
   }, [basePayload, scheduleType, participantIds]);
@@ -43,7 +42,7 @@ export const useScheduleBottomSheetModal = ({
 
     setTitle(payload.title);
 
-    // ✅ 여기서 문자열이 아니라 객체로 보냄
+ // 여기서 문자열이 아니라 객체로 보냄
     await onSubmit(payload);
 
     await onRefresh?.();
