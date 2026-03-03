@@ -2,7 +2,7 @@
 import {useCallback, useRef} from 'react';
 import {Platform, Alert} from 'react-native';
 import {appleAuth} from '@invertase/react-native-apple-authentication';
-import {useDispatch} from 'react-redux';
+import {useDispatch, useStore} from 'react-redux';
 
 import {appleLoginThunk} from '../store/loginThunk';
 import {startChatSocket, stopChatSocket} from 'features/chat/hooks/ChatSocket';
@@ -27,6 +27,7 @@ const withTimeout = (promise, ms = 8000) =>
 
 export function useAppleLogin() {
   const dispatch = useDispatch();
+  const store = useStore();
   const socketUnsubRef = useRef(null);
 
   const login = useCallback(async () => {
@@ -82,7 +83,7 @@ export function useAppleLogin() {
  // 4) 소켓은 가족 있을 때만
       const hasFamily = !!loginResult?.hasFamily;
       if (hasFamily && !socketUnsubRef.current) {
-        socketUnsubRef.current = startChatSocket(dispatch);
+        socketUnsubRef.current = startChatSocket(dispatch, store.getState);
       }
 
  // 5) 마지막에 authChecked true
@@ -115,7 +116,7 @@ export function useAppleLogin() {
     } finally {
       dispatch(setLoginLoading(false));
     }
-  }, [dispatch]);
+  }, [dispatch, store]);
 
   return {login};
 }

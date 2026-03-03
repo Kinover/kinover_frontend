@@ -4,18 +4,12 @@
 import React, {useRef, useMemo, useState, useEffect} from 'react';
 import {
   View,
-  Text,
   TouchableWithoutFeedback,
   StyleSheet,
   Animated,
   Dimensions,
-  Platform,
-  Image,
 } from 'react-native';
 
-import DropShadow from 'react-native-drop-shadow';
-import FastImage from '@d11/react-native-fast-image';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
 import {useNavigation} from '@react-navigation/native';
 
@@ -26,10 +20,8 @@ import {
 } from 'utils/responsive';
 import useHideTabBar from 'hooks/useHideTabBar';
 import {modifyUserThunk} from '../store/userThunk';
-import BottomActionButton from 'components/BottomActionButton';
-
-// Android 3버튼 네비게이션 바 높이 대략값 (insets.bottom이 0일 때 대비)
-const ANDROID_NAV_BAR_FALLBACK = 48;
+import CharacterSelectionCard from 'components/cards/CharacterSelectionCard';
+import SelectionFrameLayout from 'components/layouts/SelectionFrameLayout';
 
 const EMOTIONS = [
   {
@@ -111,7 +103,6 @@ const EmotionItem = ({
   const appear = useRef(new Animated.Value(0)).current;
   const press = useRef(new Animated.Value(0)).current;
   const select = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
-  const bgAnim = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
 
  // 등장 애니메이션
   useEffect(() => {
@@ -124,18 +115,12 @@ const EmotionItem = ({
   }, [appear, index]);
 
   useEffect(() => {
-    Animated.timing(bgAnim, {
-      toValue: isSelected ? 1 : 0,
-      duration: 160,
-      useNativeDriver: false,
-    }).start();
-
     Animated.timing(select, {
       toValue: isSelected ? 1 : 0,
       duration: 180,
       useNativeDriver: true,
     }).start();
-  }, [isSelected, bgAnim, select]);
+  }, [isSelected, select]);
 
   const handlePressIn = () => {
     Animated.spring(press, {
@@ -154,16 +139,6 @@ const EmotionItem = ({
       useNativeDriver: true,
     }).start();
   };
-
-  const backgroundColor = bgAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['#FFFFFF', '#FFF8E6'],
-  });
-
-  const borderColor = bgAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['#EEEEEE', '#FFC84D'],
-  });
 
   const opacity = appear.interpolate({inputRange: [0, 1], outputRange: [0, 1]});
   const translateY = appear.interpolate({
@@ -197,40 +172,26 @@ const EmotionItem = ({
           opacity,
           transform: [{translateY}, {scale}],
         }}>
-        <DropShadow
-          style={[
-            styles.shadow,
-            {width: itemWidth, height: cardH, borderRadius: RADIUS},
-          ]}>
+        <View>
+          <CharacterSelectionCard
+            imageSource={item.url}
+            label={item.label}
+            width={itemWidth}
+            height={cardH}
+            isSelected={isSelected}
+            cardStyle={{borderRadius: RADIUS}}
+            imageStyle={styles.emotionImage}
+            labelStyle={styles.emotionText}
+            selectedLabelStyle={styles.emotionTextSelected}
+          />
           <Animated.View
+            pointerEvents="none"
             style={[
-              styles.emotionBox,
-              {backgroundColor, borderColor, height: cardH},
-            ]}>
-            <Image
-              source={item.url}
-              style={styles.emotionImage}
-              resizeMode={FastImage.resizeMode.contain}
-            />
-
-            <Text
-              allowFontScaling={false}
-              style={[
-                styles.emotionText,
-                isSelected && styles.emotionTextSelected,
-              ]}>
-              {item.label}
-            </Text>
-
-            <Animated.View
-              pointerEvents="none"
-              style={[
-                styles.ring,
-                {opacity: badgeOpacity, borderColor: '#FFC84D'},
-              ]}
-            />
-          </Animated.View>
-        </DropShadow>
+              styles.ring,
+              {opacity: badgeOpacity, borderColor: '#FFC84D', width: itemWidth, height: cardH},
+            ]}
+          />
+        </View>
       </Animated.View>
     </TouchableWithoutFeedback>
   );
@@ -243,7 +204,6 @@ const EmotionItem = ({
  * @returns {JSX.Element} 감정 선택 화면
  */
 export default function StateScreen() {
-  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const user = useSelector(state => state.user);
@@ -269,15 +229,6 @@ export default function StateScreen() {
     contentHeight > 0 ? (contentHeight - ROW_GAP * 3) / 4 : CARD_H_DEFAULT;
   const cardHeight = Math.max(getResponsiveHeight(80), rowHeight - ROW_GAP);
 
- // Android 3버튼 네비게이션 바: insets.bottom이 0이면 fallback 적용
-  const bottomSafe = useMemo(() => {
-    const base =
-      Platform.OS === 'android'
-        ? Math.max(insets.bottom, getResponsiveHeight(ANDROID_NAV_BAR_FALLBACK))
-        : insets.bottom;
-    return base + getResponsiveHeight(16);
-  }, [insets.bottom]);
-
   const handleConfirm = () => {
     if (!selectedEmotion) return;
     dispatch(
@@ -302,16 +253,13 @@ export default function StateScreen() {
   }, []);
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text allowFontScaling={false} style={styles.title}>
-          지금 나의 감정을 골라주세요
-        </Text>
-        <Text allowFontScaling={false} style={styles.subtitle}>
-          선택한 감정은 24시간 동안 유지돼요.
-        </Text>
-      </View>
-
+    <SelectionFrameLayout
+      title="지금 나의 감정을 골라주세요"
+      subtitle="선택한 감정은 24시간 동안 유지돼요."
+      backgroundColor="#F9F9F9"
+      actionLabel="선택 완료"
+      onActionPress={handleConfirm}
+    >
       <View
         style={styles.gridWrap}
         onLayout={e => {
@@ -334,46 +282,11 @@ export default function StateScreen() {
           </View>
         ))}
       </View>
-
-      <View style={[styles.footer, {paddingBottom: bottomSafe}]}>
-        <BottomActionButton
-          variant="fixed"
-          label="선택 완료"
-          onPress={handleConfirm}
-        />
-      </View>
-    </View>
+    </SelectionFrameLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: getResponsiveHeight(45),
-    paddingHorizontal: getResponsiveWidth(20),
-    backgroundColor: '#F9F9F9',
-  },
-
-  header: {
-    paddingHorizontal: EDGE_GUTTER,
-    marginBottom: getResponsiveHeight(16),
-  },
-
-  title: {
-    fontSize: getResponsiveFontSize(20),
-    fontFamily: 'Pretendard-SemiBold',
-    color: 'black',
-    textAlign: 'center',
-    marginBottom: getResponsiveHeight(6),
-  },
-
-  subtitle: {
-    fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-Light',
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-
   gridWrap: {
     flex: 1,
     paddingHorizontal: EDGE_GUTTER,
@@ -386,35 +299,13 @@ const styles = StyleSheet.create({
     marginBottom: ROW_GAP,
   },
 
-  shadow: {
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 3},
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    ...(Platform.OS === 'android' ? {elevation: 4} : null),
-  },
-
-  footer: {
-    paddingTop: getResponsiveHeight(16),
-    paddingHorizontal: EDGE_GUTTER,
-    minHeight: getResponsiveHeight(50) + getResponsiveHeight(16),
-  },
-
-  emotionBox: {
-    width: '100%',
-    borderRadius: RADIUS,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderWidth: 1.1,
-    overflow: Platform.OS === 'android' ? 'hidden' : 'visible',
-  },
-
   ring: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: RADIUS,
+    position: 'absolute',
+    top: 0,
+    left: 0,
     borderWidth: 1,
     opacity: 0,
+    borderRadius: RADIUS,
   },
 
   emotionImage: {

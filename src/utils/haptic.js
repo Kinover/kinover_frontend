@@ -5,20 +5,22 @@ const options = {
   ignoreAndroidSystemSettings: false,
 };
 
-export const hapticLight = () =>
-  HapticFeedback.trigger('impactLight', options);
+const safeTrigger = type => {
+  try {
+    HapticFeedback?.trigger?.(type, options);
+  } catch (e) {
+    console.log('[haptic] trigger failed:', type, e?.message || e);
+  }
+};
 
-export const hapticMedium = () =>
-  HapticFeedback.trigger('impactMedium', options);
+export const hapticLight = () => safeTrigger('impactLight');
 
-export const hapticHeavy = () =>
-  HapticFeedback.trigger('impactHeavy', options);
+export const hapticMedium = () => safeTrigger('impactMedium');
 
-export const hapticSelection = () =>
-  HapticFeedback.trigger('selection', options);
+export const hapticHeavy = () => safeTrigger('impactHeavy');
 
-export const hapticSuccess = () =>
-  HapticFeedback.trigger('notificationSuccess', options);
+export const hapticSelection = () => safeTrigger('selection');
 
-export const hapticError = () =>
-  HapticFeedback.trigger('notificationError', options);
+export const hapticSuccess = () => safeTrigger('notificationSuccess');
+
+export const hapticError = () => safeTrigger('notificationError');
