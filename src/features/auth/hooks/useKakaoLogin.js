@@ -1,9 +1,9 @@
 // src/features/auth/hooks/useKakaoLogin.js
 import * as KakaoLogin from '@react-native-seoul/kakao-login';
 import {useCallback, useRef} from 'react';
-import {useDispatch} from 'react-redux';
+import {useDispatch, useStore} from 'react-redux';
 
-import {setHasFamily, deleteLoginInfo} from 'utils/storage';
+import {deleteLoginInfo} from 'utils/storage';
 import {loginThunk} from '../store/loginThunk';
 import {fetchUserThunk} from 'features/home/store/userThunk';
 
@@ -26,6 +26,7 @@ const withTimeout = (promise, ms = 8000) =>
 
 export function useKakaoLogin() {
   const dispatch = useDispatch();
+  const store = useStore();
   const socketUnsubRef = useRef(null);
 
   const login = useCallback(async () => {
@@ -51,7 +52,7 @@ export function useKakaoLogin() {
 
  // 소켓은 '메인 진입'에서만 필요하면 hasFamily일 때만 시작
       if (hasFamilyFromLogin && !socketUnsubRef.current) {
-        socketUnsubRef.current = startChatSocket(dispatch);
+        socketUnsubRef.current = startChatSocket(dispatch, store.getState);
       }
 
  // 2) 유저 fetch(권장: 로그인 성공 후)
@@ -88,7 +89,7 @@ export function useKakaoLogin() {
     } finally {
       dispatch(setLoginLoading(false));
     }
-  }, [dispatch]);
+  }, [dispatch, store]);
 
   return {login};
 }

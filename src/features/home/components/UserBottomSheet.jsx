@@ -220,7 +220,7 @@ function UserBottomSheetModalBase(
 
   const fontMode = useSelector(state => state.ui.fontMode);
 
- // ��콘텐츠 영역만” 올릴 shift
+ // 콘텐츠 영역만” 올릴 shift
   const shiftAnim = useRef(new Animated.Value(0)).current;
   const keyboardHeightRef = useRef(0);
   const keyboardOpenRef = useRef(false);
@@ -663,7 +663,7 @@ function UserBottomSheetModalBase(
 
                 <BottomSheetFooterButtons
                   bottomSafe={0}
-                  includeBottomSafePadding={true}
+                  includeBottomSafePadding={Platform.OS === 'ios'}
                   excludeSafeForMeasure={false}
                   onLayoutHeight={undefined}
                   style={styles.footerFlow}

@@ -9,9 +9,7 @@ import {
   Image,
   StyleSheet,
   Animated,
-  Platform,
   useWindowDimensions,
-  Easing,
 } from 'react-native';
 import Carousel from 'react-native-reanimated-carousel';
 import {useDispatch} from 'react-redux';
@@ -27,8 +25,8 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import BottomActionButton from 'components/BottomActionButton';
-import {BACKGROUND_COLORS, BUTTON_STYLES} from 'styles/style';
+import {BUTTON_STYLES} from 'styles/style';
+import SelectionFrameLayout from 'components/layouts/SelectionFrameLayout';
 
 const KINO_TYPE_TO_PERSONALITY = {
   YELLOW_KINO: 'SUNNY',
@@ -40,32 +38,31 @@ const KINO_TYPE_TO_PERSONALITY = {
 const KINOS = [
   {
     kinoType: 'YELLOW_KINO',
-    image: require('../../../assets/images/yellowKino.png'),
+    title: '옐로 키노',
+    tone: '밝고 경쾌한 스타일',
+    image: require('../../../assets/kinos/yellowKino.png'),
     description:
       '안녕하세요~!\n\n저는 밝고 긍정적인 에너지를 전하는 상담사, 키노예요.\n\n언제든 기분이 꿀꿀할 땐 저랑 수다 떨어요~\n웃으면서 기분 전환, 제가 책임질게요!',
   },
   {
     kinoType: 'BLUE_KINO',
-    image: require('../../../assets/images/blueKino.png'),
+    title: '블루 키노',
+    tone: '차분하고 안정적인 스타일',
+    image: require('../../../assets/kinos/blueKino.png'),
     description:
       '안녕하세요.\n\n저는 잔잔하고 조용하게 곁을 지켜주는 상담사, 키노입니다.\n\n말하지 않아도 괜찮아요.\n천천히, 편안하게 당신의 이야기를 들어드릴게요.',
   },
   {
     kinoType: 'PINK_KINO',
-    image: require('../../../assets/images/pinkKino.png'),
+    title: '핑크 키노',
+    tone: '다정하고 공감형 스타일',
+    image: require('../../../assets/kinos/pinkKino.png'),
     description:
       '아… 안녕하세요…\n\n저는 부족하지만 진심으로 곁에 있고 싶은 상담사, 키노예요.\n\n뭔가 잘 모르지만… 그냥 옆에 있고 싶었어요.\n우리 같이, 천천히 이야기해봐요…!',
   },
 ];
 
 const mod = (n, m) => ((n % m) + m) % m;
-
-// 배경 원 팔레트 (kinoType)
-const CIRCLE_PALETTE = {
-  YELLOW_KINO: {soft: '#FFF3DE', strong: '#FFE7C4'},
-  BLUE_KINO: {soft: '#EAF4FF', strong: '#D7E9FF'},
-  PINK_KINO: {soft: '#FFF8FB', strong: '#FFEAF2'},
-};
 
 // 설명 카드 팔레트 (kinoType)
 const CARD_PALETTE = {
@@ -89,6 +86,12 @@ const CARD_PALETTE = {
   },
 };
 
+const SCREEN_BG = {
+  YELLOW_KINO: '#FFF8ED',
+  BLUE_KINO: '#F4F8FF',
+  PINK_KINO: '#FFF5FA',
+};
+
 export default function KinoSelectScreen() {
   const dispatch = useDispatch();
   const navigation = useNavigation();
@@ -103,13 +106,6 @@ export default function KinoSelectScreen() {
 
   const carouselRef = useRef(null);
   const floatAnim = useRef(new Animated.Value(0)).current;
-
- // 배경 원 애니메이션 값들 (슬라이드업 + 페이드)
-  const circleSoftY = useRef(new Animated.Value(getResponsiveHeight(44))).current;
-  const circleSoftOpacity = useRef(new Animated.Value(0)).current;
-
-  const circleStrongY = useRef(new Animated.Value(getResponsiveHeight(58))).current;
-  const circleStrongOpacity = useRef(new Animated.Value(0)).current;
 
   useHideTabBar({stayHidden: true});
 
@@ -153,12 +149,12 @@ export default function KinoSelectScreen() {
     return KINOS[currentIndex]?.kinoType || 'YELLOW_KINO';
   }, [currentIndex]);
 
-  const circleColors = useMemo(() => {
-    return CIRCLE_PALETTE[currentKinoType] || CIRCLE_PALETTE.YELLOW_KINO;
-  }, [currentKinoType]);
-
   const cardColors = useMemo(() => {
     return CARD_PALETTE[currentKinoType] || CARD_PALETTE.YELLOW_KINO;
+  }, [currentKinoType]);
+
+  const screenBg = useMemo(() => {
+    return SCREEN_BG[currentKinoType] || SCREEN_BG.YELLOW_KINO;
   }, [currentKinoType]);
 
  /**
@@ -169,14 +165,14 @@ export default function KinoSelectScreen() {
   const renderHighlightedLine = useCallback(
     line => {
       if (!line) return null;
-      const parts = line.split(/(키노)/g);
+      const parts = line.split(/(키노예요|키노입니다|키노)/g);
 
       return parts.map((part, i) =>
-        part === '키노' ? (
+        part === '키노' || part === '키노예요' || part === '키노입니다' ? (
           <Text
             allowFontScaling={false}
             key={`h-${i}`}
-            style={[styles.kinoHighlight, {color: cardColors.highlight}]}>
+            style={[styles.kinoText, styles.kinoHighlight, {color: cardColors.highlight}]}>
             {part}
           </Text>
         ) : (
@@ -224,104 +220,41 @@ export default function KinoSelectScreen() {
     ],
   };
 
- // 캐릭터(키노)가 바뀔 때마다: 원 2개가 아래에서 위로 올라오며 깔리기
-  useEffect(() => {
-    circleSoftY.setValue(getResponsiveHeight(54));
-    circleSoftOpacity.setValue(0);
-
-    circleStrongY.setValue(getResponsiveHeight(72));
-    circleStrongOpacity.setValue(0);
-
-    Animated.parallel([
-      Animated.timing(circleStrongY, {
-        toValue: 0,
-        duration: 520,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(circleStrongOpacity, {
-        toValue: 1,
-        duration: 260,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-
-      Animated.timing(circleSoftY, {
-        toValue: 0,
-        duration: 460,
-        delay: 40,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(circleSoftOpacity, {
-        toValue: 1,
-        duration: 240,
-        delay: 40,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [
-    currentIndex,
-    circleSoftY,
-    circleSoftOpacity,
-    circleStrongY,
-    circleStrongOpacity,
-  ]);
-
   return (
-    <View style={styles.container}>
-      <Text allowFontScaling={false} style={styles.title}>
-        키노를 선택해주세요
-      </Text>
-      <Text allowFontScaling={false} style={styles.subtitle}>
-        각기 다른 성격의 키노를 만나보세요
-      </Text>
-
-      {/* 카드도 키노 색에 맞게 변경 */}
-      <View
-        style={[
-          styles.textCard,
-          {
-            backgroundColor: cardColors.bg,
-            borderColor: cardColors.border,
-            shadowColor: cardColors.shadow,
-          },
-        ]}>
-        <View style={styles.textCardContent}>
-          <FadingKinoText
-            index={currentIndex}
-            descriptions={KINOS.map(k => k.description)}
-            renderLine={renderHighlightedLine}
-          />
+    <SelectionFrameLayout
+      title="키노를 선택해주세요"
+      subtitle="각기 다른 성격의 키노를 만나보세요"
+      backgroundColor={screenBg}
+      actionLabel="선택 완료"
+      onActionPress={() => setConfirmVisible(true)}
+      headerExtra={
+        <View style={styles.headerBadge}>
+          <Text allowFontScaling={false} style={styles.headerBadgeText}>
+            KINO PERSONA
+          </Text>
+        </View>
+      }
+    >
+      <View style={styles.bubbleWrap}>
+        <View
+          style={[
+            styles.textCard,
+            {
+              borderColor: cardColors.border,
+              shadowColor: cardColors.shadow,
+            },
+          ]}>
+          <View style={styles.textCardContent}>
+            <FadingKinoText
+              index={currentIndex}
+              descriptions={KINOS.map(k => k.description)}
+              renderLine={renderHighlightedLine}
+            />
+          </View>
         </View>
       </View>
 
       <View style={[styles.carouselArea, {width: screenW}]}>
-        {/* 배경 원 */}
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.circleSoft,
-            {
-              backgroundColor: circleColors.soft,
-              transform: [{translateY: circleSoftY}],
-              opacity: circleSoftOpacity,
-            },
-          ]}
-        />
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.circleStrong,
-            {
-              backgroundColor: circleColors.strong,
-              transform: [{translateY: circleStrongY}],
-              opacity: circleStrongOpacity,
-            },
-          ]}
-        />
-
         {/* 캐러셀 */}
         <View
           style={[
@@ -389,19 +322,34 @@ export default function KinoSelectScreen() {
             style={styles.arrowIcon}
           />
         </TouchableOpacity>
+
+        <View style={styles.kinoMetaWrap}>
+          <Text allowFontScaling={false} style={styles.kinoName}>
+            {KINOS[currentIndex]?.title}
+          </Text>
+          <Text allowFontScaling={false} style={styles.kinoTone}>
+            {KINOS[currentIndex]?.tone}
+          </Text>
+        </View>
+
+        <View style={styles.pagination}>
+          {KINOS.map((k, idx) => {
+            const active = idx === currentIndex;
+            return (
+              <View
+                key={k.kinoType}
+                style={[styles.dot, active && styles.dotActive]}
+              />
+            );
+          })}
+        </View>
       </View>
-
-      <BottomActionButton
-        label="선택 완료"
-        onPress={() => setConfirmVisible(true)}
-      />
-
       <KinoConfirmModal
         visible={confirmVisible}
         onClose={() => setConfirmVisible(false)}
         onConfirm={handleKinoSelect}
       />
-    </View>
+    </SelectionFrameLayout>
   );
 }
 
@@ -446,79 +394,96 @@ function FadingKinoText({index, descriptions, renderLine}) {
     });
   }, [index, descriptions, fade, translateY]);
 
-  const text = descriptions?.[displayIndex] ?? '';
-  const lines = String(text).split(/\n/);
+  const rawText = descriptions?.[displayIndex] ?? '';
+  const text = String(rawText)
+    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \t]+\n/g, '\n');
+  const paragraphs = text
+    .split(/\n{2,}/)
+    .map(p => p.trim())
+    .filter(Boolean);
 
   return (
     <Animated.View style={{opacity: fade, transform: [{translateY}]}}>
-      <Text allowFontScaling={false} style={styles.kinoText}>
-        {lines.map((line, idx) => (
-          <React.Fragment key={`line-${idx}`}>
-            {renderLine(line)}
-            {idx !== lines.length - 1 ? '\n' : ''}
-          </React.Fragment>
-        ))}
-      </Text>
+      {paragraphs.map((paragraph, idx) => {
+        const isLast = idx === paragraphs.length - 1;
+        const isGreeting = idx === 0;
+        return (
+          <Text
+            key={`p-${idx}`}
+            allowFontScaling={false}
+            lineBreakStrategyIOS="hangul-word"
+            textBreakStrategy="highQuality"
+            style={[
+              isGreeting ? styles.kinoGreeting : styles.kinoText,
+              !isLast ? styles.paraGap : null,
+            ]}>
+            {renderLine(paragraph)}
+          </Text>
+        );
+      })}
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingTop: getResponsiveHeight(45),
-    paddingHorizontal: getResponsiveWidth(20),
-    paddingBottom: getResponsiveHeight(16),
-    backgroundColor: '#F9F9F9',
+  headerBadge: {
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(5),
+    borderRadius: 999,
+    marginBottom: getResponsiveHeight(10),
+    backgroundColor: 'rgba(17,24,39,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(17,24,39,0.08)',
   },
-
-  title: {
-    fontSize: getResponsiveFontSize(20),
+  headerBadgeText: {
+    fontSize: getResponsiveFontSize(10),
+    letterSpacing: 1,
+    color: '#374151',
     fontFamily: 'Pretendard-SemiBold',
-    color: 'black',
-    textAlign: 'center',
-    marginBottom: getResponsiveHeight(6),
-    zIndex: 5,
-  },
-  subtitle: {
-    fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-Light',
-    color: '#6B7280',
-    textAlign: 'center',
-    zIndex: 5,
-    marginBottom: getResponsiveHeight(18),
   },
 
   textCard: {
-    width: '100%',
-    paddingVertical: getResponsiveHeight(16),
-    paddingHorizontal: getResponsiveWidth(18),
-    borderRadius: getResponsiveWidth(20),
+    width: '96%',
+    paddingVertical: getResponsiveHeight(18),
+    paddingHorizontal: getResponsiveWidth(20),
+    borderRadius: getResponsiveWidth(24),
 
- // 기본값(혹시 모를 fallback)
-    backgroundColor: BACKGROUND_COLORS.primaryBg,
+    backgroundColor: '#FFFFFF',
     borderWidth: 1,
-    borderColor: 'rgba(244,226,208,0.9)',
+    borderColor: '#E7E9EE',
 
-    marginTop: getResponsiveHeight(10),
-    shadowOffset: {width: 0, height: 8},
-    shadowOpacity: 0.16,
-    shadowRadius: 22,
-    elevation: 4,
+    marginTop: getResponsiveHeight(6),
+    shadowOffset: {width: 0, height: 10},
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 2,
     zIndex: 10,
   },
+  bubbleWrap: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: getResponsiveHeight(6),
+  },
   textCardContent: {
-    maxHeight: getResponsiveHeight(90),
-    overflow: 'hidden',
+    minHeight: getResponsiveHeight(94),
+    justifyContent: 'center',
   },
 
+  kinoGreeting: {
+    fontSize: getResponsiveFontSize(17),
+    fontFamily: 'Pretendard-SemiBold',
+    lineHeight: getResponsiveFontSize(23),
+    color: '#111827',
+  },
   kinoText: {
-    fontSize: getResponsiveFontSize(15),
-    fontFamily:
-      Platform.OS === 'android' ? 'Pretendard-Regular' : 'Pretendard-Light',
- // 줄바꿈/줄간격 안정화: height 기반보다 fontSize 기반이 흔들림 적음
+    fontSize: getResponsiveFontSize(14.5),
+    fontFamily: 'Pretendard-Regular',
     lineHeight: getResponsiveFontSize(21),
-    color: '#18181B',
+    color: '#1F2937',
+  },
+  paraGap: {
+    marginBottom: getResponsiveHeight(10),
   },
   kinoHighlight: {
     fontFamily: 'Pretendard-Bold',
@@ -529,31 +494,8 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: getResponsiveHeight(160),
+    marginBottom: getResponsiveHeight(106),
     position: 'relative',
-  },
-
-  circleSoft: {
-    position: 'absolute',
-    width: getResponsiveWidth(700),
-    height: getResponsiveWidth(700),
-    top: getResponsiveHeight(-170),
-    right: getResponsiveHeight(80),
-    borderRadius: 999,
-    alignSelf: 'center',
-    opacity: 0.7,
-    zIndex: -1,
-  },
-  circleStrong: {
-    position: 'absolute',
-    width: getResponsiveWidth(1300),
-    height: getResponsiveWidth(1300),
-    borderRadius: 999,
-    top: getResponsiveHeight(-120),
-    left: getResponsiveHeight(-150),
-    alignSelf: 'center',
-    opacity: 0.87,
-    zIndex: 0,
   },
 
   carouselHolder: {
@@ -568,9 +510,8 @@ const styles = StyleSheet.create({
   },
 
   character: {
-    width: getResponsiveWidth(185),
-    height: getResponsiveWidth(185),
-    zIndex: 2,
+    width: getResponsiveWidth(165),
+    height: getResponsiveWidth(165),
   },
 
   arrowButton: {
@@ -585,19 +526,52 @@ const styles = StyleSheet.create({
   arrowGlass: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.96)',
+    backgroundColor: 'rgba(255,255,255,0.92)',
     borderWidth: 1,
-    borderColor: 'rgba(240,230,215,0.9)',
+    borderColor: 'rgba(255,255,255,0.95)',
     shadowColor: '#E0D4C4',
     shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.14,
-    shadowRadius: 10,
-    elevation: 3,
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
   },
   arrowIcon: {
     width: getResponsiveIconSize(18),
     height: getResponsiveIconSize(18),
     resizeMode: 'contain',
     tintColor: BUTTON_STYLES().saveBg,
+  },
+
+  kinoMetaWrap: {
+    marginTop: getResponsiveHeight(8),
+    alignItems: 'center',
+  },
+  kinoName: {
+    fontFamily: 'Pretendard-Bold',
+    fontSize: getResponsiveFontSize(18),
+    color: '#111827',
+  },
+  kinoTone: {
+    marginTop: getResponsiveHeight(4),
+    fontFamily: 'Pretendard-Regular',
+    fontSize: getResponsiveFontSize(12.5),
+    color: '#6B7280',
+  },
+  pagination: {
+    flexDirection: 'row',
+    gap: getResponsiveWidth(8),
+    marginTop: getResponsiveHeight(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dot: {
+    width: getResponsiveWidth(8),
+    height: getResponsiveWidth(8),
+    borderRadius: 99,
+    backgroundColor: 'rgba(107,114,128,0.28)',
+  },
+  dotActive: {
+    width: getResponsiveWidth(22),
+    backgroundColor: '#111827',
   },
 });

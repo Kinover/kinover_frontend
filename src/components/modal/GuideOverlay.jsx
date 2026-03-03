@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Pressable,
   Dimensions,
+  Platform,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Animated, {
@@ -51,6 +52,7 @@ export default function GuideOverlay({
   const title = step.title || '';
   const description = step.description || '';
   const key = step.key;
+  const androidTopInset = Platform.OS === 'android' ? Number(insets.top || 0) : 0;
 
   let hasHole = targetLayout && targetLayout.width > 0 && targetLayout.height > 0;
   let rawX = targetLayout?.x ?? 0;
@@ -102,6 +104,11 @@ export default function GuideOverlay({
       rawY = getResponsiveHeight(210);
       hasHole = true;
     }
+  }
+
+  // Android에서 좌표 기준이 살짝 위로 잡히는 경우가 있어 top inset만큼 보정한다.
+  if (hasHole && androidTopInset > 0) {
+    rawY += androidTopInset;
   }
 
   // 하이라이트: FAB는 원형 + 널널한 여백, 프로필/원형 타깃은 원형, 나머지는 모서리 둥근 사각

@@ -27,7 +27,7 @@ import {
 } from 'utils/responsive';
 
 import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
-import {BottomSheetButtons} from 'components/bottomSheet/BottomSheetButtons';
+import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
 import {BOTTOMSHEET_STYLE, BUTTON_STYLES, COLORS} from 'styles/style';
 
 import {useSelector} from 'react-redux';
@@ -250,9 +250,11 @@ const CategoryBottomSheetModal = forwardRef(
         onDismiss={handleDismiss}
         title="카테고리"
         subtitle="원하는 추억들만 모아봐요."
-        useInternalScroll={false}>
-        <SafeAreaView style={{flex: 1, backgroundColor: UI.bg}}>
-          <View style={{flex: 1}}>
+        useInternalScroll={false}
+        disableContentBottomPadding={true}>
+        <SafeAreaView edges={[]} style={{flex: 1, backgroundColor: UI.bg}}>
+          <View style={styles.sheetBody}>
+            <View style={styles.content}>
             <View style={styles.headerRow}>
               <View style={styles.headerLeft}>
                 <Text allowFontScaling={false} style={styles.headerTitle}>
@@ -328,14 +330,18 @@ const CategoryBottomSheetModal = forwardRef(
                 </ScrollView>
               </View>
             )}
-          </View>
+            </View>
 
-          <View style={styles.footerFixed}>
-            <BottomSheetButtons
+            <BottomSheetFooterButtons
               onCancel={handleCancel}
               onSave={handleApply}
               saveLabel="적용하기"
               autoCloseOnSave={false}
+              bottomSafe={0}
+              includeBottomSafePadding={Platform.OS === 'ios'}
+              excludeSafeForMeasure={false}
+              style={styles.footerFlow}
+              bottomGap={0}
             />
           </View>
         </SafeAreaView>
@@ -348,6 +354,15 @@ CategoryBottomSheetModal.displayName = 'CategoryBottomSheetModal';
 export default CategoryBottomSheetModal;
 
 const styles = StyleSheet.create({
+  sheetBody: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  content: {
+    paddingTop: getResponsiveHeight(2),
+    paddingBottom: getResponsiveHeight(8),
+  },
+
   panel: {
     backgroundColor: UI.panel,
     borderRadius: 18,
@@ -356,7 +371,6 @@ const styles = StyleSheet.create({
     borderColor: UI.lineSoft,
     ...shadow,
   },
-
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -364,28 +378,24 @@ const styles = StyleSheet.create({
     marginBottom: BOTTOMSHEET_STYLE().sectionLabel.marginBottom,
     marginTop: BOTTOMSHEET_STYLE().sectionLabel.marginTop,
   },
-
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'center',
     gap: getResponsiveWidth(4),
   },
-
   headerTitle: {
     fontSize: BOTTOMSHEET_STYLE().sectionLabel.fontSize,
     fontFamily: BOTTOMSHEET_STYLE().sectionLabel.fontFamily,
     color: BOTTOMSHEET_STYLE().sectionLabel.color,
     lineHeight: BOTTOMSHEET_STYLE().sectionLabel.fontSize,
   },
-
   countChipText: {
     fontSize: getResponsiveFontSize(11.5),
     fontFamily: 'Pretendard-SemiBold',
     color: COLORS.textTertiary,
     lineHeight: getResponsiveFontSize(12),
   },
-
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -409,14 +419,11 @@ const styles = StyleSheet.create({
     color: UI.sub,
     letterSpacing: -0.2,
   },
-
   listViewport: {
     borderRadius: 16,
     overflow: 'hidden',
   },
-
   scrollContent: {},
-
   itemRow: {
     paddingHorizontal: getResponsiveWidth(14),
     borderRadius: 14,
@@ -427,12 +434,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-
   itemRowSelected: {
     backgroundColor: UI.selectedBg,
     borderColor: 'rgba(17, 24, 39, 0.18)',
   },
-
   itemText: {
     flex: 1,
     paddingRight: getResponsiveWidth(10),
@@ -444,12 +449,10 @@ const styles = StyleSheet.create({
     color: UI.text,
     letterSpacing: -0.2,
   },
-
   itemTextSelected: {
     fontFamily: 'Pretendard-SemiBold',
     color: UI.selectedText,
   },
-
   emptyBox: {
     paddingVertical: getResponsiveHeight(16),
     paddingHorizontal: getResponsiveWidth(12),
@@ -471,9 +474,8 @@ const styles = StyleSheet.create({
     color: UI.sub,
     lineHeight: getResponsiveFontSize(18),
   },
-
-  footerFixed: {
+  footerFlow: {
     paddingTop: getResponsiveHeight(10),
-    paddingBottom: getResponsiveHeight(2),
+    paddingBottom: 0,
   },
 });

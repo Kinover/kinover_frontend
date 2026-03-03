@@ -238,9 +238,13 @@ export default function HomeScreen() {
       console.log('[HomeScreen] refresh fetchUser error:', e);
     }
 
-    await dispatch(fetchFamilyUserListThunk(familyId));
-    await dispatch(fetchFamilyStatusThunk(familyId));
-    await dispatch(fetchFamilyThunk(familyId));
+    try {
+      await dispatch(fetchFamilyUserListThunk(familyId));
+      await dispatch(fetchFamilyStatusThunk(familyId));
+      await dispatch(fetchFamilyThunk(familyId));
+    } catch (e) {
+      console.log('[HomeScreen] refresh family data error:', e);
+    }
   }, [dispatch, familyId]);
 
   const onPullRefresh = useCallback(() => {
@@ -294,8 +298,12 @@ export default function HomeScreen() {
     await dispatch(modifyUserThunk(payload));
 
     if (familyId) {
-      dispatch(fetchFamilyUserListThunk(familyId));
-      dispatch(fetchFamilyStatusThunk(familyId));
+      dispatch(fetchFamilyUserListThunk(familyId)).catch(e =>
+        console.log('[HomeScreen] post-save family users refresh error:', e),
+      );
+      dispatch(fetchFamilyStatusThunk(familyId)).catch(e =>
+        console.log('[HomeScreen] post-save family status refresh error:', e),
+      );
     }
 
     dismissUserSheet();

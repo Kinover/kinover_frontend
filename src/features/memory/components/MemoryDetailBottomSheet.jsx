@@ -229,10 +229,16 @@ function CommentFooter({
   return (
     <BottomSheetFooter
       {...footerProps}
- // 하단 제스처 영역만 보정 (키보드 높이는 BottomSheet가 margin으로 처리)
-      bottomInset={Math.max(insets.bottom, 0)}>
+      bottomInset={0}>
       <View
-        style={styles.footerBar}
+        style={[
+          styles.footerBar,
+          {
+            paddingBottom:
+              getResponsiveHeight(10) +
+              Math.max(Math.min(insets.bottom, getResponsiveHeight(16)), 0),
+          },
+        ]}
         onLayout={e => {
           const h = e?.nativeEvent?.layout?.height ?? 0;
           if (h > 0) onFooterLayoutHeight?.(h);
@@ -341,7 +347,6 @@ export default function MemoryDetailBottomSheet({
   disabled = false,
 }) {
   const snapPoints = useMemo(() => snapPointsProp || ['81%'], [snapPointsProp]);
-  const insets = useSafeAreaInsets();
   const isAndroid = Platform.OS === 'android';
 
   const listRef = useRef(null);
@@ -503,7 +508,7 @@ export default function MemoryDetailBottomSheet({
       onChange={onSheetChange}
       enableContentPanningGesture={!disabled}
       enableHandlePanningGesture={!disabled}
-      bottomInset={Math.max(insets.bottom, 0)}
+      bottomInset={0}
       android_keyboardInputMode="adjustResize"
       keyboardBehavior="interactive"
       keyboardBlurBehavior={isAndroid ? 'none' : 'restore'}

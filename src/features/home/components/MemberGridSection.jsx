@@ -25,6 +25,7 @@ import {
   getResponsiveIconSize,
   getResponsiveWidth,
 } from 'utils/responsive';
+import {STORE_MOCK_ENABLED} from '../utils/storeMockData';
 import {formatRelativeKorean} from '../utils/dateUtils';
 import {getEmotionImage, getEmotionColor} from '../utils/emotionUtils';
 import {EMPTY_STYLE, LAYOUT_STYLE} from 'styles/style';
@@ -100,6 +101,8 @@ const MemberGridItem = memo(function MemberGridItem({
 
   const emotionImage = finalEmotion ? getEmotionImage(finalEmotion) : null;
   const hasEmotion = !!emotionImage;
+  const forceMomEmotionPeek =
+    STORE_MOCK_ENABLED && memberId === 'mock-mom' && hasEmotion;
 
   const shellMax = AVATAR * 1.36;
 
@@ -192,6 +195,7 @@ const MemberGridItem = memo(function MemberGridItem({
   const runTiltPeekOnce = useCallback(() => {
     if (isRefreshing) return;
     if (!hasEmotion) return;
+    if (forceMomEmotionPeek) return;
 
     clearTapPeekTimer();
 
@@ -229,7 +233,16 @@ const MemberGridItem = memo(function MemberGridItem({
       cancelAnimation(pivotX);
       pivotX.value = withTiming(0, {duration: 180});
     }, 520);
-  }, [isRefreshing, hasEmotion, clearTapPeekTimer, popY, tilt, pivotX, scale]);
+  }, [
+    isRefreshing,
+    hasEmotion,
+    forceMomEmotionPeek,
+    clearTapPeekTimer,
+    popY,
+    tilt,
+    pivotX,
+    scale,
+  ]);
 
   const handlePress = useCallback(() => {
     if (longPressedRef.current) return;
@@ -277,6 +290,18 @@ const MemberGridItem = memo(function MemberGridItem({
 
   useEffect(() => {
     if (!hasEmotion) return;
+    if (forceMomEmotionPeek) {
+      clearTapPeekTimer();
+      cancelAnimation(popY);
+      cancelAnimation(tilt);
+      cancelAnimation(pivotX);
+      cancelAnimation(scale);
+      popY.value = 1;
+      tilt.value = 0;
+      pivotX.value = 0;
+      scale.value = 1;
+      return;
+    }
 
     let mounted = true;
     let timer1 = null;
@@ -352,7 +377,16 @@ const MemberGridItem = memo(function MemberGridItem({
       cancelAnimation(pivotX);
       cancelAnimation(scale);
     };
-  }, [hasEmotion, isRefreshing, popY, tilt, pivotX, scale]);
+  }, [
+    hasEmotion,
+    forceMomEmotionPeek,
+    isRefreshing,
+    clearTapPeekTimer,
+    popY,
+    tilt,
+    pivotX,
+    scale,
+  ]);
 
   const EMOTION_HIDE_PUSH = Math.round(profileSize * 0.2) + 6;
 
@@ -543,7 +577,7 @@ export default function MemberGridSection({
   const ADD_BUTTON_GAP = getResponsiveHeight(14);
   const bottomSpace = footerPaddingBottom + ADD_BUTTON_H + ADD_BUTTON_GAP;
 
- // ��6명 초과” 기준으로 내부 스크롤 ON
+ // 6명 초과” 기준으로 내부 스크롤 ON
   const enableInnerScroll = !isEmptyState && members.length > INTERNAL_SCROLL_THRESHOLD;
 
   const gridMaxHRaw = screenHeight * 0.33; // 대충 카드 안에서 1/3 정도만 스크롤 영역

@@ -27,13 +27,23 @@ export function AppStateResourceBridge() {
 
       if (!isLogin || !userId) return;
 
-      dispatch(fetchUserThunk());
+      dispatch(fetchUserThunk()).catch(e =>
+        console.log('[AppStateResourceBridge] user refresh error:', e),
+      );
 
       if (familyId) {
-        dispatch(fetchFamilyThunk(familyId));
-        dispatch(fetchFamilyUserListThunk(familyId));
-        dispatch(fetchFamilyStatusThunk(familyId));
-        dispatch(fetchChatRoomListThunk(familyId, userId));
+        dispatch(fetchFamilyThunk(familyId)).catch(e =>
+          console.log('[AppStateResourceBridge] family refresh error:', e),
+        );
+        dispatch(fetchFamilyUserListThunk(familyId)).catch(e =>
+          console.log('[AppStateResourceBridge] family users refresh error:', e),
+        );
+        dispatch(fetchFamilyStatusThunk(familyId)).catch(e =>
+          console.log('[AppStateResourceBridge] family status refresh error:', e),
+        );
+        dispatch(fetchChatRoomListThunk(familyId, userId)).catch(e =>
+          console.log('[AppStateResourceBridge] chat room refresh error:', e),
+        );
       }
     },
   });

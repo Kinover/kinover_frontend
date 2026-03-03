@@ -827,7 +827,12 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                     includeBottomSafePadding={true}
                     excludeSafeForMeasure={false}
                     onLayoutHeight={undefined}
-                    style={styles.footerFlow}
+                    style={[
+                      styles.footerFlow,
+                      Platform.OS === 'android' && {
+                        paddingBottom: getResponsiveHeight(12),
+                      },
+                    ]}
                     {...footerProps}
                   />
                 </View>

@@ -109,8 +109,8 @@ export default function BottomSheetLayout({
       ? Math.max(androidInset + androidFallback, ANDROID_SYSTEM_NAV_FALLBACK)
       : Math.max(Number(insets.bottom || 0), IOS_HOME_INDICATOR_MIN);
 
- // 모달 자체가 “시스템 네비게이션 바” 위에서 끝나도록 (탭바는 가려도 OK, 시스템 바에는 안 가리게)
- // 시트가 화면 맨 아래까지 내려가게 해서 시트 배경이 하단까지 하얗게 채워지도록 (bottomInset 0)
+ // 안드로이드는 modal bottomInset을 주면 시트가 위로 떠서 하단에 딤 빈띠가 생긴다.
+ // 하단 보호는 content/footer 패딩에서 처리하고, modal 자체는 바닥에 붙인다.
   const bottomInsetForModal = 0;
 
   const ANDROID_FOOTER_BUFFER = getResponsiveHeight(16);

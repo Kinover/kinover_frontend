@@ -86,8 +86,6 @@ function ResponsiveModeBridge() {
 
 // 생체인식 잠금 — 백그라운드 갔다 오면 다시 인증 요구
 function AppLockGate({readyForAuth}) {
-  return null;
-
   const dispatch = useDispatch();
   const bioOn = useSelector(state => !!state.ui?.bioLockEnabled);
   const rehydrated = useSelector(state => !!state?._persist?.rehydrated);
@@ -98,7 +96,6 @@ function AppLockGate({readyForAuth}) {
   const authInFlightRef = useRef(false);
   const lastAppStateRef = useRef(AppState.currentState);
   const authedThisSessionRef = useRef(false);
-  const didInitialAuthRef = useRef(false);
 
   async function runAuth() {
     if (!bioOn) {
@@ -143,8 +140,8 @@ function AppLockGate({readyForAuth}) {
   }
 
   useEffect(() => {
-    if (didInitialAuthRef.current) return;
-    didInitialAuthRef.current = true;
+    if (!bioOn || !rehydrated || !readyForAuth) return;
+    if (authedThisSessionRef.current) return;
     runAuth();
   }, [bioOn, rehydrated, readyForAuth]);
 
@@ -153,12 +150,18 @@ function AppLockGate({readyForAuth}) {
       const prev = lastAppStateRef.current;
       lastAppStateRef.current = nextState;
 
-      if (prev === 'active' && nextState === 'background') {
+      if (
+        prev === 'active' &&
+        (nextState === 'background' || nextState === 'inactive')
+      ) {
         authedThisSessionRef.current = false;
         return;
       }
 
-      if (prev === 'background' && nextState === 'active') {
+      if (
+        (prev === 'background' || prev === 'inactive') &&
+        nextState === 'active'
+      ) {
         runAuth();
       }
     });
@@ -340,6 +343,7 @@ export default function App() {
                           <RootScreen />
                         </View>
                         <GuideOverlayRoot />
+                        <AppLockGate readyForAuth={readyForAuth} />
                       </View>
                     </GuideOverlayProvider>
                   )}

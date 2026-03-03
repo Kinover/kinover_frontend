@@ -1,6 +1,6 @@
 // src/features/auth/hooks/useAutoLogin.js
 import {useEffect, useRef} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
+import {useDispatch, useSelector, useStore} from 'react-redux';
 
 import {getToken, deleteLoginInfo, setHasFamily} from 'utils/storage';
 import {fetchUserThunk} from 'features/home/store/userThunk';
@@ -20,6 +20,7 @@ const withTimeout = (promise, ms = 6000) =>
 
 export function useAutoLogin(shouldRun = true) {
   const dispatch = useDispatch();
+  const store = useStore();
 
   const rehydrated = useSelector(state => !!state?._persist?.rehydrated);
   const authChecked = useSelector(state => state.login?.authChecked);
@@ -105,7 +106,7 @@ export function useAutoLogin(shouldRun = true) {
         if (cancelled) return;
 
         if (!socketUnsubRef.current) {
-          socketUnsubRef.current = startChatSocket(dispatch);
+          socketUnsubRef.current = startChatSocket(dispatch, store.getState);
         }
       } catch (err) {
         console.log('🚨 AutoLogin fatal:', err?.message);
@@ -113,12 +114,10 @@ export function useAutoLogin(shouldRun = true) {
         stopChatSocket();
         dispatch(setLogout());
       } finally {
-        if (cancelled) {
-          runningRef.current = false;
-          return;
+        if (!cancelled) {
+          console.log('✅ AutoLogin done -> authChecked true');
+          dispatch(setAuthChecked(true));
         }
-        console.log('✅ AutoLogin done -> authChecked true');
-        dispatch(setAuthChecked(true));
         runningRef.current = false;
       }
     };
@@ -127,13 +126,17 @@ export function useAutoLogin(shouldRun = true) {
 
     return () => {
       cancelled = true;
+      runningRef.current = false;
+    };
+  }, [dispatch, store, rehydrated, authChecked, shouldRun, loginLoading]);
 
- // shouldRun 변동으로 cleanup이 타더라도, 소켓 끊기는 게 싫으면 여기 제거 가능
+ // 언마운트 시에만 소켓 정리
+  useEffect(() => {
+    return () => {
       if (socketUnsubRef.current) {
         socketUnsubRef.current();
         socketUnsubRef.current = null;
       }
-      runningRef.current = false;
     };
-  }, [dispatch, rehydrated, authChecked, shouldRun, loginLoading]);
+  }, []);
 }
