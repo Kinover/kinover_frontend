@@ -64,13 +64,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
-    borderWidth: 1.1,
-    borderColor: '#EEEEEE',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 3},
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    ...(Platform.OS === 'android' ? {elevation: 4} : null),
+    borderWidth: 1,
+    borderColor: '#E6E8EB',
+    ...(Platform.OS === 'ios'
+      ? {
+          shadowColor: '#000',
+          shadowOffset: {width: 0, height: 3},
+          shadowOpacity: 0.08,
+          shadowRadius: 3,
+        }
+      : {
+          elevation: 0,
+        }),
   },
   cardSelected: {
     backgroundColor: '#FFF8E6',
@@ -91,4 +96,3 @@ const styles = StyleSheet.create({
     color: '#000',
   },
 });
-
