@@ -1,6 +1,6 @@
-// src/features/schedule/components/BirthdayModal.jsx
 import React, {useMemo} from 'react';
 import {View, Text, StyleSheet, Platform} from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import CustomModal from 'components/modal/CustomModal';
 import ScreenConfetti from './ScreenConfetti';
 import {
@@ -9,7 +9,13 @@ import {
   getResponsiveFontSize,
 } from 'utils/responsive';
 
-export default function BirthdayModal({visible, onClose, namesText}) {
+export default function BirthdayModal({
+  visible,
+  onClose,
+  namesText,
+  onSendMessage,
+  sendingMessage = false,
+}) {
   const parsed = useMemo(() => {
     const raw = String(namesText || '').trim();
 
@@ -28,12 +34,13 @@ export default function BirthdayModal({visible, onClose, namesText}) {
 
     const first = names[0] || '가족';
     const second = names[1] || null;
+    const total = names.length;
 
     const heroNames = `${first}${second ? ` · ${second}` : ''}${
       hasEtc ? ' 외' : ''
     }`;
 
-    return {raw, heroNames};
+    return {raw, heroNames, total};
   }, [namesText]);
 
  // subText는 "상황 설명"만 짧게
@@ -43,32 +50,69 @@ export default function BirthdayModal({visible, onClose, namesText}) {
       : '오늘 일정에 생일이 등록되어 있어요.';
 
  // 메시지는 1개만, 짧고 자연스럽게
-  const messageText = `생일 축하해요! 🎉
-오늘 하루 기분 좋은 일만 가득하길 바라요.
-항상 고마워요 💛`;
+  const messageText = `${parsed.heroNames} 생일 축하해요! 🎉
+오늘 하루, 웃는 일이 더 많았으면 해요.
+늘 고맙고 소중해요.`;
+
+  const handleConfirm = () => {
+    if (sendingMessage) return;
+    if (typeof onSendMessage === 'function') {
+      onSendMessage(messageText);
+      return;
+    }
+    onClose?.();
+  };
 
   return (
     <CustomModal
       showCloseButton
       visible={visible}
       onClose={onClose}
-      onConfirm={onClose}
+      onConfirm={handleConfirm}
       closeText="닫기"
-      confirmText="메시지 보내기"
+      confirmText={sendingMessage ? '전송 중...' : '메시지 보내기'}
       title={`${parsed.heroNames} 생일`}
       subText={subtitle}
       modalBoxStyle={styles.modalBox}
+      contentStyle={styles.contentArea}
       overlayChildren={
         <ScreenConfetti visible={visible} originX={0.5} originY={0.52} />
       }>
-      {/* 내용은 딱 2덩어리: 안내 1줄 + 메시지 박스 */}
       <View style={styles.content}>
-        <Text style={styles.noticeText}>
-          짧게라도 한마디 전하면 좋아요.
-        </Text>
+        <LinearGradient
+          colors={['#FFF8E8', '#FFFDF6']}
+          start={{x: 0, y: 0}}
+          end={{x: 1, y: 1}}
+          style={styles.heroCard}>
+          <View style={styles.heroRow}>
+            <Text style={styles.heroEmoji}>🎂</Text>
+            <Text style={styles.heroTitle}>Happy Birthday</Text>
+          </View>
+
+          <View style={styles.badgeRow}>
+            <View style={styles.nameBadge}>
+              <Text style={styles.nameBadgeText}>{parsed.heroNames}</Text>
+            </View>
+            <View style={styles.countBadge}>
+              <Text style={styles.countBadgeText}>
+                {parsed.total > 0 ? `${parsed.total}명` : '오늘'}
+              </Text>
+            </View>
+          </View>
+        </LinearGradient>
+
+        <View style={styles.noticeRow}>
+          <Text style={styles.noticeIcon}>✦</Text>
+          <Text style={styles.noticeText}>짧게라도 한마디 전하면 더 좋아요.</Text>
+        </View>
 
         <View style={styles.messageBox}>
-          <Text style={styles.messageLabel}>추천 문구</Text>
+          <View style={styles.messageHeader}>
+            <Text style={styles.messageLabel}>추천 문구</Text>
+            <View style={styles.messageTag}>
+              <Text style={styles.messageTagText}>복사해서 사용</Text>
+            </View>
+          </View>
           <Text style={styles.messageBody}>{messageText}</Text>
         </View>
       </View>
@@ -81,43 +125,148 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(326),
     maxWidth: '90%',
     alignSelf: 'center',
+    borderRadius: getResponsiveWidth(20),
+  },
+
+  contentArea: {
+    marginTop: getResponsiveHeight(4),
   },
 
   content: {
-    gap: getResponsiveHeight(10),
+    gap: getResponsiveHeight(12),
   },
 
-  noticeText: {
-    fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(12.8),
-    color: '#6B7280',
-    lineHeight: getResponsiveHeight(18),
-  },
-
-  messageBox: {
-    borderRadius: 14,
+  heroCard: {
+    borderRadius: getResponsiveWidth(16),
+    paddingHorizontal: getResponsiveWidth(14),
     paddingVertical: getResponsiveHeight(12),
-    paddingHorizontal: getResponsiveWidth(12),
+    borderWidth: 1,
+    borderColor: 'rgba(255,200,77,0.42)',
+  },
+
+  heroRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(8),
+    marginBottom: getResponsiveHeight(10),
+  },
+
+  heroEmoji: {
+    fontSize: getResponsiveFontSize(18),
+  },
+
+  heroTitle: {
+    fontFamily: 'SpaceMono-Regular',
+    fontSize: getResponsiveFontSize(14),
+    color: '#111827',
+    letterSpacing: 0.25,
+  },
+
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: getResponsiveWidth(8),
+  },
+
+  nameBadge: {
+    flex: 1,
+    borderRadius: 999,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: 'rgba(17,24,39,0.08)',
-    shadowColor: '#000',
-    shadowOpacity: Platform.OS === 'ios' ? 0.06 : 0,
-    shadowRadius: 8,
-    shadowOffset: {width: 0, height: 4},
-    elevation: Platform.OS === 'android' ? 1 : 0,
+    paddingHorizontal: getResponsiveWidth(11),
+    paddingVertical: getResponsiveHeight(7),
+  },
+
+  nameBadgeText: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(12.5),
+    color: '#111827',
+  },
+
+  countBadge: {
+    borderRadius: 999,
+    backgroundColor: '#111827',
+    paddingHorizontal: getResponsiveWidth(10),
+    paddingVertical: getResponsiveHeight(6),
+    minWidth: getResponsiveWidth(52),
+    alignItems: 'center',
+  },
+
+  countBadgeText: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(11.2),
+    color: '#FFFFFF',
+  },
+
+  noticeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(6),
+    paddingHorizontal: getResponsiveWidth(2),
+  },
+
+  noticeIcon: {
+    fontSize: getResponsiveFontSize(11.5),
+    color: '#D97706',
+  },
+
+  noticeText: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(12.2),
+    color: '#4B5563',
+    lineHeight: getResponsiveHeight(17),
+  },
+
+  messageBox: {
+    borderRadius: getResponsiveWidth(14),
+    paddingVertical: getResponsiveHeight(13),
+    paddingHorizontal: getResponsiveWidth(13),
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: 'rgba(17,24,39,0.08)',
+    ...(Platform.OS === 'ios'
+      ? {
+          shadowColor: '#000',
+          shadowOpacity: 0.06,
+          shadowRadius: 8,
+          shadowOffset: {width: 0, height: 4},
+        }
+      : {
+          elevation: 0,
+        }),
+  },
+
+  messageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: getResponsiveHeight(8),
   },
 
   messageLabel: {
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(12.2),
+    fontSize: getResponsiveFontSize(12),
     color: '#111827',
-    marginBottom: getResponsiveHeight(8),
+  },
+
+  messageTag: {
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,200,77,0.2)',
+    paddingHorizontal: getResponsiveWidth(8),
+    paddingVertical: getResponsiveHeight(4),
+  },
+
+  messageTagText: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: getResponsiveFontSize(10.4),
+    color: '#92400E',
   },
 
   messageBody: {
     fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(13.4),
+    fontSize: getResponsiveFontSize(13.2),
     color: '#111827',
     lineHeight: getResponsiveHeight(20),
   },

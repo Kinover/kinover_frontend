@@ -38,6 +38,8 @@ import {COLORS, EMPTY_STYLE} from 'styles/style';
 const ACTION_W = getResponsiveWidth(70);
 const INPUT_H = getResponsiveHeight(46);
 const INPUT_SIDE_PAD = getResponsiveWidth(16);
+const ANDROID_MIN_BOTTOM_SAFE = getResponsiveHeight(16);
+const ANDROID_BOTTOM_BUFFER = getResponsiveHeight(6);
 
 /* =========================
  * Mention Utils
@@ -142,6 +144,11 @@ function CommentFooter({
   const insets = useSafeAreaInsets();
   const draftRef = useRef(initialText || '');
   const inputRef = useRef(null);
+  const rawBottomInset = Number(insets.bottom || 0);
+  const footerSafeBottom =
+    Platform.OS === 'android'
+      ? Math.max(rawBottomInset, ANDROID_MIN_BOTTOM_SAFE) + ANDROID_BOTTOM_BUFFER
+      : Math.max(rawBottomInset, 0);
 
   const [cursor, setCursor] = useState(0);
   const [draftText, setDraftText] = useState(initialText || '');
@@ -235,8 +242,9 @@ function CommentFooter({
           styles.footerBar,
           {
             paddingBottom:
-              getResponsiveHeight(10) +
-              Math.max(Math.min(insets.bottom, getResponsiveHeight(16)), 0),
+              Platform.OS === 'android'
+                ? footerSafeBottom
+                : getResponsiveHeight(10) + footerSafeBottom,
           },
         ]}
         onLayout={e => {

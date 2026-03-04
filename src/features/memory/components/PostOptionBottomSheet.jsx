@@ -4,13 +4,22 @@
 // src/features/post/components/PostOptionBottomSheet.jsx
 
 import React, {useMemo} from 'react';
-import {View, Text, StyleSheet, Image, TouchableOpacity, Dimensions} from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Dimensions,
+  Platform,
+} from 'react-native';
 
 import {
   BottomSheetModal,
   BottomSheetBackdrop,
   BottomSheetScrollView,
 } from '@gorhom/bottom-sheet';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {
   getResponsiveFontSize,
@@ -19,6 +28,9 @@ import {
 } from 'utils/responsive';
 
 const {width: SCREEN_W} = Dimensions.get('window');
+const ANDROID_NAV_FALLBACK = getResponsiveHeight(56);
+const ANDROID_FOOTER_BUFFER = getResponsiveHeight(24);
+const BASE_BOTTOM_PADDING = getResponsiveHeight(26);
 
 export default function PostOptionBottomSheet({
   sheetRef,
@@ -33,7 +45,14 @@ export default function PostOptionBottomSheet({
   onDeletePost,
   CameraRollAvailable = true,
 }) {
+  const insets = useSafeAreaInsets();
   const snapPoints = useMemo(() => ['51%'], []);
+  const rawBottomInset = Number(insets.bottom || 0);
+  const safeBottom =
+    Platform.OS === 'android'
+      ? Math.max(rawBottomInset, ANDROID_NAV_FALLBACK) + ANDROID_FOOTER_BUFFER
+      : Math.max(rawBottomInset, 0);
+  const contentBottomPadding = BASE_BOTTOM_PADDING + safeBottom;
 
   return (
     <BottomSheetModal
@@ -52,7 +71,7 @@ export default function PostOptionBottomSheet({
         />
       )}>
       <BottomSheetScrollView
-        contentContainerStyle={styles.optionContent}
+        contentContainerStyle={[styles.optionContent, {paddingBottom: contentBottomPadding}]}
         showsVerticalScrollIndicator={false}>
         {/* 상단 썸네일 + 제목 */}
         <View style={styles.optionTop}>
@@ -263,7 +282,6 @@ const styles = StyleSheet.create({
   optionContent: {
     paddingHorizontal: getResponsiveWidth(16),
     paddingTop: getResponsiveHeight(8),
-    paddingBottom: getResponsiveHeight(26),
     gap: getResponsiveHeight(14),
   },
 
