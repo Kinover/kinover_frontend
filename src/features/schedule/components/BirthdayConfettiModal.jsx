@@ -1,8 +1,10 @@
-import React, {useMemo} from 'react';
-import {View, Text, StyleSheet, Platform} from 'react-native';
+import React, {useMemo, useState, useEffect, useCallback} from 'react';
+import {View, Text, StyleSheet, Platform, Pressable} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import Clipboard from '@react-native-clipboard/clipboard';
 import CustomModal from 'components/modal/CustomModal';
 import ScreenConfetti from './ScreenConfetti';
+import {hapticLight, hapticSuccess} from 'utils/haptic';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
@@ -53,6 +55,18 @@ export default function BirthdayModal({
   const messageText = `${parsed.heroNames} 생일 축하해요! 🎉
 오늘 하루, 웃는 일이 더 많았으면 해요.
 늘 고맙고 소중해요.`;
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!visible) setCopied(false);
+  }, [visible]);
+
+  const handleCopyMessage = useCallback(() => {
+    hapticLight();
+    Clipboard.setString(messageText);
+    setCopied(true);
+    hapticSuccess();
+  }, [messageText]);
 
   const handleConfirm = () => {
     if (sendingMessage) return;
@@ -106,15 +120,24 @@ export default function BirthdayModal({
           <Text style={styles.noticeText}>짧게라도 한마디 전하면 더 좋아요.</Text>
         </View>
 
-        <View style={styles.messageBox}>
+        <Pressable
+          onPress={handleCopyMessage}
+          hitSlop={8}
+          style={({pressed}) => [
+            styles.messageBox,
+            copied && styles.messageBoxCopied,
+            pressed && styles.messageBoxPressed,
+          ]}>
           <View style={styles.messageHeader}>
             <Text style={styles.messageLabel}>추천 문구</Text>
-            <View style={styles.messageTag}>
-              <Text style={styles.messageTagText}>복사해서 사용</Text>
+            <View style={[styles.messageTag, copied && styles.messageTagCopied]}>
+              <Text style={[styles.messageTagText, copied && styles.messageTagTextCopied]}>
+                {copied ? '복사됨' : '복사'}
+              </Text>
             </View>
           </View>
           <Text style={styles.messageBody}>{messageText}</Text>
-        </View>
+        </Pressable>
       </View>
     </CustomModal>
   );
@@ -237,6 +260,14 @@ const styles = StyleSheet.create({
           elevation: 0,
         }),
   },
+  messageBoxPressed: {
+    transform: [{scale: 0.99}],
+    opacity: 0.94,
+  },
+  messageBoxCopied: {
+    backgroundColor: '#FFF8E1',
+    borderColor: '#FFD36A',
+  },
 
   messageHeader: {
     flexDirection: 'row',
@@ -257,11 +288,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(8),
     paddingVertical: getResponsiveHeight(4),
   },
+  messageTagCopied: {
+    backgroundColor: '#FFB000',
+  },
 
   messageTagText: {
     fontFamily: 'Pretendard-Medium',
     fontSize: getResponsiveFontSize(10.4),
     color: '#92400E',
+  },
+  messageTagTextCopied: {
+    color: '#111827',
   },
 
   messageBody: {

@@ -22,7 +22,7 @@ import GuideOverlay from './GuideOverlay';
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 const MAIN_YELLOW = '#FFC84D';
 const OVERLAY_DIM = 'rgba(0,0,0,0.65)';
-const BOTTOM_BAR_BG = '#1a1a1a';
+const BOTTOM_BAR_BG = 'transparent';
 
 /** description 안의 **텍스트** 를 굵게 파싱 (말풍선 본문용) */
 function parseDescription(desc) {
@@ -149,6 +149,7 @@ function GuideModalCarouselInner({
   const currentTargetRef =
     (targetRefsByKey && step && targetRefsByKey[step.key]) || targetRef;
   const useRealScreen = !!currentTargetRef;
+  const hasLiveTarget = !!currentTargetRef?.current;
 
   useEffect(() => {
     setIndex(0);
@@ -174,7 +175,23 @@ function GuideModalCarouselInner({
           return;
         }
 
-        setTargetLayout({x, y, width, height});
+        const nextX = Math.round(x);
+        const nextY = Math.round(y);
+        const nextW = Math.round(width);
+        const nextH = Math.round(height);
+
+        setTargetLayout(prev => {
+          if (
+            prev &&
+            Math.abs((prev.x ?? 0) - nextX) < 2 &&
+            Math.abs((prev.y ?? 0) - nextY) < 2 &&
+            Math.abs((prev.width ?? 0) - nextW) < 2 &&
+            Math.abs((prev.height ?? 0) - nextH) < 2
+          ) {
+            return prev;
+          }
+          return {x: nextX, y: nextY, width: nextW, height: nextH};
+        });
       });
     };
 
@@ -205,6 +222,7 @@ function GuideModalCarouselInner({
     return (
       <GuideOverlay
         targetLayout={targetLayout}
+        suppressFallbackUntilMeasured={useRealScreen && hasLiveTarget}
         step={{...step, title, description}}
         stepIndex={index}
         total={total}
@@ -241,17 +259,27 @@ function GuideModalCarouselInner({
 
       {/* 하단 고정 바: 건너뛰기 | 1/3 | 다음 */}
       <View style={[styles.bottomBar, {paddingBottom: Math.max(insets.bottom, getResponsiveHeight(12))}]}>
-        <TouchableOpacity onPress={handleSkip} hitSlop={{top: 12, bottom: 12, left: 12, right: 12}}>
+        <TouchableOpacity
+          onPress={handleSkip}
+          hitSlop={{top: 12, bottom: 12, left: 12, right: 12}}
+          style={styles.bottomLeftAction}>
           <Text allowFontScaling={false} style={styles.skipText}>
             건너뛰기
           </Text>
         </TouchableOpacity>
 
-        {total > 1 && (
-          <Text allowFontScaling={false} style={styles.stepIndicator}>
-            {index + 1}/{total}
-          </Text>
-        )}
+        <View
+          pointerEvents="none"
+          style={[
+            styles.centerIndicatorWrap,
+            {bottom: Math.max(insets.bottom, getResponsiveHeight(12))},
+          ]}>
+          {total > 1 && (
+            <Text allowFontScaling={false} style={styles.stepIndicator}>
+              {index + 1}/{total}
+            </Text>
+          )}
+        </View>
 
         <TouchableOpacity
           style={styles.nextButton}
@@ -362,10 +390,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(20),
     paddingTop: getResponsiveHeight(16),
   },
+  bottomLeftAction: {
+    minWidth: getResponsiveWidth(80),
+    height: getResponsiveHeight(52),
+    justifyContent: 'center',
+  },
+  centerIndicatorWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: getResponsiveHeight(16),
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   skipText: {
     fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-Regular',
     color: 'rgba(255,255,255,0.85)',
+    lineHeight: getResponsiveHeight(20),
   },
   stepIndicator: {
     fontSize: getResponsiveFontSize(15),
@@ -374,11 +417,12 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     paddingHorizontal: getResponsiveWidth(28),
-    paddingVertical: getResponsiveHeight(14),
+    height: getResponsiveHeight(52),
     borderRadius: 999,
     backgroundColor: MAIN_YELLOW,
     minWidth: getResponsiveWidth(100),
     alignItems: 'center',
+    justifyContent: 'center',
     ...Platform.select({
       ios: {
         shadowColor: '#EAB308',

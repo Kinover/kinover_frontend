@@ -1,5 +1,5 @@
 // 백그라운드 갔다 온 뒤에만 새로고침 (첫 진입은 오토로그인에서 이미 함)
-import {useRef} from 'react';
+import {useEffect, useRef} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {useAppStateBackground} from 'hooks/useAppStateBackground';
 import {pauseForBackground, resumeFromBackground} from 'features/chat/hooks/ChatSocket';
@@ -14,13 +14,23 @@ export function AppStateResourceBridge() {
   const familyId = useSelector(s => s.family?.familyId ?? s.user?.familyId ?? s.user?.family?.familyId);
   const isLogin = useSelector(s => !!s.login?.isLoggedIn);
   const beenBackgroundRef = useRef(false);
+  const pauseTimerRef = useRef(null);
+  const PAUSE_GRACE_MS = 700;
 
   useAppStateBackground({
     onBackground: () => {
-      beenBackgroundRef.current = true;
-      pauseForBackground();
+      if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
+      pauseTimerRef.current = setTimeout(() => {
+        beenBackgroundRef.current = true;
+        pauseForBackground();
+        pauseTimerRef.current = null;
+      }, PAUSE_GRACE_MS);
     },
     onActive: () => {
+      if (pauseTimerRef.current) {
+        clearTimeout(pauseTimerRef.current);
+        pauseTimerRef.current = null;
+      }
       resumeFromBackground();
 
       if (!beenBackgroundRef.current) return;
@@ -47,6 +57,15 @@ export function AppStateResourceBridge() {
       }
     },
   });
+
+  useEffect(() => {
+    return () => {
+      if (pauseTimerRef.current) {
+        clearTimeout(pauseTimerRef.current);
+        pauseTimerRef.current = null;
+      }
+    };
+  }, []);
 
   return null;
 }

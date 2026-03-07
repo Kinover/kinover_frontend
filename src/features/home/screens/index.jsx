@@ -377,6 +377,7 @@ export default function HomeScreen() {
         onAfterClose={handleGuideAfterClose}
         targetRefsByKey={{
           family_status: guideProfileRef,
+          family_edit: guideProfileRef,
           my_mood: guideMoodRef,
           family_invite: guideInviteRef,
         }}

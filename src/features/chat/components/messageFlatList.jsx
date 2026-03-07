@@ -206,6 +206,18 @@ export default function MessageFlatList({
     return result;
   }, [messageList, isKino, showIntroMessage, showKinoTyping, isInitialLoaded]);
 
+  const latestRealMessageId = useMemo(() => {
+    const firstReal = (finalMessages || []).find(
+      m => m?.localType !== 'kinoTyping',
+    );
+    if (!firstReal) return null;
+    return (
+      firstReal?.clientMessageId ||
+      firstReal?.messageId ||
+      `${firstReal?.senderId ?? 'x'}_${firstReal?.createdAt ?? ''}`
+    );
+  }, [finalMessages]);
+
   return (
     <FlatList
       ref={flatListRef}
@@ -239,6 +251,11 @@ export default function MessageFlatList({
           item?.localType === 'kinoTyping' || item?.localType === 'kinoIntro';
 
         const unreadCount = isLocalKino ? 0 : calcUnreadCount(item);
+        const itemStableId =
+          item?.clientMessageId ||
+          item?.messageId ||
+          `${item?.senderId ?? 'x'}_${item?.createdAt ?? ''}`;
+        const forceShowTime = latestRealMessageId === itemStableId;
 
         return (
           <ChatMessageItem
@@ -251,6 +268,7 @@ export default function MessageFlatList({
             isGrouped={isGrouped}
             mentionUsers={mentionUsers}
             unreadCount={unreadCount}
+            forceShowTime={forceShowTime}
           />
         );
       }}

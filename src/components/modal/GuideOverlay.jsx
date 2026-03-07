@@ -9,12 +9,13 @@ import {
   Pressable,
   Dimensions,
   Platform,
+  Image,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Animated, {
   Easing,
-  FadeInDown,
-  FadeOutUp,
+  FadeIn,
+  FadeOut,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -32,13 +33,15 @@ import {CalloutBubble} from './GuideModal';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 const OVERLAY_DIM = 'rgba(0,0,0,0.65)';
-const BOTTOM_BAR_BG = '#1a1a1a';
+const BOTTOM_BAR_BG = 'transparent';
 const PADDING = 20;
 const HOLE_EXTRA_PADDING = 8;
 const HIGHLIGHT_RADIUS = 20;
+const POST_GUIDE_IMAGE = require('../../assets/kinos/post.png');
 
 export default function GuideOverlay({
   targetLayout,
+  suppressFallbackUntilMeasured = false,
   step = {},
   stepIndex = 0,
   total = 1,
@@ -52,9 +55,11 @@ export default function GuideOverlay({
   const title = step.title || '';
   const description = step.description || '';
   const key = step.key;
-  const androidTopInset = Platform.OS === 'android' ? Number(insets.top || 0) : 0;
+  const androidTopInset =
+    Platform.OS === 'android' ? Number(insets.top || 0) : 0;
 
-  let hasHole = targetLayout && targetLayout.width > 0 && targetLayout.height > 0;
+  let hasHole =
+    targetLayout && targetLayout.width > 0 && targetLayout.height > 0;
   let rawX = targetLayout?.x ?? 0;
   let rawY = targetLayout?.y ?? 0;
   let w = targetLayout?.width ?? 0;
@@ -70,7 +75,7 @@ export default function GuideOverlay({
    * - timeline  : 추억 탭 피드 카드 영역
    * - filter    : 추억 탭 상단 필터 바 영역
    */
-  if (!hasHole) {
+  if (!hasHole && !suppressFallbackUntilMeasured) {
     if (key === 'chat_action' || key === 'add' || key === 'upload') {
       const fabSize = getResponsiveIconSize(65);
       const fabRight = getResponsiveWidth(13);
@@ -82,13 +87,15 @@ export default function GuideOverlay({
       rawY = SCREEN_HEIGHT - fabBottom - fabSize;
       hasHole = true;
     } else if (key === 'timeline') {
-      // 카테고리+필터 바 아래만 하이라이트 (피드 콘텐츠 영역만)
-      const side = getResponsiveWidth(18);
-      const belowFilterBar = getResponsiveHeight(280); // 배너 + 필터 바 아래 시작
-      const bottomMargin = getResponsiveHeight(130); // 하단 바·FAB 위까지
+      // 첫 게시글 카드 ref 측정 실패 시에도 "카드 1개" 크기만 대체 하이라이트한다.
+      const side = SCREEN_WIDTH * 0.03; // MemoryFeed cardOuter marginHorizontal과 동일 비율
+      const filterBarTop = getResponsiveHeight(210);
+      const filterBarH = getResponsiveHeight(56);
+      const cardGap = getResponsiveHeight(12);
+      const belowFilterBar = filterBarTop + filterBarH + cardGap;
 
       w = SCREEN_WIDTH - side * 2;
-      h = Math.max(getResponsiveHeight(200), SCREEN_HEIGHT - belowFilterBar - bottomMargin);
+      h = getResponsiveHeight(360);
       rawX = side;
       rawY = belowFilterBar;
       hasHole = true;
@@ -111,10 +118,20 @@ export default function GuideOverlay({
     rawY += androidTopInset;
   }
 
+  if (suppressFallbackUntilMeasured && !hasHole) {
+    return (
+      <View style={styles.container} pointerEvents="auto">
+        <View style={styles.dimWrap} pointerEvents="none">
+          <View style={[styles.dim, StyleSheet.absoluteFill]} />
+        </View>
+      </View>
+    );
+  }
+
   // 하이라이트: FAB는 원형 + 널널한 여백, 프로필/원형 타깃은 원형, 나머지는 모서리 둥근 사각
   const isFabStep = key === 'chat_action' || key === 'add' || key === 'upload';
   const isCircleTargetStep =
-    key === 'family_status' || key === 'my_mood'; // 프로필·감정 버튼 등 원형 UI
+    key === 'family_status' || key === 'family_edit' || key === 'my_mood'; // 프로필·감정 버튼 등 원형 UI
   const holePadding = isFabStep
     ? getResponsiveWidth(10)
     : getResponsiveWidth(HOLE_EXTRA_PADDING);
@@ -164,6 +181,7 @@ export default function GuideOverlay({
     const shouldForceAbove =
       key === 'family_invite' ||
       key === 'chat_action' ||
+      key === 'timeline' ||
       key === 'add' ||
       key === 'upload';
 
@@ -184,6 +202,8 @@ export default function GuideOverlay({
       }
     }
   }
+  const stableBubbleLeft = Math.round(bubbleLeft);
+  const stableBubbleTop = bubbleTop != null ? Math.round(bubbleTop) : undefined;
 
   // 하이라이트 박스에 살짝 펄스 모션
   const highlightPulse = useSharedValue(0);
@@ -213,6 +233,7 @@ export default function GuideOverlay({
   });
 
   const bubbleIsAboveTarget = hasHole && bubbleTop != null && bubbleTop < rawY;
+  const showTimelineGuideImage = hasHole && key === 'timeline';
 
   // 꼬리 위치를 타깃 쪽으로 조금 치우치도록 가로 오프셋 계산
   let tailOffset = 0;
@@ -222,7 +243,9 @@ export default function GuideOverlay({
     const rawOffset = targetCenterX - bubbleCenterX;
     const maxOffset = bubbleWidth / 2 - getResponsiveWidth(36);
     if (Number.isFinite(rawOffset) && maxOffset > 0) {
-      tailOffset = Math.max(-maxOffset, Math.min(maxOffset, rawOffset));
+      tailOffset = Math.round(
+        Math.max(-maxOffset, Math.min(maxOffset, rawOffset)),
+      );
     }
   }
 
@@ -279,6 +302,27 @@ export default function GuideOverlay({
         pointerEvents="auto"
       />
 
+      {showTimelineGuideImage && (
+        <View
+          pointerEvents="none"
+          style={[
+            styles.timelineGuideImageWrap,
+            {
+              left: holeX,
+              top: holeY,
+              width: holeW,
+              height: holeH,
+              borderRadius: highlightRadius,
+            },
+          ]}>
+          <Image
+            source={POST_GUIDE_IMAGE}
+            style={styles.timelineGuideImage}
+            resizeMode="contain"
+          />
+        </View>
+      )}
+
       {hasHole && (
         <Animated.View
           pointerEvents="none"
@@ -297,12 +341,17 @@ export default function GuideOverlay({
       )}
 
       <Animated.View
-        entering={FadeInDown.duration(220)}
-        exiting={FadeOutUp.duration(180)}
+        entering={FadeIn.duration(160)}
+        exiting={FadeOut.duration(130)}
         style={[
           styles.bubbleWrap,
           hasHole
-            ? {position: 'absolute', left: bubbleLeft, top: bubbleTop, width: bubbleWidth}
+            ? {
+                position: 'absolute',
+                left: stableBubbleLeft,
+                top: stableBubbleTop,
+                width: bubbleWidth,
+              }
             : {marginHorizontal: getResponsiveWidth(24), alignSelf: 'center'},
         ]}
         pointerEvents="none">
@@ -322,17 +371,30 @@ export default function GuideOverlay({
         ]}>
         <TouchableOpacity
           onPress={onSkip}
-          hitSlop={{top: 12, bottom: 12, left: 12, right: 12}}>
+          hitSlop={{top: 12, bottom: 12, left: 12, right: 12}}
+          style={styles.bottomLeftAction}>
           <Text allowFontScaling={false} style={styles.skipText}>
             건너뛰기
           </Text>
         </TouchableOpacity>
-        {total > 1 && (
-          <Text allowFontScaling={false} style={styles.stepIndicator}>
-            {stepIndex + 1}/{total}
-          </Text>
-        )}
-        <TouchableOpacity style={styles.nextButton} onPress={onNext} activeOpacity={0.88}>
+
+        <View
+          pointerEvents="none"
+          style={[
+            styles.centerIndicatorWrap,
+            {bottom: Math.max(insets.bottom, getResponsiveHeight(12))},
+          ]}>
+          {total > 1 && (
+            <Text allowFontScaling={false} style={styles.stepIndicator}>
+              {stepIndex + 1}/{total}
+            </Text>
+          )}
+        </View>
+
+        <TouchableOpacity
+          style={styles.nextButton}
+          onPress={onNext}
+          activeOpacity={0.88}>
           <Text allowFontScaling={false} style={styles.nextButtonText}>
             {isLast ? doneText : nextText}
           </Text>
@@ -343,18 +405,27 @@ export default function GuideOverlay({
 }
 
 const styles = StyleSheet.create({
-  container: { ...StyleSheet.absoluteFillObject },
-  dimWrap: { ...StyleSheet.absoluteFillObject },
-  dim: { backgroundColor: OVERLAY_DIM },
-  dimRow: { flexDirection: 'row' },
+  container: {...StyleSheet.absoluteFillObject},
+  dimWrap: {...StyleSheet.absoluteFillObject},
+  dim: {backgroundColor: OVERLAY_DIM},
+  dimRow: {flexDirection: 'row'},
   highlightBox: {
     position: 'absolute',
-    zIndex: 1,
+    zIndex: 2,
     borderWidth: 2,
     borderColor: 'rgba(255,200,77,0.9)',
     backgroundColor: 'rgba(255,255,255,0.04)',
   },
-  bubbleWrap: { maxWidth: SCREEN_WIDTH - getResponsiveWidth(48), zIndex: 2 },
+  timelineGuideImageWrap: {
+    position: 'absolute',
+    zIndex: 1,
+    overflow: 'hidden',
+  },
+  timelineGuideImage: {
+    width: '100%',
+    height: '100%',
+  },
+  bubbleWrap: {maxWidth: SCREEN_WIDTH - getResponsiveWidth(48), zIndex: 2},
   bottomBar: {
     position: 'absolute',
     left: 0,
@@ -369,10 +440,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: getResponsiveWidth(20),
     paddingTop: getResponsiveHeight(16),
   },
+  bottomLeftAction: {
+    minWidth: getResponsiveWidth(80),
+    height: getResponsiveHeight(52),
+    justifyContent: 'center',
+  },
+  centerIndicatorWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: getResponsiveHeight(16),
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   skipText: {
     fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-Regular',
     color: 'rgba(255,255,255,0.85)',
+    lineHeight: getResponsiveHeight(20),
   },
   stepIndicator: {
     fontSize: getResponsiveFontSize(15),
@@ -381,11 +467,12 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     paddingHorizontal: getResponsiveWidth(28),
-    paddingVertical: getResponsiveHeight(14),
+    height: getResponsiveHeight(52),
     borderRadius: 999,
     backgroundColor: '#FFC84D',
     minWidth: getResponsiveWidth(100),
     alignItems: 'center',
+    justifyContent: 'center',
   },
   nextButtonText: {
     fontSize: getResponsiveFontSize(15),

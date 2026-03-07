@@ -223,7 +223,7 @@ export default function KinoSelectScreen() {
   return (
     <SelectionFrameLayout
       title="키노를 선택해주세요"
-      subtitle="각기 다른 성격의 키노를 만나보세요"
+      subtitle="원하는 대화 스타일의 키노를 골라보세요."
       backgroundColor={screenBg}
       actionLabel="선택 완료"
       onActionPress={() => setConfirmVisible(true)}

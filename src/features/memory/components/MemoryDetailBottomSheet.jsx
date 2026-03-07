@@ -536,6 +536,13 @@ export default function MemoryDetailBottomSheet({
         />
       )}>
       <BottomSheetView style={{flex: 1, width: '100%'}}>
+        <View style={styles.commentSheetHeader}>
+          <Text allowFontScaling={false} style={styles.commentSheetTitle}>
+            댓글창
+          </Text>
+          <View style={styles.commentSheetDivider} />
+        </View>
+
         <BottomSheetFlatList
           ref={listRef}
           data={commentList}
@@ -606,6 +613,23 @@ const styles = StyleSheet.create({
   sheetBackground: {
     borderTopLeftRadius: getResponsiveWidth(18),
     borderTopRightRadius: getResponsiveWidth(18),
+  },
+  commentSheetHeader: {
+    paddingTop: getResponsiveHeight(12),
+    paddingBottom: getResponsiveHeight(16),
+    paddingHorizontal: getResponsiveWidth(14),
+    backgroundColor: '#F9F9F9',
+  },
+  commentSheetTitle: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: getResponsiveFontSize(14),
+    color: '#111827',
+    textAlign: 'center',
+    marginBottom: getResponsiveHeight(16),
+  },
+  commentSheetDivider: {
+    height: 1,
+    backgroundColor: 'rgba(17,24,39,0.1)',
   },
 
   commentBox: {

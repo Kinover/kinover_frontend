@@ -269,10 +269,7 @@ export default function SettingScreen() {
         </View>
 
         <View
-          style={{
-            paddingTop: getResponsiveHeight(8),
-            paddingBottom: getResponsiveHeight(12),
-          }}>
+          style={styles.fontSliderWrap}>
           <FontModeSliderBlue
             value={sliderStep}
             onComplete={step => applyFontMode(valueToMode(step))}
@@ -305,7 +302,7 @@ export default function SettingScreen() {
         </Text>
 
         <View style={styles.row}>
-          <View style={{flex: 1, paddingRight: getResponsiveWidth(10)}}>
+          <View style={styles.rowTextWrap}>
             <Text allowFontScaling={false} style={styles.label}>
               {bioLabel}
             </Text>
@@ -449,21 +446,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   container: {
-    paddingHorizontal: getResponsiveWidth(18),
-    paddingTop: getResponsiveHeight(16),
+    paddingHorizontal: getResponsiveWidth(20),
+    paddingTop: getResponsiveHeight(10),
   },
   header: {
     fontSize: SETTING_STYLES().titleFontSize,
     fontWeight: SETTING_STYLES().titleFontWeight,
-    marginBottom: getResponsiveHeight(20),
+    marginBottom: getResponsiveHeight(14),
     color: SETTING_STYLES().titleFontColor,
     fontFamily: SETTING_STYLES().titleFontFamily,
   },
   sectionTitle: {
     fontSize: getResponsiveFontSize(12.5),
     color: '#888',
-    marginTop: getResponsiveHeight(6),
-    marginBottom: getResponsiveHeight(6),
+    marginTop: 0,
+    marginBottom: getResponsiveHeight(8),
     fontFamily: 'Pretendard-Medium',
   },
   hint: {
@@ -476,7 +473,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: getResponsiveHeight(10),
+    minHeight: getResponsiveHeight(56),
+    paddingVertical: getResponsiveHeight(11),
+  },
+  rowTextWrap: {
+    flex: 1,
+    paddingRight: getResponsiveWidth(10),
   },
   label: {
     fontSize: SETTING_STYLES().labelFontSize,
@@ -496,6 +498,11 @@ const styles = StyleSheet.create({
   section: {
     borderBottomWidth: 0.5,
     borderColor: '#E5E5E5',
-    paddingVertical: getResponsiveHeight(6),
+    paddingTop: getResponsiveHeight(10),
+    paddingBottom: getResponsiveHeight(8),
+  },
+  fontSliderWrap: {
+    paddingTop: getResponsiveHeight(4),
+    paddingBottom: getResponsiveHeight(8),
   },
 });

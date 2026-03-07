@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {ActivityIndicator, View, Text} from 'react-native';
+import {ActivityIndicator, View, Text, Image, StyleSheet} from 'react-native';
 import {useSelector} from 'react-redux';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -11,12 +11,17 @@ import {onAuthFlagsChanged} from 'utils/authFlagsEvent';
 
 function BootLoading({label = ''}) {
   return (
-    <SafeAreaView
-      style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+    <SafeAreaView style={styles.bootContainer}>
+      <Image
+        source={require('../../assets/images/kinover!!.png')}
+        style={styles.bootLogo}
+        resizeMode="contain"
+      />
+      <View style={{height: 14}} />
       <ActivityIndicator />
       <View style={{height: 8}} />
       {!!label && (
-        <Text allowFontScaling={false} style={{color: '#666', fontSize: 12}}>
+        <Text allowFontScaling={false} style={styles.bootLabel}>
           {label}
         </Text>
       )}
@@ -112,25 +117,28 @@ export default function RootScreen() {
       }
     } else if (!isLogin) {
       target = {flow: 'AuthFlow', initialRouteName: '온보딩화면'};
+    } else if (needsSignup) {
+      target = {flow: 'AuthFlow', initialRouteName: '약관동의화면'};
     } else if (hasFamily === true) {
       target = {flow: 'AppFlow', initialRouteName: 'Tabs'};
     } else if (hasFamily === false) {
       target = {flow: 'AuthFlow', initialRouteName: '약관동의화면'};
     } else {
-      target = {flow: 'AppFlow', initialRouteName: 'Tabs'};
+      // hasFamily 미확정(null) 상태에서는 Tabs로 먼저 보내지 않고 로딩 유지
+      target = null;
     }
   }
 
   if (!target) {
     const label = !rehydrated
-      ? 'rehydrated 대기'
+      ? '앱 데이터를 불러오고 있어요'
       : !bootDone
-      ? 'bootDone 대기'
+      ? '초기 설정을 준비하고 있어요'
       : loginLoading
-      ? 'loginLoading...'
+      ? '로그인 상태를 확인하고 있어요'
       : !authChecked
-      ? 'authChecked 대기(오토로그인)'
-      : '';
+      ? '자동 로그인 중이에요'
+      : '잠시만 기다려 주세요';
     return <BootLoading label={label} />;
   }
 
@@ -139,3 +147,20 @@ export default function RootScreen() {
   }
   return <RootNavigator initialRouteName={target.initialRouteName} />;
 }
+
+const styles = StyleSheet.create({
+  bootContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  bootLogo: {
+    width: 168,
+    height: 58,
+  },
+  bootLabel: {
+    color: '#666',
+    fontSize: 12,
+  },
+});

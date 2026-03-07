@@ -1,7 +1,12 @@
 // src/features/chat/store/messageThunk.js
 
 import {apiClient} from 'utils/apiClient';
-import {sendChat, sendRead, isChatSocketOpen} from '../hooks/ChatSocket';
+import {
+  sendChat,
+  sendRead,
+  isChatSocketOpen,
+  reconnectIfNeeded,
+} from '../hooks/ChatSocket';
 import {
   setMessageList,
   appendMessageList,
@@ -68,6 +73,8 @@ const genClientId = () => {
  // 가볍게 유니크만 보장하면 OK
   return `c_${Date.now()}_${Math.random().toString(16).slice(2)}`;
 };
+
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /* =========================
  * 1) 메시지 fetch (REST)
@@ -192,19 +199,30 @@ export const sendMessageWsThunk = (messageBody, chatRoomId, userId) => {
  // 3) WS 전송 (백엔드 WebSocketMessageHandler는 MessageDTO로 파싱)
     try {
       const payloadToSend = {
-        ...messageBody,
-        chatRoomId,
+        content: messageBody?.content ?? '',
+        chatRoomId: String(chatRoomId),
         senderId: userId,
+        messageType: messageBody?.messageType ?? 'text',
+        ...(Array.isArray(messageBody?.mentionUserIds)
+          ? {mentionUserIds: messageBody.mentionUserIds}
+          : {}),
+        ...(Array.isArray(messageBody?.imageUrls)
+          ? {imageUrls: messageBody.imageUrls}
+          : {}),
+        ...(Array.isArray(messageBody?.mediaUrls)
+          ? {mediaUrls: messageBody.mediaUrls}
+          : {}),
         clientMessageId, // 서버가 그대로 저장/브로드캐스트하면 매칭이 깔끔해짐
-        createdAt: nowIso,
  // type은 안 넣어도 서버 default가 message:new라 OK
       };
 
-      const ok = sendChat(payloadToSend);
-
+      let ok = sendChat(payloadToSend);
       if (!ok) {
-        throw new Error('WebSocket not connected');
+        reconnectIfNeeded();
+        await wait(420);
+        ok = sendChat(payloadToSend);
       }
+      if (!ok) throw new Error('WebSocket not connected');
 
       return {ok: true, clientMessageId};
     } catch (e) {

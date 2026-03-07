@@ -119,6 +119,7 @@ export default function MemoryFeed({
   onPressCategoryFilter,
   onPressPeriodFilter,
   filterBarRef,
+  firstPostRef,
 }) {
   const dispatch = useDispatch();
   const navigation = useNavigation();
@@ -518,7 +519,10 @@ export default function MemoryFeed({
       const scale = refreshing ? null : getCardScale(scaleKey);
 
       const CardInner = (
-        <View style={styles.cardOuter}>
+        <View
+          ref={index === 0 ? firstPostRef : undefined}
+          collapsable={index === 0 ? false : undefined}
+          style={styles.cardOuter}>
           <TouchableOpacity
             activeOpacity={1}
             onPressIn={() => pressInCard(scaleKey)}

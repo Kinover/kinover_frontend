@@ -40,6 +40,7 @@ export default function ReceiveKinoChat({
   isSameSender = false,
   isTyping = false,
   kinoType = 'YELLOW_KINO',
+  forceShowTime = false,
 }) {
   const KINO_PROFILE_MAP = {
     YELLOW_KINO: require('../../../assets/kinos/yellowKino.png'),
@@ -237,7 +238,7 @@ export default function ReceiveKinoChat({
             </View>
           )}
 
-          {showTime && (
+          {(showTime || forceShowTime) && !!chatTime && (
             <Text allowFontScaling={false} style={styles.receivedTime}>
               {formatTime(chatTime)}
             </Text>
