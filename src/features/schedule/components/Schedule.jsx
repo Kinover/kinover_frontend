@@ -1,4 +1,4 @@
-import React, {useMemo, useState, useCallback, useRef} from 'react';
+import React, {useMemo, useState, useCallback, useRef, useEffect} from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   Image,
   Alert,
   ScrollView,
+  InteractionManager,
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 
@@ -172,10 +173,16 @@ function Schedule({
   currentUserId,
 }) {
   const dispatch = useDispatch();
+  const fallbackFamilyId = useSelector(
+    state => state?.family?.familyId ?? state?.user?.familyId ?? null,
+  );
+  const fallbackUserId = useSelector(state => state?.user?.userId ?? null);
   const chatRoomList = useSelector(state =>
     Array.isArray(state?.chatRoom?.chatRoomList) ? state.chatRoom.chatRoomList : [],
   );
   const chatRoomLoading = useSelector(state => !!state?.chatRoom?.loading);
+  const effectiveFamilyId = familyIdProp ?? fallbackFamilyId;
+  const effectiveUserId = currentUserId ?? fallbackUserId;
 
   const hookResult =
     useScheduleListByDate(selectedDate, refreshTrigger, familyIdProp) || {};
@@ -201,6 +208,7 @@ function Schedule({
   const [selectedChatRoomId, setSelectedChatRoomId] = useState(null);
   const [birthdayMessageDraft, setBirthdayMessageDraft] = useState('');
   const [sendingBirthdayMessage, setSendingBirthdayMessage] = useState(false);
+  const openPickerTimerRef = useRef(null);
 
   const openBirthdayModal = useCallback(() => {
     if (!hasBirthday) return;
@@ -216,6 +224,15 @@ function Schedule({
     setChatRoomPickerVisible(false);
     setSelectedChatRoomId(null);
   }, [sendingBirthdayMessage]);
+
+  useEffect(() => {
+    return () => {
+      if (openPickerTimerRef.current) {
+        clearTimeout(openPickerTimerRef.current);
+        openPickerTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const namesText = useMemo(() => {
     if (!hasBirthday) return '';
@@ -242,58 +259,95 @@ function Schedule({
       setBirthdayMessageDraft(nextMessage);
       setBirthdayModalVisible(false);
       setSelectedChatRoomId(null);
-      setTimeout(() => {
-        setChatRoomPickerVisible(true);
-      }, 190);
+      if (openPickerTimerRef.current) clearTimeout(openPickerTimerRef.current);
+      InteractionManager.runAfterInteractions(() => {
+        openPickerTimerRef.current = setTimeout(() => {
+          setChatRoomPickerVisible(true);
+          openPickerTimerRef.current = null;
+        }, 240);
+      });
 
-      if (chatRoomItems.length > 0) return;
-      if (!familyIdProp || currentUserId == null) return;
-
-      await dispatch(fetchChatRoomListThunk(familyIdProp, currentUserId));
+      if (!effectiveFamilyId || effectiveUserId == null) return;
+      await dispatch(fetchChatRoomListThunk(effectiveFamilyId, effectiveUserId));
     },
-    [chatRoomItems.length, familyIdProp, currentUserId, dispatch],
+    [effectiveFamilyId, effectiveUserId, dispatch],
   );
 
-  const handleBirthdaySendToRoom = useCallback(async () => {
-    if (!selectedChatRoomId) {
-      Alert.alert('채팅방 선택', '메시지를 보낼 채팅방을 선택해주세요.');
-      return;
-    }
-    if (currentUserId == null) {
-      Alert.alert('전송 실패', '사용자 정보를 확인할 수 없어요.');
-      return;
-    }
-
-    setSendingBirthdayMessage(true);
-    try {
-      const res = await dispatch(
-        sendMessageWsThunk(
-          {
-            content: birthdayMessageDraft,
-            messageType: 'text',
-          },
-          selectedChatRoomId,
-          currentUserId,
-        ),
-      );
-
-      if (res?.ok) {
-        setChatRoomPickerVisible(false);
-        setSelectedChatRoomId(null);
-        Alert.alert('전송 완료', '선택한 채팅방에 축하 메시지를 보냈어요.');
+  const handlePickChatRoomAndSend = useCallback(
+    async roomId => {
+      if (!roomId) return;
+      if (sendingBirthdayMessage) return;
+      if (effectiveUserId == null) {
+        Alert.alert('전송 실패', '사용자 정보를 확인할 수 없어요.');
         return;
       }
 
-      Alert.alert(
-        '전송 실패',
-        '메시지를 보내지 못했어요. 잠시 후 다시 시도해주세요.',
-      );
-    } catch (e) {
-      Alert.alert('전송 실패', e?.message || '메시지를 보내지 못했어요.');
-    } finally {
-      setSendingBirthdayMessage(false);
+      setSelectedChatRoomId(String(roomId));
+      setSendingBirthdayMessage(true);
+
+      try {
+        const res = await dispatch(
+          sendMessageWsThunk(
+            {
+              content: birthdayMessageDraft,
+              messageType: 'text',
+            },
+            String(roomId),
+            effectiveUserId,
+          ),
+        );
+
+        if (res?.ok) {
+          setChatRoomPickerVisible(false);
+          setSelectedChatRoomId(null);
+          Alert.alert('전송 완료', '선택한 채팅방에 축하 메시지를 보냈어요.');
+          return;
+        }
+
+        Alert.alert(
+          '전송 실패',
+          '메시지를 보내지 못했어요. 잠시 후 다시 시도해주세요.',
+        );
+      } catch (e) {
+        Alert.alert('전송 실패', e?.message || '메시지를 보내지 못했어요.');
+      } finally {
+        setSendingBirthdayMessage(false);
+      }
+    },
+    [birthdayMessageDraft, effectiveUserId, dispatch, sendingBirthdayMessage],
+  );
+
+  const handlePickChatRoomOnly = useCallback(
+    roomId => {
+      if (!roomId) return;
+      if (sendingBirthdayMessage) return;
+      setSelectedChatRoomId(String(roomId));
+    },
+    [sendingBirthdayMessage],
+  );
+
+  const handleConfirmPickedChatRoomSend = useCallback(() => {
+    if (sendingBirthdayMessage) return;
+    if (!selectedChatRoomId) {
+      Alert.alert('채팅방 선택', '먼저 보낼 채팅방을 선택해주세요.');
+      return;
     }
-  }, [birthdayMessageDraft, currentUserId, dispatch, selectedChatRoomId]);
+    handlePickChatRoomAndSend(selectedChatRoomId);
+  }, [sendingBirthdayMessage, selectedChatRoomId, handlePickChatRoomAndSend]);
+
+  useEffect(() => {
+    if (!chatRoomPickerVisible) return;
+    if (chatRoomItems.length > 0) return;
+    if (!effectiveFamilyId || effectiveUserId == null) return;
+
+    dispatch(fetchChatRoomListThunk(effectiveFamilyId, effectiveUserId));
+  }, [
+    chatRoomPickerVisible,
+    chatRoomItems.length,
+    effectiveFamilyId,
+    effectiveUserId,
+    dispatch,
+  ]);
 
  // type 판별 로직
   const getCardPreset = item => {
@@ -517,19 +571,20 @@ function Schedule({
       <CustomModal
         visible={chatRoomPickerVisible}
         onClose={closeChatRoomPicker}
-        onConfirm={handleBirthdaySendToRoom}
+        onConfirm={handleConfirmPickedChatRoomSend}
         closeOnBackdropPress={false}
         closeText="취소"
-        confirmText={sendingBirthdayMessage ? '전송 중...' : '선택한 방에 보내기'}
+        confirmText={sendingBirthdayMessage ? '전송 중...' : '보내기'}
         title="보낼 채팅방 선택"
-        subText="축하 메시지를 보낼 채팅방 하나를 선택해주세요."
+        subText="채팅방을 고른 뒤 보내기 버튼을 눌러 전송해주세요."
         modalBoxStyle={styles.roomPickerModalBox}
         contentStyle={styles.roomPickerContent}
         confirmButtonStyle={
           !selectedChatRoomId || sendingBirthdayMessage
             ? styles.roomPickerConfirmDisabled
             : null
-        }>
+        }
+      >
         {chatRoomLoading && chatRoomItems.length === 0 ? (
           <Text allowFontScaling={false} style={styles.roomPickerEmptyText}>
             채팅방 목록을 불러오는 중이에요...
@@ -549,10 +604,12 @@ function Schedule({
                 <TouchableOpacity
                   key={room.id}
                   activeOpacity={0.88}
-                  onPress={() => setSelectedChatRoomId(room.id)}
+                  disabled={sendingBirthdayMessage}
+                  onPress={() => handlePickChatRoomOnly(room.id)}
                   style={[
                     styles.roomPickerItem,
                     selected && styles.roomPickerItemSelected,
+                    sendingBirthdayMessage && styles.roomPickerItemDisabled,
                   ]}>
                   <Text
                     allowFontScaling={false}
@@ -808,6 +865,9 @@ const styles = StyleSheet.create({
     borderColor: '#FFC84D',
     backgroundColor: '#FFF8E6',
   },
+  roomPickerItemDisabled: {
+    opacity: 0.6,
+  },
   roomPickerTitle: {
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(13.5),
@@ -830,7 +890,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   roomPickerConfirmDisabled: {
-    opacity: 0.55,
+    opacity: 0.45,
   },
   emptyText: {
     marginTop: getResponsiveHeight(60),

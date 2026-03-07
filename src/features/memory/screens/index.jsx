@@ -35,6 +35,7 @@ export default function MemoryScreen() {
   const guideRootRef = useRef(null);
   const guideFilterBarRef = useRef(null);
   const guideFabRef = useRef(null);
+  const guideFirstPostRef = useRef(null);
 
   const selectedTab = useSelector(state => state.memory.ui.selectedTab);
 
@@ -312,6 +313,7 @@ export default function MemoryScreen() {
         onPressCategoryFilter={openCategorySheet}
         onPressPeriodFilter={openPeriodModal}
         filterBarRef={guideFilterBarRef}
+        firstPostRef={guideFirstPostRef}
       />
       </View>
 
@@ -357,6 +359,7 @@ export default function MemoryScreen() {
         onAfterClose={handleGuideAfterClose}
         targetRef={guideRootRef}
         targetRefsByKey={{
+          timeline: guideFirstPostRef,
           filter: guideFilterBarRef,
           upload: guideFabRef,
         }}

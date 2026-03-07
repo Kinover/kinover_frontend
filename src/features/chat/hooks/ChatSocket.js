@@ -21,10 +21,15 @@ let isPausedByBackground = false;
 
 let dispatchRef = null;
 let getStateRef = null;
+let started = false;
 
 // 메시지 배칭: 짧은 시간에 여러 건 들어오면 한 번에 디스패치
 let messageBatch = [];
 let batchTimer = null;
+
+// 전송 큐: 끊김 순간 보낸 메시지를 복구 후 순차 전송
+const MAX_OUTGOING_QUEUE = 120;
+let outgoingQueue = [];
 
 function flushMessageBatch() {
   if (batchTimer) {
@@ -50,6 +55,31 @@ function clearReconnectTimer() {
   if (reconnectTimer) {
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
+  }
+}
+
+function enqueueOutgoing(payload) {
+  if (!payload) return;
+  outgoingQueue.push(payload);
+  if (outgoingQueue.length > MAX_OUTGOING_QUEUE) {
+    outgoingQueue = outgoingQueue.slice(outgoingQueue.length - MAX_OUTGOING_QUEUE);
+  }
+}
+
+function flushOutgoingQueue() {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  if (!outgoingQueue.length) return;
+
+  const pending = outgoingQueue;
+  outgoingQueue = [];
+
+  for (const payload of pending) {
+    try {
+      ws.send(JSON.stringify(payload));
+    } catch (e) {
+      enqueueOutgoing(payload);
+      break;
+    }
   }
 }
 
@@ -94,21 +124,27 @@ async function openSocket() {
   ws.onopen = () => {
     reconnectAttempt = 0;
     console.log('✅ [GLOBAL WS] connected');
+    flushOutgoingQueue();
   };
 
   ws.onmessage = e => {
     try {
       const data = JSON.parse(e.data);
-      const type = data?.type ?? 'message:new';
+      const payload =
+        data?.payload && typeof data.payload === 'object' ? data.payload : data;
+      const type = data?.type ?? payload?.type ?? 'message:new';
 
  // =========================
  // A) 읽음 브로드캐스트 처리 (실시간 unreadCount 갱신용)
  // =========================
       if (type === 'room:read') {
  // payload: { type:'room:read', chatRoomId, userId, lastReadAt }
-        const chatRoomId = data?.chatRoomId;
-        const userId = data?.userId;
-        const lastReadAt = data?.lastReadAt;
+        const chatRoomId =
+          payload?.chatRoomId ??
+          payload?.roomId ??
+          payload?.chatRoom?.chatRoomId;
+        const userId = payload?.userId;
+        const lastReadAt = payload?.lastReadAt;
 
         if (chatRoomId && userId != null && lastReadAt) {
           dispatchRef(
@@ -125,10 +161,12 @@ async function openSocket() {
  // =========================
  // B) 일반 메시지 처리 (배칭)
  // =========================
-      const incomingRoomId = String(data?.chatRoomId ?? '');
+      const incomingRoomId = String(
+        payload?.chatRoomId ?? payload?.roomId ?? payload?.chatRoom?.chatRoomId ?? '',
+      );
       if (!incomingRoomId) return;
 
-      messageBatch.push(data);
+      messageBatch.push(payload);
       scheduleFlush();
     } catch (err) {
       console.log('❌ [GLOBAL WS] parse fail', err);
@@ -164,6 +202,7 @@ async function openSocket() {
  * 백그라운드 진입 시 소켓만 해제. active 시 resumeFromBackground()로 재연결.
  */
 export function pauseForBackground() {
+  if (isPausedByBackground) return;
   isPausedByBackground = true;
   cleanupWsOnly();
 }
@@ -173,6 +212,7 @@ export function pauseForBackground() {
  */
 export function resumeFromBackground() {
   if (!dispatchRef || !getStateRef || isManuallyClosed) return;
+  if (!isPausedByBackground && ws && ws.readyState === WebSocket.OPEN) return;
   isPausedByBackground = false;
   clearReconnectTimer();
   reconnectAttempt = 0;
@@ -186,29 +226,27 @@ export function resumeFromBackground() {
 export function startChatSocket(dispatch, getState) {
   dispatchRef = dispatch;
   getStateRef = getState;
+  isManuallyClosed = false;
 
+  if (started) {
+    openSocket();
+    return () => {};
+  }
+
+  started = true;
   openSocket();
-
-  const sub = AppState.addEventListener('change', state => {
-    if (state === 'active') {
-      resumeFromBackground();
-    } else if (state === 'background' || state === 'inactive') {
-      pauseForBackground();
-    }
-  });
-
-  return () => {
-    sub.remove();
-  };
+  return () => {};
 }
 
 export function stopChatSocket() {
+  started = false;
   isManuallyClosed = true;
   isPausedByBackground = false;
   connectedToken = null;
   dispatchRef = null;
   getStateRef = null;
   cleanupWsOnly();
+  outgoingQueue = [];
 }
 
 export function isChatSocketOpen() {
@@ -230,12 +268,20 @@ export function reconnectIfNeeded() {
 }
 
 export function sendChat(payload) {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+  if (!payload) return false;
+
+  if (!ws || ws.readyState !== WebSocket.OPEN) {
+    enqueueOutgoing(payload);
+    reconnectIfNeeded();
+    return false;
+  }
 
   try {
     ws.send(JSON.stringify(payload));
     return true;
   } catch (e) {
+    enqueueOutgoing(payload);
+    reconnectIfNeeded();
     return false;
   }
 }

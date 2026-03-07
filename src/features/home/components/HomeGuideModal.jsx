@@ -12,7 +12,14 @@ const steps = [
   {
     key: 'family_status',
     title: '가족 프로필',
-    description: '프로필을 눌러 가족의 상태를 확인해보세요.\n**길게 누르면** 별명·한마디를 수정할 수 있어요.',
+    description:
+      '가족 프로필을 **한 번 콕 누르면** 감정 표현이 톡 올라와요.\n오늘 기분을 빠르게 확인해보세요.',
+  },
+  {
+    key: 'family_edit',
+    title: '프로필 편집',
+    description:
+      '가족 프로필을 **길게 누르면** 편집 바텀시트가 열려요.\n별명과 한 줄 소개를 수정할 수 있어요.',
   },
   {
     key: 'my_mood',

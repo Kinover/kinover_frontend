@@ -58,6 +58,7 @@ export default function ChatMessageItem({
   mentionUsers = [],
 
   unreadCount = 0,
+  forceShowTime = false,
 }) {
   const navigation = useNavigation();
 
@@ -138,6 +139,7 @@ export default function ChatMessageItem({
         messageType={messageType}
         imageUrls={imageUrls}
         mentionUsers={mentionUsers}
+        forceShowTime={forceShowTime}
  // unreadCount={unreadCount}
       />
     ) : (
