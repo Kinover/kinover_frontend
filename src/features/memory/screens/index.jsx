@@ -55,6 +55,7 @@ export default function MemoryScreen() {
   }, [selectedCategory]);
 
   const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const familyId = useSelector(state => state.family?.familyId);
@@ -230,6 +231,7 @@ export default function MemoryScreen() {
  // console.log('[MemoryScreen] onSelectCategory:', cat);
 
       handleSelectCategory?.(cat);
+      setIsCategorySheetOpen(false);
       requestAnimationFrame(() => forceShowHeaderAndTabBar(true));
     },
     [handleSelectCategory, forceShowHeaderAndTabBar],
@@ -284,6 +286,7 @@ export default function MemoryScreen() {
   }, [FAB_HIDE_DISTANCE, tabBarTranslateY]);
 
   const openCategorySheet = useCallback(() => {
+    setIsCategorySheetOpen(true);
     categorySheetRef?.current?.present?.();
   }, [categorySheetRef]);
 
@@ -307,6 +310,7 @@ export default function MemoryScreen() {
       <MemoryFeed
  // 여기만 바뀜: 훅에서 온 title 말고 "selectedCategory 기반 title"
         selectedCategoryTitle={computedSelectedCategoryTitle}
+        isCategoryOpen={isCategorySheetOpen}
         startDate={startDate}
         endDate={endDate}
         onScroll={handleFeedScroll}
@@ -322,6 +326,7 @@ export default function MemoryScreen() {
         categoryList={categoryList}
         selectedCategory={selectedCategory}
         onSelectCategory={handleSelectCategoryWithReset}
+        onDismiss={() => setIsCategorySheetOpen(false)}
         onCancel={() => {}}
       />
 

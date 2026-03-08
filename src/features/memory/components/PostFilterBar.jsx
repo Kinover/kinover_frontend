@@ -25,6 +25,7 @@ import {
 import {BUTTON_STYLES, COLORS} from 'styles/style';
 
 const {width: SCREEN_W} = Dimensions.get('window');
+const FILTER_CONTROL_H = getResponsiveHeight(34);
 
 const DEFAULT_SORT_OPTIONS = [
   {key: 'latest', title: '최신순'},
@@ -32,6 +33,17 @@ const DEFAULT_SORT_OPTIONS = [
 ];
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
+
+const hashToHue = (text = '') => {
+  const s = String(text).trim();
+  if (!s) return 210;
+  let hash = 0;
+  for (const ch of s) {
+    hash = ch.charCodeAt(0) + ((hash << 5) - hash);
+    hash |= 0;
+  }
+  return Math.abs(hash % 360);
+};
 
 const formatPeriodLabel = raw => {
   if (!raw) return '';
@@ -53,6 +65,7 @@ const formatPeriodLabel = raw => {
 
 export default React.forwardRef(function PostFilterBar({
   categoryTitle = '전체',
+  categoryOpen = false,
   onPressCategory,
   periodLabel,
   onPressDateFilter,
@@ -77,6 +90,7 @@ export default React.forwardRef(function PostFilterBar({
   const displayPeriodLabel = useMemo(() => {
     return periodLabel ? formatPeriodLabel(periodLabel) : '기간 선택';
   }, [periodLabel]);
+  const categoryHue = useMemo(() => hashToHue(categoryTitle), [categoryTitle]);
 
   const closeSort = useCallback(() => setSortModalOpen(false), []);
 
@@ -137,9 +151,34 @@ export default React.forwardRef(function PostFilterBar({
     [sortArrow],
   );
 
+  const categoryArrow = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(categoryArrow, {
+      toValue: categoryOpen ? 1 : 0,
+      duration: 160,
+      useNativeDriver: true,
+    }).start();
+  }, [categoryOpen, categoryArrow]);
+
+  const categoryArrowStyle = useMemo(
+    () => ({
+      transform: [
+        {
+          rotate: categoryArrow.interpolate({
+            inputRange: [0, 1],
+            outputRange: ['0deg', '180deg'],
+          }),
+        },
+      ],
+    }),
+    [categoryArrow],
+  );
+
  // tone
-  const ACTIVE_BORDER = BUTTON_STYLES()?.backgroundColor ?? '#111827';
-  const TEXT_MAIN = '#111827';
+  const ACTIVE_BORDER = BUTTON_STYLES().saveBg;
+  const ACTIVE_BG = 'rgba(17,24,39,0.045)';
+  const TEXT_MAIN = COLORS.textPrimary;
   const TEXT_SUB = COLORS.textTertiary;
 
   return (
@@ -147,9 +186,25 @@ export default React.forwardRef(function PostFilterBar({
       <View ref={ref} style={styles.container}>
         {/* Category: pill로 “통일”하지 말고, 드롭다운 트리거처럼 자연스럽게 */}
         <TouchableOpacity
-          style={styles.categoryButton}
+          style={[
+            styles.categoryButton,
+            isCategoryActive && {
+              borderColor: `hsla(${categoryHue}, 35%, 84%, 1)`,
+              backgroundColor: `hsla(${categoryHue}, 36%, 97%, 1)`,
+            },
+          ]}
           onPress={onPressCategory}
           activeOpacity={0.75}>
+          <View
+            style={[
+              styles.categoryDot,
+              {
+                backgroundColor: isCategoryActive
+                  ? `hsla(${categoryHue}, 54%, 44%, 1)`
+                  : COLORS.textTertiary,
+              },
+            ]}
+          />
           <Text
             allowFontScaling={false}
             style={[
@@ -160,11 +215,14 @@ export default React.forwardRef(function PostFilterBar({
             ellipsizeMode="tail">
             {categoryTitle}
           </Text>
-          <Image
+          <Animated.Image
             source={require('../../../assets/icons/down-arrow.png')}
-            style={[
+              style={[
               styles.categoryCaret,
-              {tintColor: isCategoryActive ? TEXT_MAIN : '#525252'},
+              {
+                tintColor: isCategoryActive ? TEXT_MAIN : TEXT_SUB,
+              },
+              categoryArrowStyle,
             ]}
           />
         </TouchableOpacity>
@@ -175,7 +233,8 @@ export default React.forwardRef(function PostFilterBar({
           <TouchableOpacity
             style={[
               styles.pill,
-              isPeriodActive && {borderColor: ACTIVE_BORDER},
+              isPeriodActive && styles.pillActive,
+              isPeriodActive && {borderColor: ACTIVE_BORDER, backgroundColor: ACTIVE_BG},
             ]}
             activeOpacity={0.75}
             onPress={onPressDateFilter}>
@@ -202,7 +261,11 @@ export default React.forwardRef(function PostFilterBar({
           {/* Sort */}
           <TouchableOpacity
             ref={sortBtnRef}
-            style={[styles.pill, isSortActive && {borderColor: ACTIVE_BORDER}]}
+            style={[
+              styles.pill,
+              isSortActive && styles.pillActive,
+              isSortActive && {borderColor: ACTIVE_BORDER, backgroundColor: ACTIVE_BG},
+            ]}
             activeOpacity={0.75}
             onPress={openSort}>
             <Text
@@ -268,7 +331,7 @@ export default React.forwardRef(function PostFilterBar({
           {active ? (
             <Image
               style={{
-                tintColor: 'black',
+                tintColor: COLORS.iconPrimary,
                 width: getResponsiveIconSize(9),
                 height: getResponsiveIconSize(9),
                 resizeMode: 'contain',
@@ -302,20 +365,31 @@ const styles = StyleSheet.create({
   categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: getResponsiveWidth(4),
+    gap: getResponsiveWidth(6),
     maxWidth: getResponsiveWidth(160),
-    paddingVertical: getResponsiveHeight(6),
-    paddingRight: getResponsiveWidth(6),
+    height: FILTER_CONTROL_H,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: COLORS.borderSubtle,
+    backgroundColor: COLORS.surfaceSecondary,
+    paddingVertical: 0,
+    paddingLeft: getResponsiveWidth(10),
+    paddingRight: getResponsiveWidth(9),
+  },
+  categoryDot: {
+    width: getResponsiveWidth(6),
+    height: getResponsiveWidth(6),
+    borderRadius: 99,
   },
   categoryText: {
     fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(13),
+    fontSize: getResponsiveFontSize(12),
     lineHeight: getResponsiveHeight(17),
-    color: '#525252',
+    color: COLORS.textTertiary,
   },
   categoryTextActive: {
     fontFamily: 'Pretendard-SemiBold',
-    color: '#111827',
+    color: COLORS.textPrimary,
   },
   categoryCaret: {
     resizeMode: 'contain',
@@ -334,26 +408,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: getResponsiveWidth(6),
+    height: FILTER_CONTROL_H,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: '#F9FAFB',
-    paddingHorizontal: getResponsiveWidth(11),
-    paddingVertical: getResponsiveHeight(6),
+    borderColor: COLORS.borderSubtle,
+    backgroundColor: COLORS.surfaceSecondary,
+    paddingHorizontal: getResponsiveWidth(10),
+    paddingVertical: 0,
     maxWidth: getResponsiveWidth(220),
   },
 
   pillText: {
-    fontSize: getResponsiveFontSize(11.5),
+    fontSize: getResponsiveFontSize(12),
     fontFamily: 'Pretendard-Medium',
   },
   pillTextActive: {
     fontFamily: 'Pretendard-SemiBold',
   },
+  pillActive: {
+    shadowColor: COLORS.shadowBase,
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
 
   icon: {
-    width: getResponsiveWidth(13),
-    height: getResponsiveWidth(13),
+    width: getResponsiveWidth(14),
+    height: getResponsiveWidth(14),
   },
 
   caret: {
@@ -374,14 +456,14 @@ const styles = StyleSheet.create({
   },
 
   dropdown: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: COLORS.surfacePrimary,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.borderSubtle,
     paddingVertical: getResponsiveHeight(6),
     ...Platform.select({
       ios: {
-        shadowColor: '#000',
+        shadowColor: COLORS.shadowBase,
         shadowOpacity: 0.08,
         shadowRadius: 10,
         shadowOffset: {width: 0, height: 6},
@@ -408,12 +490,12 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     fontSize: getResponsiveFontSize(12),
     fontFamily: 'Pretendard-Medium',
-    color: '#525252',
+    color: COLORS.iconSecondary,
   },
 
   dropdownItemTextActive: {
     fontFamily: 'Pretendard-SemiBold',
-    color: '#111827',
+    color: COLORS.textPrimary,
   },
 
   dropdownShadowPlate: {
@@ -423,7 +505,7 @@ const styles = StyleSheet.create({
   right: getResponsiveWidth(-1),            // 약간 더 크게(확장)
   bottom: getResponsiveHeight(-2),          // 약간 더 크게(확장)
   borderRadius: 14,
-  backgroundColor: '#000',
+  backgroundColor: COLORS.shadowBase,
   opacity: 0.10,                            // 핵심: 너무 진하면 “검은 박스” 됨
 },
 
@@ -431,6 +513,6 @@ const styles = StyleSheet.create({
     marginLeft: getResponsiveWidth(8),
     fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-Bold',
-    color: '#111827',
+    color: COLORS.textPrimary,
   },
 });

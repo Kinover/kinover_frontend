@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Platform,
   StatusBar,
+  Dimensions,
 } from 'react-native';
 import {
   GestureHandlerRootView,
@@ -140,6 +141,25 @@ const applyGlobalTextScale = (fontMode, routeName) => {
   globalTextScale = resolveTextScale(fontMode, routeName);
 };
 
+function KinoverSplashView({loop = false, onAnimationFinish}) {
+  return (
+    <View style={styles.splashContainer}>
+      <Image
+        source={require('../assets/images/kinover!!.png')}
+        style={styles.logo}
+      />
+      <LottieView
+        source={require('../assets/animations/kinoSplash_circle_expand.json')}
+        autoPlay
+        loop={loop}
+        resizeMode="cover"
+        style={styles.splashAnimation}
+        onAnimationFinish={onAnimationFinish}
+      />
+    </View>
+  );
+}
+
 function ResponsiveModeBridge() {
   const fontMode = useSelector(state => state.ui?.fontMode);
 
@@ -244,6 +264,14 @@ function AppLockGate({readyForAuth}) {
   if (!rehydrated) return null;
   if (!readyForAuth) return null;
   if (!locked) return null;
+
+  if (authing) {
+    return (
+      <View style={styles.lockOverlay} pointerEvents="auto">
+        <KinoverSplashView loop={true} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.lockOverlay} pointerEvents="auto">
@@ -403,27 +431,19 @@ export default function App() {
                     applyGlobalTextScale(latestFontMode, routeName);
                   }}>
                   {showSplash && !splashDone ? (
-                    <View style={styles.splashContainer}>
-                      <Image
-                        source={require('../assets/images/kinover!!.png')}
-                        style={styles.logo}
-                      />
-                      <LottieView
-                        source={require('../assets/animations/kinoSplash_circle_expand.json')}
-                        autoPlay
-                        loop={false}
-                        resizeMode="cover"
-                        style={styles.splashAnimation}
-                        onAnimationFinish={onSplashFinish}
-                      />
-                    </View>
+                    <KinoverSplashView
+                      loop={false}
+                      onAnimationFinish={onSplashFinish}
+                    />
                   ) : (
                     <GuideOverlayProvider>
                       <View style={styles.guideRootWrap}>
                         <View style={styles.mainContent}>
                           <RootScreen />
                         </View>
-                        <GuideOverlayRoot />
+                        <View style={styles.guideOverlayWrap} pointerEvents="box-none">
+                          <GuideOverlayRoot />
+                        </View>
                         <AppLockGate readyForAuth={readyForAuth} />
                       </View>
                     </GuideOverlayProvider>
@@ -451,6 +471,16 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
+  },
+  guideOverlayWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    // Android(Pixel 등): 탭 바·소프트키 영역까지 덮도록 전체 화면 높이 사용
+    height: Dimensions.get('screen').height,
+    zIndex: 99998,
+    elevation: 99998,
   },
 
   splashContainer: {

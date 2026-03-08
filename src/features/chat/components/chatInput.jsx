@@ -50,7 +50,7 @@ import {
 } from 'utils/responsive';
 
 import {convertPhUriToFileUri} from 'utils/photoUriConverter';
-import {getSelectOrder, toggleSelectImage} from 'utils/selection';
+import {getSelectOrder, isSameAsset, toggleSelectImage} from 'utils/selection';
 import {loadGalleryPhotos} from 'utils/gallery';
 import formatDuration from 'utils/formatDuration';
 import ToastModal from 'components/modal/ToastModal';
@@ -733,8 +733,8 @@ const ChatInput = forwardRef(function ChatInput(
 
   const renderPhoto = useCallback(
     ({item}) => {
-      const isSelected = selectedImages.some(f => f.uri === item.uri);
-      const order = getSelectOrder(selectedImages, item.uri);
+      const isSelected = selectedImages.some(f => isSameAsset(f, item));
+      const order = getSelectOrder(selectedImages, item);
 
       return (
         <TouchableOpacity
@@ -935,7 +935,7 @@ const ChatInput = forwardRef(function ChatInput(
                 source={ICON_SEND}
                 style={[
                   styles.sendIcon,
-                  canSend ? styles.sendIconWhite : styles.sendIconInactive,
+                  canSend ? styles.sendIconActive : styles.sendIconInactive,
                 ]}
               />
 
@@ -1155,8 +1155,15 @@ const styles = StyleSheet.create({
     height: getResponsiveIconSize(31),
     resizeMode: 'contain',
   },
-  sendIconWhite: {opacity: 1, transform: [{scale: 0.9}]},
-  sendIconInactive: {opacity: 1, transform: [{scale: 0.9}]},
+  sendIconActive: {
+    opacity: 1,
+    transform: [{scale: 0.9}],
+  },
+  sendIconInactive: {
+    opacity: 1,
+    transform: [{scale: 0.7}],
+    tintColor: '#9CA3AF',
+  },
 
   sendBadge: {
     position: 'absolute',

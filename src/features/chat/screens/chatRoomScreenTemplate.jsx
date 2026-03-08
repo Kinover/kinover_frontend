@@ -1,6 +1,7 @@
 // ChatRoomScreenTemplate - 공통 채팅방 화면 (관심사 분리: 훅 + 메시지/입력 컴포넌트)
 import React from 'react';
 import {StyleSheet, KeyboardAvoidingView, Platform, View} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import useChatRoomTemplate from '../hooks/useChatRoomTemplate';
 import {onLeaveChat} from '../hooks/onLeaveChat';
@@ -9,6 +10,7 @@ import ChatRoomMessageList from '../components/ChatRoomMessageList';
 import ChatRoomInputArea from '../components/ChatRoomInputArea';
 import ChatSettings from './chatSetting';
 import ToastModal from 'components/modal/ToastModal';
+import {getChatKeyboardVerticalOffset} from 'utils/layoutMetrics';
 
 export default function ChatRoomScreenTemplate({
   chatRoom,
@@ -17,6 +19,9 @@ export default function ChatRoomScreenTemplate({
   isKino,
   navigation,
 }) {
+  const insets = useSafeAreaInsets();
+  const keyboardVerticalOffset = getChatKeyboardVerticalOffset(insets.top);
+
   const {
     chatRoomId,
     currentChatRoom,
@@ -88,7 +93,7 @@ export default function ChatRoomScreenTemplate({
       <KeyboardAvoidingView
         style={styles.container}
         behavior="padding"
-        keyboardVerticalOffset={102.5}>
+        keyboardVerticalOffset={keyboardVerticalOffset}>
         {content}
       </KeyboardAvoidingView>
     );

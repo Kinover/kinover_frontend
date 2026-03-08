@@ -19,7 +19,7 @@ import {
 } from 'utils/responsive';
 import GuideOverlay from './GuideOverlay';
 
-const {width: SCREEN_WIDTH} = Dimensions.get('window');
+const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 const MAIN_YELLOW = '#FFC84D';
 const OVERLAY_DIM = 'rgba(0,0,0,0.65)';
 const BOTTOM_BAR_BG = 'transparent';
@@ -114,11 +114,19 @@ export default function GuideModalCarousel(props) {
 
   if (total === 0) return null;
 
-  // RN Modal 대신 View 오버레이를 사용한다.
+  // RN Modal 대신 View 오버레이. 화면 전체(탭 바 포함)를 덮도록 window 크기 + absolute 사용
   if (!visible) return null;
   return (
     <View
-      style={[StyleSheet.absoluteFillObject, {zIndex: 99999, elevation: 99999}]}
+      style={[
+        StyleSheet.absoluteFillObject,
+        {
+          width: SCREEN_WIDTH,
+          height: SCREEN_HEIGHT,
+          zIndex: 99999,
+          elevation: 99999,
+        },
+      ]}
       pointerEvents="auto">
       <GuideModalCarouselInner {...props} />
     </View>
@@ -257,12 +265,26 @@ function GuideModalCarouselInner({
         )}
       </View>
 
-      {/* 하단 고정 바: 건너뛰기 | 1/3 | 다음 */}
-      <View style={[styles.bottomBar, {paddingBottom: Math.max(insets.bottom, getResponsiveHeight(12))}]}>
+      {/* 하단 고정 바: 건너뛰기 | 1/3 | 다음 — Android에서 더 아래로 */}
+      <View
+        style={[
+          styles.bottomBar,
+          {
+            paddingBottom:
+              Platform.OS === 'android'
+                ? insets.bottom
+                : insets.bottom + getResponsiveHeight(6),
+            paddingTop:
+              Platform.OS === 'android'
+                ? getResponsiveHeight(8)
+                : getResponsiveHeight(12),
+          },
+        ]}>
         <TouchableOpacity
           onPress={handleSkip}
           hitSlop={{top: 12, bottom: 12, left: 12, right: 12}}
-          style={styles.bottomLeftAction}>
+          style={styles.skipButton}
+          activeOpacity={0.88}>
           <Text allowFontScaling={false} style={styles.skipText}>
             건너뛰기
           </Text>
@@ -272,7 +294,16 @@ function GuideModalCarouselInner({
           pointerEvents="none"
           style={[
             styles.centerIndicatorWrap,
-            {bottom: Math.max(insets.bottom, getResponsiveHeight(12))},
+            {
+              bottom:
+                Platform.OS === 'android'
+                  ? insets.bottom
+                  : insets.bottom + getResponsiveHeight(6),
+              top:
+                Platform.OS === 'android'
+                  ? getResponsiveHeight(8)
+                  : getResponsiveHeight(12),
+            },
           ]}>
           {total > 1 && (
             <Text allowFontScaling={false} style={styles.stepIndicator}>
@@ -388,55 +419,58 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: BOTTOM_BAR_BG,
     paddingHorizontal: getResponsiveWidth(20),
-    paddingTop: getResponsiveHeight(16),
+    paddingTop: getResponsiveHeight(12),
   },
-  bottomLeftAction: {
-    minWidth: getResponsiveWidth(80),
-    height: getResponsiveHeight(52),
+  skipButton: {
+    height: getResponsiveHeight(44),
+    paddingHorizontal: getResponsiveWidth(20),
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
     justifyContent: 'center',
   },
   centerIndicatorWrap: {
     position: 'absolute',
     left: 0,
     right: 0,
-    top: getResponsiveHeight(16),
+    top: getResponsiveHeight(12),
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
   skipText: {
     fontSize: getResponsiveFontSize(14),
-    fontFamily: 'Pretendard-Regular',
-    color: 'rgba(255,255,255,0.85)',
+    fontFamily: 'Pretendard-Medium',
+    color: 'rgba(255,255,255,0.95)',
     lineHeight: getResponsiveHeight(20),
   },
   stepIndicator: {
-    fontSize: getResponsiveFontSize(15),
+    fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-Medium',
-    color: '#FFFFFF',
+    color: 'rgba(255,255,255,0.85)',
   },
   nextButton: {
-    paddingHorizontal: getResponsiveWidth(28),
-    height: getResponsiveHeight(52),
+    height: getResponsiveHeight(44),
+    paddingHorizontal: getResponsiveWidth(24),
     borderRadius: 999,
-    backgroundColor: MAIN_YELLOW,
-    minWidth: getResponsiveWidth(100),
+    backgroundColor: 'rgba(255,200,77,0.95)',
+    minWidth: getResponsiveWidth(88),
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
       ios: {
         shadowColor: '#EAB308',
         shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
       },
       android: {
-        elevation: 4,
+        elevation: 3,
       },
     }),
   },
   nextButtonText: {
-    fontSize: getResponsiveFontSize(15),
+    fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-SemiBold',
     color: '#111827',
   },

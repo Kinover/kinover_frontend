@@ -25,6 +25,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
+import {BACKGROUND_COLORS} from 'styles/style';
 
 import HeaderSection from '../components/HeaderSection';
 import MemberGridSection from '../components/MemberGridSection';
@@ -54,6 +55,13 @@ import {
   getStoreMockOnlineUserIds,
   getStoreMockLastActiveMap,
 } from '../utils/storeMockData';
+
+const awaitAction = async action => {
+  if (!action) return null;
+  if (typeof action.unwrap === 'function') return action.unwrap();
+  if (typeof action.then === 'function') return action;
+  return action;
+};
 
 export default function HomeScreen() {
   const dispatch = useDispatch();
@@ -113,8 +121,6 @@ export default function HomeScreen() {
       mounted = false;
     };
   }, [familyId]);
-
-  const familyLoaded = !!familyId;
 
   const familyMembers = (familyUserList || []).filter(
     m => m.userId !== user?.userId,
@@ -188,36 +194,31 @@ export default function HomeScreen() {
   useDoubleBackToExit(true);
 
  /**
- * 핵심 수정:
- * Home 진입 시
- * 1) fetchUserThunk로 내 상태를 먼저 최신화
- * 2) 그 다음 family 관련 3개 fetch
+ * Home 진입 시:
+ * - 화면은 먼저 보여주고(체감속도 개선),
+ * - 데이터는 백그라운드에서 병렬 갱신
  */
   useEffect(() => {
     let mounted = true;
 
     (async () => {
       if (!user?.userId) return;
-      if (!familyId) return;
+      if (!familyId) {
+        if (mounted) setDidInitialLoad(true);
+        return;
+      }
+
+      if (mounted) setDidInitialLoad(true);
 
       try {
- // 1) 유저 최신화 먼저
-        const r = dispatch(fetchUserThunk());
-        if (r && typeof r.unwrap === 'function') {
-          await r.unwrap();
-        } else if (r && typeof r.then === 'function') {
-          await r;
-        }
+        const userTask = awaitAction(dispatch(fetchUserThunk()));
+        const familyTask = awaitAction(dispatch(fetchFamilyThunk(familyId)));
+        const usersTask = awaitAction(dispatch(fetchFamilyUserListThunk(familyId)));
+        const statusTask = awaitAction(dispatch(fetchFamilyStatusThunk(familyId)));
 
- // 2) 그 다음 가족 데이터
-        await dispatch(fetchFamilyThunk(familyId));
-        await dispatch(fetchFamilyUserListThunk(familyId));
-        await dispatch(fetchFamilyStatusThunk(familyId));
+        await Promise.allSettled([userTask, familyTask, usersTask, statusTask]);
       } catch (e) {
         console.log('[HomeScreen] initial load error:', e);
- // 에러 나도 로딩 막지 말고 화면은 뜨게
-      } finally {
-        if (mounted) setDidInitialLoad(true);
       }
     })();
 
@@ -229,19 +230,13 @@ export default function HomeScreen() {
   const doRefreshMembers = useCallback(async () => {
     if (!familyId) return;
 
- // 새로고침 때도 유저 최신화 한번 섞어주면 더 튼튼함
     try {
-      const r = dispatch(fetchUserThunk());
-      if (r && typeof r.unwrap === 'function') await r.unwrap();
-      else if (r && typeof r.then === 'function') await r;
-    } catch (e) {
-      console.log('[HomeScreen] refresh fetchUser error:', e);
-    }
+      const userTask = awaitAction(dispatch(fetchUserThunk()));
+      const usersTask = awaitAction(dispatch(fetchFamilyUserListThunk(familyId)));
+      const statusTask = awaitAction(dispatch(fetchFamilyStatusThunk(familyId)));
+      const familyTask = awaitAction(dispatch(fetchFamilyThunk(familyId)));
 
-    try {
-      await dispatch(fetchFamilyUserListThunk(familyId));
-      await dispatch(fetchFamilyStatusThunk(familyId));
-      await dispatch(fetchFamilyThunk(familyId));
+      await Promise.allSettled([userTask, usersTask, statusTask, familyTask]);
     } catch (e) {
       console.log('[HomeScreen] refresh family data error:', e);
     }
@@ -309,8 +304,7 @@ export default function HomeScreen() {
     dismissUserSheet();
   };
 
-  const isLoading =
-    !STORE_MOCK_ENABLED && (!familyLoaded || !didInitialLoad);
+  const isLoading = !STORE_MOCK_ENABLED && !didInitialLoad;
 
   if (isLoading) {
     return (
@@ -403,7 +397,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFC84D',
+    backgroundColor: BACKGROUND_COLORS.primaryBg,
     overflow: 'visible',
   },
   contentWrap: {
@@ -420,14 +414,14 @@ const styles = StyleSheet.create({
     width: '220%',
     left: '-60%',
     height: '100%',
-    backgroundColor: '#F9F9F9',
+    backgroundColor: BACKGROUND_COLORS.secondaryBg,
     borderTopLeftRadius: getResponsiveWidth(600),
     borderTopRightRadius: getResponsiveWidth(600),
     zIndex: -1,
   },
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#FFC84D',
+    backgroundColor: BACKGROUND_COLORS.primaryBg,
     justifyContent: 'center',
     alignItems: 'center',
   },

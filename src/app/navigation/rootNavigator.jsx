@@ -47,7 +47,7 @@ const createHeaderOptions = (navigation, route) => ({
     elevation: 0,
     borderBottomWidth: 0,
   },
-  headerTitle: '',
+  headerTitle: route?.name === '알림화면' ? '알림' : '',
   headerLeft: () => (
     <RenderHeaderBackButton navigation={navigation} route={route} />
   ),

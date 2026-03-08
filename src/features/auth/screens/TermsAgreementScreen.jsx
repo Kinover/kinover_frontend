@@ -14,6 +14,7 @@ import {useNavigateToWhere} from 'hooks/useNavigateToWhere';
 import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
 import ToastModal from 'components/modal/ToastModal';
 import {COLORS} from 'styles/style';
+import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
 
 // Redux / FontMode
 import {useSelector} from 'react-redux';
@@ -323,7 +324,11 @@ export default function TermsAgreementScreen() {
         index={0}
         snapPoints={snapPoints}
         backdropComponent={renderBackdrop}
-        handleIndicatorStyle={{backgroundColor: '#D1D5DB'}}>
+        handleIndicatorStyle={{
+          backgroundColor: 'rgba(156,163,175,0.45)',
+          width: getResponsiveWidth(48),
+          height: getResponsiveHeight(4),
+        }}>
         <View style={styles.sheetContainer}>{renderDetailContent()}</View>
       </BottomSheetModal>
     </SafeAreaView>

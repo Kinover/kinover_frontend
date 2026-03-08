@@ -24,6 +24,7 @@ import {
   getResponsiveWidth,
   getResponsiveFontSize,
 } from 'utils/responsive';
+import {getCreateRoomBottomSheetSnapPoints} from 'utils/layoutMetrics';
 import {BOTTOMSHEET_STYLE} from 'styles/style';
 
 import ToastModal from 'components/modal/ToastModal';
@@ -209,20 +210,7 @@ export default function CreateChatRoomBottomSheet({
 
  // snapPoints
   const resolvedSnapPoints = useMemo(() => {
-    if (Array.isArray(externalSnapPoints) && externalSnapPoints.length >= 2) {
-      return externalSnapPoints;
-    }
-    if (Array.isArray(externalSnapPoints) && externalSnapPoints.length === 1) {
-      return [externalSnapPoints[0], '92%'];
-    }
-
-    const fm = String(fontMode ?? '').toLowerCase();
-    const isLarge = fm.includes('large') && !fm.includes('extra');
-    const isXL = fm.includes('extra');
-
-    if (isXL) return ['72%', '94%'];
-    if (isLarge) return ['68%', '93%'];
-    return ['56.5%', '92%'];
+    return getCreateRoomBottomSheetSnapPoints(fontMode, externalSnapPoints);
   }, [externalSnapPoints, fontMode]);
 
   const sheetKey = useMemo(() => {

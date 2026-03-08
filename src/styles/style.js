@@ -12,22 +12,37 @@ export const COLORS = {
   brandPrimaryStrong: '#F59E0B',
   brandPrimarySoft: '#FEF3C7',
 
-  textPrimary: 'black',
+  textPrimary: '#111827',
+  textDefault: '#1F2937',
   textSecondary: '#6B7280',
   textTertiary: '#9CA3AF',
   textInverse: '#FFFFFF',
+
+  iconPrimary: '#111827',
+  iconSecondary: '#525252',
+
+  surfacePrimary: '#FFFFFF',
+  surfaceSecondary: '#F9FAFB',
+  surfaceMuted: '#F3F4F6',
+  surfaceDisabled: '#F3F4F6',
+
+  borderSubtle: '#E5E7EB',
+  borderStrong: '#111827',
+
+  shadowBase: '#000000',
 };
 
 export const getBackgroundColors = () => ({
-  primaryBg: '#FFC84D',
+  primaryBg: COLORS.brandPrimary,
   secondaryBg: '#F9F9F9',
+  surfaceBg: COLORS.surfaceSecondary,
   overlayBg:
     Platform.OS === 'android' ? 'rgba(17,24,39,0.55)' : 'rgba(17,24,39,0.45)',
 });
 
 export const getButtonStyles = () => ({
-  saveBg: 'black',
-  cancelBg: '#FFFFFF',
+  saveBg: COLORS.textPrimary,
+  cancelBg: COLORS.surfacePrimary,
   fontSize: getResponsiveFontSize(14),
   fontFamily: 'Pretendard-Medium',
   border_radius: getResponsiveIconSize(14),
@@ -35,13 +50,13 @@ export const getButtonStyles = () => ({
 
 export const getHeaderStyles = () => ({
   mainTitleFontSize: getResponsiveFontSize(23),
-  mainTitleFontColor: 'black',
+  mainTitleFontColor: COLORS.textPrimary,
   mainTitleFontFamily: 'Pretendard-SemiBold',
   mainTitleFontWeight: Platform.OS === 'android' ? '700' : undefined,
   mainTitleLineHeight: getResponsiveFontSize(27),
 
   defaultTitleFontSize: getResponsiveFontSize(20),
-  defaultTitleFontColor: '#333',
+  defaultTitleFontColor: COLORS.textDefault,
   defaultTitleFontFamily: 'Pretendard-Medium',
 
   headerLeftIconWidth:
@@ -67,12 +82,12 @@ export const getHeaderStyles = () => ({
 
 export const getSettingStyles = () => ({
   titleFontSize: getResponsiveFontSize(21),
-  titleFontColor: '#000',
+  titleFontColor: COLORS.textPrimary,
   titleFontFamily: 'Pretendard-Bold',
   titleFontWeight: '700',
 
   labelFontSize: getResponsiveFontSize(16),
-  labelFontColor: '#222',
+  labelFontColor: COLORS.textDefault,
   labelFontFamily: 'Pretendard-Medium',
 });
 
@@ -105,13 +120,13 @@ export const getBottomSheetStyle = () => ({
   sectionLabel: {
     fontSize: getResponsiveFontSize(14.5),
     fontFamily: 'Pretendard-SemiBold',
-    color: 'black',
+    color: COLORS.textPrimary,
     marginBottom: getResponsiveHeight(6),
     marginTop: getResponsiveHeight(10),
   },
   inactive: {
  // color: ' #F6F7FB',
-    color: '#F3F4F6',
+    color: COLORS.surfaceDisabled,
   },
 });
 

@@ -396,10 +396,6 @@ export default function HeaderSection({user, onUserPress, onInvitePress, guideRe
     longPressedRef.current = false;
   }, []);
 
-  const handleCardPress = useCallback(() => {
-    openUserBottomSheet();
-  }, [openUserBottomSheet]);
-
   const emotionRenderSize = Math.round(profileSize * 1.1);
 
   return (
@@ -514,10 +510,7 @@ export default function HeaderSection({user, onUserPress, onInvitePress, guideRe
       </TouchableOpacity>
 
       <DropShadow style={styles.shadowBox}>
-        <TouchableOpacity
-          activeOpacity={0.92}
-          onPress={handleCardPress}
-          style={styles.headerCard}>
+        <View style={styles.headerCard}>
           {/* 우측 상단: 버튼 2개 (초대코드 + 감정) */}
           <View style={styles.topRightButtons}>
        
@@ -545,7 +538,7 @@ export default function HeaderSection({user, onUserPress, onInvitePress, guideRe
           <Text allowFontScaling={false} style={styles.trait} numberOfLines={2}>
             {user?.trait || '이 사람을 한마디로 표현한다면?'}
           </Text>
-        </TouchableOpacity>
+        </View>
       </DropShadow>
     </View>
   );

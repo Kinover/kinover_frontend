@@ -8,6 +8,7 @@ import {deleteFcmToken} from 'features/notification/utils/requestNotificationPer
 import {deleteLoginInfo} from 'utils/storage';
 
 import {stopChatSocket} from 'features/chat/hooks/ChatSocket';
+import {resetUi} from 'store/uiSlice';
 import {setLogout, setAuthChecked} from '../store/loginSlice';
 
 const nextTick = () => new Promise(resolve => setTimeout(resolve, 0));
@@ -53,6 +54,7 @@ export const useLogout = () => {
 
  // 4) 타이밍 안정화
     await nextTick();
+    dispatch(resetUi()); // 글씨 크기·생체인식 앱잠금 초기화
     dispatch(setLogout());
     dispatch(setAuthChecked(true));
   }, [dispatch]);

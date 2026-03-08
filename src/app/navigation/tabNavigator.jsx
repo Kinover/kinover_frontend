@@ -29,8 +29,8 @@ const Tab = createBottomTabNavigator();
 
 /** 탭바 기본 스타일 */
 const tabBarBaseStyle = {
-  backgroundColor: 'white',
-  borderTopColor: '#F9F9F9',
+  backgroundColor: COLORS.surfacePrimary,
+  borderTopColor: COLORS.borderSubtle,
   borderTopLeftRadius: getResponsiveIconSize(15),
   borderTopRightRadius: getResponsiveIconSize(15),
   paddingTop: 8,
@@ -78,7 +78,7 @@ function TabIcon({focused, source}) {
         width: getResponsiveIconSize(30),
         height: getResponsiveIconSize(30),
         resizeMode: 'contain',
-        tintColor: focused ? 'black' : COLORS.textTertiary,
+        tintColor: focused ? COLORS.iconPrimary : COLORS.textTertiary,
       }}
     />
   );

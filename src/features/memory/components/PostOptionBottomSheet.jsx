@@ -276,8 +276,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: getResponsiveWidth(22),
   },
   optionHandle: {
-    backgroundColor: 'rgba(17,24,39,0.16)',
-    width: getResponsiveWidth(44),
+    backgroundColor: 'rgba(156,163,175,0.45)',
+    width: getResponsiveWidth(48),
+    height: getResponsiveHeight(4),
   },
   optionContent: {
     paddingHorizontal: getResponsiveWidth(16),
