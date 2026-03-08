@@ -204,7 +204,6 @@ function CommentFooter({
       requestAnimationFrame(() => {
         if (inputRef.current?.setNativeProps) {
           inputRef.current.setNativeProps({
-            text: next,
             selection: {start: nextCursor, end: nextCursor},
           });
         }
@@ -232,6 +231,8 @@ function CommentFooter({
     setCursor(0);
     inputRef.current?.setNativeProps?.({text: ''});
   }, [familyUsers, myUserId, onChangeComment, onSubmitComment, disabled]);
+
+  const canSubmitComment = !disabled && String(draftText || '').trim().length > 0;
 
   return (
     <BottomSheetFooter
@@ -307,16 +308,17 @@ function CommentFooter({
                 : '댓글을 달아보세요 ( @가족이름 멘션 가능 )'
             }
             placeholderTextColor="#999"
-            defaultValue={initialText || ''}
+            value={draftText}
             onChangeText={t => {
               if (disabled) return;
               draftRef.current = t;
               setDraftText(t);
+              setCursor(t.length);
             }}
             onSelectionChange={e => {
               if (disabled) return;
-              const nextCursor = e?.nativeEvent?.selection?.start ?? 0;
-              setCursor(nextCursor);
+              const start = e?.nativeEvent?.selection?.start ?? 0;
+              setCursor(start);
             }}
             returnKeyType="send"
             onSubmitEditing={handleSubmit}
@@ -326,9 +328,13 @@ function CommentFooter({
           <TouchableOpacity
             onPress={handleSubmit}
             activeOpacity={0.9}
-            disabled={disabled}>
+            disabled={!canSubmitComment}
+            style={!canSubmitComment && {opacity: 0.6}}>
             <Image
-              style={styles.commentSendBt}
+              style={[
+                styles.commentSendBt,
+                !canSubmitComment && styles.commentSendBtInactive,
+              ]}
               source={require('../../../assets/icons/sendBt-dark.png')}
             />
           </TouchableOpacity>
@@ -354,19 +360,39 @@ export default function MemoryDetailBottomSheet({
   onSheetChange,
   disabled = false,
 }) {
-  const snapPoints = useMemo(() => snapPointsProp || ['81%'], [snapPointsProp]);
+  const isSamsungAndroid = useMemo(() => {
+    if (Platform.OS !== 'android') return false;
+    const brand = String(
+      Platform?.constants?.Brand ??
+        Platform?.constants?.brand ??
+        Platform?.constants?.Manufacturer ??
+        '',
+    ).toLowerCase();
+    return brand.includes('samsung');
+  }, []);
+
+  const snapPoints = useMemo(() => {
+    if (snapPointsProp) return snapPointsProp;
+    return [isSamsungAndroid ? '83%' : '78%'];
+  }, [snapPointsProp, isSamsungAndroid]);
   const isAndroid = Platform.OS === 'android';
 
   const listRef = useRef(null);
 
   const [showTopFade, setShowTopFade] = useState(false);
   const [showBottomFade, setShowBottomFade] = useState(false);
+  const [openedSwipeCommentId, setOpenedSwipeCommentId] = useState(null);
 
   const lastFadeRef = useRef({top: false, bottom: false});
   const scrollThrottleRef = useRef(0);
 
   const [footerLayoutH, setFooterLayoutH] = useState(
     INPUT_H + getResponsiveHeight(20),
+  );
+  const commentCount = Array.isArray(commentList) ? commentList.length : 0;
+  const emptyBottomOffset = useMemo(
+    () => Math.max(getResponsiveHeight(18), Math.round(footerLayoutH * 0.34)),
+    [footerLayoutH],
   );
 
   const handleListScroll = useCallback(e => {
@@ -403,6 +429,18 @@ export default function MemoryDetailBottomSheet({
       setShowBottomFade(false);
     }
   }, [commentList.length]);
+
+  useEffect(() => {
+    if (!commentList?.length) {
+      setOpenedSwipeCommentId(null);
+      return;
+    }
+
+    const exists = commentList.some(
+      c => String(c?.commentId) === String(openedSwipeCommentId),
+    );
+    if (!exists) setOpenedSwipeCommentId(null);
+  }, [commentList, openedSwipeCommentId]);
 
   const renderBackdrop = useCallback(
     props => (
@@ -463,6 +501,9 @@ export default function MemoryDetailBottomSheet({
   const renderCommentItem = useCallback(
     ({item}) => {
       const mine = isMyComment(item);
+      const isSwipeOpened =
+        openedSwipeCommentId != null &&
+        String(openedSwipeCommentId) === String(item?.commentId);
 
       return (
         <Swipeable
@@ -470,12 +511,36 @@ export default function MemoryDetailBottomSheet({
           overshootRight={false}
           rightThreshold={ACTION_W / 2}
           simultaneousHandlers={listRef}
+          onSwipeableOpenStartDrag={() => {
+            if (!mine || disabled) return;
+            setOpenedSwipeCommentId(item?.commentId ?? null);
+          }}
+          onSwipeableCloseStartDrag={() => {
+            if (String(openedSwipeCommentId) === String(item?.commentId)) {
+              setOpenedSwipeCommentId(null);
+            }
+          }}
+          onSwipeableWillOpen={() => {
+            if (!mine || disabled) return;
+            setOpenedSwipeCommentId(item?.commentId ?? null);
+          }}
+          onSwipeableWillClose={() => {
+            if (
+              String(openedSwipeCommentId) === String(item?.commentId)
+            ) {
+              setOpenedSwipeCommentId(null);
+            }
+          }}
           renderRightActions={progress =>
             mine && !disabled
               ? renderRightActions(item.commentId, progress)
               : null
           }>
-          <View style={styles.commentBox}>
+          <View
+            style={[
+              styles.commentBox,
+              isSwipeOpened && styles.commentBoxSwiped,
+            ]}>
             <View style={styles.commentRow}>
               <FastImage
                 fallback={true}
@@ -503,13 +568,24 @@ export default function MemoryDetailBottomSheet({
         </Swipeable>
       );
     },
-    [familyUsers, isMyComment, renderRightActions, disabled],
+    [
+      familyUsers,
+      isMyComment,
+      renderRightActions,
+      disabled,
+      openedSwipeCommentId,
+    ],
   );
+
+  const handleCloseSheet = useCallback(() => {
+    sheetRef?.current?.dismiss?.();
+  }, [sheetRef]);
 
   return (
     <BottomSheetModal
       ref={sheetRef}
       snapPoints={snapPoints}
+      handleIndicatorStyle={styles.sheetHandle}
       enablePanDownToClose={!disabled}
       backdropComponent={renderBackdrop}
       backgroundStyle={[styles.sheetBackground, {backgroundColor}]}
@@ -537,24 +613,45 @@ export default function MemoryDetailBottomSheet({
       )}>
       <BottomSheetView style={{flex: 1, width: '100%'}}>
         <View style={styles.commentSheetHeader}>
-          <Text allowFontScaling={false} style={styles.commentSheetTitle}>
-            댓글창
-          </Text>
+          <View style={styles.commentHeaderRow}>
+            <Text allowFontScaling={false} style={styles.commentSheetTitle}>
+              댓글
+            </Text>
+            <Text allowFontScaling={false} style={styles.commentCountText}>
+              {commentCount}
+            </Text>
+            <TouchableOpacity
+              onPress={handleCloseSheet}
+              activeOpacity={0.75}
+              style={styles.closeButton}>
+              <Image
+                source={require('../../../assets/icons/close(1).png')}
+                style={styles.closeButtonIcon}
+              />
+            </TouchableOpacity>
+          </View>
           <View style={styles.commentSheetDivider} />
         </View>
 
         <BottomSheetFlatList
           ref={listRef}
+          style={styles.commentList}
           data={commentList}
           keyExtractor={item => String(item.commentId)}
           renderItem={renderCommentItem}
           onScroll={handleListScroll}
           scrollEventThrottle={16}
           showsVerticalScrollIndicator={false}
+          nestedScrollEnabled={true}
+          alwaysBounceVertical={false}
           keyboardShouldPersistTaps="handled"
           scrollEnabled={!disabled}
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
+            <View
+              style={[
+                styles.emptyContainer,
+                {paddingBottom: emptyBottomOffset},
+              ]}>
               <Text allowFontScaling={false} style={styles.emptyText}>
                 아직 댓글이 없어요.
                 {'\n'}첫 댓글을 남겨보세요!
@@ -562,6 +659,7 @@ export default function MemoryDetailBottomSheet({
             </View>
           }
           contentContainerStyle={{
+            flexGrow: 1,
             paddingBottom: footerLayoutH + getResponsiveHeight(12),
           }}
         />
@@ -614,18 +712,50 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: getResponsiveWidth(18),
     borderTopRightRadius: getResponsiveWidth(18),
   },
+  sheetHandle: {
+    width: getResponsiveWidth(48),
+    height: getResponsiveHeight(4),
+    backgroundColor: 'rgba(156,163,175,0.45)',
+  },
   commentSheetHeader: {
     paddingTop: getResponsiveHeight(12),
     paddingBottom: getResponsiveHeight(16),
     paddingHorizontal: getResponsiveWidth(14),
     backgroundColor: '#F9F9F9',
   },
+  commentHeaderRow: {
+    position: 'relative',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: getResponsiveHeight(16),
+    minHeight: getResponsiveHeight(24),
+  },
   commentSheetTitle: {
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(14),
+    fontSize: getResponsiveFontSize(18.5),
     color: '#111827',
     textAlign: 'center',
-    marginBottom: getResponsiveHeight(16),
+  },
+  commentCountText: {
+    marginLeft: getResponsiveWidth(6),
+    fontFamily: 'Pretendard-Regular',
+    fontSize: getResponsiveFontSize(12.5),
+    color: '#9CA3AF',
+  },
+  closeButton: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    paddingHorizontal: getResponsiveWidth(4),
+  },
+  closeButtonIcon: {
+    width: getResponsiveWidth(22),
+    height: getResponsiveWidth(22),
+    resizeMode: 'contain',
+    tintColor: '#6B7280',
   },
   commentSheetDivider: {
     height: 1,
@@ -633,8 +763,12 @@ const styles = StyleSheet.create({
   },
 
   commentBox: {
-    paddingHorizontal: getResponsiveWidth(10),
+    paddingHorizontal: getResponsiveWidth(14),
     paddingVertical: getResponsiveHeight(10),
+  },
+  commentBoxSwiped: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: getResponsiveWidth(10),
   },
   commentRow: {flexDirection: 'row'},
   commentWriterImage: {
@@ -665,6 +799,9 @@ const styles = StyleSheet.create({
     lineHeight: 15,
     color: '#000',
   },
+  commentList: {
+    flex: 1,
+  },
   mentionText: {
     color: '#111827',
     fontFamily: 'Pretendard-SemiBold',
@@ -675,7 +812,9 @@ const styles = StyleSheet.create({
   },
 
   emptyContainer: {
-    paddingTop: getResponsiveHeight(30),
+    flex: 1,
+    minHeight: getResponsiveHeight(240),
+    justifyContent: 'center',
     alignItems: 'center',
   },
   emptyText: {
@@ -749,6 +888,10 @@ const styles = StyleSheet.create({
   commentSendBt: {
     width: getResponsiveWidth(24),
     height: getResponsiveWidth(24),
+  },
+  commentSendBtInactive: {
+    tintColor: COLORS.textTertiary,
+    transform: [{scale: 0.85}],
   },
 
   mentionDropdown: {

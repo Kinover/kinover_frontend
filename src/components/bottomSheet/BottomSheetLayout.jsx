@@ -28,6 +28,7 @@ import {
   getResponsiveWidth,
   getResponsiveFontSize,
 } from 'utils/responsive';
+import {getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
 
 import {BOTTOMSHEET_STYLE, COLORS} from 'styles/style';
 
@@ -99,14 +100,17 @@ export default function BottomSheetLayout({
  * - insets.bottom이 0인 경우(에뮬/실기기에서 시스템 네비게이션바 영역 미보고) fallback으로 네비바 높이만큼 여백 확보
  */
   const androidInset = Platform.OS === 'android' ? Number(insets.bottom || 0) : 0;
-
-  const androidFallback =
-    Platform.OS === 'android' && androidInset === 0 ? ANDROID_SYSTEM_NAV_FALLBACK : 0;
+  const androidInsetByScreen = getAndroidNavBottomInsetEstimate();
+  const androidSafeBottom = Math.max(
+    androidInset,
+    androidInsetByScreen,
+    ANDROID_SYSTEM_NAV_FALLBACK,
+  );
 
  // 콘텐츠 하단 패딩: Android fallback, iOS는 홈 인디케이터 최소값
   const baseBottom =
     Platform.OS === 'android'
-      ? Math.max(androidInset + androidFallback, ANDROID_SYSTEM_NAV_FALLBACK)
+      ? androidSafeBottom
       : Math.max(Number(insets.bottom || 0), IOS_HOME_INDICATOR_MIN);
 
  // 안드로이드는 modal bottomInset을 주면 시트가 위로 떠서 하단에 딤 빈띠가 생긴다.
@@ -372,8 +376,9 @@ export default function BottomSheetLayout({
       key={modalKey}
       ref={modalRef}
       handleIndicatorStyle={{
-        width: getResponsiveHeight(35),
-        backgroundColor: COLORS.textTertiary,
+        width: getResponsiveWidth(48),
+        height: getResponsiveHeight(4),
+        backgroundColor: 'rgba(156,163,175,0.45)',
       }}
       snapPoints={resolvedSnapPoints}
       enableDynamicSizing={false}

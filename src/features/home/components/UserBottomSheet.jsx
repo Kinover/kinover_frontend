@@ -44,6 +44,10 @@ import {
   getResponsiveFontSize,
   getResponsiveHeight,
 } from 'utils/responsive';
+import {
+  getKeyboardSafeGap,
+  getUserBottomSheetSnapPoints,
+} from 'utils/layoutMetrics';
 import FastImage from '@d11/react-native-fast-image';
 import {
   convertPhUriToFileUri,
@@ -62,7 +66,7 @@ import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterBu
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 
 const {height: WINDOW_H} = Dimensions.get('window');
-const SAFE_GAP = 12;
+const SAFE_GAP = getKeyboardSafeGap();
 
 const IMG_DEFAULT = require('../../../assets/images/default.png');
 let IMG_PENCIL;
@@ -76,6 +80,13 @@ function UserBottomSheetModalBase(
   {selectedUser, onSave, onCancel, onDismiss},
   ref,
 ) {
+  const normalizeNickname = useCallback(value => {
+    return String(value ?? '')
+      .trim()
+      .replace(/\s+/g, ' ')
+      .toLowerCase();
+  }, []);
+
   const styles = useMemo(
     () =>
       StyleSheet.create({
@@ -219,6 +230,9 @@ function UserBottomSheetModalBase(
   const traitInputRef = useRef(null);
 
   const fontMode = useSelector(state => state.ui.fontMode);
+  const familyUserList = useSelector(
+    state => state?.userFamily?.familyUserList ?? [],
+  );
 
  // 콘텐츠 영역만” 올릴 shift
   const shiftAnim = useRef(new Animated.Value(0)).current;
@@ -252,13 +266,7 @@ function UserBottomSheetModalBase(
   }, []);
 
   const snapPoints = useMemo(() => {
-    const fm = String(fontMode ?? '').toLowerCase();
-    const isLarge = fm.includes('large') && !fm.includes('extra');
-    const isXL = fm.includes('extra');
-
-    if (isXL) return ['74%', '94%'];
-    if (isLarge) return ['70%', '93%'];
-    return ['66%', '92%'];
+    return getUserBottomSheetSnapPoints(fontMode);
   }, [fontMode]);
 
   const sheetKey = useMemo(() => {
@@ -485,6 +493,23 @@ function UserBottomSheetModalBase(
       const finalTrait =
         trimmedTrait.length > 0 ? trimmedTrait : initialTrait ?? '';
 
+      const myId = selectedUser?.userId ?? selectedUser?.id ?? null;
+      const normalizedFinalName = normalizeNickname(finalName);
+      const hasDuplicateNickname = (familyUserList || []).some(member => {
+        const memberId = member?.userId ?? member?.id ?? null;
+        if (myId != null && memberId != null && String(memberId) === String(myId)) {
+          return false;
+        }
+        const candidate = member?.nickname ?? member?.name ?? '';
+        return normalizeNickname(candidate) === normalizedFinalName;
+      });
+
+      if (normalizedFinalName && hasDuplicateNickname) {
+        showToast('가족 내에 같은 별명이 있어요. 다른 별명을 입력해주세요.');
+        setIsSaving(false);
+        return;
+      }
+
       const rawImg =
         (imageUrlRef.current && imageUrlRef.current.trim().length > 0
           ? imageUrlRef.current
@@ -500,7 +525,16 @@ function UserBottomSheetModalBase(
       showToast('프로필 저장 중 문제가 발생했어요.');
       setIsSaving(false);
     }
-  }, [isSaving, onSave, showToast, closeSheet]);
+  }, [
+    isSaving,
+    onSave,
+    showToast,
+    closeSheet,
+    familyUserList,
+    selectedUser?.userId,
+    selectedUser?.id,
+    normalizeNickname,
+  ]);
 
   const handleCancel = useCallback(() => {
     const {name, trait, image} = initialDataRef.current;

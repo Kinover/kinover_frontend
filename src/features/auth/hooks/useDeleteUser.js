@@ -4,6 +4,7 @@ import {useCallback, useState} from 'react';
 import {useDispatch} from 'react-redux';
 import {deleteUserThunk} from 'features/home/store/userThunk';
 import {deleteLoginInfo} from 'utils/storage';
+import {resetUi} from 'store/uiSlice';
 import {setLogout} from '../store/loginSlice';
 import {setUserlogout} from 'features/home/store/userSlice';
 import {resetGuideShownKeys} from 'hooks/useGuide';
@@ -36,7 +37,8 @@ export function useDeleteUser(onSuccess) {
  // 가이드 "봤음" 플래그 삭제 → 재가입 후 탭 진입 시 가이드 다시 노출
       await resetGuideShownKeys();
 
- // Redux 상태도 초기화
+ // Redux 상태도 초기화 (글씨 크기·생체인식 앱잠금 포함)
+      dispatch(resetUi());
       dispatch(setLogout());      // loginSlice
       dispatch(setUserlogout());  // userSlice
 

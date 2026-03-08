@@ -63,6 +63,13 @@ const normalizeCategory = cat => {
   };
 };
 
+// 카테고리명 → hue (0–360) — 우측 pill 색상용
+const hashToHue = (text = '') => {
+  let n = 0;
+  for (let i = 0; i < text.length; i++) n = (n * 31 + text.charCodeAt(i)) >>> 0;
+  return n % 360;
+};
+
 const UI = {
   bg: '#FFFFFF',
   panel: '#FFFFFF',
@@ -92,7 +99,13 @@ const shadow = Platform.select({});
 
 const CategoryBottomSheetModal = forwardRef(
   (
-    {categoryList = [], selectedCategory, onSelectCategory, guideListRef},
+    {
+      categoryList = [],
+      selectedCategory,
+      onSelectCategory,
+      guideListRef,
+      onDismiss,
+    },
     ref,
   ) => {
     const modalRef = useRef(null);
@@ -122,7 +135,7 @@ const CategoryBottomSheetModal = forwardRef(
       const maxVisible =
         level === 'XL' ? 7 : level === 'L' ? 7 : MAX_VISIBLE_ITEMS_BASE;
 
-      const snap = level === 'XL' ? ['92%'] : level === 'L' ? ['84%'] : ['81%'];
+      const snap = level === 'XL' ? ['72%'] : level === 'L' ? ['68%'] : ['62%'];
 
       const listExtra =
         level === 'XL'
@@ -234,7 +247,8 @@ const CategoryBottomSheetModal = forwardRef(
 
     const handleDismiss = useCallback(() => {
       setTempSelected(selectedCategory);
-    }, [selectedCategory]);
+      onDismiss?.();
+    }, [selectedCategory, onDismiss]);
 
     const isOnlyAll = data.length <= 1;
 
@@ -266,8 +280,32 @@ const CategoryBottomSheetModal = forwardRef(
               </View>
 
               <View style={styles.pill}>
-                <View style={styles.pillDot} />
-                <Text allowFontScaling={false} style={styles.pillText}>
+                <View
+                  style={[
+                    styles.pillDot,
+                    {
+                      backgroundColor: (() => {
+                        const title = tempSelected?.title ?? '전체';
+                        if (title === '전체') return UI.sub;
+                        const h = hashToHue(title);
+                        return `hsl(${h}, 52%, 42%)`;
+                      })(),
+                    },
+                  ]}
+                />
+                <Text
+                  allowFontScaling={false}
+                  style={[
+                    styles.pillText,
+                    {
+                      color: (() => {
+                        const title = tempSelected?.title ?? '전체';
+                        if (title === '전체') return UI.sub;
+                        const h = hashToHue(title);
+                        return `hsl(${h}, 44%, 26%)`;
+                      })(),
+                    },
+                  ]}>
                   {tempSelected?.title ?? '전체'}
                 </Text>
               </View>
@@ -411,12 +449,10 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(6),
     height: getResponsiveWidth(6),
     borderRadius: 999,
-    backgroundColor: UI.brandDeep,
   },
   pillText: {
     fontSize: getResponsiveFontSize(11.5),
     fontFamily: 'Pretendard-SemiBold',
-    color: UI.sub,
     letterSpacing: -0.2,
   },
   listViewport: {

@@ -5,6 +5,7 @@ import {View, Platform} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {getResponsiveHeight} from 'utils/responsive';
 import {BottomSheetButtons} from 'components/bottomSheet/BottomSheetButtons';
+import {getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
 
 /**
  * Android에서 insets.bottom이 0이어도 시스템 내비게이션 바 높이만큼 최소 여백 확보
@@ -34,8 +35,11 @@ export default function BottomSheetFooterButtons({
 }) {
   const insets = useSafeAreaInsets();
   const rawBottom = Number(insets?.bottom ?? 0);
+  const androidInsetByScreen = getAndroidNavBottomInsetEstimate();
   const androidMinBottom =
-    Platform.OS === 'android' ? Math.max(rawBottom, ANDROID_NAV_FALLBACK) : rawBottom;
+    Platform.OS === 'android'
+      ? Math.max(rawBottom, androidInsetByScreen, ANDROID_NAV_FALLBACK)
+      : rawBottom;
 
   const baseSafe = includeBottomSafePadding
     ? Math.max(Number(bottomSafe || 0), androidMinBottom)

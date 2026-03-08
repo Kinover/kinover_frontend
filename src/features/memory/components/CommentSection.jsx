@@ -219,12 +219,16 @@ export default function CommentSection({
               onSubmitEditing={onSubmitComment}
               returnKeyType="send"
             />
-            <TouchableOpacity onPress={onSubmitComment}>
+            <TouchableOpacity
+              onPress={onSubmitComment}
+              disabled={!(commentText || '').trim().length}>
               <FastImage
-                style={styles.commentSendBt}
+                style={[
+                  styles.commentSendBt,
+                  !(commentText || '').trim().length && styles.commentSendBtInactive,
+                ]}
                 source={require('../../../assets/icons/paperPlaneTilt.png')}
                 resizeMode={FastImage.resizeMode.contain}
-
               />
             </TouchableOpacity>
           </View>
@@ -312,6 +316,10 @@ const styles = StyleSheet.create({
     width: getResponsiveWidth(24),
     height: getResponsiveWidth(24),
     resizeMode: 'contain',
+  },
+  commentSendBtInactive: {
+    opacity: 0.5,
+    transform: [{scale: 0.85}],
   },
   emptyContainer: {
     flex: 3,

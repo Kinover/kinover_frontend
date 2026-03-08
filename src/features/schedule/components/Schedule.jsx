@@ -55,7 +55,9 @@ const MAX_VISIBLE_AVATARS = 2; // 3명 이상부터 +1, +2… 로 표시
 /** 겹쳐진 아바타: 왼쪽부터 1번째, 2번째… 순서로 겹치고, 3명 이상이면 +N을 오른쪽에 */
 function StackedAvatar({participants = [], size = AVATAR_SIZE}) {
   const list =
-    participants.length > 0 ? participants : [{id: '_', name: '가족', imageUri: null}];
+    participants.length > 0
+      ? participants
+      : [{id: '_', name: '가족', imageUri: null}];
   const visible = list.slice(0, MAX_VISIBLE_AVATARS);
   const rest = list.length - MAX_VISIBLE_AVATARS;
 
@@ -178,7 +180,9 @@ function Schedule({
   );
   const fallbackUserId = useSelector(state => state?.user?.userId ?? null);
   const chatRoomList = useSelector(state =>
-    Array.isArray(state?.chatRoom?.chatRoomList) ? state.chatRoom.chatRoomList : [],
+    Array.isArray(state?.chatRoom?.chatRoomList)
+      ? state.chatRoom.chatRoomList
+      : [],
   );
   const chatRoomLoading = useSelector(state => !!state?.chatRoom?.loading);
   const effectiveFamilyId = familyIdProp ?? fallbackFamilyId;
@@ -268,7 +272,9 @@ function Schedule({
       });
 
       if (!effectiveFamilyId || effectiveUserId == null) return;
-      await dispatch(fetchChatRoomListThunk(effectiveFamilyId, effectiveUserId));
+      await dispatch(
+        fetchChatRoomListThunk(effectiveFamilyId, effectiveUserId),
+      );
     },
     [effectiveFamilyId, effectiveUserId, dispatch],
   );
@@ -349,7 +355,7 @@ function Schedule({
     dispatch,
   ]);
 
- // type 판별 로직
+  // type 판별 로직
   const getCardPreset = item => {
     const raw =
       item?.type ??
@@ -412,22 +418,21 @@ function Schedule({
     };
   };
 
- /** 개별 일정 참여자 목록 (프로필 사진·이름). 앱 사용자가 있으면 맨 앞에 배치 */
+  /** 개별 일정 참여자 목록 (프로필 사진·이름). 앱 사용자가 있으면 맨 앞에 배치 */
   const getIndividualParticipants = useCallback(
     item => {
       const ids = Array.isArray(item?.participantIds)
         ? item.participantIds
         : item?.userId != null
-          ? [item.userId]
-          : [];
+        ? [item.userId]
+        : [];
       const names = Array.isArray(item?.participantNames)
         ? item.participantNames.filter(Boolean)
         : [];
       const list = [];
       ids.forEach((id, i) => {
         const user = familyUserList?.find(
-          u =>
-            String(u?.userId) === String(id) || String(u?.id) === String(id),
+          u => String(u?.userId) === String(id) || String(u?.id) === String(id),
         );
         const name =
           user?.name ?? user?.nickname ?? names[i] ?? item?.userName ?? '가족';
@@ -479,8 +484,8 @@ function Schedule({
       const ids = Array.isArray(item?.participantIds)
         ? item.participantIds
         : item?.userId != null
-          ? [item.userId]
-          : [];
+        ? [item.userId]
+        : [];
       if (ids.length > 0 && familyUserList?.length) {
         const resolved = ids
           .map(id => {
@@ -583,8 +588,7 @@ function Schedule({
           !selectedChatRoomId || sendingBirthdayMessage
             ? styles.roomPickerConfirmDisabled
             : null
-        }
-      >
+        }>
         {chatRoomLoading && chatRoomItems.length === 0 ? (
           <Text allowFontScaling={false} style={styles.roomPickerEmptyText}>
             채팅방 목록을 불러오는 중이에요...
@@ -643,7 +647,7 @@ function Schedule({
             return (
               <ScheduleCard
                 key={item.scheduleId ?? `${preset.type}-${item.title}`}
- // FIX: 카드에서 판별한 type을 강제로 전달
+                // FIX: 카드에서 판별한 type을 강제로 전달
                 onPress={() =>
                   onOpenSheet({
                     ...item,
@@ -658,9 +662,7 @@ function Schedule({
                           styles.iconCircle,
                           {backgroundColor: preset.iconBg},
                         ]}>
-                        <Text
-                          allowFontScaling={false}
-                          style={styles.iconText}>
+                        <Text allowFontScaling={false} style={styles.iconText}>
                           {preset.icon}
                         </Text>
                       </View>
@@ -809,20 +811,22 @@ const styles = StyleSheet.create({
   },
   texts: {
     flexDirection: 'column',
-    gap: getResponsiveHeight(2),
+    gap: getResponsiveHeight(0),
     flex: 1,
     minWidth: 0,
   },
   subtitle: {
     fontFamily: 'Pretendard-Medium',
     fontSize: getResponsiveFontSize(12),
+    lineHeight: getResponsiveFontSize(14),
+
     color: '#6B7280',
   },
   title: {
     fontFamily: 'Pretendard-SemiBold',
     fontSize: getResponsiveFontSize(14.5),
     color: '#111827',
-    lineHeight: getResponsiveFontSize(20),
+    lineHeight: getResponsiveFontSize(18),
     paddingTop: 2,
   },
   pill: {

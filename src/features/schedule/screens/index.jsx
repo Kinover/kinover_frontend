@@ -70,6 +70,15 @@ export default function ScheduleScreen() {
   const dispatch = useDispatch();
   const guideCalendarRef = useRef(null);
   const guideFabRef = useRef(null);
+  const blockOpenUntilRef = useRef(0);
+
+  const shouldBlockOpen = useCallback(() => {
+    return Date.now() < (blockOpenUntilRef.current || 0);
+  }, []);
+
+  const blockOpenFor = useCallback((ms = 420) => {
+    blockOpenUntilRef.current = Date.now() + ms;
+  }, []);
 
   const {familyId: reduxFamilyId} = useSelector(state => state.family);
   const reduxFamilyUserList = useSelector(
@@ -172,6 +181,8 @@ export default function ScheduleScreen() {
    ========================= */
   const handleOpenSheet = useCallback(
     item => {
+      if (shouldBlockOpen()) return;
+
       if (!item) {
         openSheet(null);
         return;
@@ -184,7 +195,7 @@ export default function ScheduleScreen() {
         openSheet(item);
       }
     },
-    [openSheet],
+    [openSheet, shouldBlockOpen],
   );
 
   const birthdayNamesForSelectedDate = birthdayMap?.[selectedDateKey] ?? [];
@@ -288,6 +299,7 @@ export default function ScheduleScreen() {
         }
         throw e;
       } finally {
+        blockOpenFor();
         setRefreshTrigger(prev => prev + 1);
         closeSheet();
       }
@@ -305,6 +317,7 @@ export default function ScheduleScreen() {
       selectedDateKey,
       setRefreshTrigger,
       closeSheet,
+      blockOpenFor,
     ],
   );
 
@@ -334,6 +347,7 @@ export default function ScheduleScreen() {
       console.log('data:', e?.response?.data);
       throw e;
     } finally {
+      blockOpenFor();
       setRefreshTrigger(prev => prev + 1);
       closeSheet();
     }
@@ -349,9 +363,11 @@ export default function ScheduleScreen() {
     selectedDateKey,
     setRefreshTrigger,
     closeSheet,
+    blockOpenFor,
   ]);
 
   const handleFabPress = useCallback(() => {
+    if (shouldBlockOpen()) return;
     if (isLoading) return;
     hapticLight();
 
@@ -359,7 +375,7 @@ export default function ScheduleScreen() {
     setSelectedUserIds(me ? [me] : []);
 
     openSheet(null);
-  }, [isLoading, openSheet, currentUserId]);
+  }, [isLoading, openSheet, currentUserId, shouldBlockOpen]);
 
  // iOS: 가이드 모달 닫은 뒤 터치 복구용
   const [contentKey, setContentKey] = useState(0);

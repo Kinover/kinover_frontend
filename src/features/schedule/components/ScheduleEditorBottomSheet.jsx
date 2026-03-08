@@ -30,6 +30,10 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
+import {
+  getKeyboardSafeGap,
+  getScheduleBottomSheetSnapPoints,
+} from 'utils/layoutMetrics';
 
 import {useScheduleBottomSheetModal} from '../hooks/useScheduleBottomSheetModal';
 import ToastModal from 'components/modal/ToastModal';
@@ -44,7 +48,7 @@ import SlideSegment from 'components/SlideSegment';
 import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
 
 const {height: WINDOW_H} = Dimensions.get('window');
-const SAFE_GAP = 12;
+const SAFE_GAP = getKeyboardSafeGap();
 
 const KIND = {
   INDIVIDUAL: 'individual',
@@ -361,13 +365,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       });
 
     const snapPoints = useMemo(() => {
-      const fm = String(fontMode ?? '').toLowerCase();
-      const isLarge = fm.includes('large') && !fm.includes('extra');
-      const isXL = fm.includes('extra');
-
-      if (isXL) return ['74%', '99%'];
-      if (isLarge) return ['72%', '98%'];
-      return ['70%', '97%'];
+      return getScheduleBottomSheetSnapPoints(fontMode);
     }, [fontMode]);
 
     const insets = useSafeAreaInsets();

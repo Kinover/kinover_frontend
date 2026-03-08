@@ -32,6 +32,11 @@ import {
 import {CalloutBubble} from './GuideModal';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
+// Android: 탭 바·소프트키까지 덮이도록 전체 화면 높이 사용
+const OVERLAY_HEIGHT =
+  Platform.OS === 'android'
+    ? Dimensions.get('screen').height
+    : SCREEN_HEIGHT;
 const OVERLAY_DIM = 'rgba(0,0,0,0.65)';
 const BOTTOM_BAR_BG = 'transparent';
 const PADDING = 20;
@@ -118,15 +123,7 @@ export default function GuideOverlay({
     rawY += androidTopInset;
   }
 
-  if (suppressFallbackUntilMeasured && !hasHole) {
-    return (
-      <View style={styles.container} pointerEvents="auto">
-        <View style={styles.dimWrap} pointerEvents="none">
-          <View style={[styles.dim, StyleSheet.absoluteFill]} />
-        </View>
-      </View>
-    );
-  }
+  const shouldRenderWithoutHole = suppressFallbackUntilMeasured && !hasHole;
 
   // 하이라이트: FAB는 원형 + 널널한 여백, 프로필/원형 타깃은 원형, 나머지는 모서리 둥근 사각
   const isFabStep = key === 'chat_action' || key === 'add' || key === 'upload';
@@ -170,37 +167,45 @@ export default function GuideOverlay({
     : (SCREEN_WIDTH - bubbleWidth) / 2;
 
   const bubbleMargin = getResponsiveHeight(16);
+  // 말풍선 ↔ 하이라이트 간격 (넓게)
+  const bubbleToHighlightGap = getResponsiveHeight(40);
   // iOS / Android 모두 동일한 레이아웃을 위해 bottomSafe를 고정 값으로 사용
   const bottomSafe = getResponsiveHeight(12) + getResponsiveHeight(72);
   const maxBubbleTop = SCREEN_HEIGHT - bottomSafe;
+  // 상단 상태바/노치 영역을 침범하지 않도록 최소 top을 보장
+  const minBubbleTop = Math.max(
+    PADDING,
+    Number(insets.top || 0) + getResponsiveHeight(10),
+  );
 
   // 단, FAB 계열 스텝은 항상 타깃 "위"에 말풍선이 오도록 강제
   let bubbleTop;
   if (hasHole) {
-    const aboveMargin = getResponsiveHeight(24);
     const shouldForceAbove =
       key === 'family_invite' ||
       key === 'chat_action' ||
       key === 'timeline' ||
       key === 'add' ||
-      key === 'upload';
+      key === 'upload' ||
+      key === 'kino_counseling';
 
     if (shouldForceAbove) {
-      // 타깃 위쪽 고정 (iOS / Android 동일)
+      // 타깃 위쪽 고정 — 말풍선과 하이라이트 사이 간격 확보
       bubbleTop = Math.max(
-        PADDING,
-        rawY - getResponsiveHeight(96) - aboveMargin,
+        minBubbleTop,
+        rawY - getResponsiveHeight(96) - bubbleToHighlightGap,
       );
     } else {
       bubbleTop = rawY + h + bubbleMargin;
       if (bubbleTop > maxBubbleTop) {
-        // 위로 올릴 때는 타깃과 거리를 조금 더 두어 버튼을 가리지 않도록 여유를 둔다
+        // 위로 올릴 때는 타깃과 거리를 두어 버튼을 가리지 않도록
         bubbleTop = Math.max(
-          PADDING,
-          rawY - getResponsiveHeight(96) - aboveMargin,
+          minBubbleTop,
+          rawY - getResponsiveHeight(96) - bubbleToHighlightGap,
         );
       }
     }
+    bubbleTop = Math.max(minBubbleTop, bubbleTop);
   }
   const stableBubbleLeft = Math.round(bubbleLeft);
   const stableBubbleTop = bubbleTop != null ? Math.round(bubbleTop) : undefined;
@@ -255,7 +260,7 @@ export default function GuideOverlay({
         {hasHole ? (
           <Svg
             width={SCREEN_WIDTH}
-            height={SCREEN_HEIGHT}
+            height={OVERLAY_HEIGHT}
             style={StyleSheet.absoluteFill}>
             <Defs>
               <Mask
@@ -263,12 +268,12 @@ export default function GuideOverlay({
                 x="0"
                 y="0"
                 width={SCREEN_WIDTH}
-                height={SCREEN_HEIGHT}>
+                height={OVERLAY_HEIGHT}>
                 <Rect
                   x={0}
                   y={0}
                   width={SCREEN_WIDTH}
-                  height={SCREEN_HEIGHT}
+                  height={OVERLAY_HEIGHT}
                   fill="#ffffff"
                 />
                 <Rect
@@ -286,7 +291,7 @@ export default function GuideOverlay({
               x={0}
               y={0}
               width={SCREEN_WIDTH}
-              height={SCREEN_HEIGHT}
+              height={OVERLAY_HEIGHT}
               fill={OVERLAY_DIM}
               mask="url(#highlightMask)"
             />
@@ -345,14 +350,14 @@ export default function GuideOverlay({
         exiting={FadeOut.duration(130)}
         style={[
           styles.bubbleWrap,
-          hasHole
+          hasHole && !shouldRenderWithoutHole
             ? {
                 position: 'absolute',
                 left: stableBubbleLeft,
                 top: stableBubbleTop,
                 width: bubbleWidth,
               }
-            : {marginHorizontal: getResponsiveWidth(24), alignSelf: 'center'},
+            : styles.bubbleFallbackWrap,
         ]}
         pointerEvents="none">
         <CalloutBubble
@@ -367,12 +372,22 @@ export default function GuideOverlay({
         pointerEvents="auto"
         style={[
           styles.bottomBar,
-          {paddingBottom: Math.max(insets.bottom, getResponsiveHeight(12))},
+          {
+            paddingBottom:
+              Platform.OS === 'android'
+                ? insets.bottom
+                : insets.bottom + getResponsiveHeight(6),
+            paddingTop:
+              Platform.OS === 'android'
+                ? getResponsiveHeight(8)
+                : getResponsiveHeight(12),
+          },
         ]}>
         <TouchableOpacity
           onPress={onSkip}
           hitSlop={{top: 12, bottom: 12, left: 12, right: 12}}
-          style={styles.bottomLeftAction}>
+          style={styles.skipButton}
+          activeOpacity={0.88}>
           <Text allowFontScaling={false} style={styles.skipText}>
             건너뛰기
           </Text>
@@ -382,7 +397,16 @@ export default function GuideOverlay({
           pointerEvents="none"
           style={[
             styles.centerIndicatorWrap,
-            {bottom: Math.max(insets.bottom, getResponsiveHeight(12))},
+            {
+              bottom:
+                Platform.OS === 'android'
+                  ? insets.bottom
+                  : insets.bottom + getResponsiveHeight(6),
+              top:
+                Platform.OS === 'android'
+                  ? getResponsiveHeight(8)
+                  : getResponsiveHeight(12),
+            },
           ]}>
           {total > 1 && (
             <Text allowFontScaling={false} style={styles.stepIndicator}>
@@ -426,6 +450,11 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   bubbleWrap: {maxWidth: SCREEN_WIDTH - getResponsiveWidth(48), zIndex: 2},
+  bubbleFallbackWrap: {
+    marginHorizontal: getResponsiveWidth(24),
+    alignSelf: 'center',
+    marginTop: getResponsiveHeight(108),
+  },
   bottomBar: {
     position: 'absolute',
     left: 0,
@@ -438,44 +467,47 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: BOTTOM_BAR_BG,
     paddingHorizontal: getResponsiveWidth(20),
-    paddingTop: getResponsiveHeight(16),
+    paddingTop: getResponsiveHeight(12),
   },
-  bottomLeftAction: {
-    minWidth: getResponsiveWidth(80),
-    height: getResponsiveHeight(52),
+  skipButton: {
+    height: getResponsiveHeight(44),
+    paddingHorizontal: getResponsiveWidth(20),
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
     justifyContent: 'center',
   },
   centerIndicatorWrap: {
     position: 'absolute',
     left: 0,
     right: 0,
-    top: getResponsiveHeight(16),
+    top: getResponsiveHeight(12),
     bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
   skipText: {
     fontSize: getResponsiveFontSize(14),
-    fontFamily: 'Pretendard-Regular',
-    color: 'rgba(255,255,255,0.85)',
+    fontFamily: 'Pretendard-Medium',
+    color: 'rgba(255,255,255,0.95)',
     lineHeight: getResponsiveHeight(20),
   },
   stepIndicator: {
-    fontSize: getResponsiveFontSize(15),
+    fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-Medium',
-    color: '#FFFFFF',
+    color: 'rgba(255,255,255,0.85)',
   },
   nextButton: {
-    paddingHorizontal: getResponsiveWidth(28),
-    height: getResponsiveHeight(52),
+    height: getResponsiveHeight(44),
+    paddingHorizontal: getResponsiveWidth(24),
     borderRadius: 999,
-    backgroundColor: '#FFC84D',
-    minWidth: getResponsiveWidth(100),
+    backgroundColor: 'rgba(255,200,77,0.95)',
+    minWidth: getResponsiveWidth(88),
     alignItems: 'center',
     justifyContent: 'center',
   },
   nextButtonText: {
-    fontSize: getResponsiveFontSize(15),
+    fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-SemiBold',
     color: '#111827',
   },

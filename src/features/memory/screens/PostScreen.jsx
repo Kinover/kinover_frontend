@@ -458,7 +458,7 @@ export default function PostPage({route}) {
         onChangeComment={vm.setCommentText}
         onSubmitComment={vm.handleSendComment}
         onDeleteComment={openDeleteCommentConfirm}
-        snapPoints={['75%']}
+        snapPoints={['68%']}
         myUserId={vm.user?.userId}
         onSheetChange={onCommentSheetChange}
         disabled={vm.isImageFullScreen || isChromeHidden}

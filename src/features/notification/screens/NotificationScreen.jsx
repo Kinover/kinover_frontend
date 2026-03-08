@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Dimensions,
 } from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import {
@@ -15,7 +16,7 @@ import {
 } from 'utils/responsive';
 import YellowSpinner from 'components/yellowSpinner';
 import {useNotificationList} from '../hooks/useNotificationList';
-import {EMPTY_STYLE, LAYOUT_STYLE} from 'styles/style';
+import {EMPTY_STYLE, getHeaderStyles, LAYOUT_STYLE} from 'styles/style';
 import {useFocusEffect, useNavigation, useRoute, StackActions, CommonActions} from '@react-navigation/native';
 import {useDispatch} from 'react-redux';
 import {
@@ -49,9 +50,16 @@ export default function NotificationScreen() {
     }
   }, [route?.params?.fromTab]);
 
-  // 뒤로가기: pop 사용 → 슬라이드 애니메이션 (detachInactiveScreens: false라 탭 유지)
+  // 헤더 타이틀 + 뒤로가기 (pop 사용 → 슬라이드 애니메이션) — Android에서 제목 중앙 정렬
   useLayoutEffect(() => {
     navigation.setOptions({
+      headerTitle: '알림',
+      headerTitleAlign: 'center',
+      headerTitleStyle: {
+        fontSize: getHeaderStyles().defaultTitleFontSize,
+        fontFamily: getHeaderStyles().defaultTitleFontFamily,
+        color: getHeaderStyles().defaultTitleFontColor,
+      },
       headerLeft: () => (
         <RenderHeaderBackButton
           navigation={navigation}
@@ -187,7 +195,7 @@ export default function NotificationScreen() {
       })}
 
       {!hasNotifications && (
-        <View style={{paddingVertical: getResponsiveHeight(60)}}>
+        <View style={[styles.emptyWrapper, {minHeight: Dimensions.get('window').height * 0.72}]}>
           <Text allowFontScaling={false} style={styles.empty}>
             아직 새로운 소식이 없어요.
           </Text>
@@ -256,6 +264,11 @@ const styles = StyleSheet.create({
     color: '#444',
     fontFamily: 'Pretendard-Regular',
     lineHeight: getResponsiveHeight(18),
+  },
+  emptyWrapper: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: getResponsiveHeight(60),
   },
   empty: {
     textAlign: 'center',

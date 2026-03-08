@@ -9,6 +9,7 @@ import {
   deleteCommentThunk,
 } from '../store/commentThunk';
 import {deletePostThunk, deletePostImageThunk} from '../store/memoryThunk';
+import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
 
 export default function usePostPageViewModel(memory) {
   const dispatch = useDispatch();
@@ -73,6 +74,13 @@ export default function usePostPageViewModel(memory) {
   useEffect(() => {
     if (safePostId) dispatch(fetchCommentsThunk(safePostId));
   }, [dispatch, safePostId]);
+
+  // 멘션 후보: 게시글 진입 시 가족 목록이 비어 있으면 한 번 로드
+  useEffect(() => {
+    if (familyId && (!rawFamilyUsers || rawFamilyUsers.length === 0)) {
+      dispatch(fetchFamilyUserListThunk(familyId)).catch(() => {});
+    }
+  }, [dispatch, familyId, rawFamilyUsers?.length]);
 
  /**
  * 댓글 전송 (멘션 확장)
