@@ -56,13 +56,22 @@ export const getCreateRoomBottomSheetSnapPoints = (fontMode, externalSnapPoints)
   });
 };
 
-export const getScheduleBottomSheetSnapPoints = fontMode =>
-  getSheetSnapPointsByTier({
+/** 구성원 칩이 많아서 다음 줄로 넘어갈 때 바텀시트를 더 높게 열기 위한 스냅 */
+const SCHEDULE_SNAP_MANY_MEMBERS = {
+  normal: ['78%', '97%'],
+  large: ['80%', '98%'],
+  xl: ['82%', '99%'],
+};
+
+export const getScheduleBottomSheetSnapPoints = (fontMode, memberCount = 0) => {
+  const hasManyMembers = memberCount >= 5;
+  return getSheetSnapPointsByTier({
     fontMode,
-    normal: ['70%', '97%'],
-    large: ['72%', '98%'],
-    xl: ['74%', '99%'],
+    normal: hasManyMembers ? SCHEDULE_SNAP_MANY_MEMBERS.normal : ['70%', '97%'],
+    large: hasManyMembers ? SCHEDULE_SNAP_MANY_MEMBERS.large : ['72%', '98%'],
+    xl: hasManyMembers ? SCHEDULE_SNAP_MANY_MEMBERS.xl : ['74%', '99%'],
   });
+};
 
 export const getKeyboardSafeGap = () => getResponsiveHeight(12);
 
