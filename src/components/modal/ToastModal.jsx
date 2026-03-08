@@ -1,6 +1,7 @@
 // components/ToastModal.js
 import React, {useEffect} from 'react';
 import {Modal, View, Text, StyleSheet} from 'react-native';
+import DropShadow from 'react-native-drop-shadow';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -29,11 +30,13 @@ export default function ToastModal({
 
   const content = (
     <View style={styles.overlay}>
-      <View style={styles.toastBox}>
-        <Text allowFontScaling={false} style={styles.toastText}>
-          {message}
-        </Text>
-      </View>
+      <DropShadow style={styles.toastShadow}>
+        <View style={styles.toastBox}>
+          <Text allowFontScaling={false} style={styles.toastText}>
+            {message}
+          </Text>
+        </View>
+      </DropShadow>
     </View>
   );
 
@@ -72,6 +75,12 @@ const styles = StyleSheet.create({
     elevation: 99999,
   },
 
+  toastShadow: {
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+  },
   toastBox: {
     backgroundColor: 'rgba(0, 0, 0, 0.85)',
     borderRadius: getResponsiveIconSize(20),
@@ -79,12 +88,6 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(12),
     maxWidth: '90%',
     alignSelf: 'center',
-
-    shadowColor: '#000',
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    shadowOffset: {width: 0, height: 3},
-    elevation: 6,
   },
 
   toastText: {

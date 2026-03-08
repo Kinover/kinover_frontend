@@ -5,7 +5,7 @@
 
 import {Image} from 'react-native';
 
-export const STORE_MOCK_ENABLED = true;
+export const STORE_MOCK_ENABLED = false;
 
 // 1-엄마 2-아빠 3-둘째 4-첫째(나) 5-셋째
 const getAssetUri = module => Image.resolveAssetSource(module)?.uri ?? null;
