@@ -365,8 +365,9 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       });
 
     const snapPoints = useMemo(() => {
-      return getScheduleBottomSheetSnapPoints(fontMode);
-    }, [fontMode]);
+      const memberCount = (familyUserList || []).length + 1;
+      return getScheduleBottomSheetSnapPoints(fontMode, memberCount);
+    }, [fontMode, familyUserList]);
 
     const insets = useSafeAreaInsets();
  // 안드로이드 실물 기기에서 insets.bottom이 0이어도 최소 24dp 여백 확보
