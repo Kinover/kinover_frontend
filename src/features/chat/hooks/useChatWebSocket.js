@@ -1,6 +1,7 @@
 // hooks/useChatWebSocket.js
 import {useEffect, useRef, useCallback} from 'react';
 import {getToken} from 'utils/storage';
+import {WS_CHAT_BASE_URL, WS_CHAT_PATH} from 'config/constants';
 
 export default function useChatWebSocket({
  // 서버에서 받은 raw msg를 여기로 올려줌
@@ -52,7 +53,7 @@ export default function useChatWebSocket({
 
     cleanup();
 
-    const ws = new WebSocket(`ws://kinover.shop:9090/chat?token=${token}`);
+    const ws = new WebSocket(`${WS_CHAT_BASE_URL}${WS_CHAT_PATH}?token=${token}`);
     socketRef.current = ws;
 
     ws.onopen = () => {

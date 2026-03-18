@@ -47,6 +47,8 @@ export const WS_CHAT_BASE_URL = env('WS_CHAT_BASE_URL', 'ws://kinover.shop:9090'
 export const WS_CHAT_PATH = '/chat';
 /** 가족 온라인 상태 소켓 경로 (WS_CHAT_BASE_URL + WS_FAMILY_STATUS_PATH) */
 export const WS_FAMILY_STATUS_PATH = '/family-status';
+/** 접속 상태 소켓 경로 (WS_CHAT_BASE_URL + WS_STATUS_PATH) */
+export const WS_STATUS_PATH = '/status';
 /** 메시지 배칭 디바운스 (ms) */
 export const CHAT_BATCH_DEBOUNCE_MS = 80;
 /** 재연결 대기: base * (attempt+1), 최대 RECONNECT_DELAY_MAX_MS */

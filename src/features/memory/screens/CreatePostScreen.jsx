@@ -530,7 +530,6 @@ export default function CreatePostPage({navigation, route}) {
         const payload = {
           authorId,
           content: text || '',
-          familyId,
           categoryId: finalCategoryId,
           imageUrls,
           postTypes,
@@ -547,7 +546,6 @@ export default function CreatePostPage({navigation, route}) {
         const payload = {
           authorId,
           content: text || '',
-          familyId,
           categoryId: finalCategoryId,
           imageUrls,
           postTypes,

@@ -145,6 +145,7 @@ function CommentFooter({
   const draftRef = useRef(initialText || '');
   const inputRef = useRef(null);
   const rawBottomInset = Number(insets.bottom || 0);
+  const footerBasePad = getResponsiveHeight(8);
   const footerSafeBottom =
     Platform.OS === 'android'
       ? Math.max(rawBottomInset, ANDROID_MIN_BOTTOM_SAFE) + ANDROID_BOTTOM_BUFFER
@@ -237,15 +238,13 @@ function CommentFooter({
   return (
     <BottomSheetFooter
       {...footerProps}
-      bottomInset={0}>
+      bottomInset={footerSafeBottom}>
       <View
         style={[
           styles.footerBar,
           {
-            paddingBottom:
-              Platform.OS === 'android'
-                ? footerSafeBottom
-                : getResponsiveHeight(10) + footerSafeBottom,
+            paddingTop: footerBasePad,
+            paddingBottom: footerBasePad,
           },
         ]}
         onLayout={e => {

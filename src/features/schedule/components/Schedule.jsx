@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
-  Image,
   Alert,
   ScrollView,
   InteractionManager,
@@ -23,6 +22,7 @@ import {useFormattedScheduleDate} from '../hooks/useFormattedScheduleDate';
 import {COLORS, DEFAULT_STYLE, EMPTY_STYLE} from 'styles/style';
 
 import DropShadow from 'react-native-drop-shadow';
+import FastImage from '@d11/react-native-fast-image';
 import BirthdayConfettiModal from './BirthdayConfettiModal';
 import CustomModal from 'components/modal/CustomModal';
 import {fetchChatRoomListThunk} from 'features/chat/store/chatRoomThunk';
@@ -79,14 +79,21 @@ function StackedAvatar({participants = [], size = AVATAR_SIZE}) {
             },
           ]}>
           {p.imageUri ? (
-            <Image
-              source={{uri: String(p.imageUri)}}
+            <View
               style={[
-                styles.stackedAvatarImage,
+                styles.stackedAvatarImageWrap,
                 {width: size, height: size, borderRadius: size / 2},
-              ]}
-              resizeMode="cover"
-            />
+              ]}>
+              <FastImage
+                source={{uri: String(p.imageUri)}}
+                style={[
+                  styles.stackedAvatarImage,
+                  StyleSheet.absoluteFillObject,
+                  {borderRadius: size / 2},
+                ]}
+                resizeMode={FastImage.resizeMode.cover}
+              />
+            </View>
           ) : (
             <View
               style={[
@@ -774,6 +781,11 @@ const styles = StyleSheet.create({
   stackedAvatarCircle: {
     overflow: 'hidden',
     backgroundColor: COLOR.GRAY_BG,
+  },
+  stackedAvatarImageWrap: {
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   stackedAvatarImage: {
     backgroundColor: '#f3f4f6',

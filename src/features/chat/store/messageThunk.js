@@ -1,6 +1,7 @@
 // src/features/chat/store/messageThunk.js
 
 import {apiClient} from 'utils/apiClient';
+import {CHAT_ROOM} from 'config/apiEndpoints';
 import {
   sendChat,
   sendRead,
@@ -79,11 +80,45 @@ const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 /* =========================
  * 1) 메시지 fetch (REST)
  * ========================= */
+const toStr = v => (v == null ? null : String(v));
+
+/** 서버 목록에 없는 로컬/옵티미스틱 메시지(내가 보낸 것 등)를 병합해 채팅방 재진입 시에도 내 메시지가 보이게 함 */
+function mergeWithExistingList(serverList, existingList) {
+  if (!Array.isArray(existingList) || existingList.length === 0) return serverList;
+  const serverIds = new Set(
+    (serverList || [])
+      .map(m => (m?.messageId != null ? toStr(m.messageId) : null))
+      .filter(Boolean),
+  );
+  const serverClientIds = new Set(
+    (serverList || [])
+      .map(m => (m?.clientMessageId != null ? toStr(m.clientMessageId) : null))
+      .filter(Boolean),
+  );
+  const existingOnly = existingList.filter(m => {
+    const id = m?.messageId;
+    const cid = m?.clientMessageId;
+    if (cid && serverClientIds.has(toStr(cid))) return false;
+    if (cid) return true;
+    if (id && toStr(id).startsWith('client-')) return true;
+    if (id && !serverIds.has(toStr(id))) return true;
+    return false;
+  });
+  if (existingOnly.length === 0) return serverList;
+  const combined = [...(serverList || []), ...existingOnly];
+  combined.sort(
+    (a, b) =>
+      new Date(b?.createdAt ?? 0).getTime() -
+      new Date(a?.createdAt ?? 0).getTime(),
+  );
+  return combined;
+}
+
 /**
  * GET /api/chatRoom/{chatRoomId}/messages/fetch?limit=...&before=...
  */
 export const fetchMessageThunk = (chatRoomId, before = null, limit = 20) => {
-  return async dispatch => {
+  return async (dispatch, getState) => {
     dispatch(setMessageLoading({chatRoomId, isLoading: true}));
     dispatch(setMessageFetched({chatRoomId, isFetched: false}));
 
@@ -98,7 +133,13 @@ export const fetchMessageThunk = (chatRoomId, before = null, limit = 20) => {
         },
       );
 
-      dispatch(setMessageList({chatRoomId, messages: res.data}));
+      const existingList =
+        getState()?.message?.rooms?.[String(chatRoomId)]?.messageList ?? [];
+      const merged = mergeWithExistingList(
+        Array.isArray(res.data) ? res.data : [],
+        existingList,
+      );
+      dispatch(setMessageList({chatRoomId, messages: merged}));
       dispatch(bumpListRevision());
     } catch (error) {
       dispatch(
@@ -223,6 +264,19 @@ export const sendMessageWsThunk = (messageBody, chatRoomId, userId) => {
         ok = sendChat(payloadToSend);
       }
       if (!ok) throw new Error('WebSocket not connected');
+
+      // 채팅 멘션 알림 생성 (백엔드에 알림만 등록)
+      if (Array.isArray(payloadToSend.mentionUserIds) && payloadToSend.mentionUserIds.length > 0) {
+        apiClient
+          .post(CHAT_ROOM.notifyMentions(), {
+            chatRoomId,
+            senderId: userId,
+            contentPreview: payloadToSend.content ?? '',
+            mentionUserIds: payloadToSend.mentionUserIds,
+            roomName: null,
+          })
+          .catch(() => {});
+      }
 
       return {ok: true, clientMessageId};
     } catch (e) {
