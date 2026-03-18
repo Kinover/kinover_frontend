@@ -56,7 +56,7 @@ const finalizeList = state => {
 /* =========================
  * API
  * ========================= */
-const API_BASE = 'https://kinover.shop/api/chatRoom';
+const API_BASE = '/chatRoom';
 
 /**
  * markReadThunk

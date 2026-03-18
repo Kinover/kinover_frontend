@@ -1,22 +1,9 @@
 import { apiClient } from 'utils/apiClient';
-import { getToken } from '../utils/storage';
+import {CATEGORIES} from 'config/apiEndpoints';
 
-export const getCategoryApi = async (familyId) => {
+export const getCategoryApi = async () => {
   try {
-    const token = await getToken();
-
-    if (!token) {
-      throw new Error('로그인이 필요합니다.');
-    }
-
-    const response = await apiClient.get(
-      `https://kinover.shop/api/categories/${familyId}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      }
-    );
+    const response = await apiClient.get(CATEGORIES.list);
 
     return response.data; // [{ categoryId, title, familyId, createdAt }, ...]
   } catch (error) {

@@ -2,8 +2,6 @@
 import { apiClient } from 'utils/apiClient';
 import {getToken} from '../utils/storage';
 
-const BASE_URL = 'https://kinover.shop';
-
 const toServerPostType = v => {
   const s = String(v || '').trim().toLowerCase();
   if (s.includes('video')) return 'video';
@@ -20,7 +18,7 @@ const cleanUndefined = obj => {
 
 /**
  * PATCH /api/posts/{postId}
- * body: { authorId, familyId?, content?, categoryId?, imageUrls?, postTypes? }
+ * body: { authorId, content?, categoryId?, imageUrls?, postTypes? }
  */
 export async function updatePostApi(postId, payload) {
   if (!postId) throw new Error('postId is required');
@@ -31,7 +29,6 @@ export async function updatePostApi(postId, payload) {
 
   const raw = {
     authorId: payload.authorId,
-    familyId: payload.familyId, // 추가 (이게 지금 빠지고 있었음)
     content: payload.content,
     categoryId: payload.categoryId,
     imageUrls: payload.imageUrls,
@@ -63,7 +60,7 @@ export async function updatePostApi(postId, payload) {
     }
   }
 
-  const apiUrl = `${BASE_URL}/api/posts/${postId}`;
+  const apiUrl = `/posts/${postId}`;
 
   const res = await apiClient.patch(apiUrl, body, {
     headers: {

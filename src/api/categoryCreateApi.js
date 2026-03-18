@@ -1,24 +1,14 @@
 import { apiClient } from 'utils/apiClient';
-import {getToken} from '../utils/storage';
+import {CATEGORIES} from 'config/apiEndpoints';
 
-export const createCategory = async (title, familyId) => {
+export const createCategory = async title => {
   try {
-    const token = await getToken();
-
-    if (!token) {
-      throw new Error('로그인이 필요합니다.');
-    }
-
     const response = await apiClient.post(
-      'https://kinover.shop/api/categories',
-      {
-        title,
-        familyId: String(familyId), // UUID 문자열로 보장
-      },
+      CATEGORIES.create,
+      {title},
       {
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`, // 반드시 포함
         },
       },
     );

@@ -17,6 +17,8 @@ export const CHAT_ROOM = {
   media: chatRoomId => `/chatRoom/${chatRoomId}/media`,
   notificationUser: () => '/chatRoom/notification/user',
   one: chatRoomId => `/chatRoom/${chatRoomId}`,
+  /** 채팅 멘션 알림 생성 (WS 전송 성공 후 호출) */
+  notifyMentions: () => '/chatRoom/messages/notify-mentions',
 };
 
 export const SCHEDULES = {
@@ -34,11 +36,18 @@ export const POSTS = {
   deleteImage: postId => `/posts/${postId}/image`,
   notificationPost: postId => `/posts/${postId}/notification`,
   notificationPostGlobal: '/posts/notification/post',
+  /** 댓글: 게시글별 목록·추가 (많은 서버가 이 경로 사용) */
+  comments: postId => `/posts/${postId}/comments`,
 };
 
 export const CATEGORIES = {
   list: '/categories',
   create: '/categories',
+};
+
+/** 댓글 삭제 등 단건 조작 (경로만) */
+export const COMMENTS = {
+  delete: commentId => `/comments/${commentId}`,
 };
 
 export const USER = {

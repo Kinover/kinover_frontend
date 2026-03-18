@@ -2,6 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {View, Text, Button} from 'react-native';
 import {useDispatch} from 'react-redux';
 import {applyMessagePreview, bumpListRevision} from '../features/chat/store/chatRoomSlice';
+import {WS_CHAT_BASE_URL, WS_CHAT_PATH} from 'config/constants';
 
 const WebSocketComponent = ({token, chatRoomId, userId}) => {
   const [messages, setMessages] = useState([]);
@@ -11,7 +12,7 @@ const WebSocketComponent = ({token, chatRoomId, userId}) => {
   useEffect(() => {
     if (!token || !userId) return;
 
-    const ws = new WebSocket(`ws://43.200.47.242:9090/chat?token=${token}`);
+    const ws = new WebSocket(`${WS_CHAT_BASE_URL}${WS_CHAT_PATH}?token=${token}`);
 
     ws.onopen = () => console.log('✅ WebSocket 연결 성공');
 

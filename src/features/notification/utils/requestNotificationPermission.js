@@ -20,6 +20,7 @@ import {
 import {applyAppBadgeCount} from 'utils/appBadge';
 
 import notifee, {AndroidStyle, EventType} from '@notifee/react-native';
+import {API_BASE_URL} from 'config/constants';
 
 // ToastModal 컨트롤용
 let toastHandler = null;
@@ -30,11 +31,10 @@ const showToast = msg => {
   toastHandler && toastHandler(msg);
 };
 
-const BASE = 'https://kinover.shop/api';
-const REGISTER_URL = `${BASE}/fcm/register`;
+const REGISTER_URL = `${API_BASE_URL}/fcm/register`;
 
 // ChatRoom 단건조회 API
-const CHATROOM_BASE = `${BASE}/chatRoom`;
+const CHATROOM_BASE = `${API_BASE_URL}/chatRoom`;
 
 async function fetchChatRoomDetail(chatRoomId) {
   if (!chatRoomId) return null;

@@ -7,16 +7,12 @@ export const uploadPostApi = async (postData) => {
     const token = await getToken();
     if (!token) throw new Error('로그인이 필요합니다.');
 
-    const response = await apiClient.post(
-      'http://43.200.47.242:9090/api/posts',
-      postData,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+    const response = await apiClient.post('/posts', postData, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
     return response.data;
   } catch (error) {

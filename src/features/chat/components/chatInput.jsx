@@ -297,6 +297,8 @@ const ChatInput = forwardRef(function ChatInput(
   }, []);
   const hideToast = useCallback(() => setToastVisible(false), []);
 
+  // 키보드 이벤트로 하단 패딩을 바꾸지 않음 (입력창 위치 고정)
+
  // ====== gallery load (인앱 그리드용) ======
   const loadPhotos = useCallback(
     async (after = null) => {
@@ -788,12 +790,13 @@ const ChatInput = forwardRef(function ChatInput(
     return insets.bottom + gallery + inputBarH + gap;
   }, [insets.bottom, showGallery]);
 
-  const bottomSafePadding = useMemo(() => {
+  // SafeArea 하단 inset만큼 항상 유지 (포커스 시에도 위치 고정)
+  const rootPaddingBottom = useMemo(() => {
     return Math.max(insets.bottom, getResponsiveHeight(2));
   }, [insets.bottom]);
 
   return (
-    <View style={[styles.root, {paddingBottom: bottomSafePadding}]}>
+    <View style={[styles.root, {paddingBottom: rootPaddingBottom}]}>
       {/* 멘션 드롭다운 (bottom 기준만 사용) */}
       {!!activeMention && mentionCandidates.length > 0 && (
         <View

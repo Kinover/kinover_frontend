@@ -1,6 +1,5 @@
 // /api/imageUrlApi.js
 import {apiClient} from 'utils/apiClient';
-import {getToken} from '../utils/storage';
 import RNBlobUtil from 'react-native-blob-util';
 
 // 확장자 기반 Content-Type
@@ -17,8 +16,6 @@ const inferContentTypeByName = fileName => {
 // 여러 Presigned URL 요청
 export const getPresignedUrls = async filesOrNames => {
   try {
-    const token = await getToken();
-
     const isArray = Array.isArray(filesOrNames);
     const first = isArray ? filesOrNames[0] : null;
 
@@ -32,16 +29,11 @@ export const getPresignedUrls = async filesOrNames => {
       ? {files: filesOrNames}
       : {fileNames: filesOrNames};
 
-    const response = await apiClient.post(
-      'http://43.200.47.242:9090/api/image/upload-urls',
-      payload,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+    const response = await apiClient.post('/image/upload-urls', payload, {
+      headers: {
+        'Content-Type': 'application/json',
       },
-    );
+    });
 
     console.log('📡 Presigned 응답 데이터:', response.data);
     return response.data; // Array<string | {url: string}>

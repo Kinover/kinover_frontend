@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Bold',
     includeFontPadding: false,
   },
-  textArea: {flex: 1, gap: getResponsiveHeight(4)},
+  textArea: {flex: 1, gap: getResponsiveHeight(1)},
   name: {
     fontFamily: 'Pretendard-Medium',
     fontSize: getResponsiveFontSize(15),

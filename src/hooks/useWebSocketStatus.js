@@ -1,5 +1,6 @@
 import {useEffect, useRef} from 'react';
 import {getToken} from '../utils/storage';
+import {WS_CHAT_BASE_URL, WS_STATUS_PATH} from 'config/constants';
 
 const useWebSocketStatus = () => {
   const socketRef = useRef(null);
@@ -14,7 +15,7 @@ const useWebSocketStatus = () => {
         return;
       }
 
-      const url = `ws://43.200.47.242:9090/status?token=${token}`;
+      const url = `${WS_CHAT_BASE_URL}${WS_STATUS_PATH}?token=${token}`;
       console.log('[WS /status] 연결 시도 URL:', url);
 
       const socket = new WebSocket(url);

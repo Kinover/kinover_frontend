@@ -139,9 +139,24 @@ export const modifyUserThunk = updatedUser => {
  */
 export const deleteUserThunk = createAsyncThunk(
   'user/deleteUser',
-  async (_, {rejectWithValue, dispatch}) => {
+  async (_, {rejectWithValue, dispatch, getState}) => {
     try {
-      const res = await apiClient.delete('/user/delete');
+      let userId = getCurrentUserId(getState);
+      if (!userId) {
+        try {
+          const r = await dispatch(fetchUserThunk());
+          const payload =
+            typeof r?.unwrap === 'function' ? await r.unwrap() : r?.payload;
+          userId = payload?.userId ?? getCurrentUserId(getState);
+        } catch {
+          // fetchUser 실패 시 아래에서 에러 처리
+        }
+      }
+      if (!userId) {
+        return rejectWithValue('userId가 없습니다.');
+      }
+
+      const res = await apiClient.post(`/user/delete/${userId}`);
 
       console.log('✅ 회원 탈퇴 성공:', res.data);
 
