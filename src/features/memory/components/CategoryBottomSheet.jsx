@@ -271,10 +271,10 @@ const CategoryBottomSheetModal = forwardRef(
             <View style={styles.content}>
             <View style={styles.headerRow}>
               <View style={styles.headerLeft}>
-                <Text allowFontScaling={false} style={styles.headerTitle}>
+                <Text style={styles.headerTitle}>
                   목록
                 </Text>
-                <Text allowFontScaling={false} style={styles.countChipText}>
+                <Text style={styles.countChipText}>
                   ({totalCount}개)
                 </Text>
               </View>
@@ -294,7 +294,6 @@ const CategoryBottomSheetModal = forwardRef(
                   ]}
                 />
                 <Text
-                  allowFontScaling={false}
                   style={[
                     styles.pillText,
                     {
@@ -313,10 +312,10 @@ const CategoryBottomSheetModal = forwardRef(
 
             {isOnlyAll ? (
               <View style={styles.emptyBox}>
-                <Text allowFontScaling={false} style={styles.emptyTitle}>
+                <Text style={styles.emptyTitle}>
                   카테고리가 없어요
                 </Text>
-                <Text allowFontScaling={false} style={styles.emptyDesc}>
+                <Text style={styles.emptyDesc}>
                   지금은 ‘전체’로 보거나, 업로드할 때 새로 만들 수 있어요.
                 </Text>
               </View>
@@ -348,7 +347,6 @@ const CategoryBottomSheetModal = forwardRef(
                           isSelected && styles.itemRowSelected,
                         ]}>
                         <Text
-                          allowFontScaling={false}
                           style={[
                             styles.itemText,
                             level === 'XL' && {

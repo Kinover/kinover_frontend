@@ -29,7 +29,6 @@ import {
   getResponsiveIconSize,
 } from 'utils/responsive';
 
-import YellowSpinner from 'components/yellowSpinner';
 import ToastModal from 'components/modal/ToastModal';
 
 import {BACKGROUND_COLORS, EMPTY_STYLE} from 'styles/style';
@@ -205,7 +204,7 @@ export default function CommunicationScreen({navigation}) {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
           ListEmptyComponent={
-            <Text allowFontScaling={false} style={styles.noChatMessage}>
+            <Text style={styles.noChatMessage}>
               {'아직 채팅방이 없어요.\n가족과의 첫 대화를 시작해볼까요?'}
             </Text>
           }

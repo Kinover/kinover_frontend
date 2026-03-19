@@ -156,7 +156,7 @@ export default function ReceiveKinoChat({
         />
 
         <View style={styles.textContainer}>
-          <Text allowFontScaling={false} style={styles.userName}>
+          <Text style={styles.userName}>
             키노
           </Text>
 
@@ -204,7 +204,7 @@ export default function ReceiveKinoChat({
 
       <View style={styles.textContainer}>
         {!isGrouped && (
-          <Text allowFontScaling={false} style={styles.userName}>
+          <Text style={styles.userName}>
             키노
           </Text>
         )}
@@ -231,7 +231,6 @@ export default function ReceiveKinoChat({
                 {backgroundColor: bubbleColors.bubble},
               ]}>
               <Text
-                allowFontScaling={false}
                 style={[styles.receivedText, {color: bubbleColors.text}]}>
                 {message}
               </Text>
@@ -239,7 +238,7 @@ export default function ReceiveKinoChat({
           )}
 
           {(showTime || forceShowTime) && !!chatTime && (
-            <Text allowFontScaling={false} style={styles.receivedTime}>
+            <Text style={styles.receivedTime}>
               {formatTime(chatTime)}
             </Text>
           )}

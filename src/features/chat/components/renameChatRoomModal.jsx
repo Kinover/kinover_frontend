@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import {TextInput, StyleSheet, Text} from 'react-native';
+import {TextInput, StyleSheet} from 'react-native';
 import CustomModal from 'components/modal/CustomModal';
 import {
   getResponsiveHeight,
@@ -7,6 +7,11 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 import {required, validateLength} from 'utils/validation';
+
+import AppText from 'components/AppText';
+
+// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+const Text = AppText;
 
 const ROOM_NAME_MAX = 50;
 
@@ -54,12 +59,11 @@ export default function RenameChatRoomModal({
         '이름을 바꿔도 다른 참여자에게는 보이지 않아요.\n나만 쓰는 채팅방 이름이에요.'
       }>
       {fieldError ? (
-        <Text allowFontScaling={false} style={styles.errorText}>
+        <Text style={styles.errorText}>
           {fieldError}
         </Text>
       ) : null}
       <TextInput
-        allowFontScaling={false}
         placeholder={currentRoomName || '채팅방 이름'}
         value={newRoomName}
         onChangeText={t => {

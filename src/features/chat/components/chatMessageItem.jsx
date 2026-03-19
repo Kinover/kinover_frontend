@@ -1,6 +1,7 @@
 // components/common/ChatMessageItem.jsx
 import React, {memo} from 'react';
-import {View, StyleSheet, Text} from 'react-native';
+import {View, StyleSheet} from 'react-native';
+import AppText from 'components/AppText';
 import {
   getResponsiveWidth,
   getResponsiveIconSize,
@@ -156,9 +157,9 @@ function ChatMessageItem({
     <View style={[styles.wrapper, isMe ? styles.alignRight : styles.alignLeft]}>
       {shouldShowDate && !hideDateSeparator && message?.createdAt && (
         <View style={styles.dateSeparator}>
-          <Text allowFontScaling={false} style={styles.dateSeparatorText}>
+          <AppText style={styles.dateSeparatorText}>
             {formatDate(message.createdAt)}
-          </Text>
+          </AppText>
         </View>
       )}
       {ChatComponent}

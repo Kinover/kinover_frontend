@@ -82,7 +82,9 @@ const logAxiosError = (tag, e) => {
   let reqData = e?.config?.data;
   try {
     if (typeof reqData === 'string') reqData = JSON.parse(reqData);
-  } catch {}
+  } catch (e) {
+    // json parse 실패는 디버그용이라 무시
+  }
  // config.headers는 로깅하지 말 것 (Authorization 등 민감 정보)
   if (__DEV__) {
     console.log(`\n❌ [${tag}] AxiosError`);
@@ -610,7 +612,7 @@ export default function CreatePostPage({navigation, route}) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <Text allowFontScaling={false} style={styles.headerText}>
+        <Text style={styles.headerText}>
           {isEditMode ? '게시글 수정' : '글쓰기'}
         </Text>
       ),
@@ -694,9 +696,7 @@ export default function CreatePostPage({navigation, route}) {
                       </View>
 
                       <View pointerEvents="none" style={styles.videoBadge}>
-                        <Text
-                          allowFontScaling={false}
-                          style={styles.videoBadgeText}>
+                        <Text style={styles.videoBadgeText}>
                           {formatDuration(getDuration(item))}
                         </Text>
                       </View>
@@ -705,9 +705,7 @@ export default function CreatePostPage({navigation, route}) {
 
                   {hasExtra && index === gridImages.length - 1 && (
                     <View pointerEvents="none" style={styles.moreOverlay}>
-                      <Text
-                        allowFontScaling={false}
-                        style={styles.moreOverlayText}>
+                      <Text style={styles.moreOverlayText}>
                         +{selectedImages.length - 3}
                       </Text>
                     </View>
@@ -720,7 +718,6 @@ export default function CreatePostPage({navigation, route}) {
 
         <TextInput
           textAlignVertical="top"
-          allowFontScaling={false}
           style={styles.input}
           multiline
           value={text}

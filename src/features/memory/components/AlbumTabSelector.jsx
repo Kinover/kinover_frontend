@@ -2,12 +2,16 @@
 // src/screens/memory/components/AlbumTabSelector.js
 
 import React, {useEffect, useRef, useState, useCallback} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, Animated} from 'react-native';
+import {View, TouchableOpacity, StyleSheet, Animated} from 'react-native';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
 import {DEFAULT_STYLE, LAYOUT_STYLE} from 'styles/style';
+import AppText from 'components/AppText';
+
+// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+const Text = AppText;
 
 const TABS = [
   {key: 'feed', title: '피드'},
@@ -66,7 +70,7 @@ export default function AnimatedAlbumTabSelector({selected, onSelect}) {
                 style={styles.tab}
                 activeOpacity={0.7}
                 onLayout={e => handleLayout(tab.key, e)}>
-                <Text allowFontScaling={false}
+                <Text
                   style={[
                     styles.tabText,
                     selected === tab.key && styles.selectedText,

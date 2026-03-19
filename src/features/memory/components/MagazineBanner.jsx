@@ -2,7 +2,8 @@
 // src/features/magazine/components/MagazineBanner.jsx
 
 import React, {memo, useMemo, useCallback} from 'react';
-import {Pressable, View, Text, StyleSheet} from 'react-native';
+import {Pressable, View, StyleSheet} from 'react-native';
+import AppText from 'components/AppText';
 import LinearGradient from 'react-native-linear-gradient';
 import {useNavigation} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
@@ -13,6 +14,9 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 import {BACKGROUND_COLORS} from 'styles/style';
+
+// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+const Text = AppText;
 
 const MagazineBanner = ({
   onPress,
@@ -147,17 +151,17 @@ const MagazineBanner = ({
 
         {/* 텍스트 */}
         <View style={styles.textWrap}>
-          <Text allowFontScaling={false} numberOfLines={1} style={styles.title}>
+          <Text numberOfLines={1} style={styles.title}>
             {bannerState.title}
           </Text>
-          <Text allowFontScaling={false} numberOfLines={1} style={styles.subtitle}>
+          <Text numberOfLines={1} style={styles.subtitle}>
             {bannerState.subtitle}
           </Text>
         </View>
 
         {/* 장식(필요하면 아이콘/이미지로 교체 가능) */}
-        <Text allowFontScaling={false} style={[styles.deco, styles.decoLeft]}> </Text>
-        <Text allowFontScaling={false} style={[styles.deco, styles.decoRight]}> </Text>
+        <Text style={[styles.deco, styles.decoLeft]}> </Text>
+        <Text style={[styles.deco, styles.decoRight]}> </Text>
       </View>
     </Pressable>
   );

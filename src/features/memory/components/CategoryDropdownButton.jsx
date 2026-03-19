@@ -1,14 +1,18 @@
 import React from 'react';
-import {TouchableOpacity, Text, Image, StyleSheet} from 'react-native';
+import {TouchableOpacity, Image, StyleSheet} from 'react-native';
+import AppText from 'components/AppText';
 import {
   getResponsiveWidth,
 } from 'utils/responsive';
 import {HEADER_STYLES} from 'styles/style';
 
+// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+const Text = AppText;
+
 export default function CategoryDropdownButton({selectedTitle, onPress}) {
   return (
     <TouchableOpacity style={[styles.categoryButton]} onPress={onPress}>
-      <Text allowFontScaling={false} style={styles.text}>{selectedTitle}</Text>
+      <Text style={styles.text}>{selectedTitle}</Text>
       <Image
         source={require('../../../assets/icons/category-down.png')}
         style={styles.icon}

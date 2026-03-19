@@ -25,7 +25,7 @@ import {EMPTY_STYLE} from 'styles/style';
 function CategoryHeaderTitle() {
   return (
     <View style={{width: '100%', alignItems: 'center'}}>
-      <Text allowFontScaling={false} style={{fontSize: getResponsiveFontSize(20)}}>카테고리 선택</Text>
+      <Text style={{fontSize: getResponsiveFontSize(20)}}>카테고리 선택</Text>
     </View>
   );
 }

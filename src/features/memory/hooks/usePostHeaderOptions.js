@@ -1,8 +1,12 @@
 // src/features/post/hooks/usePostHeaderOptions.js
 import React, {useEffect} from 'react';
-import {View, Text, TouchableOpacity, Image} from 'react-native';
+import {View, TouchableOpacity, Image} from 'react-native';
 import {getResponsiveIconSize, getResponsiveWidth, getResponsiveHeight} from 'utils/responsive';
 import {HEADER_STYLES} from 'styles/style';
+import AppText from 'components/AppText';
+
+// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+const Text = AppText;
 
 export default function usePostHeaderOptions({
   navigation,
@@ -21,7 +25,7 @@ export default function usePostHeaderOptions({
       headerShown: !isChromeHidden,
       headerTransparent: true,
       headerTitle: () => (
-        <Text allowFontScaling={false} style={styles.headerTitle}>
+        <Text style={styles.headerTitle}>
           {headerCategoryTitle}
         </Text>
       ),

@@ -3,7 +3,7 @@
 
 // src/features/post/screens/PostPage.jsx
 import React, {useEffect, useMemo, useRef, useCallback, useState} from 'react';
-import {View, Text, TouchableOpacity, Image, StyleSheet, ScrollView, Pressable} from 'react-native';
+import {View, TouchableOpacity, Image, StyleSheet, ScrollView, Pressable} from 'react-native';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
@@ -24,6 +24,7 @@ import MemoryDetailBottomSheet from '../components/MemoryDetailBottomSheet';
 import ToastModal from 'components/modal/ToastModal';
 import ImageDeleteModal from '../components/DeleteOptionModal';
 import PostOptionsMenu from '../components/PostOptionMenu';
+import AppText from 'components/AppText';
 
 import {
   getResponsiveFontSize,
@@ -38,6 +39,9 @@ import usePostMediaSaver from '../hooks/usePostMediaSaver';
 import usePostConfirmDelete from '../hooks/usePostConfirmDelete';
 import usePostDescSheet from '../hooks/usePostDescSheet';
 import usePostCommentSheet from '../hooks/usePostCommentSheet';
+
+// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+const Text = AppText;
 
 export default function PostPage({route}) {
   const dispatch = useDispatch();
@@ -217,7 +221,9 @@ export default function PostPage({route}) {
  // desc도 초기화 성격으로 닫아주기
         try {
           descSheetRef.current?.snapToIndex?.(0);
-        } catch {}
+        } catch (e) {
+          // noop
+        }
         lastDescIndexRef.current = 0;
       };
     }, [
@@ -272,7 +278,9 @@ export default function PostPage({route}) {
         if (menuVisible) closeMenu();
         try {
           commentSheetRef.current?.dismiss?.();
-        } catch {}
+        } catch (e) {
+          // noop
+        }
         commentOpenRef.current = false;
         presentingCommentRef.current = false;
       } else {
@@ -281,7 +289,9 @@ export default function PostPage({route}) {
           try {
             const idx = lastDescIndexRef.current ?? 0;
             descSheetRef.current?.snapToIndex?.(idx);
-          } catch {}
+          } catch (e) {
+            // noop
+          }
         });
       }
 
@@ -418,7 +428,7 @@ export default function PostPage({route}) {
                   }
                 />
 
-                <Text allowFontScaling={false} style={styles.author} numberOfLines={1}>
+                <Text style={styles.author} numberOfLines={1}>
                   {safeMemory.authorName}
                 </Text>
 
@@ -437,7 +447,6 @@ export default function PostPage({route}) {
 
               <ScrollView scrollEnabled={descExpanded} showsVerticalScrollIndicator={false}>
                 <Text
-                  allowFontScaling={false}
                   style={styles.descContent}
                   numberOfLines={descExpanded ? undefined : 2}>
                   {safeMemory.content}

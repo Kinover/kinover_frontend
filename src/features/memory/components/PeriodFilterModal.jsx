@@ -294,7 +294,7 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
   const renderAnimatedContent = () => {
     if (mode === 'ALL') {
       return (
-        <Text allowFontScaling={false} style={styles.subText}>
+        <Text style={styles.subText}>
           전체 추억을 한 번에 보여줘요.
         </Text>
       );
@@ -308,7 +308,7 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
             alignItems: 'center',
             gap: getResponsiveHeight(10),
           }}>
-          <Text allowFontScaling={false} style={styles.subText}>
+          <Text style={styles.subText}>
             선택한 달의 추억만 모아 보여줘요.
           </Text>
 
@@ -317,16 +317,16 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
               style={styles.monthBtn}
               onPress={() => changeMonth(-1)}
               activeOpacity={0.85}>
-              <Text allowFontScaling={false} style={styles.monthBtnText}>
+              <Text style={styles.monthBtnText}>
                 ‹
               </Text>
             </TouchableOpacity>
 
             <View style={styles.monthCenter}>
-              <Text allowFontScaling={false} style={styles.monthMain}>
+              <Text style={styles.monthMain}>
                 {year}.{pad2(month + 1)}
               </Text>
-              <Text allowFontScaling={false} style={styles.monthSub}>
+              <Text style={styles.monthSub}>
                 {formatYMD(startOfMonth(year, month))} ~{' '}
                 {formatYMD(endOfMonth(year, month))}
               </Text>
@@ -336,7 +336,7 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
               style={styles.monthBtn}
               onPress={() => changeMonth(1)}
               activeOpacity={0.85}>
-              <Text allowFontScaling={false} style={styles.monthBtnText}>
+              <Text style={styles.monthBtnText}>
                 ›
               </Text>
             </TouchableOpacity>
@@ -353,7 +353,7 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
           alignItems: 'center',
           gap: getResponsiveHeight(10),
         }}>
-        <Text allowFontScaling={false} style={styles.subText}>
+        <Text style={styles.subText}>
           원하는 날짜 범위를 골라볼 수 있어요.
         </Text>
 
@@ -365,10 +365,10 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
             if (Platform.OS === 'android') openAndroidDatePicker('start');
             if (Platform.OS === 'ios') openIOSActionSheet('start');
           }}>
-          <Text allowFontScaling={false} style={styles.dateLabel}>
+          <Text style={styles.dateLabel}>
             시작
           </Text>
-          <Text allowFontScaling={false} style={styles.dateValue}>
+          <Text style={styles.dateValue}>
             {formatYMD(customStart)}
           </Text>
         </TouchableOpacity>
@@ -381,21 +381,21 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
             if (Platform.OS === 'android') openAndroidDatePicker('end');
             if (Platform.OS === 'ios') openIOSActionSheet('end');
           }}>
-          <Text allowFontScaling={false} style={styles.dateLabel}>
+          <Text style={styles.dateLabel}>
             종료
           </Text>
-          <Text allowFontScaling={false} style={styles.dateValue}>
+          <Text style={styles.dateValue}>
             {formatYMD(customEnd)}
           </Text>
         </TouchableOpacity>
 
         {Platform.OS === 'android' && (
-          <Text allowFontScaling={false} style={styles.hintText}>
+          <Text style={styles.hintText}>
             시작/종료를 눌러 날짜를 선택해줘요.
           </Text>
         )}
         {Platform.OS === 'ios' && (
-          <Text allowFontScaling={false} style={styles.hintText}>
+          <Text style={styles.hintText}>
             시작/종료를 누르면 아래에서 날짜 선택 창이 올라와요.
           </Text>
         )}
@@ -427,12 +427,12 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
             activeOpacity={0.8}
             onPress={closeIOSActionSheet}
             style={styles.sheetHeaderBtn}>
-            <Text allowFontScaling={false} style={styles.sheetHeaderText}>
+            <Text style={styles.sheetHeaderText}>
               취소
             </Text>
           </TouchableOpacity>
 
-          <Text allowFontScaling={false} style={styles.sheetTitle}>
+          <Text style={styles.sheetTitle}>
             {iosPickerWhich === 'start' ? '시작 날짜' : '종료 날짜'}
           </Text>
 
@@ -440,9 +440,7 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
             activeOpacity={0.8}
             onPress={confirmIOSActionSheet}
             style={styles.sheetHeaderBtn}>
-            <Text
-              allowFontScaling={false}
-              style={[styles.sheetHeaderText, {color: 'black'}]}>
+            <Text style={[styles.sheetHeaderText, {color: 'black'}]}>
               선택
             </Text>
           </TouchableOpacity>

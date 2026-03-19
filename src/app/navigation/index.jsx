@@ -1,9 +1,0 @@
-/**
- * @fileoverview 네비게이션 모듈 인덱스
- * 
- * 네비게이션 관련 컴포넌트들을 export합니다.
- */
-
-export {default as AppNavigator} from './rootNavigator';
-export {default as AuthNavigator} from './authNavigator';
-export {default as TabNavigator} from './tabNavigator';

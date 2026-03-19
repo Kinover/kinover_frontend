@@ -272,7 +272,7 @@ export default function ReceiveChat({
 
               {isLastCell && (
                 <View style={styles.moreOverlay}>
-                  <Text allowFontScaling={false} style={styles.moreOverlayText}>
+                  <Text style={styles.moreOverlayText}>
                     +{extraCount}
                   </Text>
                 </View>
@@ -367,7 +367,7 @@ export default function ReceiveChat({
 
       <View style={styles.textContainer}>
         {!isGrouped && (
-          <Text allowFontScaling={false} style={styles.userName}>
+          <Text style={styles.userName}>
             {userName}
           </Text>
         )}
@@ -399,12 +399,12 @@ export default function ReceiveChat({
           {(showTime || unreadCount > 0) && (
             <View style={styles.metaLine}>
               {unreadCount > 0 && (
-                <Text allowFontScaling={false} style={styles.unreadCountText}>
+                <Text style={styles.unreadCountText}>
                   {unreadCount}
                 </Text>
               )}
               {showTime && (
-                <Text allowFontScaling={false} style={styles.receivedTime}>
+                <Text style={styles.receivedTime}>
                   {formatTime(chatTime)}
                 </Text>
               )}

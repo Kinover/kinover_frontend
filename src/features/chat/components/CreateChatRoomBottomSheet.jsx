@@ -119,7 +119,9 @@ export default function CreateChatRoomBottomSheet({
         if (pendingInteractionRef.current) {
           try {
             pendingInteractionRef.current.cancel?.();
-          } catch (e) {}
+          } catch (e) {
+            // noop: pending interaction cancel 실패는 UX에 영향 없음
+          }
           pendingInteractionRef.current = null;
         }
 
@@ -162,7 +164,9 @@ export default function CreateChatRoomBottomSheet({
       if (pendingInteractionRef.current) {
         try {
           pendingInteractionRef.current.cancel?.();
-        } catch (e) {}
+        } catch (e) {
+          // noop: cleanup 단계에서 cancel 실패 무시
+        }
         pendingInteractionRef.current = null;
       }
     };
@@ -355,7 +359,6 @@ export default function CreateChatRoomBottomSheet({
             item.disabled && styles.chipDisabled,
           ]}>
           <Text
-            allowFontScaling={false}
             style={[
               styles.chipText,
               selected && styles.chipTextSelected,
@@ -378,7 +381,9 @@ export default function CreateChatRoomBottomSheet({
     if (pendingInteractionRef.current) {
       try {
         pendingInteractionRef.current.cancel?.();
-      } catch (e) {}
+      } catch (e) {
+        // noop: dismiss 중 cancel 실패 무시
+      }
       pendingInteractionRef.current = null;
     }
   }, [hideToast]);
@@ -416,7 +421,7 @@ export default function CreateChatRoomBottomSheet({
           <BottomSheetView>
             <View style={styles.body}>
               <View style={styles.sectionRow}>
-                <Text allowFontScaling={false} style={styles.label}>
+                <Text style={styles.label}>
                   채팅방 이름(선택)
                 </Text>
               </View>
@@ -430,7 +435,6 @@ export default function CreateChatRoomBottomSheet({
                   }}
                   placeholder="비워두면 기본 이름으로 생성돼요"
                   placeholderTextColor="#B0B6C3"
-                  allowFontScaling={false}
                   style={styles.input}
                   returnKeyType="done"
                   autoCorrect={false}
@@ -442,10 +446,10 @@ export default function CreateChatRoomBottomSheet({
 
               <View style={{marginTop: getResponsiveHeight(18)}}>
                 <View style={styles.sectionRow}>
-                  <Text allowFontScaling={false} style={styles.label}>
+                  <Text style={styles.label}>
                     구성원
                   </Text>
-                  <Text allowFontScaling={false} style={styles.countText}>
+                  <Text style={styles.countText}>
                     {selectedCount}명 선택
                   </Text>
                 </View>
@@ -458,7 +462,7 @@ export default function CreateChatRoomBottomSheet({
 
                 <View style={styles.tipRow}>
                   <View style={styles.tipDot} />
-                  <Text allowFontScaling={false} style={styles.tipText}>
+                  <Text style={styles.tipText}>
                     최소 1명은 선택해야 저장할 수 있어요.
                   </Text>
                 </View>
