@@ -100,7 +100,7 @@ export default function SendKinoChat({
 
   return (
     <View style={[styles.sendContainer, spacingStyle]}>
-      {showTime && <Text allowFontScaling={false} style={styles.sendTime}>{formatTime(chatTime)}</Text>}
+      {showTime && <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>}
 
       {messageType === 'image' ? (
         imageUrls.length === 1 ? (
@@ -122,7 +122,7 @@ export default function SendKinoChat({
             styles.textPadding,
             {backgroundColor: bubbleColors.bubble},
           ]}>
-          <Text allowFontScaling={false} style={[styles.sendText, {color: bubbleColors.text}]}>
+          <Text style={[styles.sendText, {color: bubbleColors.text}]}>
             {message}
           </Text>
         </View>

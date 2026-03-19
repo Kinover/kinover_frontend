@@ -18,7 +18,8 @@ import Video from 'react-native-video';
 import FastImage from '@d11/react-native-fast-image';
 
 import RNFS from 'react-native-fs';
-import {CameraRoll} from '@react-native-camera-roll/camera-roll';
+// eslint-disable-next-line import/no-commonjs
+const {CameraRoll} = require('@react-native-camera-roll/camera-roll');
 
 import {
   getResponsiveFontSize,
@@ -361,12 +362,12 @@ export default function MediaViewer({
 
       <View style={styles.topBar}>
         <TouchableOpacity onPress={handleClose} style={styles.circleIconBtn}>
-          <Text allowFontScaling={false} style={styles.xText}>✕</Text>
+          <Text style={styles.xText}>✕</Text>
         </TouchableOpacity>
 
         <View pointerEvents="none" style={styles.indexPill}>
-          <Text allowFontScaling={false} style={styles.headerIndex}>
-            <Text allowFontScaling={false} style={styles.headerIndexCurrent}>{safeIndex + 1}</Text>
+          <Text style={styles.headerIndex}>
+            <Text style={styles.headerIndexCurrent}>{safeIndex + 1}</Text>
             {' / '}
             {media.length}
           </Text>
@@ -401,10 +402,10 @@ export default function MediaViewer({
         <View style={styles.progressOverlay}>
           <View style={styles.progressBox}>
             <ActivityIndicator size="large" color="#fff" />
-            <Text allowFontScaling={false} style={styles.progressText}>
+            <Text style={styles.progressText}>
               {progress.current} / {progress.total}
             </Text>
-            <Text allowFontScaling={false} style={styles.progressSub}>
+            <Text style={styles.progressSub}>
               화면을 나가면 저장이 취소돼요
             </Text>
           </View>

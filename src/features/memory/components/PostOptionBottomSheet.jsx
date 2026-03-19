@@ -85,13 +85,13 @@ export default function PostOptionBottomSheet({
               style={styles.optionThumb}
             />
             <View style={styles.optionBadge}>
-              <Text allowFontScaling={false} style={styles.optionBadgeText}>{currentLabel}</Text>
+              <Text style={styles.optionBadgeText}>{currentLabel}</Text>
             </View>
           </View>
 
           <View style={{flex: 1, minWidth: 0}}>
-            <Text allowFontScaling={false} style={styles.optionTitle}>게시물 옵션</Text>
-            <Text allowFontScaling={false} style={styles.optionSub} numberOfLines={1}>
+            <Text style={styles.optionTitle}>게시물 옵션</Text>
+            <Text style={styles.optionSub} numberOfLines={1}>
               {isBusy ? '처리 중이에요…' : '저장/삭제를 빠르게 할 수 있어요'}
             </Text>
           </View>
@@ -135,7 +135,7 @@ export default function PostOptionBottomSheet({
 
         {/* 섹션: 저장 */}
         <View style={styles.optionSection}>
-          <Text allowFontScaling={false} style={styles.sectionTitle}>저장</Text>
+          <Text style={styles.sectionTitle}>저장</Text>
           <OptionRow
             title={`현재 ${isVideo ? '영상' : '이미지'} 저장`}
             subTitle="갤러리에 저장해요"
@@ -154,7 +154,7 @@ export default function PostOptionBottomSheet({
 
         {/* 섹션: 삭제 */}
         <View style={styles.optionSection}>
-          <Text allowFontScaling={false} style={[styles.sectionTitle, {color: '#EF4444'}]}>삭제</Text>
+          <Text style={[styles.sectionTitle, {color: '#EF4444'}]}>삭제</Text>
           <OptionRow
             title="현재 이미지 삭제"
             subTitle="선택된 이미지 1장 삭제"
@@ -174,12 +174,12 @@ export default function PostOptionBottomSheet({
         </View>
 
         {!CameraRollAvailable && (
-          <Text allowFontScaling={false} style={styles.optionHint}>
+          <Text style={styles.optionHint}>
  * 저장 기능을 쓰려면 @react-native-camera-roll/camera-roll 설치가 필요해요.
           </Text>
         )}
 
-        <Text allowFontScaling={false} style={styles.optionHint}>
+        <Text style={styles.optionHint}>
  * 저장은 네트워크/권한 상태에 따라 조금 걸릴 수 있어요.
         </Text>
       </BottomSheetScrollView>
@@ -207,12 +207,12 @@ function QuickAction({title, sub, icon, onPress, disabled, tone = 'primary'}) {
         />
       </View>
       <View style={{flex: 1, minWidth: 0}}>
-        <Text allowFontScaling={false}
+        <Text
           style={[styles.quickTitle, danger && {color: '#EF4444'}]}
           numberOfLines={1}>
           {title}
         </Text>
-        <Text allowFontScaling={false} style={styles.quickSub} numberOfLines={1}>
+        <Text style={styles.quickSub} numberOfLines={1}>
           {sub}
         </Text>
       </View>
@@ -247,12 +247,12 @@ function OptionRow({
       </View>
 
       <View style={{flex: 1, minWidth: 0}}>
-        <Text allowFontScaling={false}
+        <Text
           style={[styles.rowTitle, danger && {color: '#EF4444'}]}
           numberOfLines={1}>
           {title}
         </Text>
-        <Text allowFontScaling={false} style={styles.rowSub} numberOfLines={1}>
+        <Text style={styles.rowSub} numberOfLines={1}>
           {subTitle}
         </Text>
       </View>

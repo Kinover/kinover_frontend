@@ -2,7 +2,6 @@
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
@@ -10,6 +9,7 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
+import AppText from 'components/AppText';
 import FastImage from '@d11/react-native-fast-image';
 
 import {
@@ -50,6 +50,8 @@ export default function SendChat({
  // 이 메시지를 안 읽은 사람 수
   unreadCount = 0,
 }) {
+  // <Text />는 접근성 정책 포함 AppText로 통일
+  const Text = AppText;
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -223,12 +225,12 @@ export default function SendChat({
           {isUploading ? (
             <>
               <ActivityIndicator color="#fff" />
-              <Text allowFontScaling={false} style={styles.loadingText}>
+              <Text style={styles.loadingText}>
                 전송 중…
               </Text>
             </>
           ) : (
-            <Text allowFontScaling={false} style={styles.failText}>
+            <Text style={styles.failText}>
               전송 실패
             </Text>
           )}
@@ -308,7 +310,7 @@ export default function SendChat({
 
                 {isLastCell && (
                   <View style={styles.moreOverlay}>
-                    <Text allowFontScaling={false} style={styles.moreOverlayText}>
+                    <Text style={styles.moreOverlayText}>
                       +{extraCount}
                     </Text>
                   </View>
@@ -391,12 +393,12 @@ export default function SendChat({
       {(showTime && !!chatTime) || unreadCount > 0 ? (
         <View style={styles.metaLine}>
           {unreadCount > 0 && (
-            <Text allowFontScaling={false} style={styles.unreadCountText}>
+            <Text style={styles.unreadCountText}>
               {unreadCount}
             </Text>
           )}
           {showTime && !!chatTime && (
-            <Text allowFontScaling={false} style={styles.sendTime}>
+            <Text style={styles.sendTime}>
               {formatTime(chatTime)}
             </Text>
           )}

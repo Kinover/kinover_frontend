@@ -1,6 +1,7 @@
 // ChatRoomItem.jsx
 import React from 'react';
-import {Pressable, Text, View, StyleSheet, Image} from 'react-native';
+import {Pressable, View, StyleSheet, Image} from 'react-native';
+import AppText from 'components/AppText';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -8,6 +9,9 @@ import {
   getResponsiveIconSize,
 } from 'utils/responsive';
 import GroupAvatar from './groupAvatar';
+
+// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+const Text = AppText;
 
 const KINO_AVATAR_SOURCE = require('../../../assets/images/kino-yellow.png');
 import {useDispatch, useSelector} from 'react-redux';
@@ -92,7 +96,7 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
                   styles.aiBadge,
                   {width: AI_BADGE_SIZE, height: AI_BADGE_SIZE},
                 ]}>
-                <Text allowFontScaling={false} style={styles.aiBadgeText}>
+                <Text style={styles.aiBadgeText}>
                   AI
                 </Text>
               </View>
@@ -101,14 +105,12 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
 
           <View style={styles.textArea}>
             <Text
-              allowFontScaling={false}
               style={[styles.name, unreadCount > 0 && styles.nameUnread]}
               numberOfLines={1}>
               {title}
             </Text>
 
             <Text
-              allowFontScaling={false}
               style={[
                 styles.description,
                 unreadCount > 0 && styles.descriptionUnread,
@@ -119,13 +121,13 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
           </View>
 
           <View style={styles.metaCol}>
-            <Text allowFontScaling={false} style={styles.time}>
+            <Text style={styles.time}>
               {latestMessageTime ? formatPreviewTime(latestMessageTime) : ''}
             </Text>
 
             {unreadCount > 0 && (
               <View style={styles.badge}>
-                <Text allowFontScaling={false} style={styles.badgeText}>
+                <Text style={styles.badgeText}>
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </Text>
               </View>

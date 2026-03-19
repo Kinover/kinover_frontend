@@ -131,7 +131,7 @@ export default function CommentSection({
               onContentSizeChange={(w, h) => setContentHeight(h)}>
               {commentList.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                  <Text allowFontScaling={false} style={styles.emptyText}>
+                  <Text style={styles.emptyText}>
                     {'아직 댓글이 없어요.\n첫 댓글을 남겨보세요!'}
                   </Text>
                 </View>
@@ -163,21 +163,15 @@ export default function CommentSection({
                               resizeMode={FastImage.resizeMode.contain}
                             />
                             <View style={styles.textColumn}>
-                              <Text
-                                allowFontScaling={false}
-                                style={styles.commentWriter}>
+                              <Text style={styles.commentWriter}>
                                 {comment.authorName}
                               </Text>
-                              <Text
-                                allowFontScaling={false}
-                                style={styles.commentContent}>
+                              <Text style={styles.commentContent}>
                                 {comment.content}
                               </Text>
                             </View>
                           </View>
-                          <Text
-                            allowFontScaling={false}
-                            style={styles.timeText}>
+                          <Text style={styles.timeText}>
                             {formatPreviewTime(comment.createdAt)}
                           </Text>
                         </View>
@@ -210,7 +204,6 @@ export default function CommentSection({
           {/* 하단 입력창 (PostPage에서 commentWrapper 자체를 올림) */}
           <View style={styles.commentInputContainer}>
             <TextInput
-              allowFontScaling={false}
               style={styles.commentInput}
               placeholder="댓글 달고 추억 쌓기...."
               placeholderTextColor="#D9D9D9"

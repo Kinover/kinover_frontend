@@ -206,7 +206,6 @@ export default React.forwardRef(function PostFilterBar({
             ]}
           />
           <Text
-            allowFontScaling={false}
             style={[
               styles.categoryText,
               isCategoryActive && styles.categoryTextActive,
@@ -246,7 +245,6 @@ export default React.forwardRef(function PostFilterBar({
               ]}
             />
             <Text
-              allowFontScaling={false}
               style={[
                 styles.pillText,
                 {color: isPeriodActive ? TEXT_MAIN : TEXT_SUB},
@@ -269,7 +267,6 @@ export default React.forwardRef(function PostFilterBar({
             activeOpacity={0.75}
             onPress={openSort}>
             <Text
-              allowFontScaling={false}
               style={[
                 styles.pillText,
                 {color: isSortActive ? TEXT_MAIN : TEXT_SUB},
@@ -321,7 +318,6 @@ export default React.forwardRef(function PostFilterBar({
           activeOpacity={0.75}
           onPress={() => pickSort(opt.key)}>
           <Text
-            allowFontScaling={false}
             style={[styles.dropdownItemText, active && styles.dropdownItemTextActive]}
             numberOfLines={1}
             ellipsizeMode="tail">

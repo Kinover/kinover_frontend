@@ -142,7 +142,7 @@ export default function CategorySelectPage({route}) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <Text allowFontScaling={false} style={styles.headerTitle}>
+        <Text style={styles.headerTitle}>
           {isEditMode ? '카테고리 수정' : '카테고리 지정'}
         </Text>
       ),
@@ -197,7 +197,7 @@ export default function CategorySelectPage({route}) {
         }}
         activeOpacity={0.85}
         style={[styles.itemContainer, isSelected && styles.selectedItem]}>
-        <Text allowFontScaling={false} style={styles.itemText}>
+        <Text style={styles.itemText}>
           {item.title}
         </Text>
 
@@ -235,7 +235,7 @@ export default function CategorySelectPage({route}) {
               style={styles.addButton}
               onPress={() => setAddModalVisible(true)}
               activeOpacity={0.85}>
-              <Text allowFontScaling={false} style={styles.addText}>
+              <Text style={styles.addText}>
                 카테고리 추가
               </Text>
             </TouchableOpacity>
@@ -253,7 +253,6 @@ export default function CategorySelectPage({route}) {
         onConfirm={handleAddCategory}
         content={
           <TextInput
-            allowFontScaling={false}
             placeholder="예: 2026 가족 여행"
             placeholderTextColor={EMPTY_STYLE().emptyColor}
             style={styles.input}

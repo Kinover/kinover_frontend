@@ -170,13 +170,12 @@ export default function KinoSelectScreen() {
       return parts.map((part, i) =>
         part === '키노' || part === '키노예요' || part === '키노입니다' ? (
           <Text
-            allowFontScaling={false}
             key={`h-${i}`}
             style={[styles.kinoText, styles.kinoHighlight, {color: cardColors.highlight}]}>
             {part}
           </Text>
         ) : (
-          <Text allowFontScaling={false} key={`t-${i}`} style={styles.kinoText}>
+          <Text key={`t-${i}`} style={styles.kinoText}>
             {part}
           </Text>
         ),
@@ -229,7 +228,7 @@ export default function KinoSelectScreen() {
       onActionPress={() => setConfirmVisible(true)}
       headerExtra={
         <View style={styles.headerBadge}>
-          <Text allowFontScaling={false} style={styles.headerBadgeText}>
+          <Text style={styles.headerBadgeText}>
             KINO PERSONA
           </Text>
         </View>
@@ -324,10 +323,10 @@ export default function KinoSelectScreen() {
         </TouchableOpacity>
 
         <View style={styles.kinoMetaWrap}>
-          <Text allowFontScaling={false} style={styles.kinoName}>
+          <Text style={styles.kinoName}>
             {KINOS[currentIndex]?.title}
           </Text>
-          <Text allowFontScaling={false} style={styles.kinoTone}>
+          <Text style={styles.kinoTone}>
             {KINOS[currentIndex]?.tone}
           </Text>
         </View>
@@ -411,7 +410,6 @@ function FadingKinoText({index, descriptions, renderLine}) {
         return (
           <Text
             key={`p-${idx}`}
-            allowFontScaling={false}
             lineBreakStrategyIOS="hangul-word"
             textBreakStrategy="highQuality"
             style={[

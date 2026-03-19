@@ -25,8 +25,9 @@ import {
 
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import FastImage from '@d11/react-native-fast-image';
-import {Swipeable} from 'react-native-gesture-handler';
-import LinearGradient from 'react-native-linear-gradient';
+import RNLinearGradient from 'react-native-linear-gradient';
+
+const {Swipeable} = require('react-native-gesture-handler');
 
 import {
   getResponsiveFontSize,
@@ -102,7 +103,7 @@ function MentionText({text, familyUsers, textStyle, mentionStyle}) {
   }, [text]);
 
   return (
-    <Text allowFontScaling={false} style={textStyle}>
+    <Text style={textStyle}>
       {parts.map((p, idx) => {
         if (p?.startsWith('@')) {
           const name = p.slice(1);
@@ -110,7 +111,6 @@ function MentionText({text, familyUsers, textStyle, mentionStyle}) {
           if (user) {
             return (
               <Text
-                allowFontScaling={false}
                 key={`${idx}_${p}`}
                 style={[styles.mentionText, mentionStyle]}>
                 {p}
@@ -119,7 +119,7 @@ function MentionText({text, familyUsers, textStyle, mentionStyle}) {
           }
         }
         return (
-          <Text allowFontScaling={false} key={`${idx}_${p}`}>
+          <Text key={`${idx}_${p}`}>
             {p}
           </Text>
         );
@@ -279,12 +279,11 @@ function CommentFooter({
                       style={styles.mentionAvatar}
                     />
                     <Text
-                      allowFontScaling={false}
                       style={styles.mentionName}
                       numberOfLines={1}>
                       {item.name}
                     </Text>
-                    <Text allowFontScaling={false} style={styles.mentionHint}>
+                    <Text style={styles.mentionHint}>
                       @{item.name}
                     </Text>
                   </Pressable>
@@ -297,7 +296,6 @@ function CommentFooter({
         <View
           style={[styles.commentInputContainer, disabled && {opacity: 0.55}]}>
           <BottomSheetTextInput
-            allowFontScaling={false}
             ref={inputRef}
             editable={!disabled}
             style={styles.commentInput}
@@ -345,7 +343,7 @@ function CommentFooter({
 
 export default function MemoryDetailBottomSheet({
   sheetRef,
-  memory,
+  memory: _memory,
   commentList = [],
   user,
   commentText,
@@ -486,7 +484,7 @@ export default function MemoryDetailBottomSheet({
                 if (disabled) return;
                 onDeleteComment?.(commentId);
               }}>
-              <Text allowFontScaling={false} style={styles.deleteActionText}>
+              <Text style={styles.deleteActionText}>
                 삭제
               </Text>
             </TouchableOpacity>
@@ -548,10 +546,10 @@ export default function MemoryDetailBottomSheet({
               />
               <View style={styles.commentTextCol}>
                 <View style={styles.nameTimeRow}>
-                  <Text allowFontScaling={false} style={styles.commentWriter}>
+                  <Text style={styles.commentWriter}>
                     {item.authorName}
                   </Text>
-                  <Text allowFontScaling={false} style={styles.timeText}>
+                  <Text style={styles.timeText}>
                     {formatPreviewTime(item.createdAt)}
                   </Text>
                 </View>
@@ -613,10 +611,10 @@ export default function MemoryDetailBottomSheet({
       <BottomSheetView style={{flex: 1, width: '100%'}}>
         <View style={styles.commentSheetHeader}>
           <View style={styles.commentHeaderRow}>
-            <Text allowFontScaling={false} style={styles.commentSheetTitle}>
+            <Text style={styles.commentSheetTitle}>
               댓글
             </Text>
-            <Text allowFontScaling={false} style={styles.commentCountText}>
+            <Text style={styles.commentCountText}>
               {commentCount}
             </Text>
             <TouchableOpacity
@@ -651,7 +649,7 @@ export default function MemoryDetailBottomSheet({
                 styles.emptyContainer,
                 {paddingBottom: emptyBottomOffset},
               ]}>
-              <Text allowFontScaling={false} style={styles.emptyText}>
+              <Text style={styles.emptyText}>
                 아직 댓글이 없어요.
                 {'\n'}첫 댓글을 남겨보세요!
               </Text>
@@ -664,7 +662,7 @@ export default function MemoryDetailBottomSheet({
         />
 
         {showTopFade && (
-          <LinearGradient
+            <RNLinearGradient
             pointerEvents="none"
             colors={[backgroundColor, 'rgba(249,249,249,0)']}
             style={styles.topFade}
@@ -672,7 +670,7 @@ export default function MemoryDetailBottomSheet({
         )}
 
         {showBottomFade && (
-          <LinearGradient
+          <RNLinearGradient
             pointerEvents="none"
             colors={['rgba(249,249,249,0)', backgroundColor]}
             style={styles.bottomFade}

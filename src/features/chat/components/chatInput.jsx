@@ -15,20 +15,16 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  FlatList,
   Platform,
   Dimensions,
-  Text,
   Image,
   LayoutAnimation,
   UIManager,
   Keyboard,
-  Pressable,
 } from 'react-native';
 import {useDispatch} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
-import Animated, {SlideInDown, SlideOutDown} from 'react-native-reanimated';
-import {Gesture, GestureDetector} from 'react-native-gesture-handler';
+import {Gesture} from 'react-native-gesture-handler';
 import RNBlobUtil from 'react-native-blob-util';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
@@ -40,7 +36,7 @@ import {
 import {launchImageLibrary} from 'react-native-image-picker';
 
 import {sendChat, isChatSocketOpen} from 'features/chat/hooks/ChatSocket';
-import {getPresignedUrls, uploadFileToS3} from 'api/imageUrlApi';
+import {uploadChatMediaSnapshot} from '../utils/chatMediaUploadUtils';
 
 import {
   getResponsiveWidth,
@@ -57,6 +53,17 @@ import ToastModal from 'components/modal/ToastModal';
 import {addMessageAndUpdateRoom} from '../utils/messageActions';
 
 import {hapticLight, hapticSelection, hapticError} from 'utils/haptic';
+import ChatMentionDropdown from './ChatMentionDropdown';
+import ChatMediaGallery from './ChatMediaGallery';
+import AppText from 'components/AppText';
+import {
+  applyMention,
+  extractMentionUserIds,
+  findActiveMentionQuery,
+} from '../utils/mentionUtils';
+import {
+  getExtFromUri,
+} from '../utils/chatInputUtils';
 
 const COLORS = {
   bg: '#F6F7FB',
@@ -69,6 +76,9 @@ const COLORS = {
   chipGlass2: 'rgba(17,24,39,0.26)',
   plusBg: '#FFFFFF',
 };
+
+// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일하기 위한 별칭
+const Text = AppText;
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
@@ -96,77 +106,7 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-/* =========================
- * Mention Utils
- * ========================= */
-function escapeRegExp(str) {
-  return String(str || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function findActiveMentionQuery(text, cursor) {
-  const before = (text || '').slice(0, cursor);
-  const match = before.match(/(^|\s)@([^\s@]{0,20})$/);
-  if (!match) return null;
-
-  const query = match[2] ?? '';
-  const atIndex = before.lastIndexOf('@');
-  if (atIndex < 0) return null;
-
-  return {query, atIndex};
-}
-
-function applyMention(text, atIndex, cursor, name) {
-  const beforeAt = (text || '').slice(0, atIndex);
-  const afterToken = (text || '').slice(cursor);
-  const next = `${beforeAt}@${name} ${afterToken}`;
-  const nextCursor = (beforeAt + `@${name} `).length;
-  return {next, nextCursor};
-}
-
-function extractMentionUserIds(text, users) {
-  if (!text?.trim() || !Array.isArray(users) || users.length === 0) return [];
-
-  const ids = new Set();
-  for (const u of users) {
-    if (!u?.name || u?.userId == null) continue;
-
-    const re = new RegExp(
-      `(^|\\s)@${escapeRegExp(u.name)}(?=\\s|$|[.,!?…])`,
-      'g',
-    );
-    if (re.test(text)) ids.add(String(u.userId));
-  }
-  return Array.from(ids);
-}
-
-/* =========================
- * 파일명 기반 content-type
- * ========================= */
-const inferContentTypeByName = fileName => {
-  const lower = String(fileName || '').toLowerCase();
-  if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
-  if (lower.endsWith('.png')) return 'image/png';
-  if (lower.endsWith('.webp')) return 'image/webp';
-  if (lower.endsWith('.mp4')) return 'video/mp4';
-  if (lower.endsWith('.mov')) return 'video/quicktime';
-  return 'application/octet-stream';
-};
-
-const getExtFromUri = uri => {
-  try {
-    const clean = String(uri || '').split('?')[0];
-    const ext = clean.split('.').pop()?.toLowerCase();
-    if (!ext || ext.includes('/') || ext.length > 6) return null;
-    return ext;
-  } catch {
-    return null;
-  }
-};
-
-const stripFileScheme = uri =>
-  String(uri || '').startsWith('file://')
-    ? String(uri).replace('file://', '')
-    : String(uri);
+// mention / upload helpers were moved to src/features/chat/utils
 
 const ChatInput = forwardRef(function ChatInput(
   {
@@ -203,6 +143,7 @@ const ChatInput = forwardRef(function ChatInput(
 
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
  // mention state
   const [cursor, setCursor] = useState(0);
@@ -297,7 +238,22 @@ const ChatInput = forwardRef(function ChatInput(
   }, []);
   const hideToast = useCallback(() => setToastVisible(false), []);
 
-  // 키보드 이벤트로 하단 패딩을 바꾸지 않음 (입력창 위치 고정)
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, () => {
+      setIsKeyboardVisible(true);
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => {
+      setIsKeyboardVisible(false);
+    });
+
+    return () => {
+      showSub?.remove?.();
+      hideSub?.remove?.();
+    };
+  }, []);
 
  // ====== gallery load (인앱 그리드용) ======
   const loadPhotos = useCallback(
@@ -582,62 +538,11 @@ const ChatInput = forwardRef(function ChatInput(
         }),
       );
 
-      const now = Date.now();
-      const prepared = [];
-
-      for (let i = 0; i < mediaSnapshot.length; i++) {
-        const original = mediaSnapshot[i];
-        const originalUri = original?.uri;
-
-        const resolvedUri = await resolveUploadUri(
-          originalUri,
-          i,
-          !!original?.isVideo,
-        );
-
-        const {uri: compressedUri, ext} = await compressUploadUri(
-          resolvedUri,
-          !!original?.isVideo,
-        );
-
-        const safeExt = ext || (original?.isVideo ? 'mp4' : 'jpg');
-        const fileName = `chat_${now}_${i}.${safeExt}`;
-        const contentType = inferContentTypeByName(fileName);
-
-        const p = stripFileScheme(compressedUri);
-        const stat = await RNBlobUtil.fs.stat(p);
-        const size = Number(stat?.size || 0);
-        if (!size)
-          throw new Error(`압축 결과 파일이 비었어요: ${compressedUri}`);
-
-        prepared.push({
-          uploadUri: compressedUri,
-          fileName,
-          contentType,
-        });
-      }
-
-      const presignedUrls = await getPresignedUrls(
-        prepared.map(p => ({fileName: p.fileName, contentType: p.contentType})),
-      );
-
-      for (let i = 0; i < prepared.length; i++) {
-        const presigned =
-          typeof presignedUrls[i] === 'string'
-            ? presignedUrls[i]
-            : presignedUrls[i]?.url;
-
-        if (!presigned) throw new Error('presigned url is missing');
-
-        await uploadFileToS3(
-          presigned,
-          prepared[i].uploadUri,
-          prepared[i].contentType,
-          prepared[i].fileName,
-        );
-      }
-
-      const fileNames = prepared.map(p => p.fileName);
+      const fileNames = await uploadChatMediaSnapshot({
+        mediaSnapshot,
+        resolveUploadUri,
+        compressUploadUri,
+      });
 
       dispatch(
         addMessageAndUpdateRoom({
@@ -751,7 +656,7 @@ const ChatInput = forwardRef(function ChatInput(
 
             {item.isVideo && (
               <View style={styles.videoBadge}>
-                <Text allowFontScaling={false} style={styles.videoBadgeText}>
+                <Text style={styles.videoBadgeText}>
                   {formatDuration(item.duration)}
                 </Text>
               </View>
@@ -761,7 +666,7 @@ const ChatInput = forwardRef(function ChatInput(
 
             {isSelected && (
               <View style={styles.orderBadge}>
-                <Text allowFontScaling={false} style={styles.orderBadgeText}>
+                <Text style={styles.orderBadgeText}>
                   {order}
                 </Text>
               </View>
@@ -792,50 +697,19 @@ const ChatInput = forwardRef(function ChatInput(
 
   // SafeArea 하단 inset만큼 항상 유지 (포커스 시에도 위치 고정)
   const rootPaddingBottom = useMemo(() => {
+    if (Platform.OS === 'ios' && isKeyboardVisible) return 0;
     return Math.max(insets.bottom, getResponsiveHeight(2));
-  }, [insets.bottom]);
+  }, [insets.bottom, isKeyboardVisible]);
 
   return (
     <View style={[styles.root, {paddingBottom: rootPaddingBottom}]}>
       {/* 멘션 드롭다운 (bottom 기준만 사용) */}
       {!!activeMention && mentionCandidates.length > 0 && (
-        <View
-          style={[styles.mentionDropdown, {bottom: mentionBottom}]}
-          pointerEvents="box-none">
-          <View style={styles.mentionDropdownBox}>
-            <FlatList
-              keyboardShouldPersistTaps="always"
-              data={mentionCandidates}
-              keyExtractor={item => String(item.userId)}
-              renderItem={({item}) => (
-                <Pressable
-                  onPress={() => handlePickMention(item)}
-                  style={({pressed}) => [
-                    styles.mentionItem,
-                    pressed && {opacity: 0.86},
-                  ]}>
-                  <Image
-                    source={
-                      item.image
-                        ? {uri: item.image}
-                        : require('../../../assets/images/default.png')
-                    }
-                    style={styles.mentionAvatar}
-                  />
-                  <Text
-                    allowFontScaling={false}
-                    style={styles.mentionName}
-                    numberOfLines={1}>
-                    {item.name}
-                  </Text>
-                  <Text allowFontScaling={false} style={styles.mentionHint}>
-                    @{item.name}
-                  </Text>
-                </Pressable>
-              )}
-            />
-          </View>
-        </View>
+        <ChatMentionDropdown
+          mentionCandidates={mentionCandidates}
+          mentionBottom={mentionBottom}
+          onPickMention={handlePickMention}
+        />
       )}
 
       <View style={styles.innerContainer}>
@@ -878,7 +752,6 @@ const ChatInput = forwardRef(function ChatInput(
           )}
 
           <TextInput
-            allowFontScaling={false}
             ref={inputRef}
             style={styles.input}
             value={message}
@@ -944,9 +817,9 @@ const ChatInput = forwardRef(function ChatInput(
 
               {hasSelection && (
                 <View style={[styles.sendBadge, !canSend && {opacity: 0.5}]}>
-                  <Text allowFontScaling={false} style={styles.sendBadgeText}>
+                  <AppText style={styles.sendBadgeText}>
                     {selectedImages.length > 99 ? '99+' : selectedImages.length}
-                  </Text>
+                  </AppText>
                 </View>
               )}
             </View>
@@ -956,66 +829,20 @@ const ChatInput = forwardRef(function ChatInput(
 
       {/* (선택 유지) 인앱 갤러리: 이제는 롱프레스에서만 열림 */}
       {enableMediaPicker && (
-        <Animated.View
-          key={showGallery ? 'open' : 'close'}
-          entering={showGallery ? SlideInDown.duration(150) : undefined}
-          exiting={SlideOutDown.duration(80)}
-          style={[
-            styles.galleryContainer,
-            {height: showGallery ? GALLERY_H : 0},
-          ]}>
-          {showGallery && (
-            <GestureDetector gesture={pinchGesture}>
-              <View style={{flex: 1}}>
-                {/* 플로팅 버튼 */}
-                <View
-                  style={styles.galleryFloatingArea}
-                  pointerEvents="box-none">
-                  <TouchableOpacity
-                    activeOpacity={0.9}
-                    onPress={pickFromSystemGallery}
-                    style={styles.galleryFloatingButton}
-                    disabled={isSending || sendingLockRef.current}>
-                    <Image
-                      source={require('../../../assets/icons/tabs/2/camera.png')}
-                      width={20}
-                      height={20}
-                      style={{
-                        width: getResponsiveIconSize(20),
-                        height: getResponsiveIconSize(20),
-                        resizeMode: 'contain',
-                      }}
-                      tintColor={'#ffffff'}
-                    />
-                  </TouchableOpacity>
-                </View>
-
-                <FlatList
-                  data={photos}
-                  key={`chat-gallery-${gridColumns}`}
-                  keyExtractor={(item, index) => item.uri + index}
-                  renderItem={renderPhoto}
-                  numColumns={gridColumns}
-                  contentContainerStyle={styles.galleryContent}
-                  columnWrapperStyle={styles.columnWrapper}
-                  onEndReached={handleEndReached}
-                  onEndReachedThreshold={0.2}
-                  refreshing={isRefreshing}
-                  onRefresh={onRefresh}
-                  scrollEventThrottle={16}
-                  ListFooterComponent={
-                    isLoadingMore ? (
-                      <Text allowFontScaling={false} style={styles.footer} />
-                    ) : null
-                  }
-                  nestedScrollEnabled
-                  keyboardShouldPersistTaps="handled"
-                  removeClippedSubviews={false}
-                />
-              </View>
-            </GestureDetector>
-          )}
-        </Animated.View>
+        <ChatMediaGallery
+          showGallery={showGallery}
+          pinchGesture={pinchGesture}
+          photos={photos}
+          gridColumns={gridColumns}
+          renderPhoto={renderPhoto}
+          galleryHeight={GALLERY_H}
+          onPickFromSystemGallery={pickFromSystemGallery}
+          isPlusDisabled={isSending || sendingLockRef.current}
+          onEndReached={handleEndReached}
+          onRefresh={onRefresh}
+          isRefreshing={isRefreshing}
+          isLoadingMore={isLoadingMore}
+        />
       )}
 
       <ToastModal
@@ -1033,51 +860,6 @@ const styles = StyleSheet.create({
   root: {
     backgroundColor: '#fff',
     position: 'relative',
-  },
-
- // 멘션 드롭다운: bottom만 사용(간격 흔들림 방지)
-  mentionDropdown: {
-    position: 'absolute',
-    left: getResponsiveWidth(14),
-    right: getResponsiveWidth(14),
-    zIndex: 999,
-    elevation: 20,
-  },
-  mentionDropdownBox: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.10)',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: Platform.OS === 'ios' ? 0.08 : 0.2,
-    shadowRadius: 12,
-    shadowOffset: {width: 0, height: 6},
-  },
-  mentionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(10),
-    paddingHorizontal: getResponsiveWidth(12),
-    paddingVertical: getResponsiveHeight(10),
-  },
-  mentionAvatar: {
-    width: getResponsiveWidth(28),
-    height: getResponsiveWidth(28),
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,200,77,0.15)',
-  },
-  mentionName: {
-    flex: 1,
-    minWidth: 0,
-    color: '#111827',
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(13.5),
-  },
-  mentionHint: {
-    color: '#6B7280',
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(12),
   },
 
   innerContainer: {
@@ -1189,49 +971,6 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
 
-  galleryContainer: {
-    maxHeight: getResponsiveHeight(300),
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    overflow: 'hidden',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(17,24,39,0.06)',
-  },
-
-  galleryFloatingArea: {
-    position: 'absolute',
-    top: getResponsiveHeight(8),
-    right: getResponsiveWidth(10),
-    zIndex: 50,
-    elevation: 10,
-  },
-  galleryFloatingButton: {
-    backgroundColor: 'rgba(17,24,39,0.72)',
-    padding: getResponsiveIconSize(20),
-    borderRadius: 999,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: getResponsiveIconSize(30),
-    height: getResponsiveIconSize(30),
-    borderColor: 'rgba(255,255,255,0.18)',
-  },
-  galleryFloatingText: {
-    color: '#fff',
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(12.5),
-    includeFontPadding: false,
-  },
-
-  galleryContent: {
-    paddingTop: GAP,
-    paddingBottom: GAP,
-    paddingHorizontal: PADDING_H,
-  },
-  columnWrapper: {
-    columnGap: GAP,
-  },
-
   tile: {
     marginBottom: GAP,
     borderRadius: getResponsiveWidth(1),
@@ -1297,11 +1036,5 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveIconSize(11.5),
     fontFamily: 'Pretendard-SemiBold',
     includeFontPadding: false,
-  },
-
-  footer: {
-    textAlign: 'center',
-    paddingVertical: getResponsiveHeight(4),
-    color: '#666',
   },
 });

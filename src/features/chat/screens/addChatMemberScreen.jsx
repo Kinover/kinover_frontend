@@ -85,7 +85,7 @@ export default function AddChatMemberScreen({navigation, route}) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <Text allowFontScaling={false} style={styles.headerTitle}>
+        <Text style={styles.headerTitle}>
           새 멤버 초대
         </Text>
       ),
@@ -117,7 +117,7 @@ export default function AddChatMemberScreen({navigation, route}) {
                 style={[styles.userItem, isSelected && styles.userItemSelected]}>
                 <View style={styles.userInfo}>
                   <Image source={{uri: user.image}} style={styles.userImage} />
-                  <Text allowFontScaling={false} style={styles.userName}>
+                  <Text style={styles.userName}>
                     {user.name}
                   </Text>
                 </View>

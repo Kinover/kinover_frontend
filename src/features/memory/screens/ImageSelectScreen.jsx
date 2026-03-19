@@ -296,7 +296,7 @@ export default function ImageSelectPage() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <Text allowFontScaling={false} style={styles.headerTitle}>
+        <Text style={styles.headerTitle}>
           {isEditMode ? '미디어 수정' : '사진 업로드'}{' '}
           {hasSelection ? `(${selectedFiles.length})` : ''}
         </Text>
@@ -359,14 +359,14 @@ export default function ImageSelectPage() {
             ]}>
             <View style={styles.plusInner}>
               <View style={styles.plusIconCircle}>
-                <Text allowFontScaling={false} style={styles.plusIcon}>
+                <Text style={styles.plusIcon}>
                   ＋
                 </Text>
               </View>
-              <Text allowFontScaling={false} style={styles.plusSubText}>
+              <Text style={styles.plusSubText}>
                 추가하기
               </Text>
-              <Text allowFontScaling={false} style={styles.plusHint}>
+              <Text style={styles.plusHint}>
                 {selectedFiles.length}/{MAX_SELECTION}
               </Text>
             </View>
@@ -397,7 +397,7 @@ export default function ImageSelectPage() {
 
           {/* 순서칩(예쁘게) */}
           <View style={styles.orderChip}>
-            <Text allowFontScaling={false} style={styles.orderChipText}>
+            <Text style={styles.orderChipText}>
               {order}
             </Text>
           </View>
@@ -405,7 +405,7 @@ export default function ImageSelectPage() {
           {/* 비디오 칩 */}
           {item.isVideo ? (
             <View style={styles.videoPill}>
-              <Text allowFontScaling={false} style={styles.videoPillText}>
+              <Text style={styles.videoPillText}>
                 VIDEO
               </Text>
             </View>
@@ -432,7 +432,7 @@ export default function ImageSelectPage() {
             }}
             activeOpacity={0.85}
             style={styles.removeBtn}>
-            <Text allowFontScaling={false} style={styles.removeBtnText}>
+            <Text style={styles.removeBtnText}>
               ✕
             </Text>
           </TouchableOpacity>
@@ -463,7 +463,7 @@ export default function ImageSelectPage() {
 
       {!hasSelection && (
         <View style={styles.helperBox}>
-          <Text allowFontScaling={false} style={styles.helperText}>
+          <Text style={styles.helperText}>
             오른쪽 ‘추가하기’ 타일을 눌러 미디어를 선택해줘요
           </Text>
         </View>

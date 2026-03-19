@@ -124,7 +124,6 @@ const Chip = memo(function Chip({text}) {
       ]}>
       <View style={[styles.chipDot, {backgroundColor: dynamicStyle.dot}]} />
       <Text
-        allowFontScaling={false}
         style={[styles.chipText, {color: dynamicStyle.text}]}
         numberOfLines={1}>
         {text}
@@ -584,10 +583,10 @@ export default function MemoryFeed({
             }
             style={styles.cardPress}>
             <View style={styles.cardHeader}>
-              <Text allowFontScaling={false} style={styles.dateText}>
+              <Text style={styles.dateText}>
                 {dateLabel}
               </Text>
-              <Text allowFontScaling={false} style={styles.metaCompactText}>
+              <Text style={styles.metaCompactText}>
                 {mediaLabel}
               </Text>
             </View>
@@ -618,11 +617,7 @@ export default function MemoryFeed({
 
             <View style={styles.contentArea}>
               {bodyText ? (
-                <Text
-                  allowFontScaling={false}
-                  style={styles.contentText}
-                  numberOfLines={3}
-                  ellipsizeMode="tail">
+                <Text style={styles.contentText} numberOfLines={3} ellipsizeMode="tail">
                   {bodyText}
                 </Text>
               ) : null}
@@ -712,7 +707,7 @@ export default function MemoryFeed({
 
               {!!item?.duration && (
                 <View pointerEvents="none" style={styles.videoBadge}>
-                  <Text allowFontScaling={false} style={styles.videoBadgeText}>
+                  <Text style={styles.videoBadgeText}>
                     {formatDuration(item.duration)}
                   </Text>
                 </View>
@@ -723,6 +718,11 @@ export default function MemoryFeed({
       );
     },
     [navigation, tileWidth, videoThumbMap],
+  );
+
+  const renderFeedItem = useCallback(
+    ({item, index}) => renderListItem(item, index),
+    [renderListItem],
   );
 
   /* =========================
@@ -848,7 +848,7 @@ export default function MemoryFeed({
             }}
             ListEmptyComponent={
               <View style={styles.emptyWrapper}>
-                <Text allowFontScaling={false} style={styles.emptyText}>
+                <Text style={styles.emptyText}>
                   아직 등록된 게시글이 없어요.
                 </Text>
               </View>
@@ -868,7 +868,7 @@ export default function MemoryFeed({
               item.postId?.toString() || `no-id-${index}`
             }
             numColumns={1}
-            renderItem={({item, index}) => renderListItem(item, index)}
+            renderItem={renderFeedItem}
             refreshControl={refreshControl}
             ListHeaderComponent={listHeader}
             initialNumToRender={8}
@@ -877,7 +877,7 @@ export default function MemoryFeed({
             removeClippedSubviews={true}
             ListEmptyComponent={
               <View style={styles.emptyWrapper}>
-                <Text allowFontScaling={false} style={styles.emptyText}>
+                <Text style={styles.emptyText}>
                   아직 등록된 게시글이 없어요.
                 </Text>
               </View>

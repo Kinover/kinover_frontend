@@ -1,13 +1,17 @@
 // src/features/chat/components/ChatListGuideModal.tsx
 
 import React from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, Modal} from 'react-native';
+import {View, StyleSheet, TouchableOpacity, Modal} from 'react-native';
+import AppText from 'components/AppText';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
 import { COLORS } from 'styles/style';
+
+// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+const Text = AppText;
 
 export default function ChatListGuideModal({
   visible,
@@ -22,25 +26,25 @@ export default function ChatListGuideModal({
     <Modal transparent visible={visible} animationType="fade">
       <View style={styles.overlay}>
         <View style={styles.content}>
-          <Text allowFontScaling={false} style={styles.stepText}>
+          <Text style={styles.stepText}>
             {step + 1}/{totalSteps}
           </Text>
 
           {!!title && (
-            <Text allowFontScaling={false} style={styles.title}>{title}</Text>
+            <Text style={styles.title}>{title}</Text>
           )}
 
           <View style={styles.contentBody}>
-            <Text allowFontScaling={false} style={styles.description}>{description}</Text>
+            <Text style={styles.description}>{description}</Text>
           </View>
 
           <View style={styles.buttonRow}>
             <TouchableOpacity onPress={onSkip}>
-              <Text allowFontScaling={false} style={styles.skipText}>건너뛰기</Text>
+              <Text style={styles.skipText}>건너뛰기</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.nextButton} onPress={onNext}>
-              <Text allowFontScaling={false} style={styles.nextButtonText}>
+              <Text style={styles.nextButtonText}>
                 {step === totalSteps - 1 ? '완료' : '다음'}
               </Text>
             </TouchableOpacity>
