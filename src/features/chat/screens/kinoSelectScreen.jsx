@@ -4,13 +4,13 @@
 import React, {useEffect, useRef, useState, useCallback, useMemo} from 'react';
 import {
   View,
-  Text,
   TouchableOpacity,
   Image,
   StyleSheet,
   Animated,
   useWindowDimensions,
 } from 'react-native';
+import AppText from 'components/AppText';
 import Carousel from 'react-native-reanimated-carousel';
 import {useDispatch} from 'react-redux';
 import {useNavigation, useRoute} from '@react-navigation/native';
@@ -27,6 +27,9 @@ import {
 } from 'utils/responsive';
 import {BUTTON_STYLES} from 'styles/style';
 import SelectionFrameLayout from 'components/layouts/SelectionFrameLayout';
+
+// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+const Text = AppText;
 
 const KINO_TYPE_TO_PERSONALITY = {
   YELLOW_KINO: 'SUNNY',

@@ -8,12 +8,12 @@ import React, {useState, useEffect, useLayoutEffect, useCallback} from 'react';
 import {
   StyleSheet,
   View,
-  Text,
   TouchableOpacity,
   ScrollView,
   ActivityIndicator,
   Image,
 } from 'react-native';
+import AppText from 'components/AppText';
 
 import { apiClient } from 'utils/apiClient';
 import {CHAT_ROOM} from 'config/apiEndpoints';
@@ -29,6 +29,9 @@ import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
 import useHideTabBar from 'hooks/useHideTabBar';
 import FastImage from '@d11/react-native-fast-image';
 import {HEADER_STYLES} from 'styles/style';
+
+// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+const Text = AppText;
 
 export default function AddChatMemberScreen({navigation, route}) {
   const {chatRoomId, onInvited} = route.params; // 콜백 받기

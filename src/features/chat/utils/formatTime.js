@@ -9,3 +9,4 @@ export default function formatTime(time) {
 
   return `${ampm} ${hours}:${minutes}`;
 }
+

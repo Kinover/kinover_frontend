@@ -2,12 +2,12 @@
 import React, {useEffect, useRef, useState, useMemo} from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   TouchableOpacity,
   Platform,
   FlatList,
 } from 'react-native';
+import AppText from 'components/AppText';
 import FastImage from '@d11/react-native-fast-image';
 import {
   getResponsiveWidth,
@@ -15,7 +15,7 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import formatTime from 'utils/formatTime';
+import formatTime from '../utils/formatTime';
 import ImageModal from './mediaModal';
 
 import {
@@ -26,6 +26,9 @@ import {
 } from '../utils/timeRegistry';
 import {getSpacingStyle} from '../utils/getSpacingStyle';
 import {CHATROOM_STYLE} from 'styles/style';
+
+// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+const Text = AppText;
 
 export default function SendKinoChat({
   chatTime,

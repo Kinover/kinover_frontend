@@ -4,7 +4,6 @@
 import React, {useMemo, useCallback, useState, useEffect, useRef} from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   Platform,
   TouchableOpacity,
@@ -12,6 +11,7 @@ import {
   InteractionManager,
   SafeAreaView,
 } from 'react-native';
+import AppText from 'components/AppText';
 
 import {useSelector} from 'react-redux';
 
@@ -29,6 +29,9 @@ import {BOTTOMSHEET_STYLE} from 'styles/style';
 
 import ToastModal from 'components/modal/ToastModal';
 import {validateLength} from 'utils/validation';
+
+// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+const Text = AppText;
 
 export default function CreateChatRoomBottomSheet({
   modalRef,
