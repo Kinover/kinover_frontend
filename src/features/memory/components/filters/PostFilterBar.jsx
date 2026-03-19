@@ -215,7 +215,7 @@ export default React.forwardRef(function PostFilterBar({
             {categoryTitle}
           </Text>
           <Animated.Image
-            source={require('../../../assets/icons/down-arrow.png')}
+            source={require('assets/icons/down-arrow.png')}
               style={[
               styles.categoryCaret,
               {
@@ -238,7 +238,7 @@ export default React.forwardRef(function PostFilterBar({
             activeOpacity={0.75}
             onPress={onPressDateFilter}>
             <Image
-              source={require('../../../assets/icons/calendar.png')}
+              source={require('assets/icons/calendar.png')}
               style={[
                 styles.icon,
                 {tintColor: isPeriodActive ? TEXT_MAIN : TEXT_SUB},
@@ -278,7 +278,7 @@ export default React.forwardRef(function PostFilterBar({
             </Text>
 
             <Animated.Image
-              source={require('../../../assets/icons/down-arrow.png')}
+              source={require('assets/icons/down-arrow.png')}
               style={[
                 styles.caret,
                 {tintColor: isSortActive ? TEXT_MAIN : TEXT_SUB},
@@ -332,7 +332,7 @@ export default React.forwardRef(function PostFilterBar({
                 height: getResponsiveIconSize(9),
                 resizeMode: 'contain',
               }}
-              source={require('../../../assets/icons/check-gray.png')}
+                  source={require('assets/icons/check-gray.png')}
             />
           ) : null}
         </TouchableOpacity>

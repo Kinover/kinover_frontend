@@ -18,7 +18,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
-import CategoryModal from '../components/CategoryModal';
+import CategoryModal from '../components/modals/CategoryModal';
 import {fetchCategoryThunk} from '../store/categoryThunk';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {EMPTY_STYLE, HEADER_STYLES, COLORS} from 'styles/style';

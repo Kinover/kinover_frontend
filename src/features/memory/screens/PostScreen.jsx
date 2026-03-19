@@ -19,11 +19,11 @@ import {deleteCommentThunk} from '../store/commentThunk';
 import useHideTabBar from 'hooks/useHideTabBar';
 import usePostPageViewModel from '../hooks/usePostPageViewModel';
 
-import ImageCarousel from '../components/ImageCarousel';
-import MemoryDetailBottomSheet from '../components/MemoryDetailBottomSheet';
+import ImageCarousel from '../components/media/ImageCarousel';
+import MemoryDetailBottomSheet from '../components/bottomSheets/MemoryDetailBottomSheet';
 import ToastModal from 'components/modal/ToastModal';
-import ImageDeleteModal from '../components/DeleteOptionModal';
-import PostOptionsMenu from '../components/PostOptionMenu';
+import ImageDeleteModal from '../components/modals/DeleteOptionModal';
+import PostOptionsMenu from '../components/menus/PostOptionMenu';
 import AppText from 'components/AppText';
 
 import {

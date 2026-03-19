@@ -9,8 +9,8 @@ export default function GalleryToggle({isGalleryView, onToggle}) {
         <Image
           source={
             isGalleryView
-              ? require('../../../assets/images/grid_on.png')
-              : require('../../../assets/images/grid_off.png')
+              ? require('assets/images/grid_on.png')
+              : require('assets/images/grid_off.png')
           }
           style={styles.icon}
         />
@@ -19,8 +19,8 @@ export default function GalleryToggle({isGalleryView, onToggle}) {
         <Image
           source={
             !isGalleryView
-              ? require('../../../assets/images/list_on.png')
-              : require('../../../assets/images/list_off.png')
+              ? require('assets/images/list_on.png')
+              : require('assets/images/list_off.png')
           }
           style={styles.icon}
         />

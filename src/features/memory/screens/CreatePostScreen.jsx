@@ -56,7 +56,7 @@ import {getVideoThumbnail} from 'utils/videoThumbnail';
 import {fetchPostByIdThunk, deletePostImageThunk} from '../store/memoryThunk';
 
 // MediaViewer 적용
-import MediaViewer from '../components/MediaViewer';
+import MediaViewer from '../components/media/MediaViewer';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
