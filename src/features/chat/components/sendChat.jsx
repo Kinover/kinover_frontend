@@ -20,6 +20,7 @@ import {
 } from 'utils/responsive';
 import formatTime from '../utils/formatTime';
 import MediaModal from './mediaModal';
+import ChatBubble from './bubbles/ChatBubble';
 
 import {
   registerTimeLast,
@@ -270,7 +271,7 @@ export default function SendChat({
   );
 
   const renderGrid = () => (
-    <View style={[styles.sendBubble, styles.imagePadding]}>
+    <ChatBubble alignment="right" paddingVariant="media" backgroundColor="#FFECC3">
       <FlatList
         data={displayMedia}
         keyExtractor={(item, index) => String(item) + index}
@@ -322,7 +323,7 @@ export default function SendChat({
       />
 
       {renderUploadOverlay(getResponsiveIconSize(20))}
-    </View>
+    </ChatBubble>
   );
 
  // 단건(1장) 원본 비율 렌더
@@ -412,14 +413,14 @@ export default function SendChat({
           renderGrid()
         )
       ) : hasText ? (
-        <View style={[styles.sendBubble, styles.textPadding]}>
+        <ChatBubble alignment="right" paddingVariant="text" backgroundColor="#FFECC3">
           <MentionText
             text={message}
             users={mentionUsers}
             textStyle={styles.sendText}
             mentionStyle={[styles.sendText, styles.mentionText]}
           />
-        </View>
+        </ChatBubble>
       ) : null}
 
       <MediaModal

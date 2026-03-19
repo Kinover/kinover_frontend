@@ -18,6 +18,7 @@ import {
 } from 'utils/responsive';
 import formatTime from '../utils/formatTime';
 import MediaModal from './mediaModal';
+import ChatBubble from './bubbles/ChatBubble';
 
 import {
   registerTimeLast,
@@ -379,13 +380,10 @@ export default function ReceiveChat({
           {isMedia && safeMediaUrls.length === 1 ? (
             renderSingle()
           ) : (
-            <View
-              style={[
-                styles.receivedBubble,
-                normalizedType === 'text'
-                  ? styles.textPadding
-                  : styles.imagePadding,
-              ]}>
+            <ChatBubble
+              alignment="left"
+              paddingVariant={normalizedType === 'text' ? 'text' : 'media'}
+              backgroundColor="#FFECC3">
               {isMedia ? (
                 renderMediaGrid()
               ) : hasText ? (
@@ -396,7 +394,7 @@ export default function ReceiveChat({
                   mentionStyle={[styles.receivedText, styles.mentionText]}
                 />
               ) : null}
-            </View>
+            </ChatBubble>
           )}
 
           {(showTime || unreadCount > 0) && (
