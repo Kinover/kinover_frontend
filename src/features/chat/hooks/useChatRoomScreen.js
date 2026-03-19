@@ -4,7 +4,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {fetchMoreMessagesThunk} from '../store/messageThunk';
 import {initRoom, selectRoomMessages, selectRoomMeta} from '../store/messageSlice';
 
-export default function useChatRoomScreen(chatRoom, userId, isKino) {
+export default function useChatRoomScreen(chatRoom, _userId, _isKino) {
   const dispatch = useDispatch();
 
   const roomId = useMemo(() => {

@@ -15,8 +15,8 @@ const Text = AppText;
 
 const KINO_AVATAR_SOURCE = require('../../../assets/images/kino-yellow.png');
 import {useDispatch, useSelector} from 'react-redux';
-import {markRoomRead} from '../store/chatRoomSlice';
-import {getChatRoomTitle} from '../utils/chatRoomTitleHelper';
+import {markRoomRead} from '../../store/chatRoomSlice';
+import {getChatRoomTitle} from '../../utils/chatRoomTitleHelper';
 
 function ChatRoomItem({chatRoom, userId, navigation}) {
   const dispatch = useDispatch();

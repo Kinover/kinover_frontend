@@ -36,7 +36,7 @@ import {
 import {launchImageLibrary} from 'react-native-image-picker';
 
 import {sendChat, isChatSocketOpen} from 'features/chat/hooks/ChatSocket';
-import {uploadChatMediaSnapshot} from '../utils/chatMediaUploadUtils';
+import {uploadChatMediaSnapshot} from '../../utils/chatMediaUploadUtils';
 
 import {
   getResponsiveWidth,
@@ -46,11 +46,11 @@ import {
 } from 'utils/responsive';
 
 import {convertPhUriToFileUri} from 'utils/photoUriConverter';
-import {getSelectOrder, isSameAsset, toggleSelectImage} from '../utils/selection';
-import {loadGalleryPhotos} from '../utils/gallery';
+import {getSelectOrder, isSameAsset, toggleSelectImage} from '../../utils/selection';
+import {loadGalleryPhotos} from '../../utils/gallery';
 import formatDuration from 'utils/formatDuration';
 import ToastModal from 'components/modal/ToastModal';
-import {addMessageAndUpdateRoom} from '../utils/messageActions';
+import {addMessageAndUpdateRoom} from '../../utils/messageActions';
 
 import {hapticLight, hapticSelection, hapticError} from 'utils/haptic';
 import ChatMentionDropdown from './ChatMentionDropdown';
@@ -60,10 +60,10 @@ import {
   applyMention,
   extractMentionUserIds,
   findActiveMentionQuery,
-} from '../utils/mentionUtils';
+} from '../../utils/mentionUtils';
 import {
   getExtFromUri,
-} from '../utils/chatInputUtils';
+} from '../../utils/chatInputUtils';
 
 const COLORS = {
   bg: '#F6F7FB',

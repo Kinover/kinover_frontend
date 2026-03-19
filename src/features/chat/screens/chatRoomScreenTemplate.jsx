@@ -6,8 +6,8 @@ import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import useChatRoomTemplate from '../hooks/useChatRoomTemplate';
 import {onLeaveChat} from '../hooks/onLeaveChat';
 
-import ChatRoomMessageList from '../components/ChatRoomMessageList';
-import ChatRoomInputArea from '../components/ChatRoomInputArea';
+import ChatRoomMessageList from '../components/messages/ChatRoomMessageList';
+import ChatRoomInputArea from '../components/rooms/ChatRoomInputArea';
 import ChatSettings from './chatSetting';
 import ToastModal from 'components/modal/ToastModal';
 import {getChatKeyboardVerticalOffset} from 'utils/layoutMetrics';

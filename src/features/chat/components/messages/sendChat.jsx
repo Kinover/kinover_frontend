@@ -18,17 +18,17 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import formatTime from '../utils/formatTime';
+import formatTime from '../../utils/formatTime';
 import MediaModal from './mediaModal';
-import ChatBubble from './bubbles/ChatBubble';
+import ChatBubble from '../bubbles/ChatBubble';
 
 import {
   registerTimeLast,
   unregisterTimeLast,
   minuteKey,
   toEpochMs,
-} from '../utils/timeRegistry';
-import {getSpacingStyle} from '../utils/getSpacingStyle';
+} from '../../utils/timeRegistry';
+import {getSpacingStyle} from '../../utils/getSpacingStyle';
 import {CHATROOM_STYLE} from 'styles/style';
 
 import {getVideoThumbnail} from 'utils/videoThumbnail';

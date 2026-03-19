@@ -28,16 +28,6 @@ import {
 /* =========================
  * Utils
  * ========================= */
-const toIso = d => {
-  try {
-    const t = d ? new Date(d) : new Date();
-    if (Number.isNaN(t.getTime())) return new Date().toISOString();
-    return t.toISOString();
-  } catch {
-    return new Date().toISOString();
-  }
-};
-
 const normalizePreviewMessage = (msg, fallbackBody = null) => {
   const merged = {...(msg || {})};
 
