@@ -426,6 +426,25 @@ export default function MemoryFeed({
     });
   }, [filteredMemoryList, sortKey, inferIsVideo, normalizeMediaUrl]);
 
+  const feedPreviewVideoUris = useMemo(() => {
+    return (sortedMemoryList || [])
+      .slice(0, 16)
+      .map(memory => {
+        const rawFirstUri = memory?.imageUrls?.[0] || null;
+        const firstUri = rawFirstUri ? normalizeMediaUrl(rawFirstUri) : null;
+        const firstIsVideo = firstUri ? inferIsVideo(memory, 0, firstUri) : false;
+        return firstIsVideo && firstUri ? firstUri : null;
+      })
+      .filter(Boolean);
+  }, [sortedMemoryList, normalizeMediaUrl, inferIsVideo]);
+
+  const albumPreviewVideoUris = useMemo(() => {
+    return (allMedia || [])
+      .filter(item => item?.isVideo && item?.uri)
+      .slice(0, 36)
+      .map(item => item.uri);
+  }, [allMedia]);
+
   const isAllPhotos = selectedTab === 'album';
   const data = isAllPhotos ? allMedia : sortedMemoryList;
 
@@ -506,11 +525,15 @@ export default function MemoryFeed({
     if (!isAllPhotos) return;
     if (refreshing) return;
 
-    const firstFew = (data || []).slice(0, 24);
-    (firstFew || []).forEach(
-      it => it?.isVideo && it?.uri && ensureVideoThumbByUri(it.uri),
-    );
-  }, [isAllPhotos, data, ensureVideoThumbByUri, refreshing]);
+    albumPreviewVideoUris.forEach(uri => ensureVideoThumbByUri(uri));
+  }, [isAllPhotos, albumPreviewVideoUris, ensureVideoThumbByUri, refreshing]);
+
+  useEffect(() => {
+    if (isAllPhotos) return;
+    if (refreshing) return;
+
+    feedPreviewVideoUris.forEach(uri => ensureVideoThumbByUri(uri));
+  }, [isAllPhotos, feedPreviewVideoUris, ensureVideoThumbByUri, refreshing]);
 
   /* =========================
    * Render: Feed Card
@@ -525,10 +548,6 @@ export default function MemoryFeed({
       const firstIsVideo = firstUri ? inferIsVideo(memory, 0, firstUri) : false;
       const firstThumb =
         firstIsVideo && firstUri ? videoThumbMap[firstUri] : null;
-
-      if (!refreshing && firstIsVideo && firstUri && !firstThumb) {
-        requestAnimationFrame(() => ensureVideoThumbByUri(firstUri));
-      }
 
       const categoryLabel = getCategoryLabel(memory.categoryId);
       const dateLabel = formatDate(memory.createdAt);
@@ -648,10 +667,6 @@ export default function MemoryFeed({
       const isVideo = !!item?.isVideo;
       const thumbUri = isVideo && uri ? videoThumbMap[uri] : null;
 
-      if (!refreshing && isVideo && uri && !thumbUri) {
-        requestAnimationFrame(() => ensureVideoThumbByUri(uri));
-      }
-
       const goPost = () => {
         navigation.navigate('게시글화면', {
           postId: item.postId,
@@ -707,7 +722,7 @@ export default function MemoryFeed({
         </TouchableOpacity>
       );
     },
-    [ensureVideoThumbByUri, navigation, refreshing, tileWidth, videoThumbMap],
+    [navigation, tileWidth, videoThumbMap],
   );
 
   /* =========================

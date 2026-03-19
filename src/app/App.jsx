@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Image,
   Text,
-  TextInput,
   AppState,
   ActivityIndicator,
   Platform,
@@ -16,7 +15,6 @@ import {
 } from 'react-native';
 import {
   GestureHandlerRootView,
-  TextInput as GHTextInput,
 } from 'react-native-gesture-handler';
 import {NavigationContainer} from '@react-navigation/native';
 import {Provider, useDispatch, useSelector} from 'react-redux';
@@ -45,7 +43,7 @@ import {
   checkAndAuthBiometric,
   getBiometricAvailability,
 } from '../utils/biometrics';
-import {FONT_MODE, setBioLockEnabled} from 'store/uiSlice';
+import {setBioLockEnabled} from 'store/uiSlice';
 import useNetworkStatus, {registerReconnectCallback} from 'hooks/useNetworkStatus';
 import {reconnectIfNeeded} from 'features/chat/hooks/ChatSocket';
 import {AppStateResourceBridge} from './AppStateResourceBridge';
@@ -54,92 +52,7 @@ import {
   GuideOverlayRoot,
 } from '../contexts/GuideOverlayContext';
 
-// ==================== Font Scaling Disable ====================
-
-if (Text.defaultProps == null) {
-  Text.defaultProps = {};
-}
-Text.defaultProps.allowFontScaling = false;
-
-if (TextInput.defaultProps == null) {
-  TextInput.defaultProps = {};
-}
-TextInput.defaultProps.allowFontScaling = false;
-
-if (GHTextInput?.defaultProps == null) {
-  GHTextInput.defaultProps = {};
-}
-GHTextInput.defaultProps.allowFontScaling = false;
-
 const SPLASH_KEY = 'SPLASH_SHOWN_V1';
-
-const FONT_MODE_SCALE = {
-  [FONT_MODE.NORMAL]: 1,
-  [FONT_MODE.LARGE]: 1.08,
-  [FONT_MODE.EXTRA_LARGE]: 1.16,
-};
-
-const ONBOARDING_ROUTE_NAME = '온보딩화면';
-
-let latestFontMode = FONT_MODE.NORMAL;
-let globalTextScale = 1;
-let textRenderPatched = false;
-
-const isStyleObject = value =>
-  value != null && typeof value === 'object' && !Array.isArray(value);
-
-const scaleTextStyle = style => {
-  if (!style || globalTextScale === 1) return style;
-
-  if (Array.isArray(style)) return style.map(scaleTextStyle);
-  if (!isStyleObject(style)) return style;
-
-  const hasMetric =
-    typeof style.fontSize === 'number' ||
-    typeof style.lineHeight === 'number' ||
-    typeof style.letterSpacing === 'number';
-
-  if (!hasMetric) return style;
-
-  const next = {...style};
-  if (typeof style.fontSize === 'number') next.fontSize = style.fontSize * globalTextScale;
-  if (typeof style.lineHeight === 'number') next.lineHeight = style.lineHeight * globalTextScale;
-  if (typeof style.letterSpacing === 'number') {
-    next.letterSpacing = style.letterSpacing * globalTextScale;
-  }
-  return next;
-};
-
-const patchTextRenderOnce = () => {
-  if (textRenderPatched) return;
-  if (typeof Text?.render !== 'function') return;
-
-  const originalRender = Text.render;
-  Text.render = function patchedTextRender(...args) {
-    const element = originalRender.apply(this, args);
-    if (!React.isValidElement(element)) return element;
-    if (globalTextScale === 1) return element;
-
-    const originalStyle = element?.props?.style;
-    if (!originalStyle) return element;
-
-    const scaledStyle = scaleTextStyle(originalStyle);
-    if (scaledStyle === originalStyle) return element;
-    return React.cloneElement(element, {style: scaledStyle});
-  };
-
-  textRenderPatched = true;
-};
-
-const resolveTextScale = (fontMode, routeName) => {
-  if (routeName === ONBOARDING_ROUTE_NAME) return 1;
-  return FONT_MODE_SCALE[fontMode] ?? 1;
-};
-
-const applyGlobalTextScale = (fontMode, routeName) => {
-  patchTextRenderOnce();
-  globalTextScale = resolveTextScale(fontMode, routeName);
-};
 
 function KinoverSplashView({loop = false, onAnimationFinish}) {
   return (
@@ -166,9 +79,6 @@ function ResponsiveModeBridge() {
   useEffect(() => {
     if (fontMode != null) {
       setResponsiveMode(fontMode);
-      latestFontMode = fontMode;
-      const routeName = navigationRef?.getCurrentRoute?.()?.name;
-      applyGlobalTextScale(fontMode, routeName);
     }
   }, [fontMode]);
 
@@ -422,13 +332,7 @@ export default function App() {
                 <NavigationContainer
                   ref={navigationRef}
                   onReady={() => {
-                    const routeName = navigationRef?.getCurrentRoute?.()?.name;
-                    applyGlobalTextScale(latestFontMode, routeName);
                     flushPendingNavigation();
-                  }}
-                  onStateChange={() => {
-                    const routeName = navigationRef?.getCurrentRoute?.()?.name;
-                    applyGlobalTextScale(latestFontMode, routeName);
                   }}>
                   {showSplash && !splashDone ? (
                     <KinoverSplashView
