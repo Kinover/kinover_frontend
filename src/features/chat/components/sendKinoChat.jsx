@@ -26,6 +26,7 @@ import {
 } from '../utils/timeRegistry';
 import {getSpacingStyle} from '../utils/getSpacingStyle';
 import {CHATROOM_STYLE} from 'styles/style';
+import KinoBubble from './bubbles/KinoBubble';
 
 // 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
@@ -79,12 +80,10 @@ export default function SendKinoChat({
     KINO_SEND_BUBBLE_PALETTE[kinoType] ?? KINO_SEND_BUBBLE_PALETTE.YELLOW_KINO;
 
   const renderImages = () => (
-    <View
-      style={[
-        styles.sendBubble,
-        styles.imagePadding,
-        {backgroundColor: bubbleColors.bubble},
-      ]}>
+    <KinoBubble
+      alignment="right"
+      paddingVariant="media"
+      backgroundColor={bubbleColors.bubble}>
       <FlatList
         data={imageUrls}
         keyExtractor={(item, index) => item + index}
@@ -98,7 +97,7 @@ export default function SendKinoChat({
         scrollEnabled={false}
         contentContainerStyle={styles.imageGrid}
       />
-    </View>
+    </KinoBubble>
   );
 
   return (
@@ -119,16 +118,14 @@ export default function SendKinoChat({
           renderImages()
         )
       ) : (
-        <View
-          style={[
-            styles.sendBubble,
-            styles.textPadding,
-            {backgroundColor: bubbleColors.bubble},
-          ]}>
+        <KinoBubble
+          alignment="right"
+          paddingVariant="text"
+          backgroundColor={bubbleColors.bubble}>
           <Text style={[styles.sendText, {color: bubbleColors.text}]}>
             {message}
           </Text>
-        </View>
+        </KinoBubble>
       )}
 
       <ImageModal

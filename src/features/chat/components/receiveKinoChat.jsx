@@ -28,6 +28,7 @@ import {
 import {getSpacingStyle} from '../utils/getSpacingStyle';
 import {CHATROOM_STYLE} from 'styles/style';
 import AppText from 'components/AppText';
+import KinoBubble from './bubbles/KinoBubble';
 
 // 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
@@ -228,16 +229,16 @@ export default function ReceiveKinoChat({
               renderImages()
             )
           ) : (
-            <View
-              style={[
-                styles.receivedBubble,
-                {backgroundColor: bubbleColors.bubble},
-              ]}>
+            <KinoBubble
+              alignment="left"
+              paddingVariant="text"
+              maxWidth="80%"
+              backgroundColor={bubbleColors.bubble}>
               <Text
                 style={[styles.receivedText, {color: bubbleColors.text}]}>
                 {message}
               </Text>
-            </View>
+            </KinoBubble>
           )}
 
           {(showTime || forceShowTime) && !!chatTime && (
