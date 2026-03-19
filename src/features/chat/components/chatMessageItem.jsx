@@ -1,7 +1,6 @@
 // components/common/ChatMessageItem.jsx
-import React, {useEffect} from 'react';
+import React, {memo} from 'react';
 import {View, StyleSheet, Text} from 'react-native';
-import {useNavigation} from '@react-navigation/native';
 import {
   getResponsiveWidth,
   getResponsiveIconSize,
@@ -46,7 +45,7 @@ const getMessageType = message => {
   return String(t).toLowerCase();
 };
 
-export default function ChatMessageItem({
+function ChatMessageItem({
   message,
   currentUserId,
   isKino = false,
@@ -60,12 +59,6 @@ export default function ChatMessageItem({
   unreadCount = 0,
   forceShowTime = false,
 }) {
-  const navigation = useNavigation();
-
-  useEffect(() => {
-    navigation.getParent()?.setOptions({tabBarStyle: {display: 'none'}});
-  }, [navigation]);
-
   if (!message) return null;
 
   const localType = message?.localType;
@@ -172,6 +165,8 @@ export default function ChatMessageItem({
     </View>
   );
 }
+
+export default memo(ChatMessageItem);
 
 const styles = StyleSheet.create({
   wrapper: {width: '100%', paddingHorizontal: '2.5%'},

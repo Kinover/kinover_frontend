@@ -1,5 +1,5 @@
 // components/MessageFlatList.jsx
-import React, {useEffect, useState, useMemo, useRef} from 'react';
+import React, {useEffect, useState, useMemo, useRef, useCallback} from 'react';
 import {FlatList, ActivityIndicator, View} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ChatMessageItem from './chatMessageItem';
@@ -15,11 +15,12 @@ export default function MessageFlatList({
   isFetchingMore,
   loadOlderMessages,
   handleScroll,
-  scrollToBottom,
+  scrollToBottom: _scrollToBottom,
   isMessageFetched,
 
   mentionUsers,
 
+  // ✅ 추가: { [userId]: lastReadAt }
   readPointersMap,
 }) {
   const [showKinoTyping, setShowKinoTyping] = useState(false);
@@ -46,7 +47,7 @@ export default function MessageFlatList({
     if (isMessageFetched) setIsInitialLoaded(true);
   }, [chatRoom?.chatRoomId, isMessageFetched]);
 
- // "YYYY-MM-DD HH:mm:ss" / "YYYY-MM-DDTHH:mm:ss" / ISO 전부 최대한 로컬로 파싱
+  // "YYYY-MM-DD HH:mm:ss" / "YYYY-MM-DDTHH:mm:ss" / ISO 전부 최대한 로컬로 파싱
   const toMsLocal = v => {
     if (!v) return 0;
     const s = String(v).trim().replace(' ', 'T');
@@ -55,8 +56,8 @@ export default function MessageFlatList({
     return Number.isNaN(t) ? 0 : t;
   };
 
- // 메시지별 “안읽은 사람 수”
-  const calcUnreadCount = message => {
+  // ✅ 메시지별 “안읽은 사람 수”
+  const calcUnreadCount = useCallback(message => {
     if (!message) return 0;
 
     const createdAtMs = toMsLocal(message.createdAt);
@@ -79,12 +80,12 @@ export default function MessageFlatList({
       const uid = u?.userId ?? u?.id ?? null;
       if (uid == null) continue;
 
- // 보낸 사람 제외
+      // ✅ 보낸 사람 제외
       if (senderId != null && String(uid) === String(senderId)) continue;
 
       const lastReadAt = map?.[String(uid)] ?? null;
 
- // lastReadAt이 없으면 = 안읽음
+      // lastReadAt이 없으면 = 안읽음
       if (!lastReadAt) {
         count += 1;
         continue;
@@ -96,11 +97,11 @@ export default function MessageFlatList({
 
     if (!Number.isFinite(count) || count < 0) return 0;
     return count;
-  };
+  }, [mentionUsers, readPointersMap]);
 
- // =========================
- // 1) 키노 인트로
- // =========================
+  // =========================
+  // 1) 키노 인트로
+  // =========================
   useEffect(() => {
     if (!isKino || !chatRoom?.chatRoomId) return;
     if (!isInitialLoaded) return;
@@ -141,9 +142,9 @@ export default function MessageFlatList({
     };
   }, [isKino, chatRoom?.chatRoomId, isInitialLoaded]);
 
- // =========================
- // 2) 유저 메시지 이후 키노 타이핑
- // =========================
+  // =========================
+  // 2) 유저 메시지 이후 키노 타이핑
+  // =========================
   useEffect(() => {
     if (!isKino) return;
     if (!isInitialLoaded) return;
@@ -177,26 +178,37 @@ export default function MessageFlatList({
   }, [messageList, isKino, userId, introSequenceRunning, isInitialLoaded]);
 
   const roomKey = chatRoom?.chatRoomId ?? 'no-room';
+  const syntheticCreatedAtBase = useMemo(() => new Date().toISOString(), [roomKey]);
+  const syntheticCreatedAtTyping = useMemo(() => {
+    const baseMs = toMsLocal(syntheticCreatedAtBase) || Date.now();
+    return new Date(baseMs + 1).toISOString();
+  }, [syntheticCreatedAtBase]);
 
-  const kinoIntroMessage = {
-    messageId: `kino-intro-${roomKey}`,
-    senderId: 0,
-    content:
-      '안녕하세요! 저는 키노예요! 가족들이 하루 동안 느낀 일들, 나누고 싶은 순간들, 그 모든 따뜻한 기록을 한곳에 모아주는 역할을 하고 있어요. 여기선 무엇이든 편하게 말해줘요. 다 소중한 이야기니까요!',
-    createdAt: new Date().toISOString(),
-    localType: 'kinoIntro',
-  };
+  const kinoIntroMessage = useMemo(
+    () => ({
+      messageId: `kino-intro-${roomKey}`,
+      senderId: 0,
+      content:
+        '안녕하세요! 저는 키노예요! 가족들이 하루 동안 느낀 일들, 나누고 싶은 순간들, 그 모든 따뜻한 기록을 한곳에 모아주는 역할을 하고 있어요. 여기선 무엇이든 편하게 말해줘요. 다 소중한 이야기니까요!',
+      createdAt: syntheticCreatedAtBase,
+      localType: 'kinoIntro',
+    }),
+    [roomKey, syntheticCreatedAtBase],
+  );
 
-  const kinoTypingMessage = {
-    messageId: `kino-typing-${roomKey}`,
-    senderId: 0,
-    content: '',
-    createdAt: new Date().toISOString(),
-    localType: 'kinoTyping',
-  };
+  const kinoTypingMessage = useMemo(
+    () => ({
+      messageId: `kino-typing-${roomKey}`,
+      senderId: 0,
+      content: '',
+      createdAt: syntheticCreatedAtTyping,
+      localType: 'kinoTyping',
+    }),
+    [roomKey, syntheticCreatedAtTyping],
+  );
 
   const finalMessages = useMemo(() => {
-    let result = [...(messageList ?? [])]; // DESC 유지
+    let result = [...(messageList ?? [])]; // ✅ DESC 유지
 
     if (isKino && isInitialLoaded) {
       if (showIntroMessage) result = [...result, kinoIntroMessage];
@@ -204,7 +216,15 @@ export default function MessageFlatList({
     }
 
     return result;
-  }, [messageList, isKino, showIntroMessage, showKinoTyping, isInitialLoaded]);
+  }, [
+    messageList,
+    isKino,
+    showIntroMessage,
+    showKinoTyping,
+    isInitialLoaded,
+    kinoIntroMessage,
+    kinoTypingMessage,
+  ]);
 
   const latestRealMessageId = useMemo(() => {
     const firstReal = (finalMessages || []).find(
@@ -218,60 +238,71 @@ export default function MessageFlatList({
     );
   }, [finalMessages]);
 
+  const decoratedMessages = useMemo(() => {
+    return finalMessages.map((item, index) => {
+      const prev = finalMessages[index + 1];
+      const prevDate = prev?.createdAt
+        ? new Date(prev.createdAt).toDateString()
+        : null;
+      const curDate = item?.createdAt
+        ? new Date(item.createdAt).toDateString()
+        : '';
+      const shouldShowDate = curDate !== prevDate;
+      const isGrouped = String(prev?.senderId) === String(item?.senderId);
+      const isLocalKino =
+        item?.localType === 'kinoTyping' || item?.localType === 'kinoIntro';
+      const unreadCount = isLocalKino ? 0 : calcUnreadCount(item);
+      const itemStableId =
+        item?.clientMessageId ||
+        item?.messageId ||
+        `${item?.senderId ?? 'x'}_${item?.createdAt ?? ''}`;
+      const forceShowTime = latestRealMessageId === itemStableId;
+
+      return {
+        message: item,
+        shouldShowDate,
+        isGrouped,
+        unreadCount,
+        forceShowTime,
+      };
+    });
+  }, [finalMessages, calcUnreadCount, latestRealMessageId]);
+
+  const renderMessageItem = useCallback(
+    ({item}) => (
+      <ChatMessageItem
+        message={item.message}
+        currentUserId={userId}
+        isKino={isKino}
+        kinoType={chatRoom?.kinoType}
+        shouldShowDate={item.shouldShowDate}
+        isGrouped={item.isGrouped}
+        mentionUsers={mentionUsers}
+        unreadCount={item.unreadCount}
+        forceShowTime={item.forceShowTime}
+      />
+    ),
+    [userId, isKino, chatRoom?.kinoType, mentionUsers],
+  );
+
   return (
     <FlatList
       ref={flatListRef}
-      data={finalMessages}
+      data={decoratedMessages}
       keyExtractor={(item, index) => {
-        if (item?.clientMessageId) return `cid-${String(item.clientMessageId)}`;
-        if (item?.messageId) return String(item.messageId);
-        if (item?.localType) return `${item.localType}_${item.createdAt ?? index}`;
-        return `${item?.senderId ?? 'x'}_${item?.createdAt ?? 't'}_${index}`;
+        const message = item?.message;
+        if (message?.clientMessageId) return `cid-${String(message.clientMessageId)}`;
+        if (message?.messageId) return String(message.messageId);
+        if (message?.localType) {
+          return `${message.localType}_${message.createdAt ?? index}`;
+        }
+        return `${message?.senderId ?? 'x'}_${message?.createdAt ?? 't'}_${index}`;
       }}
       initialNumToRender={12}
       maxToRenderPerBatch={10}
       windowSize={9}
       removeClippedSubviews={true}
-      renderItem={({item, index}) => {
-        const prev = finalMessages[index + 1];
-
-        const prevDate = prev?.createdAt
-          ? new Date(prev.createdAt).toDateString()
-          : null;
-
-        const curDate = item?.createdAt
-          ? new Date(item.createdAt).toDateString()
-          : '';
-
-        const shouldShowDate = curDate !== prevDate;
-        const isGrouped = String(prev?.senderId) === String(item?.senderId);
-
- // 키노 인트로/타이핑은 읽음 숫자 붙이지 않기
-        const isLocalKino =
-          item?.localType === 'kinoTyping' || item?.localType === 'kinoIntro';
-
-        const unreadCount = isLocalKino ? 0 : calcUnreadCount(item);
-        const itemStableId =
-          item?.clientMessageId ||
-          item?.messageId ||
-          `${item?.senderId ?? 'x'}_${item?.createdAt ?? ''}`;
-        const forceShowTime = latestRealMessageId === itemStableId;
-
-        return (
-          <ChatMessageItem
-            chatRoom={chatRoom}
-            message={item}
-            currentUserId={userId}
-            isKino={isKino}
-            kinoType={chatRoom?.kinoType}
-            shouldShowDate={shouldShowDate}
-            isGrouped={isGrouped}
-            mentionUsers={mentionUsers}
-            unreadCount={unreadCount}
-            forceShowTime={forceShowTime}
-          />
-        );
-      }}
+      renderItem={renderMessageItem}
       inverted
       onEndReached={noMoreMessages ? null : loadOlderMessages}
       onEndReachedThreshold={0.3}
@@ -281,16 +312,16 @@ export default function MessageFlatList({
       ListHeaderComponent={<View style={{height: getResponsiveHeight(20)}} />}
       onScroll={handleScroll}
 
- // 변경 1) 스크롤 이벤트 촘촘하게(부드러움 + 바닥판단 안정)
+      // ✅✅ 변경 1) 스크롤 이벤트 촘촘하게(부드러움 + 바닥판단 안정)
       scrollEventThrottle={16}
 
- // 변경 2) 키보드 열린 채로 스크롤 가능하게 (터치가 키보드로 빨려가지 않게)
+      // ✅✅ 변경 2) 키보드 열린 채로 스크롤 가능하게 (터치가 키보드로 빨려가지 않게)
       keyboardShouldPersistTaps="handled"
 
- // 변경 3) 스크롤 드래그로 키보드가 내려가며 제스처가 뻣뻣해지는 걸 방지
+      // ✅✅ 변경 3) 스크롤 드래그로 키보드가 내려가며 제스처가 뻣뻣해지는 걸 방지
       keyboardDismissMode="none"
 
- // 변경 4) 안드로이드 중첩/제스처 충돌 완화
+      // ✅✅ 변경 4) 안드로이드 중첩/제스처 충돌 완화
       nestedScrollEnabled
     />
   );
