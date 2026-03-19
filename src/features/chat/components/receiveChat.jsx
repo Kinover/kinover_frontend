@@ -2,7 +2,6 @@
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
 import {
   View,
-  Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
@@ -17,7 +16,7 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import formatTime from 'utils/formatTime';
+import formatTime from '../utils/formatTime';
 import MediaModal from './mediaModal';
 
 import {
@@ -32,6 +31,10 @@ import {CHATROOM_STYLE} from 'styles/style';
 import {getVideoThumbnail} from 'utils/videoThumbnail';
 import {toCdnUrl} from 'utils/mediaUrl';
 import MentionText from 'components/mention/MentionText';
+import AppText from 'components/AppText';
+
+// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+const Text = AppText;
 
 export default function ReceiveChat({
   userProfileImage,

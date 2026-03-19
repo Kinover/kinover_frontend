@@ -9,12 +9,12 @@ import {
   Dimensions,
   View,
   FlatList,
-  Text,
   Platform,
   PermissionsAndroid,
   ActivityIndicator,
   Image,
 } from 'react-native';
+import AppText from 'components/AppText';
 import Video from 'react-native-video';
 import FastImage from '@d11/react-native-fast-image';
 
@@ -40,6 +40,9 @@ import {useSelector} from 'react-redux';
 import {FONT_MODE} from 'store/uiSlice';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+
+// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+const Text = AppText;
 
 /* ================= utils ================= */
 

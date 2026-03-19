@@ -46,8 +46,8 @@ import {
 } from 'utils/responsive';
 
 import {convertPhUriToFileUri} from 'utils/photoUriConverter';
-import {getSelectOrder, isSameAsset, toggleSelectImage} from 'utils/selection';
-import {loadGalleryPhotos} from 'utils/gallery';
+import {getSelectOrder, isSameAsset, toggleSelectImage} from '../utils/selection';
+import {loadGalleryPhotos} from '../utils/gallery';
 import formatDuration from 'utils/formatDuration';
 import ToastModal from 'components/modal/ToastModal';
 import {addMessageAndUpdateRoom} from '../utils/messageActions';

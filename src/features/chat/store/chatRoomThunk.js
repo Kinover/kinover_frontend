@@ -1,7 +1,7 @@
 // src/features/chat/store/chatRoomThunk.js
 import {createAsyncThunk} from '@reduxjs/toolkit';
 import {apiClient} from 'utils/apiClient';
-import {getApiErrorMessage} from 'utils/apiErrorHandler';
+import {getApiErrorMessage} from '../utils/apiErrorHandler';
 import {CHAT_ROOM} from 'config/apiEndpoints';
 
 import {

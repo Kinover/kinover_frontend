@@ -41,7 +41,7 @@ import {
 import SkeletonPhotoGridItem from '../components/SkeletonPhotoGridItem';
 import SkeletonMemoryItem from '../components/SkeletonMemoryItem';
 
-import {filterPostsByDateRange} from 'utils/postDateFilter';
+import {filterPostsByDateRange} from '../utils/postDateFilter';
 import {
   BACKGROUND_COLORS,
   COLORS,

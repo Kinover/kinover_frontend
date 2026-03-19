@@ -1,8 +1,10 @@
 // utils/photo/gallery.js
-import {requestMediaPermission} from './requestMediaPermission';
-import {CameraRoll} from '@react-native-camera-roll/camera-roll';
+import {requestMediaPermission} from 'utils/requestMediaPermission';
+// eslint-disable-next-line import/no-commonjs
+const {CameraRoll} = require('@react-native-camera-roll/camera-roll');
 
 import uuid from 'react-native-uuid';
+
 export async function loadGalleryPhotos(after = null, pageSize = 60) {
   const hasPermission = await requestMediaPermission();
   if (!hasPermission) {
@@ -62,7 +64,7 @@ export async function loadGalleryPhotos(after = null, pageSize = 60) {
 export function getFileNameWithExtension(file, index) {
   const id = uuid.v4();
 
- // 0) isVideo 최우선
+  // 0) isVideo 최우선
   if (file?.isVideo) {
     const mime = String(file?.type || '').toLowerCase();
     if (mime.includes('quicktime') || mime.includes('mov')) {
@@ -85,3 +87,4 @@ export function getFileNameWithExtension(file, index) {
 
   return `${id}_${index}.jpg`;
 }
+

@@ -18,7 +18,7 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import formatTime from 'utils/formatTime';
+import formatTime from '../utils/formatTime';
 import MediaModal from './mediaModal';
 
 import {

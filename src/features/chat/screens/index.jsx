@@ -4,13 +4,13 @@
 import React, {useEffect, useCallback, useState, useRef, useMemo} from 'react';
 import {
   StyleSheet,
-  Text,
   View,
   TouchableOpacity,
   FlatList,
   RefreshControl,
   Image,
 } from 'react-native';
+import AppText from 'components/AppText';
 import {useDispatch, useSelector} from 'react-redux';
 
 import {
@@ -38,6 +38,9 @@ import DropShadow from 'react-native-drop-shadow';
 import CreateChatRoomBottomSheet from '../components/CreateChatRoomBottomSheet';
 import ChatGuideModal from '../components/ChatGuideModal';
 import {STORE_MOCK_ENABLED} from '../../home/utils/storeMockData';
+
+// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+const Text = AppText;
 
 export default function CommunicationScreen({navigation}) {
   const dispatch = useDispatch();

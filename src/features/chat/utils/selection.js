@@ -44,3 +44,4 @@ export function getSelectOrder(selectedImages, itemOrUri) {
   const idx = selectedImages.findIndex(img => isSameAsset(img, item));
   return idx === -1 ? null : idx + 1;
 }
+
