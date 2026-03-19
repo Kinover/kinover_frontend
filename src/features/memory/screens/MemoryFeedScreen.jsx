@@ -38,8 +38,8 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 
-import SkeletonPhotoGridItem from '../components/SkeletonPhotoGridItem';
-import SkeletonMemoryItem from '../components/SkeletonMemoryItem';
+import SkeletonPhotoGridItem from '../components/skeletons/SkeletonPhotoGridItem';
+import SkeletonMemoryItem from '../components/skeletons/SkeletonMemoryItem';
 
 import {filterPostsByDateRange} from '../utils/postDateFilter';
 import {
@@ -54,8 +54,8 @@ import {getVideoThumbnail} from 'utils/videoThumbnail';
 import {toCdnUrl} from 'utils/mediaUrl';
 
 import {setMemorySelectedTab} from '../store/memorySlice';
-import PostFilterBar from '../components/PostFilterBar';
-import MagazineBanner from '../components/MagazineBanner';
+import PostFilterBar from '../components/filters/PostFilterBar';
+import MagazineBanner from '../components/sections/MagazineBanner';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 

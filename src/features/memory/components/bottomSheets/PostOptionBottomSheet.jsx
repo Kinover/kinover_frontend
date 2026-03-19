@@ -80,7 +80,7 @@ export default function PostOptionBottomSheet({
               source={
                 currentMediaUri
                   ? {uri: currentMediaUri}
-                  : require('../../../assets/images/default.png')
+                  : require('assets/images/default.png')
               }
               style={styles.optionThumb}
             />
@@ -102,7 +102,7 @@ export default function PostOptionBottomSheet({
           <QuickAction
             title="현재 저장"
             sub={`${isVideo ? '영상' : '이미지'} 1개`}
-            icon={require('../../../assets/icons/download.png')}
+            icon={require('assets/icons/download.png')}
             disabled={isBusy || !currentMediaUri}
             onPress={onSaveCurrent}
             tone="primary"
@@ -110,7 +110,7 @@ export default function PostOptionBottomSheet({
           <QuickAction
             title="전체 저장"
             sub={`${mediaCount}개`}
-            icon={require('../../../assets/icons/download.png')}
+            icon={require('assets/icons/download.png')}
             disabled={isBusy || mediaCount === 0}
             onPress={onSaveAll}
             tone="primary"
@@ -118,7 +118,7 @@ export default function PostOptionBottomSheet({
           <QuickAction
             title="현재 삭제"
             sub="선택된 1개"
-            icon={require('../../../assets/images/trash.png')}
+            icon={require('assets/images/trash.png')}
             disabled={isBusy || !currentMediaUri}
             onPress={onDeleteCurrentImage}
             tone="danger"
@@ -126,7 +126,7 @@ export default function PostOptionBottomSheet({
           <QuickAction
             title="게시글 삭제"
             sub="전체 삭제"
-            icon={require('../../../assets/images/trash.png')}
+            icon={require('assets/images/trash.png')}
             disabled={isBusy}
             onPress={onDeletePost}
             tone="danger"
@@ -139,14 +139,14 @@ export default function PostOptionBottomSheet({
           <OptionRow
             title={`현재 ${isVideo ? '영상' : '이미지'} 저장`}
             subTitle="갤러리에 저장해요"
-            icon={require('../../../assets/icons/download.png')}
+            icon={require('assets/icons/download.png')}
             disabled={isBusy || !currentMediaUri}
             onPress={onSaveCurrent}
           />
           <OptionRow
             title="전체 이미지 저장"
             subTitle={`${mediaCount}개를 순서대로 저장해요`}
-            icon={require('../../../assets/icons/download.png')}
+            icon={require('assets/icons/download.png')}
             disabled={isBusy || mediaCount === 0}
             onPress={onSaveAll}
           />
@@ -158,7 +158,7 @@ export default function PostOptionBottomSheet({
           <OptionRow
             title="현재 이미지 삭제"
             subTitle="선택된 이미지 1장 삭제"
-            icon={require('../../../assets/images/trash.png')}
+            icon={require('assets/images/trash.png')}
             disabled={isBusy || !currentMediaUri}
             onPress={onDeleteCurrentImage}
             danger
@@ -166,7 +166,7 @@ export default function PostOptionBottomSheet({
           <OptionRow
             title="게시글 삭제"
             subTitle="게시글 + 이미지 전체 삭제"
-            icon={require('../../../assets/images/trash.png')}
+            icon={require('assets/images/trash.png')}
             disabled={isBusy}
             onPress={onDeletePost}
             danger
@@ -258,7 +258,7 @@ function OptionRow({
       </View>
 
       <Image
-        source={require('../../../assets/images/rightArrow.png')}
+        source={require('assets/images/rightArrow.png')}
         style={[
           styles.rowChevron,
           danger && {tintColor: 'rgba(239,68,68,0.7)'},

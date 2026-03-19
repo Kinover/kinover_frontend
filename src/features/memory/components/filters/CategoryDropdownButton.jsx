@@ -14,7 +14,7 @@ export default function CategoryDropdownButton({selectedTitle, onPress}) {
     <TouchableOpacity style={[styles.categoryButton]} onPress={onPress}>
       <Text style={styles.text}>{selectedTitle}</Text>
       <Image
-        source={require('../../../assets/icons/category-down.png')}
+        source={require('assets/icons/category-down.png')}
         style={styles.icon}
       />
     </TouchableOpacity>

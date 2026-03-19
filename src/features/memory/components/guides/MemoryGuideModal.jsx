@@ -1,5 +1,5 @@
 // src/features/memory/components/MemoryGuideModal.jsx
-import React, {useEffect} from 'react';
+import {useEffect} from 'react';
 import {Platform} from 'react-native';
 import useGuide from 'hooks/useGuide';
 import {useGuideOverlay} from 'contexts/GuideOverlayContext';

@@ -220,7 +220,7 @@ export default function CommentSection({
                   styles.commentSendBt,
                   !(commentText || '').trim().length && styles.commentSendBtInactive,
                 ]}
-                source={require('../../../assets/icons/paperPlaneTilt.png')}
+                source={require('assets/icons/paperPlaneTilt.png')}
                 resizeMode={FastImage.resizeMode.contain}
               />
             </TouchableOpacity>

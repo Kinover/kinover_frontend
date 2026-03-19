@@ -45,7 +45,7 @@ import {requestMediaPermission} from 'utils/requestMediaPermission';
 import {useDispatch, useSelector} from 'react-redux';
 import {fetchPostByIdThunk} from '../store/memoryThunk';
 
-import MediaViewer from '../components/MediaViewer';
+import MediaViewer from '../components/media/MediaViewer';
 
 const MAX_SELECTION = 30;
 

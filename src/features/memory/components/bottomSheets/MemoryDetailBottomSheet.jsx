@@ -274,7 +274,7 @@ function CommentFooter({
                       source={
                         item.image
                           ? {uri: item.image}
-                          : require('../../../assets/images/default.png')
+                          : require('assets/images/default.png')
                       }
                       style={styles.mentionAvatar}
                     />
@@ -332,7 +332,7 @@ function CommentFooter({
                 styles.commentSendBt,
                 !canSubmitComment && styles.commentSendBtInactive,
               ]}
-              source={require('../../../assets/icons/sendBt-dark.png')}
+              source={require('assets/icons/sendBt-dark.png')}
             />
           </TouchableOpacity>
         </View>
@@ -622,7 +622,7 @@ export default function MemoryDetailBottomSheet({
               activeOpacity={0.75}
               style={styles.closeButton}>
               <Image
-                source={require('../../../assets/icons/close(1).png')}
+                source={require('assets/icons/close(1).png')}
                 style={styles.closeButtonIcon}
               />
             </TouchableOpacity>

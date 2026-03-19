@@ -5,9 +5,9 @@ import React, {useMemo, useState, useRef, useCallback, useEffect} from 'react';
 import {View, StyleSheet, TouchableOpacity, Animated, Image} from 'react-native';
 
 import MemoryFeed from './MemoryFeedScreen';
-import AnimatedAlbumTabSelector from '../components/AlbumTabSelector';
-import CategoryBottomSheetModal from '../components/CategoryBottomSheet';
-import PeriodFilterModal from '../components/PeriodFilterModal';
+import AnimatedAlbumTabSelector from '../components/filters/AlbumTabSelector';
+import CategoryBottomSheetModal from '../components/bottomSheets/CategoryBottomSheet';
+import PeriodFilterModal from '../components/modals/PeriodFilterModal';
 
 import {
   getResponsiveHeight,
@@ -28,7 +28,7 @@ import {useFocusEffect} from '@react-navigation/native';
 import AnimatedRe, {useAnimatedStyle, withTiming} from 'react-native-reanimated';
 import DropShadow from 'react-native-drop-shadow';
 import {BACKGROUND_COLORS} from 'styles/style';
-import MemoryGuideModal from '../components/MemoryGuideModal';
+import MemoryGuideModal from '../components/guides/MemoryGuideModal';
 
 export default function MemoryScreen() {
   const dispatch = useDispatch();

@@ -18,7 +18,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
-import CategoryModal from '../components/CategoryModal';
+import CategoryModal from '../components/modals/CategoryModal';
 import {createCategoryThunk, fetchCategoryThunk} from '../store/categoryThunk';
 import {EMPTY_STYLE} from 'styles/style';
 

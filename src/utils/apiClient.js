@@ -14,7 +14,7 @@ import {
   AUTH_EXCLUDE_PREFIXES,
   AUTH_ERROR_COOLDOWN_MS,
 } from 'config/constants';
-import {showApiError} from './apiErrorHandler';
+import {showApiError} from 'features/chat/utils/apiErrorHandler';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
