@@ -9,7 +9,6 @@ import {
   Image,
 } from 'react-native';
 import {useSelector} from 'react-redux';
-import FastImage from '@d11/react-native-fast-image';
 
 import {
   getResponsiveHeight,
@@ -535,7 +534,7 @@ const styles = StyleSheet.create({
   headerDot: {top: -2.5, right: -2.5},
   tabDot: {top: -2.5, right: -2.5},
 
- // ��갉아먹는” 큰 원(노치) — 위치는 여기만
+ // ��갉아먹는” 큰 원(노치) — 위치는 여기만
   badgeBase: {
     position: 'absolute',
     top: -2,

@@ -7,14 +7,17 @@ import useHeaderSetting from 'hooks/useHeaderSetting';
 import useHideTabBar from 'hooks/useHideTabBar';
 
 import {fetchMessageThunk} from '../store/messageThunk';
-import {setMessageList, setMessageFetched} from '../store/messageSlice';
+import {
+  setMessageList,
+  setMessageFetched,
+  selectRoomMeta,
+} from '../store/messageSlice';
 import {
   setActiveChatRoom,
   selectReadPointers,
   fetchReadPointersThunk,
   markReadThunk,
 } from '../store/chatRoomSlice';
-import {selectRoomMeta} from '../store/messageSlice';
 import {selectRoomMessagesSorted} from '../store/messageSelectors';
 import {fetchChatRoomUsersThunk} from '../store/chatRoomThunk';
 

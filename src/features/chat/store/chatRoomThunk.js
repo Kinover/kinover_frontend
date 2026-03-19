@@ -10,10 +10,9 @@ import {
   setChatRoomLoading,
   setChatRoomError,
   setChatRoomNotificationState,
+  markReadThunk,
 } from './chatRoomSlice';
 import {STORE_MOCK_ENABLED, getStoreMockChatRoomList, getStoreMockChatRoomUsers, isStoreMockChatRoomId} from '../../home/utils/storeMockData';
-
-import {markReadThunk} from './chatRoomSlice';
 import {syncAppBadgeThunk} from 'features/notification/store/notificationThunk';
 
 const toId = v => (v == null ? null : String(v));
@@ -130,11 +129,6 @@ export const renameChatRoomForMeThunk = createAsyncThunk(
 
       return {chatRoomId: rid, roomName: nextName};
     } catch (err) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.response?.data ||
-        err?.message ||
-        '알 수 없는 오류';
       return rejectWithValue(getApiErrorMessage(err) || '알 수 없는 오류');
     }
   },
@@ -265,7 +259,6 @@ export const toggleChatRoomNotificationThunk = createAsyncThunk(
       dispatch(setChatRoomNotificationState({chatRoomId, isOn}));
       return {chatRoomId, isOn};
     } catch (err) {
-      const msg = err?.response?.data || err?.message || '알 수 없는 에러';
       return rejectWithValue(getApiErrorMessage(err) || '알 수 없는 에러');
     }
   },

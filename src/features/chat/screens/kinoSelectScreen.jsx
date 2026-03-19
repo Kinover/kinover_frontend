@@ -15,7 +15,7 @@ import Carousel from 'react-native-reanimated-carousel';
 import {useDispatch} from 'react-redux';
 import {useNavigation, useRoute} from '@react-navigation/native';
 
-import KinoConfirmModal from '../components/kinoConfirmModal';
+import KinoConfirmModal from '../components/modals/kinoConfirmModal';
 import useHideTabBar from 'hooks/useHideTabBar';
 import {updateKinoPersonalityThunk} from '../store/chatRoomThunk';
 

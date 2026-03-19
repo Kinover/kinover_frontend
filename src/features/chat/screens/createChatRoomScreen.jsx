@@ -23,7 +23,7 @@ import AppText from 'components/AppText';
 const Text = AppText;
 
 // 너가 만든 바텀시트 컴포넌트
-import CreateChatRoomBottomSheet from '../components/CreateChatRoomBottomSheet';
+import CreateChatRoomBottomSheet from '../components/modals/CreateChatRoomBottomSheet';
 
 export default function CreateChatRoom({navigation}) {
   const dispatch = useDispatch();

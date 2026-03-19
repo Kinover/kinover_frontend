@@ -15,7 +15,7 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import formatTime from '../utils/formatTime';
+import formatTime from '../../utils/formatTime';
 import ImageModal from './mediaModal';
 
 import {
@@ -23,10 +23,10 @@ import {
   unregisterTimeLast,
   minuteKey,
   toEpochMs,
-} from '../utils/timeRegistry';
-import {getSpacingStyle} from '../utils/getSpacingStyle';
+} from '../../utils/timeRegistry';
+import {getSpacingStyle} from '../../utils/getSpacingStyle';
 import {CHATROOM_STYLE} from 'styles/style';
-import KinoBubble from './bubbles/KinoBubble';
+import KinoBubble from '../bubbles/KinoBubble';
 
 // 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;

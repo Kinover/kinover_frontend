@@ -19,8 +19,8 @@ import {
 } from '../store/chatRoomThunk';
 import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
 
-import ChatRoomItem from '../components/chatRoomItem';
-import SkeletonChatRoomItem from '../components/SkeletonChatRoomItem';
+import ChatRoomItem from '../components/rooms/chatRoomItem';
+import SkeletonChatRoomItem from '../components/rooms/SkeletonChatRoomItem';
 
 import {
   getResponsiveHeight,
@@ -35,8 +35,8 @@ import {BACKGROUND_COLORS, EMPTY_STYLE} from 'styles/style';
 import {hapticLight} from 'utils/haptic';
 import DropShadow from 'react-native-drop-shadow';
 
-import CreateChatRoomBottomSheet from '../components/CreateChatRoomBottomSheet';
-import ChatGuideModal from '../components/ChatGuideModal';
+import CreateChatRoomBottomSheet from '../components/modals/CreateChatRoomBottomSheet';
+import ChatGuideModal from '../components/guides/ChatGuideModal';
 import {STORE_MOCK_ENABLED} from '../../home/utils/storeMockData';
 
 // 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
