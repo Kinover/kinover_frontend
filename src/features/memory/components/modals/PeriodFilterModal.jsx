@@ -2,15 +2,10 @@
 // src/screens/memory/components/PeriodFilterModal.js
 
 import React, {useEffect, useMemo, useState, useCallback, useRef} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-  Platform,
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
 
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from '@react-native-community/datetimepicker';
@@ -45,6 +40,173 @@ const startOfMonth = (y, m) => new Date(y, m, 1, 0, 0, 0);
 const endOfMonth = (y, m) => new Date(y, m + 1, 0, 23, 59, 0);
 
 export default function PeriodFilterModal({visible, onClose, onApply}) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  container: {
+    width: '100%',
+    paddingTop: getResponsiveHeight(2),
+    marginBottom: getResponsiveHeight(7),
+    alignItems: 'center',
+  },
+
+  card: {
+    width: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: getResponsiveWidth(14),
+    borderWidth: 1,
+    borderColor: '#F1F5F9',
+    paddingVertical: getResponsiveHeight(14),
+    paddingHorizontal: getResponsiveWidth(12),
+    alignItems: 'center',
+  },
+
+  monthPicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderRadius: getResponsiveWidth(12),
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.07)',
+    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
+    paddingVertical: getResponsiveHeight(10),
+    paddingHorizontal: getResponsiveWidth(10),
+    width: '100%',
+  },
+  monthBtn: {
+    width: getResponsiveWidth(36),
+    height: getResponsiveWidth(36),
+    borderRadius: 999,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: 'rgba(17, 24, 39, 0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  monthBtnText: {
+    fontSize: rf(22),
+    color: 'black',
+    includeFontPadding: false,
+    textAlign: 'center',
+  },
+  monthCenter: {
+    alignItems: 'center',
+    gap: getResponsiveHeight(2),
+    flex: 1,
+  },
+  monthMain: {
+    fontSize: rf(15),
+    color: 'black',
+    fontFamily: 'Pretendard-SemiBold',
+    textAlign: 'center',
+  },
+  monthSub: {
+    fontSize: rf(11),
+    color: '#6B7280',
+    fontFamily: 'Pretendard-Regular',
+    textAlign: 'center',
+  },
+
+  dateRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: getResponsiveHeight(12),
+    paddingHorizontal: getResponsiveWidth(12),
+    borderRadius: getResponsiveWidth(12),
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
+  },
+  dateRowActive: {
+    borderColor: 'rgba(17,24,39,0.35)',
+    backgroundColor: '#fff',
+  },
+  dateLabel: {
+    fontSize: rf(12),
+    color: COLORS.textTertiary,
+    fontFamily: 'Pretendard-Medium',
+  },
+  dateValue: {
+    fontSize: rf(12.5),
+    color: 'black',
+    fontFamily: 'Pretendard-SemiBold',
+  },
+
+  subText: {
+    fontSize: rf(12),
+    color: COLORS.textSecondary,
+    fontFamily: 'Pretendard-Medium',
+    alignSelf: 'center',
+    paddingVertical: getResponsiveHeight(6),
+  },
+
+  hintText: {
+    marginTop: getResponsiveHeight(6),
+    fontSize: rf(11.5),
+    color: '#9CA3AF',
+    fontFamily: 'Pretendard-Medium',
+    textAlign: 'center',
+  },
+
+  segmentWrap: {
+    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(15, 23, 42, 0.08)',
+    overflow: 'hidden',
+    marginBottom: getResponsiveHeight(15),
+  },
+
+ // -------------------------
+ // iOS ActionSheet styles (overlayChildren)
+ // -------------------------
+  sheetBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  sheetBox: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderTopLeftRadius: getResponsiveWidth(18),
+    borderTopRightRadius: getResponsiveWidth(18),
+    overflow: 'hidden',
+    borderTopWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+  },
+  sheetHeader: {
+    height: getResponsiveHeight(50),
+    paddingHorizontal: getResponsiveWidth(14),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+  },
+  sheetHeaderBtn: {
+    paddingVertical: getResponsiveHeight(8),
+    paddingHorizontal: getResponsiveWidth(8),
+    minWidth: getResponsiveWidth(56),
+  },
+  sheetHeaderText: {
+    fontSize: rf(13),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  sheetTitle: {
+    fontSize: rf(13),
+    fontFamily: 'Pretendard-SemiBold',
+    color: 'black',
+    textAlign: 'center',
+  },
+  sheetPickerArea: {
+    paddingVertical: getResponsiveHeight(6),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  }));
   const today = useMemo(() => new Date(), []);
   const [mode, setMode] = useState('ALL');
 
@@ -294,9 +456,9 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
   const renderAnimatedContent = () => {
     if (mode === 'ALL') {
       return (
-        <Text style={styles.subText}>
+        <AppText style={styles.subText}>
           전체 추억을 한 번에 보여줘요.
-        </Text>
+        </AppText>
       );
     }
 
@@ -308,37 +470,37 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
             alignItems: 'center',
             gap: getResponsiveHeight(10),
           }}>
-          <Text style={styles.subText}>
+          <AppText style={styles.subText}>
             선택한 달의 추억만 모아 보여줘요.
-          </Text>
+          </AppText>
 
           <View style={styles.monthPicker}>
             <TouchableOpacity
               style={styles.monthBtn}
               onPress={() => changeMonth(-1)}
               activeOpacity={0.85}>
-              <Text style={styles.monthBtnText}>
+              <AppText style={styles.monthBtnText}>
                 ‹
-              </Text>
+              </AppText>
             </TouchableOpacity>
 
             <View style={styles.monthCenter}>
-              <Text style={styles.monthMain}>
+              <AppText style={styles.monthMain}>
                 {year}.{pad2(month + 1)}
-              </Text>
-              <Text style={styles.monthSub}>
+              </AppText>
+              <AppText style={styles.monthSub}>
                 {formatYMD(startOfMonth(year, month))} ~{' '}
                 {formatYMD(endOfMonth(year, month))}
-              </Text>
+              </AppText>
             </View>
 
             <TouchableOpacity
               style={styles.monthBtn}
               onPress={() => changeMonth(1)}
               activeOpacity={0.85}>
-              <Text style={styles.monthBtnText}>
+              <AppText style={styles.monthBtnText}>
                 ›
-              </Text>
+              </AppText>
             </TouchableOpacity>
           </View>
         </View>
@@ -353,9 +515,9 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
           alignItems: 'center',
           gap: getResponsiveHeight(10),
         }}>
-        <Text style={styles.subText}>
+        <AppText style={styles.subText}>
           원하는 날짜 범위를 골라볼 수 있어요.
-        </Text>
+        </AppText>
 
         <TouchableOpacity
           style={[styles.dateRow, target === 'start' && styles.dateRowActive]}
@@ -365,12 +527,12 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
             if (Platform.OS === 'android') openAndroidDatePicker('start');
             if (Platform.OS === 'ios') openIOSActionSheet('start');
           }}>
-          <Text style={styles.dateLabel}>
+          <AppText style={styles.dateLabel}>
             시작
-          </Text>
-          <Text style={styles.dateValue}>
+          </AppText>
+          <AppText style={styles.dateValue}>
             {formatYMD(customStart)}
-          </Text>
+          </AppText>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -381,23 +543,23 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
             if (Platform.OS === 'android') openAndroidDatePicker('end');
             if (Platform.OS === 'ios') openIOSActionSheet('end');
           }}>
-          <Text style={styles.dateLabel}>
+          <AppText style={styles.dateLabel}>
             종료
-          </Text>
-          <Text style={styles.dateValue}>
+          </AppText>
+          <AppText style={styles.dateValue}>
             {formatYMD(customEnd)}
-          </Text>
+          </AppText>
         </TouchableOpacity>
 
         {Platform.OS === 'android' && (
-          <Text style={styles.hintText}>
+          <AppText style={styles.hintText}>
             시작/종료를 눌러 날짜를 선택해줘요.
-          </Text>
+          </AppText>
         )}
         {Platform.OS === 'ios' && (
-          <Text style={styles.hintText}>
+          <AppText style={styles.hintText}>
             시작/종료를 누르면 아래에서 날짜 선택 창이 올라와요.
-          </Text>
+          </AppText>
         )}
       </View>
     );
@@ -427,22 +589,22 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
             activeOpacity={0.8}
             onPress={closeIOSActionSheet}
             style={styles.sheetHeaderBtn}>
-            <Text style={styles.sheetHeaderText}>
+            <AppText style={styles.sheetHeaderText}>
               취소
-            </Text>
+            </AppText>
           </TouchableOpacity>
 
-          <Text style={styles.sheetTitle}>
+          <AppText style={styles.sheetTitle}>
             {iosPickerWhich === 'start' ? '시작 날짜' : '종료 날짜'}
-          </Text>
+          </AppText>
 
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={confirmIOSActionSheet}
             style={styles.sheetHeaderBtn}>
-            <Text style={[styles.sheetHeaderText, {color: 'black'}]}>
+            <AppText style={[styles.sheetHeaderText, {color: 'black'}]}>
               선택
-            </Text>
+            </AppText>
           </TouchableOpacity>
         </View>
 
@@ -510,168 +672,3 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    paddingTop: getResponsiveHeight(2),
-    marginBottom: getResponsiveHeight(7),
-    alignItems: 'center',
-  },
-
-  card: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: getResponsiveWidth(14),
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-    paddingVertical: getResponsiveHeight(14),
-    paddingHorizontal: getResponsiveWidth(12),
-    alignItems: 'center',
-  },
-
-  monthPicker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderRadius: getResponsiveWidth(12),
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.07)',
-    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
-    paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(10),
-    width: '100%',
-  },
-  monthBtn: {
-    width: getResponsiveWidth(36),
-    height: getResponsiveWidth(36),
-    borderRadius: 999,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: 'rgba(17, 24, 39, 0.06)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  monthBtnText: {
-    fontSize: getResponsiveFontSize(22),
-    color: 'black',
-    includeFontPadding: false,
-    textAlign: 'center',
-  },
-  monthCenter: {
-    alignItems: 'center',
-    gap: getResponsiveHeight(2),
-    flex: 1,
-  },
-  monthMain: {
-    fontSize: getResponsiveFontSize(15),
-    color: 'black',
-    fontFamily: 'Pretendard-SemiBold',
-    textAlign: 'center',
-  },
-  monthSub: {
-    fontSize: getResponsiveFontSize(11),
-    color: '#6B7280',
-    fontFamily: 'Pretendard-Regular',
-    textAlign: 'center',
-  },
-
-  dateRow: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: getResponsiveHeight(12),
-    paddingHorizontal: getResponsiveWidth(12),
-    borderRadius: getResponsiveWidth(12),
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
-  },
-  dateRowActive: {
-    borderColor: 'rgba(17,24,39,0.35)',
-    backgroundColor: '#fff',
-  },
-  dateLabel: {
-    fontSize: getResponsiveFontSize(12),
-    color: COLORS.textTertiary,
-    fontFamily: 'Pretendard-Medium',
-  },
-  dateValue: {
-    fontSize: getResponsiveFontSize(12.5),
-    color: 'black',
-    fontFamily: 'Pretendard-SemiBold',
-  },
-
-  subText: {
-    fontSize: getResponsiveFontSize(12),
-    color: COLORS.textSecondary,
-    fontFamily: 'Pretendard-Medium',
-    alignSelf: 'center',
-    paddingVertical: getResponsiveHeight(6),
-  },
-
-  hintText: {
-    marginTop: getResponsiveHeight(6),
-    fontSize: getResponsiveFontSize(11.5),
-    color: '#9CA3AF',
-    fontFamily: 'Pretendard-Medium',
-    textAlign: 'center',
-  },
-
-  segmentWrap: {
-    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(15, 23, 42, 0.08)',
-    overflow: 'hidden',
-    marginBottom: getResponsiveHeight(15),
-  },
-
- // -------------------------
- // iOS ActionSheet styles (overlayChildren)
- // -------------------------
-  sheetBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-  sheetBox: {
-    width: '100%',
-    backgroundColor: '#fff',
-    borderTopLeftRadius: getResponsiveWidth(18),
-    borderTopRightRadius: getResponsiveWidth(18),
-    overflow: 'hidden',
-    borderTopWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
-  },
-  sheetHeader: {
-    height: getResponsiveHeight(50),
-    paddingHorizontal: getResponsiveWidth(14),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.06)',
-  },
-  sheetHeaderBtn: {
-    paddingVertical: getResponsiveHeight(8),
-    paddingHorizontal: getResponsiveWidth(8),
-    minWidth: getResponsiveWidth(56),
-  },
-  sheetHeaderText: {
-    fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  sheetTitle: {
-    fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-SemiBold',
-    color: 'black',
-    textAlign: 'center',
-  },
-  sheetPickerArea: {
-    paddingVertical: getResponsiveHeight(6),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

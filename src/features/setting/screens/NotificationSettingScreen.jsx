@@ -1,7 +1,9 @@
 // NotificationSettingScreen.js
 import React, {useState, useEffect, useLayoutEffect} from 'react';
-import {View, Text, StyleSheet, ScrollView} from 'react-native';
+import { View, StyleSheet, ScrollView } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -20,6 +22,39 @@ import ToastModal from 'components/modal/ToastModal';
 import {SETTING_STYLES} from 'styles/style';
 
 export default function NotificationSettingScreen() {
+  const styles = useScaledStyleSheet(rf => ({
+
+  container: {
+    backgroundColor: '#fff',
+    paddingHorizontal: getResponsiveWidth(18),
+    paddingTop: getResponsiveHeight(16),
+    flex: 1,
+  },
+  header: {
+    fontSize: SETTING_STYLES().titleFontSize,
+    fontWeight: SETTING_STYLES().titleFontWeight,
+    marginBottom: getResponsiveHeight(20), // 🔽 30 → 20
+    color: SETTING_STYLES().titleFontColor,
+    fontFamily: SETTING_STYLES().titleFontFamily,
+  },
+  section: {
+    borderBottomWidth: 0.5,
+    borderColor: '#E5E5E5',
+    paddingVertical: getResponsiveHeight(6),
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: getResponsiveHeight(8),
+  },
+  label: {
+    fontSize: SETTING_STYLES().labelFontSize,
+    color: SETTING_STYLES().labelFontColor,
+    fontFamily: SETTING_STYLES().labelFontFamily,
+  },
+
+  }));
   const navigation = useNavigation();
   const route = useRoute();
   const dispatch = useDispatch();
@@ -152,11 +187,11 @@ export default function NotificationSettingScreen() {
   return (
     <>
       <ScrollView style={styles.container}>
-        <Text allowFontScaling={false} style={styles.header}>알림</Text>
+        <AppText allowFontScaling={false} style={styles.header}>알림</AppText>
 
         <View style={styles.section}>
           <View style={styles.row}>
-            <Text allowFontScaling={false} style={styles.label}>전체 알림</Text>
+            <AppText allowFontScaling={false} style={styles.label}>전체 알림</AppText>
             <CustomSwitch
               isEnabled={allNotification}
               toggleSwitch={handleToggleAllNotification}
@@ -166,7 +201,7 @@ export default function NotificationSettingScreen() {
 
         <View style={styles.section}>
           <View style={styles.row}>
-            <Text allowFontScaling={false} style={styles.label}>채팅방 알림</Text>
+            <AppText allowFontScaling={false} style={styles.label}>채팅방 알림</AppText>
             <CustomSwitch
               isEnabled={chatNotification}
               toggleSwitch={handleToggleChatNotification}
@@ -176,7 +211,7 @@ export default function NotificationSettingScreen() {
 
         <View style={styles.section}>
           <View style={styles.row}>
-            <Text allowFontScaling={false} style={styles.label}>게시물 알림</Text>
+            <AppText allowFontScaling={false} style={styles.label}>게시물 알림</AppText>
             <CustomSwitch
               isEnabled={postNotification}
               toggleSwitch={handleTogglePostNotification}
@@ -186,7 +221,7 @@ export default function NotificationSettingScreen() {
 
         <View style={styles.section}>
           <View style={styles.row}>
-            <Text allowFontScaling={false} style={styles.label}>댓글 알림</Text>
+            <AppText allowFontScaling={false} style={styles.label}>댓글 알림</AppText>
             <CustomSwitch
               isEnabled={commentNotification}
               toggleSwitch={handleToggleCommentNotification}
@@ -206,34 +241,3 @@ export default function NotificationSettingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#fff',
-    paddingHorizontal: getResponsiveWidth(18),
-    paddingTop: getResponsiveHeight(16),
-    flex: 1,
-  },
-  header: {
-    fontSize: SETTING_STYLES().titleFontSize,
-    fontWeight: SETTING_STYLES().titleFontWeight,
-    marginBottom: getResponsiveHeight(20), // 🔽 30 → 20
-    color: SETTING_STYLES().titleFontColor,
-    fontFamily: SETTING_STYLES().titleFontFamily,
-  },
-  section: {
-    borderBottomWidth: 0.5,
-    borderColor: '#E5E5E5',
-    paddingVertical: getResponsiveHeight(6),
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: getResponsiveHeight(8),
-  },
-  label: {
-    fontSize: SETTING_STYLES().labelFontSize,
-    color: SETTING_STYLES().labelFontColor,
-    fontFamily: SETTING_STYLES().labelFontFamily,
-  },
-});

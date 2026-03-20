@@ -1,12 +1,8 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, {useState, useCallback, useMemo} from 'react';
-import {
-  StyleSheet,
-  TextInput,
-  Platform,
-  View,
-  Text,
-} from 'react-native';
+import { StyleSheet, TextInput, Platform, View } from 'react-native';
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
@@ -21,6 +17,107 @@ const REQUIRED_TEXT = '탈퇴합니다';
 
 export default function DeleteAccountModal({visible, onClose}) {
 
+  const styles = useScaledStyleSheet(rf => ({
+
+  modalButtonRow: {
+    flexDirection: 'row',
+    gap: getResponsiveWidth(10),
+    justifyContent: 'space-between',
+  },
+
+ // 왼쪽(취소) 버튼
+  cancelBtn: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  cancelText: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: rf(14),
+    color: '#111827',
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+
+ // 오른쪽(위험) 버튼
+  dangerBtn: {
+    backgroundColor: '#FF4D4D',
+    borderWidth: 1,
+    borderColor: '#FF4D4D',
+  },
+  dangerBtnDisabled: {
+    opacity: 0.55,
+  },
+  dangerText: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: rf(14),
+    color: '#FFFFFF',
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+
+  step2Content: {
+    marginTop: getResponsiveHeight(4),
+    marginBottom: getResponsiveHeight(4),
+  },
+  requiredTextBox: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: getResponsiveWidth(10),
+    paddingVertical: getResponsiveHeight(12),
+    paddingHorizontal: getResponsiveWidth(14),
+    marginBottom: getResponsiveHeight(14),
+  },
+  requiredTextLabel: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: rf(12),
+    color: '#6B7280',
+    marginBottom: getResponsiveHeight(6),
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+  requiredText: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(16),
+    color: '#111827',
+    letterSpacing: 0.3,
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+  inputLabel: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: rf(13),
+    color: '#374151',
+    marginBottom: getResponsiveHeight(6),
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+  input: {
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    borderRadius: getResponsiveWidth(10),
+    paddingVertical:
+      Platform.OS === 'android'
+        ? getResponsiveHeight(12)
+        : getResponsiveHeight(14),
+    paddingHorizontal: getResponsiveWidth(14),
+    fontSize: rf(16),
+    fontFamily: 'Pretendard-Regular',
+    color: '#111827',
+    backgroundColor: '#FFFFFF',
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+  inputError: {
+    borderColor: '#FCA5A5',
+    backgroundColor: '#FEF2F2',
+  },
+  inputSuccess: {
+    borderColor: '#86EFAC',
+    backgroundColor: '#F0FDF4',
+  },
+  helperText: {
+    fontFamily: 'Pretendard-Regular',
+    fontSize: rf(12),
+    color: '#DC2626',
+    marginTop: getResponsiveHeight(6),
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+
+  }));
   const {deleteAccount, toastVisible, toastMessage, hideToast, showToast} =
     useDeleteUser(() => {});
 
@@ -92,16 +189,16 @@ export default function DeleteAccountModal({visible, onClose}) {
         {step === 2 && (
           <View style={styles.step2Content}>
             <View style={styles.requiredTextBox}>
-              <Text allowFontScaling={false} style={styles.requiredTextLabel}>
+              <AppText allowFontScaling={false} style={styles.requiredTextLabel}>
                 입력할 문구
-              </Text>
-              <Text allowFontScaling={false} style={styles.requiredText}>
+              </AppText>
+              <AppText allowFontScaling={false} style={styles.requiredText}>
                 {REQUIRED_TEXT}
-              </Text>
+              </AppText>
             </View>
-            <Text allowFontScaling={false} style={styles.inputLabel}>
+            <AppText allowFontScaling={false} style={styles.inputLabel}>
               입력
-            </Text>
+            </AppText>
             <TextInput
               allowFontScaling={false}
               autoFocus
@@ -118,9 +215,9 @@ export default function DeleteAccountModal({visible, onClose}) {
               onSubmitEditing={handleConfirm}
             />
             {confirmationText.length > 0 && !isMatch && (
-              <Text allowFontScaling={false} style={styles.helperText}>
+              <AppText allowFontScaling={false} style={styles.helperText}>
                 문구가 일치하지 않아요. 위와 똑같이 입력해주세요.
-              </Text>
+              </AppText>
             )}
           </View>
         )}
@@ -135,102 +232,3 @@ export default function DeleteAccountModal({visible, onClose}) {
   );
 }
 
-const styles = StyleSheet.create({
-  modalButtonRow: {
-    flexDirection: 'row',
-    gap: getResponsiveWidth(10),
-    justifyContent: 'space-between',
-  },
-
- // 왼쪽(취소) 버튼
-  cancelBtn: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-  },
-  cancelText: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(14),
-    color: '#111827',
-    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
-  },
-
- // 오른쪽(위험) 버튼
-  dangerBtn: {
-    backgroundColor: '#FF4D4D',
-    borderWidth: 1,
-    borderColor: '#FF4D4D',
-  },
-  dangerBtnDisabled: {
-    opacity: 0.55,
-  },
-  dangerText: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(14),
-    color: '#FFFFFF',
-    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
-  },
-
-  step2Content: {
-    marginTop: getResponsiveHeight(4),
-    marginBottom: getResponsiveHeight(4),
-  },
-  requiredTextBox: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: getResponsiveWidth(10),
-    paddingVertical: getResponsiveHeight(12),
-    paddingHorizontal: getResponsiveWidth(14),
-    marginBottom: getResponsiveHeight(14),
-  },
-  requiredTextLabel: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(12),
-    color: '#6B7280',
-    marginBottom: getResponsiveHeight(6),
-    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
-  },
-  requiredText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(16),
-    color: '#111827',
-    letterSpacing: 0.3,
-    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
-  },
-  inputLabel: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(13),
-    color: '#374151',
-    marginBottom: getResponsiveHeight(6),
-    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
-  },
-  input: {
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
-    borderRadius: getResponsiveWidth(10),
-    paddingVertical:
-      Platform.OS === 'android'
-        ? getResponsiveHeight(12)
-        : getResponsiveHeight(14),
-    paddingHorizontal: getResponsiveWidth(14),
-    fontSize: getResponsiveFontSize(16),
-    fontFamily: 'Pretendard-Regular',
-    color: '#111827',
-    backgroundColor: '#FFFFFF',
-    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
-  },
-  inputError: {
-    borderColor: '#FCA5A5',
-    backgroundColor: '#FEF2F2',
-  },
-  inputSuccess: {
-    borderColor: '#86EFAC',
-    backgroundColor: '#F0FDF4',
-  },
-  helperText: {
-    fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(12),
-    color: '#DC2626',
-    marginTop: getResponsiveHeight(6),
-    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
-  },
-});

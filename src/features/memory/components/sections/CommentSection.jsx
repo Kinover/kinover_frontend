@@ -1,18 +1,10 @@
 // src/features/post/components/CommentSection.js
 
 import React, {useEffect, useState} from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  SafeAreaView,
-  Platform,
-  Animated,
-} from 'react-native';
+import { View, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Platform, Animated } from 'react-native';
 
+import AppText, {AnimatedAppText} from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -34,6 +26,135 @@ export default function CommentSection({
   user,
   onDeleteComment,
 }) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  commentContainer: {
+    flex: 1,
+    backgroundColor: '#F9F9F9',
+  },
+  scrollWrapper: {
+    flex: 1,
+    position: 'relative',
+  },
+  commentBox: {
+    paddingHorizontal: getResponsiveWidth(20),
+    marginVertical: getResponsiveHeight(13),
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    flexShrink: 1,
+  },
+  textColumn: {
+    flexDirection: 'column',
+    flexShrink: 1,
+  },
+  commentWriterImage: {
+    width: getResponsiveWidth(34),
+    height: getResponsiveWidth(34),
+    borderRadius: getResponsiveWidth(17),
+    backgroundColor: '#D9D9D9',
+    marginRight: getResponsiveWidth(10),
+  },
+  commentWriter: {
+    fontFamily: 'Pretendard-Regular',
+    fontSize: rf(14),
+    color: '#000',
+    marginBottom: getResponsiveHeight(2),
+    lineHeight: getResponsiveHeight(20),
+  },
+  commentContent: {
+    flexShrink: 1,
+    flexWrap: 'wrap',
+    fontFamily: 'Pretendard-Light',
+    fontSize: rf(13),
+    color: '#000',
+    lineHeight: 20,
+  },
+  timeText: {
+    fontSize: rf(11),
+    color: '#999',
+    marginTop: 2,
+  },
+  commentInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '90%',
+    alignSelf: 'center',
+    backgroundColor: 'white',
+    paddingHorizontal: getResponsiveWidth(16),
+    borderWidth: 1,
+    borderColor: '#FFC84D',
+    borderRadius: getResponsiveWidth(10),
+    marginTop: getResponsiveHeight(5),
+    marginBottom: Platform.OS === 'android' ? getResponsiveHeight(30) : 0,
+    height: getResponsiveHeight(50),
+  },
+  commentInput: {
+    flex: 1,
+    fontSize: rf(14),
+    fontFamily: 'Pretendard-Regular',
+    paddingVertical: getResponsiveHeight(8),
+  },
+  commentSendBt: {
+    width: getResponsiveWidth(24),
+    height: getResponsiveWidth(24),
+    resizeMode: 'contain',
+  },
+  commentSendBtInactive: {
+    opacity: 0.5,
+    transform: [{scale: 0.85}],
+  },
+  emptyContainer: {
+    flex: 3,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F9F9F9',
+  },
+  emptyText: {
+    fontSize: EMPTY_STYLE().emptyFontSize,
+    fontFamily: EMPTY_STYLE().emptyFontFamily,
+    color: EMPTY_STYLE().emptyColor,
+    textAlign: 'center',
+  },
+  rightActionContainer: {
+    width: ACTION_W,
+    justifyContent: 'center',
+    alignItems: 'stretch',
+  },
+  deleteAction: {
+    width: '100%',
+    backgroundColor: '#FF3B30',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 1,
+  },
+  deleteActionText: {
+    color: '#FFF',
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(14),
+  },
+  topFade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: getResponsiveHeight(30),
+  },
+  bottomFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: getResponsiveHeight(30),
+  },
+
+  }));
   const [isReady, setIsReady] = useState(false);
 
   // 스크롤 위치에 따라 그라데이션 표시 여부
@@ -97,13 +218,13 @@ export default function CommentSection({
             style={[styles.deleteAction, {flex: 1}]}
             activeOpacity={0.8}
             onPress={() => onDeleteComment?.(commentId)}>
-            <Animated.Text
+            <AnimatedAppText
               style={[
                 styles.deleteActionText,
                 {transform: [{scale: textScale}]},
               ]}>
               삭제
-            </Animated.Text>
+            </AnimatedAppText>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -131,9 +252,9 @@ export default function CommentSection({
               onContentSizeChange={(w, h) => setContentHeight(h)}>
               {commentList.length === 0 ? (
                 <View style={styles.emptyContainer}>
-                  <Text style={styles.emptyText}>
+                  <AppText style={styles.emptyText}>
                     {'아직 댓글이 없어요.\n첫 댓글을 남겨보세요!'}
-                  </Text>
+                  </AppText>
                 </View>
               ) : (
                 commentList.map(comment => {
@@ -163,17 +284,17 @@ export default function CommentSection({
                               resizeMode={FastImage.resizeMode.contain}
                             />
                             <View style={styles.textColumn}>
-                              <Text style={styles.commentWriter}>
+                              <AppText style={styles.commentWriter}>
                                 {comment.authorName}
-                              </Text>
-                              <Text style={styles.commentContent}>
+                              </AppText>
+                              <AppText style={styles.commentContent}>
                                 {comment.content}
-                              </Text>
+                              </AppText>
                             </View>
                           </View>
-                          <Text style={styles.timeText}>
+                          <AppText style={styles.timeText}>
                             {formatPreviewTime(comment.createdAt)}
-                          </Text>
+                          </AppText>
                         </View>
                       </View>
                     </Swipeable>
@@ -230,134 +351,6 @@ export default function CommentSection({
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  commentContainer: {
-    flex: 1,
-    backgroundColor: '#F9F9F9',
-  },
-  scrollWrapper: {
-    flex: 1,
-    position: 'relative',
-  },
-  commentBox: {
-    paddingHorizontal: getResponsiveWidth(20),
-    marginVertical: getResponsiveHeight(13),
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  authorRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    flexShrink: 1,
-  },
-  textColumn: {
-    flexDirection: 'column',
-    flexShrink: 1,
-  },
-  commentWriterImage: {
-    width: getResponsiveWidth(34),
-    height: getResponsiveWidth(34),
-    borderRadius: getResponsiveWidth(17),
-    backgroundColor: '#D9D9D9',
-    marginRight: getResponsiveWidth(10),
-  },
-  commentWriter: {
-    fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(14),
-    color: '#000',
-    marginBottom: getResponsiveHeight(2),
-    lineHeight: getResponsiveHeight(20),
-  },
-  commentContent: {
-    flexShrink: 1,
-    flexWrap: 'wrap',
-    fontFamily: 'Pretendard-Light',
-    fontSize: getResponsiveFontSize(13),
-    color: '#000',
-    lineHeight: 20,
-  },
-  timeText: {
-    fontSize: getResponsiveFontSize(11),
-    color: '#999',
-    marginTop: 2,
-  },
-  commentInputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '90%',
-    alignSelf: 'center',
-    backgroundColor: 'white',
-    paddingHorizontal: getResponsiveWidth(16),
-    borderWidth: 1,
-    borderColor: '#FFC84D',
-    borderRadius: getResponsiveWidth(10),
-    marginTop: getResponsiveHeight(5),
-    marginBottom: Platform.OS === 'android' ? getResponsiveHeight(30) : 0,
-    height: getResponsiveHeight(50),
-  },
-  commentInput: {
-    flex: 1,
-    fontSize: getResponsiveFontSize(14),
-    fontFamily: 'Pretendard-Regular',
-    paddingVertical: getResponsiveHeight(8),
-  },
-  commentSendBt: {
-    width: getResponsiveWidth(24),
-    height: getResponsiveWidth(24),
-    resizeMode: 'contain',
-  },
-  commentSendBtInactive: {
-    opacity: 0.5,
-    transform: [{scale: 0.85}],
-  },
-  emptyContainer: {
-    flex: 3,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F9F9F9',
-  },
-  emptyText: {
-    fontSize: EMPTY_STYLE().emptyFontSize,
-    fontFamily: EMPTY_STYLE().emptyFontFamily,
-    color: EMPTY_STYLE().emptyColor,
-    textAlign: 'center',
-  },
-  rightActionContainer: {
-    width: ACTION_W,
-    justifyContent: 'center',
-    alignItems: 'stretch',
-  },
-  deleteAction: {
-    width: '100%',
-    backgroundColor: '#FF3B30',
-    justifyContent: 'center',
-    alignItems: 'center',
-    flex: 1,
-  },
-  deleteActionText: {
-    color: '#FFF',
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(14),
-  },
-  topFade: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: getResponsiveHeight(30),
-  },
-  bottomFade: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: getResponsiveHeight(30),
-  },
-});
 
 function formatPreviewTime(time) {
   if (!time) return '';

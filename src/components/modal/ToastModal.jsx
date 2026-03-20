@@ -1,7 +1,9 @@
 // components/ToastModal.js
 import React, {useEffect} from 'react';
-import {Modal, View, Text, StyleSheet} from 'react-native';
+import { Modal, View, StyleSheet } from 'react-native';
 import DropShadow from 'react-native-drop-shadow';
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -16,48 +18,8 @@ export default function ToastModal({
   duration = 1000,
   useNativeModal = true, // 추가: 기본은 기존처럼 Modal 사용
 }) {
- // 일정 시간 뒤 자동 닫기
-  useEffect(() => {
-    if (visible) {
-      const timer = setTimeout(() => {
-        onClose?.();
-      }, duration);
-      return () => clearTimeout(timer);
-    }
-  }, [visible, duration, onClose]);
+  const styles = useScaledStyleSheet(rf => ({
 
-  if (!visible) return null;
-
-  const content = (
-    <View style={styles.overlay}>
-      <DropShadow style={styles.toastShadow}>
-        <View style={styles.toastBox}>
-          <Text allowFontScaling={false} style={styles.toastText}>
-            {message}
-          </Text>
-        </View>
-      </DropShadow>
-    </View>
-  );
-
-  if (useNativeModal) {
-    return (
-      <Modal
-        animationType="fade"
-        transparent
-        visible={visible}
-        onRequestClose={onClose}
-        statusBarTranslucent={true}>
-        {content}
-      </Modal>
-    );
-  }
-
- // 다른 Modal 안에서 쓸 때: 그냥 오버레이 뷰만 리턴
-  return content;
-}
-
-const styles = StyleSheet.create({
   overlay: {
     position: 'absolute',
     left: 0,
@@ -92,8 +54,50 @@ const styles = StyleSheet.create({
 
   toastText: {
     color: '#fff',
-    fontSize: getResponsiveFontSize(14),
+    fontSize: rf(14),
     textAlign: 'center',
     fontFamily: 'Pretendard-Medium',
   },
-});
+
+  }));
+ // 일정 시간 뒤 자동 닫기
+  useEffect(() => {
+    if (visible) {
+      const timer = setTimeout(() => {
+        onClose?.();
+      }, duration);
+      return () => clearTimeout(timer);
+    }
+  }, [visible, duration, onClose]);
+
+  if (!visible) return null;
+
+  const content = (
+    <View style={styles.overlay}>
+      <DropShadow style={styles.toastShadow}>
+        <View style={styles.toastBox}>
+          <AppText allowFontScaling={false} style={styles.toastText}>
+            {message}
+          </AppText>
+        </View>
+      </DropShadow>
+    </View>
+  );
+
+  if (useNativeModal) {
+    return (
+      <Modal
+        animationType="fade"
+        transparent
+        visible={visible}
+        onRequestClose={onClose}
+        statusBarTranslucent={true}>
+        {content}
+      </Modal>
+    );
+  }
+
+ // 다른 Modal 안에서 쓸 때: 그냥 오버레이 뷰만 리턴
+  return content;
+}
+

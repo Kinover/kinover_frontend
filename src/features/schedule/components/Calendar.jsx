@@ -2,15 +2,10 @@
 // src/features/schedule/components/Calendar.jsx (CalendarToggle)
 
 import React, {useRef, useMemo, useEffect, useCallback} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-  PanResponder,
-} from 'react-native';
+import { View, TouchableOpacity, Image, StyleSheet, PanResponder } from 'react-native';
 
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -154,6 +149,196 @@ export default function CalendarToggle({
   mode: modeProp = null,
   setMode: setModeProp = null,
 }) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  container: {
+    paddingTop: getResponsiveHeight(8),
+    marginBottom: getResponsiveHeight(5),
+  },
+  shadowBox: {
+    alignSelf: 'center',
+    backgroundColor: 'transparent',
+    marginBottom: getResponsiveHeight(10),
+  },
+  calendarTouchWrap: {
+    width: '100%',
+    borderRadius: RADIUS,
+  },
+  cardInnerHeader: {
+    borderRadius: RADIUS,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    paddingVertical: getResponsiveHeight(10),
+    paddingHorizontal: getResponsiveWidth(14),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cardInnerCalendar: {
+    borderRadius: RADIUS,
+    overflow: 'hidden',
+    backgroundColor: '#FFFFFF',
+    paddingTop: getResponsiveHeight(8),
+    paddingBottom: getResponsiveHeight(10),
+    paddingHorizontal: getResponsiveWidth(10),
+    alignItems: 'center',
+  },
+
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(8),
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(10),
+  },
+  monthText: {
+    fontFamily: DEFAULT_STYLE().sectionTitle.fontFamily,
+    fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
+    color: COLORS.textPrimary,
+    letterSpacing: -0.2,
+  },
+  iconBtn: {
+    width: getResponsiveWidth(32),
+    height: getResponsiveWidth(32),
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    resizeMode: 'contain',
+  },
+  calendarIcon: {
+    width: getResponsiveWidth(18),
+    height: getResponsiveWidth(18),
+    resizeMode: 'contain',
+    tintColor: '#525252',
+  },
+  navButtons: {
+    flexDirection: 'row',
+    gap: getResponsiveWidth(6),
+    alignItems: 'center',
+  },
+  navIcon: {
+    width: getResponsiveWidth(15),
+    height: getResponsiveWidth(15),
+    resizeMode: 'contain',
+  },
+  modeToggle: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 999,
+    padding: 2,
+  },
+  toggleChip: {
+    paddingVertical: getResponsiveHeight(6.5),
+    paddingHorizontal: getResponsiveWidth(12),
+    borderRadius: 999,
+  },
+  toggleText: {
+    fontSize: rf(12.5),
+    color: '#6B7280',
+  },
+  toggleTextActive: {
+    color: '#111827',
+    fontFamily: 'Pretendard-SemiBold',
+  },
+
+  weekRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: getResponsiveHeight(6),
+  },
+  weekCell: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dayText: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(12.5),
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  sundayText: {
+    color: '#EF4444',
+  },
+
+  divider: {
+    height: 1,
+    width: '100%',
+    backgroundColor: '#EEF2F7',
+    marginTop: getResponsiveHeight(6),
+    marginBottom: getResponsiveHeight(10),
+  },
+
+  dayCell: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  innerCircle: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'white',
+    backgroundColor: '#FFFFFF',
+  },
+  selectedBox: {
+    backgroundColor: COLOR.FOCUS_BG,
+    borderColor: COLOR.FOCUS_BORDER,
+    borderWidth: 1,
+  },
+
+  dateGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  weekGrid: {
+    flexDirection: 'row',
+  },
+
+  dateText: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: rf(13.5),
+    color: '#111827',
+  },
+  selectedText: {
+    fontFamily: 'Pretendard-SemiBold',
+    color: COLOR.FOCUS_TEXT,
+  },
+  holidayText: {
+    color: '#EF4444',
+    fontFamily: 'Pretendard-SemiBold',
+  },
+
+  absoluteLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+  },
+
+  dotRow: {
+    position: 'absolute',
+    bottom: getResponsiveHeight(6),
+    flexDirection: 'row',
+    gap: getResponsiveWidth(3),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dotBase: {
+    width: getResponsiveWidth(4.5),
+    height: getResponsiveWidth(4.5),
+    borderRadius: 999,
+  },
+  dotAnniv: {
+    backgroundColor: COLOR.ANNIV,
+  },
+  dotFamily: {
+    backgroundColor: COLOR.FAMILY,
+  },
+
+  }));
   const {OUTER_HPAD, GAP, cellSize, gridWidth, cardWidth} = useCalendarLayout();
 
   const {
@@ -364,9 +549,9 @@ export default function CalendarToggle({
                 source={require('../../../assets/icons/calendar.png')}
               />
             </TouchableOpacity>
-            <Text allowFontScaling={false} style={styles.monthText}>
+            <AppText allowFontScaling={false} style={styles.monthText}>
               {headerLabel}
-            </Text>
+            </AppText>
           </View>
 
           <View style={styles.headerRight}>
@@ -403,11 +588,11 @@ export default function CalendarToggle({
                 style={[styles.toggleChip, styles.toggleActive]}
                 onPress={toggleMode}
                 hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
-                <Text
+                <AppText
                   allowFontScaling={false}
                   style={[styles.toggleText, styles.toggleTextActive]}>
                   {mode === 'month' ? '주' : '월'}
-                </Text>
+                </AppText>
               </TouchableOpacity>
             </View>
           </View>
@@ -436,11 +621,11 @@ export default function CalendarToggle({
                 const isRestDow = dow === '일';
                 return (
                   <View key={dow} style={[styles.weekCell, {width: cellSize}]}>
-                    <Text
+                    <AppText
                       allowFontScaling={false}
                       style={[styles.dayText, isRestDow && styles.sundayText]}>
                       {dow}
-                    </Text>
+                    </AppText>
                   </View>
                 );
               })}
@@ -497,7 +682,7 @@ export default function CalendarToggle({
                             item.isSelected && styles.selectedBox,
                             !item.isCurrentMonth && {opacity: 0.35},
                           ]}>
-                          <Text
+                          <AppText
                             allowFontScaling={false}
                             style={[
                               styles.dateText,
@@ -505,7 +690,7 @@ export default function CalendarToggle({
                               !item.isSelected && holiday && styles.holidayText,
                             ]}>
                             {item.date.getDate()}
-                          </Text>
+                          </AppText>
                           {renderDots(counts)}
                         </View>
                       </TouchableOpacity>
@@ -558,7 +743,7 @@ export default function CalendarToggle({
                             !item.isSelected && getCountColorStyle(total),
                             item.isSelected && styles.selectedBox,
                           ]}>
-                          <Text
+                          <AppText
                             allowFontScaling={false}
                             style={[
                               styles.dateText,
@@ -566,7 +751,7 @@ export default function CalendarToggle({
                               !item.isSelected && holiday && styles.holidayText,
                             ]}>
                             {item.date.getDate()}
-                          </Text>
+                          </AppText>
                           {renderDots(counts)}
                         </View>
                       </TouchableOpacity>
@@ -599,191 +784,3 @@ export default function CalendarToggle({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    paddingTop: getResponsiveHeight(8),
-    marginBottom: getResponsiveHeight(5),
-  },
-  shadowBox: {
-    alignSelf: 'center',
-    backgroundColor: 'transparent',
-    marginBottom: getResponsiveHeight(10),
-  },
-  calendarTouchWrap: {
-    width: '100%',
-    borderRadius: RADIUS,
-  },
-  cardInnerHeader: {
-    borderRadius: RADIUS,
-    overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(14),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  cardInnerCalendar: {
-    borderRadius: RADIUS,
-    overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
-    paddingTop: getResponsiveHeight(8),
-    paddingBottom: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(10),
-    alignItems: 'center',
-  },
-
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(8),
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(10),
-  },
-  monthText: {
-    fontFamily: DEFAULT_STYLE().sectionTitle.fontFamily,
-    fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
-    color: COLORS.textPrimary,
-    letterSpacing: -0.2,
-  },
-  iconBtn: {
-    width: getResponsiveWidth(32),
-    height: getResponsiveWidth(32),
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    resizeMode: 'contain',
-  },
-  calendarIcon: {
-    width: getResponsiveWidth(18),
-    height: getResponsiveWidth(18),
-    resizeMode: 'contain',
-    tintColor: '#525252',
-  },
-  navButtons: {
-    flexDirection: 'row',
-    gap: getResponsiveWidth(6),
-    alignItems: 'center',
-  },
-  navIcon: {
-    width: getResponsiveWidth(15),
-    height: getResponsiveWidth(15),
-    resizeMode: 'contain',
-  },
-  modeToggle: {
-    flexDirection: 'row',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 999,
-    padding: 2,
-  },
-  toggleChip: {
-    paddingVertical: getResponsiveHeight(6.5),
-    paddingHorizontal: getResponsiveWidth(12),
-    borderRadius: 999,
-  },
-  toggleText: {
-    fontSize: getResponsiveFontSize(12.5),
-    color: '#6B7280',
-  },
-  toggleTextActive: {
-    color: '#111827',
-    fontFamily: 'Pretendard-SemiBold',
-  },
-
-  weekRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    paddingVertical: getResponsiveHeight(6),
-  },
-  weekCell: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dayText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(12.5),
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  sundayText: {
-    color: '#EF4444',
-  },
-
-  divider: {
-    height: 1,
-    width: '100%',
-    backgroundColor: '#EEF2F7',
-    marginTop: getResponsiveHeight(6),
-    marginBottom: getResponsiveHeight(10),
-  },
-
-  dayCell: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  innerCircle: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'white',
-    backgroundColor: '#FFFFFF',
-  },
-  selectedBox: {
-    backgroundColor: COLOR.FOCUS_BG,
-    borderColor: COLOR.FOCUS_BORDER,
-    borderWidth: 1,
-  },
-
-  dateGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  weekGrid: {
-    flexDirection: 'row',
-  },
-
-  dateText: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(13.5),
-    color: '#111827',
-  },
-  selectedText: {
-    fontFamily: 'Pretendard-SemiBold',
-    color: COLOR.FOCUS_TEXT,
-  },
-  holidayText: {
-    color: '#EF4444',
-    fontFamily: 'Pretendard-SemiBold',
-  },
-
-  absoluteLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-  },
-
-  dotRow: {
-    position: 'absolute',
-    bottom: getResponsiveHeight(6),
-    flexDirection: 'row',
-    gap: getResponsiveWidth(3),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dotBase: {
-    width: getResponsiveWidth(4.5),
-    height: getResponsiveWidth(4.5),
-    borderRadius: 999,
-  },
-  dotAnniv: {
-    backgroundColor: COLOR.ANNIV,
-  },
-  dotFamily: {
-    backgroundColor: COLOR.FAMILY,
-  },
-});

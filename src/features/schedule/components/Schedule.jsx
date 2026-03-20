@@ -1,21 +1,11 @@
 import React, {useMemo, useState, useCallback, useRef, useEffect} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-  Alert,
-  ScrollView,
-  InteractionManager,
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Animated, Alert, ScrollView, InteractionManager } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 
-import {
-  getResponsiveFontSize,
-  getResponsiveWidth,
-  getResponsiveHeight,
-} from 'utils/responsive';
+import AppText from 'components/AppText';
+import {getResponsiveWidth, getResponsiveHeight} from 'utils/responsive';
+
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 
 import {useScheduleListByDate} from '../hooks/useScheduleListByDate';
 import {useFormattedScheduleDate} from '../hooks/useFormattedScheduleDate';
@@ -53,7 +43,7 @@ const AVATAR_OVERLAP = getResponsiveWidth(-10);
 const MAX_VISIBLE_AVATARS = 2; // 3명 이상부터 +1, +2… 로 표시
 
 /** 겹쳐진 아바타: 왼쪽부터 1번째, 2번째… 순서로 겹치고, 3명 이상이면 +N을 오른쪽에 */
-function StackedAvatar({participants = [], size = AVATAR_SIZE}) {
+function StackedAvatar({participants = [], size = AVATAR_SIZE, styles}) {
   const list =
     participants.length > 0
       ? participants
@@ -100,11 +90,11 @@ function StackedAvatar({participants = [], size = AVATAR_SIZE}) {
                 styles.stackedAvatarFallback,
                 {width: size, height: size, borderRadius: size / 2},
               ]}>
-              <Text
+              <AppText
                 allowFontScaling={false}
                 style={[styles.stackedAvatarInitial, {fontSize: size * 0.4}]}>
                 {String(p.name || '가족').slice(0, 1)}
-              </Text>
+              </AppText>
             </View>
           )}
         </View>
@@ -121,11 +111,11 @@ function StackedAvatar({participants = [], size = AVATAR_SIZE}) {
               zIndex: 0,
             },
           ]}>
-          <Text
+          <AppText
             allowFontScaling={false}
             style={[styles.stackedAvatarPlusText, {fontSize: size * 0.35}]}>
             +{rest}
-          </Text>
+          </AppText>
         </View>
       )}
     </View>
@@ -135,7 +125,7 @@ function StackedAvatar({participants = [], size = AVATAR_SIZE}) {
 /* =========================================================
  * 카드 컴포넌트: 눌렀을 때 살짝 작아지는 효과
  * ========================================================= */
-function ScheduleCard({children, onPress}) {
+function ScheduleCard({children, onPress, styles}) {
   const scale = useRef(new Animated.Value(1)).current;
 
   const handlePressIn = () => {
@@ -181,6 +171,213 @@ function Schedule({
   familyUserList = [],
   currentUserId,
 }) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  container: {
+    flex: 1,
+    paddingHorizontal: getResponsiveWidth(0),
+    paddingBottom: getResponsiveHeight(200),
+  },
+  dateText: {
+    color: COLORS.textPrimary,
+    fontSize: DEFAULT_STYLE().sectionTitle.fontSize - 1.5,
+    fontFamily: DEFAULT_STYLE().sectionTitle.fontFamily,
+    marginTop: getResponsiveHeight(15),
+    marginBottom: getResponsiveHeight(16),
+    alignSelf: 'flex-start',
+  },
+  timelineWrapper: {
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  scheduleCards: {
+    flex: 1,
+    width: '100%',
+  },
+  cardShadowBox: {
+    width: '100%',
+    borderRadius: 0,
+    backgroundColor: 'transparent',
+    marginBottom: getResponsiveHeight(10),
+  },
+  roundPillShadow: {
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+  },
+  cardWrap: {
+    width: '100%',
+    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: getResponsiveHeight(12),
+    paddingHorizontal: getResponsiveWidth(14),
+    overflow: 'hidden',
+  },
+  roundPillWrap: {
+    minHeight: getResponsiveHeight(58),
+    justifyContent: 'center',
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: getResponsiveWidth(10),
+  },
+  cardLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(10),
+    flex: 1,
+    minWidth: 0,
+  },
+  stackedAvatarWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stackedAvatarCircle: {
+    overflow: 'hidden',
+    backgroundColor: COLOR.GRAY_BG,
+  },
+  stackedAvatarImageWrap: {
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stackedAvatarImage: {
+    backgroundColor: '#f3f4f6',
+  },
+  stackedAvatarFallback: {
+    backgroundColor: COLOR.GRAY_BG,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stackedAvatarInitial: {
+    fontFamily: 'Pretendard-SemiBold',
+    color: COLOR.GRAY_TEXT,
+  },
+  stackedAvatarPlus: {
+    backgroundColor: COLOR.GRAY_BG,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stackedAvatarPlusText: {
+    fontFamily: 'Pretendard-SemiBold',
+    color: COLOR.GRAY_TEXT,
+  },
+  iconCircle: {
+    width: getResponsiveWidth(36),
+    height: getResponsiveWidth(36),
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconText: {
+    fontSize: rf(16),
+    lineHeight: rf(25),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#111827',
+  },
+  texts: {
+    flexDirection: 'column',
+    gap: getResponsiveHeight(0),
+    flex: 1,
+    minWidth: 0,
+  },
+  subtitle: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: rf(12),
+    lineHeight: rf(14),
+
+    color: '#6B7280',
+  },
+  title: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(14.5),
+    color: '#111827',
+    lineHeight: rf(18),
+    paddingTop: 2,
+  },
+  pill: {
+    paddingVertical: getResponsiveHeight(5),
+    paddingHorizontal: getResponsiveWidth(10),
+    borderRadius: 999,
+    backgroundColor: 'rgba(17,24,39,0.05)',
+    flexShrink: 0,
+  },
+  pillText: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(10.5),
+    color: '#111827',
+    letterSpacing: 0.4,
+  },
+  roomPickerModalBox: {
+    width: getResponsiveWidth(332),
+    maxWidth: '92%',
+  },
+  roomPickerContent: {
+    minHeight: getResponsiveHeight(140),
+    maxHeight: getResponsiveHeight(300),
+  },
+  roomPickerList: {
+    width: '100%',
+  },
+  roomPickerListContent: {
+    gap: getResponsiveHeight(8),
+    paddingBottom: getResponsiveHeight(4),
+  },
+  roomPickerItem: {
+    borderWidth: 1,
+    borderColor: 'rgba(17,24,39,0.08)',
+    borderRadius: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(10),
+    paddingHorizontal: getResponsiveWidth(12),
+    backgroundColor: '#FFFFFF',
+  },
+  roomPickerItemSelected: {
+    borderColor: '#FFC84D',
+    backgroundColor: '#FFF8E6',
+  },
+  roomPickerItemDisabled: {
+    opacity: 0.6,
+  },
+  roomPickerTitle: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(13.5),
+    color: '#111827',
+    marginBottom: getResponsiveHeight(4),
+  },
+  roomPickerTitleSelected: {
+    color: '#7A4E00',
+  },
+  roomPickerPreview: {
+    fontFamily: 'Pretendard-Regular',
+    fontSize: rf(12),
+    color: '#6B7280',
+  },
+  roomPickerEmptyText: {
+    paddingVertical: getResponsiveHeight(12),
+    fontFamily: 'Pretendard-Regular',
+    fontSize: rf(13),
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  roomPickerConfirmDisabled: {
+    opacity: 0.45,
+  },
+  emptyText: {
+    marginTop: getResponsiveHeight(60),
+    fontSize: EMPTY_STYLE().emptyFontSize,
+    fontFamily: EMPTY_STYLE().emptyFontFamily,
+    color: EMPTY_STYLE().emptyColor,
+    alignSelf: 'center',
+    textAlign: 'center',
+    textAlignVertical: 'center',
+  },
+
+  }));
+
   const dispatch = useDispatch();
   const fallbackFamilyId = useSelector(
     state => state?.family?.familyId ?? state?.user?.familyId ?? null,
@@ -523,9 +720,9 @@ function Schedule({
 
   return (
     <View style={styles.container}>
-      <Text allowFontScaling={false} style={styles.dateText}>
+      <AppText allowFontScaling={false} style={styles.dateText}>
         {formattedDate}
-      </Text>
+      </AppText>
 
       {hasBirthday && (
         <DropShadow style={[styles.cardShadowBox, styles.roundPillShadow]}>
@@ -540,30 +737,30 @@ function Schedule({
                     styles.iconCircle,
                     {backgroundColor: COLOR.YELLOW_BG},
                   ]}>
-                  <Text allowFontScaling={false} style={styles.iconText}>
+                  <AppText allowFontScaling={false} style={styles.iconText}>
                     🎂
-                  </Text>
+                  </AppText>
                 </View>
 
                 <View style={styles.texts}>
-                  <Text allowFontScaling={false} style={styles.subtitle}>
+                  <AppText allowFontScaling={false} style={styles.subtitle}>
                     {displayNames}
-                  </Text>
-                  <Text
+                  </AppText>
+                  <AppText
                     allowFontScaling={false}
                     style={styles.title}
                     numberOfLines={1}>
                     {displayNames}님의 생일이에요
-                  </Text>
+                  </AppText>
                 </View>
               </View>
 
               <View style={[styles.pill, {backgroundColor: COLOR.YELLOW_PILL}]}>
-                <Text
+                <AppText
                   allowFontScaling={false}
                   style={[styles.pillText, {color: COLOR.YELLOW_TEXT}]}>
                   기념일
-                </Text>
+                </AppText>
               </View>
             </View>
           </TouchableOpacity>
@@ -597,13 +794,13 @@ function Schedule({
             : null
         }>
         {chatRoomLoading && chatRoomItems.length === 0 ? (
-          <Text allowFontScaling={false} style={styles.roomPickerEmptyText}>
+          <AppText allowFontScaling={false} style={styles.roomPickerEmptyText}>
             채팅방 목록을 불러오는 중이에요...
-          </Text>
+          </AppText>
         ) : chatRoomItems.length === 0 ? (
-          <Text allowFontScaling={false} style={styles.roomPickerEmptyText}>
+          <AppText allowFontScaling={false} style={styles.roomPickerEmptyText}>
             보낼 수 있는 채팅방이 없어요.
-          </Text>
+          </AppText>
         ) : (
           <ScrollView
             style={styles.roomPickerList}
@@ -622,7 +819,7 @@ function Schedule({
                     selected && styles.roomPickerItemSelected,
                     sendingBirthdayMessage && styles.roomPickerItemDisabled,
                   ]}>
-                  <Text
+                  <AppText
                     allowFontScaling={false}
                     style={[
                       styles.roomPickerTitle,
@@ -630,13 +827,13 @@ function Schedule({
                     ]}
                     numberOfLines={1}>
                     {room.title}
-                  </Text>
-                  <Text
+                  </AppText>
+                  <AppText
                     allowFontScaling={false}
                     style={styles.roomPickerPreview}
                     numberOfLines={1}>
                     {room.preview || '최근 메시지가 없어요.'}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               );
             })}
@@ -653,6 +850,7 @@ function Schedule({
 
             return (
               <ScheduleCard
+                styles={styles}
                 key={item.scheduleId ?? `${preset.type}-${item.title}`}
                 // FIX: 카드에서 판별한 type을 강제로 전달
                 onPress={() =>
@@ -669,32 +867,33 @@ function Schedule({
                           styles.iconCircle,
                           {backgroundColor: preset.iconBg},
                         ]}>
-                        <Text allowFontScaling={false} style={styles.iconText}>
+                        <AppText allowFontScaling={false} style={styles.iconText}>
                           {preset.icon}
-                        </Text>
+                        </AppText>
                       </View>
                     ) : (
                       <StackedAvatar
+                        styles={styles}
                         participants={getIndividualParticipants(item)}
                       />
                     )}
 
                     <View style={styles.texts}>
-                      <Text allowFontScaling={false} style={styles.subtitle}>
+                      <AppText allowFontScaling={false} style={styles.subtitle}>
                         {ownerLabel}
-                      </Text>
-                      <Text allowFontScaling={false} style={styles.title}>
+                      </AppText>
+                      <AppText allowFontScaling={false} style={styles.title}>
                         {item.title || '제목 없음'}
-                      </Text>
+                      </AppText>
                     </View>
                   </View>
 
                   <View style={[styles.pill, {backgroundColor: preset.pillBg}]}>
-                    <Text
+                    <AppText
                       allowFontScaling={false}
                       style={[styles.pillText, {color: preset.pillTextColor}]}>
                       {preset.pillText}
-                    </Text>
+                    </AppText>
                   </View>
                 </View>
               </ScheduleCard>
@@ -702,9 +901,9 @@ function Schedule({
           })}
 
           {scheduleList.length === 0 && (
-            <Text allowFontScaling={false} style={styles.emptyText}>
+            <AppText allowFontScaling={false} style={styles.emptyText}>
               {'일정이 비어 있어요.\n새로운 일정을 추가해볼까요?'}
-            </Text>
+            </AppText>
           )}
         </View>
       </View>
@@ -714,207 +913,4 @@ function Schedule({
 
 export default React.memo(Schedule);
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: getResponsiveWidth(0),
-    paddingBottom: getResponsiveHeight(200),
-  },
-  dateText: {
-    color: COLORS.textPrimary,
-    fontSize: DEFAULT_STYLE().sectionTitle.fontSize - 1.5,
-    fontFamily: DEFAULT_STYLE().sectionTitle.fontFamily,
-    marginTop: getResponsiveHeight(15),
-    marginBottom: getResponsiveHeight(16),
-    alignSelf: 'flex-start',
-  },
-  timelineWrapper: {
-    position: 'relative',
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  scheduleCards: {
-    flex: 1,
-    width: '100%',
-  },
-  cardShadowBox: {
-    width: '100%',
-    borderRadius: 0,
-    backgroundColor: 'transparent',
-    marginBottom: getResponsiveHeight(10),
-  },
-  roundPillShadow: {
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 3},
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-  },
-  cardWrap: {
-    width: '100%',
-    borderRadius: 14,
-    backgroundColor: '#FFFFFF',
-    paddingVertical: getResponsiveHeight(12),
-    paddingHorizontal: getResponsiveWidth(14),
-    overflow: 'hidden',
-  },
-  roundPillWrap: {
-    minHeight: getResponsiveHeight(58),
-    justifyContent: 'center',
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: getResponsiveWidth(10),
-  },
-  cardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(10),
-    flex: 1,
-    minWidth: 0,
-  },
-  stackedAvatarWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  stackedAvatarCircle: {
-    overflow: 'hidden',
-    backgroundColor: COLOR.GRAY_BG,
-  },
-  stackedAvatarImageWrap: {
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stackedAvatarImage: {
-    backgroundColor: '#f3f4f6',
-  },
-  stackedAvatarFallback: {
-    backgroundColor: COLOR.GRAY_BG,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stackedAvatarInitial: {
-    fontFamily: 'Pretendard-SemiBold',
-    color: COLOR.GRAY_TEXT,
-  },
-  stackedAvatarPlus: {
-    backgroundColor: COLOR.GRAY_BG,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stackedAvatarPlusText: {
-    fontFamily: 'Pretendard-SemiBold',
-    color: COLOR.GRAY_TEXT,
-  },
-  iconCircle: {
-    width: getResponsiveWidth(36),
-    height: getResponsiveWidth(36),
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconText: {
-    fontSize: getResponsiveFontSize(16),
-    lineHeight: getResponsiveFontSize(25),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#111827',
-  },
-  texts: {
-    flexDirection: 'column',
-    gap: getResponsiveHeight(0),
-    flex: 1,
-    minWidth: 0,
-  },
-  subtitle: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(12),
-    lineHeight: getResponsiveFontSize(14),
 
-    color: '#6B7280',
-  },
-  title: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(14.5),
-    color: '#111827',
-    lineHeight: getResponsiveFontSize(18),
-    paddingTop: 2,
-  },
-  pill: {
-    paddingVertical: getResponsiveHeight(5),
-    paddingHorizontal: getResponsiveWidth(10),
-    borderRadius: 999,
-    backgroundColor: 'rgba(17,24,39,0.05)',
-    flexShrink: 0,
-  },
-  pillText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(10.5),
-    color: '#111827',
-    letterSpacing: 0.4,
-  },
-  roomPickerModalBox: {
-    width: getResponsiveWidth(332),
-    maxWidth: '92%',
-  },
-  roomPickerContent: {
-    minHeight: getResponsiveHeight(140),
-    maxHeight: getResponsiveHeight(300),
-  },
-  roomPickerList: {
-    width: '100%',
-  },
-  roomPickerListContent: {
-    gap: getResponsiveHeight(8),
-    paddingBottom: getResponsiveHeight(4),
-  },
-  roomPickerItem: {
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.08)',
-    borderRadius: getResponsiveWidth(12),
-    paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(12),
-    backgroundColor: '#FFFFFF',
-  },
-  roomPickerItemSelected: {
-    borderColor: '#FFC84D',
-    backgroundColor: '#FFF8E6',
-  },
-  roomPickerItemDisabled: {
-    opacity: 0.6,
-  },
-  roomPickerTitle: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(13.5),
-    color: '#111827',
-    marginBottom: getResponsiveHeight(4),
-  },
-  roomPickerTitleSelected: {
-    color: '#7A4E00',
-  },
-  roomPickerPreview: {
-    fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(12),
-    color: '#6B7280',
-  },
-  roomPickerEmptyText: {
-    paddingVertical: getResponsiveHeight(12),
-    fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(13),
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  roomPickerConfirmDisabled: {
-    opacity: 0.45,
-  },
-  emptyText: {
-    marginTop: getResponsiveHeight(60),
-    fontSize: EMPTY_STYLE().emptyFontSize,
-    fontFamily: EMPTY_STYLE().emptyFontFamily,
-    color: EMPTY_STYLE().emptyColor,
-    alignSelf: 'center',
-    textAlign: 'center',
-    textAlignVertical: 'center',
-  },
-});

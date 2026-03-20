@@ -2,18 +2,7 @@
 // src/screens/memory/MemoryFeed.jsx
 
 import React, {useCallback, useMemo, useRef, useState, useEffect} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  LayoutAnimation,
-  UIManager,
-  Platform,
-  RefreshControl,
-  Dimensions,
-  Animated,
-} from 'react-native';
+import { View, StyleSheet, FlatList, LayoutAnimation, UIManager, Platform, RefreshControl, Dimensions, Animated } from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
@@ -27,6 +16,8 @@ import SkeletonPhotoGridItem from '../components/skeletons/SkeletonPhotoGridItem
 import SkeletonMemoryItem from '../components/skeletons/SkeletonMemoryItem';
 
 import {filterPostsByDateRange} from '../utils/postDateFilter';
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   BACKGROUND_COLORS,
   EMPTY_STYLE,
@@ -95,6 +86,19 @@ export default function MemoryFeed({
   filterBarRef,
   firstPostRef,
 }) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  container: {flex: 1, backgroundColor: BG},
+  postContainer: {},
+
+  emptyWrapper: {paddingTop: getResponsiveHeight(60), alignItems: 'center'},
+  emptyText: {
+    fontSize: EMPTY_STYLE().emptyFontSize,
+    fontFamily: EMPTY_STYLE().emptyFontFamily,
+    color: EMPTY_STYLE().emptyColor,
+  },
+
+  }));
   const dispatch = useDispatch();
   const navigation = useNavigation();
 
@@ -610,9 +614,9 @@ export default function MemoryFeed({
   const listEmptyComponent = useMemo(
     () => (
       <View style={styles.emptyWrapper}>
-        <Text style={styles.emptyText}>
+        <AppText style={styles.emptyText}>
           아직 등록된 게시글이 없어요.
-        </Text>
+        </AppText>
       </View>
     ),
     [],
@@ -731,18 +735,3 @@ export default function MemoryFeed({
     </View>
   );
 }
-
-/* =========================
- * Styles
- * ========================= */
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: BG},
-  postContainer: {},
-
-  emptyWrapper: {paddingTop: getResponsiveHeight(60), alignItems: 'center'},
-  emptyText: {
-    fontSize: EMPTY_STYLE().emptyFontSize,
-    fontFamily: EMPTY_STYLE().emptyFontFamily,
-    color: EMPTY_STYLE().emptyColor,
-  },
-});

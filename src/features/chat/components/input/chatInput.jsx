@@ -10,18 +10,7 @@ import React, {
   useImperativeHandle,
   useMemo,
 } from 'react';
-import {
-  View,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-  Dimensions,
-  Image,
-  LayoutAnimation,
-  UIManager,
-  Keyboard,
-} from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet, Platform, Dimensions, Image, LayoutAnimation, UIManager, Keyboard } from 'react-native';
 import {useDispatch} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
 import {Gesture} from 'react-native-gesture-handler';
@@ -77,7 +66,7 @@ const COLORS = {
   plusBg: '#FFFFFF',
 };
 
-// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일하기 위한 별칭
+// 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일하기 위한 별칭
 const Text = AppText;
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -656,9 +645,9 @@ const ChatInput = forwardRef(function ChatInput(
 
             {item.isVideo && (
               <View style={styles.videoBadge}>
-                <Text style={styles.videoBadgeText}>
+                <AppText style={styles.videoBadgeText}>
                   {formatDuration(item.duration)}
-                </Text>
+                </AppText>
               </View>
             )}
 
@@ -666,9 +655,9 @@ const ChatInput = forwardRef(function ChatInput(
 
             {isSelected && (
               <View style={styles.orderBadge}>
-                <Text style={styles.orderBadgeText}>
+                <AppText style={styles.orderBadgeText}>
                   {order}
-                </Text>
+                </AppText>
               </View>
             )}
           </View>

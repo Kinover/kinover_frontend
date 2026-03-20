@@ -2,22 +2,13 @@
 
 /* eslint-disable react-native/no-inline-styles */
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
-import {
-  Modal,
-  StyleSheet,
-  TouchableOpacity,
-  Dimensions,
-  View,
-  FlatList,
-  Text,
-  Platform,
-  PermissionsAndroid,
-  ActivityIndicator,
-} from 'react-native';
+import { Modal, StyleSheet, TouchableOpacity, Dimensions, View, FlatList, Platform, PermissionsAndroid, ActivityIndicator } from 'react-native';
 import Video from 'react-native-video';
 import FastImage from '@d11/react-native-fast-image';
 
 import RNFS from 'react-native-fs';
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 // eslint-disable-next-line import/no-commonjs
 const {CameraRoll} = require('@react-native-camera-roll/camera-roll');
 
@@ -233,6 +224,145 @@ export default function MediaViewer({
   onIndexChange,
   onClose,
 }) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'black',
+  },
+
+  topBar: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 46 : 16,
+    left: 16,
+    right: 16,
+    zIndex: 60,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  circleIconBtn: {
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  circlePillBtn: {
+    minWidth: getResponsiveWidth(86),
+    height: CIRCLE_SIZE,
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: getResponsiveWidth(14),
+  },
+
+  circlePillText: {
+    color: '#fff',
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(12.5),
+    includeFontPadding: false,
+  },
+
+  xText: {
+    color: '#fff',
+    fontSize: rf(16),
+    fontFamily: 'Pretendard-SemiBold',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
+
+  indexPill: {
+    position: 'relative',
+    alignSelf: 'center',
+    backgroundColor: 'rgba(0,0,0,0.28)',
+    paddingHorizontal: getResponsiveWidth(10),
+    paddingVertical: getResponsiveHeight(3),
+    borderRadius: getResponsiveWidth(999),
+  },
+
+  headerIndex: {
+    color: '#FFF',
+    fontSize: rf(11),
+    fontFamily: 'Pretendard-Medium',
+  },
+
+  headerIndexCurrent: {
+    color: '#FFC84D',
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(13),
+  },
+
+  page: {
+    width: screenWidth,
+    height: screenHeight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  zoomContainer: {
+    width: screenWidth,
+    height: screenHeight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  zoomImageWrap: {
+    width: screenWidth,
+    height: screenHeight,
+  },
+
+  zoomImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  video: {
+    width: screenWidth,
+    height: screenHeight,
+  },
+
+  mediaPlaceholder: {
+    width: screenWidth,
+    height: screenHeight,
+    backgroundColor: 'rgba(30,30,30,0.6)',
+  },
+
+  progressOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 100,
+  },
+
+  progressBox: {
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    borderRadius: 18,
+    paddingVertical: 22,
+    paddingHorizontal: 26,
+    alignItems: 'center',
+  },
+
+  progressText: {
+    color: '#fff',
+    fontSize: 16,
+    marginTop: 12,
+    fontFamily: 'Pretendard-SemiBold',
+  },
+
+  progressSub: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 12,
+    marginTop: 8,
+    fontFamily: 'Pretendard-Medium',
+  },
+
+  }));
   const listRef = useRef(null);
 
   const cancelRequestedRef = useRef(false);
@@ -362,15 +492,15 @@ export default function MediaViewer({
 
       <View style={styles.topBar}>
         <TouchableOpacity onPress={handleClose} style={styles.circleIconBtn}>
-          <Text style={styles.xText}>✕</Text>
+          <AppText style={styles.xText}>✕</AppText>
         </TouchableOpacity>
 
         <View pointerEvents="none" style={styles.indexPill}>
-          <Text style={styles.headerIndex}>
-            <Text style={styles.headerIndexCurrent}>{safeIndex + 1}</Text>
+          <AppText style={styles.headerIndex}>
+            <AppText style={styles.headerIndexCurrent}>{safeIndex + 1}</AppText>
             {' / '}
             {media.length}
-          </Text>
+          </AppText>
         </View>
 
         <View style={{width: CIRCLE_SIZE, height: CIRCLE_SIZE}} />
@@ -402,12 +532,12 @@ export default function MediaViewer({
         <View style={styles.progressOverlay}>
           <View style={styles.progressBox}>
             <ActivityIndicator size="large" color="#fff" />
-            <Text style={styles.progressText}>
+            <AppText style={styles.progressText}>
               {progress.current} / {progress.total}
-            </Text>
-            <Text style={styles.progressSub}>
+            </AppText>
+            <AppText style={styles.progressSub}>
               화면을 나가면 저장이 취소돼요
-            </Text>
+            </AppText>
           </View>
         </View>
       )}
@@ -419,140 +549,3 @@ export default function MediaViewer({
 
 const CIRCLE_SIZE = getResponsiveWidth(38);
 
-const styles = StyleSheet.create({
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'black',
-  },
-
-  topBar: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 46 : 16,
-    left: 16,
-    right: 16,
-    zIndex: 60,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-
-  circleIconBtn: {
-    width: CIRCLE_SIZE,
-    height: CIRCLE_SIZE,
-    borderRadius: 999,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  circlePillBtn: {
-    minWidth: getResponsiveWidth(86),
-    height: CIRCLE_SIZE,
-    borderRadius: 999,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: getResponsiveWidth(14),
-  },
-
-  circlePillText: {
-    color: '#fff',
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(12.5),
-    includeFontPadding: false,
-  },
-
-  xText: {
-    color: '#fff',
-    fontSize: getResponsiveFontSize(16),
-    fontFamily: 'Pretendard-SemiBold',
-    includeFontPadding: false,
-    textAlignVertical: 'center',
-  },
-
-  indexPill: {
-    position: 'relative',
-    alignSelf: 'center',
-    backgroundColor: 'rgba(0,0,0,0.28)',
-    paddingHorizontal: getResponsiveWidth(10),
-    paddingVertical: getResponsiveHeight(3),
-    borderRadius: getResponsiveWidth(999),
-  },
-
-  headerIndex: {
-    color: '#FFF',
-    fontSize: getResponsiveFontSize(11),
-    fontFamily: 'Pretendard-Medium',
-  },
-
-  headerIndexCurrent: {
-    color: '#FFC84D',
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(13),
-  },
-
-  page: {
-    width: screenWidth,
-    height: screenHeight,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  zoomContainer: {
-    width: screenWidth,
-    height: screenHeight,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  zoomImageWrap: {
-    width: screenWidth,
-    height: screenHeight,
-  },
-
-  zoomImage: {
-    width: '100%',
-    height: '100%',
-  },
-
-  video: {
-    width: screenWidth,
-    height: screenHeight,
-  },
-
-  mediaPlaceholder: {
-    width: screenWidth,
-    height: screenHeight,
-    backgroundColor: 'rgba(30,30,30,0.6)',
-  },
-
-  progressOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 100,
-  },
-
-  progressBox: {
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    borderRadius: 18,
-    paddingVertical: 22,
-    paddingHorizontal: 26,
-    alignItems: 'center',
-  },
-
-  progressText: {
-    color: '#fff',
-    fontSize: 16,
-    marginTop: 12,
-    fontFamily: 'Pretendard-SemiBold',
-  },
-
-  progressSub: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 12,
-    marginTop: 8,
-    fontFamily: 'Pretendard-Medium',
-  },
-});

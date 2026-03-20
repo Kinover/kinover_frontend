@@ -4,7 +4,7 @@ import CommunicationScreen from 'features/chat/screens';
 import KinoChatRoom from 'features/chat/screens/kinoChatRoomScreen';
 import ChatSettings from 'features/chat/screens/chatSetting';
 import {getResponsiveHeight} from 'utils/responsive';
-import {Text} from 'react-native';
+import AppText from 'components/AppText';
 import {
   RenderGoBackButton,
   RenderHeaderHome,
@@ -44,7 +44,7 @@ export default function CommunicationStack() {
           headerBackTitle: '',
           headerLeft: () => null,
           headerTitle: () => (
-            <Text
+            <AppText
               allowFontScaling={false}
               style={{
                 fontFamily: HEADER_STYLES().mainTitleFontFamily,
@@ -56,7 +56,7 @@ export default function CommunicationStack() {
                 textAlignVertical: 'center',
               }}>
               소통
-            </Text>
+            </AppText>
           ),
           headerTitleAlign: 'bottom',
  // headerTitleContainerStyle: {

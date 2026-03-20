@@ -2,17 +2,11 @@
 /* eslint-disable no-alert */
 /* eslint-disable react-native/no-inline-styles */
 import React, {useState, useLayoutEffect, useEffect, useMemo} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  TextInput,
-} from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Image, TextInput } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -25,7 +19,7 @@ import {EMPTY_STYLE} from 'styles/style';
 function CategoryHeaderTitle() {
   return (
     <View style={{width: '100%', alignItems: 'center'}}>
-      <Text style={{fontSize: getResponsiveFontSize(20)}}>카테고리 선택</Text>
+      <AppText style={{fontSize: getResponsiveFontSize(20)}}>카테고리 선택</AppText>
     </View>
   );
 }
@@ -44,6 +38,35 @@ function CategoryHeaderRight({onPress}) {
 }
 
 export default function CategoryPage() {
+  const styles = useScaledStyleSheet(rf => ({
+
+  container: {
+    flex: 1,
+    backgroundColor: 'white',
+    borderTopWidth: 3,
+    borderColor: '#D3D3D3',
+  },
+  itemContainer: {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: getResponsiveWidth(20),
+    paddingHorizontal: getResponsiveWidth(25),
+  },
+  selectedItem: {
+    backgroundColor: '#FFF3D2',
+  },
+  itemText: {
+    fontSize: rf(15),
+    fontFamily: 'Pretendard-Regular',
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#eee',
+    marginHorizontal: getResponsiveWidth(10),
+  },
+
+  }));
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const familyId = useSelector(state => state.family.familyId);
@@ -111,7 +134,7 @@ export default function CategoryPage() {
           styles.itemContainer,
           selectedIndex === index && styles.selectedItem,
         ]}>
-        <Text style={styles.itemText}>{item.title}</Text>
+        <AppText style={styles.itemText}>{item.title}</AppText>
         <TouchableOpacity>
           <Image
             source={
@@ -147,7 +170,7 @@ export default function CategoryPage() {
         onConfirm={handleAddCategory}
         content={
           <View>
-            <Text
+            <AppText
               style={{
                 fontSize: getResponsiveFontSize(18),
                 fontFamily: 'Pretendard-SemiBold',
@@ -155,7 +178,7 @@ export default function CategoryPage() {
                 marginVertical: getResponsiveHeight(15),
               }}>
               새 카테고리를 입력해주세요
-            </Text>
+            </AppText>
             <View
               style={{
                 borderWidth: 1,
@@ -181,30 +204,3 @@ export default function CategoryPage() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-    borderTopWidth: 3,
-    borderColor: '#D3D3D3',
-  },
-  itemContainer: {
-    display: 'flex',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: getResponsiveWidth(20),
-    paddingHorizontal: getResponsiveWidth(25),
-  },
-  selectedItem: {
-    backgroundColor: '#FFF3D2',
-  },
-  itemText: {
-    fontSize: getResponsiveFontSize(15),
-    fontFamily: 'Pretendard-Regular',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#eee',
-    marginHorizontal: getResponsiveWidth(10),
-  },
-});

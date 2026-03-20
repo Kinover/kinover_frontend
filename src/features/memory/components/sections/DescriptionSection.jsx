@@ -1,13 +1,7 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableWithoutFeedback,
-  StyleSheet,
-  Image,
-  Platform,
-} from 'react-native';
+import { View, ScrollView, TouchableWithoutFeedback, StyleSheet, Image, Platform } from 'react-native';
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -16,47 +10,8 @@ import {
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 
 export default function DescriptionSection({memory, onContentLayout}) {
-  const insets = useSafeAreaInsets(); // 하단 inset 가져오기
+  const styles = useScaledStyleSheet(rf => ({
 
-  if (!memory) return null;
-
-  return (
-    <View>
-      <TouchableWithoutFeedback>
-        <View style={styles.headerContainer}>
-          <View style={styles.writer}>
-            <Image
-              style={styles.writerImage}
-              source={{uri: memory.authorImage}}
-            />
-            <Text style={styles.writerName}>{memory.authorName}</Text>
-          </View>
-        </View>
-      </TouchableWithoutFeedback>
-
-      {/* SafeAreaView + paddingBottom */}
-      <SafeAreaView
-        edges={['bottom']}
-        style={[
-          styles.description,
-          {paddingBottom: insets.bottom + getResponsiveHeight(10)},
-        ]}>
-        <ScrollView
-          style={styles.contentContainer}
-          contentContainerStyle={{paddingBottom: getResponsiveHeight(40)}}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-          nestedScrollEnabled={true}>
-          <Text style={styles.content} onLayout={onContentLayout}>
-            {memory.content}
-          </Text>
-        </ScrollView>
-      </SafeAreaView>
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
   description: {
     width: '100%',
     height: '100%',
@@ -93,8 +48,8 @@ const styles = StyleSheet.create({
     color: 'black',
     fontSize:
       Platform.OS === 'ios'
-        ? getResponsiveFontSize(18) // 🔽 21 → 18
-        : getResponsiveFontSize(16), // 🔽 18 → 16
+        ? rf(18) // 🔽 21 → 18
+        : rf(16), // 🔽 18 → 16
     fontFamily: 'Pretendard-Regular',
     textAlignVertical: 'center',
     lineHeight:
@@ -106,8 +61,8 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Light',
     fontSize:
       Platform.OS === 'ios'
-        ? getResponsiveFontSize(15) // 🔽 17 → 15
-        : getResponsiveFontSize(14), // 🔽 15 → 14
+        ? rf(15) // 🔽 17 → 15
+        : rf(14), // 🔽 15 → 14
     lineHeight:
       Platform.OS === 'ios'
         ? getResponsiveHeight(24) // 자연스럽게 읽히는 라인 높이
@@ -121,4 +76,45 @@ const styles = StyleSheet.create({
     height: '100%',
     paddingHorizontal: getResponsiveWidth(25),
   },
-});
+
+  }));
+  const insets = useSafeAreaInsets(); // 하단 inset 가져오기
+
+  if (!memory) return null;
+
+  return (
+    <View>
+      <TouchableWithoutFeedback>
+        <View style={styles.headerContainer}>
+          <View style={styles.writer}>
+            <Image
+              style={styles.writerImage}
+              source={{uri: memory.authorImage}}
+            />
+            <AppText style={styles.writerName}>{memory.authorName}</AppText>
+          </View>
+        </View>
+      </TouchableWithoutFeedback>
+
+      {/* SafeAreaView + paddingBottom */}
+      <SafeAreaView
+        edges={['bottom']}
+        style={[
+          styles.description,
+          {paddingBottom: insets.bottom + getResponsiveHeight(10)},
+        ]}>
+        <ScrollView
+          style={styles.contentContainer}
+          contentContainerStyle={{paddingBottom: getResponsiveHeight(40)}}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled={true}>
+          <AppText style={styles.content} onLayout={onContentLayout}>
+            {memory.content}
+          </AppText>
+        </ScrollView>
+      </SafeAreaView>
+    </View>
+  );
+}
+

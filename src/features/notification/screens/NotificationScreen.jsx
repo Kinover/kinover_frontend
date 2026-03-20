@@ -1,14 +1,9 @@
 // src/features/notification/screens/NotificationScreen.js
 import React, {useCallback, useEffect, useLayoutEffect, useMemo} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Dimensions,
-} from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveFontSize,
   getResponsiveWidth,
@@ -34,6 +29,80 @@ import {
 } from '../store/notificationThunk';
 
 export default function NotificationScreen() {
+  const styles = useScaledStyleSheet(rf => ({
+
+  container: {flex: 1, backgroundColor: '#fff'},
+  sectionTitle: {
+    marginTop: getResponsiveHeight(14),
+    marginBottom: getResponsiveHeight(4),
+    fontSize: rf(12),
+    color: '#8D8D8D',
+    fontFamily: 'Pretendard-Medium',
+    paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal + 5,
+  },
+  error: {
+    fontSize: rf(15),
+    color: 'red',
+    textAlign: 'center',
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: getResponsiveHeight(15),
+    paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal + 5,
+    borderBottomWidth: 0.5,
+    borderBottomColor: '#EFEFEF',
+    gap: getResponsiveWidth(12),
+  },
+  cardNew: {backgroundColor: '#FFF9EC'},
+  avatarWrap: {position: 'relative'},
+  profileImage: {
+    borderRadius: getResponsiveWidth(5),
+    backgroundColor: '#EAEAEA',
+  },
+  center: {flex: 1, justifyContent: 'center'},
+  rowTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(8),
+    marginBottom: getResponsiveHeight(4),
+  },
+  typeBadgeText: {
+    fontSize: rf(11),
+    fontFamily: 'Pretendard-SemiBold',
+    fontWeight: '700',
+  },
+  when: {
+    marginLeft: 'auto',
+    fontSize: rf(10),
+    color: '#9A9A9A',
+    fontFamily: 'Pretendard-Regular',
+  },
+  summary: {
+    fontSize: rf(12.5),
+    color: '#1A1A1A',
+    fontFamily: 'Pretendard-Medium',
+  },
+  content: {
+    marginTop: getResponsiveHeight(2),
+    fontSize: rf(12),
+    color: '#444',
+    fontFamily: 'Pretendard-Regular',
+    lineHeight: getResponsiveHeight(18),
+  },
+  emptyWrapper: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: getResponsiveHeight(60),
+  },
+  empty: {
+    textAlign: 'center',
+    fontSize: EMPTY_STYLE().emptyFontSize,
+    fontFamily: EMPTY_STYLE().emptyFontFamily,
+    color: EMPTY_STYLE().emptyColor,
+  },
+
+  }));
   const AVATAR = getResponsiveWidth(46);
   const navigation = useNavigation();
   const route = useRoute();
@@ -117,9 +186,9 @@ export default function NotificationScreen() {
   if (error) {
     return (
       <View style={[styles.container, {justifyContent: 'center'}]}>
-        <Text allowFontScaling={false} style={styles.error}>
+        <AppText allowFontScaling={false} style={styles.error}>
           오류 발생: {String(error)}
-        </Text>
+        </AppText>
       </View>
     );
   }
@@ -129,12 +198,12 @@ export default function NotificationScreen() {
       {safeRows.map((row, index) => {
         if (row?.type === 'section') {
           return (
-            <Text
+            <AppText
               allowFontScaling={false}
               key={`sec-${row.key}-${index}`}
               style={styles.sectionTitle}>
               {row.title}
-            </Text>
+            </AppText>
           );
         }
 
@@ -161,33 +230,33 @@ export default function NotificationScreen() {
 
             <View style={styles.center}>
               <View style={styles.rowTop}>
-                <Text
+                <AppText
                   allowFontScaling={false}
                   style={[
                     styles.typeBadgeText,
                     {color: row.typeColor || 'black'},
                   ]}>
                   {row.title}
-                </Text>
-                <Text allowFontScaling={false} style={styles.when}>
+                </AppText>
+                <AppText allowFontScaling={false} style={styles.when}>
                   {row.when}
-                </Text>
+                </AppText>
               </View>
 
-              <Text
+              <AppText
                 allowFontScaling={false}
                 numberOfLines={1}
                 style={styles.summary}>
                 {row.summary}
-              </Text>
+              </AppText>
 
               {!!row.preview && (
-                <Text
+                <AppText
                   allowFontScaling={false}
                   numberOfLines={2}
                   style={styles.content}>
                   {row.preview}
-                </Text>
+                </AppText>
               )}
             </View>
           </TouchableOpacity>
@@ -196,84 +265,12 @@ export default function NotificationScreen() {
 
       {!hasNotifications && (
         <View style={[styles.emptyWrapper, {minHeight: Dimensions.get('window').height * 0.72}]}>
-          <Text allowFontScaling={false} style={styles.empty}>
+          <AppText allowFontScaling={false} style={styles.empty}>
             아직 새로운 소식이 없어요.
-          </Text>
+          </AppText>
         </View>
       )}
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#fff'},
-  sectionTitle: {
-    marginTop: getResponsiveHeight(14),
-    marginBottom: getResponsiveHeight(4),
-    fontSize: getResponsiveFontSize(12),
-    color: '#8D8D8D',
-    fontFamily: 'Pretendard-Medium',
-    paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal + 5,
-  },
-  error: {
-    fontSize: getResponsiveFontSize(15),
-    color: 'red',
-    textAlign: 'center',
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: getResponsiveHeight(15),
-    paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal + 5,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#EFEFEF',
-    gap: getResponsiveWidth(12),
-  },
-  cardNew: {backgroundColor: '#FFF9EC'},
-  avatarWrap: {position: 'relative'},
-  profileImage: {
-    borderRadius: getResponsiveWidth(5),
-    backgroundColor: '#EAEAEA',
-  },
-  center: {flex: 1, justifyContent: 'center'},
-  rowTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(8),
-    marginBottom: getResponsiveHeight(4),
-  },
-  typeBadgeText: {
-    fontSize: getResponsiveFontSize(11),
-    fontFamily: 'Pretendard-SemiBold',
-    fontWeight: '700',
-  },
-  when: {
-    marginLeft: 'auto',
-    fontSize: getResponsiveFontSize(10),
-    color: '#9A9A9A',
-    fontFamily: 'Pretendard-Regular',
-  },
-  summary: {
-    fontSize: getResponsiveFontSize(12.5),
-    color: '#1A1A1A',
-    fontFamily: 'Pretendard-Medium',
-  },
-  content: {
-    marginTop: getResponsiveHeight(2),
-    fontSize: getResponsiveFontSize(12),
-    color: '#444',
-    fontFamily: 'Pretendard-Regular',
-    lineHeight: getResponsiveHeight(18),
-  },
-  emptyWrapper: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: getResponsiveHeight(60),
-  },
-  empty: {
-    textAlign: 'center',
-    fontSize: EMPTY_STYLE().emptyFontSize,
-    fontFamily: EMPTY_STYLE().emptyFontFamily,
-    color: EMPTY_STYLE().emptyColor,
-  },
-});

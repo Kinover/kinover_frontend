@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {ActivityIndicator, View, Text, Image, StyleSheet} from 'react-native';
+import { ActivityIndicator, View, Image, StyleSheet } from 'react-native';
 import {useSelector} from 'react-redux';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -8,6 +8,7 @@ import RootNavigator from './rootNavigator';
 import {setGuestMode, getHasFamily, getNeedsSignup} from 'utils/storage';
 import {useAutoLogin} from 'features/auth/hooks/useAutoLogin';
 import {onAuthFlagsChanged} from 'utils/authFlagsEvent';
+import AppText from 'components/AppText';
 
 function BootLoading({label = ''}) {
   return (
@@ -21,9 +22,9 @@ function BootLoading({label = ''}) {
       <ActivityIndicator />
       <View style={{height: 8}} />
       {!!label && (
-        <Text allowFontScaling={false} style={styles.bootLabel}>
+        <AppText allowFontScaling={false} style={styles.bootLabel}>
           {label}
-        </Text>
+        </AppText>
       )}
     </SafeAreaView>
   );

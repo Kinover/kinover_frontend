@@ -1,5 +1,5 @@
 import React, {useMemo} from 'react';
-import {Text} from 'react-native';
+import AppText from 'components/AppText';
 
 export default function MentionText({text, users = [], textStyle, mentionStyle}) {
   const nameMap = useMemo(() => {
@@ -16,21 +16,21 @@ export default function MentionText({text, users = [], textStyle, mentionStyle})
   }, [text]);
 
   return (
-    <Text allowFontScaling={false} style={textStyle}>
+    <AppText allowFontScaling={false} style={textStyle}>
       {parts.map((p, idx) => {
         if (p?.startsWith('@')) {
           const name = p.slice(1);
           const user = nameMap.get(name);
           if (user) {
             return (
-              <Text allowFontScaling={false} key={`${idx}_${p}`} style={mentionStyle}>
+              <AppText allowFontScaling={false} key={`${idx}_${p}`} style={mentionStyle}>
                 {p}
-              </Text>
+              </AppText>
             );
           }
         }
-        return <Text allowFontScaling={false} key={`${idx}_${p}`}>{p}</Text>;
+        return <AppText allowFontScaling={false} key={`${idx}_${p}`}>{p}</AppText>;
       })}
-    </Text>
+    </AppText>
   );
 }

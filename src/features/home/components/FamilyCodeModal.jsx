@@ -1,5 +1,7 @@
 import React, {useState, useCallback, useEffect} from 'react';
-import {Text, StyleSheet, View, Pressable} from 'react-native';
+import { StyleSheet, View, Pressable } from 'react-native';
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
@@ -14,6 +16,101 @@ import {BUTTON_STYLES, COLORS} from 'styles/style';
 import {hapticLight, hapticSuccess} from 'utils/haptic';
 
 export default function FamilyCodeModal({visible, onClose, familyCode}) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  innerWrapper: {
+    width: '100%',
+    alignItems: 'center',
+  },
+
+  codeCard: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#F9FAFB',
+    borderRadius: getResponsiveWidth(14),
+    paddingVertical: getResponsiveHeight(14),
+    paddingHorizontal: getResponsiveWidth(14),
+    marginBottom: getResponsiveHeight(14),
+    marginTop: getResponsiveHeight(4),
+    borderWidth: 1,
+    borderColor: '#EEF2F7',
+  },
+
+  codeCardPressed: {
+    transform: [{scale: 0.99}],
+    opacity: 0.92,
+  },
+
+  codeCardCopied: {
+    backgroundColor: '#FFF8E1',
+    borderColor: '#FFD36A',
+  },
+
+  codeTextWrap: {
+    flex: 1,
+    paddingRight: getResponsiveWidth(10),
+  },
+
+  codeLabel: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(10.5),
+    color: COLORS.textTertiary,
+    letterSpacing: 1.4,
+    marginBottom: getResponsiveHeight(4),
+  },
+
+  codeText: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(15),
+    color: '#111827',
+    letterSpacing: 1.2,
+  },
+
+ // 이제 오른쪽은 "버튼"처럼 보이기만 하고 실제 클릭 처리는 카드 전체가 함
+  copyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: getResponsiveWidth(6),
+    paddingVertical: getResponsiveHeight(8),
+    paddingHorizontal: getResponsiveWidth(12),
+    borderRadius: 999,
+    backgroundColor: BUTTON_STYLES().saveBg,
+  },
+
+  copyBtnCopied: {
+    backgroundColor: '#FFB000',
+  },
+
+  copyIcon: {
+    width: getResponsiveIconSize(16),
+    height: getResponsiveIconSize(16),
+    tintColor: '#FFFFFF',
+  },
+
+  copyIconCopied: {
+    tintColor: '#111827',
+  },
+
+  copyText: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(12),
+    color: '#FFFFFF',
+  },
+
+  copyTextCopied: {
+    color: '#111827',
+  },
+
+  modalButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+ // marginTop: getResponsiveHeight(10),
+  },
+
+  }));
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(() => {
@@ -59,16 +156,16 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
             !familyCode && {opacity: 0.6},
           ]}>
           <View style={styles.codeTextWrap}>
-            <Text allowFontScaling={false} style={styles.codeLabel}>
+            <AppText allowFontScaling={false} style={styles.codeLabel}>
               INVITE CODE
-            </Text>
-            <Text
+            </AppText>
+            <AppText
               allowFontScaling={false}
               style={styles.codeText}
               numberOfLines={1}
               ellipsizeMode="middle">
               {familyCode || '-'}
-            </Text>
+            </AppText>
           </View>
 
           {/* 오른쪽은 "복사" 힌트용 (아이콘/텍스트만 표시, 눌러도 카드 onPress로 복사됨) */}
@@ -78,11 +175,11 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
               style={[styles.copyIcon, copied && styles.copyIconCopied]}
               resizeMode="contain"
             /> */}
-            <Text
+            <AppText
               allowFontScaling={false}
               style={[styles.copyText, copied && styles.copyTextCopied]}>
               {copied ? '복사됨' : '복사'}
-            </Text>
+            </AppText>
           </View>
         </Pressable>
       </View>
@@ -90,96 +187,3 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
   );
 }
 
-const styles = StyleSheet.create({
-  innerWrapper: {
-    width: '100%',
-    alignItems: 'center',
-  },
-
-  codeCard: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: '#F9FAFB',
-    borderRadius: getResponsiveWidth(14),
-    paddingVertical: getResponsiveHeight(14),
-    paddingHorizontal: getResponsiveWidth(14),
-    marginBottom: getResponsiveHeight(14),
-    marginTop: getResponsiveHeight(4),
-    borderWidth: 1,
-    borderColor: '#EEF2F7',
-  },
-
-  codeCardPressed: {
-    transform: [{scale: 0.99}],
-    opacity: 0.92,
-  },
-
-  codeCardCopied: {
-    backgroundColor: '#FFF8E1',
-    borderColor: '#FFD36A',
-  },
-
-  codeTextWrap: {
-    flex: 1,
-    paddingRight: getResponsiveWidth(10),
-  },
-
-  codeLabel: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(10.5),
-    color: COLORS.textTertiary,
-    letterSpacing: 1.4,
-    marginBottom: getResponsiveHeight(4),
-  },
-
-  codeText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(15),
-    color: '#111827',
-    letterSpacing: 1.2,
-  },
-
- // 이제 오른쪽은 "버튼"처럼 보이기만 하고 실제 클릭 처리는 카드 전체가 함
-  copyBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: getResponsiveWidth(6),
-    paddingVertical: getResponsiveHeight(8),
-    paddingHorizontal: getResponsiveWidth(12),
-    borderRadius: 999,
-    backgroundColor: BUTTON_STYLES().saveBg,
-  },
-
-  copyBtnCopied: {
-    backgroundColor: '#FFB000',
-  },
-
-  copyIcon: {
-    width: getResponsiveIconSize(16),
-    height: getResponsiveIconSize(16),
-    tintColor: '#FFFFFF',
-  },
-
-  copyIconCopied: {
-    tintColor: '#111827',
-  },
-
-  copyText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(12),
-    color: '#FFFFFF',
-  },
-
-  copyTextCopied: {
-    color: '#111827',
-  },
-
-  modalButtonRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
- // marginTop: getResponsiveHeight(10),
-  },
-});

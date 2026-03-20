@@ -2,22 +2,14 @@ import 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import React, {useEffect, useRef, useState} from 'react';
-import {
-  View,
-  StyleSheet,
-  Image,
-  Text,
-  AppState,
-  ActivityIndicator,
-  Platform,
-  StatusBar,
-  Dimensions,
-} from 'react-native';
+import { View, StyleSheet, Image, AppState, ActivityIndicator, Platform, StatusBar, Dimensions } from 'react-native';
+import AppText from 'components/AppText';
 import {
   GestureHandlerRootView,
 } from 'react-native-gesture-handler';
 import {NavigationContainer} from '@react-navigation/native';
 import {Provider, useDispatch, useSelector} from 'react-redux';
+import {useReduxFontMode} from 'hooks/useReduxFontMode';
 import {MenuProvider} from 'react-native-popup-menu';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {BottomSheetModalProvider} from '@gorhom/bottom-sheet';
@@ -74,13 +66,12 @@ function KinoverSplashView({loop = false, onAnimationFinish}) {
 }
 
 function ResponsiveModeBridge() {
-  const fontMode = useSelector(state => state.ui?.fontMode);
+  const fontMode = useReduxFontMode();
 
-  useEffect(() => {
-    if (fontMode != null) {
-      setResponsiveMode(fontMode);
-    }
-  }, [fontMode]);
+  // useEffect가 아니라 렌더와 동기화: 같은 프레임에서 getResponsiveFontSize가 Redux와 일치
+  if (fontMode != null) {
+    setResponsiveMode(fontMode);
+  }
 
   return null;
 }
@@ -186,19 +177,19 @@ function AppLockGate({readyForAuth}) {
   return (
     <View style={styles.lockOverlay} pointerEvents="auto">
       <View style={styles.lockCard}>
-        <Text allowFontScaling={false} style={styles.lockTitle}>
+        <AppText allowFontScaling={false} style={styles.lockTitle}>
           앱 잠금
-        </Text>
-        <Text allowFontScaling={false} style={styles.lockDesc}>
+        </AppText>
+        <AppText allowFontScaling={false} style={styles.lockDesc}>
           생체인식으로 잠금을 해제해줘요
-        </Text>
+        </AppText>
         <View style={{height: 16}} />
         {authing ? (
           <ActivityIndicator size="small" color="#111827" />
         ) : (
-          <Text allowFontScaling={false} style={styles.lockHint}>
+          <AppText allowFontScaling={false} style={styles.lockHint}>
             화면을 잠시 터치하면 다시 시도해요
-          </Text>
+          </AppText>
         )}
       </View>
 

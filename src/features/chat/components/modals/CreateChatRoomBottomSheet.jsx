@@ -2,23 +2,16 @@
 // src/features/chat/components/CreateChatRoomBottomSheet.jsx
 
 import React, {useMemo, useCallback, useState, useEffect, useRef} from 'react';
-import {
-  View,
-  StyleSheet,
-  Platform,
-  TouchableOpacity,
-  Keyboard,
-  InteractionManager,
-  SafeAreaView,
-} from 'react-native';
+import { View, StyleSheet, Platform, TouchableOpacity, Keyboard, InteractionManager, SafeAreaView } from 'react-native';
 import AppText from 'components/AppText';
 
-import {useSelector} from 'react-redux';
+import {useReduxFontMode} from 'hooks/useReduxFontMode';
 
 import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
 import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
 import {BottomSheetTextInput, BottomSheetView} from '@gorhom/bottom-sheet';
 
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -30,7 +23,7 @@ import {BOTTOMSHEET_STYLE} from 'styles/style';
 import ToastModal from 'components/modal/ToastModal';
 import {validateLength} from 'utils/validation';
 
-// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+// 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
 
 export default function CreateChatRoomBottomSheet({
@@ -43,7 +36,124 @@ export default function CreateChatRoomBottomSheet({
   maxRoomNameLength = 30,
   snapPoints: externalSnapPoints,
 }) {
-  const fontMode = useSelector(state => state.ui.fontMode);
+  const styles = useScaledStyleSheet(rf => ({
+
+  body: {
+    paddingTop: getResponsiveHeight(6),
+    paddingBottom: getResponsiveHeight(6),
+  },
+
+  label: {
+    fontSize: BOTTOMSHEET_STYLE().sectionLabel.fontSize,
+    fontFamily: BOTTOMSHEET_STYLE().sectionLabel.fontFamily,
+    color: BOTTOMSHEET_STYLE().sectionLabel.color,
+    marginBottom: BOTTOMSHEET_STYLE().sectionLabel.marginBottom,
+    marginTop: BOTTOMSHEET_STYLE().sectionLabel.marginTop,
+  },
+
+  sectionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+
+  countText: {
+    fontSize: rf(12),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#566073',
+  },
+
+  inputWrap: {
+    width: '100%',
+    borderRadius: getResponsiveWidth(14),
+    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
+    borderWidth: 1,
+    borderColor: '#E6EAF2',
+    paddingHorizontal: getResponsiveWidth(14),
+    paddingVertical:
+      Platform.OS === 'ios' ? getResponsiveHeight(12) : getResponsiveHeight(8),
+  },
+  input: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: rf(14.5),
+    color: '#111827',
+    padding: 0,
+  },
+
+  memberCard: {
+    minHeight: getResponsiveHeight(120),
+    marginTop: getResponsiveHeight(6),
+    backgroundColor: '#FFFFFF',
+    borderRadius: getResponsiveWidth(18),
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(12),
+    borderWidth: 1,
+    borderColor: 'rgba(15, 23, 42, 0.08)',
+  },
+
+  chipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+
+  chip: {
+    height: getResponsiveHeight(34),
+    paddingHorizontal: getResponsiveWidth(12),
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(15, 23, 42, 0.08)',
+    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    marginRight: getResponsiveWidth(8),
+    maxWidth: getResponsiveWidth(140),
+  },
+
+  chipSelected: {
+    backgroundColor: 'black',
+    borderColor: 'black',
+  },
+
+  chipDisabled: {
+    opacity: 0.45,
+  },
+
+  chipText: {
+    fontSize: rf(12.5),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#566073',
+    letterSpacing: -0.2,
+  },
+
+  chipTextSelected: {
+    color: '#FFFFFF',
+  },
+
+  chipTextDisabled: {
+    color: '#9CA3AF',
+  },
+
+  tipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(8),
+    marginTop: getResponsiveHeight(6),
+  },
+  tipDot: {
+    width: getResponsiveWidth(6),
+    height: getResponsiveWidth(6),
+    borderRadius: 999,
+    backgroundColor: '#FFB020',
+  },
+  tipText: {
+    fontSize: rf(11.5),
+    fontFamily: 'Pretendard-Medium',
+    color: '#566073',
+  },
+
+  }));
+  const fontMode = useReduxFontMode();
 
  // roomName: ref로만 관리
   const roomNameRef = useRef(String(initialRoomName ?? ''));
@@ -361,7 +471,7 @@ export default function CreateChatRoomBottomSheet({
             selected && styles.chipSelected,
             item.disabled && styles.chipDisabled,
           ]}>
-          <Text
+          <AppText
             style={[
               styles.chipText,
               selected && styles.chipTextSelected,
@@ -369,7 +479,7 @@ export default function CreateChatRoomBottomSheet({
             ]}
             numberOfLines={1}>
             {item.name}
-          </Text>
+          </AppText>
         </TouchableOpacity>
       );
     },
@@ -424,9 +534,9 @@ export default function CreateChatRoomBottomSheet({
           <BottomSheetView>
             <View style={styles.body}>
               <View style={styles.sectionRow}>
-                <Text style={styles.label}>
+                <AppText style={styles.label}>
                   채팅방 이름(선택)
-                </Text>
+                </AppText>
               </View>
 
               <View style={styles.inputWrap}>
@@ -449,12 +559,12 @@ export default function CreateChatRoomBottomSheet({
 
               <View style={{marginTop: getResponsiveHeight(18)}}>
                 <View style={styles.sectionRow}>
-                  <Text style={styles.label}>
+                  <AppText style={styles.label}>
                     구성원
-                  </Text>
-                  <Text style={styles.countText}>
+                  </AppText>
+                  <AppText style={styles.countText}>
                     {selectedCount}명 선택
-                  </Text>
+                  </AppText>
                 </View>
 
                 <View style={styles.memberCard}>
@@ -465,9 +575,9 @@ export default function CreateChatRoomBottomSheet({
 
                 <View style={styles.tipRow}>
                   <View style={styles.tipDot} />
-                  <Text style={styles.tipText}>
+                  <AppText style={styles.tipText}>
                     최소 1명은 선택해야 저장할 수 있어요.
-                  </Text>
+                  </AppText>
                 </View>
               </View>
 
@@ -501,118 +611,3 @@ export default function CreateChatRoomBottomSheet({
   );
 }
 
-const styles = StyleSheet.create({
-  body: {
-    paddingTop: getResponsiveHeight(6),
-    paddingBottom: getResponsiveHeight(6),
-  },
-
-  label: {
-    fontSize: BOTTOMSHEET_STYLE().sectionLabel.fontSize,
-    fontFamily: BOTTOMSHEET_STYLE().sectionLabel.fontFamily,
-    color: BOTTOMSHEET_STYLE().sectionLabel.color,
-    marginBottom: BOTTOMSHEET_STYLE().sectionLabel.marginBottom,
-    marginTop: BOTTOMSHEET_STYLE().sectionLabel.marginTop,
-  },
-
-  sectionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-
-  countText: {
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#566073',
-  },
-
-  inputWrap: {
-    width: '100%',
-    borderRadius: getResponsiveWidth(14),
-    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
-    borderWidth: 1,
-    borderColor: '#E6EAF2',
-    paddingHorizontal: getResponsiveWidth(14),
-    paddingVertical:
-      Platform.OS === 'ios' ? getResponsiveHeight(12) : getResponsiveHeight(8),
-  },
-  input: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(14.5),
-    color: '#111827',
-    padding: 0,
-  },
-
-  memberCard: {
-    minHeight: getResponsiveHeight(120),
-    marginTop: getResponsiveHeight(6),
-    backgroundColor: '#FFFFFF',
-    borderRadius: getResponsiveWidth(18),
-    paddingHorizontal: getResponsiveWidth(12),
-    paddingVertical: getResponsiveHeight(12),
-    borderWidth: 1,
-    borderColor: 'rgba(15, 23, 42, 0.08)',
-  },
-
-  chipWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-
-  chip: {
-    height: getResponsiveHeight(34),
-    paddingHorizontal: getResponsiveWidth(12),
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(15, 23, 42, 0.08)',
-    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    marginRight: getResponsiveWidth(8),
-    maxWidth: getResponsiveWidth(140),
-  },
-
-  chipSelected: {
-    backgroundColor: 'black',
-    borderColor: 'black',
-  },
-
-  chipDisabled: {
-    opacity: 0.45,
-  },
-
-  chipText: {
-    fontSize: getResponsiveFontSize(12.5),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#566073',
-    letterSpacing: -0.2,
-  },
-
-  chipTextSelected: {
-    color: '#FFFFFF',
-  },
-
-  chipTextDisabled: {
-    color: '#9CA3AF',
-  },
-
-  tipRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(8),
-    marginTop: getResponsiveHeight(6),
-  },
-  tipDot: {
-    width: getResponsiveWidth(6),
-    height: getResponsiveWidth(6),
-    borderRadius: 999,
-    backgroundColor: '#FFB020',
-  },
-  tipText: {
-    fontSize: getResponsiveFontSize(11.5),
-    fontFamily: 'Pretendard-Medium',
-    color: '#566073',
-  },
-});

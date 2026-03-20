@@ -1,14 +1,9 @@
 import React, {memo, useMemo} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import DropShadow from 'react-native-drop-shadow';
 
+import AppText from 'components/AppText';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -59,11 +54,11 @@ const Chip = memo(function Chip({text}) {
         },
       ]}>
       <View style={[styles.chipDot, {backgroundColor: dynamicStyle.dot}]} />
-      <Text
+      <AppText
         style={[styles.chipText, {color: dynamicStyle.text}]}
         numberOfLines={1}>
         {text}
-      </Text>
+      </AppText>
     </View>
   );
 });
@@ -109,8 +104,8 @@ const MemoryFeedListItem = memo(function MemoryFeedListItem({
           onPress={() => onPressPost(postId)}
           style={styles.cardPress}>
           <View style={styles.cardHeader}>
-            <Text style={styles.dateText}>{dateLabel}</Text>
-            <Text style={styles.metaCompactText}>{mediaLabel}</Text>
+            <AppText style={styles.dateText}>{dateLabel}</AppText>
+            <AppText style={styles.metaCompactText}>{mediaLabel}</AppText>
           </View>
 
           <View style={styles.mediaWrap}>
@@ -138,12 +133,12 @@ const MemoryFeedListItem = memo(function MemoryFeedListItem({
 
           <View style={styles.contentArea}>
             {bodyText ? (
-              <Text
+              <AppText
                 style={styles.contentText}
                 numberOfLines={3}
                 ellipsizeMode="tail">
                 {bodyText}
-              </Text>
+              </AppText>
             ) : null}
           </View>
         </TouchableOpacity>

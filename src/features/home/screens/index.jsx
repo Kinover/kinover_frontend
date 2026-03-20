@@ -8,6 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
+import {useReduxFontMode} from 'hooks/useReduxFontMode';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {FONT_MODE} from 'store/uiSlice';
@@ -75,7 +76,7 @@ export default function HomeScreen() {
   const familyUserList = useSelector(state => state.userFamily.familyUserList);
   const {onlineUserIds, lastActiveMap} = useSelector(state => state.family);
 
-  const fontMode = useSelector(state => state.ui.fontMode);
+  const fontMode = useReduxFontMode();
 
   const familyId =
     family?.familyId || user?.familyId || user?.family?.familyId || null;

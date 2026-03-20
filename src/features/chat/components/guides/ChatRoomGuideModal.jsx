@@ -1,8 +1,9 @@
 // src/features/chat/components/ChatRoomGuideModal.tsx
 
 import React from 'react';
-import {View, StyleSheet, TouchableOpacity, Modal} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -10,7 +11,7 @@ import {
 } from 'utils/responsive';
 import { COLORS } from 'styles/style';
 
-// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+// 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
 
 export default function ChatRoomGuideModal({
@@ -22,40 +23,8 @@ export default function ChatRoomGuideModal({
   onNext,
   onSkip,
 }) {
-  return (
-    <Modal transparent visible={visible} animationType="fade">
-      <View style={styles.overlay}>
-        <View style={styles.content}>
-          <Text style={styles.stepText}>
-            {step + 1}/{totalSteps}
-          </Text>
+  const styles = useScaledStyleSheet(rf => ({
 
-          {!!title && (
-            <Text style={styles.title}>{title}</Text>
-          )}
-
-          <View style={styles.contentBody}>
-            <Text style={styles.description}>{description}</Text>
-          </View>
-
-          <View style={styles.buttonRow}>
-            <TouchableOpacity onPress={onSkip}>
-              <Text style={styles.skipText}>건너뛰기</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.nextButton} onPress={onNext}>
-              <Text style={styles.nextButtonText}>
-                {step === totalSteps - 1 ? '완료' : '다음'}
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </View>
-    </Modal>
-  );
-}
-
-const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.35)',
@@ -77,19 +46,19 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(16),
   },
   stepText: {
-    fontSize: getResponsiveFontSize(11),
+    fontSize: rf(11),
     fontFamily: 'Pretendard-Medium',
     color: COLORS.textTertiary,
     marginBottom: getResponsiveHeight(4),
   },
   title: {
-    fontSize: getResponsiveFontSize(17),
+    fontSize: rf(17),
     fontFamily: 'Pretendard-SemiBold',
     color: '#111827',
     marginBottom: getResponsiveHeight(6),
   },
   description: {
-    fontSize: getResponsiveFontSize(13),
+    fontSize: rf(13),
     fontFamily: 'Pretendard-Regular',
     color: '#4B5563',
     lineHeight: getResponsiveHeight(20),
@@ -101,7 +70,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   skipText: {
-    fontSize: getResponsiveFontSize(13),
+    fontSize: rf(13),
     fontFamily: 'Pretendard-Regular',
     color: COLORS.textTertiary,
   },
@@ -112,8 +81,42 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFC84D',
   },
   nextButtonText: {
-    fontSize: getResponsiveFontSize(13.5),
+    fontSize: rf(13.5),
     fontFamily: 'Pretendard-Medium',
     color: '#111827',
   },
-});
+
+  }));
+  return (
+    <Modal transparent visible={visible} animationType="fade">
+      <View style={styles.overlay}>
+        <View style={styles.content}>
+          <AppText style={styles.stepText}>
+            {step + 1}/{totalSteps}
+          </AppText>
+
+          {!!title && (
+            <AppText style={styles.title}>{title}</AppText>
+          )}
+
+          <View style={styles.contentBody}>
+            <AppText style={styles.description}>{description}</AppText>
+          </View>
+
+          <View style={styles.buttonRow}>
+            <TouchableOpacity onPress={onSkip}>
+              <AppText style={styles.skipText}>건너뛰기</AppText>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.nextButton} onPress={onNext}>
+              <AppText style={styles.nextButtonText}>
+                {step === totalSteps - 1 ? '완료' : '다음'}
+              </AppText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+

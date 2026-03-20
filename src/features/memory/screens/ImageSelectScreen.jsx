@@ -10,16 +10,9 @@ import React, {
   useState,
   useRef,
 } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-  Image,
-  Dimensions,
-  Pressable,
-} from 'react-native';
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
+import { View, TouchableOpacity, StyleSheet, Platform, Image, Dimensions, Pressable } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {launchImageLibrary} from 'react-native-image-picker';
 import DraggableFlatList from 'react-native-draggable-flatlist';
@@ -76,6 +69,224 @@ const TILE_R = getResponsiveIconSize(14);
 const PILL_R = 999;
 
 export default function ImageSelectPage() {
+  const styles = useScaledStyleSheet(rf => ({
+
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.bg,
+    paddingHorizontal: H_PADDING,
+    paddingTop: getResponsiveHeight(12),
+  },
+
+  headerTitle: {
+    fontSize: HEADER_STYLES().defaultTitleFontSize,
+    fontFamily: HEADER_STYLES().defaultTitleFontFamily,
+    color: HEADER_STYLES().defaultTitleFontColor,
+    lineHeight: getResponsiveHeight(26),
+    textAlign: 'center',
+    textAlignVertical: 'center',
+  },
+  headerRightBtn: {
+    paddingVertical: getResponsiveHeight(6),
+  },
+  checkIcon: {
+    width: HEADER_STYLES().headerRightIconWidth,
+    height: HEADER_STYLES().headerRightIconHeight,
+    marginRight: HEADER_STYLES().headerRightIconRightPadding,
+    resizeMode: 'contain',
+  },
+
+  grid: {paddingBottom: GRID_GAP / 2},
+  row: {
+    justifyContent: 'flex-start',
+    columnGap: GRID_GAP,
+    marginBottom: GRID_GAP,
+  },
+
+  tile: {
+    width: ITEM_SIZE,
+    height: ITEM_SIZE,
+    borderRadius: TILE_R,
+    overflow: 'hidden',
+    backgroundColor: '#EDEFF4',
+    borderWidth: 1,
+    borderColor: 'rgba(17,24,39,0.06)',
+  },
+  tileActive: {
+    opacity: 0.95,
+    transform: [{scale: 0.99}],
+  },
+  tileImage: {width: '100%', height: '100%'},
+  placeholder: {width: ITEM_SIZE, height: ITEM_SIZE, opacity: 0},
+
+  plusTile: {
+    width: ITEM_SIZE,
+    height: ITEM_SIZE,
+    borderRadius: TILE_R,
+    borderWidth: 1,
+    borderColor: COLORS.lineStrong,
+    backgroundColor: COLORS.plusBg,
+    overflow: 'hidden',
+  },
+  plusInner: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: getResponsiveHeight(6),
+  },
+  plusIconCircle: {
+    width: getResponsiveWidth(44),
+    height: getResponsiveWidth(44),
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: COLORS.lineStrong,
+    backgroundColor: '#F9FAFB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  plusIcon: {
+    fontSize: rf(22),
+    fontFamily: 'Pretendard-Bold',
+    color: COLORS.text,
+    lineHeight: rf(24),
+  },
+  plusSubText: {
+    fontSize: rf(12.8),
+    fontFamily: 'Pretendard-SemiBold',
+    color: COLORS.text,
+    letterSpacing: -0.1,
+  },
+  plusHint: {
+    marginTop: getResponsiveHeight(-2),
+    fontSize: rf(11),
+    fontFamily: 'Pretendard-Medium',
+    color: COLORS.sub,
+  },
+
+ /* =================== 여기부터 “꾸민” 부분 =================== */
+
+ // 순서칩: 글래스 알약 + 얇은 화이트 보더
+  orderChip: {
+    position: 'absolute',
+    top: getResponsiveHeight(7),
+    left: getResponsiveWidth(7),
+    minWidth: getResponsiveWidth(22),
+    height: getResponsiveWidth(22),
+    paddingHorizontal: getResponsiveWidth(7),
+    borderRadius: PILL_R,
+    backgroundColor: COLORS.chipGlass,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+ // ios: {
+ // shadowColor: '#000',
+ // shadowOpacity: 0.14,
+ // shadowRadius: 8,
+ // shadowOffset: {width: 0, height: 4},
+ // },
+ // android: {elevation: 2},
+    }),
+  },
+  orderChipText: {
+    fontSize: rf(12),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#FFF',
+    letterSpacing: -0.2,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+  },
+
+  remoteTag: {
+    position: 'absolute',
+    left: getResponsiveWidth(7),
+    top: getResponsiveHeight(7),
+    paddingHorizontal: getResponsiveWidth(9),
+    height: getResponsiveWidth(22),
+    borderRadius: PILL_R,
+    backgroundColor: 'rgba(255,255,255,0.78)',
+    borderWidth: 1,
+    borderColor: 'rgba(17,24,39,0.10)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  remoteTagText: {
+    color: 'rgba(17,24,39,0.78)',
+    fontSize: rf(10.5),
+    fontFamily: 'Pretendard-SemiBold',
+    letterSpacing: -0.2,
+    includeFontPadding: false,
+  },
+
+  videoPill: {
+    position: 'absolute',
+    bottom: getResponsiveHeight(7),
+    right: getResponsiveWidth(7),
+    height: getResponsiveWidth(22),
+    paddingHorizontal: getResponsiveWidth(10),
+    borderRadius: PILL_R,
+    backgroundColor: COLORS.chipGlass2,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videoPillText: {
+    fontSize: rf(10.2),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#fff',
+    letterSpacing: 0.4,
+    includeFontPadding: false,
+  },
+
+ // X 버튼: 크기/보더/텍스트 정렬 “깔끔”
+  removeBtn: {
+    position: 'absolute',
+    right: getResponsiveWidth(7),
+    top: getResponsiveHeight(7),
+    width: getResponsiveWidth(22),
+    height: getResponsiveWidth(22),
+    borderRadius: 999,
+    backgroundColor: 'rgba(17,24,39,0.44)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Platform.select({
+ // ios: {
+ // shadowColor: '#000',
+ // shadowOpacity: 0.18,
+ // shadowRadius: 8,
+ // shadowOffset: {width: 0, height: 4},
+ // },
+ // android: {elevation: 2},
+    }),
+  },
+  removeBtnText: {
+    color: '#fff',
+    fontSize: rf(12.8),
+    fontFamily: 'Pretendard-SemiBold',
+    includeFontPadding: false,
+    textAlignVertical: 'center',
+    lineHeight: rf(13),
+ // 폰트 렌더링 때문에 살짝 위로 뜨는 경우가 있어서 보정
+  },
+
+ /* =================== 여기까지 =================== */
+
+  helperBox: {
+    marginTop: getResponsiveHeight(12),
+    paddingVertical: getResponsiveHeight(10),
+    alignItems: 'center',
+  },
+  helperText: {
+    fontSize: rf(12.5),
+    fontFamily: 'Pretendard-Medium',
+    color: COLORS.sub,
+  },
+
+  }));
   const navigation = useNavigation();
   const route = useRoute();
   const dispatch = useDispatch();
@@ -296,10 +507,10 @@ export default function ImageSelectPage() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <Text style={styles.headerTitle}>
+        <AppText style={styles.headerTitle}>
           {isEditMode ? '미디어 수정' : '사진 업로드'}{' '}
           {hasSelection ? `(${selectedFiles.length})` : ''}
-        </Text>
+        </AppText>
       ),
       headerRight: () => (
         <TouchableOpacity
@@ -359,16 +570,16 @@ export default function ImageSelectPage() {
             ]}>
             <View style={styles.plusInner}>
               <View style={styles.plusIconCircle}>
-                <Text style={styles.plusIcon}>
+                <AppText style={styles.plusIcon}>
                   ＋
-                </Text>
+                </AppText>
               </View>
-              <Text style={styles.plusSubText}>
+              <AppText style={styles.plusSubText}>
                 추가하기
-              </Text>
-              <Text style={styles.plusHint}>
+              </AppText>
+              <AppText style={styles.plusHint}>
                 {selectedFiles.length}/{MAX_SELECTION}
-              </Text>
+              </AppText>
             </View>
           </Pressable>
         );
@@ -397,17 +608,17 @@ export default function ImageSelectPage() {
 
           {/* 순서칩(예쁘게) */}
           <View style={styles.orderChip}>
-            <Text style={styles.orderChipText}>
+            <AppText style={styles.orderChipText}>
               {order}
-            </Text>
+            </AppText>
           </View>
 
           {/* 비디오 칩 */}
           {item.isVideo ? (
             <View style={styles.videoPill}>
-              <Text style={styles.videoPillText}>
+              <AppText style={styles.videoPillText}>
                 VIDEO
-              </Text>
+              </AppText>
             </View>
           ) : null}
 
@@ -432,9 +643,9 @@ export default function ImageSelectPage() {
             }}
             activeOpacity={0.85}
             style={styles.removeBtn}>
-            <Text style={styles.removeBtnText}>
+            <AppText style={styles.removeBtnText}>
               ✕
-            </Text>
+            </AppText>
           </TouchableOpacity>
         </Pressable>
       );
@@ -463,9 +674,9 @@ export default function ImageSelectPage() {
 
       {!hasSelection && (
         <View style={styles.helperBox}>
-          <Text style={styles.helperText}>
+          <AppText style={styles.helperText}>
             오른쪽 ‘추가하기’ 타일을 눌러 미디어를 선택해줘요
-          </Text>
+          </AppText>
         </View>
       )}
 
@@ -486,219 +697,3 @@ export default function ImageSelectPage() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.bg,
-    paddingHorizontal: H_PADDING,
-    paddingTop: getResponsiveHeight(12),
-  },
-
-  headerTitle: {
-    fontSize: HEADER_STYLES().defaultTitleFontSize,
-    fontFamily: HEADER_STYLES().defaultTitleFontFamily,
-    color: HEADER_STYLES().defaultTitleFontColor,
-    lineHeight: getResponsiveHeight(26),
-    textAlign: 'center',
-    textAlignVertical: 'center',
-  },
-  headerRightBtn: {
-    paddingVertical: getResponsiveHeight(6),
-  },
-  checkIcon: {
-    width: HEADER_STYLES().headerRightIconWidth,
-    height: HEADER_STYLES().headerRightIconHeight,
-    marginRight: HEADER_STYLES().headerRightIconRightPadding,
-    resizeMode: 'contain',
-  },
-
-  grid: {paddingBottom: GRID_GAP / 2},
-  row: {
-    justifyContent: 'flex-start',
-    columnGap: GRID_GAP,
-    marginBottom: GRID_GAP,
-  },
-
-  tile: {
-    width: ITEM_SIZE,
-    height: ITEM_SIZE,
-    borderRadius: TILE_R,
-    overflow: 'hidden',
-    backgroundColor: '#EDEFF4',
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.06)',
-  },
-  tileActive: {
-    opacity: 0.95,
-    transform: [{scale: 0.99}],
-  },
-  tileImage: {width: '100%', height: '100%'},
-  placeholder: {width: ITEM_SIZE, height: ITEM_SIZE, opacity: 0},
-
-  plusTile: {
-    width: ITEM_SIZE,
-    height: ITEM_SIZE,
-    borderRadius: TILE_R,
-    borderWidth: 1,
-    borderColor: COLORS.lineStrong,
-    backgroundColor: COLORS.plusBg,
-    overflow: 'hidden',
-  },
-  plusInner: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: getResponsiveHeight(6),
-  },
-  plusIconCircle: {
-    width: getResponsiveWidth(44),
-    height: getResponsiveWidth(44),
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: COLORS.lineStrong,
-    backgroundColor: '#F9FAFB',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  plusIcon: {
-    fontSize: getResponsiveFontSize(22),
-    fontFamily: 'Pretendard-Bold',
-    color: COLORS.text,
-    lineHeight: getResponsiveFontSize(24),
-  },
-  plusSubText: {
-    fontSize: getResponsiveFontSize(12.8),
-    fontFamily: 'Pretendard-SemiBold',
-    color: COLORS.text,
-    letterSpacing: -0.1,
-  },
-  plusHint: {
-    marginTop: getResponsiveHeight(-2),
-    fontSize: getResponsiveFontSize(11),
-    fontFamily: 'Pretendard-Medium',
-    color: COLORS.sub,
-  },
-
- /* =================== 여기부터 “꾸민” 부분 =================== */
-
- // 순서칩: 글래스 알약 + 얇은 화이트 보더
-  orderChip: {
-    position: 'absolute',
-    top: getResponsiveHeight(7),
-    left: getResponsiveWidth(7),
-    minWidth: getResponsiveWidth(22),
-    height: getResponsiveWidth(22),
-    paddingHorizontal: getResponsiveWidth(7),
-    borderRadius: PILL_R,
-    backgroundColor: COLORS.chipGlass,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.22)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
- // ios: {
- // shadowColor: '#000',
- // shadowOpacity: 0.14,
- // shadowRadius: 8,
- // shadowOffset: {width: 0, height: 4},
- // },
- // android: {elevation: 2},
-    }),
-  },
-  orderChipText: {
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#FFF',
-    letterSpacing: -0.2,
-    includeFontPadding: false,
-    textAlignVertical: 'center',
-  },
-
-  remoteTag: {
-    position: 'absolute',
-    left: getResponsiveWidth(7),
-    top: getResponsiveHeight(7),
-    paddingHorizontal: getResponsiveWidth(9),
-    height: getResponsiveWidth(22),
-    borderRadius: PILL_R,
-    backgroundColor: 'rgba(255,255,255,0.78)',
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.10)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  remoteTagText: {
-    color: 'rgba(17,24,39,0.78)',
-    fontSize: getResponsiveFontSize(10.5),
-    fontFamily: 'Pretendard-SemiBold',
-    letterSpacing: -0.2,
-    includeFontPadding: false,
-  },
-
-  videoPill: {
-    position: 'absolute',
-    bottom: getResponsiveHeight(7),
-    right: getResponsiveWidth(7),
-    height: getResponsiveWidth(22),
-    paddingHorizontal: getResponsiveWidth(10),
-    borderRadius: PILL_R,
-    backgroundColor: COLORS.chipGlass2,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  videoPillText: {
-    fontSize: getResponsiveFontSize(10.2),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#fff',
-    letterSpacing: 0.4,
-    includeFontPadding: false,
-  },
-
- // X 버튼: 크기/보더/텍스트 정렬 “깔끔”
-  removeBtn: {
-    position: 'absolute',
-    right: getResponsiveWidth(7),
-    top: getResponsiveHeight(7),
-    width: getResponsiveWidth(22),
-    height: getResponsiveWidth(22),
-    borderRadius: 999,
-    backgroundColor: 'rgba(17,24,39,0.44)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.22)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
- // ios: {
- // shadowColor: '#000',
- // shadowOpacity: 0.18,
- // shadowRadius: 8,
- // shadowOffset: {width: 0, height: 4},
- // },
- // android: {elevation: 2},
-    }),
-  },
-  removeBtnText: {
-    color: '#fff',
-    fontSize: getResponsiveFontSize(12.8),
-    fontFamily: 'Pretendard-SemiBold',
-    includeFontPadding: false,
-    textAlignVertical: 'center',
-    lineHeight: getResponsiveFontSize(13),
- // 폰트 렌더링 때문에 살짝 위로 뜨는 경우가 있어서 보정
-  },
-
- /* =================== 여기까지 =================== */
-
-  helperBox: {
-    marginTop: getResponsiveHeight(12),
-    paddingVertical: getResponsiveHeight(10),
-    alignItems: 'center',
-  },
-  helperText: {
-    fontSize: getResponsiveFontSize(12.5),
-    fontFamily: 'Pretendard-Medium',
-    color: COLORS.sub,
-  },
-});

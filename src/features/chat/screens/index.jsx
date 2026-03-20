@@ -2,17 +2,11 @@
 // src/features/chat/screens/CommunicationScreen.jsx
 
 import React, {useEffect, useCallback, useState, useRef, useMemo} from 'react';
-import {
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  FlatList,
-  RefreshControl,
-  Image,
-} from 'react-native';
+import { StyleSheet, View, TouchableOpacity, FlatList, RefreshControl, Image } from 'react-native';
 import AppText from 'components/AppText';
 import {useDispatch, useSelector} from 'react-redux';
 
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   fetchChatRoomListThunk,
   createChatRoomThunk,
@@ -39,10 +33,71 @@ import CreateChatRoomBottomSheet from '../components/modals/CreateChatRoomBottom
 import ChatGuideModal from '../components/guides/ChatGuideModal';
 import {STORE_MOCK_ENABLED} from '../../home/utils/storeMockData';
 
-// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+// 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
 
 export default function CommunicationScreen({navigation}) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  container: {
+    flex: 1,
+    backgroundColor: '#F9F9F9',
+  },
+  listWrap: { flex: 1 },
+  listContent: {
+    paddingTop: getResponsiveHeight(4),
+    paddingBottom: getResponsiveHeight(150),
+    gap: getResponsiveHeight(6),
+  },
+  noChatMessage: {
+    fontSize: EMPTY_STYLE().emptyFontSize,
+    fontFamily: EMPTY_STYLE().emptyFontFamily,
+    color: EMPTY_STYLE().emptyColor,
+    textAlign: 'center',
+    marginTop: getResponsiveHeight(80),
+    lineHeight: rf(20),
+    paddingHorizontal: getResponsiveWidth(10),
+  },
+  loaderWrapper: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fabContainer: {
+    position: 'absolute',
+    bottom: getResponsiveHeight(110),
+    right: getResponsiveWidth(13),
+    width: getResponsiveIconSize(65),
+    height: getResponsiveIconSize(65),
+  },
+  fabShadow: {
+    width: '100%',
+    height: '100%',
+  },
+  fabMeasure: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  fab: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: BACKGROUND_COLORS.primaryBg,
+    borderRadius: 999,
+    justifyContent: 'center',
+  },
+  fabIcon: {
+    alignSelf: 'center',
+    width: '45%',
+    height: '45%',
+    resizeMode: 'contain',
+  },
+  shadow: {
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+  },
+
+  }));
   const dispatch = useDispatch();
   const modalRef = useRef(null);
 
@@ -207,9 +262,9 @@ export default function CommunicationScreen({navigation}) {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
           ListEmptyComponent={
-            <Text style={styles.noChatMessage}>
+            <AppText style={styles.noChatMessage}>
               {'아직 채팅방이 없어요.\n가족과의 첫 대화를 시작해볼까요?'}
-            </Text>
+            </AppText>
           }
           keyExtractor={item => String(item?.chatRoomId)}
         />
@@ -261,62 +316,3 @@ export default function CommunicationScreen({navigation}) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F9F9F9',
-  },
-  listWrap: { flex: 1 },
-  listContent: {
-    paddingTop: getResponsiveHeight(4),
-    paddingBottom: getResponsiveHeight(150),
-    gap: getResponsiveHeight(6),
-  },
-  noChatMessage: {
-    fontSize: EMPTY_STYLE().emptyFontSize,
-    fontFamily: EMPTY_STYLE().emptyFontFamily,
-    color: EMPTY_STYLE().emptyColor,
-    textAlign: 'center',
-    marginTop: getResponsiveHeight(80),
-    lineHeight: getResponsiveFontSize(20),
-    paddingHorizontal: getResponsiveWidth(10),
-  },
-  loaderWrapper: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fabContainer: {
-    position: 'absolute',
-    bottom: getResponsiveHeight(110),
-    right: getResponsiveWidth(13),
-    width: getResponsiveIconSize(65),
-    height: getResponsiveIconSize(65),
-  },
-  fabShadow: {
-    width: '100%',
-    height: '100%',
-  },
-  fabMeasure: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  fab: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: BACKGROUND_COLORS.primaryBg,
-    borderRadius: 999,
-    justifyContent: 'center',
-  },
-  fabIcon: {
-    alignSelf: 'center',
-    width: '45%',
-    height: '45%',
-    resizeMode: 'contain',
-  },
-  shadow: {
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 3},
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-  },
-});

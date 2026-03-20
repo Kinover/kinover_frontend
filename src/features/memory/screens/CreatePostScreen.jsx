@@ -9,6 +9,8 @@ import React, {
   useEffect,
   useMemo,
 } from 'react';
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 
 import {
   Image as ImageCompressor,
@@ -18,7 +20,6 @@ import {
 import {
   StyleSheet,
   View,
-  Text,
   TouchableOpacity,
   Image,
   TextInput,
@@ -27,10 +28,10 @@ import {
   Dimensions,
   KeyboardAvoidingView,
   Platform,
-  BackHandler, // ADD
+  BackHandler,
 } from 'react-native';
 
-import {useFocusEffect} from '@react-navigation/native'; // ADD
+import {useFocusEffect} from '@react-navigation/native';
 import FastImage from '@d11/react-native-fast-image';
 
 import {
@@ -98,6 +99,114 @@ const logAxiosError = (tag, e) => {
 };
 
 export default function CreatePostPage({navigation, route}) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    padding: SIDE_PADDING,
+  },
+
+  headerText: {
+    fontSize: HEADER_STYLES().defaultTitleFontSize,
+    fontFamily: HEADER_STYLES().defaultTitleFontFamily,
+    color: HEADER_STYLES().defaultTitleFontColor,
+    lineHeight: getResponsiveHeight(26),
+    textAlign: 'center',
+    textAlignVertical: 'center',
+  },
+  checkIcon: {
+    width: HEADER_STYLES().headerRightIconWidth,
+    height: HEADER_STYLES().headerRightIconHeight,
+    marginRight: HEADER_STYLES().headerRightIconRightPadding,
+    resizeMode: 'contain',
+  },
+  headerRightBtn: {
+    paddingVertical: getResponsiveHeight(6),
+  },
+
+  gridContainer: {
+    flexDirection: 'row',
+    marginBottom: getResponsiveHeight(16),
+  },
+  gridImageWrapper: {
+    width: (SCREEN_WIDTH - SIDE_PADDING * 2 - H_MARGIN * 2) / 3,
+    aspectRatio: 1,
+    marginRight: H_MARGIN,
+    borderRadius: 12,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  gridImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  thumbFallback: {
+    backgroundColor: '#E5E7EB',
+  },
+
+  playOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 18,
+    borderTopWidth: 12,
+    borderBottomWidth: 12,
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    marginLeft: 4,
+  },
+
+  videoBadge: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    backgroundColor: 'rgba(0,0,0,0.65)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  videoBadgeText: {
+    color: '#fff',
+    fontSize: rf(11),
+    fontFamily: 'Pretendard-Medium',
+  },
+
+  moreOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  moreOverlayText: {
+    color: '#fff',
+    fontSize: rf(18),
+    fontFamily: 'Pretendard-SemiBold',
+  },
+
+  input: {
+    height: getResponsiveHeight(200),
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 12,
+    padding: 12,
+  },
+
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.6)',
+  },
+
+  }));
   const dispatch = useDispatch();
   const {userId} = useSelector(s => s.user);
   const {familyId} = useSelector(s => s.family);
@@ -612,9 +721,9 @@ export default function CreatePostPage({navigation, route}) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <Text style={styles.headerText}>
+        <AppText style={styles.headerText}>
           {isEditMode ? '게시글 수정' : '글쓰기'}
-        </Text>
+        </AppText>
       ),
       headerRight: () => (
         <TouchableOpacity
@@ -696,18 +805,18 @@ export default function CreatePostPage({navigation, route}) {
                       </View>
 
                       <View pointerEvents="none" style={styles.videoBadge}>
-                        <Text style={styles.videoBadgeText}>
+                        <AppText style={styles.videoBadgeText}>
                           {formatDuration(getDuration(item))}
-                        </Text>
+                        </AppText>
                       </View>
                     </>
                   )}
 
                   {hasExtra && index === gridImages.length - 1 && (
                     <View pointerEvents="none" style={styles.moreOverlay}>
-                      <Text style={styles.moreOverlayText}>
+                      <AppText style={styles.moreOverlayText}>
                         +{selectedImages.length - 3}
-                      </Text>
+                      </AppText>
                     </View>
                   )}
                 </Pressable>
@@ -766,109 +875,3 @@ export default function CreatePostPage({navigation, route}) {
 const H_MARGIN = getResponsiveWidth(8);
 const SIDE_PADDING = getResponsiveWidth(15);
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: SIDE_PADDING,
-  },
-
-  headerText: {
-    fontSize: HEADER_STYLES().defaultTitleFontSize,
-    fontFamily: HEADER_STYLES().defaultTitleFontFamily,
-    color: HEADER_STYLES().defaultTitleFontColor,
-    lineHeight: getResponsiveHeight(26),
-    textAlign: 'center',
-    textAlignVertical: 'center',
-  },
-  checkIcon: {
-    width: HEADER_STYLES().headerRightIconWidth,
-    height: HEADER_STYLES().headerRightIconHeight,
-    marginRight: HEADER_STYLES().headerRightIconRightPadding,
-    resizeMode: 'contain',
-  },
-  headerRightBtn: {
-    paddingVertical: getResponsiveHeight(6),
-  },
-
-  gridContainer: {
-    flexDirection: 'row',
-    marginBottom: getResponsiveHeight(16),
-  },
-  gridImageWrapper: {
-    width: (SCREEN_WIDTH - SIDE_PADDING * 2 - H_MARGIN * 2) / 3,
-    aspectRatio: 1,
-    marginRight: H_MARGIN,
-    borderRadius: 12,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  gridImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  thumbFallback: {
-    backgroundColor: '#E5E7EB',
-  },
-
-  playOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playTriangle: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 18,
-    borderTopWidth: 12,
-    borderBottomWidth: 12,
-    borderLeftColor: 'rgba(255,255,255,0.95)',
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    marginLeft: 4,
-  },
-
-  videoBadge: {
-    position: 'absolute',
-    bottom: 6,
-    right: 6,
-    backgroundColor: 'rgba(0,0,0,0.65)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  videoBadgeText: {
-    color: '#fff',
-    fontSize: getResponsiveFontSize(11),
-    fontFamily: 'Pretendard-Medium',
-  },
-
-  moreOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  moreOverlayText: {
-    color: '#fff',
-    fontSize: getResponsiveFontSize(18),
-    fontFamily: 'Pretendard-SemiBold',
-  },
-
-  input: {
-    height: getResponsiveHeight(200),
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 12,
-    padding: 12,
-  },
-
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.6)',
-  },
-});

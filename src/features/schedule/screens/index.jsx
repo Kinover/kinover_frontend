@@ -1,6 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/features/schedule/screens/ScheduleScreen.jsx
 import React, {useMemo, useState, useCallback, useRef} from 'react';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   StyleSheet,
   ScrollView,
@@ -67,6 +68,50 @@ const toLongArray = raw => {
 };
 
 export default function ScheduleScreen() {
+  const styles = useScaledStyleSheet(rf => ({
+
+  container: {flex: 1, backgroundColor: '#F9F9F9'},
+  mainContentWrap: {flex: 1},
+  mainContainer: {
+    flex: 1,
+    paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal,
+    paddingTop: getResponsiveHeight(5),
+  },
+  fabContainer: {
+    position: 'absolute',
+    bottom: getResponsiveHeight(110),
+    right: getResponsiveWidth(13),
+    width: getResponsiveIconSize(65),
+    height: getResponsiveIconSize(65),
+  },
+  fabShadow: {
+    width: '100%',
+    height: '100%',
+  },
+  fabMeasure: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  fab: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: BACKGROUND_COLORS.primaryBg,
+    borderRadius: 999,
+    justifyContent: 'center',
+  },
+  fabIcon: {
+    alignSelf: 'center',
+    width: '40%',
+    height: '40%',
+    resizeMode: 'contain',
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(249,249,249,0.6)',
+  },
+
+  }));
   const dispatch = useDispatch();
   const guideCalendarRef = useRef(null);
   const guideFabRef = useRef(null);
@@ -489,45 +534,3 @@ export default function ScheduleScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#F9F9F9'},
-  mainContentWrap: {flex: 1},
-  mainContainer: {
-    flex: 1,
-    paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal,
-    paddingTop: getResponsiveHeight(5),
-  },
-  fabContainer: {
-    position: 'absolute',
-    bottom: getResponsiveHeight(110),
-    right: getResponsiveWidth(13),
-    width: getResponsiveIconSize(65),
-    height: getResponsiveIconSize(65),
-  },
-  fabShadow: {
-    width: '100%',
-    height: '100%',
-  },
-  fabMeasure: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  fab: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: BACKGROUND_COLORS.primaryBg,
-    borderRadius: 999,
-    justifyContent: 'center',
-  },
-  fabIcon: {
-    alignSelf: 'center',
-    width: '40%',
-    height: '40%',
-    resizeMode: 'contain',
-  },
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(249,249,249,0.6)',
-  },
-});

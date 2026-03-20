@@ -2,14 +2,7 @@
 // src/features/chat/screens/KinoSelectScreen.jsx
 
 import React, {useEffect, useRef, useState, useCallback, useMemo} from 'react';
-import {
-  View,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-  Animated,
-  useWindowDimensions,
-} from 'react-native';
+import { View, TouchableOpacity, Image, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import AppText from 'components/AppText';
 import Carousel from 'react-native-reanimated-carousel';
 import {useDispatch} from 'react-redux';
@@ -19,6 +12,7 @@ import KinoConfirmModal from '../components/modals/kinoConfirmModal';
 import useHideTabBar from 'hooks/useHideTabBar';
 import {updateKinoPersonalityThunk} from '../store/chatRoomThunk';
 
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -28,7 +22,7 @@ import {
 import {BUTTON_STYLES} from 'styles/style';
 import SelectionFrameLayout from 'components/layouts/SelectionFrameLayout';
 
-// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+// 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
 
 const KINO_TYPE_TO_PERSONALITY = {
@@ -96,6 +90,157 @@ const SCREEN_BG = {
 };
 
 export default function KinoSelectScreen() {
+  const styles = useScaledStyleSheet(rf => ({
+
+  headerBadge: {
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(5),
+    borderRadius: 999,
+    marginBottom: getResponsiveHeight(10),
+    backgroundColor: 'rgba(17,24,39,0.07)',
+    borderWidth: 1,
+    borderColor: 'rgba(17,24,39,0.08)',
+  },
+  headerBadgeText: {
+    fontSize: rf(10),
+    letterSpacing: 1,
+    color: '#374151',
+    fontFamily: 'Pretendard-SemiBold',
+  },
+
+  textCard: {
+    width: '96%',
+    paddingVertical: getResponsiveHeight(18),
+    paddingHorizontal: getResponsiveWidth(20),
+    borderRadius: getResponsiveWidth(24),
+
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E7E9EE',
+
+    marginTop: getResponsiveHeight(6),
+    shadowOffset: {width: 0, height: 10},
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    elevation: 2,
+    zIndex: 10,
+  },
+  bubbleWrap: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: getResponsiveHeight(6),
+  },
+  textCardContent: {
+    minHeight: getResponsiveHeight(94),
+    justifyContent: 'center',
+  },
+
+  kinoGreeting: {
+    fontSize: rf(17),
+    fontFamily: 'Pretendard-SemiBold',
+    lineHeight: rf(23),
+    color: '#111827',
+  },
+  kinoText: {
+    fontSize: rf(14.5),
+    fontFamily: 'Pretendard-Regular',
+    lineHeight: rf(21),
+    color: '#1F2937',
+  },
+  paraGap: {
+    marginBottom: getResponsiveHeight(10),
+  },
+  kinoHighlight: {
+    fontFamily: 'Pretendard-Bold',
+  },
+
+  carouselArea: {
+    flex: 1,
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: getResponsiveHeight(106),
+    position: 'relative',
+  },
+
+  carouselHolder: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  characterCard: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  character: {
+    width: getResponsiveWidth(165),
+    height: getResponsiveWidth(165),
+  },
+
+  arrowButton: {
+    position: 'absolute',
+    top: '50%',
+    marginTop: -getResponsiveWidth(23),
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 50,
+  },
+  arrowGlass: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.95)',
+    shadowColor: '#E0D4C4',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  arrowIcon: {
+    width: getResponsiveIconSize(18),
+    height: getResponsiveIconSize(18),
+    resizeMode: 'contain',
+    tintColor: BUTTON_STYLES().saveBg,
+  },
+
+  kinoMetaWrap: {
+    marginTop: getResponsiveHeight(8),
+    alignItems: 'center',
+  },
+  kinoName: {
+    fontFamily: 'Pretendard-Bold',
+    fontSize: rf(18),
+    color: '#111827',
+  },
+  kinoTone: {
+    marginTop: getResponsiveHeight(4),
+    fontFamily: 'Pretendard-Regular',
+    fontSize: rf(12.5),
+    color: '#6B7280',
+  },
+  pagination: {
+    flexDirection: 'row',
+    gap: getResponsiveWidth(8),
+    marginTop: getResponsiveHeight(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dot: {
+    width: getResponsiveWidth(8),
+    height: getResponsiveWidth(8),
+    borderRadius: 99,
+    backgroundColor: 'rgba(107,114,128,0.28)',
+  },
+  dotActive: {
+    width: getResponsiveWidth(22),
+    backgroundColor: '#111827',
+  },
+
+  }));
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const route = useRoute();
@@ -172,15 +317,15 @@ export default function KinoSelectScreen() {
 
       return parts.map((part, i) =>
         part === '키노' || part === '키노예요' || part === '키노입니다' ? (
-          <Text
+          <AppText
             key={`h-${i}`}
             style={[styles.kinoText, styles.kinoHighlight, {color: cardColors.highlight}]}>
             {part}
-          </Text>
+          </AppText>
         ) : (
-          <Text key={`t-${i}`} style={styles.kinoText}>
+          <AppText key={`t-${i}`} style={styles.kinoText}>
             {part}
-          </Text>
+          </AppText>
         ),
       );
     },
@@ -231,9 +376,9 @@ export default function KinoSelectScreen() {
       onActionPress={() => setConfirmVisible(true)}
       headerExtra={
         <View style={styles.headerBadge}>
-          <Text style={styles.headerBadgeText}>
+          <AppText style={styles.headerBadgeText}>
             KINO PERSONA
-          </Text>
+          </AppText>
         </View>
       }
     >
@@ -326,12 +471,12 @@ export default function KinoSelectScreen() {
         </TouchableOpacity>
 
         <View style={styles.kinoMetaWrap}>
-          <Text style={styles.kinoName}>
+          <AppText style={styles.kinoName}>
             {KINOS[currentIndex]?.title}
-          </Text>
-          <Text style={styles.kinoTone}>
+          </AppText>
+          <AppText style={styles.kinoTone}>
             {KINOS[currentIndex]?.tone}
-          </Text>
+          </AppText>
         </View>
 
         <View style={styles.pagination}>
@@ -411,7 +556,7 @@ function FadingKinoText({index, descriptions, renderLine}) {
         const isLast = idx === paragraphs.length - 1;
         const isGreeting = idx === 0;
         return (
-          <Text
+          <AppText
             key={`p-${idx}`}
             lineBreakStrategyIOS="hangul-word"
             textBreakStrategy="highQuality"
@@ -420,159 +565,10 @@ function FadingKinoText({index, descriptions, renderLine}) {
               !isLast ? styles.paraGap : null,
             ]}>
             {renderLine(paragraph)}
-          </Text>
+          </AppText>
         );
       })}
     </Animated.View>
   );
 }
 
-const styles = StyleSheet.create({
-  headerBadge: {
-    paddingHorizontal: getResponsiveWidth(12),
-    paddingVertical: getResponsiveHeight(5),
-    borderRadius: 999,
-    marginBottom: getResponsiveHeight(10),
-    backgroundColor: 'rgba(17,24,39,0.07)',
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.08)',
-  },
-  headerBadgeText: {
-    fontSize: getResponsiveFontSize(10),
-    letterSpacing: 1,
-    color: '#374151',
-    fontFamily: 'Pretendard-SemiBold',
-  },
-
-  textCard: {
-    width: '96%',
-    paddingVertical: getResponsiveHeight(18),
-    paddingHorizontal: getResponsiveWidth(20),
-    borderRadius: getResponsiveWidth(24),
-
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E7E9EE',
-
-    marginTop: getResponsiveHeight(6),
-    shadowOffset: {width: 0, height: 10},
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 2,
-    zIndex: 10,
-  },
-  bubbleWrap: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: getResponsiveHeight(6),
-  },
-  textCardContent: {
-    minHeight: getResponsiveHeight(94),
-    justifyContent: 'center',
-  },
-
-  kinoGreeting: {
-    fontSize: getResponsiveFontSize(17),
-    fontFamily: 'Pretendard-SemiBold',
-    lineHeight: getResponsiveFontSize(23),
-    color: '#111827',
-  },
-  kinoText: {
-    fontSize: getResponsiveFontSize(14.5),
-    fontFamily: 'Pretendard-Regular',
-    lineHeight: getResponsiveFontSize(21),
-    color: '#1F2937',
-  },
-  paraGap: {
-    marginBottom: getResponsiveHeight(10),
-  },
-  kinoHighlight: {
-    fontFamily: 'Pretendard-Bold',
-  },
-
-  carouselArea: {
-    flex: 1,
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: getResponsiveHeight(106),
-    position: 'relative',
-  },
-
-  carouselHolder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  characterCard: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  character: {
-    width: getResponsiveWidth(165),
-    height: getResponsiveWidth(165),
-  },
-
-  arrowButton: {
-    position: 'absolute',
-    top: '50%',
-    marginTop: -getResponsiveWidth(23),
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 50,
-  },
-  arrowGlass: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.95)',
-    shadowColor: '#E0D4C4',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  arrowIcon: {
-    width: getResponsiveIconSize(18),
-    height: getResponsiveIconSize(18),
-    resizeMode: 'contain',
-    tintColor: BUTTON_STYLES().saveBg,
-  },
-
-  kinoMetaWrap: {
-    marginTop: getResponsiveHeight(8),
-    alignItems: 'center',
-  },
-  kinoName: {
-    fontFamily: 'Pretendard-Bold',
-    fontSize: getResponsiveFontSize(18),
-    color: '#111827',
-  },
-  kinoTone: {
-    marginTop: getResponsiveHeight(4),
-    fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(12.5),
-    color: '#6B7280',
-  },
-  pagination: {
-    flexDirection: 'row',
-    gap: getResponsiveWidth(8),
-    marginTop: getResponsiveHeight(12),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dot: {
-    width: getResponsiveWidth(8),
-    height: getResponsiveWidth(8),
-    borderRadius: 99,
-    backgroundColor: 'rgba(107,114,128,0.28)',
-  },
-  dotActive: {
-    width: getResponsiveWidth(22),
-    backgroundColor: '#111827',
-  },
-});

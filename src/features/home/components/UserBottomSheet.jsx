@@ -5,6 +5,7 @@
 // - 내부 탭: shift 리셋만 + 연타 방지
 // - 키보드 이벤트: 높이 추적 + shift 리셋만
 
+import AppText from 'components/AppText';
 import React, {
   useState,
   useEffect,
@@ -14,20 +15,7 @@ import React, {
   useMemo,
   useCallback,
 } from 'react';
-import {
-  Platform,
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  ActivityIndicator,
-  Image,
-  Keyboard,
-  Animated,
-  Dimensions,
-  SafeAreaView,
-} from 'react-native';
+import { Platform, View, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Image, Keyboard, Animated, Dimensions, SafeAreaView } from 'react-native';
 
 import {
   BottomSheetTextInput as GorhomBottomSheetTextInput,
@@ -39,6 +27,7 @@ const BottomSheetTextInput = GorhomBottomSheetTextInput ?? TextInput;
 const BottomSheetView = GorhomBottomSheetView ?? View;
 import {launchImageLibrary} from 'react-native-image-picker';
 import {useSelector} from 'react-redux';
+import {useReduxFontMode} from 'hooks/useReduxFontMode';
 
 import {
   getResponsiveFontSize,
@@ -229,7 +218,7 @@ function UserBottomSheetModalBase(
   const nameInputRef = useRef(null);
   const traitInputRef = useRef(null);
 
-  const fontMode = useSelector(state => state.ui.fontMode);
+  const fontMode = useReduxFontMode();
   const familyUserList = useSelector(
     state => state?.userFamily?.familyUserList ?? [],
   );
@@ -641,15 +630,15 @@ function UserBottomSheetModalBase(
                       />
                     </View>
                   </View>
-                  <Text allowFontScaling={false} style={styles.profileEditText}>
+                  <AppText allowFontScaling={false} style={styles.profileEditText}>
                     사진 변경
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
 
                 <View style={styles.fieldBlock}>
-                  <Text allowFontScaling={false} style={styles.label}>
+                  <AppText allowFontScaling={false} style={styles.label}>
                     별명
-                  </Text>
+                  </AppText>
                   <BottomSheetTextInput
                     allowFontScaling={false}
                     ref={nameInputRef}
@@ -672,9 +661,9 @@ function UserBottomSheetModalBase(
                 </View>
 
                 <View style={styles.fieldBlock}>
-                  <Text allowFontScaling={false} style={styles.label}>
+                  <AppText allowFontScaling={false} style={styles.label}>
                     한 줄 소개
-                  </Text>
+                  </AppText>
                   <BottomSheetTextInput
                     allowFontScaling={false}
                     ref={traitInputRef}
@@ -708,9 +697,9 @@ function UserBottomSheetModalBase(
                   <View style={styles.loadingOverlay} pointerEvents="none">
                     <View style={styles.loadingBox}>
                       <ActivityIndicator size="small" color="#4B5563" />
-                      <Text allowFontScaling={false} style={styles.loadingText}>
+                      <AppText allowFontScaling={false} style={styles.loadingText}>
                         저장 중...
-                      </Text>
+                      </AppText>
                     </View>
                   </View>
                 )}

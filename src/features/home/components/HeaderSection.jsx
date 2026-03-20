@@ -1,14 +1,9 @@
 // src/features/home/components/HeaderSection.jsx
 import React, {useMemo, useEffect, useRef, useCallback} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  useWindowDimensions,
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Image, useWindowDimensions } from 'react-native';
 
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveHeight,
   getResponsiveIconSize,
@@ -64,6 +59,111 @@ const OVERLAP_MIN = -getResponsiveIconSize(86);
 const OVERLAP_MAX = -getResponsiveIconSize(56);
 
 export default function HeaderSection({user, onUserPress, onInvitePress, guideRefs}) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  smileIcon: {
+    width: '58%',
+    height: '58%',
+    resizeMode: 'contain',
+  },
+
+  inviteIcon: {
+    width: '62%',
+    height: '62%',
+    resizeMode: 'contain',
+    tintColor: '#6B7280', // MemberGridSection 톤 참고
+  },
+
+ // 두 버튼 묶어서 우상단 정렬
+  topRightButtons: {
+    position: 'absolute',
+    right: getResponsiveWidth(14),
+    top: getResponsiveWidth(14),
+    flexDirection: 'row',
+    alignItems: 'center',
+    columnGap: getResponsiveWidth(8),
+  },
+
+  smileBtn: {
+    width: getResponsiveIconSize(30),
+    height: getResponsiveIconSize(30),
+    borderRadius: getResponsiveIconSize(10),
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#ECEFF3',
+  },
+
+ // 초대 버튼은 같은 톤으로(살짝만 키워도 됨)
+  inviteBtn: {
+    width: getResponsiveIconSize(30),
+    height: getResponsiveIconSize(30),
+    borderRadius: getResponsiveIconSize(10),
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#ECEFF3',
+  },
+
+  headerContainer: {
+    position: 'relative',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginTop: getResponsiveHeight(34),
+    marginBottom: getResponsiveHeight(16),
+  },
+  avatarArea: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 3,
+  },
+  avatarRing: {
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+  },
+  avatarPress: {
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shadowBox: {
+    width: '100%',
+    borderRadius: getResponsiveIconSize(16),
+    backgroundColor: 'transparent',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+  },
+  headerCard: {
+    width: '100%',
+    alignItems: 'center',
+    paddingTop: getResponsiveHeight(66),
+    paddingBottom: getResponsiveHeight(22),
+    paddingHorizontal: getResponsiveWidth(8),
+    backgroundColor: '#FFFFFF',
+    borderRadius: getResponsiveIconSize(16),
+  },
+
+  userNameHeader: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
+    color: COLORS.textPrimary,
+    letterSpacing: -0.2,
+    marginBottom: 3,
+  },
+  trait: {
+    fontFamily: DEFAULT_STYLE().sectionSubtitle.fontFamily,
+    fontSize: getResponsiveHeight(13),
+    marginTop: getResponsiveHeight(4),
+    color: DEFAULT_STYLE().sectionSubtitle.color,
+    textAlign: 'center',
+    lineHeight: DEFAULT_STYLE().sectionSubtitle.fontSize + 1,
+  },
+
+  }));
   const navigation = useNavigation();
   const {width: screenWidth} = useWindowDimensions();
 
@@ -321,7 +421,6 @@ export default function HeaderSection({user, onUserPress, onInvitePress, guideRe
     navigation.navigate('감정상태화면');
   }, [navigation]);
 
-
  /**
  * =========================================================
  * BottomSheet open (프로필 탭)
@@ -529,121 +628,18 @@ export default function HeaderSection({user, onUserPress, onInvitePress, guideRe
             </TouchableOpacity>
           </View>
 
-          <Text
+          <AppText
             allowFontScaling={false}
             style={styles.userNameHeader}
             numberOfLines={1}>
             {user?.name || '이름'}
-          </Text>
-          <Text allowFontScaling={false} style={styles.trait} numberOfLines={2}>
+          </AppText>
+          <AppText allowFontScaling={false} style={styles.trait} numberOfLines={2}>
             {user?.trait || '이 사람을 한마디로 표현한다면?'}
-          </Text>
+          </AppText>
         </View>
       </DropShadow>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  smileIcon: {
-    width: '58%',
-    height: '58%',
-    resizeMode: 'contain',
-  },
-
-  inviteIcon: {
-    width: '62%',
-    height: '62%',
-    resizeMode: 'contain',
-    tintColor: '#6B7280', // MemberGridSection 톤 참고
-  },
-
- // 두 버튼 묶어서 우상단 정렬
-  topRightButtons: {
-    position: 'absolute',
-    right: getResponsiveWidth(14),
-    top: getResponsiveWidth(14),
-    flexDirection: 'row',
-    alignItems: 'center',
-    columnGap: getResponsiveWidth(8),
-  },
-
-  smileBtn: {
-    width: getResponsiveIconSize(30),
-    height: getResponsiveIconSize(30),
-    borderRadius: getResponsiveIconSize(10),
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#ECEFF3',
-  },
-
- // 초대 버튼은 같은 톤으로(살짝만 키워도 됨)
-  inviteBtn: {
-    width: getResponsiveIconSize(30),
-    height: getResponsiveIconSize(30),
-    borderRadius: getResponsiveIconSize(10),
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#ECEFF3',
-  },
-
-  headerContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    alignSelf: 'center',
-    marginTop: getResponsiveHeight(34),
-    marginBottom: getResponsiveHeight(16),
-  },
-  avatarArea: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 3,
-  },
-  avatarRing: {
-    backgroundColor: '#FFFFFF',
-    overflow: 'hidden',
-  },
-  avatarPress: {
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  shadowBox: {
-    width: '100%',
-    borderRadius: getResponsiveIconSize(16),
-    backgroundColor: 'transparent',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 3},
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-  },
-  headerCard: {
-    width: '100%',
-    alignItems: 'center',
-    paddingTop: getResponsiveHeight(66),
-    paddingBottom: getResponsiveHeight(22),
-    paddingHorizontal: getResponsiveWidth(8),
-    backgroundColor: '#FFFFFF',
-    borderRadius: getResponsiveIconSize(16),
-  },
-
-  userNameHeader: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
-    color: COLORS.textPrimary,
-    letterSpacing: -0.2,
-    marginBottom: 3,
-  },
-  trait: {
-    fontFamily: DEFAULT_STYLE().sectionSubtitle.fontFamily,
-    fontSize: getResponsiveHeight(13),
-    marginTop: getResponsiveHeight(4),
-    color: DEFAULT_STYLE().sectionSubtitle.color,
-    textAlign: 'center',
-    lineHeight: DEFAULT_STYLE().sectionSubtitle.fontSize + 1,
-  },
-});

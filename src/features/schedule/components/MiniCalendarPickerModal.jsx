@@ -2,25 +2,20 @@
 // src/features/schedule/components/MiniCalendarPickerModal.jsx
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-  useWindowDimensions,
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Platform, useWindowDimensions } from 'react-native';
 
 import DateTimePicker, {DateTimePickerAndroid} from '@react-native-community/datetimepicker';
 
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
 
-import {useSelector} from 'react-redux';
 import {FONT_MODE} from 'store/uiSlice';
+import {useReduxFontMode} from 'hooks/useReduxFontMode';
 
 import CustomModal from 'components/modal/CustomModal';
 
@@ -71,7 +66,81 @@ export default function MiniCalendarPickerModal({
 
   closeOnPressOutside = true,
 }) {
-  const fontMode = useSelector(state => state.ui.fontMode);
+  const styles = useScaledStyleSheet(rf => ({
+
+  modalBoxStyle: {},
+  contentStyle: {marginTop: getResponsiveHeight(10)},
+  panel: {alignItems: 'center', justifyContent: 'center', width: '100%'},
+
+  pickerBox: {
+    width: '100%',
+    borderRadius: getResponsiveWidth(14),
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    overflow: 'hidden',
+  },
+
+  androidPickBtn: {
+    width: '100%',
+    borderRadius: getResponsiveWidth(14),
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+    backgroundColor: '#fff',
+    paddingVertical: getResponsiveHeight(14),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  androidPickText: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(13),
+    color: 'black',
+    textAlign: 'center',
+  },
+
+  resetBtn: {
+    marginTop: getResponsiveHeight(10),
+    paddingVertical: getResponsiveHeight(10),
+    paddingHorizontal: getResponsiveHeight(14),
+    borderRadius: 999,
+    backgroundColor: 'black',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resetText: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(12),
+    color: '#fff',
+    textAlign: 'center',
+  },
+
+  rangeHint: {
+    marginTop: getResponsiveHeight(12),
+    fontFamily: 'Pretendard-Medium',
+    fontSize: rf(11.5),
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginBottom:getResponsiveHeight(16),
+  },
+
+  resetBtnIOS: {
+    marginTop: getResponsiveHeight(10),
+    paddingVertical: getResponsiveHeight(10),
+    paddingHorizontal: getResponsiveHeight(14),
+    borderRadius: 999,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  resetTextIOS: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(12),
+    color: 'black',
+    textAlign: 'center',
+  },
+
+  }));
+  const fontMode = useReduxFontMode();
   const isLargeFont = fontMode === FONT_MODE.LARGE;
 
   const baseDate = useMemo(() => {
@@ -205,17 +274,17 @@ export default function MiniCalendarPickerModal({
               />
             </View>
 
-            <Text allowFontScaling={false} style={styles.rangeHint}>
+            <AppText allowFontScaling={false} style={styles.rangeHint}>
               선택 가능 범위: {minYear}년 1월 1일 ~ {maxYear}년 12월 31일
-            </Text>
+            </AppText>
 
             {/* <TouchableOpacity
               activeOpacity={0.9}
               onPress={resetToBase}
               style={styles.resetBtnIOS}>
-              <Text allowFontScaling={false} style={styles.resetTextIOS}>
+              <AppText allowFontScaling={false} style={styles.resetTextIOS}>
                 기본값으로 되돌리기
-              </Text>
+              </AppText>
             </TouchableOpacity> */}
           </>
         ) : (
@@ -224,23 +293,23 @@ export default function MiniCalendarPickerModal({
               activeOpacity={0.9}
               onPress={openAndroidPicker}
               style={styles.androidPickBtn}>
-              <Text allowFontScaling={false} style={styles.androidPickText}>
+              <AppText allowFontScaling={false} style={styles.androidPickText}>
                 날짜 고르기
-              </Text>
+              </AppText>
             </TouchableOpacity>
 
             {/* <TouchableOpacity
               activeOpacity={0.9}
               onPress={resetToBase}
               style={styles.resetBtn}>
-              <Text allowFontScaling={false} style={styles.resetText}>
+              <AppText allowFontScaling={false} style={styles.resetText}>
                 기본값으로 되돌리기
-              </Text>
+              </AppText>
             </TouchableOpacity> */}
 
-            <Text allowFontScaling={false} style={styles.rangeHint}>
+            <AppText allowFontScaling={false} style={styles.rangeHint}>
               선택 가능 범위: {minYear}년 1월 1일 ~ {maxYear}년 12월 31일
-            </Text>
+            </AppText>
           </>
         )}
       </View>
@@ -248,75 +317,3 @@ export default function MiniCalendarPickerModal({
   );
 }
 
-const styles = StyleSheet.create({
-  modalBoxStyle: {},
-  contentStyle: {marginTop: getResponsiveHeight(10)},
-  panel: {alignItems: 'center', justifyContent: 'center', width: '100%'},
-
-  pickerBox: {
-    width: '100%',
-    borderRadius: getResponsiveWidth(14),
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
-    overflow: 'hidden',
-  },
-
-  androidPickBtn: {
-    width: '100%',
-    borderRadius: getResponsiveWidth(14),
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
-    backgroundColor: '#fff',
-    paddingVertical: getResponsiveHeight(14),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  androidPickText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(13),
-    color: 'black',
-    textAlign: 'center',
-  },
-
-  resetBtn: {
-    marginTop: getResponsiveHeight(10),
-    paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveHeight(14),
-    borderRadius: 999,
-    backgroundColor: 'black',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resetText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(12),
-    color: '#fff',
-    textAlign: 'center',
-  },
-
-  rangeHint: {
-    marginTop: getResponsiveHeight(12),
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(11.5),
-    color: '#9CA3AF',
-    textAlign: 'center',
-    marginBottom:getResponsiveHeight(16),
-  },
-
-  resetBtnIOS: {
-    marginTop: getResponsiveHeight(10),
-    paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveHeight(14),
-    borderRadius: 999,
-    backgroundColor: 'rgba(0,0,0,0.06)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resetTextIOS: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(12),
-    color: 'black',
-    textAlign: 'center',
-  },
-});

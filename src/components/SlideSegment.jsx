@@ -2,8 +2,10 @@
 // src/components/common/SlideSegment.jsx
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet, Animated} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import {BOTTOMSHEET_STYLE} from 'styles/style';
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -44,6 +46,44 @@ export default function SlideSegment({
   springConfig,
   animateOnValueChange = true,
 }) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  segment: {
+    flexDirection: 'row',
+    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
+    borderRadius: 999,
+    overflow: 'hidden',
+    width: '100%',
+    position: 'relative',
+  },
+  thumb: {
+    position: 'absolute',
+    top: getResponsiveHeight(4),
+    bottom: getResponsiveHeight(4),
+    borderRadius: 999,
+    backgroundColor: '#111827',
+    borderWidth: 1,
+    borderColor: 'rgba(17, 24, 39, 0.06)',
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: getResponsiveHeight(10),
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  tabText: {
+    fontSize: rf(13),
+    color: '#6B7280',
+    fontFamily: 'Pretendard-Medium',
+  },
+  tabTextActive: {
+    color: '#FFFFFF',
+    fontFamily: 'Pretendard-SemiBold',
+  },
+
+  }));
   const [segmentW, setSegmentW] = useState(0);
   const thumbX = useRef(new Animated.Value(0)).current;
 
@@ -135,7 +175,7 @@ export default function SlideSegment({
             onPress={() => handlePress(it.key)}
             activeOpacity={0.85}
             style={[styles.tab, tabStyle]}>
-            <Text
+            <AppText
               allowFontScaling={false}
               style={[
                 styles.tabText,
@@ -144,7 +184,7 @@ export default function SlideSegment({
                 active && activeTextStyle,
               ]}>
               {it.label}
-            </Text>
+            </AppText>
           </TouchableOpacity>
         );
       })}
@@ -152,39 +192,3 @@ export default function SlideSegment({
   );
 }
 
-const styles = StyleSheet.create({
-  segment: {
-    flexDirection: 'row',
-    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
-    borderRadius: 999,
-    overflow: 'hidden',
-    width: '100%',
-    position: 'relative',
-  },
-  thumb: {
-    position: 'absolute',
-    top: getResponsiveHeight(4),
-    bottom: getResponsiveHeight(4),
-    borderRadius: 999,
-    backgroundColor: '#111827',
-    borderWidth: 1,
-    borderColor: 'rgba(17, 24, 39, 0.06)',
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: getResponsiveHeight(10),
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 2,
-  },
-  tabText: {
-    fontSize: getResponsiveFontSize(13),
-    color: '#6B7280',
-    fontFamily: 'Pretendard-Medium',
-  },
-  tabTextActive: {
-    color: '#FFFFFF',
-    fontFamily: 'Pretendard-SemiBold',
-  },
-});

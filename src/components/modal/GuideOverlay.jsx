@@ -1,17 +1,10 @@
 // src/components/modal/GuideOverlay.jsx
 // 실제 탭 화면 위에 딤 + 하이라이트(구멍) + 말풍선 + 하단바 (첨부 시안 구조)
 import React, {useEffect} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Pressable,
-  Dimensions,
-  Platform,
-  Image,
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Pressable, Dimensions, Platform, Image } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import Animated, {
   Easing,
   FadeIn,
@@ -55,6 +48,92 @@ export default function GuideOverlay({
   nextText = '다음',
   doneText = '확인',
 }) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  container: {...StyleSheet.absoluteFillObject},
+  dimWrap: {...StyleSheet.absoluteFillObject},
+  dim: {backgroundColor: OVERLAY_DIM},
+  dimRow: {flexDirection: 'row'},
+  highlightBox: {
+    position: 'absolute',
+    zIndex: 2,
+    borderWidth: 2,
+    borderColor: 'rgba(255,200,77,0.9)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  timelineGuideImageWrap: {
+    position: 'absolute',
+    zIndex: 1,
+    overflow: 'hidden',
+  },
+  timelineGuideImage: {
+    width: '100%',
+    height: '100%',
+  },
+  bubbleWrap: {maxWidth: SCREEN_WIDTH - getResponsiveWidth(48), zIndex: 2},
+  bubbleFallbackWrap: {
+    marginHorizontal: getResponsiveWidth(24),
+    alignSelf: 'center',
+    marginTop: getResponsiveHeight(108),
+  },
+  bottomBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 20,
+    elevation: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: BOTTOM_BAR_BG,
+    paddingHorizontal: getResponsiveWidth(20),
+    paddingTop: getResponsiveHeight(12),
+  },
+  skipButton: {
+    height: getResponsiveHeight(44),
+    paddingHorizontal: getResponsiveWidth(20),
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centerIndicatorWrap: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: getResponsiveHeight(12),
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  skipText: {
+    fontSize: rf(14),
+    fontFamily: 'Pretendard-Medium',
+    color: 'rgba(255,255,255,0.95)',
+    lineHeight: getResponsiveHeight(20),
+  },
+  stepIndicator: {
+    fontSize: rf(14),
+    fontFamily: 'Pretendard-Medium',
+    color: 'rgba(255,255,255,0.85)',
+  },
+  nextButton: {
+    height: getResponsiveHeight(44),
+    paddingHorizontal: getResponsiveWidth(24),
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,200,77,0.95)',
+    minWidth: getResponsiveWidth(88),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nextButtonText: {
+    fontSize: rf(14),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#111827',
+  },
+
+  }));
   const insets = useSafeAreaInsets();
   const isLast = stepIndex === total - 1;
   const title = step.title || '';
@@ -388,9 +467,9 @@ export default function GuideOverlay({
           hitSlop={{top: 12, bottom: 12, left: 12, right: 12}}
           style={styles.skipButton}
           activeOpacity={0.88}>
-          <Text allowFontScaling={false} style={styles.skipText}>
+          <AppText allowFontScaling={false} style={styles.skipText}>
             건너뛰기
-          </Text>
+          </AppText>
         </TouchableOpacity>
 
         <View
@@ -409,9 +488,9 @@ export default function GuideOverlay({
             },
           ]}>
           {total > 1 && (
-            <Text allowFontScaling={false} style={styles.stepIndicator}>
+            <AppText allowFontScaling={false} style={styles.stepIndicator}>
               {stepIndex + 1}/{total}
-            </Text>
+            </AppText>
           )}
         </View>
 
@@ -419,96 +498,12 @@ export default function GuideOverlay({
           style={styles.nextButton}
           onPress={onNext}
           activeOpacity={0.88}>
-          <Text allowFontScaling={false} style={styles.nextButtonText}>
+          <AppText allowFontScaling={false} style={styles.nextButtonText}>
             {isLast ? doneText : nextText}
-          </Text>
+          </AppText>
         </TouchableOpacity>
       </View>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {...StyleSheet.absoluteFillObject},
-  dimWrap: {...StyleSheet.absoluteFillObject},
-  dim: {backgroundColor: OVERLAY_DIM},
-  dimRow: {flexDirection: 'row'},
-  highlightBox: {
-    position: 'absolute',
-    zIndex: 2,
-    borderWidth: 2,
-    borderColor: 'rgba(255,200,77,0.9)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
-  timelineGuideImageWrap: {
-    position: 'absolute',
-    zIndex: 1,
-    overflow: 'hidden',
-  },
-  timelineGuideImage: {
-    width: '100%',
-    height: '100%',
-  },
-  bubbleWrap: {maxWidth: SCREEN_WIDTH - getResponsiveWidth(48), zIndex: 2},
-  bubbleFallbackWrap: {
-    marginHorizontal: getResponsiveWidth(24),
-    alignSelf: 'center',
-    marginTop: getResponsiveHeight(108),
-  },
-  bottomBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 20,
-    elevation: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: BOTTOM_BAR_BG,
-    paddingHorizontal: getResponsiveWidth(20),
-    paddingTop: getResponsiveHeight(12),
-  },
-  skipButton: {
-    height: getResponsiveHeight(44),
-    paddingHorizontal: getResponsiveWidth(20),
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  centerIndicatorWrap: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: getResponsiveHeight(12),
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  skipText: {
-    fontSize: getResponsiveFontSize(14),
-    fontFamily: 'Pretendard-Medium',
-    color: 'rgba(255,255,255,0.95)',
-    lineHeight: getResponsiveHeight(20),
-  },
-  stepIndicator: {
-    fontSize: getResponsiveFontSize(14),
-    fontFamily: 'Pretendard-Medium',
-    color: 'rgba(255,255,255,0.85)',
-  },
-  nextButton: {
-    height: getResponsiveHeight(44),
-    paddingHorizontal: getResponsiveWidth(24),
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,200,77,0.95)',
-    minWidth: getResponsiveWidth(88),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  nextButtonText: {
-    fontSize: getResponsiveFontSize(14),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#111827',
-  },
-});

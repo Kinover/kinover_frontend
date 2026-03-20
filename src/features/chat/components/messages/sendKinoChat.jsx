@@ -1,18 +1,12 @@
 // SendKinoChat.jsx
 import React, {useEffect, useRef, useState, useMemo} from 'react';
-import {
-  View,
-  StyleSheet,
-  TouchableOpacity,
-  Platform,
-  FlatList,
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Platform, FlatList } from 'react-native';
 import AppText from 'components/AppText';
 import FastImage from '@d11/react-native-fast-image';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
-  getResponsiveFontSize,
   getResponsiveIconSize,
 } from 'utils/responsive';
 import formatTime from '../../utils/formatTime';
@@ -28,7 +22,7 @@ import {getSpacingStyle} from '../../utils/getSpacingStyle';
 import {CHATROOM_STYLE} from 'styles/style';
 import KinoBubble from '../bubbles/KinoBubble';
 
-// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+// 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
 
 export default function SendKinoChat({
@@ -40,6 +34,57 @@ export default function SendKinoChat({
   isSameSender = false,
   kinoType = 'YELLOW_KINO',
 }) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  sendContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+  },
+  sendBubble: {
+    backgroundColor: '#FFECC3', // 기본값(동적으로 override 됨)
+    borderRadius: getResponsiveIconSize(20),
+    maxWidth: getResponsiveWidth(260),
+    flexShrink: 1,
+    alignSelf: 'flex-end',
+  },
+  textPadding: {
+    paddingVertical: getResponsiveHeight(10),
+    paddingHorizontal: getResponsiveWidth(14.5),
+  },
+  imagePadding: {
+    paddingVertical: getResponsiveHeight(4.5),
+    paddingHorizontal: getResponsiveWidth(4.5),
+  },
+  sendText: {
+    fontFamily: CHATROOM_STYLE().messageFontFamily,
+    fontSize: CHATROOM_STYLE().KinoMessageFontSize,
+    color: 'black', // 기본값(동적으로 override 됨)
+    flexWrap: 'wrap',
+    lineHeight: rf(18),
+  },
+  sendTime: {
+    fontSize: rf(10.5),
+    color: '#666',
+    marginRight: getResponsiveWidth(5),
+    marginBottom: getResponsiveHeight(2),
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+  imageGrid: {gap: getResponsiveWidth(4)},
+  imageItem: {
+    width: getResponsiveWidth(70),
+    height: getResponsiveWidth(70),
+    borderRadius: 4,
+    margin: 2,
+  },
+  singleImage: {
+    width: getResponsiveWidth(200),
+    aspectRatio: 1,
+    borderRadius: 10,
+    alignSelf: 'flex-end',
+  },
+
+  }));
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -102,7 +147,7 @@ export default function SendKinoChat({
 
   return (
     <View style={[styles.sendContainer, spacingStyle]}>
-      {showTime && <Text style={styles.sendTime}>{formatTime(chatTime)}</Text>}
+      {showTime && <AppText style={styles.sendTime}>{formatTime(chatTime)}</AppText>}
 
       {messageType === 'image' ? (
         imageUrls.length === 1 ? (
@@ -122,9 +167,9 @@ export default function SendKinoChat({
           alignment="right"
           paddingVariant="text"
           backgroundColor={bubbleColors.bubble}>
-          <Text style={[styles.sendText, {color: bubbleColors.text}]}>
+          <AppText style={[styles.sendText, {color: bubbleColors.text}]}>
             {message}
-          </Text>
+          </AppText>
         </KinoBubble>
       )}
 
@@ -139,52 +184,3 @@ export default function SendKinoChat({
 }
 
 /* ===== 스타일 ===== */
-const styles = StyleSheet.create({
-  sendContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'flex-end',
-  },
-  sendBubble: {
-    backgroundColor: '#FFECC3', // 기본값(동적으로 override 됨)
-    borderRadius: getResponsiveIconSize(20),
-    maxWidth: getResponsiveWidth(260),
-    flexShrink: 1,
-    alignSelf: 'flex-end',
-  },
-  textPadding: {
-    paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(14.5),
-  },
-  imagePadding: {
-    paddingVertical: getResponsiveHeight(4.5),
-    paddingHorizontal: getResponsiveWidth(4.5),
-  },
-  sendText: {
-    fontFamily: CHATROOM_STYLE().messageFontFamily,
-    fontSize: CHATROOM_STYLE().KinoMessageFontSize,
-    color: 'black', // 기본값(동적으로 override 됨)
-    flexWrap: 'wrap',
-    lineHeight: getResponsiveFontSize(18),
-  },
-  sendTime: {
-    fontSize: CHATROOM_STYLE().messageTimeFontSize,
-    color: '#666',
-    marginRight: getResponsiveWidth(5),
-    marginBottom: getResponsiveHeight(2),
-    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
-  },
-  imageGrid: {gap: getResponsiveWidth(4)},
-  imageItem: {
-    width: getResponsiveWidth(70),
-    height: getResponsiveWidth(70),
-    borderRadius: 4,
-    margin: 2,
-  },
-  singleImage: {
-    width: getResponsiveWidth(200),
-    aspectRatio: 1,
-    borderRadius: 10,
-    alignSelf: 'flex-end',
-  },
-});

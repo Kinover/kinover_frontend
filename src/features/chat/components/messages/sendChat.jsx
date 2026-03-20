@@ -1,21 +1,13 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
-import {
-  View,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Platform,
-  ActivityIndicator,
-  Image,
-} from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Platform, ActivityIndicator, Image } from 'react-native';
 import AppText from 'components/AppText';
 import FastImage from '@d11/react-native-fast-image';
 
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
-  getResponsiveFontSize,
   getResponsiveIconSize,
 } from 'utils/responsive';
 import formatTime from '../../utils/formatTime';
@@ -51,7 +43,153 @@ export default function SendChat({
  // 이 메시지를 안 읽은 사람 수
   unreadCount = 0,
 }) {
-  // <Text />는 접근성 정책 포함 AppText로 통일
+  const styles = useScaledStyleSheet(rf => ({
+
+  sendContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+  },
+
+  metaLine: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+    marginRight: getResponsiveWidth(5),
+    marginBottom: getResponsiveHeight(2),
+  },
+  unreadCountText: {
+    fontSize: rf(11),
+    color: '#FFC84D',
+    fontFamily: 'Pretendard-SemiBold',
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+
+  sendBubble: {
+    backgroundColor: '#FFECC3',
+    borderRadius: getResponsiveIconSize(20),
+    maxWidth: getResponsiveWidth(260),
+    flexShrink: 1,
+    alignSelf: 'flex-end',
+  },
+  textPadding: {
+    paddingVertical: getResponsiveHeight(10),
+    paddingHorizontal: getResponsiveWidth(14.5),
+  },
+  imagePadding: {
+    paddingVertical: getResponsiveHeight(4.5),
+    paddingHorizontal: getResponsiveWidth(4.5),
+  },
+  sendText: {
+    fontFamily: CHATROOM_STYLE().messageFontFamily,
+    fontSize: CHATROOM_STYLE().messageFontSize,
+    color: 'black',
+    lineHeight: rf(17),
+  },
+  mentionText: {
+    color: '#FFC84D',
+    fontFamily: 'Pretendard-SemiBold',
+  },
+
+  sendTime: {
+    fontSize: rf(10.5),
+    color: '#666',
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+
+  imageGrid: {gap: getResponsiveWidth(4)},
+  thumbWrap: {position: 'relative'},
+
+  imageItem: {
+    width: getResponsiveWidth(70),
+    height: getResponsiveWidth(70),
+    borderRadius: 4,
+    margin: 2,
+    backgroundColor: '#F3F4F6',
+  },
+  thumbFallback: {backgroundColor: '#E5E7EB'},
+
+  singleWrapper: {position: 'relative', alignSelf: 'flex-end'},
+  singleBase: {
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
+  },
+
+  moreOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 4,
+  },
+  moreOverlayText: {
+    color: '#fff',
+    fontSize: rf(16),
+    fontFamily: 'Pretendard-SemiBold',
+  },
+
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 6,
+    color: '#fff',
+    fontFamily: 'Pretendard-Medium',
+    fontSize: rf(12),
+  },
+  failText: {
+    color: '#fff',
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(13),
+  },
+
+  playOverlay: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 12,
+    borderTopWidth: 8,
+    borderBottomWidth: 8,
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    marginLeft: 3,
+  },
+
+  playOverlaySingle: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playTriangleBig: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 22,
+    borderTopWidth: 14,
+    borderBottomWidth: 14,
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    marginLeft: 5,
+  },
+
+  }));
+  // <AppText />는 접근성 정책 포함 AppText로 통일
   const Text = AppText;
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -226,14 +364,14 @@ export default function SendChat({
           {isUploading ? (
             <>
               <ActivityIndicator color="#fff" />
-              <Text style={styles.loadingText}>
+              <AppText style={styles.loadingText}>
                 전송 중…
-              </Text>
+              </AppText>
             </>
           ) : (
-            <Text style={styles.failText}>
+            <AppText style={styles.failText}>
               전송 실패
-            </Text>
+            </AppText>
           )}
         </View>
       );
@@ -311,9 +449,9 @@ export default function SendChat({
 
                 {isLastCell && (
                   <View style={styles.moreOverlay}>
-                    <Text style={styles.moreOverlayText}>
+                    <AppText style={styles.moreOverlayText}>
                       +{extraCount}
-                    </Text>
+                    </AppText>
                   </View>
                 )}
               </View>
@@ -394,14 +532,14 @@ export default function SendChat({
       {(showTime && !!chatTime) || unreadCount > 0 ? (
         <View style={styles.metaLine}>
           {unreadCount > 0 && (
-            <Text style={styles.unreadCountText}>
+            <AppText style={styles.unreadCountText}>
               {unreadCount}
-            </Text>
+            </AppText>
           )}
           {showTime && !!chatTime && (
-            <Text style={styles.sendTime}>
+            <AppText style={styles.sendTime}>
               {formatTime(chatTime)}
-            </Text>
+            </AppText>
           )}
         </View>
       ) : null}
@@ -434,147 +572,3 @@ export default function SendChat({
   );
 }
 
-const styles = StyleSheet.create({
-  sendContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'flex-end',
-  },
-
-  metaLine: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    justifyContent: 'flex-end',
-    marginRight: getResponsiveWidth(5),
-    marginBottom: getResponsiveHeight(2),
-  },
-  unreadCountText: {
-    fontSize: getResponsiveFontSize(11),
-    color: '#FFC84D',
-    fontFamily: 'Pretendard-SemiBold',
-    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
-  },
-
-  sendBubble: {
-    backgroundColor: '#FFECC3',
-    borderRadius: getResponsiveIconSize(20),
-    maxWidth: getResponsiveWidth(260),
-    flexShrink: 1,
-    alignSelf: 'flex-end',
-  },
-  textPadding: {
-    paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(14.5),
-  },
-  imagePadding: {
-    paddingVertical: getResponsiveHeight(4.5),
-    paddingHorizontal: getResponsiveWidth(4.5),
-  },
-  sendText: {
-    fontFamily: CHATROOM_STYLE().messageFontFamily,
-    fontSize: CHATROOM_STYLE().messageFontSize,
-    color: 'black',
-    lineHeight: getResponsiveFontSize(17),
-  },
-  mentionText: {
-    color: '#FFC84D',
-    fontFamily: 'Pretendard-SemiBold',
-  },
-
-  sendTime: {
-    fontSize: CHATROOM_STYLE().messageTimeFontSize,
-    color: '#666',
-    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
-  },
-
-  imageGrid: {gap: getResponsiveWidth(4)},
-  thumbWrap: {position: 'relative'},
-
-  imageItem: {
-    width: getResponsiveWidth(70),
-    height: getResponsiveWidth(70),
-    borderRadius: 4,
-    margin: 2,
-    backgroundColor: '#F3F4F6',
-  },
-  thumbFallback: {backgroundColor: '#E5E7EB'},
-
-  singleWrapper: {position: 'relative', alignSelf: 'flex-end'},
-  singleBase: {
-    borderRadius: 10,
-    backgroundColor: '#F3F4F6',
-  },
-
-  moreOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 4,
-  },
-  moreOverlayText: {
-    color: '#fff',
-    fontSize: getResponsiveFontSize(16),
-    fontFamily: 'Pretendard-SemiBold',
-  },
-
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 6,
-    color: '#fff',
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(12),
-  },
-  failText: {
-    color: '#fff',
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(13),
-  },
-
-  playOverlay: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playTriangle: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 12,
-    borderTopWidth: 8,
-    borderBottomWidth: 8,
-    borderLeftColor: 'rgba(255,255,255,0.95)',
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    marginLeft: 3,
-  },
-
-  playOverlaySingle: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playTriangleBig: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 22,
-    borderTopWidth: 14,
-    borderBottomWidth: 14,
-    borderLeftColor: 'rgba(255,255,255,0.95)',
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    marginLeft: 5,
-  },
-});

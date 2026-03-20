@@ -1,6 +1,6 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
-import { Text} from 'react-native';
+import AppText from 'components/AppText';
 import {useNavigation} from '@react-navigation/native';
 
 import MemoryScreen from 'features/memory/screens';
@@ -50,7 +50,7 @@ export default function MemoryStack() {
         ),
 
         headerTitle: () => (
-          <Text
+          <AppText
             allowFontScaling={false}
             style={{
               fontFamily: HEADER_STYLES().mainTitleFontFamily,
@@ -61,7 +61,7 @@ export default function MemoryStack() {
               textAlignVertical: 'center',
             }}>
             추억
-          </Text>
+          </AppText>
         ),
       }}>
       <Stack.Screen

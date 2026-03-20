@@ -1,5 +1,6 @@
 import React from 'react';
 import {StyleSheet, Platform } from 'react-native';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
@@ -7,24 +8,11 @@ import {
 } from 'utils/responsive';
 import CustomModal from 'components/modal/CustomModal';
 export default function LogoutModal({ visible, onClose, onConfirm }) {
-  return (
-    <CustomModal
-    showCloseButton
-      visible={visible}
-      onClose={onClose} // ❗ 취소 → 닫기
-      onConfirm={onConfirm} // ❗ 로그아웃 → 처리 실행
-      confirmText="로그아웃"
-      closeText="취소"
-      title="로그아웃 할까요?">
-    </CustomModal>
-  );
-}
+  const styles = useScaledStyleSheet(rf => ({
 
-
-const styles = StyleSheet.create({
   modalTitle: {
     color:'black',
-    fontSize: Platform.OS === 'android' ? getResponsiveFontSize(20) : getResponsiveFontSize(22),
+    fontSize: Platform.OS === 'android' ? rf(20) : rf(22),
     textAlign: 'center',
     fontFamily: 'Pretendard-SemiBold',
     marginBottom: getResponsiveHeight(6),
@@ -33,7 +21,7 @@ const styles = StyleSheet.create({
   },
   modalText: {
     fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(14),
+    fontSize: rf(14),
   },
   modalButtonRow: {
     flexDirection: 'row',
@@ -52,4 +40,19 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(11),
     borderRadius: getResponsiveWidth(8),
   },
-});
+
+  }));
+  return (
+    <CustomModal
+    showCloseButton
+      visible={visible}
+      onClose={onClose} // ❗ 취소 → 닫기
+      onConfirm={onConfirm} // ❗ 로그아웃 → 처리 실행
+      confirmText="로그아웃"
+      closeText="취소"
+      title="로그아웃 할까요?">
+    </CustomModal>
+  );
+}
+
+

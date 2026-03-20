@@ -1,4 +1,5 @@
 import React from 'react';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   FlatList,
   Image,
@@ -34,6 +35,50 @@ export default function ChatMediaGallery({
   isRefreshing,
   isLoadingMore,
 }) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  galleryContainer: {
+    maxHeight: getResponsiveHeight(300),
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    overflow: 'hidden',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(17,24,39,0.06)',
+  },
+  galleryFloatingArea: {
+    position: 'absolute',
+    top: getResponsiveHeight(8),
+    right: getResponsiveWidth(10),
+    zIndex: 50,
+    elevation: 10,
+  },
+  galleryFloatingButton: {
+    backgroundColor: 'rgba(17,24,39,0.72)',
+    padding: getResponsiveIconSize(20),
+    borderRadius: 999,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: getResponsiveIconSize(30),
+    height: getResponsiveIconSize(30),
+    borderColor: 'rgba(255,255,255,0.18)',
+  },
+  galleryContent: {
+    paddingTop: GAP,
+    paddingBottom: GAP,
+    paddingHorizontal: PADDING_H,
+  },
+  columnWrapper: {
+    columnGap: GAP,
+  },
+  footer: {
+    textAlign: 'center',
+    paddingVertical: getResponsiveHeight(4),
+    color: '#666',
+    fontSize: rf(13),
+  },
+
+  }));
   if (!Array.isArray(photos) || photos.length === 0) {
     // photos가 없는데 갤러리 UI를 띄우면 깜빡일 수 있어서
     if (!showGallery) return null;
@@ -99,47 +144,4 @@ export default function ChatMediaGallery({
     </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  galleryContainer: {
-    maxHeight: getResponsiveHeight(300),
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    overflow: 'hidden',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(17,24,39,0.06)',
-  },
-  galleryFloatingArea: {
-    position: 'absolute',
-    top: getResponsiveHeight(8),
-    right: getResponsiveWidth(10),
-    zIndex: 50,
-    elevation: 10,
-  },
-  galleryFloatingButton: {
-    backgroundColor: 'rgba(17,24,39,0.72)',
-    padding: getResponsiveIconSize(20),
-    borderRadius: 999,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: getResponsiveIconSize(30),
-    height: getResponsiveIconSize(30),
-    borderColor: 'rgba(255,255,255,0.18)',
-  },
-  galleryContent: {
-    paddingTop: GAP,
-    paddingBottom: GAP,
-    paddingHorizontal: PADDING_H,
-  },
-  columnWrapper: {
-    columnGap: GAP,
-  },
-  footer: {
-    textAlign: 'center',
-    paddingVertical: getResponsiveHeight(4),
-    color: '#666',
-    fontSize: getResponsiveFontSize(13),
-  },
-});
 

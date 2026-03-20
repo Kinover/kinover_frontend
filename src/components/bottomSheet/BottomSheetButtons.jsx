@@ -1,6 +1,7 @@
 import React from 'react';
-import {TouchableOpacity, View, Text, StyleSheet, Platform} from 'react-native';
+import { TouchableOpacity, View, StyleSheet, Platform } from 'react-native';
 import {BUTTON_STYLES} from 'styles/style';
+import AppText from 'components/AppText';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -67,7 +68,7 @@ export function BottomSheetButtons({
           onPress={handleCancelPress}
           disabled={saving}
           activeOpacity={0.85}>
-          <Text
+          <AppText
             allowFontScaling={false}
             style={[
               styles.buttonText,
@@ -75,7 +76,7 @@ export function BottomSheetButtons({
               cancelLabel === '삭제하기' && {color: '#EF4444'}, // 추가
             ]}>
             {cancelLabel}
-          </Text>
+          </AppText>
         </TouchableOpacity>
       )}
 
@@ -84,9 +85,9 @@ export function BottomSheetButtons({
         onPress={handleSavePress}
         disabled={saving}
         activeOpacity={0.85}>
-        <Text allowFontScaling={false} style={styles.buttonText}>
+        <AppText allowFontScaling={false} style={styles.buttonText}>
           {saving ? '저장 중...' : saveLabel}
-        </Text>
+        </AppText>
       </TouchableOpacity>
     </View>
   );

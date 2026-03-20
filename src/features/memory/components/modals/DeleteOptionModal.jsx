@@ -1,6 +1,7 @@
 import React from 'react';
 import {StyleSheet} from 'react-native';
 import CustomModal from 'components/modal/CustomModal';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -15,25 +16,8 @@ export default function ImageDeleteModal({
   title,
   subText,
 }) {
-  if (!visible) return null;
-  return (
-    <CustomModal
-      showCloseButton
-      visible={visible}
-      onClose={onClose}
-      onConfirm={onConfirm}
-      closeText="취소하기"
-      confirmText="삭제하기"
-      title={title}
-      subText={subText}
- // buttonBottomStyle={styles.buttonRow}
-    >
-      {children}
-    </CustomModal>
-  );
-}
+  const styles = useScaledStyleSheet(rf => ({
 
-const styles = StyleSheet.create({
   modalBox: {
     width: getResponsiveWidth(320),
     maxWidth: '90%',
@@ -59,14 +43,33 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   closeText: {
-    fontSize: getResponsiveFontSize(14),
+    fontSize: rf(14),
     fontFamily: 'Pretendard-Regular',
     textAlign: 'center',
   },
   confirmText: {
-    fontSize: getResponsiveFontSize(14),
+    fontSize: rf(14),
     fontFamily: 'Pretendard-Regular',
     textAlign: 'center',
     color: 'black',
   },
-});
+
+  }));
+  if (!visible) return null;
+  return (
+    <CustomModal
+      showCloseButton
+      visible={visible}
+      onClose={onClose}
+      onConfirm={onConfirm}
+      closeText="취소하기"
+      confirmText="삭제하기"
+      title={title}
+      subText={subText}
+ // buttonBottomStyle={styles.buttonRow}
+    >
+      {children}
+    </CustomModal>
+  );
+}
+

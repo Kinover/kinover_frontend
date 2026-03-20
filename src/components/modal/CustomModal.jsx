@@ -1,22 +1,11 @@
 // src/components/CustomModal.jsx
 import React, {useMemo, useEffect, useState, useCallback, useRef} from 'react';
-import {
-  View,
-  Text,
-  Modal,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-  Image,
-  Animated,
-  Easing,
-  Dimensions,
-  Pressable,
-} from 'react-native';
+import { View, Modal, TouchableOpacity, StyleSheet, Platform, Image, Animated, Easing, Dimensions, Pressable } from 'react-native';
 import DropShadow from 'react-native-drop-shadow';
-import {useSelector} from 'react-redux';
 import {FONT_MODE} from 'store/uiSlice';
+import {useReduxFontMode} from 'hooks/useReduxFontMode';
 
+import AppText from 'components/AppText';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -79,7 +68,7 @@ export default function CustomModal({
  /** true면 Modal 대신 View 오버레이 사용 (iOS/Android 닫은 뒤 탭 터치 막힘 방지) */
   useViewOverlayOnIOS = false,
 }) {
-  const fontMode = useSelector(state => state.ui.fontMode);
+  const fontMode = useReduxFontMode();
 
   const fontScale = useMemo(() => {
     if (fontMode === FONT_MODE.EXTRA_LARGE) return 1.12;
@@ -235,9 +224,9 @@ export default function CustomModal({
         : null;
 
     return (
-      <Text style={[styles.subText, extraStyle]} allowFontScaling={false}>
+      <AppText style={[styles.subText, extraStyle]} allowFontScaling={false}>
         {subText}
-      </Text>
+      </AppText>
     );
   };
 
@@ -283,9 +272,9 @@ export default function CustomModal({
               )}
 
               {!!title && (
-                <Text style={styles.title} allowFontScaling={false}>
+                <AppText style={styles.title} allowFontScaling={false}>
                   {title}
-                </Text>
+                </AppText>
               )}
 
               {renderSubText('title')}
@@ -304,11 +293,11 @@ export default function CustomModal({
                     onPress={handleLeftPress}
                     style={[styles.leftBtn, closeButtonStyle]}
                     activeOpacity={0.9}>
-                    <Text
+                    <AppText
                       style={[styles.leftText, closeTextStyle]}
                       allowFontScaling={false}>
                       {closeText}
-                    </Text>
+                    </AppText>
                   </TouchableOpacity>
                 )}
 
@@ -317,11 +306,11 @@ export default function CustomModal({
                     onPress={handleRightPress}
                     style={[styles.rightBtn, confirmButtonStyle]}
                     activeOpacity={0.9}>
-                    <Text
+                    <AppText
                       style={[styles.rightText, confirmTextStyle]}
                       allowFontScaling={false}>
                       {confirmText}
-                    </Text>
+                    </AppText>
                   </TouchableOpacity>
                 )}
               </View>
@@ -352,9 +341,9 @@ export default function CustomModal({
             )}
 
             {!!title && (
-              <Text style={styles.title} allowFontScaling={false}>
+              <AppText style={styles.title} allowFontScaling={false}>
                 {title}
-              </Text>
+              </AppText>
             )}
 
             {renderSubText('title')}
@@ -373,11 +362,11 @@ export default function CustomModal({
                   onPress={handleLeftPress}
                   style={[styles.leftBtn, closeButtonStyle]}
                   activeOpacity={0.9}>
-                  <Text
+                  <AppText
                     style={[styles.leftText, closeTextStyle]}
                     allowFontScaling={false}>
                     {closeText}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               )}
 
@@ -386,11 +375,11 @@ export default function CustomModal({
                   onPress={handleRightPress}
                   style={[styles.rightBtn, confirmButtonStyle]}
                   activeOpacity={0.9}>
-                  <Text
+                  <AppText
                     style={[styles.rightText, confirmTextStyle]}
                     allowFontScaling={false}>
                     {confirmText}
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               )}
             </View>

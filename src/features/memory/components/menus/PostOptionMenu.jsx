@@ -8,7 +8,7 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from 'react';
-import {View, TouchableOpacity, StyleSheet, Pressable} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
 import AppText from 'components/AppText';
 
 import Animated, {
@@ -24,7 +24,7 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 
-// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+// 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
 
 function PostOptionsMenu(
@@ -122,9 +122,9 @@ function PostOptionsMenu(
             (disableMenu || !canSaveCurrent) && {opacity: 0.5},
           ]}
         >
-          <Text style={styles.menuText}>
+          <AppText style={styles.menuText}>
             현재 미디어 저장{currentLabel ? ` (${currentLabel})` : ''}
-          </Text>
+          </AppText>
         </TouchableOpacity>
 
         <View style={styles.menuDivider} />
@@ -141,9 +141,9 @@ function PostOptionsMenu(
             (disableMenu || !canSaveAll) && {opacity: 0.5},
           ]}
         >
-          <Text style={styles.menuText}>
+          <AppText style={styles.menuText}>
             전체 미디어 저장 ({mediaCount || 0})
-          </Text>
+          </AppText>
         </TouchableOpacity>
 
         <View style={styles.menuDivider} />
@@ -157,9 +157,9 @@ function PostOptionsMenu(
           activeOpacity={0.85}
           style={[styles.menuItem, disableMenu && {opacity: 0.5}]}
         >
-          <Text style={styles.menuText}>
+          <AppText style={styles.menuText}>
             게시글 수정
-          </Text>
+          </AppText>
         </TouchableOpacity>
 
         <View style={styles.menuDivider} />
@@ -176,9 +176,9 @@ function PostOptionsMenu(
             (disableMenu || !canDeleteCurrent) && {opacity: 0.5},
           ]}
         >
-          <Text style={[styles.menuText, {color: '#FF5A5F'}]}>
+          <AppText style={[styles.menuText, {color: '#FF5A5F'}]}>
             현재 미디어 삭제
-          </Text>
+          </AppText>
         </TouchableOpacity>
 
         <View style={styles.menuDivider} />
@@ -192,9 +192,9 @@ function PostOptionsMenu(
           activeOpacity={0.85}
           style={[styles.menuItem, disableMenu && {opacity: 0.5}]}
         >
-          <Text style={[styles.menuText, {color: '#FF5A5F'}]}>
+          <AppText style={[styles.menuText, {color: '#FF5A5F'}]}>
             게시글 삭제
-          </Text>
+          </AppText>
         </TouchableOpacity>
       </Animated.View>
     </View>

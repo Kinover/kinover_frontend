@@ -1,6 +1,7 @@
 import React from 'react';
 import {StyleSheet, Platform} from 'react-native';
 import CustomModal from 'components/modal/CustomModal';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
@@ -8,31 +9,14 @@ import {
 } from 'utils/responsive';
 
 export default function LeaveChatRoomModal({visible, onClose, onConfirm}) {
-  return (
-    <CustomModal
-      showCloseButton
-      visible={visible}
-      onClose={onClose}
-      onConfirm={() => {
-        onClose(); // 먼저 모달 닫기
-        setTimeout(() => {
-          onConfirm(); // 그 다음 화면 이동
-        }, 100); // 100ms 정도만 주면 충분해
-      }}
-      confirmText="나가기"
-      closeText="취소하기"
-      title="채팅방을 나갈까요?"
-    />
-  );
-}
+  const styles = useScaledStyleSheet(rf => ({
 
-const styles = StyleSheet.create({
   modalTitle: {
     color: 'black',
     fontSize:
       Platform.OS === 'android'
-        ? getResponsiveFontSize(20)
-        : getResponsiveFontSize(22),
+        ? rf(20)
+        : rf(22),
     textAlign: 'center',
     fontFamily: 'Pretendard-Medium',
     fontWeight: Platform.OS === 'ios' ? undefined : '700',
@@ -41,7 +25,7 @@ const styles = StyleSheet.create({
   },
   modalText: {
     fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(14),
+    fontSize: rf(14),
   },
   modalButtonRow: {
     flexDirection: 'row',
@@ -60,4 +44,23 @@ const styles = StyleSheet.create({
     paddingVertical: getResponsiveHeight(10),
     borderRadius: getResponsiveWidth(8),
   },
-});
+
+  }));
+  return (
+    <CustomModal
+      showCloseButton
+      visible={visible}
+      onClose={onClose}
+      onConfirm={() => {
+        onClose(); // 먼저 모달 닫기
+        setTimeout(() => {
+          onConfirm(); // 그 다음 화면 이동
+        }, 100); // 100ms 정도만 주면 충분해
+      }}
+      confirmText="나가기"
+      closeText="취소하기"
+      title="채팅방을 나갈까요?"
+    />
+  );
+}
+

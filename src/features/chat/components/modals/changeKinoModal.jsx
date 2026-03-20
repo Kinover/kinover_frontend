@@ -1,6 +1,7 @@
 import React, {useCallback, useEffect, useRef} from 'react';
 import {StyleSheet, Platform} from 'react-native';
 import CustomModal from 'components/modal/CustomModal';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
@@ -8,6 +9,47 @@ import {
 } from 'utils/responsive';
 
 export default function ChangeKinoModal({visible, onClose, onConfirm}) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  modalTitle: {
+    color: 'black',
+    fontSize:
+      Platform.OS === 'android'
+        ? rf(20)
+        : rf(22),
+    textAlign: 'center',
+    fontFamily: 'Pretendard-SemiBold',
+  },
+  modalSubText: {
+    textAlign: 'center',
+    color: '#6E6E6E',
+    fontFamily: 'Pretendard-Regular',
+    fontSize:
+      Platform.OS === 'android'
+        ? rf(15)
+        : rf(16),
+    lineHeight: getResponsiveHeight(21), // 17은 너무 촘촘해서 답답해 보일 수 있어
+  },
+  modalButtonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: getResponsiveWidth(10),
+    marginTop: getResponsiveHeight(2),
+  },
+  confirmButton: {
+    flex: 1,
+    backgroundColor: 'black',
+    paddingVertical: getResponsiveHeight(12.5),
+    borderRadius: getResponsiveWidth(10),
+  },
+  closeButton: {
+    flex: 1,
+    backgroundColor: '#E0E0E0',
+    paddingVertical: getResponsiveHeight(12.5),
+    borderRadius: getResponsiveWidth(10),
+  },
+
+  }));
  // 중복 클릭/연속 호출 방지 + 언마운트 안전 처리
   const lockedRef = useRef(false);
   const timerRef = useRef(null);
@@ -65,42 +107,3 @@ export default function ChangeKinoModal({visible, onClose, onConfirm}) {
   );
 }
 
-const styles = StyleSheet.create({
-  modalTitle: {
-    color: 'black',
-    fontSize:
-      Platform.OS === 'android'
-        ? getResponsiveFontSize(20)
-        : getResponsiveFontSize(22),
-    textAlign: 'center',
-    fontFamily: 'Pretendard-SemiBold',
-  },
-  modalSubText: {
-    textAlign: 'center',
-    color: '#6E6E6E',
-    fontFamily: 'Pretendard-Regular',
-    fontSize:
-      Platform.OS === 'android'
-        ? getResponsiveFontSize(15)
-        : getResponsiveFontSize(16),
-    lineHeight: getResponsiveHeight(21), // 17은 너무 촘촘해서 답답해 보일 수 있어
-  },
-  modalButtonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: getResponsiveWidth(10),
-    marginTop: getResponsiveHeight(2),
-  },
-  confirmButton: {
-    flex: 1,
-    backgroundColor: 'black',
-    paddingVertical: getResponsiveHeight(12.5),
-    borderRadius: getResponsiveWidth(10),
-  },
-  closeButton: {
-    flex: 1,
-    backgroundColor: '#E0E0E0',
-    paddingVertical: getResponsiveHeight(12.5),
-    borderRadius: getResponsiveWidth(10),
-  },
-});

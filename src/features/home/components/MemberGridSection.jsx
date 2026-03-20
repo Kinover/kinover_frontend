@@ -8,16 +8,9 @@ import React, {
   useEffect,
   useRef,
 } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  useWindowDimensions,
-  Image,
-  ActivityIndicator,
-  ScrollView,
-} from 'react-native';
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
+import { View, TouchableOpacity, StyleSheet, useWindowDimensions, Image, ActivityIndicator, ScrollView } from 'react-native';
 
 import {
   getResponsiveFontSize,
@@ -77,6 +70,7 @@ const MemberGridItem = memo(function MemberGridItem({
   lastActiveMap,
   onUserPress,
   isRefreshing,
+  styles,
 }) {
   const safeMember = member ?? {};
   const rawId = safeMember.userId ?? safeMember.id ?? safeMember._id ?? index;
@@ -487,12 +481,12 @@ const MemberGridItem = memo(function MemberGridItem({
       </Animated.View>
 
       <View style={styles.infoCol}>
-        <Text
+        <AppText
           allowFontScaling={false}
           style={styles.userName}
           numberOfLines={1}>
           {safeMember.name ?? ''}
-        </Text>
+        </AppText>
 
         {!!statusText && (
           <View
@@ -500,7 +494,7 @@ const MemberGridItem = memo(function MemberGridItem({
               styles.statusPill,
               isOnline ? styles.statusPillOnline : styles.statusPillOffline,
             ]}>
-            <Text
+            <AppText
               allowFontScaling={false}
               style={[
                 styles.statusText,
@@ -508,7 +502,7 @@ const MemberGridItem = memo(function MemberGridItem({
               ]}
               numberOfLines={1}>
               {statusText}
-            </Text>
+            </AppText>
           </View>
         )}
       </View>
@@ -527,176 +521,8 @@ export default function MemberGridSection({
   isRefreshing: isRefreshingProp = null,
   guideInviteRef,
 }) {
-  const {width: screenWidth, height: screenHeight} = useWindowDimensions();
-  const insets = useSafeAreaInsets();
+  const styles = useScaledStyleSheet(rf => ({
 
-  const marginH = getResponsiveWidth(14);
-  const paddingH = getResponsiveWidth(8);
-
-  const gapX = getResponsiveWidth(8);
-  const gapY = getResponsiveHeight(14);
-
-  const containerWidth =
-    screenWidth - LAYOUT_STYLE().screenPaddingHorizontal * 2;
-  const innerContentWidth = screenWidth - marginH * 2 - paddingH * 2;
-  const itemWidth = (innerContentWidth - gapX * (chunkSize - 1)) / chunkSize;
-
-  const isEmptyState = !members || members.length === 0;
-
-  const onlineSet = useMemo(() => {
-    return new Set((onlineUserIds || []).map(v => String(v)));
-  }, [onlineUserIds]);
-
-  const [isRefreshingLocal, setIsRefreshingLocal] = useState(false);
-  const isRefreshing =
-    typeof isRefreshingProp === 'boolean' ? isRefreshingProp : isRefreshingLocal;
-
-  const handleRefresh = useCallback(async () => {
-    if (!onRefreshPress) return;
-    if (isRefreshing) return;
-
-    try {
-      setIsRefreshingLocal(true);
-      hapticLight();
-      await onRefreshPress?.();
-    } finally {
-      setIsRefreshingLocal(false);
-    }
-  }, [onRefreshPress, isRefreshing]);
-
-  const handleAddPress = useCallback(() => {
-    hapticLight();
-    onAddPress?.();
-  }, [onAddPress]);
-
- // 버튼 아래 여백 확보 (absolute 버튼)
-  const safeBottom = Math.max(insets.bottom, getResponsiveHeight(10));
-  const footerPaddingBottom = safeBottom + getResponsiveHeight(8);
-
-  const ADD_BUTTON_H = getResponsiveHeight(48);
-  const ADD_BUTTON_GAP = getResponsiveHeight(14);
-  const bottomSpace = footerPaddingBottom + ADD_BUTTON_H + ADD_BUTTON_GAP;
-
- // 6명 초과” 기준으로 내부 스크롤 ON
-  const enableInnerScroll = !isEmptyState && members.length > INTERNAL_SCROLL_THRESHOLD;
-
-  const gridMaxHRaw = screenHeight * 0.33; // 대충 카드 안에서 1/3 정도만 스크롤 영역
-  const gridMaxH = clamp(
-    gridMaxHRaw,
-    getResponsiveHeight(240),
-    getResponsiveHeight(360),
-  );
-
-  const GridContent = (
-    <View
-      style={[
-        styles.wrapRow,
-        {
-          width: innerContentWidth,
-          columnGap: gapX,
-          rowGap: gapY,
-        },
-      ]}>
-      {members.map((m, i) => (
-        <MemberGridItem
-          key={String(m?.userId ?? m?.id ?? m?._id ?? i)}
-          member={m}
-          index={i}
-          itemWidth={itemWidth}
-          onlineSet={onlineSet}
-          lastActiveMap={lastActiveMap}
-          onUserPress={onUserPress}
-          isRefreshing={isRefreshing}
-        />
-      ))}
-    </View>
-  );
-
-  return (
-    <DropShadow
-      style={[
-        styles.shadowWrap,
-        {
-          width: containerWidth,
-          shadowColor: '#000',
-          shadowOffset: {width: 0, height: 3},
-          shadowOpacity: 0.08,
-          shadowRadius: 3,
-        },
-      ]}>
-      <View
-        style={[
-          styles.bodyContainer,
-          {
-            width: '100%',
-            paddingHorizontal: paddingH,
-            minHeight: screenHeight - getResponsiveHeight(490),
-            paddingBottom: bottomSpace,
-          },
-        ]}>
-        <View style={styles.gridArea}>
-          {isEmptyState ? (
-            <View style={styles.emptyStateContainer}>
-              <Text allowFontScaling={false} style={styles.emptyDesc}>
-                {'아직 가족 모임이 완성되지 않았어요.\n가족을 초대해서 모임을 완성해보세요!'}
-              </Text>
-            </View>
-          ) : enableInnerScroll ? (
- // 여기: 6명 초과면 “이 영역만” 스크롤
-            <View style={[styles.innerScrollWrap, {maxHeight: gridMaxH}]}>
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                nestedScrollEnabled
-                contentContainerStyle={styles.innerScrollContent}
-                scrollEventThrottle={16}
- // iOS에서 스크롤 위/아래 바운스 느낌(싫으면 false)
-                bounces={true}>
-                {GridContent}
-              </ScrollView>
-            </View>
-          ) : (
-            GridContent
-          )}
-
-          {isRefreshing && (
-            <View style={styles.loadingOverlay} pointerEvents="auto">
-              <View style={styles.loadingCard}>
-                <ActivityIndicator size="small" color="#111827" />
-                <Text allowFontScaling={false} style={styles.loadingText}>
-                  로딩중…
-                </Text>
-              </View>
-            </View>
-          )}
-        </View>
-
-        {/* 하단 버튼: 카드 바닥 고정 */}
-        <View
-          style={[
-            styles.footerFixed,
-            {
-              left: paddingH * 2,
-              right: paddingH * 2,
-              bottom: paddingH * 2,
-            },
-          ]}>
-          <TouchableOpacity
-            ref={guideInviteRef}
-            activeOpacity={0.9}
-            onPress={handleAddPress}
-            disabled={isRefreshing}
-            style={[styles.addButton, isRefreshing && {opacity: 0.5}]}>
-            <Text allowFontScaling={false} style={styles.addButtonText}>
-              가족 추가하기
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </DropShadow>
-  );
-}
-
-const styles = StyleSheet.create({
   shadowWrap: {
     position: 'relative',
     alignItems: 'center',
@@ -793,7 +619,7 @@ const styles = StyleSheet.create({
     gap: getResponsiveHeight(5),
   },
   userName: {
-    fontSize: getResponsiveFontSize(14),
+    fontSize: rf(14),
     fontFamily: 'Pretendard-SemiBold',
     color: '#111827',
     letterSpacing: -0.2,
@@ -816,7 +642,7 @@ const styles = StyleSheet.create({
   },
 
   statusText: {
-    fontSize: getResponsiveFontSize(11),
+    fontSize: rf(11),
     fontFamily: 'Pretendard-Medium',
   },
   statusOnline: {color: '#16A34A'},
@@ -841,7 +667,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(17,24,39,0.08)',
   },
   loadingText: {
-    fontSize: getResponsiveFontSize(12.5),
+    fontSize: rf(12.5),
     fontFamily: 'Pretendard-SemiBold',
     color: '#111827',
     letterSpacing: -0.1,
@@ -876,9 +702,180 @@ const styles = StyleSheet.create({
   },
 
   addButtonText: {
-    fontSize: getResponsiveFontSize(13.5),
+    fontSize: rf(13.5),
     fontFamily: 'Pretendard-SemiBold',
     color: '#FFFFFF',
     letterSpacing: -0.2,
   },
-});
+
+  }));
+  const {width: screenWidth, height: screenHeight} = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+
+  const marginH = getResponsiveWidth(14);
+  const paddingH = getResponsiveWidth(8);
+
+  const gapX = getResponsiveWidth(8);
+  const gapY = getResponsiveHeight(14);
+
+  const containerWidth =
+    screenWidth - LAYOUT_STYLE().screenPaddingHorizontal * 2;
+  const innerContentWidth = screenWidth - marginH * 2 - paddingH * 2;
+  const itemWidth = (innerContentWidth - gapX * (chunkSize - 1)) / chunkSize;
+
+  const isEmptyState = !members || members.length === 0;
+
+  const onlineSet = useMemo(() => {
+    return new Set((onlineUserIds || []).map(v => String(v)));
+  }, [onlineUserIds]);
+
+  const [isRefreshingLocal, setIsRefreshingLocal] = useState(false);
+  const isRefreshing =
+    typeof isRefreshingProp === 'boolean' ? isRefreshingProp : isRefreshingLocal;
+
+  const handleRefresh = useCallback(async () => {
+    if (!onRefreshPress) return;
+    if (isRefreshing) return;
+
+    try {
+      setIsRefreshingLocal(true);
+      hapticLight();
+      await onRefreshPress?.();
+    } finally {
+      setIsRefreshingLocal(false);
+    }
+  }, [onRefreshPress, isRefreshing]);
+
+  const handleAddPress = useCallback(() => {
+    hapticLight();
+    onAddPress?.();
+  }, [onAddPress]);
+
+ // 버튼 아래 여백 확보 (absolute 버튼)
+  const safeBottom = Math.max(insets.bottom, getResponsiveHeight(10));
+  const footerPaddingBottom = safeBottom + getResponsiveHeight(8);
+
+  const ADD_BUTTON_H = getResponsiveHeight(48);
+  const ADD_BUTTON_GAP = getResponsiveHeight(14);
+  const bottomSpace = footerPaddingBottom + ADD_BUTTON_H + ADD_BUTTON_GAP;
+
+ // 6명 초과” 기준으로 내부 스크롤 ON
+  const enableInnerScroll = !isEmptyState && members.length > INTERNAL_SCROLL_THRESHOLD;
+
+  const gridMaxHRaw = screenHeight * 0.33; // 대충 카드 안에서 1/3 정도만 스크롤 영역
+  const gridMaxH = clamp(
+    gridMaxHRaw,
+    getResponsiveHeight(240),
+    getResponsiveHeight(360),
+  );
+
+  const GridContent = (
+    <View
+      style={[
+        styles.wrapRow,
+        {
+          width: innerContentWidth,
+          columnGap: gapX,
+          rowGap: gapY,
+        },
+      ]}>
+      {members.map((m, i) => (
+        <MemberGridItem
+          key={String(m?.userId ?? m?.id ?? m?._id ?? i)}
+          member={m}
+          index={i}
+          itemWidth={itemWidth}
+          onlineSet={onlineSet}
+          lastActiveMap={lastActiveMap}
+          onUserPress={onUserPress}
+          isRefreshing={isRefreshing}
+          styles={styles}
+        />
+      ))}
+    </View>
+  );
+
+  return (
+    <DropShadow
+      style={[
+        styles.shadowWrap,
+        {
+          width: containerWidth,
+          shadowColor: '#000',
+          shadowOffset: {width: 0, height: 3},
+          shadowOpacity: 0.08,
+          shadowRadius: 3,
+        },
+      ]}>
+      <View
+        style={[
+          styles.bodyContainer,
+          {
+            width: '100%',
+            paddingHorizontal: paddingH,
+            minHeight: screenHeight - getResponsiveHeight(490),
+            paddingBottom: bottomSpace,
+          },
+        ]}>
+        <View style={styles.gridArea}>
+          {isEmptyState ? (
+            <View style={styles.emptyStateContainer}>
+              <AppText allowFontScaling={false} style={styles.emptyDesc}>
+                {'아직 가족 모임이 완성되지 않았어요.\n가족을 초대해서 모임을 완성해보세요!'}
+              </AppText>
+            </View>
+          ) : enableInnerScroll ? (
+ // 여기: 6명 초과면 “이 영역만” 스크롤
+            <View style={[styles.innerScrollWrap, {maxHeight: gridMaxH}]}>
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                nestedScrollEnabled
+                contentContainerStyle={styles.innerScrollContent}
+                scrollEventThrottle={16}
+ // iOS에서 스크롤 위/아래 바운스 느낌(싫으면 false)
+                bounces={true}>
+                {GridContent}
+              </ScrollView>
+            </View>
+          ) : (
+            GridContent
+          )}
+
+          {isRefreshing && (
+            <View style={styles.loadingOverlay} pointerEvents="auto">
+              <View style={styles.loadingCard}>
+                <ActivityIndicator size="small" color="#111827" />
+                <AppText allowFontScaling={false} style={styles.loadingText}>
+                  로딩중…
+                </AppText>
+              </View>
+            </View>
+          )}
+        </View>
+
+        {/* 하단 버튼: 카드 바닥 고정 */}
+        <View
+          style={[
+            styles.footerFixed,
+            {
+              left: paddingH * 2,
+              right: paddingH * 2,
+              bottom: paddingH * 2,
+            },
+          ]}>
+          <TouchableOpacity
+            ref={guideInviteRef}
+            activeOpacity={0.9}
+            onPress={handleAddPress}
+            disabled={isRefreshing}
+            style={[styles.addButton, isRefreshing && {opacity: 0.5}]}>
+            <AppText allowFontScaling={false} style={styles.addButtonText}>
+              가족 추가하기
+            </AppText>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </DropShadow>
+  );
+}
+

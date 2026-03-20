@@ -1,7 +1,7 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import ScheduleScreen from 'features/schedule/screens';
-import {Text} from 'react-native';
+import AppText from 'components/AppText';
 import {getResponsiveHeight} from 'utils/responsive';
 import {
   RenderHeaderHome,
@@ -27,7 +27,7 @@ export default function ScheduleStack() {
         headerTitleAlign: 'left',
         headerLeft: () => null,
         headerTitle: () => (
-          <Text
+          <AppText
             allowFontScaling={false}
             style={{
               fontFamily: HEADER_STYLES().mainTitleFontFamily,
@@ -38,7 +38,7 @@ export default function ScheduleStack() {
               textAlignVertical: 'center',
             }}>
             일정
-          </Text>
+          </AppText>
         ),
  // headerTitleContainerStyle: {
  // paddingLeft: getResponsiveWidth(6),

@@ -2,14 +2,13 @@
 // src/features/onboarding/components/OnboardingHeroMotion.jsx
 
 import React, {memo, useEffect, useMemo, useRef} from 'react';
-import {View, Text, StyleSheet, Image, Animated} from 'react-native';
+import {View, StyleSheet, Image, Animated, Text} from 'react-native';
 
 import Svg, {Defs, RadialGradient, Stop, Ellipse} from 'react-native-svg';
-
 import {
   getResponsiveHeight,
   getResponsiveWidth,
-  getResponsiveFontSize,
+  getResponsiveFontSizeIgnoreAppMode,
 } from 'utils/responsive';
 
 const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
@@ -396,14 +395,14 @@ const s = StyleSheet.create({
   },
   weekText: {
     fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(9.5),
+    fontSize: getResponsiveFontSizeIgnoreAppMode(9.5),
     color: '#333',
     textAlign: 'center',
   },
   grid: {flexDirection: 'row', flexWrap: 'wrap'},
   dayText: {
     fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(9.5),
+    fontSize: getResponsiveFontSizeIgnoreAppMode(9.5),
     color: '#111',
     textAlign: 'center',
   },
@@ -417,7 +416,7 @@ const s = StyleSheet.create({
   },
   dotText: {
     fontFamily: 'Pretendard-Bold',
-    fontSize: getResponsiveFontSize(9),
+    fontSize: getResponsiveFontSizeIgnoreAppMode(9),
     color: '#111',
   },
   dotGhost: {

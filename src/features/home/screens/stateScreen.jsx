@@ -2,6 +2,7 @@
 /* eslint-disable react/no-unstable-nested-components */
 
 import React, {useRef, useMemo, useState, useEffect} from 'react';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   View,
   TouchableWithoutFeedback,
@@ -204,6 +205,47 @@ const EmotionItem = ({
  * @returns {JSX.Element} 감정 선택 화면
  */
 export default function StateScreen() {
+  const styles = useScaledStyleSheet(rf => ({
+
+  gridWrap: {
+    flex: 1,
+    paddingHorizontal: EDGE_GUTTER,
+    justifyContent: 'flex-start',
+  },
+
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: ROW_GAP,
+  },
+
+  ring: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    borderWidth: 1,
+    opacity: 0,
+    borderRadius: RADIUS,
+  },
+
+  emotionImage: {
+    width: getResponsiveWidth(60),
+    height: getResponsiveWidth(60),
+    marginBottom: getResponsiveHeight(8),
+  },
+
+  emotionText: {
+    fontSize: rf(13.5),
+    fontFamily: 'Pretendard-Regular',
+    color: '#333',
+  },
+
+  emotionTextSelected: {
+    fontFamily: 'Pretendard-Bold',
+    color: '#000',
+  },
+
+  }));
   const navigation = useNavigation();
   const dispatch = useDispatch();
   const user = useSelector(state => state.user);
@@ -286,42 +328,3 @@ export default function StateScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  gridWrap: {
-    flex: 1,
-    paddingHorizontal: EDGE_GUTTER,
-    justifyContent: 'flex-start',
-  },
-
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: ROW_GAP,
-  },
-
-  ring: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    borderWidth: 1,
-    opacity: 0,
-    borderRadius: RADIUS,
-  },
-
-  emotionImage: {
-    width: getResponsiveWidth(60),
-    height: getResponsiveWidth(60),
-    marginBottom: getResponsiveHeight(8),
-  },
-
-  emotionText: {
-    fontSize: getResponsiveFontSize(13.5),
-    fontFamily: 'Pretendard-Regular',
-    color: '#333',
-  },
-
-  emotionTextSelected: {
-    fontFamily: 'Pretendard-Bold',
-    color: '#000',
-  },
-});

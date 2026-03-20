@@ -9,6 +9,7 @@ import AnimatedAlbumTabSelector from '../components/filters/AlbumTabSelector';
 import CategoryBottomSheetModal from '../components/bottomSheets/CategoryBottomSheet';
 import PeriodFilterModal from '../components/modals/PeriodFilterModal';
 
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -31,6 +32,47 @@ import {BACKGROUND_COLORS} from 'styles/style';
 import MemoryGuideModal from '../components/guides/MemoryGuideModal';
 
 export default function MemoryScreen() {
+  const styles = useScaledStyleSheet(rf => ({
+
+  container: {
+    flex: 1,
+    backgroundColor: BACKGROUND_COLORS.secondaryBg,
+    width: '100%',
+  },
+  guideContentWrap: { flex: 1 },
+  rangeBar: {
+    paddingHorizontal: getResponsiveWidth(24),
+    paddingBottom: getResponsiveHeight(4),
+  },
+  rangeText: {fontSize: rf(12), color: '#777'},
+
+  fabWrap: {
+    position: 'absolute',
+    zIndex: 99,
+    width: getResponsiveIconSize(65),
+    height: getResponsiveIconSize(65),
+  },
+  fabShadow: {
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 3},
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+  },
+  fab: {
+    width: getResponsiveIconSize(65),
+    height: getResponsiveIconSize(65),
+    backgroundColor: BACKGROUND_COLORS.primaryBg,
+    borderRadius: 999,
+    justifyContent: 'center',
+  },
+  fabIcon: {
+    alignSelf: 'center',
+    width: '45%',
+    height: '45%',
+    resizeMode: 'contain',
+  },
+
+  }));
   const dispatch = useDispatch();
   const guideRootRef = useRef(null);
   const guideFilterBarRef = useRef(null);
@@ -373,42 +415,3 @@ export default function MemoryScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BACKGROUND_COLORS.secondaryBg,
-    width: '100%',
-  },
-  guideContentWrap: { flex: 1 },
-  rangeBar: {
-    paddingHorizontal: getResponsiveWidth(24),
-    paddingBottom: getResponsiveHeight(4),
-  },
-  rangeText: {fontSize: getResponsiveFontSize(12), color: '#777'},
-
-  fabWrap: {
-    position: 'absolute',
-    zIndex: 99,
-    width: getResponsiveIconSize(65),
-    height: getResponsiveIconSize(65),
-  },
-  fabShadow: {
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 3},
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-  },
-  fab: {
-    width: getResponsiveIconSize(65),
-    height: getResponsiveIconSize(65),
-    backgroundColor: BACKGROUND_COLORS.primaryBg,
-    borderRadius: 999,
-    justifyContent: 'center',
-  },
-  fabIcon: {
-    alignSelf: 'center',
-    width: '45%',
-    height: '45%',
-    resizeMode: 'contain',
-  },
-});

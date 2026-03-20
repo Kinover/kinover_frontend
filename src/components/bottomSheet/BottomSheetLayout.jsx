@@ -2,18 +2,10 @@
 /* eslint-disable react-native/no-inline-styles */
 
 import React, {useMemo, useCallback, useEffect, useRef, useState} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Animated,
-  Platform,
-  Dimensions,
-  Keyboard,
-  TouchableWithoutFeedback,
-  InteractionManager,
-} from 'react-native';
+import { View, StyleSheet, Animated, Platform, Dimensions, Keyboard, TouchableWithoutFeedback, InteractionManager } from 'react-native';
 
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   BottomSheetModal,
   BottomSheetBackdrop,
@@ -79,6 +71,43 @@ export default function BottomSheetLayout({
   disableContentBottomPadding = false,
   onHeaderLayout,
 }) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  container: {
+    paddingTop: getResponsiveHeight(12),
+    paddingHorizontal: getResponsiveWidth(16),
+  },
+
+  header: {
+    paddingBottom: getResponsiveHeight(6),
+  },
+  title: {
+    fontFamily: BOTTOMSHEET_STYLE()?.title?.fontFamily || 'Pretendard-SemiBold',
+    fontSize: BOTTOMSHEET_STYLE()?.title?.fontSize || rf(16),
+    color: BOTTOMSHEET_STYLE()?.title?.color || '#111827',
+    letterSpacing: -0.2,
+  },
+  subtitle: {
+    marginTop: getResponsiveHeight(3),
+    fontFamily:
+      BOTTOMSHEET_STYLE()?.subtitle?.fontFamily || 'Pretendard-Medium',
+    fontSize:
+      BOTTOMSHEET_STYLE()?.subtitle?.fontSize || rf(12.5),
+    color: BOTTOMSHEET_STYLE()?.subtitle?.color || '#6B7280',
+    lineHeight: rf(18),
+  },
+
+  scrollWrap: {},
+  scrollContent: {
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+
+  animatedContent: {
+    minHeight: Platform.OS === 'android' ? 1 : undefined,
+  },
+
+  }));
   const insets = useSafeAreaInsets();
   const WINDOW_H = Dimensions.get('window').height;
 
@@ -405,14 +434,14 @@ export default function BottomSheetLayout({
               onHeaderLayout?.(h);
             }}>
             {!!title && (
-              <Text allowFontScaling={false} style={styles.title}>
+              <AppText allowFontScaling={false} style={styles.title}>
                 {title}
-              </Text>
+              </AppText>
             )}
             {!!subtitle && (
-              <Text allowFontScaling={false} style={styles.subtitle}>
+              <AppText allowFontScaling={false} style={styles.subtitle}>
                 {subtitle}
-              </Text>
+              </AppText>
             )}
           </View>
         )}
@@ -458,38 +487,3 @@ export default function BottomSheetLayout({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    paddingTop: getResponsiveHeight(12),
-    paddingHorizontal: getResponsiveWidth(16),
-  },
-
-  header: {
-    paddingBottom: getResponsiveHeight(6),
-  },
-  title: {
-    fontFamily: BOTTOMSHEET_STYLE()?.title?.fontFamily || 'Pretendard-SemiBold',
-    fontSize: BOTTOMSHEET_STYLE()?.title?.fontSize || getResponsiveFontSize(16),
-    color: BOTTOMSHEET_STYLE()?.title?.color || '#111827',
-    letterSpacing: -0.2,
-  },
-  subtitle: {
-    marginTop: getResponsiveHeight(3),
-    fontFamily:
-      BOTTOMSHEET_STYLE()?.subtitle?.fontFamily || 'Pretendard-Medium',
-    fontSize:
-      BOTTOMSHEET_STYLE()?.subtitle?.fontSize || getResponsiveFontSize(12.5),
-    color: BOTTOMSHEET_STYLE()?.subtitle?.color || '#6B7280',
-    lineHeight: getResponsiveFontSize(18),
-  },
-
-  scrollWrap: {},
-  scrollContent: {
-    paddingTop: 0,
-    paddingBottom: 0,
-  },
-
-  animatedContent: {
-    minHeight: Platform.OS === 'android' ? 1 : undefined,
-  },
-});

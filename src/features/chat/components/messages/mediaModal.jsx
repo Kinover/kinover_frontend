@@ -2,18 +2,7 @@
 
 /* eslint-disable react-native/no-inline-styles */
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
-import {
-  Modal,
-  StyleSheet,
-  TouchableOpacity,
-  Dimensions,
-  View,
-  FlatList,
-  Platform,
-  PermissionsAndroid,
-  ActivityIndicator,
-  Image,
-} from 'react-native';
+import { Modal, StyleSheet, TouchableOpacity, Dimensions, View, FlatList, Platform, PermissionsAndroid, ActivityIndicator, Image } from 'react-native';
 import AppText from 'components/AppText';
 import Video from 'react-native-video';
 import FastImage from '@d11/react-native-fast-image';
@@ -36,12 +25,12 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 
-import {useSelector} from 'react-redux';
+import {useReduxFontMode} from 'hooks/useReduxFontMode';
 import {FONT_MODE} from 'store/uiSlice';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
-// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+// 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
 
 /* ================= utils ================= */
@@ -160,7 +149,7 @@ export default function MediaModal({
   initialIndex = 0,
   onClose,
 }) {
-  const fontMode = useSelector(state => state.ui.fontMode);
+  const fontMode = useReduxFontMode();
 
  // multiplier
   const fontMul = useMemo(() => {
@@ -389,16 +378,16 @@ export default function MediaModal({
 
       <View style={styles.topBar}>
         <TouchableOpacity onPress={handleClose} style={styles.circleIconBtn}>
-          <Text style={styles.xText}>
+          <AppText style={styles.xText}>
             ✕
-          </Text>
+          </AppText>
         </TouchableOpacity>
 
         <View style={styles.indexPill}>
-          <Text style={styles.indexText}>
+          <AppText style={styles.indexText}>
             {resolvedItems.length ? currentIndex + 1 : 0} /{' '}
             {resolvedItems.length}
-          </Text>
+          </AppText>
         </View>
 
         <TouchableOpacity
@@ -457,9 +446,9 @@ export default function MediaModal({
               styles.menuItem,
               (saving || !resolvedItems[currentIndex]?.url) && {opacity: 0.5},
             ]}>
-            <Text style={styles.menuText}>
+            <AppText style={styles.menuText}>
               {singleLabel}
-            </Text>
+            </AppText>
           </TouchableOpacity>
 
           <View style={styles.menuDivider} />
@@ -475,9 +464,9 @@ export default function MediaModal({
               styles.menuItem,
               (saving || !resolvedItems.length) && {opacity: 0.5},
             ]}>
-            <Text style={styles.menuText}>
+            <AppText style={styles.menuText}>
               전체저장
-            </Text>
+            </AppText>
           </TouchableOpacity>
         </Animated.View>
       </Animated.View>
@@ -486,12 +475,12 @@ export default function MediaModal({
         <View style={styles.progressOverlay}>
           <View style={styles.progressBox}>
             <ActivityIndicator size="large" color="#fff" />
-            <Text style={styles.progressText}>
+            <AppText style={styles.progressText}>
               {progress.current} / {progress.total}
-            </Text>
-            <Text style={styles.progressSub}>
+            </AppText>
+            <AppText style={styles.progressSub}>
               화면을 나가면 저장이 취소돼요
-            </Text>
+            </AppText>
           </View>
         </View>
       )}
