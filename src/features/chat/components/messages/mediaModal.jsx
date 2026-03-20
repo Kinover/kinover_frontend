@@ -406,7 +406,7 @@ export default function MediaModal({
           disabled={isMenuDisabled}
           style={[styles.circleIconBtn, isMenuDisabled && {opacity: 0.5}]}>
           <Image
-            source={require('../../../assets/images/dots_white.png')}
+            source={require('assets/images/dots_white.png')}
             style={styles.dotsIcon}
  // resizeMode={FastImage.resizeMode.contain}
           />

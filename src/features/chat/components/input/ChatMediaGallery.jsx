@@ -60,7 +60,7 @@ export default function ChatMediaGallery({
                 style={styles.galleryFloatingButton}
                 disabled={isPlusDisabled}>
                 <Image
-                  source={require('../../../assets/icons/tabs/2/camera.png')}
+                  source={require('assets/icons/tabs/2/camera.png')}
                   width={20}
                   height={20}
                   style={{
