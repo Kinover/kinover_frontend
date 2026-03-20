@@ -1,6 +1,3 @@
-/* eslint-disable react-native/no-inline-styles */
-/* eslint-disable react/no-unstable-nested-components */
-
 // src/features/post/screens/PostPage.jsx
 import React, {useEffect, useMemo, useRef, useCallback, useState} from 'react';
 import {View, TouchableOpacity, Image, StyleSheet, ScrollView, Pressable} from 'react-native';
@@ -42,6 +39,24 @@ import usePostCommentSheet from '../hooks/usePostCommentSheet';
 
 // 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
+
+const DESC_PRESSABLE_HIT_SLOP = {top: 16, bottom: 16, left: 16, right: 16};
+
+/** Gorhom backdrop은 안정적인 컴포넌트 타입이 필요해 ref로 최신 collapse 콜백을 연결 */
+const postDescBackdropCollapseRef = {current: null};
+
+function PostDescSheetBackdrop(props) {
+  return (
+    <BottomSheetBackdrop
+      {...props}
+      appearsOnIndex={1}
+      disappearsOnIndex={0}
+      opacity={0.25}
+      pressBehavior="none"
+      onPress={() => postDescBackdropCollapseRef.current?.()}
+    />
+  );
+}
 
 export default function PostPage({route}) {
   const dispatch = useDispatch();
@@ -328,6 +343,8 @@ export default function PostPage({route}) {
   const canSaveAll = Boolean(mediaCount);
   const canDeleteCurrent = Boolean(!vm.isImageFullScreen && currentMediaUri);
 
+  postDescBackdropCollapseRef.current = collapseDesc;
+
   return (
     <SafeAreaView edges={[]} style={styles.container}>
       <ImageDeleteModal
@@ -356,7 +373,7 @@ export default function PostPage({route}) {
         onDeletePost={openDeletePostConfirm}
       />
 
-      <View style={{flex: 1}}>
+      <View style={styles.carouselWrap}>
         <ImageCarousel
           localImages={vm.localImages}
           currentIndex={vm.currentImageIndex}
@@ -391,22 +408,13 @@ export default function PostPage({route}) {
           snapPoints={descSnapPoints}
           enableContentPanningGesture={false}
           enableHandlePanningGesture={false}
-          handleIndicatorStyle={{backgroundColor: 'transparent'}}
-          backgroundStyle={{backgroundColor: 'transparent'}}
+          handleIndicatorStyle={styles.sheetHandleHidden}
+          backgroundStyle={styles.sheetTransparentBg}
           onChange={onDescSheetChange}
-          backdropComponent={props => (
-            <BottomSheetBackdrop
-              {...props}
-              appearsOnIndex={1}
-              disappearsOnIndex={0}
-              opacity={0.25}
-              pressBehavior="none"
-              onPress={collapseDesc}
-            />
-          )}>
+          backdropComponent={PostDescSheetBackdrop}>
           <Pressable
             onPress={toggleDescByClick}
-            hitSlop={{top: 16, bottom: 16, left: 16, right: 16}}
+            hitSlop={DESC_PRESSABLE_HIT_SLOP}
             style={styles.descTapArea}>
             <LinearGradient
               colors={[
@@ -432,7 +440,7 @@ export default function PostPage({route}) {
                   {safeMemory.authorName}
                 </Text>
 
-                <View style={{flex: 1}} />
+                <View style={styles.descHeaderSpacer} />
 
                 <TouchableOpacity
                   onPress={openCommentSheet}
@@ -440,7 +448,7 @@ export default function PostPage({route}) {
                   style={styles.commentBtn}>
                   <Image
                     source={require('../../../assets/icons/chat.png')}
-                    style={{tintColor: 'white', width: '100%', height: '100%'}}
+                    style={styles.commentIcon}
                   />
                 </TouchableOpacity>
               </View>
@@ -485,6 +493,10 @@ export default function PostPage({route}) {
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: '#000'},
   loadingContainer: {flex: 1, backgroundColor: '#000'},
+  carouselWrap: {flex: 1},
+
+  sheetHandleHidden: {backgroundColor: 'transparent'},
+  sheetTransparentBg: {backgroundColor: 'transparent'},
 
   headerGradient: {
     position: 'absolute',
@@ -508,6 +520,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: getResponsiveHeight(10),
   },
+  descHeaderSpacer: {flex: 1},
   avatar: {
     width: getResponsiveWidth(28),
     height: getResponsiveWidth(28),
@@ -522,6 +535,11 @@ const styles = StyleSheet.create({
   commentBtn: {
     width: getResponsiveIconSize(22),
     height: getResponsiveIconSize(22),
+  },
+  commentIcon: {
+    tintColor: 'white',
+    width: '100%',
+    height: '100%',
   },
   descContent: {
     color: 'rgba(255,255,255,0.92)',

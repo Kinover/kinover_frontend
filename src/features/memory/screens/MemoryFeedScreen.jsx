@@ -1,18 +1,10 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/screens/memory/MemoryFeed.jsx
 
-import React, {
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-  useEffect,
-  memo,
-} from 'react';
+import React, {useCallback, useMemo, useRef, useState, useEffect} from 'react';
 import {
   View,
   Text,
-  TouchableOpacity,
   StyleSheet,
   FlatList,
   LayoutAnimation,
@@ -22,21 +14,14 @@ import {
   Dimensions,
   Animated,
 } from 'react-native';
-import FastImage from '@d11/react-native-fast-image';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
-import DropShadow from 'react-native-drop-shadow';
 
 import {fetchMemoryThunk} from '../store/memoryThunk';
 import {fetchCategoryThunk} from '../store/categoryThunk';
 
-import {
-  getResponsiveFontSize,
-  getResponsiveHeight,
-  getResponsiveIconSize,
-  getResponsiveWidth,
-} from 'utils/responsive';
+import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
 
 import SkeletonPhotoGridItem from '../components/skeletons/SkeletonPhotoGridItem';
 import SkeletonMemoryItem from '../components/skeletons/SkeletonMemoryItem';
@@ -44,18 +29,18 @@ import SkeletonMemoryItem from '../components/skeletons/SkeletonMemoryItem';
 import {filterPostsByDateRange} from '../utils/postDateFilter';
 import {
   BACKGROUND_COLORS,
-  COLORS,
   EMPTY_STYLE,
   LAYOUT_STYLE,
 } from 'styles/style';
 
-import formatDuration from 'utils/formatDuration';
 import {getVideoThumbnail} from 'utils/videoThumbnail';
 import {toCdnUrl} from 'utils/mediaUrl';
 
 import {setMemorySelectedTab} from '../store/memorySlice';
 import PostFilterBar from '../components/filters/PostFilterBar';
 import MagazineBanner from '../components/sections/MagazineBanner';
+import MemoryFeedListItem from '../components/items/MemoryFeedListItem';
+import AlbumMediaTile from '../components/items/AlbumMediaTile';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -65,35 +50,6 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
 const ITEM_MARGIN = getResponsiveWidth(2);
 
 const BG = BACKGROUND_COLORS.secondaryBg;
-
-// FastImage 공통 정책
-const FASTIMAGE_DEFAULTS = {
-  priority: FastImage.priority.normal,
-  cache: FastImage.cacheControl.immutable,
-};
-
-const hashStringToHue = (text = '') => {
-  const normalized = String(text).trim();
-  if (!normalized) return 210;
-
-  let hash = 0;
-  for (const char of normalized) {
-    hash = char.charCodeAt(0) + ((hash << 5) - hash);
-    hash |= 0;
-  }
-  return Math.abs(hash % 360);
-};
-
-// 카테고리 칩: 카테고리별 색상 배경 + 반투명 (이미지 위에서 색이 보이면서 비침)
-const getDynamicTagStyle = text => {
-  const h = hashStringToHue(text);
-  return {
-    bg: `hsla(${h}, 42%, 90%, 0.62)`,
-    border: `hsla(${h}, 38%, 82%, 0.88)`,
-    dot: `hsla(${h}, 56%, 42%, 0.95)`,
-    text: `hsla(${h}, 44%, 24%, 1)`,
-  };
-};
 
 /* =========================
  * Android Layout Animation
@@ -105,38 +61,25 @@ if (
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
-/* =========================
- * Small Components
- * ========================= */
-const Chip = memo(function Chip({text}) {
-  if (!text) return null;
-
-  const dynamicStyle = useMemo(() => getDynamicTagStyle(text), [text]);
-
-  return (
-    <View
-      style={[
-        styles.chip,
-        {
-          backgroundColor: dynamicStyle.bg,
-          borderColor: dynamicStyle.border,
-        },
-      ]}>
-      <View style={[styles.chipDot, {backgroundColor: dynamicStyle.dot}]} />
-      <Text
-        style={[styles.chipText, {color: dynamicStyle.text}]}
-        numberOfLines={1}>
-        {text}
-      </Text>
-    </View>
-  );
-});
-
 // id/categoryId 혼용 대비 유틸
 const getCatId = cat => {
   const v = cat?.categoryId ?? cat?.id ?? null;
   return v != null ? String(v) : null;
 };
+
+/** 앨범 FlatList: 정렬이 바뀌어도 셀 정체성이 유지되도록 postId + 슬롯 인덱스 기준 */
+function albumMediaItemKey(item) {
+  const pid = item?.postId;
+  const slot = item?.indexInPost;
+  if (pid != null && slot != null) {
+    return `${String(pid)}-${slot}`;
+  }
+  return item?.uri ? String(item.uri) : 'album-unknown';
+}
+
+function feedPostKey(item, index) {
+  return item.postId?.toString() || `no-id-${index}`;
+}
 
 /* =========================
  * Main
@@ -534,195 +477,145 @@ export default function MemoryFeed({
     feedPreviewVideoUris.forEach(uri => ensureVideoThumbByUri(uri));
   }, [isAllPhotos, feedPreviewVideoUris, ensureVideoThumbByUri, refreshing]);
 
-  /* =========================
-   * Render: Feed Card
-   * ========================= */
-  const renderListItem = useCallback(
-    (memory, index) => {
-      const {mediaCount} = getMediaStats(memory);
+  const onPressPost = useCallback(
+    postId => {
+      if (postId == null) return;
+      navigation.navigate('게시글화면', {postId});
+    },
+    [navigation],
+  );
 
+  const openAlbumPost = useCallback(
+    (postId, imageIndex) => {
+      if (postId == null) return;
+      navigation.navigate('게시글화면', {postId, imageIndex});
+    },
+    [navigation],
+  );
+
+  /* =========================
+   * Render: Feed / Album rows (memoized children)
+   * ========================= */
+  const renderFeedItem = useCallback(
+    ({item: memory, index}) => {
+      const {mediaCount} = getMediaStats(memory);
       const rawFirstUri = memory?.imageUrls?.[0] || null;
       const firstUri = rawFirstUri ? normalizeMediaUrl(rawFirstUri) : null;
-
       const firstIsVideo = firstUri ? inferIsVideo(memory, 0, firstUri) : false;
       const firstThumb =
         firstIsVideo && firstUri ? videoThumbMap[firstUri] : null;
 
-      const categoryLabel = getCategoryLabel(memory.categoryId);
-      const dateLabel = formatDate(memory.createdAt);
-      const bodyText = String(memory?.content || '').trim();
-
-      const mediaLabel = `댓글 ${
-        memory?.commentCount ?? 0
-      }  미디어 ${mediaCount}`;
-
-      const mediaSource =
-        firstIsVideo && firstThumb
-          ? {uri: firstThumb, ...FASTIMAGE_DEFAULTS}
-          : !firstIsVideo && firstUri
-          ? {uri: firstUri, ...FASTIMAGE_DEFAULTS}
-          : null;
-
       const scaleKey =
         memory?.postId != null ? `post-${memory.postId}` : `idx-${index}`;
 
-      const scale = refreshing ? null : getCardScale(scaleKey);
-
-      const CardInner = (
-        <DropShadow style={styles.cardShadowWrap}>
-          <View
-            ref={index === 0 ? firstPostRef : undefined}
-            collapsable={index === 0 ? false : undefined}
-            style={styles.cardOuter}>
-            <TouchableOpacity
-            activeOpacity={1}
-            onPressIn={() => pressInCard(scaleKey)}
-            onPressOut={() => pressOutCard(scaleKey)}
-            onPress={() =>
-              navigation.navigate('게시글화면', {postId: memory?.postId})
-            }
-            style={styles.cardPress}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.dateText}>
-                {dateLabel}
-              </Text>
-              <Text style={styles.metaCompactText}>
-                {mediaLabel}
-              </Text>
-            </View>
-
-            <View style={styles.mediaWrap}>
-              {mediaSource ? (
-                <FastImage
-                  fallback={true}
-                  style={styles.mediaImg}
-                  source={mediaSource}
-                  resizeMode={FastImage.resizeMode.cover}
-                />
-              ) : (
-                <View style={styles.mediaPlaceholder} />
-              )}
-
-              {firstIsVideo && (
-                <View pointerEvents="none" style={styles.playCenter}>
-                  <View style={styles.playCircle}>
-                    <View style={styles.playTriangle} />
-                  </View>
-                </View>
-              )}
-
-              <Chip text={categoryLabel} />
-
-            </View>
-
-            <View style={styles.contentArea}>
-              {bodyText ? (
-                <Text style={styles.contentText} numberOfLines={3} ellipsizeMode="tail">
-                  {bodyText}
-                </Text>
-              ) : null}
-            </View>
-          </TouchableOpacity>
-          </View>
-        </DropShadow>
-      );
-
-      if (refreshing || !scale) return CardInner;
-
       return (
-        <Animated.View
-          key={memory.postId ?? `shadow-${index}`}
-          style={{transform: [{scale}]}}>
-          {CardInner}
-        </Animated.View>
+        <MemoryFeedListItem
+          postId={memory?.postId}
+          index={index}
+          scaleKey={scaleKey}
+          refreshing={refreshing}
+          scale={refreshing ? null : getCardScale(scaleKey)}
+          dateLabel={formatDate(memory.createdAt)}
+          mediaLabel={`댓글 ${memory?.commentCount ?? 0}  미디어 ${mediaCount}`}
+          bodyText={String(memory?.content || '').trim()}
+          categoryLabel={getCategoryLabel(memory.categoryId)}
+          firstUri={firstUri}
+          firstIsVideo={firstIsVideo}
+          firstThumbUri={firstThumb}
+          onPressPost={onPressPost}
+          onPressInCard={pressInCard}
+          onPressOutCard={pressOutCard}
+          firstPostRef={firstPostRef}
+        />
       );
     },
     [
-      ensureVideoThumbByUri,
       formatDate,
       getCardScale,
       getCategoryLabel,
       getMediaStats,
       inferIsVideo,
-      navigation,
       normalizeMediaUrl,
       pressInCard,
       pressOutCard,
       refreshing,
       videoThumbMap,
+      onPressPost,
+      firstPostRef,
     ],
   );
 
-  /* =========================
-   * Render: Album Tile
-   * ========================= */
   const renderMediaItem = useCallback(
-    ({item, index}) => {
-      const uri = item?.uri;
-      const isVideo = !!item?.isVideo;
-      const thumbUri = isVideo && uri ? videoThumbMap[uri] : null;
-
-      const goPost = () => {
-        navigation.navigate('게시글화면', {
-          postId: item.postId,
-          imageIndex: item.indexInPost,
-        });
-      };
-
-      const source =
-        isVideo && thumbUri
-          ? {uri: thumbUri, ...FASTIMAGE_DEFAULTS}
-          : !isVideo && uri
-          ? {uri, ...FASTIMAGE_DEFAULTS}
-          : null;
-
-      return (
-        <TouchableOpacity
-          activeOpacity={0.85}
-          key={`${uri || 'no-uri'}_${index}`}
-          onPress={goPost}
-          style={{
-            width: tileWidth,
-            aspectRatio: 1,
-            marginBottom: ITEM_MARGIN,
-          }}>
-          {source ? (
-            <FastImage
-              fallback={true}
-              source={source}
-              style={styles.galleryImage}
-              resizeMode={FastImage.resizeMode.cover}
-            />
-          ) : (
-            <View style={styles.galleryPlaceholder} />
-          )}
-
-          {isVideo && (
-            <>
-              <View pointerEvents="none" style={styles.albumPlayOverlay}>
-                <View style={styles.albumPlayCircle}>
-                  <View style={styles.albumPlayTriangle} />
-                </View>
-              </View>
-
-              {!!item?.duration && (
-                <View pointerEvents="none" style={styles.videoBadge}>
-                  <Text style={styles.videoBadgeText}>
-                    {formatDuration(item.duration)}
-                  </Text>
-                </View>
-              )}
-            </>
-          )}
-        </TouchableOpacity>
-      );
-    },
-    [navigation, tileWidth, videoThumbMap],
+    ({item}) => (
+      <AlbumMediaTile
+        uri={item?.uri}
+        isVideo={!!item?.isVideo}
+        thumbUri={
+          item?.isVideo && item?.uri ? videoThumbMap[item.uri] : null
+        }
+        duration={item?.duration}
+        tileWidth={tileWidth}
+        postId={item?.postId}
+        indexInPost={item?.indexInPost}
+        onOpenPost={openAlbumPost}
+      />
+    ),
+    [tileWidth, videoThumbMap, openAlbumPost],
   );
 
-  const renderFeedItem = useCallback(
-    ({item, index}) => renderListItem(item, index),
-    [renderListItem],
+  const refreshControl = useMemo(
+    () => <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />,
+    [refreshing, onRefresh],
+  );
+
+  const headerCategoryTitle =
+    selectedCategoryTitle === '전체' ? '전체' : selectedCategoryTitle || '전체';
+
+  const headerPeriodLabel =
+    startDate && endDate
+      ? `${startDate.replace(/-/g, '.')} ~ ${endDate.replace(/-/g, '.')}`
+      : null;
+
+  const listHeader = useMemo(
+    () => (
+      <View
+        style={{
+          paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal,
+          gap: getResponsiveHeight(4),
+          paddingBottom: getResponsiveHeight(8),
+        }}>
+        <MagazineBanner />
+        <PostFilterBar
+          ref={filterBarRef}
+          categoryTitle={headerCategoryTitle}
+          categoryOpen={isCategoryOpen}
+          onPressCategory={onPressCategoryFilter}
+          periodLabel={headerPeriodLabel}
+          onPressDateFilter={onPressPeriodFilter}
+          sortKey={sortKey}
+          onChangeSort={setSortKey}
+        />
+      </View>
+    ),
+    [
+      headerCategoryTitle,
+      isCategoryOpen,
+      onPressCategoryFilter,
+      headerPeriodLabel,
+      onPressPeriodFilter,
+      sortKey,
+    ],
+  );
+
+  const listEmptyComponent = useMemo(
+    () => (
+      <View style={styles.emptyWrapper}>
+        <Text style={styles.emptyText}>
+          아직 등록된 게시글이 없어요.
+        </Text>
+      </View>
+    ),
+    [],
   );
 
   /* =========================
@@ -783,42 +676,6 @@ export default function MemoryFeed({
   }
 
   /* =========================
-   * Header UI (FilterBar)
-   * ========================= */
-  const refreshControl = (
-    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-  );
-
-  const headerCategoryTitle =
-    selectedCategoryTitle === '전체' ? '전체' : selectedCategoryTitle || '전체';
-
-  const headerPeriodLabel =
-    startDate && endDate
-      ? `${startDate.replace(/-/g, '.')} ~ ${endDate.replace(/-/g, '.')}`
-      : null;
-
-  const listHeader = (
-    <View
-      style={{
-        paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal,
-        gap: getResponsiveHeight(4),
-        paddingBottom: getResponsiveHeight(8),
-      }}>
-      <MagazineBanner />
-      <PostFilterBar
-        ref={filterBarRef}
-        categoryTitle={headerCategoryTitle}
-        categoryOpen={isCategoryOpen}
-        onPressCategory={onPressCategoryFilter}
-        periodLabel={headerPeriodLabel}
-        onPressDateFilter={onPressPeriodFilter}
-        sortKey={sortKey}
-        onChangeSort={setSortKey}
-      />
-    </View>
-  );
-
-  /* =========================
    * Render
    * ========================= */
   return (
@@ -832,7 +689,7 @@ export default function MemoryFeed({
             onScroll={onScroll}
             scrollEventThrottle={16}
             showsVerticalScrollIndicator={true}
-            keyExtractor={(item, index) => `${item.uri}_${index}`}
+            keyExtractor={albumMediaItemKey}
             numColumns={gridColumns}
             renderItem={renderMediaItem}
             refreshControl={refreshControl}
@@ -846,13 +703,7 @@ export default function MemoryFeed({
               gap: ITEM_MARGIN,
               paddingHorizontal: ITEM_MARGIN,
             }}
-            ListEmptyComponent={
-              <View style={styles.emptyWrapper}>
-                <Text style={styles.emptyText}>
-                  아직 등록된 게시글이 없어요.
-                </Text>
-              </View>
-            }
+            ListEmptyComponent={listEmptyComponent}
           />
         </GestureDetector>
       ) : (
@@ -864,9 +715,7 @@ export default function MemoryFeed({
             onScroll={onScroll}
             scrollEventThrottle={16}
             showsVerticalScrollIndicator={true}
-            keyExtractor={(item, index) =>
-              item.postId?.toString() || `no-id-${index}`
-            }
+            keyExtractor={feedPostKey}
             numColumns={1}
             renderItem={renderFeedItem}
             refreshControl={refreshControl}
@@ -875,13 +724,7 @@ export default function MemoryFeed({
             maxToRenderPerBatch={6}
             windowSize={7}
             removeClippedSubviews={true}
-            ListEmptyComponent={
-              <View style={styles.emptyWrapper}>
-                <Text style={styles.emptyText}>
-                  아직 등록된 게시글이 없어요.
-                </Text>
-              </View>
-            }
+            ListEmptyComponent={listEmptyComponent}
           />
         </GestureDetector>
       )}
@@ -895,186 +738,6 @@ export default function MemoryFeed({
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: BG},
   postContainer: {},
-
-  cardShadowWrap: {
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 3},
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-  },
-  cardOuter: {
-    backgroundColor: COLORS.surfaceSecondary,
-    borderRadius: getResponsiveIconSize(12),
-    overflow: 'visible',
-    marginBottom: getResponsiveHeight(18),
-    marginHorizontal: '3%',
-    paddingHorizontal: getResponsiveWidth(22),
-    paddingVertical: getResponsiveHeight(27),
-    borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
-  },
-  cardPress: {width: '100%'},
-
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    marginBottom: getResponsiveHeight(7),
-  },
-  metaCompactText: {
-    fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-Regular',
-    lineHeight: getResponsiveFontSize(15),
-    textAlignVertical: 'bottom',
-    color: COLORS.textDefault,
-    marginLeft: getResponsiveWidth(8),
-  },
-  dateText: {
-    fontSize: getResponsiveFontSize(15),
-    fontFamily: 'Pretendard-Regular',
-    lineHeight: getResponsiveFontSize(18),
-    textAlignVertical: 'bottom',
-    color: COLORS.textPrimary,
-    letterSpacing: 0.2,
-  },
-  mediaWrap: {
-    width: '100%',
-    aspectRatio: 4 / 3,
-    backgroundColor: COLORS.borderSubtle,
-    borderRadius: getResponsiveIconSize(2),
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  mediaImg: {width: '100%', height: '100%', backgroundColor: COLORS.surfaceMuted},
-  mediaPlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: COLORS.surfaceMuted,
-  },
-
-  playCenter: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playCircle: {
-    width: getResponsiveWidth(54),
-    height: getResponsiveWidth(54),
-    borderRadius: 999,
-    backgroundColor: 'rgba(0,0,0,0.28)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.22)',
-  },
-  playTriangle: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 20,
-    borderTopWidth: 12,
-    borderBottomWidth: 12,
-    borderLeftColor: 'rgba(255,255,255,0.95)',
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    marginLeft: 3,
-  },
-
-  chip: {
-    position: 'absolute',
-    top: getResponsiveHeight(10),
-    right: getResponsiveWidth(10),
-    zIndex: 3,
-    maxWidth: getResponsiveWidth(128),
-    minHeight: getResponsiveHeight(22),
-    borderRadius: 999,
-    paddingHorizontal: getResponsiveWidth(9),
-    paddingVertical: getResponsiveHeight(3.5),
-    borderWidth: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.9)',
-  },
-  chipDot: {
-    width: getResponsiveWidth(5),
-    height: getResponsiveWidth(5),
-    borderRadius: 99,
-    marginRight: getResponsiveWidth(4.5),
-  },
-  chipText: {
-    fontSize: getResponsiveFontSize(10.8),
-    fontFamily: 'Pretendard-SemiBold',
-    letterSpacing: 0.1,
-    flexShrink: 1,
-  },
-
-  contentArea: {
-    paddingHorizontal: 0,
-    paddingTop: getResponsiveHeight(14),
-  },
-
-  contentText: {
-    fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(14),
-    color: COLORS.textPrimary,
-    lineHeight: getResponsiveHeight(19),
-    letterSpacing: 0.1,
-  },
-  contentEmpty: {
-    fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(13.5),
-    color: COLORS.textPrimary,
-  },
-
-  galleryImage: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: COLORS.borderSubtle,
-  },
-  galleryPlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: COLORS.borderSubtle,
-  },
-
-  albumPlayOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  albumPlayCircle: {
-    width: getResponsiveWidth(36),
-    height: getResponsiveWidth(36),
-    borderRadius: 999,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  albumPlayTriangle: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 14,
-    borderTopWidth: 9,
-    borderBottomWidth: 9,
-    borderLeftColor: 'rgba(255,255,255,0.95)',
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    marginLeft: 3,
-  },
-
-  videoBadge: {
-    position: 'absolute',
-    bottom: getResponsiveWidth(4),
-    right: getResponsiveWidth(4),
-    zIndex: 2,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    paddingHorizontal: 6,
-    paddingVertical: 3,
-    borderRadius: 7,
-  },
-  videoBadgeText: {
-    color: COLORS.textInverse,
-    fontSize: getResponsiveFontSize(10.5),
-  },
 
   emptyWrapper: {paddingTop: getResponsiveHeight(60), alignItems: 'center'},
   emptyText: {
