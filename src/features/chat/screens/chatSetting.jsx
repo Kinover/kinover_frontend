@@ -41,10 +41,10 @@ import {
   fetchChatRoomMediaThunk,
 } from '../store/chatRoomThunk';
 
-import LeaveChatRoomModal from '../components/leaveChatRoomModal';
-import RenameChatRoomModal from '../components/renameChatRoomModal';
-import ChangeKinoModal from '../components/changeKinoModal';
-import MediaModal from '../components/mediaModal';
+import LeaveChatRoomModal from '../components/modals/leaveChatRoomModal';
+import RenameChatRoomModal from '../components/modals/renameChatRoomModal';
+import ChangeKinoModal from '../components/modals/changeKinoModal';
+import MediaModal from '../components/messages/mediaModal';
 
 import {
   getResponsiveHeight,
@@ -199,7 +199,7 @@ export default function ChatSettings({
   }, [navigation]);
 
   const clearInvitedToastParams = useCallback(() => {
- // ��현재 화면(=채팅방 화면)” params 제거
+ // “현재 화면(=채팅방 화면)” params 제거
  // setParams는 현재 route에 걸리므로 여기서는 가장 정확한 제거 방식
     try {
       navigation?.setParams?.({
@@ -694,7 +694,7 @@ export default function ChatSettings({
                 </View>
 
                 <Image
-                  source={require('../../../assets/images/down-yellow.png')}
+                  source={require('assets/images/down-yellow.png')}
                   style={[
                     styles.chevronDown,
                     {transform: [{rotate: showMembers ? '180deg' : '0deg'}]},
@@ -737,7 +737,7 @@ export default function ChatSettings({
                       style={styles.inviteBtn}
                       activeOpacity={0.9}>
                       <Image
-                        source={require('../../../assets/images/addMember_bt.png')}
+                        source={require('assets/images/addMember_bt.png')}
                         style={styles.addIcon}
                       />
                       <Text allowFontScaling={false} style={styles.inviteText}>
@@ -796,7 +796,7 @@ export default function ChatSettings({
 
                   <Image
                     tintColor={tint_color}
-                    source={require('../../../assets/images/down-yellow.png')}
+                    source={require('assets/images/down-yellow.png')}
                     style={[
                       styles.chevronDown,
                       {transform: [{rotate: mediaOpened ? '180deg' : '0deg'}]},
@@ -963,8 +963,8 @@ export default function ChatSettings({
                 style={styles.alarmIcon}
                 source={
                   isAlarmOn
-                    ? require('../../../assets/images/navigator_alarm-button.png')
-                    : require('../../../assets/images/navigator_alarm-button-off4.png')
+                    ? require('assets/images/navigator_alarm-button.png')
+                    : require('assets/images/navigator_alarm-button-off4.png')
                 }
               />
             </View>

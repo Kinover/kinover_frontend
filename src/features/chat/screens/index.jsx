@@ -249,7 +249,7 @@ export default function CommunicationScreen({navigation}) {
             accessibilityLabel="새 채팅방 만들기"
             accessibilityRole="button">
             <Image
-              source={require('../../../assets/icons/tabs/2/two.png')}
+              source={require('assets/icons/tabs/2/two.png')}
               style={styles.fabIcon}
               tintColor="white"
               accessibilityIgnoresInvertColors

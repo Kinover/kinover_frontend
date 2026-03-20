@@ -15,7 +15,7 @@ import {
 import {useDispatch} from 'react-redux';
 
 import {fetchChatRoomMediaThunk} from '../store/chatRoomThunk';
-import MediaModal from '../components/mediaModal';
+import MediaModal from '../components/messages/mediaModal';
 
 import {
   getResponsiveHeight,
@@ -33,13 +33,13 @@ export default function ChatRoomMediaScreen({navigation, route}) {
   const initialType = String(route?.params?.initialType ?? 'ALL').toUpperCase(); // ALL | IMAGE | VIDEO
 
  // =========================================================
- // ìƒíƒœ
+ // ì?í??
  // =========================================================
   const [type, setType] = useState(
     ['ALL', 'IMAGE', 'VIDEO'].includes(initialType) ? initialType : 'ALL',
   );
 
- // 2~4 ì—´ ì¡°ì ˆ
+ // 2~4 ì?´ ì¡°ì ?
   const [columns, setColumns] = useState(3); // 2 | 3 | 4
 
   const [items, setItems] = useState([]);
@@ -56,7 +56,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
   const fetchingFirstRef = useRef(false);
 
  // =========================================================
- // ìœ í‹¸
+ // ì? í?¸
  // =========================================================
   const pickThumbUri = item =>
     item?.thumbnailUrl ||
@@ -116,7 +116,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
         setItems(list);
         setNextBefore(res?.nextBefore ?? null);
       } catch (e) {
-        console.warn('âŒ ChatRoomMediaScreen fetchFirst ì‹¤íŒ¨:', e);
+        console.warn('â? ChatRoomMediaScreen fetchFirst ì?¤í?¨:', e);
         setItems([]);
         setNextBefore(null);
       } finally {
@@ -147,14 +147,14 @@ export default function ChatRoomMediaScreen({navigation, route}) {
       setItems(prev => [...prev, ...nextList]);
       setNextBefore(res?.nextBefore ?? null);
     } catch (e) {
-      console.warn('âŒ ChatRoomMediaScreen fetchMore ì‹¤íŒ¨:', e);
+      console.warn('â? ChatRoomMediaScreen fetchMore ì?¤í?¨:', e);
     } finally {
       setMoreLoading(false);
     }
   }, [dispatch, chatRoomId, nextBefore, moreLoading, type]);
 
  // =========================================================
- // íƒ­ ë³€ê²½
+ // í?­ ë³?ê²½
  // =========================================================
   const onChangeType = useCallback(
     async next => {
@@ -167,7 +167,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
   );
 
  // =========================================================
- // ìµœì´ˆ ë¡œë“œ
+ // ìµ?ì´? ë¡?ë??
  // =========================================================
   useEffect(() => {
     if (!chatRoomId) return;
@@ -176,7 +176,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
   }, [chatRoomId]);
 
  // =========================================================
- // ëª¨ë‹¬ ì—´ê¸°
+ // ëª¨ë?¬ ì?´ê¸°
  // =========================================================
   const openMediaModal = useCallback(
     (pressedItem, pressedIndex) => {
@@ -225,15 +225,15 @@ export default function ChatRoomMediaScreen({navigation, route}) {
   }, []);
 
  // =========================================================
- // ë ˆì´ì•„ì›ƒ: í™”ë©´ ì‹¤ì œ width ê¸°ë°˜ + ê°€ìš´ë° ì •ë ¬
+ // ë ?ì´ì??ì??: í??ë©´ ì?¤ì ? width ê¸°ë°? + ê°?ì?´ë° ì ?ë ¬
  // =========================================================
   const windowW = Dimensions.get('window').width;
 
- // €œë³´ê¸° ì¢‹ê²Œâ€ íŒ¨ë”©/ê°„ê²© ê³ ì •
+ // ??ë³´ê¸° ì¢?ê²?â? í?¨ë?©/ê°?ê²© ê³ ì ?
   const screenPaddingH = getResponsiveWidth(18);
   const gridGap = getResponsiveWidth(8);
 
- // cellSize = (ì‹¤ì œ ì‚¬ìš©ê°€ëŠ¥ í­ - gap*(columns-1)) / columns
+ // cellSize = (ì?¤ì ? ì?¬ì?©ê°?ë?¥ í­ - gap*(columns-1)) / columns
   const cellSize = useMemo(() => {
     const usableW = windowW - screenPaddingH * 2;
     const totalGap = gridGap * (columns - 1);
@@ -241,7 +241,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
     return Math.floor(raw);
   }, [windowW, screenPaddingH, gridGap, columns]);
 
- // ê·¸ë¦¬ë“œ ì „ì²´ í­(ì…€ + gap) â†’ ë‚¨ëŠ” ì—¬ë°±ì„ ì¢Œìš°ë¡œ ë‚˜ëˆ ì„œ ê°€ìš´ë° ì •ë ¬
+ // ê·¸ë¦¬ë?? ì ?ì²´ í­(ì?? + gap) â?? ë?¨ë?? ì?¬ë°±ì? ì¢?ì?°ë¡? ë??ë? ì?? ê°?ì?´ë° ì ?ë ¬
   const gridWidth = useMemo(() => {
     return cellSize * columns + gridGap * (columns - 1);
   }, [cellSize, columns, gridGap]);
@@ -284,7 +284,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
 
           {kind === 'VIDEO' && (
             <View style={styles.videoBadge}>
-              <Text allowFontScaling={false} style={styles.videoBadgeText}>ì˜ìƒ</Text>
+              <Text allowFontScaling={false} style={styles.videoBadgeText}>ì?ì?</Text>
             </View>
           )}
         </TouchableOpacity>
@@ -294,12 +294,12 @@ export default function ChatRoomMediaScreen({navigation, route}) {
   );
 
  // =========================================================
- // ê·¸ë¦¬ë“œ í¬ê¸°(2~4) ì¡°ì ˆ UI
+ // ê·¸ë¦¬ë?? í¬ê¸°(2~4) ì¡°ì ? UI
  // =========================================================
   const GridSizePicker = useMemo(() => {
     return (
       <View style={[styles.sizeRow, {paddingHorizontal: screenPaddingH}]}>
-        <Text allowFontScaling={false} style={styles.sizeLabel}>ê·¸ë¦¬ë“œ</Text>
+        <Text allowFontScaling={false} style={styles.sizeLabel}>ê·¸ë¦¬ë??</Text>
 
         {[2, 3, 4].map(n => {
           const active = columns === n;
@@ -325,7 +325,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
 
   return (
     <View style={styles.page}>
-      {/* íƒ­ */}
+      {/* í?­ */}
       <View style={[styles.tabs, {paddingHorizontal: screenPaddingH}]}>
         {['ALL', 'IMAGE', 'VIDEO'].map(t => {
           const active = type === t;
@@ -336,25 +336,25 @@ export default function ChatRoomMediaScreen({navigation, route}) {
               style={[styles.tab, active && styles.tabActive]}
               activeOpacity={0.9}>
               <Text allowFontScaling={false} style={[styles.tabText, active && styles.tabTextActive]}>
-                {t === 'ALL' ? 'ì „ì²´' : t === 'IMAGE' ? 'ì‚¬ì§„' : 'ì˜ìƒ'}
+                {t === 'ALL' ? 'ì ?ì²´' : t === 'IMAGE' ? 'ì?¬ì§?' : 'ì?ì?'}
               </Text>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      {/* ê·¸ë¦¬ë“œ í¬ê¸° ì¡°ì ˆ */}
+      {/* ê·¸ë¦¬ë?? í¬ê¸° ì¡°ì ? */}
       {GridSizePicker}
 
-      {/* ì»¨í…ì¸  */}
+      {/* ì»¨í?ì¸  */}
       {loading ? (
         <View style={styles.centerBox}>
           <ActivityIndicator />
-          <Text allowFontScaling={false} style={styles.loadingText}>ë¶ˆëŸ¬ì˜¤ëŠ” ì¤‘â€¦</Text>
+          <Text allowFontScaling={false} style={styles.loadingText}>ë¶?ë?¬ì?¤ë?? ì¤?â?¦</Text>
         </View>
       ) : items.length === 0 ? (
         <View style={styles.centerBox}>
-          <Text allowFontScaling={false} style={styles.emptyText}>ì•„ì§ ëª¨ì•„ë³¼ ë¯¸ë””ì–´ê°€ ì—†ì–´ìš”.</Text>
+          <Text allowFontScaling={false} style={styles.emptyText}>ì??ì§ ëª¨ì??ë³¼ ë¯¸ë??ì?´ê°? ì??ì?´ì??.</Text>
         </View>
       ) : (
         <FlatList
@@ -364,7 +364,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
             `${String(getMediaKey(item) ?? 'noid')}_${idx}`
           }
           numColumns={columns}
- // columns ë³€ê²½ ì‹œ ë ˆì´ì•„ì›ƒ ì¬êµ¬ì„±ë˜ê²Œ keyë¥¼ ì»¬ëŸ¼ ìˆ˜ì— ì˜ì¡´
+ // columns ë³?ê²½ ì?? ë ?ì´ì??ì?? ì?¬êµ¬ì?±ë?ê²? keyë¥¼ ì»¬ë?¼ ì??ì? ì?ì¡´
           key={`media-grid-${columns}`}
           showsVerticalScrollIndicator={false}
           removeClippedSubviews={false}
@@ -373,7 +373,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
             paddingBottom: getResponsiveHeight(30),
             paddingHorizontal: screenPaddingH,
           }}
- // row(ì¤„) ìì²´ë¥¼ ê°€ìš´ë° ì •ë ¬
+ // row(ì¤?) ì?ì²´ë¥¼ ê°?ì?´ë° ì ?ë ¬
           columnWrapperStyle={{
             justifyContent: 'flex-start',
             paddingLeft: sideInset,
@@ -401,7 +401,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
         />
       )}
 
-      {/* ë·°ì–´ ëª¨ë‹¬ */}
+      {/* ë·°ì?´ ëª¨ë?¬ */}
       <MediaModal
         visible={mediaModalVisible}
         mediaItems={modalMediaItems}

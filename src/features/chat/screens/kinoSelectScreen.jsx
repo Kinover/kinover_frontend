@@ -43,7 +43,7 @@ const KINOS = [
     kinoType: 'YELLOW_KINO',
     title: '옐로 키노',
     tone: '밝고 경쾌한 스타일',
-    image: require('../../../assets/kinos/yellowKino.png'),
+    image: require('assets/kinos/yellowKino.png'),
     description:
       '안녕하세요~!\n\n저는 밝고 긍정적인 에너지를 전하는 상담사, 키노예요.\n\n언제든 기분이 꿀꿀할 땐 저랑 수다 떨어요~\n웃으면서 기분 전환, 제가 책임질게요!',
   },
@@ -51,7 +51,7 @@ const KINOS = [
     kinoType: 'BLUE_KINO',
     title: '블루 키노',
     tone: '차분하고 안정적인 스타일',
-    image: require('../../../assets/kinos/blueKino.png'),
+    image: require('assets/kinos/blueKino.png'),
     description:
       '안녕하세요.\n\n저는 잔잔하고 조용하게 곁을 지켜주는 상담사, 키노입니다.\n\n말하지 않아도 괜찮아요.\n천천히, 편안하게 당신의 이야기를 들어드릴게요.',
   },
@@ -59,7 +59,7 @@ const KINOS = [
     kinoType: 'PINK_KINO',
     title: '핑크 키노',
     tone: '다정하고 공감형 스타일',
-    image: require('../../../assets/kinos/pinkKino.png'),
+    image: require('assets/kinos/pinkKino.png'),
     description:
       '아… 안녕하세요…\n\n저는 부족하지만 진심으로 곁에 있고 싶은 상담사, 키노예요.\n\n뭔가 잘 모르지만… 그냥 옆에 있고 싶었어요.\n우리 같이, 천천히 이야기해봐요…!',
   },
@@ -305,7 +305,7 @@ export default function KinoSelectScreen() {
           hitSlop={{top: 12, bottom: 12, left: 12, right: 12}}>
           <View style={styles.arrowGlass} />
           <Image
-            source={require('../../../assets/images/leftArrow.png')}
+            source={require('assets/images/leftArrow.png')}
             style={styles.arrowIcon}
           />
         </TouchableOpacity>
@@ -320,7 +320,7 @@ export default function KinoSelectScreen() {
           hitSlop={{top: 12, bottom: 12, left: 12, right: 12}}>
           <View style={styles.arrowGlass} />
           <Image
-            source={require('../../../assets/images/rightArrow.png')}
+            source={require('assets/images/rightArrow.png')}
             style={styles.arrowIcon}
           />
         </TouchableOpacity>

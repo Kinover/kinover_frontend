@@ -13,7 +13,7 @@ import GroupAvatar from './groupAvatar';
 // 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
 
-const KINO_AVATAR_SOURCE = require('../../../assets/images/kino-yellow.png');
+const KINO_AVATAR_SOURCE = require('assets/images/kino-yellow.png');
 import {useDispatch, useSelector} from 'react-redux';
 import {markRoomRead} from '../../store/chatRoomSlice';
 import {getChatRoomTitle} from '../../utils/chatRoomTitleHelper';

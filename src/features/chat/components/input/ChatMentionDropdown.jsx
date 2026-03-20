@@ -45,7 +45,7 @@ export default function ChatMentionDropdown({
                 source={
                   item.image
                     ? {uri: item.image}
-                    : require('../../../assets/images/default.png')
+                    : require('assets/images/default.png')
                 }
                 style={styles.mentionAvatar}
               />

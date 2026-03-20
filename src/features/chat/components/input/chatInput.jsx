@@ -88,9 +88,9 @@ const PAGE_SIZE = 60;
 const GAP = getResponsiveWidth(2);
 const PADDING_H = getResponsiveWidth(2);
 
-const ICON_SEND = require('../../../assets/icons/sendBt-dark.png');
+const ICON_SEND = require('assets/icons/sendBt-dark.png');
 
-const ICON_PLUS = require('../../../assets/icons/tabs/2/camera.png');
+const ICON_PLUS = require('assets/icons/tabs/2/camera.png');
 
 const INPUT_H = getResponsiveHeight(45);
 const INNER_PAD_V = getResponsiveHeight(10);
@@ -793,7 +793,7 @@ const ChatInput = forwardRef(function ChatInput(
                 setCursor(0);
               }}>
               <Image
-                source={require('../../../assets/images/clearBt.png')}
+                source={require('assets/images/clearBt.png')}
                 style={styles.clearIcon}
               />
             </TouchableOpacity>
