@@ -5,14 +5,7 @@
  * ========================================================= */
 
 import React, {useState, useEffect, useLayoutEffect, useCallback} from 'react';
-import {
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-  Image,
-} from 'react-native';
+import { StyleSheet, View, TouchableOpacity, ScrollView, ActivityIndicator, Image } from 'react-native';
 import AppText from 'components/AppText';
 
 import { apiClient } from 'utils/apiClient';
@@ -30,10 +23,65 @@ import useHideTabBar from 'hooks/useHideTabBar';
 import FastImage from '@d11/react-native-fast-image';
 import {HEADER_STYLES} from 'styles/style';
 
-// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+// 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
 
 export default function AddChatMemberScreen({navigation, route}) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  container: {
+    flex: 1,
+    backgroundColor: 'white',
+    borderTopWidth: 2,
+    borderColor: '#E5E5E5',
+  },
+  headerTitle: {
+    fontSize: HEADER_STYLES().defaultTitleFontSize,
+    textAlign: 'center',
+    fontFamily: HEADER_STYLES().defaultTitleFontFamily,
+    color: HEADER_STYLES().defaultTitleFontColor,
+  },
+  headerCheckIcon: {
+    width: getResponsiveWidth(24),
+    height: getResponsiveHeight(24),
+    marginRight: getResponsiveWidth(15),
+    resizeMode: 'contain',
+  },
+
+  userItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: getResponsiveHeight(13),
+    paddingHorizontal: getResponsiveWidth(20),
+  },
+  userItemSelected: {
+    backgroundColor: '#FFF2CC',
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(6),
+  },
+  userImage: {
+    width: getResponsiveIconSize(40),
+    height: getResponsiveIconSize(40),
+    borderRadius: getResponsiveIconSize(20),
+    marginRight: getResponsiveWidth(8),
+    backgroundColor: '#eee',
+  },
+  userName: {
+    fontSize: rf(15),
+    fontFamily: 'Pretendard-Regular',
+    color: '#222',
+  },
+  selectIcon: {
+    width: getResponsiveIconSize(13),
+    height: getResponsiveIconSize(13),
+    resizeMode: 'contain',
+  },
+
+  }));
   const {chatRoomId, onInvited} = route.params; // 콜백 받기
 
   const dispatch = useDispatch();
@@ -88,9 +136,9 @@ export default function AddChatMemberScreen({navigation, route}) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <Text style={styles.headerTitle}>
+        <AppText style={styles.headerTitle}>
           새 멤버 초대
-        </Text>
+        </AppText>
       ),
       headerRight: () => (
         <TouchableOpacity
@@ -120,9 +168,9 @@ export default function AddChatMemberScreen({navigation, route}) {
                 style={[styles.userItem, isSelected && styles.userItemSelected]}>
                 <View style={styles.userInfo}>
                   <Image source={{uri: user.image}} style={styles.userImage} />
-                  <Text style={styles.userName}>
+                  <AppText style={styles.userName}>
                     {user.name}
-                  </Text>
+                  </AppText>
                 </View>
                 <Image
                   source={
@@ -141,56 +189,5 @@ export default function AddChatMemberScreen({navigation, route}) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-    borderTopWidth: 2,
-    borderColor: '#E5E5E5',
-  },
-  headerTitle: {
-    fontSize: HEADER_STYLES().defaultTitleFontSize,
-    textAlign: 'center',
-    fontFamily: HEADER_STYLES().defaultTitleFontFamily,
-    color: HEADER_STYLES().defaultTitleFontColor,
-  },
-  headerCheckIcon: {
-    width: getResponsiveWidth(24),
-    height: getResponsiveHeight(24),
-    marginRight: getResponsiveWidth(15),
-    resizeMode: 'contain',
-  },
 
-  userItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: getResponsiveHeight(13),
-    paddingHorizontal: getResponsiveWidth(20),
-  },
-  userItemSelected: {
-    backgroundColor: '#FFF2CC',
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(6),
-  },
-  userImage: {
-    width: getResponsiveIconSize(40),
-    height: getResponsiveIconSize(40),
-    borderRadius: getResponsiveIconSize(20),
-    marginRight: getResponsiveWidth(8),
-    backgroundColor: '#eee',
-  },
-  userName: {
-    fontSize: getResponsiveFontSize(15),
-    fontFamily: 'Pretendard-Regular',
-    color: '#222',
-  },
-  selectIcon: {
-    width: getResponsiveIconSize(13),
-    height: getResponsiveIconSize(13),
-    resizeMode: 'contain',
-  },
-});
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';

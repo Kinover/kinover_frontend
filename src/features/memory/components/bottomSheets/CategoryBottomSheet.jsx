@@ -1,6 +1,7 @@
 // src/screens/xxx/CategoryBottomSheetModal.js
 /* eslint-disable react-native/no-inline-styles */
 
+import AppText from 'components/AppText';
 import React, {
   useRef,
   useState,
@@ -10,15 +11,7 @@ import React, {
   useMemo,
   useCallback,
 } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  Platform,
-  ScrollView,
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, SafeAreaView, Platform, ScrollView } from 'react-native';
 
 import {
   getResponsiveHeight,
@@ -30,7 +23,7 @@ import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
 import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
 import {BOTTOMSHEET_STYLE, BUTTON_STYLES, COLORS} from 'styles/style';
 
-import {useSelector} from 'react-redux';
+import {useReduxFontMode} from 'hooks/useReduxFontMode';
 import {FONT_MODE} from 'store/uiSlice';
 
 /** 폰트모드별 UI 스케일(체감용) */
@@ -113,7 +106,7 @@ const CategoryBottomSheetModal = forwardRef(
     const [tempSelected, setTempSelected] = useState(selectedCategory);
     const isClosingRef = useRef(false);
 
-    const fontMode = useSelector(state => state.ui.fontMode);
+    const fontMode = useReduxFontMode();
     const level = useMemo(() => getFontScaleLevel(fontMode), [fontMode]);
 
  // 폰트모드에 따른 레이아웃 계산
@@ -271,12 +264,12 @@ const CategoryBottomSheetModal = forwardRef(
             <View style={styles.content}>
             <View style={styles.headerRow}>
               <View style={styles.headerLeft}>
-                <Text style={styles.headerTitle}>
+                <AppText style={styles.headerTitle}>
                   목록
-                </Text>
-                <Text style={styles.countChipText}>
+                </AppText>
+                <AppText style={styles.countChipText}>
                   ({totalCount}개)
-                </Text>
+                </AppText>
               </View>
 
               <View style={styles.pill}>
@@ -293,7 +286,7 @@ const CategoryBottomSheetModal = forwardRef(
                     },
                   ]}
                 />
-                <Text
+                <AppText
                   style={[
                     styles.pillText,
                     {
@@ -306,18 +299,18 @@ const CategoryBottomSheetModal = forwardRef(
                     },
                   ]}>
                   {tempSelected?.title ?? '전체'}
-                </Text>
+                </AppText>
               </View>
             </View>
 
             {isOnlyAll ? (
               <View style={styles.emptyBox}>
-                <Text style={styles.emptyTitle}>
+                <AppText style={styles.emptyTitle}>
                   카테고리가 없어요
-                </Text>
-                <Text style={styles.emptyDesc}>
+                </AppText>
+                <AppText style={styles.emptyDesc}>
                   지금은 ‘전체’로 보거나, 업로드할 때 새로 만들 수 있어요.
-                </Text>
+                </AppText>
               </View>
             ) : (
               <View
@@ -346,7 +339,7 @@ const CategoryBottomSheetModal = forwardRef(
                           index !== 0 && {marginTop: layout.GAP},
                           isSelected && styles.itemRowSelected,
                         ]}>
-                        <Text
+                        <AppText
                           style={[
                             styles.itemText,
                             level === 'XL' && {
@@ -359,7 +352,7 @@ const CategoryBottomSheetModal = forwardRef(
                           ]}
                           numberOfLines={1}>
                           {cat.title}
-                        </Text>
+                        </AppText>
                       </TouchableOpacity>
                     );
                   })}

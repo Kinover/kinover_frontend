@@ -2,19 +2,9 @@
 // src/screens/memory/components/PostFilterBar.jsx
 
 import React, {useMemo, useState, useCallback, useRef, useEffect} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  Modal,
-  Pressable,
-  Platform,
-  Dimensions,
-  Animated,
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Image, Modal, Pressable, Platform, Dimensions, Animated } from 'react-native';
 
+import AppText from 'components/AppText';
 import {
   getResponsiveFontSize,
   getResponsiveWidth,
@@ -205,7 +195,7 @@ export default React.forwardRef(function PostFilterBar({
               },
             ]}
           />
-          <Text
+          <AppText
             style={[
               styles.categoryText,
               isCategoryActive && styles.categoryTextActive,
@@ -213,7 +203,7 @@ export default React.forwardRef(function PostFilterBar({
             numberOfLines={1}
             ellipsizeMode="tail">
             {categoryTitle}
-          </Text>
+          </AppText>
           <Animated.Image
             source={require('assets/icons/down-arrow.png')}
               style={[
@@ -244,7 +234,7 @@ export default React.forwardRef(function PostFilterBar({
                 {tintColor: isPeriodActive ? TEXT_MAIN : TEXT_SUB},
               ]}
             />
-            <Text
+            <AppText
               style={[
                 styles.pillText,
                 {color: isPeriodActive ? TEXT_MAIN : TEXT_SUB},
@@ -253,7 +243,7 @@ export default React.forwardRef(function PostFilterBar({
               numberOfLines={1}
               ellipsizeMode="tail">
               {displayPeriodLabel}
-            </Text>
+            </AppText>
           </TouchableOpacity>
 
           {/* Sort */}
@@ -266,7 +256,7 @@ export default React.forwardRef(function PostFilterBar({
             ]}
             activeOpacity={0.75}
             onPress={openSort}>
-            <Text
+            <AppText
               style={[
                 styles.pillText,
                 {color: isSortActive ? TEXT_MAIN : TEXT_SUB},
@@ -275,7 +265,7 @@ export default React.forwardRef(function PostFilterBar({
               numberOfLines={1}
               ellipsizeMode="tail">
               {sortTitle}
-            </Text>
+            </AppText>
 
             <Animated.Image
               source={require('assets/icons/down-arrow.png')}
@@ -317,12 +307,12 @@ export default React.forwardRef(function PostFilterBar({
           style={[styles.dropdownItem, active && styles.dropdownItemActive]}
           activeOpacity={0.75}
           onPress={() => pickSort(opt.key)}>
-          <Text
+          <AppText
             style={[styles.dropdownItemText, active && styles.dropdownItemTextActive]}
             numberOfLines={1}
             ellipsizeMode="tail">
             {opt.title}
-          </Text>
+          </AppText>
 
           {active ? (
             <Image

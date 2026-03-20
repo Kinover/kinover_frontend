@@ -1,21 +1,16 @@
 // src/utils/navigationRenderers.js
 import React, {memo, useCallback} from 'react';
-import {
-  Platform,
-  Text,
-  TouchableOpacity,
-  View,
-  StyleSheet,
-  Image,
-} from 'react-native';
+import { Platform, TouchableOpacity, View, Image } from 'react-native';
 import {useSelector} from 'react-redux';
 
+import AppText from 'components/AppText';
 import {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveFontSize,
   getResponsiveWidth,
 } from 'utils/responsive';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 
 import {BUTTON_STYLES, HEADER_STYLES, LAYOUT_STYLE} from 'styles/style';
 import {hapticLight} from 'utils/haptic';
@@ -27,6 +22,46 @@ import {
   resetToTabScreen,
   getLastFromTabForGlobalScreen,
 } from '../navigationService';
+
+function useTabHeaderBadgeStyles() {
+  return useScaledStyleSheet(rf => ({
+    iconWrap: {position: 'relative'},
+
+    dot: {
+      position: 'absolute',
+      width: 6,
+      height: 6,
+      borderRadius: 999,
+      backgroundColor: '#FF3B30',
+    },
+
+    headerDot: {top: -2.5, right: -2.5},
+    tabDot: {top: -2.5, right: -2.5},
+
+    badgeBase: {
+      position: 'absolute',
+      top: -2,
+      right: -2,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    badgeInner: {
+      backgroundColor: '#FF3B30',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+
+    badgeInnerText: {
+      color: '#FFFFFF',
+      fontSize: rf(10),
+      lineHeight: Math.round(rf(10) + 2),
+      fontFamily: 'Pretendard-SemiBold',
+      includeFontPadding: false,
+      textAlignVertical: 'center',
+    },
+  }));
+}
 
 /* =========================================================
  * 공통: 아이콘 + (알림 뱃지 or 빨간 점)
@@ -53,6 +88,7 @@ const IconWithBadge = memo(function IconWithBadge({
   badgeInnerMinWidth = 12,
   badgeInnerHPadding = 5, // 여기 올리면 “좌우 여백” 확실히 늘어남
 }) {
+  const styles = useTabHeaderBadgeStyles();
   const count = Number(badgeCount || 0); // 절대 20 같은 하드코딩 하면 안 됨
   const showBadge = count > 0;
 
@@ -124,6 +160,7 @@ export const TabBarIcon = memo(function TabBarIcon({
   const showDot = isAlarmTab ? !!hasUnread : false;
 
   const size = Platform.OS === 'ios' ? 22 : 24;
+  const styles = useTabHeaderBadgeStyles();
 
   return (
     <IconWithBadge
@@ -147,7 +184,7 @@ export const renderTabBarLabel = (label, focused) => {
   const lineHeight = Math.round(fontSize + 4);
 
   return (
-    <Text
+    <AppText
       allowFontScaling={false}
       numberOfLines={1}
       style={{
@@ -160,7 +197,7 @@ export const renderTabBarLabel = (label, focused) => {
         textAlignVertical: 'center',
       }}>
       {label}
-    </Text>
+    </AppText>
   );
 };
 
@@ -285,6 +322,7 @@ export const RenderHeaderHome = memo(function RenderHeaderHome({
   const goSetting = () => safeNavigate('설정화면', {fromTab: currentScreen});
 
   const baseColor = isHome ? '#FFC84D' : '#FFFFFF';
+  const styles = useTabHeaderBadgeStyles();
 
   return (
     <View
@@ -496,7 +534,7 @@ export const RenderHeaderLogo = memo(function RenderHeaderLogo({
           resizeMode: 'contain',
         }}
       />
-      <Text
+      <AppText
         allowFontScaling={false}
         numberOfLines={1}
         style={{
@@ -512,50 +550,7 @@ export const RenderHeaderLogo = memo(function RenderHeaderLogo({
           color: currentScreen === '홈' ? '#FFFFFF' : '#111827',
         }}>
         Kinover
-      </Text>
+      </AppText>
     </TouchableOpacity>
   );
-});
-
-/* =========================================================
- * styles
- * ========================================================= */
-const styles = StyleSheet.create({
-  iconWrap: {position: 'relative'},
-
-  dot: {
-    position: 'absolute',
-    width: 6,
-    height: 6,
-    borderRadius: 999,
-    backgroundColor: '#FF3B30',
-  },
-
-  headerDot: {top: -2.5, right: -2.5},
-  tabDot: {top: -2.5, right: -2.5},
-
- // ��갉아먹는” 큰 원(노치) — 위치는 여기만
-  badgeBase: {
-    position: 'absolute',
-    top: -2,
-    right: -2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
- // 이너 pill
-  badgeInner: {
-    backgroundColor: '#FF3B30',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  badgeInnerText: {
-    color: '#FFFFFF',
-    fontSize: getResponsiveFontSize(10),
-    lineHeight: Math.round(getResponsiveFontSize(10) + 2),
-    fontFamily: 'Pretendard-SemiBold',
-    includeFontPadding: false,
-    textAlignVertical: 'center',
-  },
 });

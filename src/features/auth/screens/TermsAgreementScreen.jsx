@@ -1,13 +1,7 @@
 // src/screens/auth/TermsAgreementScreen.js
 
 import React, {useState, useEffect, useRef, useMemo, useCallback} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-} from 'react-native';
+import {View, StyleSheet, TouchableOpacity, ScrollView, Text} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import BottomActionButton from 'components/BottomActionButton';
 import {useNavigateToWhere} from 'hooks/useNavigateToWhere';
@@ -16,15 +10,10 @@ import ToastModal from 'components/modal/ToastModal';
 import {COLORS} from 'styles/style';
 import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
 
-// Redux / FontMode
-import {useSelector} from 'react-redux';
-import {FONT_MODE} from 'store/uiSlice';
-
 // 약관/개인정보 data import (경로는 프로젝트 alias에 맞춰져 있어야 함)
 // alias 없으면 상대경로로 바꿔줘: ../../../data/legal
 import {privacyPolicy} from 'data/legal/privacyPolicy';
 import {termsOfService} from 'data/legal/termsOfService';
-
 /**
  * 마케팅 동의는 별도 문구로 유지 (필요하면 data로 빼도 됨)
  */
@@ -60,15 +49,8 @@ export default function TermsAgreementScreen() {
   const bottomSheetRef = useRef(null);
   const [detailType, setDetailType] = useState(null);
 
- // fontMode 가져오기
-  const fontMode = useSelector(state => state.ui.fontMode);
-
- // 폰트모드에 따른 바텀시트 높이
-  const snapPoints = useMemo(() => {
-    if (fontMode === FONT_MODE.EXTRA_LARGE) return ['87%'];
-    if (fontMode === FONT_MODE.LARGE) return ['81%'];
-    return ['73%'];
-  }, [fontMode]);
+  // 가입 전 화면: 앱 글씨 크기 설정과 무관하게 시트 높이 고정
+  const snapPoints = useMemo(() => ['73%'], []);
 
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -307,6 +289,7 @@ export default function TermsAgreementScreen() {
       </ScrollView>
 
       <BottomActionButton
+        useAppFontScaling={false}
         label="동의하고 계속하기"
         onPress={handleNext}
         disabled={!isRequiredChecked}

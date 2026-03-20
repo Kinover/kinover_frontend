@@ -91,3 +91,28 @@ export const getAndroidNavBottomInsetEstimate = () => {
   const rawDiff = screenH - windowH - statusH;
   return Math.max(0, Math.round(rawDiff));
 };
+
+/**
+ * @gorhom BottomSheetFooter `bottomInset` / 푸터 paddingBottom과 동일 정책.
+ * 모달·오버레이에서 insets.bottom이 0으로 오는 기기(삼성 3버튼 내비 등) 대비.
+ *
+ * @param {number} rawBottomInset useSafeAreaInsets().bottom
+ * @param {number} [extraMinBottom] 화면별 추가 최소값 (예: ScheduleEditor의 bottomSafe)
+ */
+export function getAndroidBottomSheetFooterInsetPx(
+  rawBottomInset = 0,
+  extraMinBottom = 0,
+) {
+  if (Platform.OS !== 'android') return 0;
+  const raw = Number(rawBottomInset || 0);
+  const fromScreen = getAndroidNavBottomInsetEstimate();
+  const navFallback = getResponsiveHeight(56);
+  const footerBuffer = getResponsiveHeight(24);
+  const core = Math.max(
+    raw,
+    fromScreen,
+    navFallback,
+    Number(extraMinBottom || 0),
+  );
+  return core + footerBuffer;
+}

@@ -1,13 +1,8 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Image,
-  Platform,
-  TouchableWithoutFeedback,
-} from 'react-native';
+import { View, StyleSheet, Image, Platform, TouchableWithoutFeedback } from 'react-native';
 
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -27,38 +22,8 @@ export default function CharacterSelectionCard({
   labelStyle,
   selectedLabelStyle,
 }) {
-  const body = (
-    <View
-      style={[
-        styles.card,
-        width ? {width} : null,
-        height ? {height} : null,
-        isSelected ? styles.cardSelected : null,
-        cardStyle,
-      ]}>
-      <Image source={imageSource} style={[styles.image, imageStyle]} resizeMode="contain" />
+  const styles = useScaledStyleSheet(rf => ({
 
-      {showLabel ? (
-        <Text
-          allowFontScaling={false}
-          style={[
-            styles.label,
-            isSelected ? styles.labelSelected : null,
-            labelStyle,
-            isSelected ? selectedLabelStyle : null,
-          ]}>
-          {label}
-        </Text>
-      ) : null}
-    </View>
-  );
-
-  if (!onPress) return body;
-
-  return <TouchableWithoutFeedback onPress={onPress}>{body}</TouchableWithoutFeedback>;
-}
-
-const styles = StyleSheet.create({
   card: {
     borderRadius: getResponsiveWidth(14),
     justifyContent: 'center',
@@ -87,7 +52,7 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(8),
   },
   label: {
-    fontSize: getResponsiveFontSize(13.5),
+    fontSize: rf(13.5),
     fontFamily: 'Pretendard-Regular',
     color: '#333',
   },
@@ -95,4 +60,36 @@ const styles = StyleSheet.create({
     fontFamily: 'Pretendard-Bold',
     color: '#000',
   },
-});
+
+  }));
+  const body = (
+    <View
+      style={[
+        styles.card,
+        width ? {width} : null,
+        height ? {height} : null,
+        isSelected ? styles.cardSelected : null,
+        cardStyle,
+      ]}>
+      <Image source={imageSource} style={[styles.image, imageStyle]} resizeMode="contain" />
+
+      {showLabel ? (
+        <AppText
+          allowFontScaling={false}
+          style={[
+            styles.label,
+            isSelected ? styles.labelSelected : null,
+            labelStyle,
+            isSelected ? selectedLabelStyle : null,
+          ]}>
+          {label}
+        </AppText>
+      ) : null}
+    </View>
+  );
+
+  if (!onPress) return body;
+
+  return <TouchableWithoutFeedback onPress={onPress}>{body}</TouchableWithoutFeedback>;
+}
+

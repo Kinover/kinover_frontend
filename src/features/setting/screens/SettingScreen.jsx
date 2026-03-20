@@ -2,20 +2,11 @@
 // SettingScreen.jsx
 
 import React, {useEffect, useLayoutEffect, useState, useCallback, useMemo} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Image,
-  Linking,
-  Alert,
-  Pressable,
-} from 'react-native';
+import { View, TouchableOpacity, ScrollView, Image, Linking, Alert, Pressable } from 'react-native';
 
 import {useNavigation, useRoute, StackActions, CommonActions} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
+import AppText from 'components/AppText';
 import {
   getLastFromTabForGlobalScreen,
   setLastFromTabForGlobalScreen,
@@ -32,11 +23,12 @@ import {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveWidth,
-  getResponsiveFontSize,
 } from 'utils/responsive';
 
 import {useLogout} from 'features/auth/hooks/useLogout';
 import useHideTabBar from 'hooks/useHideTabBar';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
+import {useReduxFontMode} from 'hooks/useReduxFontMode';
 import {SETTING_STYLES} from 'styles/style';
 
 import {
@@ -94,8 +86,78 @@ export default function SettingScreen() {
   const [bioType, setBioType] = useState(null);
   const [bioLoading, setBioLoading] = useState(true);
 
-  const fontMode = useSelector(state => state.ui.fontMode);
+  const fontMode = useReduxFontMode();
   const bioOn = useSelector(state => state.ui.bioLockEnabled);
+
+  const styles = useScaledStyleSheet(rf => {
+    const S = SETTING_STYLES();
+    return {
+      scroll: {
+        backgroundColor: '#fff',
+        flex: 1,
+      },
+      container: {
+        paddingHorizontal: getResponsiveWidth(20),
+        paddingTop: getResponsiveHeight(10),
+      },
+      header: {
+        fontSize: S.titleFontSize,
+        fontWeight: S.titleFontWeight,
+        marginBottom: getResponsiveHeight(14),
+        color: S.titleFontColor,
+        fontFamily: S.titleFontFamily,
+      },
+      sectionTitle: {
+        fontSize: rf(12.5),
+        color: '#888',
+        marginTop: 0,
+        marginBottom: getResponsiveHeight(8),
+        fontFamily: 'Pretendard-Medium',
+      },
+      hint: {
+        marginTop: getResponsiveHeight(3),
+        fontSize: rf(11.5),
+        color: '#A0A0A0',
+        fontFamily: 'Pretendard-Regular',
+      },
+      row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        minHeight: getResponsiveHeight(56),
+        paddingVertical: getResponsiveHeight(11),
+      },
+      rowTextWrap: {
+        flex: 1,
+        paddingRight: getResponsiveWidth(10),
+      },
+      label: {
+        fontSize: S.labelFontSize,
+        color: S.labelFontColor,
+        fontFamily: S.labelFontFamily,
+      },
+      value: {
+        fontSize: rf(13),
+        color: '#555',
+        fontFamily: 'Pretendard-Regular',
+      },
+      arrow: {
+        width: getResponsiveIconSize(11),
+        height: getResponsiveIconSize(11),
+        resizeMode: 'contain',
+      },
+      section: {
+        borderBottomWidth: 0.5,
+        borderColor: '#E5E5E5',
+        paddingTop: getResponsiveHeight(10),
+        paddingBottom: getResponsiveHeight(8),
+      },
+      fontSliderWrap: {
+        paddingTop: getResponsiveHeight(4),
+        paddingBottom: getResponsiveHeight(8),
+      },
+    };
+  });
 
   const modeToValue = useCallback(m => {
     if (m === FONT_MODE.EXTRA_LARGE) return 2;
@@ -250,21 +312,21 @@ export default function SettingScreen() {
       style={styles.scroll}
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={true}>
-      <Text allowFontScaling={false} style={styles.header}>
+      <AppText allowFontScaling={false} style={styles.header}>
         설정
-      </Text>
+      </AppText>
 
       {/* 1) 화면(글씨 크기) */}
       <View style={styles.section}>
-        <Text allowFontScaling={false} style={styles.sectionTitle}>
+        <AppText allowFontScaling={false} style={styles.sectionTitle}>
           화면
-        </Text>
+        </AppText>
 
         <View style={styles.row}>
           <View style={{flex: 1}}>
-            <Text allowFontScaling={false} style={styles.label}>
+            <AppText allowFontScaling={false} style={styles.label}>
               글씨 크기
-            </Text>
+            </AppText>
           </View>
         </View>
 
@@ -284,9 +346,9 @@ export default function SettingScreen() {
           onPress={() => navigation.navigate('알림설정화면')}
           accessibilityLabel="알림 설정"
           accessibilityRole="button">
-          <Text allowFontScaling={false} style={styles.label}>
+          <AppText allowFontScaling={false} style={styles.label}>
             알림
-          </Text>
+          </AppText>
           <Image
             style={styles.arrow}
             source={require('../../../assets/images/rightArrow-gray.png')}
@@ -297,19 +359,19 @@ export default function SettingScreen() {
 
       {/* 3) 보안(생체인식) */}
       <View style={styles.section}>
-        <Text allowFontScaling={false} style={styles.sectionTitle}>
+        <AppText allowFontScaling={false} style={styles.sectionTitle}>
           보안
-        </Text>
+        </AppText>
 
         <View style={styles.row}>
           <View style={styles.rowTextWrap}>
-            <Text allowFontScaling={false} style={styles.label}>
+            <AppText allowFontScaling={false} style={styles.label}>
               {bioLabel}
-            </Text>
+            </AppText>
             {!bioSupported && !bioLoading ? (
-              <Text allowFontScaling={false} style={styles.hint}>
+              <AppText allowFontScaling={false} style={styles.hint}>
                 이 기기에서는 사용할 수 없어요
-              </Text>
+              </AppText>
             ) : null}
           </View>
 
@@ -330,34 +392,34 @@ export default function SettingScreen() {
 
       {/* 4) 고객지원 */}
       <View style={styles.section}>
-        <Text allowFontScaling={false} style={styles.sectionTitle}>
+        <AppText allowFontScaling={false} style={styles.sectionTitle}>
           고객지원
-        </Text>
+        </AppText>
 
         <TouchableOpacity style={styles.row} onPress={openMail} activeOpacity={0.8}>
-          <Text allowFontScaling={false} style={styles.label}>
+          <AppText allowFontScaling={false} style={styles.label}>
             문의하기
-          </Text>
-          <Text allowFontScaling={false} style={styles.value}>
+          </AppText>
+          <AppText allowFontScaling={false} style={styles.value}>
             kinover.service@gmail.com
-          </Text>
+          </AppText>
         </TouchableOpacity>
       </View>
 
       {/* 5) 약관 및 정책 */}
       <View style={styles.section}>
-        <Text allowFontScaling={false} style={styles.sectionTitle}>
+        <AppText allowFontScaling={false} style={styles.sectionTitle}>
           약관 및 정책
-        </Text>
+        </AppText>
 
         <TouchableOpacity
           style={styles.row}
           onPress={() =>
             openLink('https://www.notion.so/2129f61bad50805589f6edfcac083179')
           }>
-          <Text allowFontScaling={false} style={styles.label}>
+          <AppText allowFontScaling={false} style={styles.label}>
             서비스 이용약관
-          </Text>
+          </AppText>
           <Image
             style={styles.arrow}
             source={require('../../../assets/images/rightArrow-gray.png')}
@@ -369,9 +431,9 @@ export default function SettingScreen() {
           onPress={() =>
             openLink('https://www.notion.so/2129f61bad5080f6bd29e269f5f319b1')
           }>
-          <Text allowFontScaling={false} style={styles.label}>
+          <AppText allowFontScaling={false} style={styles.label}>
             개인정보처리방침
-          </Text>
+          </AppText>
           <Image
             style={styles.arrow}
             source={require('../../../assets/images/rightArrow-gray.png')}
@@ -381,31 +443,31 @@ export default function SettingScreen() {
 
       {/* 6) 버전 정보 */}
       <View style={styles.section}>
-        <Text allowFontScaling={false} style={styles.sectionTitle}>
+        <AppText allowFontScaling={false} style={styles.sectionTitle}>
           버전 정보
-        </Text>
+        </AppText>
         <View style={styles.row}>
-          <Text allowFontScaling={false} style={styles.label}>
+          <AppText allowFontScaling={false} style={styles.label}>
             현재 버전
-          </Text>
-          <Text allowFontScaling={false} style={styles.value}>
+          </AppText>
+          <AppText allowFontScaling={false} style={styles.value}>
             1.1.0
-          </Text>
+          </AppText>
         </View>
       </View>
 
       {/* 7) 로그인 정보 (맨 아래 고정) */}
       <View style={styles.section}>
-        <Text allowFontScaling={false} style={styles.sectionTitle}>
+        <AppText allowFontScaling={false} style={styles.sectionTitle}>
           로그인 정보
-        </Text>
+        </AppText>
 
         <TouchableOpacity
           style={styles.row}
           onPress={() => setShowLogoutModal(true)}>
-          <Text allowFontScaling={false} style={styles.label}>
+          <AppText allowFontScaling={false} style={styles.label}>
             로그아웃
-          </Text>
+          </AppText>
           <Image
             style={styles.arrow}
             source={require('../../../assets/images/rightArrow-gray.png')}
@@ -415,9 +477,9 @@ export default function SettingScreen() {
         <TouchableOpacity
           style={styles.row}
           onPress={() => setShowDeleteModal(true)}>
-          <Text allowFontScaling={false} style={styles.label}>
+          <AppText allowFontScaling={false} style={styles.label}>
             계정 탈퇴
-          </Text>
+          </AppText>
           <Image
             style={styles.arrow}
             source={require('../../../assets/images/rightArrow-gray.png')}
@@ -439,70 +501,3 @@ export default function SettingScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  scroll: {
-    backgroundColor: '#fff',
-    flex: 1,
-  },
-  container: {
-    paddingHorizontal: getResponsiveWidth(20),
-    paddingTop: getResponsiveHeight(10),
-  },
-  header: {
-    fontSize: SETTING_STYLES().titleFontSize,
-    fontWeight: SETTING_STYLES().titleFontWeight,
-    marginBottom: getResponsiveHeight(14),
-    color: SETTING_STYLES().titleFontColor,
-    fontFamily: SETTING_STYLES().titleFontFamily,
-  },
-  sectionTitle: {
-    fontSize: getResponsiveFontSize(12.5),
-    color: '#888',
-    marginTop: 0,
-    marginBottom: getResponsiveHeight(8),
-    fontFamily: 'Pretendard-Medium',
-  },
-  hint: {
-    marginTop: getResponsiveHeight(3),
-    fontSize: getResponsiveFontSize(11.5),
-    color: '#A0A0A0',
-    fontFamily: 'Pretendard-Regular',
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    minHeight: getResponsiveHeight(56),
-    paddingVertical: getResponsiveHeight(11),
-  },
-  rowTextWrap: {
-    flex: 1,
-    paddingRight: getResponsiveWidth(10),
-  },
-  label: {
-    fontSize: SETTING_STYLES().labelFontSize,
-    color: SETTING_STYLES().labelFontColor,
-    fontFamily: SETTING_STYLES().labelFontFamily,
-  },
-  value: {
-    fontSize: getResponsiveFontSize(13),
-    color: '#555',
-    fontFamily: 'Pretendard-Regular',
-  },
-  arrow: {
-    width: getResponsiveIconSize(11),
-    height: getResponsiveIconSize(11),
-    resizeMode: 'contain',
-  },
-  section: {
-    borderBottomWidth: 0.5,
-    borderColor: '#E5E5E5',
-    paddingTop: getResponsiveHeight(10),
-    paddingBottom: getResponsiveHeight(8),
-  },
-  fontSliderWrap: {
-    paddingTop: getResponsiveHeight(4),
-    paddingBottom: getResponsiveHeight(8),
-  },
-});

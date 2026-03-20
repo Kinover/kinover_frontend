@@ -1,10 +1,11 @@
 import React, {memo, useMemo, useCallback} from 'react';
-import {View, Text, TouchableOpacity, StyleSheet} from 'react-native';
+import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 
 import formatDuration from 'utils/formatDuration';
 import {getResponsiveFontSize, getResponsiveWidth} from 'utils/responsive';
 import {COLORS} from 'styles/style';
+import AppText from 'components/AppText';
 
 const ITEM_MARGIN = getResponsiveWidth(2);
 
@@ -70,9 +71,9 @@ const AlbumMediaTile = memo(function AlbumMediaTile({
 
           {!!duration && (
             <View pointerEvents="none" style={styles.videoBadge}>
-              <Text style={styles.videoBadgeText}>
+              <AppText style={styles.videoBadgeText}>
                 {formatDuration(duration)}
-              </Text>
+              </AppText>
             </View>
           )}
         </>

@@ -1,19 +1,12 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
-import {
-  View,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Platform,
-  Image,
-} from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Platform, Image } from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
-  getResponsiveFontSize,
   getResponsiveIconSize,
 } from 'utils/responsive';
 import formatTime from '../../utils/formatTime';
@@ -34,7 +27,7 @@ import {toCdnUrl} from 'utils/mediaUrl';
 import MentionText from 'components/mention/MentionText';
 import AppText from 'components/AppText';
 
-// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+// 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
 
 export default function ReceiveChat({
@@ -50,6 +43,154 @@ export default function ReceiveChat({
   mentionUsers = [],
   unreadCount = 0,
 }) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  receivedContainer: {flexDirection: 'row', alignItems: 'flex-start'},
+
+  receivedUserImage: {
+    width: AVATAR_W,
+    height: AVATAR_W,
+    borderRadius: getResponsiveWidth(25),
+    backgroundColor: '#ddd',
+    marginRight: getResponsiveWidth(8),
+  },
+  avatarSpacer: {
+    width: AVATAR_W,
+    marginRight: getResponsiveWidth(10),
+  },
+
+  textContainer: {flex: 1, flexDirection: 'column'},
+
+  userName: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: CHATROOM_STYLE().messageFontSize,
+    color: '#444',
+    marginBottom: getResponsiveHeight(7),
+  },
+
+  messageLine: {flexDirection: 'row', alignItems: 'flex-end', flexShrink: 1},
+
+  receivedBubble: {
+    backgroundColor: '#FFECC3',
+    borderRadius: getResponsiveIconSize(20),
+    maxWidth: getResponsiveWidth(260),
+    flexShrink: 1,
+  },
+
+  textPadding: {
+    paddingVertical: getResponsiveHeight(10),
+    paddingHorizontal: getResponsiveWidth(14.5),
+  },
+  imagePadding: {
+    paddingVertical: getResponsiveHeight(4.5),
+    paddingHorizontal: getResponsiveWidth(4.5),
+  },
+
+  receivedText: {
+    fontFamily: CHATROOM_STYLE().messageFontFamily,
+    fontSize: CHATROOM_STYLE().messageFontSize,
+    color: 'black',
+    flexWrap: 'wrap',
+    lineHeight: rf(17),
+  },
+
+  mentionText: {
+    color: '#FFC84D',
+    fontFamily: 'Pretendard-SemiBold',
+  },
+
+  metaLine: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    justifyContent: 'flex-end',
+    marginLeft: getResponsiveWidth(5),
+  },
+  unreadCountText: {
+    fontSize: rf(11),
+    color: '#FFC84D',
+    fontFamily: 'Pretendard-SemiBold',
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+
+  receivedTime: {
+    fontSize: rf(10.5),
+    color: '#666',
+    lineHeight: rf(13),
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+
+  imageGrid: {gap: getResponsiveWidth(4)},
+  thumbWrap: {position: 'relative'},
+  imageItem: {
+    width: getResponsiveWidth(70),
+    height: getResponsiveWidth(70),
+    borderRadius: 8,
+    margin: 2,
+    backgroundColor: '#F3F4F6',
+  },
+  thumbFallback: {backgroundColor: '#E5E7EB'},
+
+  singleBase: {
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
+  },
+
+  moreOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 8,
+  },
+  moreOverlayText: {
+    color: '#fff',
+    fontSize: rf(16),
+    fontFamily: 'Pretendard-SemiBold',
+  },
+
+  playOverlay: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 12,
+    borderTopWidth: 8,
+    borderBottomWidth: 8,
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    marginLeft: 3,
+  },
+
+  playOverlaySingle: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playTriangleBig: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 22,
+    borderTopWidth: 14,
+    borderBottomWidth: 14,
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    marginLeft: 5,
+  },
+
+  }));
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
@@ -276,9 +417,9 @@ export default function ReceiveChat({
 
               {isLastCell && (
                 <View style={styles.moreOverlay}>
-                  <Text style={styles.moreOverlayText}>
+                  <AppText style={styles.moreOverlayText}>
                     +{extraCount}
-                  </Text>
+                  </AppText>
                 </View>
               )}
             </View>
@@ -371,9 +512,9 @@ export default function ReceiveChat({
 
       <View style={styles.textContainer}>
         {!isGrouped && (
-          <Text style={styles.userName}>
+          <AppText style={styles.userName}>
             {userName}
-          </Text>
+          </AppText>
         )}
 
         <View style={styles.messageLine}>
@@ -400,14 +541,14 @@ export default function ReceiveChat({
           {(showTime || unreadCount > 0) && (
             <View style={styles.metaLine}>
               {unreadCount > 0 && (
-                <Text style={styles.unreadCountText}>
+                <AppText style={styles.unreadCountText}>
                   {unreadCount}
-                </Text>
+                </AppText>
               )}
               {showTime && (
-                <Text style={styles.receivedTime}>
+                <AppText style={styles.receivedTime}>
                   {formatTime(chatTime)}
-                </Text>
+                </AppText>
               )}
             </View>
           )}
@@ -435,149 +576,3 @@ export default function ReceiveChat({
 
 const AVATAR_W = getResponsiveWidth(38);
 
-const styles = StyleSheet.create({
-  receivedContainer: {flexDirection: 'row', alignItems: 'flex-start'},
-
-  receivedUserImage: {
-    width: AVATAR_W,
-    height: AVATAR_W,
-    borderRadius: getResponsiveWidth(25),
-    backgroundColor: '#ddd',
-    marginRight: getResponsiveWidth(8),
-  },
-  avatarSpacer: {
-    width: AVATAR_W,
-    marginRight: getResponsiveWidth(10),
-  },
-
-  textContainer: {flex: 1, flexDirection: 'column'},
-
-  userName: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: CHATROOM_STYLE().messageFontSize,
-    color: '#444',
-    marginBottom: getResponsiveHeight(7),
-  },
-
-  messageLine: {flexDirection: 'row', alignItems: 'flex-end', flexShrink: 1},
-
-  receivedBubble: {
-    backgroundColor: '#FFECC3',
-    borderRadius: getResponsiveIconSize(20),
-    maxWidth: getResponsiveWidth(260),
-    flexShrink: 1,
-  },
-
-  textPadding: {
-    paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(14.5),
-  },
-  imagePadding: {
-    paddingVertical: getResponsiveHeight(4.5),
-    paddingHorizontal: getResponsiveWidth(4.5),
-  },
-
-  receivedText: {
-    fontFamily: CHATROOM_STYLE().messageFontFamily,
-    fontSize: CHATROOM_STYLE().messageFontSize,
-    color: 'black',
-    flexWrap: 'wrap',
-    lineHeight: getResponsiveFontSize(17),
-  },
-
-  mentionText: {
-    color: '#FFC84D',
-    fontFamily: 'Pretendard-SemiBold',
-  },
-
-  metaLine: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    justifyContent: 'flex-end',
-    marginLeft: getResponsiveWidth(5),
-  },
-  unreadCountText: {
-    fontSize: getResponsiveFontSize(11),
-    color: '#FFC84D',
-    fontFamily: 'Pretendard-SemiBold',
-    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
-  },
-
-  receivedTime: {
-    fontSize: CHATROOM_STYLE().messageTimeFontSize,
-    color: '#666',
-    lineHeight: getResponsiveFontSize(11),
-    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
-  },
-
-  imageGrid: {gap: getResponsiveWidth(4)},
-  thumbWrap: {position: 'relative'},
-  imageItem: {
-    width: getResponsiveWidth(70),
-    height: getResponsiveWidth(70),
-    borderRadius: 8,
-    margin: 2,
-    backgroundColor: '#F3F4F6',
-  },
-  thumbFallback: {backgroundColor: '#E5E7EB'},
-
-  singleBase: {
-    borderRadius: 10,
-    backgroundColor: '#F3F4F6',
-  },
-
-  moreOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  moreOverlayText: {
-    color: '#fff',
-    fontSize: getResponsiveFontSize(16),
-    fontFamily: 'Pretendard-SemiBold',
-  },
-
-  playOverlay: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playTriangle: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 12,
-    borderTopWidth: 8,
-    borderBottomWidth: 8,
-    borderLeftColor: 'rgba(255,255,255,0.95)',
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    marginLeft: 3,
-  },
-
-  playOverlaySingle: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playTriangleBig: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 22,
-    borderTopWidth: 14,
-    borderBottomWidth: 14,
-    borderLeftColor: 'rgba(255,255,255,0.95)',
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    marginLeft: 5,
-  },
-});

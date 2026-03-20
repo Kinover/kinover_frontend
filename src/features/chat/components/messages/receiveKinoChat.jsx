@@ -1,19 +1,11 @@
 // ReceiveKinoChat.jsx
 import React, {useEffect, useRef, useState} from 'react';
-import {
-  View,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Animated,
-  Platform,
-  Image,
-} from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Animated, Platform, Image } from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
-  getResponsiveFontSize,
   getResponsiveIconSize,
 } from 'utils/responsive';
 import formatTime from '../../utils/formatTime';
@@ -30,7 +22,7 @@ import {CHATROOM_STYLE} from 'styles/style';
 import AppText from 'components/AppText';
 import KinoBubble from '../bubbles/KinoBubble';
 
-// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+// 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
 
 const AVATAR_W = getResponsiveWidth(35);
@@ -46,6 +38,91 @@ export default function ReceiveKinoChat({
   kinoType = 'YELLOW_KINO',
   forceShowTime = false,
 }) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  receivedContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  userName: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: CHATROOM_STYLE().messageFontSize,
+    color: '#444',
+    marginBottom: getResponsiveHeight(7),
+  },
+  kinoProfileImage: {
+    width: AVATAR_W,
+    height: getResponsiveHeight(35),
+    marginRight: getResponsiveWidth(7),
+    bottom: getResponsiveHeight(0),
+    resizeMode: 'contain',
+  },
+  avatarSpacer: {
+    width: AVATAR_W,
+    marginRight: getResponsiveWidth(8),
+  },
+  textContainer: {flex: 1, flexDirection: 'column'},
+  messageContainer: {flexDirection: 'row', alignItems: 'flex-end'},
+
+  receivedBubble: {
+    backgroundColor: '#FFC84D', // 기본값(동적으로 override 됨)
+    borderRadius: getResponsiveIconSize(20),
+    paddingVertical: getResponsiveHeight(10),
+    paddingHorizontal: getResponsiveWidth(14.5),
+    maxWidth: '80%',
+    flexShrink: 1,
+  },
+  receivedText: {
+    fontFamily: CHATROOM_STYLE().messageFontFamily,
+    fontSize: CHATROOM_STYLE().KinoMessageFontSize,
+    color: 'black', // 기본값(동적으로 override 됨)
+    flexWrap: 'wrap',
+    lineHeight: rf(18),
+  },
+  receivedTime: {
+    fontSize: rf(10.5),
+    color: '#666',
+    marginLeft: getResponsiveWidth(5),
+    lineHeight: rf(13),
+    marginBottom: getResponsiveHeight(2),
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+  imageGrid: {gap: getResponsiveWidth(4)},
+  imageItem: {
+    width: getResponsiveWidth(70),
+    height: getResponsiveWidth(70),
+    borderRadius: 8,
+    margin: 2,
+  },
+  singleImage: {
+    width: getResponsiveWidth(200),
+    aspectRatio: 1,
+    borderRadius: 10,
+  },
+
+ // typing 전용 스타일
+  typingBubble: {
+    backgroundColor: '#FFC84D', // 기본값(동적으로 override 됨)
+    paddingHorizontal: getResponsiveWidth(20),
+    paddingVertical: getResponsiveHeight(12),
+    borderRadius: getResponsiveIconSize(24),
+    minHeight: getResponsiveHeight(32),
+    justifyContent: 'center',
+  },
+  typingRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    columnGap: getResponsiveWidth(6),
+  },
+  typingDot: {
+    width: getResponsiveWidth(7),
+    height: getResponsiveWidth(7),
+    borderRadius: 999,
+    backgroundColor: '#2A2A2A', // 기본값(동적으로 override 됨)
+  },
+
+  }));
   const KINO_PROFILE_MAP = {
     YELLOW_KINO: require('assets/kinos/yellowKino.png'),
     BLUE_KINO: require('assets/kinos/blueKino.png'),
@@ -160,9 +237,9 @@ export default function ReceiveKinoChat({
         />
 
         <View style={styles.textContainer}>
-          <Text style={styles.userName}>
+          <AppText style={styles.userName}>
             키노
-          </Text>
+          </AppText>
 
           <View style={styles.messageContainer}>
             <View
@@ -208,9 +285,9 @@ export default function ReceiveKinoChat({
 
       <View style={styles.textContainer}>
         {!isGrouped && (
-          <Text style={styles.userName}>
+          <AppText style={styles.userName}>
             키노
-          </Text>
+          </AppText>
         )}
 
         <View style={styles.messageContainer}>
@@ -234,17 +311,17 @@ export default function ReceiveKinoChat({
               paddingVariant="text"
               maxWidth="80%"
               backgroundColor={bubbleColors.bubble}>
-              <Text
+              <AppText
                 style={[styles.receivedText, {color: bubbleColors.text}]}>
                 {message}
-              </Text>
+              </AppText>
             </KinoBubble>
           )}
 
           {(showTime || forceShowTime) && !!chatTime && (
-            <Text style={styles.receivedTime}>
+            <AppText style={styles.receivedTime}>
               {formatTime(chatTime)}
-            </Text>
+            </AppText>
           )}
         </View>
       </View>
@@ -260,86 +337,3 @@ export default function ReceiveKinoChat({
 }
 
 /* ===== 스타일 ===== */
-const styles = StyleSheet.create({
-  receivedContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-  },
-  userName: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: CHATROOM_STYLE().messageFontSize,
-    color: '#444',
-    marginBottom: getResponsiveHeight(7),
-  },
-  kinoProfileImage: {
-    width: AVATAR_W,
-    height: getResponsiveHeight(35),
-    marginRight: getResponsiveWidth(7),
-    bottom: getResponsiveHeight(0),
-    resizeMode: 'contain',
-  },
-  avatarSpacer: {
-    width: AVATAR_W,
-    marginRight: getResponsiveWidth(8),
-  },
-  textContainer: {flex: 1, flexDirection: 'column'},
-  messageContainer: {flexDirection: 'row', alignItems: 'flex-end'},
-
-  receivedBubble: {
-    backgroundColor: '#FFC84D', // 기본값(동적으로 override 됨)
-    borderRadius: getResponsiveIconSize(20),
-    paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(14.5),
-    maxWidth: '80%',
-    flexShrink: 1,
-  },
-  receivedText: {
-    fontFamily: CHATROOM_STYLE().messageFontFamily,
-    fontSize: CHATROOM_STYLE().KinoMessageFontSize,
-    color: 'black', // 기본값(동적으로 override 됨)
-    flexWrap: 'wrap',
-    lineHeight: getResponsiveFontSize(18),
-  },
-  receivedTime: {
-    fontSize: CHATROOM_STYLE().messageTimeFontSize,
-    color: '#666',
-    marginLeft: getResponsiveWidth(5),
-    lineHeight: getResponsiveFontSize(12),
-    marginBottom: getResponsiveHeight(2),
-    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
-  },
-  imageGrid: {gap: getResponsiveWidth(4)},
-  imageItem: {
-    width: getResponsiveWidth(70),
-    height: getResponsiveWidth(70),
-    borderRadius: 8,
-    margin: 2,
-  },
-  singleImage: {
-    width: getResponsiveWidth(200),
-    aspectRatio: 1,
-    borderRadius: 10,
-  },
-
- // typing 전용 스타일
-  typingBubble: {
-    backgroundColor: '#FFC84D', // 기본값(동적으로 override 됨)
-    paddingHorizontal: getResponsiveWidth(20),
-    paddingVertical: getResponsiveHeight(12),
-    borderRadius: getResponsiveIconSize(24),
-    minHeight: getResponsiveHeight(32),
-    justifyContent: 'center',
-  },
-  typingRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    columnGap: getResponsiveWidth(6),
-  },
-  typingDot: {
-    width: getResponsiveWidth(7),
-    height: getResponsiveWidth(7),
-    borderRadius: 999,
-    backgroundColor: '#2A2A2A', // 기본값(동적으로 override 됨)
-  },
-});

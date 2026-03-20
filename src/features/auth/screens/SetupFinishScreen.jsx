@@ -3,11 +3,11 @@ import React, {useEffect, useRef, useCallback} from 'react';
 import {
   View,
   StyleSheet,
-  Text,
   Animated,
   Easing,
   Platform,
   Image,
+  Text,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,7 +15,7 @@ import {useDispatch} from 'react-redux';
 
 import BottomActionButton from 'components/BottomActionButton';
 import {
-  getResponsiveFontSize,
+  getResponsiveFontSizeIgnoreAppMode,
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
@@ -39,6 +39,61 @@ const withTimeout = (promise, ms = 8000) =>
       setTimeout(() => reject(new Error(`timeout ${ms}ms`)), ms),
     ),
   ]);
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: getResponsiveWidth(24),
+  },
+  illustrationArea: {
+    flex: 1.15,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: getResponsiveHeight(22),
+  },
+  circleBg: {
+    position: 'absolute',
+    width: getResponsiveWidth(260),
+    height: getResponsiveWidth(260),
+    borderRadius: getResponsiveWidth(260) / 2,
+    backgroundColor: '#FFF3DE',
+    opacity: 0.9,
+    top:
+      Platform.OS === 'android'
+        ? getResponsiveHeight(150)
+        : getResponsiveHeight(140),
+  },
+  mainImage: {
+    width: '55%',
+    resizeMode: 'contain',
+    top: getResponsiveHeight(80),
+  },
+  bottomArea: {
+    flex: 0.85,
+    justifyContent: 'space-between',
+    paddingBottom: getResponsiveHeight(22),
+  },
+  textBlock: {
+    alignItems: 'center',
+    marginBottom: getResponsiveHeight(10),
+  },
+  headerTitle: {
+    fontSize: getResponsiveFontSizeIgnoreAppMode(24),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#161823',
+    textAlign: 'center',
+    lineHeight: getResponsiveHeight(30),
+    marginBottom: getResponsiveHeight(10),
+  },
+  headerSubTitle: {
+    fontSize: getResponsiveFontSizeIgnoreAppMode(13.5),
+    fontFamily: 'Pretendard-Regular',
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: getResponsiveHeight(20),
+  },
+});
 
 export default function SetupFinishScreen() {
   const dispatch = useDispatch();
@@ -220,62 +275,12 @@ export default function SetupFinishScreen() {
         </View>
       </Animated.View>
 
-      <BottomActionButton label="시작하기" onPress={handleButtonClick} />
+      <BottomActionButton
+        useAppFontScaling={false}
+        label="시작하기"
+        onPress={handleButtonClick}
+      />
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: getResponsiveWidth(24),
-  },
-  illustrationArea: {
-    flex: 1.15,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingBottom: getResponsiveHeight(22),
-  },
-  circleBg: {
-    position: 'absolute',
-    width: getResponsiveWidth(260),
-    height: getResponsiveWidth(260),
-    borderRadius: getResponsiveWidth(260) / 2,
-    backgroundColor: '#FFF3DE',
-    opacity: 0.9,
-    top:
-      Platform.OS === 'android'
-        ? getResponsiveHeight(150)
-        : getResponsiveHeight(140),
-  },
-  mainImage: {
-    width: '55%',
-    resizeMode: 'contain',
-    top: getResponsiveHeight(80),
-  },
-  bottomArea: {
-    flex: 0.85,
-    justifyContent: 'space-between',
-    paddingBottom: getResponsiveHeight(22),
-  },
-  textBlock: {
-    alignItems: 'center',
-    marginBottom: getResponsiveHeight(10),
-  },
-  headerTitle: {
-    fontSize: getResponsiveFontSize(24),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#161823',
-    textAlign: 'center',
-    lineHeight: getResponsiveHeight(30),
-    marginBottom: getResponsiveHeight(10),
-  },
-  headerSubTitle: {
-    fontSize: getResponsiveFontSize(13.5),
-    fontFamily: 'Pretendard-Regular',
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: getResponsiveHeight(20),
-  },
-});

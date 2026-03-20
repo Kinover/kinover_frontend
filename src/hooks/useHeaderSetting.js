@@ -1,8 +1,8 @@
 import React, {useLayoutEffect, useMemo} from 'react';
 import {Text} from 'react-native';
-import {useSelector} from 'react-redux';
 
 import {RenderHeaderRightChatSetting} from '../app/navigation/helpers/tabHeaderHelpers';
+import {useReduxFontMode} from 'hooks/useReduxFontMode';
 import {HEADER_STYLES} from 'styles/style';
 
 export default function useHeaderSetting(
@@ -12,7 +12,7 @@ export default function useHeaderSetting(
   isKino,
 ) {
  // 폰트모드 구독: "옵션 갱신 트리거" 역할
-  const fontMode = useSelector(state => state.ui.fontMode);
+  const fontMode = useReduxFontMode();
 
  // 스타일은 1번만 계산
   const headerStyle = useMemo(() => {

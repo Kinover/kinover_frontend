@@ -2,18 +2,10 @@
 // src/features/post/components/MemoryDetailBottomSheet.js
 
 import React, {useMemo, useCallback, useState, useEffect, useRef} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-  FlatList,
-  Image,
-  Platform,
-  Pressable,
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, FlatList, Image, Platform, Pressable } from 'react-native';
 
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   BottomSheetModal,
   BottomSheetBackdrop,
@@ -35,12 +27,11 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 import {COLORS, EMPTY_STYLE} from 'styles/style';
+import {getAndroidBottomSheetFooterInsetPx} from 'utils/layoutMetrics';
 
 const ACTION_W = getResponsiveWidth(70);
 const INPUT_H = getResponsiveHeight(46);
 const INPUT_SIDE_PAD = getResponsiveWidth(16);
-const ANDROID_MIN_BOTTOM_SAFE = getResponsiveHeight(16);
-const ANDROID_BOTTOM_BUFFER = getResponsiveHeight(6);
 
 /* =========================
  * Mention Utils
@@ -88,7 +79,7 @@ function applyMention(text, atIndex, cursor, name) {
 /* =========================
  * MentionText
  * ========================= */
-function MentionText({text, familyUsers, textStyle, mentionStyle}) {
+function MentionText({text, familyUsers, textStyle, mentionStyle = null}) {
   const nameMap = useMemo(() => {
     const m = new Map();
     (familyUsers || []).forEach(u => {
@@ -103,28 +94,28 @@ function MentionText({text, familyUsers, textStyle, mentionStyle}) {
   }, [text]);
 
   return (
-    <Text style={textStyle}>
+    <AppText style={textStyle}>
       {parts.map((p, idx) => {
         if (p?.startsWith('@')) {
           const name = p.slice(1);
           const user = nameMap.get(name);
           if (user) {
             return (
-              <Text
+              <AppText
                 key={`${idx}_${p}`}
-                style={[styles.mentionText, mentionStyle]}>
+                style={mentionStyle}>
                 {p}
-              </Text>
+              </AppText>
             );
           }
         }
         return (
-          <Text key={`${idx}_${p}`}>
+          <AppText key={`${idx}_${p}`}>
             {p}
-          </Text>
+          </AppText>
         );
       })}
-    </Text>
+    </AppText>
   );
 }
 
@@ -133,6 +124,7 @@ function MentionText({text, familyUsers, textStyle, mentionStyle}) {
  * ========================= */
 function CommentFooter({
   footerProps,
+  styles,
   initialText,
   onSubmitComment,
   onChangeComment,
@@ -148,7 +140,7 @@ function CommentFooter({
   const footerBasePad = getResponsiveHeight(8);
   const footerSafeBottom =
     Platform.OS === 'android'
-      ? Math.max(rawBottomInset, ANDROID_MIN_BOTTOM_SAFE) + ANDROID_BOTTOM_BUFFER
+      ? getAndroidBottomSheetFooterInsetPx(rawBottomInset)
       : Math.max(rawBottomInset, 0);
 
   const [cursor, setCursor] = useState(0);
@@ -278,14 +270,14 @@ function CommentFooter({
                       }
                       style={styles.mentionAvatar}
                     />
-                    <Text
+                    <AppText
                       style={styles.mentionName}
                       numberOfLines={1}>
                       {item.name}
-                    </Text>
-                    <Text style={styles.mentionHint}>
+                    </AppText>
+                    <AppText style={styles.mentionHint}>
                       @{item.name}
-                    </Text>
+                    </AppText>
                   </Pressable>
                 )}
               />
@@ -357,6 +349,240 @@ export default function MemoryDetailBottomSheet({
   onSheetChange,
   disabled = false,
 }) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  sheetInner: {},
+  sheetBackground: {
+    borderTopLeftRadius: getResponsiveWidth(18),
+    borderTopRightRadius: getResponsiveWidth(18),
+  },
+  sheetHandle: {
+    width: getResponsiveWidth(48),
+    height: getResponsiveHeight(4),
+    backgroundColor: 'rgba(156,163,175,0.45)',
+  },
+  commentSheetHeader: {
+    paddingTop: getResponsiveHeight(12),
+    paddingBottom: getResponsiveHeight(16),
+    paddingHorizontal: getResponsiveWidth(14),
+    backgroundColor: '#F9F9F9',
+  },
+  commentHeaderRow: {
+    position: 'relative',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: getResponsiveHeight(16),
+    minHeight: getResponsiveHeight(24),
+  },
+  commentSheetTitle: {
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(18.5),
+    color: '#111827',
+    textAlign: 'center',
+  },
+  commentCountText: {
+    marginLeft: getResponsiveWidth(6),
+    fontFamily: 'Pretendard-Regular',
+    fontSize: rf(12.5),
+    color: '#9CA3AF',
+  },
+  closeButton: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    paddingHorizontal: getResponsiveWidth(4),
+  },
+  closeButtonIcon: {
+    width: getResponsiveWidth(22),
+    height: getResponsiveWidth(22),
+    resizeMode: 'contain',
+    tintColor: '#6B7280',
+  },
+  commentSheetDivider: {
+    height: 1,
+    backgroundColor: 'rgba(17,24,39,0.1)',
+  },
+
+  commentBox: {
+    paddingHorizontal: getResponsiveWidth(14),
+    paddingVertical: getResponsiveHeight(10),
+  },
+  commentBoxSwiped: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: getResponsiveWidth(10),
+  },
+  commentRow: {flexDirection: 'row'},
+  commentWriterImage: {
+    width: getResponsiveWidth(34),
+    height: getResponsiveWidth(34),
+    borderRadius: getResponsiveWidth(17),
+    backgroundColor: '#D9D9D9',
+    marginRight: getResponsiveWidth(10),
+  },
+  commentTextCol: {flex: 1},
+  nameTimeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  commentWriter: {
+    fontFamily: 'Pretendard-Medium',
+    fontSize: rf(13),
+    color: '#000',
+  },
+  timeText: {
+    fontSize: rf(10),
+    color: '#999',
+  },
+  commentContent: {
+    marginTop: getResponsiveHeight(4),
+    fontFamily: 'Pretendard-Regular',
+    fontSize: rf(12),
+    lineHeight: 15,
+    color: '#000',
+  },
+  commentList: {
+    flex: 1,
+  },
+  mentionText: {
+    color: '#111827',
+    fontFamily: 'Pretendard-SemiBold',
+    backgroundColor: 'rgba(255,200,77,0.22)',
+    paddingHorizontal: getResponsiveWidth(6),
+    paddingVertical: getResponsiveHeight(2),
+    borderRadius: 8,
+  },
+
+  emptyContainer: {
+    flex: 1,
+    minHeight: getResponsiveHeight(240),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    textAlign: 'center',
+    fontSize: EMPTY_STYLE().emptyFontSize,
+    fontFamily: EMPTY_STYLE().emptyFontFamily,
+    color: EMPTY_STYLE().emptyColor,
+  },
+
+  rightActionContainer: {
+    width: ACTION_W,
+    justifyContent: 'center',
+  },
+  deleteAction: {
+    flex: 1,
+    backgroundColor: '#FF3B30',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteActionText: {
+    color: '#FFF',
+    fontFamily: 'Pretendard-SemiBold',
+  },
+
+  topFade: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: getResponsiveHeight(26),
+  },
+  bottomFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: getResponsiveHeight(26),
+  },
+
+  footerBar: {
+    backgroundColor: '#F9F9F9',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(17,24,39,0.08)',
+    paddingTop: getResponsiveHeight(8),
+    paddingHorizontal: getResponsiveWidth(14),
+    paddingBottom: getResponsiveHeight(10),
+  },
+
+  commentInputContainer: {
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    alignSelf: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(55, 65, 81,0.45)',
+    borderRadius: getResponsiveWidth(10),
+    paddingHorizontal: INPUT_SIDE_PAD,
+    height: INPUT_H,
+    backgroundColor: 'rgba(80, 100, 100, 0.1)',
+  },
+  commentInput: {
+    flex: 1,
+    fontSize: rf(14),
+    fontFamily: 'Pretendard-Regular',
+    lineHeight: getResponsiveHeight(17),
+    color: '#000',
+    paddingVertical: 0,
+    textAlignVertical: 'center',
+  },
+  commentSendBt: {
+    width: getResponsiveWidth(24),
+    height: getResponsiveWidth(24),
+  },
+  commentSendBtInactive: {
+    tintColor: COLORS.textTertiary,
+    transform: [{scale: 0.85}],
+  },
+
+  mentionDropdown: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 999,
+    elevation: 20,
+  },
+  mentionDropdownBox: {
+    backgroundColor: '#fff',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(17,24,39,0.10)',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: Platform.OS === 'ios' ? 0.08 : 0.2,
+    shadowRadius: 12,
+    shadowOffset: {width: 0, height: 6},
+  },
+  mentionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: getResponsiveWidth(10),
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(10),
+  },
+  mentionAvatar: {
+    width: getResponsiveWidth(28),
+    height: getResponsiveWidth(28),
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,200,77,0.15)',
+  },
+  mentionName: {
+    flex: 1,
+    minWidth: 0,
+    color: COLORS.textPrimary,
+    fontFamily: 'Pretendard-Medium',
+    fontSize: rf(13.5),
+  },
+  mentionHint: {
+    color: '#6B7280',
+    fontFamily: 'Pretendard-Medium',
+    fontSize: rf(12),
+  },
+
+  }));
   const isSamsungAndroid = useMemo(() => {
     if (Platform.OS !== 'android') return false;
     const brand = String(
@@ -484,9 +710,9 @@ export default function MemoryDetailBottomSheet({
                 if (disabled) return;
                 onDeleteComment?.(commentId);
               }}>
-              <Text style={styles.deleteActionText}>
+              <AppText style={styles.deleteActionText}>
                 삭제
-              </Text>
+              </AppText>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -546,18 +772,19 @@ export default function MemoryDetailBottomSheet({
               />
               <View style={styles.commentTextCol}>
                 <View style={styles.nameTimeRow}>
-                  <Text style={styles.commentWriter}>
+                  <AppText style={styles.commentWriter}>
                     {item.authorName}
-                  </Text>
-                  <Text style={styles.timeText}>
+                  </AppText>
+                  <AppText style={styles.timeText}>
                     {formatPreviewTime(item.createdAt)}
-                  </Text>
+                  </AppText>
                 </View>
 
                 <MentionText
                   text={item.content}
                   familyUsers={familyUsers}
                   textStyle={styles.commentContent}
+                  mentionStyle={styles.mentionText}
                 />
               </View>
             </View>
@@ -597,6 +824,7 @@ export default function MemoryDetailBottomSheet({
       footerComponent={props => (
         <CommentFooter
           footerProps={props}
+          styles={styles}
           initialText={commentText}
           onChangeComment={onChangeComment}
           onSubmitComment={onSubmitComment}
@@ -611,12 +839,12 @@ export default function MemoryDetailBottomSheet({
       <BottomSheetView style={{flex: 1, width: '100%'}}>
         <View style={styles.commentSheetHeader}>
           <View style={styles.commentHeaderRow}>
-            <Text style={styles.commentSheetTitle}>
+            <AppText style={styles.commentSheetTitle}>
               댓글
-            </Text>
-            <Text style={styles.commentCountText}>
+            </AppText>
+            <AppText style={styles.commentCountText}>
               {commentCount}
-            </Text>
+            </AppText>
             <TouchableOpacity
               onPress={handleCloseSheet}
               activeOpacity={0.75}
@@ -649,10 +877,10 @@ export default function MemoryDetailBottomSheet({
                 styles.emptyContainer,
                 {paddingBottom: emptyBottomOffset},
               ]}>
-              <Text style={styles.emptyText}>
+              <AppText style={styles.emptyText}>
                 아직 댓글이 없어요.
                 {'\n'}첫 댓글을 남겨보세요!
-              </Text>
+              </AppText>
             </View>
           }
           contentContainerStyle={{
@@ -703,235 +931,3 @@ function formatPreviewTime(time) {
   return `${date.getMonth() + 1}월 ${date.getDate()}일`;
 }
 
-const styles = StyleSheet.create({
-  sheetInner: {},
-  sheetBackground: {
-    borderTopLeftRadius: getResponsiveWidth(18),
-    borderTopRightRadius: getResponsiveWidth(18),
-  },
-  sheetHandle: {
-    width: getResponsiveWidth(48),
-    height: getResponsiveHeight(4),
-    backgroundColor: 'rgba(156,163,175,0.45)',
-  },
-  commentSheetHeader: {
-    paddingTop: getResponsiveHeight(12),
-    paddingBottom: getResponsiveHeight(16),
-    paddingHorizontal: getResponsiveWidth(14),
-    backgroundColor: '#F9F9F9',
-  },
-  commentHeaderRow: {
-    position: 'relative',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: getResponsiveHeight(16),
-    minHeight: getResponsiveHeight(24),
-  },
-  commentSheetTitle: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(18.5),
-    color: '#111827',
-    textAlign: 'center',
-  },
-  commentCountText: {
-    marginLeft: getResponsiveWidth(6),
-    fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(12.5),
-    color: '#9CA3AF',
-  },
-  closeButton: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    paddingHorizontal: getResponsiveWidth(4),
-  },
-  closeButtonIcon: {
-    width: getResponsiveWidth(22),
-    height: getResponsiveWidth(22),
-    resizeMode: 'contain',
-    tintColor: '#6B7280',
-  },
-  commentSheetDivider: {
-    height: 1,
-    backgroundColor: 'rgba(17,24,39,0.1)',
-  },
-
-  commentBox: {
-    paddingHorizontal: getResponsiveWidth(14),
-    paddingVertical: getResponsiveHeight(10),
-  },
-  commentBoxSwiped: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: getResponsiveWidth(10),
-  },
-  commentRow: {flexDirection: 'row'},
-  commentWriterImage: {
-    width: getResponsiveWidth(34),
-    height: getResponsiveWidth(34),
-    borderRadius: getResponsiveWidth(17),
-    backgroundColor: '#D9D9D9',
-    marginRight: getResponsiveWidth(10),
-  },
-  commentTextCol: {flex: 1},
-  nameTimeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  commentWriter: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(13),
-    color: '#000',
-  },
-  timeText: {
-    fontSize: getResponsiveFontSize(10),
-    color: '#999',
-  },
-  commentContent: {
-    marginTop: getResponsiveHeight(4),
-    fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(12),
-    lineHeight: 15,
-    color: '#000',
-  },
-  commentList: {
-    flex: 1,
-  },
-  mentionText: {
-    color: '#111827',
-    fontFamily: 'Pretendard-SemiBold',
-    backgroundColor: 'rgba(255,200,77,0.22)',
-    paddingHorizontal: getResponsiveWidth(6),
-    paddingVertical: getResponsiveHeight(2),
-    borderRadius: 8,
-  },
-
-  emptyContainer: {
-    flex: 1,
-    minHeight: getResponsiveHeight(240),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  emptyText: {
-    textAlign: 'center',
-    fontSize: EMPTY_STYLE().emptyFontSize,
-    fontFamily: EMPTY_STYLE().emptyFontFamily,
-    color: EMPTY_STYLE().emptyColor,
-  },
-
-  rightActionContainer: {
-    width: ACTION_W,
-    justifyContent: 'center',
-  },
-  deleteAction: {
-    flex: 1,
-    backgroundColor: '#FF3B30',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  deleteActionText: {
-    color: '#FFF',
-    fontFamily: 'Pretendard-SemiBold',
-  },
-
-  topFade: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: getResponsiveHeight(26),
-  },
-  bottomFade: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: getResponsiveHeight(26),
-  },
-
-  footerBar: {
-    backgroundColor: '#F9F9F9',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(17,24,39,0.08)',
-    paddingTop: getResponsiveHeight(8),
-    paddingHorizontal: getResponsiveWidth(14),
-    paddingBottom: getResponsiveHeight(10),
-  },
-
-  commentInputContainer: {
-    position: 'relative',
-    flexDirection: 'row',
-    alignItems: 'center',
-    width: '100%',
-    alignSelf: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(55, 65, 81,0.45)',
-    borderRadius: getResponsiveWidth(10),
-    paddingHorizontal: INPUT_SIDE_PAD,
-    height: INPUT_H,
-    backgroundColor: 'rgba(80, 100, 100, 0.1)',
-  },
-  commentInput: {
-    flex: 1,
-    fontSize: getResponsiveFontSize(14),
-    fontFamily: 'Pretendard-Regular',
-    lineHeight: getResponsiveHeight(17),
-    color: '#000',
-    paddingVertical: 0,
-    textAlignVertical: 'center',
-  },
-  commentSendBt: {
-    width: getResponsiveWidth(24),
-    height: getResponsiveWidth(24),
-  },
-  commentSendBtInactive: {
-    tintColor: COLORS.textTertiary,
-    transform: [{scale: 0.85}],
-  },
-
-  mentionDropdown: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    zIndex: 999,
-    elevation: 20,
-  },
-  mentionDropdownBox: {
-    backgroundColor: '#fff',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.10)',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOpacity: Platform.OS === 'ios' ? 0.08 : 0.2,
-    shadowRadius: 12,
-    shadowOffset: {width: 0, height: 6},
-  },
-  mentionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(10),
-    paddingHorizontal: getResponsiveWidth(12),
-    paddingVertical: getResponsiveHeight(10),
-  },
-  mentionAvatar: {
-    width: getResponsiveWidth(28),
-    height: getResponsiveWidth(28),
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,200,77,0.15)',
-  },
-  mentionName: {
-    flex: 1,
-    minWidth: 0,
-    color: COLORS.textPrimary,
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(13.5),
-  },
-  mentionHint: {
-    color: '#6B7280',
-    fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(12),
-  },
-});

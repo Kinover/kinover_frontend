@@ -1,13 +1,7 @@
 // src/features/auth/screens/FamilySetupScreen.js
 
 import React, {useState, useCallback} from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-} from 'react-native';
+import {View, Text, TextInput, StyleSheet, TouchableOpacity} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch} from 'react-redux';
@@ -157,6 +151,7 @@ export default function FamilySetupScreen() {
       ) : null}
 
       <BottomActionButton
+        useAppFontScaling={false}
         label="참여하기"
         onPress={handleSubmit}
         disabled={isJoinDisabled}

@@ -12,19 +12,19 @@ import React, {
 import {
   View,
   StyleSheet,
-  Text,
   Image,
   TouchableOpacity,
   Platform,
   useWindowDimensions,
   Animated,
+  Text,
 } from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import FastImage from '@d11/react-native-fast-image';
 import Svg, {Defs, Rect, RadialGradient, Stop} from 'react-native-svg';
 
 import {
-  getResponsiveFontSize,
+  getResponsiveFontSizeIgnoreAppMode,
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   },
   skipText: {
     fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(13),
+    fontSize: getResponsiveFontSizeIgnoreAppMode(13),
     color: '#9CA3AF',
   },
 
@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   },
   nextText: {
     fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(14.5),
+    fontSize: getResponsiveFontSizeIgnoreAppMode(14.5),
     color: '#FFFFFF',
     letterSpacing: -0.2,
   },
@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     marginTop: getResponsiveHeight(10),
     textAlign: 'center',
     fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(12),
+    fontSize: getResponsiveFontSizeIgnoreAppMode(12),
     color: '#9CA3AF',
   },
 });
@@ -310,7 +310,7 @@ const CopyLines = memo(function CopyLines({
             style={[
               styles.lineText,
               {
-                fontSize: getResponsiveFontSize(lineSize),
+                fontSize: getResponsiveFontSizeIgnoreAppMode(lineSize),
                 opacity,
                 transform: [{translateY}, {scale: inScale}],
               },
@@ -404,7 +404,7 @@ const SlideItem = memo(function SlideItem({
       <View style={styles.textArea}>
         <CopyLines
           lines={item.copyLines}
-          lineSize={getResponsiveFontSize(effectiveSize)}
+          lineSize={getResponsiveFontSizeIgnoreAppMode(effectiveSize)}
           index={index}
           width={width}
           scrollX={scrollX}

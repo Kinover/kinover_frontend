@@ -164,6 +164,54 @@ export const getResponsiveFontSize = (v, options = {}) => {
   return clamp(size, v, v * maxScale);
 };
 
+/**
+ * 설정 > 글씨 크기(NORMAL/LARGE/XL) 배율을 쓰지 않음.
+ * 온보딩·회원가입 등 “가입 전” 화면 전용 (화면 너비·시스템 글꼴 스케일은 유지).
+ */
+export const getResponsiveFontSizeIgnoreAppMode = (v, options = {}) => {
+  bump('font');
+  const {
+    maxScale = MAX.font,
+    applySystemFontScale = true,
+    systemFontScaleMax = 1.3,
+  } = options;
+  const {widthRatio} = cachedRatios;
+  const baseM = MODE_SCALE[RESPONSIVE_MODE.NORMAL];
+  const fontMult = baseM.font * ANDROID_BONUS.font;
+  const baseRatio = getBaseFontRatio(widthRatio);
+  const systemScale = applySystemFontScale
+    ? clamp(PixelRatio.getFontScale() || 1, 1, systemFontScaleMax)
+    : 1;
+  const size = baseRatio * v * fontMult * systemScale;
+  return clamp(size, v, v * maxScale);
+};
+
+export const getResponsiveWidthIgnoreAppMode = (v, maxScale = MAX.width) => {
+  bump('width');
+  const {widthRatio} = cachedRatios;
+  const baseM = MODE_SCALE[RESPONSIVE_MODE.NORMAL];
+  const mult = baseM.width * ANDROID_BONUS.width;
+  const size = widthRatio * v * mult;
+  return clamp(size, v, v * maxScale);
+};
+
+export const getResponsiveHeightIgnoreAppMode = (v, maxScale = MAX.height) => {
+  bump('height');
+  const {heightRatio} = cachedRatios;
+  const baseM = MODE_SCALE[RESPONSIVE_MODE.NORMAL];
+  const mult = baseM.height * ANDROID_BONUS.height;
+  const size = heightRatio * v * mult;
+  return clamp(size, v, v * maxScale);
+};
+
+export const getResponsiveIconSizeIgnoreAppMode = (v, maxScale = MAX.icon) => {
+  bump('icon');
+  const {minRatio} = cachedRatios;
+  const baseM = MODE_SCALE[RESPONSIVE_MODE.NORMAL];
+  const mult = baseM.icon * ANDROID_BONUS.icon;
+  const size = minRatio * v * mult;
+  return clamp(size, v, v * maxScale);
+};
 
 export default {
   RESPONSIVE_MODE,
@@ -171,6 +219,10 @@ export default {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveFontSize,
+  getResponsiveFontSizeIgnoreAppMode,
+  getResponsiveWidthIgnoreAppMode,
+  getResponsiveHeightIgnoreAppMode,
+  getResponsiveIconSizeIgnoreAppMode,
   setResponsiveMode,
   getResponsiveMode,
 };

@@ -1,16 +1,11 @@
 // src/features/memory/components/ImageCarousel.jsx
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
-import {
-  Dimensions,
-  Platform,
-  StyleSheet,
-  Text,
-  View,
-  Pressable,
-} from 'react-native';
+import { Dimensions, Platform, StyleSheet, View, Pressable } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Carousel from 'react-native-reanimated-carousel';
 
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -85,6 +80,82 @@ export default function ImageCarousel({
   onSingleTap,
   isChromeHidden = false,
 }) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  container: {flex: 1, backgroundColor: '#f9f9f9'},
+  carouselWrap: {flex: 1},
+
+  fullItem: {flex: 1, backgroundColor: '#f9f9f9'},
+  fullTouch: {flex: 1},
+
+  fullMedia: {width: '100%', height: '100%'},
+  fullMediaInner: {width: '100%', height: '100%'},
+  video: {width: '100%', height: '100%'},
+  videoFallback: {backgroundColor: '#111827'},
+
+  fixedTopBar: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? '13%' : '8%',
+    left: 0,
+    right: 0,
+    zIndex: 999,
+    elevation: 50,
+    alignItems: 'center',
+  },
+  indexPill: {
+    backgroundColor: 'rgba(0,0,0,0.28)',
+    paddingHorizontal: getResponsiveWidth(10),
+    paddingVertical: getResponsiveHeight(3),
+    borderRadius: getResponsiveWidth(999),
+  },
+  headerIndex: {
+    color: '#FFF',
+    fontSize: rf(11),
+    fontFamily: 'Pretendard-Medium',
+  },
+  headerIndexCurrent: {
+    color: '#FFC84D',
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(13),
+  },
+
+  playOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playCircle: {
+    width: getResponsiveWidth(56),
+    height: getResponsiveWidth(56),
+    borderRadius: getResponsiveWidth(28),
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  playTriangle: {
+    width: 0,
+    height: 0,
+    borderLeftWidth: 18,
+    borderTopWidth: 12,
+    borderBottomWidth: 12,
+    borderLeftColor: 'rgba(255,255,255,0.95)',
+    borderTopColor: 'transparent',
+    borderBottomColor: 'transparent',
+    marginLeft: 4,
+  },
+
+  edgeSwipeZone: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: getResponsiveWidth(32),
+    zIndex: 999,
+    elevation: 999,
+    backgroundColor: 'transparent',
+  },
+
+  }));
   const mainCarouselRef = useRef(null);
   const insets = useSafeAreaInsets();
  // 안드로이드에서 인디케이터가 헤더에 가리지 않도록: safe top + 네비 헤더 높이
@@ -311,7 +382,7 @@ export default function ImageCarousel({
     return Gesture.Simultaneous(pinchGesture, panGesture, tapGesture);
   }, [isCarouselEnabled, pinchGesture, panGesture, tapGesture]);
 
- // ��엣지 스와이프” (첫 장에서 오른쪽으로 크게 드래그하면 뒤로가기)
+ // ��엣지 스와이프” (첫 장에서 오른쪽으로 크게 드래그하면 뒤로가기)
   const edgeSwipeGesture = useMemo(() => {
     const THRESHOLD = 70;
 
@@ -436,11 +507,11 @@ export default function ImageCarousel({
             indicatorTop != null && {top: indicatorTop},
           ]}>
           <View style={styles.indexPill}>
-            <Text allowFontScaling={false} style={styles.headerIndex}>
-              <Text allowFontScaling={false} style={styles.headerIndexCurrent}>{currentIndex + 1}</Text>
+            <AppText allowFontScaling={false} style={styles.headerIndex}>
+              <AppText allowFontScaling={false} style={styles.headerIndexCurrent}>{currentIndex + 1}</AppText>
               {' / '}
               {mediaList.length}
-            </Text>
+            </AppText>
           </View>
         </View>
       )}
@@ -472,77 +543,3 @@ export default function ImageCarousel({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#f9f9f9'},
-  carouselWrap: {flex: 1},
-
-  fullItem: {flex: 1, backgroundColor: '#f9f9f9'},
-  fullTouch: {flex: 1},
-
-  fullMedia: {width: '100%', height: '100%'},
-  fullMediaInner: {width: '100%', height: '100%'},
-  video: {width: '100%', height: '100%'},
-  videoFallback: {backgroundColor: '#111827'},
-
-  fixedTopBar: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? '13%' : '8%',
-    left: 0,
-    right: 0,
-    zIndex: 999,
-    elevation: 50,
-    alignItems: 'center',
-  },
-  indexPill: {
-    backgroundColor: 'rgba(0,0,0,0.28)',
-    paddingHorizontal: getResponsiveWidth(10),
-    paddingVertical: getResponsiveHeight(3),
-    borderRadius: getResponsiveWidth(999),
-  },
-  headerIndex: {
-    color: '#FFF',
-    fontSize: getResponsiveFontSize(11),
-    fontFamily: 'Pretendard-Medium',
-  },
-  headerIndexCurrent: {
-    color: '#FFC84D',
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(13),
-  },
-
-  playOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playCircle: {
-    width: getResponsiveWidth(56),
-    height: getResponsiveWidth(56),
-    borderRadius: getResponsiveWidth(28),
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playTriangle: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 18,
-    borderTopWidth: 12,
-    borderBottomWidth: 12,
-    borderLeftColor: 'rgba(255,255,255,0.95)',
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    marginLeft: 4,
-  },
-
-  edgeSwipeZone: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: getResponsiveWidth(32),
-    zIndex: 999,
-    elevation: 999,
-    backgroundColor: 'transparent',
-  },
-});

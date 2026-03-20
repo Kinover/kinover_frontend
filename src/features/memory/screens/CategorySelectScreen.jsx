@@ -1,18 +1,11 @@
 // src/features/memory/screens/CategorySelectScreen.jsx
 
 import React, {useState, useLayoutEffect, useEffect, useMemo} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  TextInput,
-  Platform,
-} from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Image, TextInput, Platform } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -29,6 +22,115 @@ import {fetchPostByIdThunk} from '../store/memoryThunk';
 import CheckBadge from 'components/CheckBadge';
 
 export default function CategorySelectPage({route}) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  container: {
+    flex: 1,
+    backgroundColor: 'white',
+    borderTopWidth: 2,
+    borderColor: '#E5E5E5',
+  },
+
+  headerTitle: {
+    fontSize: HEADER_STYLES().defaultTitleFontSize,
+    fontFamily: HEADER_STYLES().defaultTitleFontFamily,
+    color: HEADER_STYLES().defaultTitleFontColor,
+    lineHeight: getResponsiveHeight(26),
+    textAlign: 'center',
+    textAlignVertical: 'center',
+  },
+  headerRight: {},
+  checkImage: {
+    width: HEADER_STYLES().headerRightIconWidth,
+    height: HEADER_STYLES().headerRightIconHeight,
+    marginRight: HEADER_STYLES().headerRightIconRightPadding,
+    resizeMode: 'contain',
+  },
+
+  itemContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: getResponsiveWidth(18),
+    paddingHorizontal: getResponsiveWidth(22),
+  },
+  selectedItem: {
+    backgroundColor: '#FFF3D2',
+  },
+  itemText: {
+    fontSize: rf(14.5),
+    fontFamily: 'Pretendard-Regular',
+    color: 'black',
+    textAlignVertical: 'center',
+  },
+
+ // 오른쪽 영역(체크뱃지 자리)
+  rightArea: {
+    width: getResponsiveWidth(18),
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  badgePlaceholder: {
+    width: getResponsiveWidth(16),
+    height: getResponsiveWidth(16),
+  },
+
+  separator: {
+    height: 1,
+    backgroundColor: '#eee',
+    marginHorizontal: getResponsiveWidth(5),
+  },
+  addButton: {
+    paddingVertical: getResponsiveWidth(18),
+    paddingHorizontal: getResponsiveWidth(22),
+  },
+  addText: {
+    color: '#F8B500',
+    fontSize: rf(14.5),
+    fontFamily: 'Pretendard-Medium',
+  },
+
+  modalContent: {
+    paddingHorizontal: getResponsiveWidth(10),
+  },
+  modalTitle: {
+    color: 'black',
+    fontSize:
+      Platform.OS === 'android'
+        ? rf(17)
+        : rf(18),
+    fontFamily: 'Pretendard-SemiBold',
+    textAlign: 'center',
+    marginBottom: getResponsiveHeight(12),
+    marginTop: getResponsiveHeight(12),
+  },
+  inputBox: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    paddingHorizontal: getResponsiveWidth(10),
+    paddingVertical:
+      Platform.OS === 'ios' ? getResponsiveHeight(10) : getResponsiveHeight(4),
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: getResponsiveWidth(10),
+    paddingVertical:
+      Platform.OS === 'android'
+        ? getResponsiveHeight(10)
+        : getResponsiveHeight(12),
+    paddingHorizontal: getResponsiveWidth(12),
+    fontSize: rf(16),
+    fontFamily: 'Pretendard-Regular',
+    color: '#111827',
+    backgroundColor: '#FFFFFF',
+    marginTop: getResponsiveHeight(8),
+    marginBottom: getResponsiveHeight(8),
+    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+  },
+
+  }));
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
@@ -142,9 +244,9 @@ export default function CategorySelectPage({route}) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <Text style={styles.headerTitle}>
+        <AppText style={styles.headerTitle}>
           {isEditMode ? '카테고리 수정' : '카테고리 지정'}
-        </Text>
+        </AppText>
       ),
       headerRight: () => (
         <TouchableOpacity
@@ -197,9 +299,9 @@ export default function CategorySelectPage({route}) {
         }}
         activeOpacity={0.85}
         style={[styles.itemContainer, isSelected && styles.selectedItem]}>
-        <Text style={styles.itemText}>
+        <AppText style={styles.itemText}>
           {item.title}
-        </Text>
+        </AppText>
 
         {/* 기존 라디오 이미지 제거 → 체크뱃지로 통일 */}
         <View style={styles.rightArea}>
@@ -235,9 +337,9 @@ export default function CategorySelectPage({route}) {
               style={styles.addButton}
               onPress={() => setAddModalVisible(true)}
               activeOpacity={0.85}>
-              <Text style={styles.addText}>
+              <AppText style={styles.addText}>
                 카테고리 추가
-              </Text>
+              </AppText>
             </TouchableOpacity>
             <View style={styles.separator} />
           </>
@@ -265,110 +367,3 @@ export default function CategorySelectPage({route}) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: 'white',
-    borderTopWidth: 2,
-    borderColor: '#E5E5E5',
-  },
-
-  headerTitle: {
-    fontSize: HEADER_STYLES().defaultTitleFontSize,
-    fontFamily: HEADER_STYLES().defaultTitleFontFamily,
-    color: HEADER_STYLES().defaultTitleFontColor,
-    lineHeight: getResponsiveHeight(26),
-    textAlign: 'center',
-    textAlignVertical: 'center',
-  },
-  headerRight: {},
-  checkImage: {
-    width: HEADER_STYLES().headerRightIconWidth,
-    height: HEADER_STYLES().headerRightIconHeight,
-    marginRight: HEADER_STYLES().headerRightIconRightPadding,
-    resizeMode: 'contain',
-  },
-
-  itemContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: getResponsiveWidth(18),
-    paddingHorizontal: getResponsiveWidth(22),
-  },
-  selectedItem: {
-    backgroundColor: '#FFF3D2',
-  },
-  itemText: {
-    fontSize: getResponsiveFontSize(14.5),
-    fontFamily: 'Pretendard-Regular',
-    color: 'black',
-    textAlignVertical: 'center',
-  },
-
- // 오른쪽 영역(체크뱃지 자리)
-  rightArea: {
-    width: getResponsiveWidth(18),
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-  },
-  badgePlaceholder: {
-    width: getResponsiveWidth(16),
-    height: getResponsiveWidth(16),
-  },
-
-  separator: {
-    height: 1,
-    backgroundColor: '#eee',
-    marginHorizontal: getResponsiveWidth(5),
-  },
-  addButton: {
-    paddingVertical: getResponsiveWidth(18),
-    paddingHorizontal: getResponsiveWidth(22),
-  },
-  addText: {
-    color: '#F8B500',
-    fontSize: getResponsiveFontSize(14.5),
-    fontFamily: 'Pretendard-Medium',
-  },
-
-  modalContent: {
-    paddingHorizontal: getResponsiveWidth(10),
-  },
-  modalTitle: {
-    color: 'black',
-    fontSize:
-      Platform.OS === 'android'
-        ? getResponsiveFontSize(17)
-        : getResponsiveFontSize(18),
-    fontFamily: 'Pretendard-SemiBold',
-    textAlign: 'center',
-    marginBottom: getResponsiveHeight(12),
-    marginTop: getResponsiveHeight(12),
-  },
-  inputBox: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: getResponsiveWidth(10),
-    paddingVertical:
-      Platform.OS === 'ios' ? getResponsiveHeight(10) : getResponsiveHeight(4),
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: getResponsiveWidth(10),
-    paddingVertical:
-      Platform.OS === 'android'
-        ? getResponsiveHeight(10)
-        : getResponsiveHeight(12),
-    paddingHorizontal: getResponsiveWidth(12),
-    fontSize: getResponsiveFontSize(16),
-    fontFamily: 'Pretendard-Regular',
-    color: '#111827',
-    backgroundColor: '#FFFFFF',
-    marginTop: getResponsiveHeight(8),
-    marginBottom: getResponsiveHeight(8),
-    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
-  },
-});

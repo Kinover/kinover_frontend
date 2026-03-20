@@ -1,22 +1,14 @@
 // src/features/chat/screens/ChatRoomMediaScreen.jsx
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  ActivityIndicator,
-  FlatList,
-  Platform,
-  Dimensions,
-} from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Image, ActivityIndicator, FlatList, Platform, Dimensions } from 'react-native';
 
 import {useDispatch} from 'react-redux';
 
 import {fetchChatRoomMediaThunk} from '../store/chatRoomThunk';
 import MediaModal from '../components/messages/mediaModal';
 
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
@@ -27,19 +19,135 @@ import {
 import {COLORS, LAYOUT_STYLE} from 'styles/style';
 
 export default function ChatRoomMediaScreen({navigation, route}) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  page: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+
+  tabs: {
+    flexDirection: 'row',
+    columnGap: getResponsiveWidth(8),
+    marginTop: getResponsiveHeight(10),
+    marginBottom: getResponsiveHeight(8),
+  },
+  tab: {
+    paddingVertical: getResponsiveHeight(7),
+    paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal,
+    borderRadius: getResponsiveIconSize(10),
+    backgroundColor: '#F3F4F6',
+  },
+  tabActive: {
+    backgroundColor: '#FEF3C7',
+  },
+  tabText: {
+    fontSize: rf(12),
+    fontFamily: 'Pretendard-Medium',
+    color: '#6B7280',
+  },
+  tabTextActive: {
+    color: '#B45309',
+  },
+
+  sizeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    columnGap: getResponsiveWidth(8),
+    marginTop: getResponsiveHeight(6),
+    marginBottom: getResponsiveHeight(8),
+  },
+  sizeLabel: {
+    fontSize: rf(12),
+    fontFamily: 'Pretendard-Medium',
+    color: COLORS.textSecondary,
+    marginRight: getResponsiveWidth(6),
+  },
+  sizeBtn: {
+    paddingVertical: getResponsiveHeight(6),
+    paddingHorizontal: getResponsiveWidth(10),
+    borderRadius: getResponsiveIconSize(14),
+    backgroundColor: '#F3F4F6',
+  },
+  sizeBtnActive: {
+    backgroundColor: '#E5E7EB',
+  },
+  sizeBtnText: {
+    fontSize: rf(12),
+    fontFamily: 'Pretendard-Medium',
+    color: '#6B7280',
+  },
+  sizeBtnTextActive: {
+    color: '#111827',
+  },
+
+  centerBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    rowGap: getResponsiveHeight(8),
+  },
+  loadingText: {
+    fontSize: rf(12),
+    fontFamily: 'Pretendard-Regular',
+    color: '#6B7280',
+  },
+  emptyText: {
+    fontSize: rf(12),
+    fontFamily: 'Pretendard-Regular',
+    color: '#6B7280',
+  },
+
+  mediaCell: {
+    borderRadius: getResponsiveIconSize(10),
+    overflow: 'hidden',
+    backgroundColor: '#F3F4F6',
+  },
+  mediaThumb: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  mediaPlaceholder: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mediaPlaceholderText: {
+    fontSize: rf(11),
+    color: '#6B7280',
+    fontFamily: 'Pretendard-Medium',
+  },
+
+  videoBadge: {
+    position: 'absolute',
+    right: getResponsiveWidth(6),
+    bottom: getResponsiveHeight(6),
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    paddingHorizontal: getResponsiveWidth(6),
+    paddingVertical: getResponsiveHeight(3),
+    borderRadius: getResponsiveIconSize(10),
+  },
+  videoBadgeText: {
+    fontSize: rf(10),
+    color: '#FFFFFF',
+    fontFamily: 'Pretendard-Medium',
+  },
+
+  }));
   const dispatch = useDispatch();
 
   const chatRoomId = route?.params?.chatRoomId ?? null;
   const initialType = String(route?.params?.initialType ?? 'ALL').toUpperCase(); // ALL | IMAGE | VIDEO
 
  // =========================================================
- // ì?í??
+ // ï¿½?ï¿½ï¿½??
  // =========================================================
   const [type, setType] = useState(
     ['ALL', 'IMAGE', 'VIDEO'].includes(initialType) ? initialType : 'ALL',
   );
 
- // 2~4 ì?´ ì¡°ì ?
+ // 2~4 ï¿½?ï¿½ ì¡°ï¿½?
   const [columns, setColumns] = useState(3); // 2 | 3 | 4
 
   const [items, setItems] = useState([]);
@@ -56,7 +164,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
   const fetchingFirstRef = useRef(false);
 
  // =========================================================
- // ì? í?¸
+ // ï¿½?ï¿½ï¿½?ï¿½
  // =========================================================
   const pickThumbUri = item =>
     item?.thumbnailUrl ||
@@ -116,7 +224,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
         setItems(list);
         setNextBefore(res?.nextBefore ?? null);
       } catch (e) {
-        console.warn('â? ChatRoomMediaScreen fetchFirst ì?¤í?¨:', e);
+        console.warn('ï¿½? ChatRoomMediaScreen fetchFirst ï¿½?ï¿½ï¿½?ï¿½:', e);
         setItems([]);
         setNextBefore(null);
       } finally {
@@ -147,14 +255,14 @@ export default function ChatRoomMediaScreen({navigation, route}) {
       setItems(prev => [...prev, ...nextList]);
       setNextBefore(res?.nextBefore ?? null);
     } catch (e) {
-      console.warn('â? ChatRoomMediaScreen fetchMore ì?¤í?¨:', e);
+      console.warn('ï¿½? ChatRoomMediaScreen fetchMore ï¿½?ï¿½ï¿½?ï¿½:', e);
     } finally {
       setMoreLoading(false);
     }
   }, [dispatch, chatRoomId, nextBefore, moreLoading, type]);
 
  // =========================================================
- // í?­ ë³?ê²½
+ // ï¿½?ï¿½ ï¿½?ê²½
  // =========================================================
   const onChangeType = useCallback(
     async next => {
@@ -167,7 +275,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
   );
 
  // =========================================================
- // ìµ?ì´? ë¡?ë??
+ // ï¿½?ï¿½? ï¿½?ï¿½??
  // =========================================================
   useEffect(() => {
     if (!chatRoomId) return;
@@ -176,7 +284,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
   }, [chatRoomId]);
 
  // =========================================================
- // ëª¨ë?¬ ì?´ê¸°
+ // ëª¨ï¿½?ï¿½ ï¿½?ï¿½ê¸°
  // =========================================================
   const openMediaModal = useCallback(
     (pressedItem, pressedIndex) => {
@@ -225,15 +333,15 @@ export default function ChatRoomMediaScreen({navigation, route}) {
   }, []);
 
  // =========================================================
- // ë ?ì´ì??ì??: í??ë©´ ì?¤ì ? width ê¸°ë°? + ê°?ì?´ë° ì ?ë ¬
+ // ï¿½?ì´ï¿½??ï¿½??: ï¿½??ë©´ ï¿½?ï¿½ï¿½? width ê¸°ï¿½? + ï¿½?ï¿½?ï¿½ë° ï¿½?ë ¬
  // =========================================================
   const windowW = Dimensions.get('window').width;
 
- // ??ë³´ê¸° ì¢?ê²?â? í?¨ë?©/ê°?ê²© ê³ ì ?
+ // ??ë³´ê¸° ï¿½?ï¿½?ï¿½?ï¿½ ï¿½?ï¿½ï¿½?ï¿½/ï¿½?ê²© ê³ ï¿½?
   const screenPaddingH = getResponsiveWidth(18);
   const gridGap = getResponsiveWidth(8);
 
- // cellSize = (ì?¤ì ? ì?¬ì?©ê°?ë?¥ í­ - gap*(columns-1)) / columns
+ // cellSize = (ï¿½?ï¿½ï¿½? ï¿½?ï¿½ï¿½?ï¿½ï¿½?ï¿½?ï¿½ í­ - gap*(columns-1)) / columns
   const cellSize = useMemo(() => {
     const usableW = windowW - screenPaddingH * 2;
     const totalGap = gridGap * (columns - 1);
@@ -241,7 +349,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
     return Math.floor(raw);
   }, [windowW, screenPaddingH, gridGap, columns]);
 
- // ê·¸ë¦¬ë?? ì ?ì²´ í­(ì?? + gap) â?? ë?¨ë?? ì?¬ë°±ì? ì¢?ì?°ë¡? ë??ë? ì?? ê°?ì?´ë° ì ?ë ¬
+ // ê·¸ë¦¬ï¿½?? ï¿½?ì²´ í­(ï¿½?? + gap) ï¿½?? ï¿½?ï¿½ï¿½?? ï¿½?ï¿½ë°±ï¿½? ï¿½?ï¿½?ï¿½ï¿½? ï¿½??ï¿½?ï¿½ï¿½?? ï¿½?ï¿½?ï¿½ë° ï¿½?ë ¬
   const gridWidth = useMemo(() => {
     return cellSize * columns + gridGap * (columns - 1);
   }, [cellSize, columns, gridGap]);
@@ -276,15 +384,15 @@ export default function ChatRoomMediaScreen({navigation, route}) {
             <Image source={{uri: thumb}} style={styles.mediaThumb} />
           ) : (
             <View style={styles.mediaPlaceholder}>
-              <Text allowFontScaling={false} style={styles.mediaPlaceholderText}>
+              <AppText allowFontScaling={false} style={styles.mediaPlaceholderText}>
                 {kind === 'VIDEO' ? 'VIDEO' : 'FILE'}
-              </Text>
+              </AppText>
             </View>
           )}
 
           {kind === 'VIDEO' && (
             <View style={styles.videoBadge}>
-              <Text allowFontScaling={false} style={styles.videoBadgeText}>ì?ì?</Text>
+              <AppText allowFontScaling={false} style={styles.videoBadgeText}>ï¿½?ï¿½ï¿½?ï¿½</AppText>
             </View>
           )}
         </TouchableOpacity>
@@ -294,12 +402,12 @@ export default function ChatRoomMediaScreen({navigation, route}) {
   );
 
  // =========================================================
- // ê·¸ë¦¬ë?? í¬ê¸°(2~4) ì¡°ì ? UI
+ // ê·¸ë¦¬ï¿½?? í¬ê¸°(2~4) ì¡°ï¿½? UI
  // =========================================================
   const GridSizePicker = useMemo(() => {
     return (
       <View style={[styles.sizeRow, {paddingHorizontal: screenPaddingH}]}>
-        <Text allowFontScaling={false} style={styles.sizeLabel}>ê·¸ë¦¬ë??</Text>
+        <AppText allowFontScaling={false} style={styles.sizeLabel}>ê·¸ë¦¬ï¿½??</AppText>
 
         {[2, 3, 4].map(n => {
           const active = columns === n;
@@ -309,13 +417,13 @@ export default function ChatRoomMediaScreen({navigation, route}) {
               onPress={() => setColumns(n)}
               style={[styles.sizeBtn, active && styles.sizeBtnActive]}
               activeOpacity={0.9}>
-              <Text allowFontScaling={false}
+              <AppText allowFontScaling={false}
                 style={[
                   styles.sizeBtnText,
                   active && styles.sizeBtnTextActive,
                 ]}>
                 {n}x{n}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           );
         })}
@@ -325,7 +433,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
 
   return (
     <View style={styles.page}>
-      {/* í?­ */}
+      {/* ï¿½?ï¿½ */}
       <View style={[styles.tabs, {paddingHorizontal: screenPaddingH}]}>
         {['ALL', 'IMAGE', 'VIDEO'].map(t => {
           const active = type === t;
@@ -335,26 +443,26 @@ export default function ChatRoomMediaScreen({navigation, route}) {
               onPress={() => onChangeType(t)}
               style={[styles.tab, active && styles.tabActive]}
               activeOpacity={0.9}>
-              <Text allowFontScaling={false} style={[styles.tabText, active && styles.tabTextActive]}>
-                {t === 'ALL' ? 'ì ?ì²´' : t === 'IMAGE' ? 'ì?¬ì§?' : 'ì?ì?'}
-              </Text>
+              <AppText allowFontScaling={false} style={[styles.tabText, active && styles.tabTextActive]}>
+                {t === 'ALL' ? 'ï¿½?ì²´' : t === 'IMAGE' ? 'ï¿½?ï¿½ï¿½?' : 'ï¿½?ï¿½ï¿½?ï¿½'}
+              </AppText>
             </TouchableOpacity>
           );
         })}
       </View>
 
-      {/* ê·¸ë¦¬ë?? í¬ê¸° ì¡°ì ? */}
+      {/* ê·¸ë¦¬ï¿½?? í¬ê¸° ì¡°ï¿½? */}
       {GridSizePicker}
 
-      {/* ì»¨í?ì¸  */}
+      {/* ì»¨ï¿½?ï¿½ì¸  */}
       {loading ? (
         <View style={styles.centerBox}>
           <ActivityIndicator />
-          <Text allowFontScaling={false} style={styles.loadingText}>ë¶?ë?¬ì?¤ë?? ì¤?â?¦</Text>
+          <AppText allowFontScaling={false} style={styles.loadingText}>ï¿½?ï¿½?ï¿½ï¿½?ï¿½ï¿½?? ï¿½?ï¿½?ï¿½</AppText>
         </View>
       ) : items.length === 0 ? (
         <View style={styles.centerBox}>
-          <Text allowFontScaling={false} style={styles.emptyText}>ì??ì§ ëª¨ì??ë³¼ ë¯¸ë??ì?´ê°? ì??ì?´ì??.</Text>
+          <AppText allowFontScaling={false} style={styles.emptyText}>ï¿½??ì§ ëª¨ï¿½??ë³¼ ë¯¸ï¿½??ï¿½?ï¿½ï¿½? ï¿½??ï¿½?ï¿½ï¿½??.</AppText>
         </View>
       ) : (
         <FlatList
@@ -364,7 +472,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
             `${String(getMediaKey(item) ?? 'noid')}_${idx}`
           }
           numColumns={columns}
- // columns ë³?ê²½ ì?? ë ?ì´ì??ì?? ì?¬êµ¬ì?±ë?ê²? keyë¥¼ ì»¬ë?¼ ì??ì? ì?ì¡´
+ // columns ï¿½?ê²½ ï¿½?? ï¿½?ì´ï¿½??ï¿½?? ï¿½?ï¿½êµ¬ï¿½?ï¿½ï¿½?ï¿½? keyë¥¼ ì»¬ï¿½?ï¿½ ï¿½??ï¿½?ï¿½ ï¿½?ì¡´
           key={`media-grid-${columns}`}
           showsVerticalScrollIndicator={false}
           removeClippedSubviews={false}
@@ -373,7 +481,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
             paddingBottom: getResponsiveHeight(30),
             paddingHorizontal: screenPaddingH,
           }}
- // row(ì¤?) ì?ì²´ë¥¼ ê°?ì?´ë° ì ?ë ¬
+ // row(ï¿½?) ï¿½?ï¿½ì²´ë¥¼ ï¿½?ï¿½?ï¿½ë° ï¿½?ë ¬
           columnWrapperStyle={{
             justifyContent: 'flex-start',
             paddingLeft: sideInset,
@@ -401,7 +509,7 @@ export default function ChatRoomMediaScreen({navigation, route}) {
         />
       )}
 
-      {/* ë·°ì?´ ëª¨ë?¬ */}
+      {/* ë·°ï¿½?ï¿½ ëª¨ï¿½?ï¿½ */}
       <MediaModal
         visible={mediaModalVisible}
         mediaItems={modalMediaItems}
@@ -412,117 +520,3 @@ export default function ChatRoomMediaScreen({navigation, route}) {
   );
 }
 
-const styles = StyleSheet.create({
-  page: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-  },
-
-  tabs: {
-    flexDirection: 'row',
-    columnGap: getResponsiveWidth(8),
-    marginTop: getResponsiveHeight(10),
-    marginBottom: getResponsiveHeight(8),
-  },
-  tab: {
-    paddingVertical: getResponsiveHeight(7),
-    paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal,
-    borderRadius: getResponsiveIconSize(10),
-    backgroundColor: '#F3F4F6',
-  },
-  tabActive: {
-    backgroundColor: '#FEF3C7',
-  },
-  tabText: {
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-Medium',
-    color: '#6B7280',
-  },
-  tabTextActive: {
-    color: '#B45309',
-  },
-
-  sizeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    columnGap: getResponsiveWidth(8),
-    marginTop: getResponsiveHeight(6),
-    marginBottom: getResponsiveHeight(8),
-  },
-  sizeLabel: {
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-Medium',
-    color: COLORS.textSecondary,
-    marginRight: getResponsiveWidth(6),
-  },
-  sizeBtn: {
-    paddingVertical: getResponsiveHeight(6),
-    paddingHorizontal: getResponsiveWidth(10),
-    borderRadius: getResponsiveIconSize(14),
-    backgroundColor: '#F3F4F6',
-  },
-  sizeBtnActive: {
-    backgroundColor: '#E5E7EB',
-  },
-  sizeBtnText: {
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-Medium',
-    color: '#6B7280',
-  },
-  sizeBtnTextActive: {
-    color: '#111827',
-  },
-
-  centerBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    rowGap: getResponsiveHeight(8),
-  },
-  loadingText: {
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-Regular',
-    color: '#6B7280',
-  },
-  emptyText: {
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-Regular',
-    color: '#6B7280',
-  },
-
-  mediaCell: {
-    borderRadius: getResponsiveIconSize(10),
-    overflow: 'hidden',
-    backgroundColor: '#F3F4F6',
-  },
-  mediaThumb: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  mediaPlaceholder: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  mediaPlaceholderText: {
-    fontSize: getResponsiveFontSize(11),
-    color: '#6B7280',
-    fontFamily: 'Pretendard-Medium',
-  },
-
-  videoBadge: {
-    position: 'absolute',
-    right: getResponsiveWidth(6),
-    bottom: getResponsiveHeight(6),
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    paddingHorizontal: getResponsiveWidth(6),
-    paddingVertical: getResponsiveHeight(3),
-    borderRadius: getResponsiveIconSize(10),
-  },
-  videoBadgeText: {
-    fontSize: getResponsiveFontSize(10),
-    color: '#FFFFFF',
-    fontFamily: 'Pretendard-Medium',
-  },
-});

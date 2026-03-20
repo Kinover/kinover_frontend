@@ -1,6 +1,6 @@
 // src/features/post/screens/PostPage.jsx
 import React, {useEffect, useMemo, useRef, useCallback, useState} from 'react';
-import {View, TouchableOpacity, Image, StyleSheet, ScrollView, Pressable} from 'react-native';
+import { View, TouchableOpacity, Image, StyleSheet, ScrollView, Pressable } from 'react-native';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
@@ -23,6 +23,7 @@ import ImageDeleteModal from '../components/modals/DeleteOptionModal';
 import PostOptionsMenu from '../components/menus/PostOptionMenu';
 import AppText from 'components/AppText';
 
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -37,7 +38,7 @@ import usePostConfirmDelete from '../hooks/usePostConfirmDelete';
 import usePostDescSheet from '../hooks/usePostDescSheet';
 import usePostCommentSheet from '../hooks/usePostCommentSheet';
 
-// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+// 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
 
 const DESC_PRESSABLE_HIT_SLOP = {top: 16, bottom: 16, left: 16, right: 16};
@@ -59,6 +60,66 @@ function PostDescSheetBackdrop(props) {
 }
 
 export default function PostPage({route}) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  container: {flex: 1, backgroundColor: '#000'},
+  loadingContainer: {flex: 1, backgroundColor: '#000'},
+  carouselWrap: {flex: 1},
+
+  sheetHandleHidden: {backgroundColor: 'transparent'},
+  sheetTransparentBg: {backgroundColor: 'transparent'},
+
+  headerGradient: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: getResponsiveHeight(120),
+    zIndex: 5,
+  },
+
+  descTapArea: {flex: 1},
+  descSheet: {
+    flex: 1,
+    paddingHorizontal: getResponsiveWidth(16),
+    paddingTop: getResponsiveHeight(40),
+    borderTopLeftRadius: getResponsiveWidth(22),
+    borderTopRightRadius: getResponsiveWidth(22),
+  },
+  descHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: getResponsiveHeight(10),
+  },
+  descHeaderSpacer: {flex: 1},
+  avatar: {
+    width: getResponsiveWidth(28),
+    height: getResponsiveWidth(28),
+    borderRadius: getResponsiveWidth(14),
+  },
+  author: {
+    marginLeft: getResponsiveWidth(8),
+    color: 'white',
+    fontSize: rf(15),
+    fontFamily: 'Pretendard-SemiBold',
+  },
+  commentBtn: {
+    width: getResponsiveIconSize(22),
+    height: getResponsiveIconSize(22),
+  },
+  commentIcon: {
+    tintColor: 'white',
+    width: '100%',
+    height: '100%',
+  },
+  descContent: {
+    color: 'rgba(255,255,255,0.92)',
+    fontSize: rf(14),
+    lineHeight: getResponsiveHeight(22),
+    fontFamily: 'Pretendard-Medium',
+  },
+
+  }));
   const dispatch = useDispatch();
   const navigation = useNavigation();
 
@@ -436,9 +497,9 @@ export default function PostPage({route}) {
                   }
                 />
 
-                <Text style={styles.author} numberOfLines={1}>
+                <AppText style={styles.author} numberOfLines={1}>
                   {safeMemory.authorName}
-                </Text>
+                </AppText>
 
                 <View style={styles.descHeaderSpacer} />
 
@@ -454,11 +515,11 @@ export default function PostPage({route}) {
               </View>
 
               <ScrollView scrollEnabled={descExpanded} showsVerticalScrollIndicator={false}>
-                <Text
+                <AppText
                   style={styles.descContent}
                   numberOfLines={descExpanded ? undefined : 2}>
                   {safeMemory.content}
-                </Text>
+                </AppText>
               </ScrollView>
             </LinearGradient>
           </Pressable>
@@ -490,61 +551,3 @@ export default function PostPage({route}) {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#000'},
-  loadingContainer: {flex: 1, backgroundColor: '#000'},
-  carouselWrap: {flex: 1},
-
-  sheetHandleHidden: {backgroundColor: 'transparent'},
-  sheetTransparentBg: {backgroundColor: 'transparent'},
-
-  headerGradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: getResponsiveHeight(120),
-    zIndex: 5,
-  },
-
-  descTapArea: {flex: 1},
-  descSheet: {
-    flex: 1,
-    paddingHorizontal: getResponsiveWidth(16),
-    paddingTop: getResponsiveHeight(40),
-    borderTopLeftRadius: getResponsiveWidth(22),
-    borderTopRightRadius: getResponsiveWidth(22),
-  },
-  descHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: getResponsiveHeight(10),
-  },
-  descHeaderSpacer: {flex: 1},
-  avatar: {
-    width: getResponsiveWidth(28),
-    height: getResponsiveWidth(28),
-    borderRadius: getResponsiveWidth(14),
-  },
-  author: {
-    marginLeft: getResponsiveWidth(8),
-    color: 'white',
-    fontSize: getResponsiveFontSize(15),
-    fontFamily: 'Pretendard-SemiBold',
-  },
-  commentBtn: {
-    width: getResponsiveIconSize(22),
-    height: getResponsiveIconSize(22),
-  },
-  commentIcon: {
-    tintColor: 'white',
-    width: '100%',
-    height: '100%',
-  },
-  descContent: {
-    color: 'rgba(255,255,255,0.92)',
-    fontSize: getResponsiveFontSize(14),
-    lineHeight: getResponsiveHeight(22),
-    fontFamily: 'Pretendard-Medium',
-  },
-});

@@ -16,7 +16,6 @@ import {useNavigateToWhere} from 'hooks/useNavigateToWhere';
 import BottomActionButton from 'components/BottomActionButton';
 import {updateUserProfile} from 'api/userProfileApi';
 import {required, validateLength} from 'utils/validation';
-
 export default function UserSetupScreen() {
   const [name, setName] = useState('');
   const [birthDate, setBirthDate] = useState(null); // Date | null
@@ -204,6 +203,7 @@ export default function UserSetupScreen() {
       ) : null}
 
       <BottomActionButton
+        useAppFontScaling={false}
         label={loading ? '저장 중...' : '완료하기'}
         onPress={handleSubmit}
         disabled={isButtonDisabled}

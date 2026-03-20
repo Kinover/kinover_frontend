@@ -1,27 +1,18 @@
 import React from 'react';
-import {TouchableOpacity, Image, StyleSheet} from 'react-native';
+import { TouchableOpacity, Image, StyleSheet } from 'react-native';
 import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveWidth,
 } from 'utils/responsive';
 import {HEADER_STYLES} from 'styles/style';
 
-// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+// 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
 
 export default function CategoryDropdownButton({selectedTitle, onPress}) {
-  return (
-    <TouchableOpacity style={[styles.categoryButton]} onPress={onPress}>
-      <Text style={styles.text}>{selectedTitle}</Text>
-      <Image
-        source={require('assets/icons/category-down.png')}
-        style={styles.icon}
-      />
-    </TouchableOpacity>
-  );
-}
+  const styles = useScaledStyleSheet(rf => ({
 
-const styles = StyleSheet.create({
   categoryButton: {
     display: 'flex',
     flexDirection: 'row',
@@ -47,4 +38,16 @@ const styles = StyleSheet.create({
     height: getResponsiveWidth(20),
     alignSelf: 'center',
   },
-});
+
+  }));
+  return (
+    <TouchableOpacity style={[styles.categoryButton]} onPress={onPress}>
+      <AppText style={styles.text}>{selectedTitle}</AppText>
+      <Image
+        source={require('assets/icons/category-down.png')}
+        style={styles.icon}
+      />
+    </TouchableOpacity>
+  );
+}
+

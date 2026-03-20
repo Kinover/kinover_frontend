@@ -2,7 +2,7 @@
 // src/features/chat/screens/CreateChatRoom.jsx
 
 import React, {useState, useEffect, useLayoutEffect, useRef, useCallback} from 'react';
-import {View, ActivityIndicator} from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 
 import {useSelector, useDispatch} from 'react-redux';
 import {CommonActions} from '@react-navigation/native';
@@ -19,7 +19,7 @@ import ToastModal from 'components/modal/ToastModal';
 import {HEADER_STYLES} from 'styles/style';
 import AppText from 'components/AppText';
 
-// 기존 JSX의 <Text />를 접근성 정책 포함 AppText로 통일
+// 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
 
 // 너가 만든 바텀시트 컴포넌트
@@ -43,9 +43,9 @@ export default function CreateChatRoom({navigation}) {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: () => (
-        <Text style={styles.headerTitle}>
+        <AppText style={styles.headerTitle}>
           채팅방 만들기
-        </Text>
+        </AppText>
       ),
       headerRight: () => null,
     });

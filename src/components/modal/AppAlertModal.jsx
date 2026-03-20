@@ -1,7 +1,9 @@
 // src/components/AppAlertModal.jsx
 import React, {useEffect, useCallback, useMemo} from 'react';
-import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import CustomModal from './CustomModal';
+import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -37,6 +39,50 @@ export default function AppAlertModal({
 
   autoDismissMs = null,
 }) {
+  const styles = useScaledStyleSheet(rf => ({
+
+  modalBox: {borderRadius: getResponsiveWidth(22)},
+  contentStyle: {paddingTop: 0},
+
+  body: {
+    width: '100%',
+    alignItems: 'center',
+  },
+
+  imageWrap: {
+    width: '100%',
+    alignItems: 'center',
+    paddingTop: getResponsiveHeight(6),
+    paddingBottom: getResponsiveHeight(10),
+  },
+
+  image: {
+ // 필요하면 둥글게
+ // borderRadius: getResponsiveWidth(14),
+    marginVertical: -getResponsiveHeight(13),
+  },
+
+  message: {
+    width: '100%',
+    textAlign: 'center',
+    fontSize: rf(15),
+    fontWeight: '600',
+    color: '#374151',
+    lineHeight: Math.round(rf(22)),
+  },
+
+  tertiaryText: {
+    fontSize: rf(12),
+    fontWeight: '700',
+    color: 'white',
+    textDecorationLine: 'underline',
+  },
+
+  buttonRow: {},
+  closeText: {color: '#111827'},
+  confirmText: {color: '#FFFFFF'},
+
+  }));
  // 자동 닫힘
   useEffect(() => {
     if (!visible) return;
@@ -115,9 +161,9 @@ export default function AppAlertModal({
       footerOutside={
         tertiaryText ? (
           <TouchableOpacity activeOpacity={0.85} onPress={handleTertiary}>
-            <Text allowFontScaling={false} style={styles.tertiaryText}>
+            <AppText allowFontScaling={false} style={styles.tertiaryText}>
               {tertiaryText}
-            </Text>
+            </AppText>
           </TouchableOpacity>
         ) : null
       }>
@@ -133,54 +179,12 @@ export default function AppAlertModal({
         )}
 
         {!!resolvedMessage && (
-          <Text allowFontScaling={false} style={styles.message}>
+          <AppText allowFontScaling={false} style={styles.message}>
             {resolvedMessage}
-          </Text>
+          </AppText>
         )}
       </View>
     </CustomModal>
   );
 }
 
-const styles = StyleSheet.create({
-  modalBox: {borderRadius: getResponsiveWidth(22)},
-  contentStyle: {paddingTop: 0},
-
-  body: {
-    width: '100%',
-    alignItems: 'center',
-  },
-
-  imageWrap: {
-    width: '100%',
-    alignItems: 'center',
-    paddingTop: getResponsiveHeight(6),
-    paddingBottom: getResponsiveHeight(10),
-  },
-
-  image: {
- // 필요하면 둥글게
- // borderRadius: getResponsiveWidth(14),
-    marginVertical: -getResponsiveHeight(13),
-  },
-
-  message: {
-    width: '100%',
-    textAlign: 'center',
-    fontSize: getResponsiveFontSize(15),
-    fontWeight: '600',
-    color: '#374151',
-    lineHeight: Math.round(getResponsiveFontSize(22)),
-  },
-
-  tertiaryText: {
-    fontSize: getResponsiveFontSize(12),
-    fontWeight: '700',
-    color: 'white',
-    textDecorationLine: 'underline',
-  },
-
-  buttonRow: {},
-  closeText: {color: '#111827'},
-  confirmText: {color: '#FFFFFF'},
-});

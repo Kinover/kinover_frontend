@@ -1,12 +1,12 @@
 // components/common/ChatMessageItem.jsx
 import React, {memo} from 'react';
-import {View, StyleSheet} from 'react-native';
+import {View} from 'react-native';
 import AppText from 'components/AppText';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveWidth,
   getResponsiveIconSize,
   getResponsiveHeight,
-  getResponsiveFontSize,
 } from 'utils/responsive';
 
 import ReceiveChat from './receiveChat';
@@ -60,6 +60,28 @@ function ChatMessageItem({
   unreadCount = 0,
   forceShowTime = false,
 }) {
+  const styles = useScaledStyleSheet(rf => ({
+    wrapper: {width: '100%', paddingHorizontal: '2.5%'},
+    alignRight: {alignItems: 'flex-end'},
+    alignLeft: {alignItems: 'flex-start'},
+    dateSeparator: {
+      alignSelf: 'center',
+      paddingHorizontal: getResponsiveWidth(12),
+      paddingVertical: getResponsiveHeight(4),
+      marginVertical: getResponsiveHeight(25),
+      backgroundColor: 'rgba(0, 0, 0, 0.25)',
+      borderRadius: getResponsiveIconSize(20),
+    },
+    dateSeparatorText: {
+      textAlign: 'center',
+      textAlignVertical: 'center',
+      fontFamily: 'Pretendard-SemiBold',
+      fontSize: rf(11.5),
+      color: 'white',
+      lineHeight: rf(16),
+    },
+  }));
+
   if (!message) return null;
 
   const localType = message?.localType;
@@ -168,25 +190,3 @@ function ChatMessageItem({
 }
 
 export default memo(ChatMessageItem);
-
-const styles = StyleSheet.create({
-  wrapper: {width: '100%', paddingHorizontal: '2.5%'},
-  alignRight: {alignItems: 'flex-end'},
-  alignLeft: {alignItems: 'flex-start'},
-  dateSeparator: {
-    alignSelf: 'center',
-    paddingHorizontal: getResponsiveWidth(12),
-    paddingVertical: getResponsiveHeight(4),
-    marginVertical: getResponsiveHeight(25),
-    backgroundColor: 'rgba(0, 0, 0, 0.25)',
-    borderRadius: getResponsiveIconSize(20),
-  },
-  dateSeparatorText: {
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: getResponsiveFontSize(11.5),
-    color: 'white',
-    lineHeight: getResponsiveHeight(16),
-  },
-});

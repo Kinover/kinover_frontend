@@ -4,6 +4,7 @@
 // - 탭 연타 방지
 // - Layout은 dismissKeyboardOnPress=true로 “키보드 열려있을 때만” dismiss 하도록
 
+import AppText from 'components/AppText';
 import React, {
   forwardRef,
   useImperativeHandle,
@@ -13,16 +14,7 @@ import React, {
   useEffect,
   useCallback,
 } from 'react';
-import {
-  Text,
-  View,
-  StyleSheet,
-  Platform,
-  TouchableOpacity,
-  Keyboard,
-  Animated,
-  Dimensions,
-} from 'react-native';
+import { View, StyleSheet, Platform, TouchableOpacity, Keyboard, Animated, Dimensions } from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {
@@ -43,7 +35,7 @@ import {BottomSheetTextInput, BottomSheetView} from '@gorhom/bottom-sheet';
 import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
 import {BOTTOMSHEET_STYLE} from 'styles/style';
 
-import {useSelector} from 'react-redux';
+import {useReduxFontMode} from 'hooks/useReduxFontMode';
 import SlideSegment from 'components/SlideSegment';
 import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
 
@@ -161,7 +153,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     },
     ref,
   ) => {
-    const fontMode = useSelector(state => state.ui.fontMode);
+    const fontMode = useReduxFontMode();
 
     const [localKind, setLocalKind] = useState(KIND.INDIVIDUAL);
     const [localSelectedUserIds, setLocalSelectedUserIds] = useState([]);
@@ -695,12 +687,12 @@ const ScheduleEditorBottomSheetModal = forwardRef(
               selected && styles.chipSelected,
               disabledByMode && styles.chipDisabled,
             ]}>
-            <Text
+            <AppText
               allowFontScaling={false}
               style={[styles.chipText, selected && styles.chipTextSelected]}
               numberOfLines={1}>
               {item.name}
-            </Text>
+            </AppText>
           </TouchableOpacity>
         );
       },
@@ -747,9 +739,9 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                 }}
               >
                 <View style={styles.content}>
-                  <Text allowFontScaling={false} style={styles.sectionTitle}>
+                  <AppText allowFontScaling={false} style={styles.sectionTitle}>
                     구분
-                  </Text>
+                  </AppText>
 
                   <SlideSegment
                     items={KIND_SEGMENTS}
@@ -765,14 +757,14 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
                   <View style={{marginTop: getResponsiveHeight(18)}}>
                     <View style={styles.sectionRow}>
-                      <Text allowFontScaling={false} style={styles.sectionTitle}>
+                      <AppText allowFontScaling={false} style={styles.sectionTitle}>
                         구성원
-                      </Text>
+                      </AppText>
 
                       {isAnniversaryMode ? null : (
-                        <Text allowFontScaling={false} style={styles.countText}>
+                        <AppText allowFontScaling={false} style={styles.countText}>
                           {selectedCount}명 선택
-                        </Text>
+                        </AppText>
                       )}
                     </View>
 
@@ -784,23 +776,23 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
                     <View style={styles.tipRow}>
                       <View style={styles.tipDot} />
-                      <Text allowFontScaling={false} style={styles.tipText}>
+                      <AppText allowFontScaling={false} style={styles.tipText}>
                         {isIndividualMode ? '개별: 1명 이상' : null}
                         {isFamilyMode ? '가족: 전체 또는 여러 명' : null}
                         {isAnniversaryMode
                           ? '기념일: 구성원은 “전체”로 고정돼요.'
                           : null}
-                      </Text>
+                      </AppText>
                     </View>
                   </View>
 
                   <View style={{marginTop: getResponsiveHeight(18)}}>
-                    <Text
+                    <AppText
                       allowFontScaling={false}
                       style={[styles.sectionTitle, {marginBottom: 3}]}
                     >
                       내용
-                    </Text>
+                    </AppText>
 
                     <BottomSheetTextInput
                       allowFontScaling={false}
