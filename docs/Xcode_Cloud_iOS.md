@@ -15,23 +15,34 @@ Archive 단계에서 아래와 비슷한 오류가 나는 경우:
 
 ## 대응 (이 저장소)
 
-저장소 루트에 **`ci_scripts/ci_post_clone.sh`** 를 두었다.
+저장소 루트 **`ci_scripts/`** 에 스크립트를 둔다.
 
-- 클론 직후: `npm ci` → `cd ios && pod install`
-- Xcode Cloud는 이 스크립트를 자동으로 실행한다. ([Custom script timing](https://developer.apple.com/documentation/xcode/running-custom-scripts-during-a-build))
+| 스크립트 | 시점 |
+|----------|------|
+| **`ci_post_clone.sh`** | 클론 직후 — `npm ci` → `pod install`, 생성된 `Pods-kinover_frontend.release.xcconfig` 존재 여부 검사 |
+| **`ci_pre_xcodebuild.sh`** | **xcodebuild 직전** — `node_modules`/Pods 없으면 다시 설치 (post_clone이 스킵·실패해도 방어) |
 
-스크립트에 **실행 권한**이 있어야 한다:
+[Xcode Cloud custom scripts](https://developer.apple.com/documentation/xcode/running-custom-scripts-during-a-build)
+
+실행 권한 (커밋 시 유지):
 
 ```bash
-chmod +x ci_scripts/ci_post_clone.sh
-git update-index --chmod=+x ci_scripts/ci_post_clone.sh
+chmod +x ci_scripts/ci_post_clone.sh ci_scripts/ci_pre_xcodebuild.sh
+git add --chmod=+x ci_scripts/ci_post_clone.sh ci_scripts/ci_pre_xcodebuild.sh
 ```
 
-## App Store Connect에서 확인할 것
+## 빌드 로그에서 확인할 것
 
-1. **Xcode Cloud** → 해당 워크플로 → **Edit Workflow**
-2. **Environment**에서 Node/npm이 필요하면 버전 지정(이미지에 따라 다름)
-3. 변경 후 다시 빌드
+Xcode Cloud 아티팩트 로그에 **`[ci_post_clone]`** / **`[ci_pre_xcodebuild]`** 가 찍히는지 본다.
+
+- **한 줄도 없으면** → 워크플로가 이 저장소/브랜치를 쓰는지, `ci_scripts`가 그 커밋에 포함됐는지 확인.
+- **ERROR 줄이 있으면** → 그 메시지 기준으로 `npm ci` / `pod` / 네트워크 등을 본다.
+
+## App Store Connect
+
+1. **Xcode Cloud** → 워크플로 → **Edit Workflow**
+2. 빌드하는 **브랜치**가 위 스크립트가 머지된 브랜치인지 확인
+3. **Environment**에서 Node 버전이 필요하면 지정
 
 ## 로컬에서 동일 재현
 
@@ -40,5 +51,3 @@ rm -rf ios/Pods ios/build
 npm ci
 cd ios && pod install
 ```
-
-이후 Xcode에서 Archive가 되면, CI에서도 동일하게 `ci_post_clone`만 정상 실행되면 통과한다.
