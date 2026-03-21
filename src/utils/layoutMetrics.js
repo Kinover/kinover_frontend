@@ -75,12 +75,6 @@ export const getScheduleBottomSheetSnapPoints = (fontMode, memberCount = 0) => {
 
 export const getKeyboardSafeGap = () => getResponsiveHeight(12);
 
-export const getChatKeyboardVerticalOffset = topInset => {
-  if (Platform.OS !== 'ios') return 0;
-  const insetTop = Number(topInset || 0);
-  return Math.round(Math.max(0, insetTop - getResponsiveHeight(4)));
-};
-
 export const getAndroidNavBottomInsetEstimate = () => {
   if (Platform.OS !== 'android') return 0;
 

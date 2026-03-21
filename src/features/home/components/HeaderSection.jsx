@@ -10,9 +10,9 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 
-import {useNavigation} from '@react-navigation/native';
 import DropShadow from 'react-native-drop-shadow';
 import {hapticLight} from 'utils/haptic';
+import {safeNavigate} from 'app/navigation/navigationService';
 import {getEmotionImage, getEmotionColor} from '../utils/emotionUtils';
 import {COLORS, DEFAULT_STYLE, LAYOUT_STYLE} from 'styles/style';
 
@@ -164,7 +164,6 @@ export default function HeaderSection({user, onUserPress, onInvitePress, guideRe
   },
 
   }));
-  const navigation = useNavigation();
   const {width: screenWidth} = useWindowDimensions();
 
   const containerWidth =
@@ -418,8 +417,13 @@ export default function HeaderSection({user, onUserPress, onInvitePress, guideRe
  */
   const goEmotionSetting = useCallback(() => {
     hapticLight();
-    navigation.navigate('감정상태화면');
-  }, [navigation]);
+    // HomeStack의 감정상태화면은 탭·루트 아래에 중첩됨. 직접 navigate('감정상태화면')은
+    // 컨텍스트에 따라 미처리 액션이 되어 튕김(빨간 화면)이 날 수 있음.
+    safeNavigate('Tabs', {
+      screen: '홈',
+      params: {screen: '감정상태화면'},
+    });
+  }, []);
 
  /**
  * =========================================================

@@ -16,14 +16,10 @@ import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
-  getResponsiveFontSize,
   getResponsiveIconSize,
 } from 'utils/responsive';
 import {BUTTON_STYLES} from 'styles/style';
 import SelectionFrameLayout from 'components/layouts/SelectionFrameLayout';
-
-// 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
-const Text = AppText;
 
 const KINO_TYPE_TO_PERSONALITY = {
   YELLOW_KINO: 'SUNNY',
@@ -329,7 +325,7 @@ export default function KinoSelectScreen() {
         ),
       );
     },
-    [cardColors.highlight],
+    [cardColors.highlight, styles],
   );
 
  // 둥둥 모션(캐릭터)
@@ -396,6 +392,7 @@ export default function KinoSelectScreen() {
               index={currentIndex}
               descriptions={KINOS.map(k => k.description)}
               renderLine={renderHighlightedLine}
+              styles={styles}
             />
           </View>
         </View>
@@ -506,7 +503,7 @@ export default function KinoSelectScreen() {
  * - "단일 Text 컨테이너" 안에서 줄별 렌더
  * - 줄 사이에는 '\n'을 그대로 넣어 RN이 라인 레이아웃을 안정적으로 계산하게 함
  */
-function FadingKinoText({index, descriptions, renderLine}) {
+function FadingKinoText({index, descriptions, renderLine, styles}) {
   const [displayIndex, setDisplayIndex] = useState(index);
   const fade = useRef(new Animated.Value(1)).current;
   const translateY = useRef(new Animated.Value(0)).current;
