@@ -1,7 +1,7 @@
 // ChatRoomScreenTemplate - 공통 채팅방 화면 (관심사 분리: 훅 + 메시지/입력 컴포넌트)
 import React from 'react';
 import {StyleSheet, KeyboardAvoidingView, Platform, View} from 'react-native';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useHeaderHeight} from '@react-navigation/elements';
 
 import useChatRoomTemplate from '../hooks/useChatRoomTemplate';
 import {onLeaveChat} from '../hooks/onLeaveChat';
@@ -10,7 +10,6 @@ import ChatRoomMessageList from '../components/messages/ChatRoomMessageList';
 import ChatRoomInputArea from '../components/rooms/ChatRoomInputArea';
 import ChatSettings from './chatSetting';
 import ToastModal from 'components/modal/ToastModal';
-import {getChatKeyboardVerticalOffset} from 'utils/layoutMetrics';
 
 export default function ChatRoomScreenTemplate({
   chatRoom,
@@ -19,8 +18,8 @@ export default function ChatRoomScreenTemplate({
   isKino,
   navigation,
 }) {
-  const insets = useSafeAreaInsets();
-  const keyboardVerticalOffset = getChatKeyboardVerticalOffset(insets.top);
+  // 스택 헤더 높이 — iOS KeyboardAvoidingView offset에 safe area top만 쓰면 입력창이 키보드에 가려짐
+  const headerHeight = useHeaderHeight();
 
   const {
     chatRoomId,
@@ -93,7 +92,7 @@ export default function ChatRoomScreenTemplate({
       <KeyboardAvoidingView
         style={styles.container}
         behavior="padding"
-        keyboardVerticalOffset={keyboardVerticalOffset}>
+        keyboardVerticalOffset={headerHeight}>
         {content}
       </KeyboardAvoidingView>
     );

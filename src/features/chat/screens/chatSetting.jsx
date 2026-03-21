@@ -1,11 +1,8 @@
 /* =========================================================
- * src/features/chat/components/ChatSettings.jsx
- * - AddChatMemberScreen?? ???? ?? route params?? merge? ??
- * invitedToast / invitedCount / invitedMessage ? ??? ??? ??
- * - ?? ??? ???? ?? params??? ??(?? ??)
- * - (??) ChatSettings? Screen? ?? ??? ?????? ? ??
- * useRoute/useFocusEffect ?? ? "Couldn't find a route object" ??? ??
- * ? navigation.getState()? ?? route? ?? ?? params ??
+ * 채팅 설정 슬라이드 패널 (Modal)
+ * - 멤버 추가 화면 복귀 시 route params로 초대 결과 토스트
+ * - invitedToast / invitedCount / invitedMessage
+ * - Modal은 useRoute 없이 navigation.getState()로 params 읽음
  * ========================================================= */
 
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
@@ -50,11 +47,12 @@ import {
 } from '../store/chatRoomSlice';
 
 import ToastModal from 'components/modal/ToastModal';
+import formatDuration from 'utils/formatDuration';
 import {resetRoomMessageList} from '../store/messageSlice';
 import {BACKGROUND_COLORS, COLORS} from 'styles/style';
 import {FONT_MODE} from 'store/uiSlice';
 
-/** ?? row ?? ?? */
+/** 설정 행(Pressable) */
 const SectionRowButton = React.memo(function SectionRowButton({
   onPress,
   children,
@@ -83,7 +81,7 @@ export default function ChatSettings({
   chatRoomId,
   navigation,
   isKino,
-  onOpenAddMember, // ??
+  onOpenAddMember,
 }) {
   const tint_color = 'black';
   const dispatch = useDispatch();
@@ -91,18 +89,11 @@ export default function ChatSettings({
   const fontMode = useReduxFontMode();
   const hideHeaderSubtitle = fontMode === FONT_MODE.EXTRA_LARGE;
 
-  const fontMul = useMemo(() => {
-    if (fontMode === FONT_MODE.EXTRA_LARGE) return 1.22;
-    if (fontMode === FONT_MODE.LARGE) return 1.12;
-    return 1.0;
-  }, [fontMode]);
-
-  const rf = useCallback(
-    n => Math.round(getResponsiveFontSize(n) * fontMul),
-    [fontMul],
+  // 글자 크기는 getResponsiveFontSize만 사용 (fontMul 이중 배율 없음).
+  const styles = useMemo(
+    () => makeStyles(n => getResponsiveFontSize(n)),
+    [fontMode],
   );
-
-  const styles = useMemo(() => makeStyles(rf), [rf]);
 
   const [isChangeKinoModalVisible, setIsChangeKinoModalVisible] =
     useState(false);
@@ -138,7 +129,7 @@ export default function ChatSettings({
     chatRoomUsers.length >= familyMembers.length;
 
  // =========================================================
- // ?? ????
+ // 패널 애니메이션
  // =========================================================
   const panelW = getResponsiveWidth(310);
   const translateX = useSharedValue(panelW);
@@ -174,9 +165,10 @@ export default function ChatSettings({
   useEffect(() => () => clearCloseTimer(), []);
 
  // =========================================================
+ // 현재 라우트 / params
  // =========================================================
   const getCurrentRouteInfo = useCallback(() => {
- // navigation? ??? getState ??? ???? null ??
+ // navigation 없으면 getState는 undefined
     const state = navigation?.getState?.();
     const routes = state?.routes || [];
     const index =
@@ -190,8 +182,8 @@ export default function ChatSettings({
   }, [navigation]);
 
   const clearInvitedToastParams = useCallback(() => {
- // ??? ??(=??? ??)? params ??
- // setParams? ?? route? ???? ???? ?? ??? ?? ??
+ // 초대 토스트용 params만 제거
+ // 가능하면 현재 route에 setParams
     try {
       navigation?.setParams?.({
         invitedToast: undefined,
@@ -199,7 +191,7 @@ export default function ChatSettings({
         invitedMessage: undefined,
       });
     } catch (e) {
- // ?? setParams? ? ?? ?? ??? merge navigate? ?? ?
+ // setParams 실패 시 merge navigate로 동일 처리
       const {currentRouteName} = getCurrentRouteInfo();
       if (!currentRouteName) return;
       try {
@@ -218,7 +210,6 @@ export default function ChatSettings({
     }
   }, [navigation, getCurrentRouteInfo]);
 
- // ??? ??? ?? ? ? ???? ??? ??? ??
   useEffect(() => {
     if (!isOpen) return;
 
@@ -231,8 +222,8 @@ export default function ChatSettings({
       const msg =
         invitedMessage ||
         (typeof invitedCount === 'number'
-          ? `${invitedCount}?? ?????.`
-          : '??? ?????.');
+          ? `${invitedCount}명을 초대했어요.`
+          : '멤버를 초대했어요.');
 
       setToastMessage(msg);
       setToastVisible(true);
@@ -252,7 +243,7 @@ export default function ChatSettings({
   ]);
 
  // =========================================================
- // ??? ??
+ // 미디어 미리보기
  // =========================================================
   const [mediaType, setMediaType] = useState('ALL');
   const [mediaItems, setMediaItems] = useState([]);
@@ -332,7 +323,7 @@ export default function ChatSettings({
       const items = Array.isArray(res?.items) ? res.items : [];
       setMediaItems(items);
     } catch (e) {
-      console.warn('? fetchMediaFirst ??:', e);
+      console.warn('[fetchMediaFirst] 실패:', e);
       setMediaItems([]);
     } finally {
       setMediaLoading(false);
@@ -406,7 +397,7 @@ export default function ChatSettings({
     if (!chatRoomId) return;
     onClose();
     setTimeout(() => {
-      navigation.navigate('????????????', {
+      navigation.navigate('채팅방미디어모아보기화면', {
         chatRoomId,
         initialType: mediaType,
       });
@@ -451,13 +442,15 @@ export default function ChatSettings({
     )
       .unwrap()
       .then(() => {
-        setToastMessage(newIsOn ? '??? ???.' : '??? ???.');
+        setToastMessage(newIsOn ? '알림을 켰어요.' : '알림을 껐어요.');
         setToastVisible(true);
       })
       .catch(err => {
-        console.warn('? ?? ?? ?? ??:', err);
+        console.warn('[알림 설정] 실패:', err);
         setIsAlarmOn(!newIsOn);
-        setToastMessage('?? ?? ??? ?????.\n?? ??? ???.');
+        setToastMessage(
+          '알림 설정을 바꾸지 못했어요.\n잠시 후 다시 시도해 주세요.',
+        );
         setToastVisible(true);
       });
   };
@@ -472,7 +465,7 @@ export default function ChatSettings({
         dispatch(updateChatRoomNameInList({chatRoomId, newRoomName: nextName}));
         setIsRenameModalVisible(false);
         setNewRoomName('');
-        setToastMessage('??? ??? ????.');
+        setToastMessage('채팅방 이름을 바꿨어요.');
         setToastVisible(true);
       })
       .catch(err => {
@@ -483,35 +476,27 @@ export default function ChatSettings({
             ? err.message
             : JSON.stringify(err);
 
-        setToastMessage(`?? ?? ??: ${msg}`);
+        setToastMessage(`이름 변경 실패: ${msg}`);
         setToastVisible(true);
       });
   };
 
   const openAddMember = () => {
-    navigation.navigate('?????????', {
+    navigation.navigate('채팅방멤버추가화면', {
       chatRoomId,
       onInvited: ({count, message}) => {
- // 1) ??? Screen? route params? ??? ???? "??" ?? (?? ??)
         navigation.setParams({
           invitedToast: true,
           invitedCount: count,
           invitedMessage: message,
         });
 
- // 2) ???? ??? ?? ?? ??? ?? (??? users ???)
- // dispatch(fetchChatRoomUsersThunk(chatRoomId));
       },
     });
   };
 
   const handleShowMembers = () => {
     onClose();
-
- // AddChatMemberScreen? ???? Screen name?? ? ? ?? ?? route.name ??
-    const {currentRouteName} = getCurrentRouteInfo();
-    const chatRoomScreenName = currentRouteName || '?????';
-
     openAddMember();
   };
 
@@ -528,7 +513,7 @@ export default function ChatSettings({
     dispatch(bumpChatRoomToTop(chatRoomId));
 
     onClose();
-    setTimeout(() => navigation.navigate('??????', {chatRoomId}), 260);
+    setTimeout(() => navigation.navigate('키노선택화면', {chatRoomId}), 260);
   };
 
   const listData = useMemo(() => [], []);
@@ -542,7 +527,7 @@ export default function ChatSettings({
         <View style={styles.mediaLoadingBox}>
           <ActivityIndicator />
           <AppText allowFontScaling={false} style={styles.helperText}>
-            ???? ??
+            불러오는 중…
           </AppText>
         </View>
       );
@@ -551,7 +536,7 @@ export default function ChatSettings({
     if (mediaItems.length === 0) {
       return (
         <AppText allowFontScaling={false} style={styles.helperText}>
-          ?? ??? ???? ???.
+          아직 미디어가 없어요.
         </AppText>
       );
     }
@@ -601,7 +586,7 @@ export default function ChatSettings({
                       <AppText
                         allowFontScaling={false}
                         style={styles.videoBadgeText}>
-                        ??
+                        {formatDuration(item?.duration)}
                       </AppText>
                     </View>
                   )}
@@ -617,7 +602,7 @@ export default function ChatSettings({
             onPress={goToMediaPage}
             activeOpacity={0.9}>
             <AppText allowFontScaling={false} style={styles.moreButtonText}>
-              ? ??
+              더 보기
             </AppText>
           </TouchableOpacity>
         )}
@@ -652,11 +637,11 @@ export default function ChatSettings({
               <View style={styles.sectionRow}>
                 <View style={styles.sectionTextBox}>
                   <AppText allowFontScaling={false} style={styles.sectionTitle}>
-                    ??? ??
+                    채팅 이름 변경
                   </AppText>
                   {!hideHeaderSubtitle && (
                     <AppText allowFontScaling={false} style={styles.sectionDesc}>
-                      ? ???? ??? ??? ???.
+                      이 채팅방에서만 보이는 이름을 바꿀 수 있어요.
                     </AppText>
                   )}
                 </View>
@@ -675,11 +660,11 @@ export default function ChatSettings({
               <View style={styles.sectionRow}>
                 <View style={styles.sectionTextBox}>
                   <AppText allowFontScaling={false} style={styles.sectionTitle}>
-                    ?? ??
+                    멤버
                   </AppText>
                   {!hideHeaderSubtitle && (
                     <AppText allowFontScaling={false} style={styles.sectionDesc}>
-                      ?? ???? ??? ????.
+                      함께하는 멤버를 확인할 수 있어요.
                     </AppText>
                   )}
                 </View>
@@ -722,8 +707,8 @@ export default function ChatSettings({
                   {!isAllFamilyInChat && (
                     <TouchableOpacity
                       onPress={() => {
-                        onClose(); // ??? ??
-                        onOpenAddMember?.(); // ??(???)?? ?? + ??? ??
+                        onClose(); // 설정 패널 닫기
+                        onOpenAddMember?.(); // 부모에서 멤버 추가 플로우 열기
                       }}
                       style={styles.inviteBtn}
                       activeOpacity={0.9}>
@@ -732,7 +717,7 @@ export default function ChatSettings({
                         style={styles.addIcon}
                       />
                       <AppText allowFontScaling={false} style={styles.inviteText}>
-                        ? ?? ??
+                        멤버 초대하기
                       </AppText>
                     </TouchableOpacity>
                   )}
@@ -750,11 +735,11 @@ export default function ChatSettings({
               <View style={styles.sectionRow}>
                 <View style={styles.sectionTextBox}>
                   <AppText allowFontScaling={false} style={styles.sectionTitle}>
-                    ?? ????
+                    키노 변경
                   </AppText>
                   {!hideHeaderSubtitle && (
                     <AppText allowFontScaling={false} style={styles.sectionDesc}>
-                      ??? ??? ?????.
+                      이 채팅에 연결된 키노를 바꿀 수 있어요.
                     </AppText>
                   )}
                 </View>
@@ -776,11 +761,11 @@ export default function ChatSettings({
                 <View style={styles.sectionRow}>
                   <View style={styles.sectionTextBox}>
                     <AppText allowFontScaling={false} style={styles.sectionTitle}>
-                      ???
+                      미디어 모아보기
                     </AppText>
                     {!hideHeaderSubtitle && (
                       <AppText allowFontScaling={false} style={styles.sectionDesc}>
-                        ??/??? ??? ????.
+                        사진·동영상을 한곳에서 볼 수 있어요.
                       </AppText>
                     )}
                   </View>
@@ -826,10 +811,10 @@ export default function ChatSettings({
                                 active && styles.mediaTabTextActive,
                               ]}>
                               {t === 'ALL'
-                                ? '??'
+                                ? '전체'
                                 : t === 'IMAGE'
-                                ? '??'
-                                : '??'}
+                                ? '사진'
+                                : '동영상'}
                             </AppText>
                           </TouchableOpacity>
                         );
@@ -930,12 +915,12 @@ export default function ChatSettings({
         <View style={styles.header}>
           <View style={styles.headerTextBox}>
             <AppText allowFontScaling={false} style={styles.headerTitle}>
-              ??? ??
+              채팅 설정
             </AppText>
 
             {!hideHeaderSubtitle && (
               <AppText allowFontScaling={false} style={styles.headerSubtitle}>
-                ?? ? ?? ? ??? ????.
+                알림·이름·미디어 등을 관리할 수 있어요.
               </AppText>
             )}
           </View>
@@ -986,7 +971,7 @@ export default function ChatSettings({
                 onPress={() => setIsLeaveModalVisible(true)}
                 activeOpacity={0.9}>
                 <AppText allowFontScaling={false} style={styles.leaveText}>
-                  ??? ???
+                  채팅방 나가기
                 </AppText>
               </TouchableOpacity>
             </View>
@@ -1031,7 +1016,7 @@ const makeStyles = rf =>
       fontSize: rf(19),
       fontFamily: 'Pretendard-SemiBold',
       color: COLORS.textPrimary,
-      lineHeight: rf(20),
+      lineHeight: rf(24),
     },
 
     headerSubtitle: {
@@ -1039,7 +1024,7 @@ const makeStyles = rf =>
       fontSize: rf(12),
       fontFamily: 'Pretendard-Regular',
       color: COLORS.textSecondary,
-      lineHeight: rf(14),
+      lineHeight: rf(17),
     },
 
     alarmBtn: {
@@ -1092,7 +1077,7 @@ const makeStyles = rf =>
       fontSize: rf(14),
       fontFamily: 'Pretendard-SemiBold',
       color: COLORS.textPrimary,
-      lineHeight: rf(16),
+      lineHeight: rf(19),
     },
 
     sectionDesc: {
@@ -1100,7 +1085,7 @@ const makeStyles = rf =>
       fontSize: rf(11),
       fontFamily: 'Pretendard-Regular',
       color: COLORS.textSecondary,
-      lineHeight: rf(13),
+      lineHeight: rf(15),
     },
 
     chevronDown: {
@@ -1295,10 +1280,10 @@ const makeStyles = rf =>
       fontSize: rf(13.5),
     },
     alarmPressable: {
-      borderRadius: getResponsiveIconSize(12), // alarmBtn? ?? ???
+      borderRadius: getResponsiveIconSize(12), // 알림 버튼 터치 영역
     },
 
     alarmPressed: {
-      backgroundColor: 'rgba(17,24,39,0.06)', // ?? hover? ? ??
+      backgroundColor: 'rgba(17,24,39,0.06)', // 눌렀을 때 배경
     },
   });

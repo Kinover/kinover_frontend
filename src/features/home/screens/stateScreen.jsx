@@ -6,7 +6,6 @@ import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   View,
   TouchableWithoutFeedback,
-  StyleSheet,
   Animated,
   Dimensions,
 } from 'react-native';
@@ -17,7 +16,6 @@ import {useNavigation} from '@react-navigation/native';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
-  getResponsiveFontSize,
 } from 'utils/responsive';
 import useHideTabBar from 'hooks/useHideTabBar';
 import {modifyUserThunk} from '../store/userThunk';
@@ -91,6 +89,7 @@ const ROW_GAP = getResponsiveHeight(12);
  * @param {Function} props.onPress - 클릭 핸들러
  * @param {number} props.itemWidth - 아이템 너비
  * @param {number} [props.cardHeight] - 카드 높이 (미주입 시 CARD_H_DEFAULT)
+ * @param {Object} props.styles - StateScreen의 useScaledStyleSheet 결과
  */
 const EmotionItem = ({
   item,
@@ -99,6 +98,7 @@ const EmotionItem = ({
   onPress,
   itemWidth,
   cardHeight,
+  styles,
 }) => {
   const cardH = cardHeight ?? CARD_H_DEFAULT;
   const appear = useRef(new Animated.Value(0)).current;
@@ -250,7 +250,7 @@ export default function StateScreen() {
   const dispatch = useDispatch();
   const user = useSelector(state => state.user);
   const [selectedEmotion, setSelectedEmotion] = useState(
-    user.emotion || 'NEUTRAL',
+    user?.emotion || 'NEUTRAL',
   );
 
  // 하단 탭바 숨김
@@ -275,8 +275,8 @@ export default function StateScreen() {
     if (!selectedEmotion) return;
     dispatch(
       modifyUserThunk({
-        userId: user.userId,
-        trait: user.trait,
+        userId: user?.userId,
+        trait: user?.trait,
         emotion: selectedEmotion,
       }),
     )
@@ -317,6 +317,7 @@ export default function StateScreen() {
                 index={rowIndex * 2 + colIndex}
                 itemWidth={itemWidth}
                 cardHeight={cardHeight}
+                styles={styles}
                 isSelected={selectedEmotion === item.id}
                 onPress={setSelectedEmotion}
               />

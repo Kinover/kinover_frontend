@@ -10,7 +10,7 @@ import React, {
   useImperativeHandle,
   useMemo,
 } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, Platform, Dimensions, Image, LayoutAnimation, UIManager, Keyboard } from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet, Platform, Dimensions, Image, LayoutAnimation, UIManager, Keyboard, ScrollView } from 'react-native';
 import {useDispatch} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
 import {Gesture} from 'react-native-gesture-handler';
@@ -88,6 +88,11 @@ const INNER_PAD_H = getResponsiveWidth(14);
 // 갤러리 높이(열렸을 때)
 const GALLERY_H = getResponsiveHeight(300);
 
+// 입력창 아래 첨부 미리보기 그리드 (6장 초과 시 높이 고정 + 세로 스크롤)
+const PREVIEW_COLS = 3;
+const PREVIEW_GAP = getResponsiveWidth(6);
+const PREVIEW_SCROLL_THRESHOLD = 6;
+
 if (
   Platform.OS === 'android' &&
   UIManager.setLayoutAnimationEnabledExperimental
@@ -148,6 +153,30 @@ const ChatInput = forwardRef(function ChatInput(
   const trimmed = message.trim();
   const hasSelection = selectedImages.length > 0;
   const canSend = !isSending && (trimmed.length > 0 || hasSelection);
+
+  const previewCellSize = useMemo(() => {
+    const totalGaps = PREVIEW_GAP * (PREVIEW_COLS - 1);
+    return (SCREEN_WIDTH - INNER_PAD_H * 2 - totalGaps) / PREVIEW_COLS;
+  }, []);
+
+  const previewScrollMaxHeight = useMemo(() => {
+    return 2 * previewCellSize + PREVIEW_GAP;
+  }, [previewCellSize]);
+
+  const previewGridHeight = useMemo(() => {
+    if (!hasSelection) return 0;
+    const n = selectedImages.length;
+    const topPad = getResponsiveHeight(8);
+    const bottomPad = getResponsiveHeight(4);
+    const effectiveRows =
+      n > PREVIEW_SCROLL_THRESHOLD ? 2 : Math.ceil(n / PREVIEW_COLS);
+    return (
+      topPad +
+      effectiveRows * previewCellSize +
+      Math.max(0, effectiveRows - 1) * PREVIEW_GAP +
+      bottomPad
+    );
+  }, [hasSelection, selectedImages.length, previewCellSize]);
 
   const imageSize = useMemo(() => {
     const totalGap = GAP * (gridColumns - 1);
@@ -294,6 +323,57 @@ const ChatInput = forwardRef(function ChatInput(
     setSelectedImages(prev => toggleSelectImage(prev, item));
   }, []);
 
+  const removeSelectedAt = useCallback(index => {
+    hapticSelection();
+    setSelectedImages(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const attachmentPreviewCells = useMemo(
+    () =>
+      selectedImages.map((item, index) => (
+        <View
+          key={`${item.uri}-${index}`}
+          style={[
+            styles.previewCell,
+            {
+              width: previewCellSize,
+              height: previewCellSize,
+              marginRight:
+                (index + 1) % PREVIEW_COLS === 0 ? 0 : PREVIEW_GAP,
+              marginBottom: PREVIEW_GAP,
+            },
+          ]}>
+          <Image
+            source={{uri: item.uri}}
+            style={styles.previewImage}
+            resizeMode="cover"
+          />
+          {item.isVideo && (
+            <View style={[styles.videoBadge, styles.previewVideoBadge]}>
+              <AppText style={styles.videoBadgeText}>
+                {formatDuration(item.duration)}
+              </AppText>
+            </View>
+          )}
+          <TouchableOpacity
+            style={styles.previewRemove}
+            onPress={() => removeSelectedAt(index)}
+            hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}
+            activeOpacity={0.85}
+            accessibilityLabel="첨부 삭제">
+            <View style={styles.previewRemoveInner}>
+              <AppText
+                allowFontScaling={false}
+                style={styles.previewRemoveText}>
+                ×
+              </AppText>
+            </View>
+          </TouchableOpacity>
+        </View>
+      )),
+    [selectedImages, previewCellSize, removeSelectedAt],
+  );
+
  /**
  * 시스템 갤러리 멀티 선택 (이걸 +버튼 탭에 연결할 거야!)
  */
@@ -338,11 +418,15 @@ const ChatInput = forwardRef(function ChatInput(
       if (normalized.length === 0) return;
 
       setSelectedImages(prev => {
-        const map = new Map(prev.map(x => [x.uri, x]));
+        const seen = new Set(prev.map(x => x.uri));
+        const next = [...prev];
         for (const n of normalized) {
-          if (!map.has(n.uri)) map.set(n.uri, n);
+          if (!seen.has(n.uri)) {
+            next.push(n);
+            seen.add(n.uri);
+          }
         }
-        return Array.from(map.values());
+        return next;
       });
 
  // 시스템 갤러리로 뽑았으면 인앱 갤러리는 닫아주기
@@ -680,9 +764,15 @@ const ChatInput = forwardRef(function ChatInput(
     const inputBarH = INNER_PAD_V * 2 + INPUT_H;
 
  // 드롭다운은 “입력바 위”에 떠야 하므로:
- // 하단 = (safe bottom padding) + (갤러리 높이) + (입력바 높이) + gap
-    return insets.bottom + gallery + inputBarH + gap;
-  }, [insets.bottom, showGallery]);
+ // 하단 = safe + 갤러리 + 첨부 미리보기 + 입력바 + gap
+    return (
+      insets.bottom +
+      gallery +
+      previewGridHeight +
+      inputBarH +
+      gap
+    );
+  }, [insets.bottom, showGallery, previewGridHeight]);
 
   // SafeArea 하단 inset만큼 항상 유지 (포커스 시에도 위치 고정)
   const rootPaddingBottom = useMemo(() => {
@@ -701,7 +791,8 @@ const ChatInput = forwardRef(function ChatInput(
         />
       )}
 
-      <View style={styles.innerContainer}>
+      <View style={styles.inputColumn}>
+        <View style={styles.innerContainer}>
         <View
           style={[
             styles.inputContainer,
@@ -814,6 +905,24 @@ const ChatInput = forwardRef(function ChatInput(
             </View>
           </TouchableOpacity>
         </View>
+        </View>
+
+        {enableMediaPicker && hasSelection && (
+          <View style={styles.previewWrap}>
+            {selectedImages.length > PREVIEW_SCROLL_THRESHOLD ? (
+              <ScrollView
+                style={[styles.previewScroll, {maxHeight: previewScrollMaxHeight}]}
+                contentContainerStyle={styles.previewGrid}
+                keyboardShouldPersistTaps="handled"
+                nestedScrollEnabled
+                showsVerticalScrollIndicator>
+                {attachmentPreviewCells}
+              </ScrollView>
+            ) : (
+              <View style={styles.previewGrid}>{attachmentPreviewCells}</View>
+            )}
+          </View>
+        )}
       </View>
 
       {/* (선택 유지) 인앱 갤러리: 이제는 롱프레스에서만 열림 */}
@@ -851,6 +960,12 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
 
+  inputColumn: {
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderColor: '#ddd',
+  },
+
   innerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -858,8 +973,65 @@ const styles = StyleSheet.create({
     paddingHorizontal: INNER_PAD_H,
     gap: getResponsiveWidth(8),
     backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderColor: '#ddd',
+  },
+
+  previewWrap: {
+    paddingTop: getResponsiveHeight(8),
+    paddingBottom: getResponsiveHeight(4),
+    paddingHorizontal: INNER_PAD_H,
+  },
+
+  previewScroll: {
+    width: '100%',
+  },
+
+  previewGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+
+  previewCell: {
+    position: 'relative',
+    borderRadius: getResponsiveWidth(8),
+    overflow: 'hidden',
+    backgroundColor: '#F3F4F6',
+  },
+
+  previewImage: {
+    width: '100%',
+    height: '100%',
+  },
+
+  previewVideoBadge: {
+    right: getResponsiveWidth(28),
+    bottom: getResponsiveWidth(4),
+  },
+
+  previewRemove: {
+    position: 'absolute',
+    top: getResponsiveWidth(4),
+    right: getResponsiveWidth(4),
+    zIndex: 20,
+  },
+
+  previewRemoveInner: {
+    width: getResponsiveWidth(22),
+    height: getResponsiveWidth(22),
+    borderRadius: 999,
+    backgroundColor: 'rgba(17,24,39,0.72)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.35)',
+  },
+
+  previewRemoveText: {
+    color: '#fff',
+    fontSize: getResponsiveFontSize(16),
+    fontFamily: 'Pretendard-SemiBold',
+    lineHeight: getResponsiveFontSize(18),
+    marginTop: -getResponsiveHeight(1),
+    includeFontPadding: false,
   },
 
   inputContainer: {
