@@ -10,12 +10,11 @@ import {
   setChatRoomLoading,
   setChatRoomError,
   setChatRoomNotificationState,
-  markReadThunk,
 } from './chatRoomSlice';
+import {markReadThunk} from './chatReadThunk';
+import {toId} from './chatStoreUtils';
 import {STORE_MOCK_ENABLED, getStoreMockChatRoomList, getStoreMockChatRoomUsers, isStoreMockChatRoomId} from '../../home/utils/storeMockData';
 import {syncAppBadgeThunk} from 'features/notification/store/notificationThunk';
-
-const toId = v => (v == null ? null : String(v));
 
 /**
  * 채팅방 리스트 조회
