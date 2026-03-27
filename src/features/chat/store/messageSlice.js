@@ -1,7 +1,7 @@
 // store/messageSlice.js
 import {createSlice} from '@reduxjs/toolkit';
+import {toId} from './chatStoreUtils';
 
-const toId = v => (v == null ? null : String(v));
 const toStr = v => (v == null ? null : String(v));
 
 const ensureRoom = (state, chatRoomId) => {
