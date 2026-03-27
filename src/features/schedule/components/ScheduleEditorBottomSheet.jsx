@@ -14,30 +14,42 @@ import React, {
   useEffect,
   useCallback,
 } from 'react';
-import { View, StyleSheet, Platform, TouchableOpacity, Keyboard, Animated, Dimensions } from 'react-native';
-import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
+import {
+  View,
+  StyleSheet,
+  Platform,
+  TouchableOpacity,
+  Keyboard,
+  Animated,
+  Dimensions,
+  ScrollView,
+} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
+  getResponsiveIconSize,
 } from 'utils/responsive';
-import {
-  getKeyboardSafeGap,
-  getScheduleBottomSheetSnapPoints,
-} from 'utils/layoutMetrics';
+import {getKeyboardSafeGap, getScheduleBottomSheetSnapPoints} from 'utils/layoutMetrics';
+import {useReduxFontMode} from 'hooks/useReduxFontMode';
 
 import {useScheduleBottomSheetModal} from '../hooks/useScheduleBottomSheetModal';
 import ToastModal from 'components/modal/ToastModal';
 import CustomModal from 'components/modal/CustomModal';
 import {validateLength} from 'utils/validation';
-import {BottomSheetTextInput, BottomSheetView} from '@gorhom/bottom-sheet';
+import {BottomSheetTextInput, BottomSheetScrollView} from '@gorhom/bottom-sheet';
 import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
-import {BOTTOMSHEET_STYLE} from 'styles/style';
-
-import {useReduxFontMode} from 'hooks/useReduxFontMode';
-import SlideSegment from 'components/SlideSegment';
 import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
+import {
+  BOTTOM_SHEET_EDITOR_COLORS as COLORS,
+  BOTTOM_SHEET_EDITOR_FLOW as FLOW,
+  getBottomSheetEditorBottomSafe,
+  getBottomSheetEditorSharedStyles,
+  getBottomSheetPrimarySaveButtonStyle,
+} from 'components/bottomSheet/bottomSheetEditorSharedStyles';
+import {Easing} from 'react-native-reanimated';
 
 const {height: WINDOW_H} = Dimensions.get('window');
 const SAFE_GAP = getKeyboardSafeGap();
@@ -61,15 +73,6 @@ const kindToScheduleType = kind => {
   }
 };
 
-const toNumId = v => {
-  if (v == null) return null;
-  const n = Number(String(v).trim());
-  return Number.isFinite(n) ? n : null;
-};
-
-const uniqNums = arr =>
-  Array.from(new Set((arr || []).map(toNumId).filter(v => v != null)));
-
 /** 숫자·문자 ID 모두 유지 (더미 mock-mom 등 문자열 ID 지원) */
 const uniqIds = arr =>
   Array.from(
@@ -82,23 +85,6 @@ const uniqIds = arr =>
 
 const idEq = (a, b) => a === b || String(a) === String(b);
 const hasId = (ids, id) => (Array.isArray(ids) ? ids : []).some(x => idEq(x, id));
-
-const COLORS = {
-  bg: '#FFFFFF',
-  text: '#0B1220',
-  sub: '#566073',
-  muted: '#98A2B3',
-  card: '#FFFFFF',
-  surface: '#F6F7FB',
-  line: 'rgba(15, 23, 42, 0.08)',
-  brand: '#FFC84D',
-  brandDeep: '#FFB020',
-  danger: '#EF4444',
-  pill: 'black',
-  pillText: '#FFFFFF',
-};
-
-const shadow = Platform.select({});
 
 const normalizeKind = raw => {
   const t = String(raw ?? '').toLowerCase();
@@ -128,16 +114,34 @@ const normalizeKind = raw => {
   return KIND.INDIVIDUAL;
 };
 
-const KIND_SEGMENTS = [
-  {key: KIND.INDIVIDUAL, label: '개별'},
-  {key: KIND.FAMILY, label: '가족'},
-];
+/** 중앙 히어로용: `2026년 3월 22일` (요일 없음) */
+function formatScheduleDateShort(raw) {
+  if (raw == null || raw === '') {
+    return '';
+  }
+  if (raw instanceof Date && !Number.isNaN(raw.getTime())) {
+    const y = raw.getFullYear();
+    const mo = raw.getMonth() + 1;
+    const d = raw.getDate();
+    return `${y}년 ${mo}월 ${d}일`;
+  }
+  const s = String(raw).trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) {
+    const y = Number(m[1]);
+    const mo = Number(m[2]);
+    const d = Number(m[3]);
+    return `${y}년 ${mo}월 ${d}일`;
+  }
+  return s;
+}
 
 const ScheduleEditorBottomSheetModal = forwardRef(
   (
     {
       editingSchedule,
       familyUserList = [],
+      currentUserId,
       familyId: familyIdProp,
       date: dateProp,
       memo: memoProp,
@@ -153,8 +157,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     },
     ref,
   ) => {
-    const fontMode = useReduxFontMode();
-
     const [localKind, setLocalKind] = useState(KIND.INDIVIDUAL);
     const [localSelectedUserIds, setLocalSelectedUserIds] = useState([]);
 
@@ -166,7 +168,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
     const closingRef = useRef(false);
 
- // shift는 “입력/콘텐츠 영역”만 올릴거라 contentWrapRef를 따로 둠
     const shiftAnim = useRef(new Animated.Value(0)).current;
     const keyboardHeightRef = useRef(0);
     const inputRef = useRef(null);
@@ -174,7 +175,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const tapToResetRef = useRef(false);
     const keyboardOpenRef = useRef(false);
 
- // 내부 탭 연타 방지
     const touchLockRef = useRef(false);
     const touchLockTimerRef = useRef(null);
     const lockTouchBriefly = useCallback(() => {
@@ -195,8 +195,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const selectedUserIds = selectedUserIdsProp ?? localSelectedUserIds;
 
     const isAnniversaryMode = currentKind === KIND.ANNIVERSARY;
-    const isIndividualMode = currentKind === KIND.INDIVIDUAL;
-    const isFamilyMode = currentKind === KIND.FAMILY;
 
     const setSelectedUserIdsSafe = next => {
       if (isClosing) return;
@@ -231,7 +229,16 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       [setKindProp, setSelectedUserIdsProp],
     );
 
- // 안정 키
+    const handleKindChange = useCallback(
+      v => {
+        setKindSafe(v);
+        if (v === KIND.INDIVIDUAL && currentUserId != null) {
+          setSelectedUserIdsSafe([currentUserId]);
+        }
+      },
+      [setKindSafe, currentUserId, setSelectedUserIdsSafe],
+    );
+
     const editingScheduleRef = useRef(editingSchedule);
     useEffect(() => {
       editingScheduleRef.current = editingSchedule;
@@ -249,6 +256,16 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const sheetKey = useMemo(
       () => `schedule-${editingKey ?? 'new'}`,
       [editingKey],
+    );
+
+    const fontMode = useReduxFontMode();
+    const sheetSnapPoints = useMemo(
+      () =>
+        getScheduleBottomSheetSnapPoints(
+          fontMode,
+          (familyUserList || []).length,
+        ),
+      [fontMode, familyUserList],
     );
 
     useEffect(() => {
@@ -306,7 +323,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       } else {
         (setSelectedUserIdsProp ?? setLocalSelectedUserIds)([]);
       }
- // eslint-disable-next-line react-hooks/exhaustive-deps
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [editingKey]);
 
     const scheduleType = useMemo(
@@ -321,8 +338,15 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         if (isAllSelected) return allFamilyUserIds;
         return safeSelectedIds;
       }
-      return safeSelectedIds;
-    }, [currentKind, safeSelectedIds, isAllSelected, allFamilyUserIds]);
+      if (safeSelectedIds.length > 0) return safeSelectedIds;
+      return currentUserId != null ? [currentUserId] : [];
+    }, [
+      currentKind,
+      safeSelectedIds,
+      isAllSelected,
+      allFamilyUserIds,
+      currentUserId,
+    ]);
 
     const basePayload = useMemo(() => {
       const es = editingScheduleRef.current;
@@ -343,6 +367,11 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       };
     }, [familyIdProp, dateProp, memoProp]);
 
+    const dateLabelShort = useMemo(
+      () => formatScheduleDateShort(dateProp ?? editingSchedule?.date),
+      [dateProp, editingSchedule?.date],
+    );
+
     const {modalRef, scheduleRef, inputKey, handleSave, handleDelete} =
       useScheduleBottomSheetModal({
         editingSchedule,
@@ -356,16 +385,18 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         basePayload,
       });
 
-    const snapPoints = useMemo(() => {
-      const memberCount = (familyUserList || []).length + 1;
-      return getScheduleBottomSheetSnapPoints(fontMode, memberCount);
-    }, [fontMode, familyUserList]);
+    const sheetAnimationConfigs = useMemo(
+      () => ({
+        duration: 250,
+        easing: Easing.inOut(Easing.cubic),
+      }),
+      [],
+    );
 
     const insets = useSafeAreaInsets();
- // 안드로이드 실물 기기에서 insets.bottom이 0이어도 최소 24dp 여백 확보
-    const bottomSafe = Math.max(
-      Number(insets.bottom || 0),
-      getResponsiveHeight(24),
+    const bottomSafe = useMemo(
+      () => getBottomSheetEditorBottomSafe(insets.bottom, getResponsiveHeight),
+      [insets.bottom],
     );
 
     const closeSheet = useCallback(() => {
@@ -414,13 +445,18 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         modalRef.current?.present?.();
 
         requestAnimationFrame(() => {
-          modalRef.current?.snapToIndex?.(0);
+          // 고정 snapPoints(퍼센트)일 때만 스냅 — enableDynamicSizing 빈 스냅과 충돌 시 빈 시트 방지
+          try {
+            modalRef.current?.snapToIndex?.(1);
+          } catch {
+            /* ignore */
+          }
+          // 열자마자 제목 포커스/키보드 올리지 않음 — 사용자가 탭할 때만 포커스
         });
       },
       dismiss: () => closeSheet(),
     }));
 
- // 키보드 이벤트: 높이 추적 + shift 리셋만
     useEffect(() => {
       const onShow = e => {
         keyboardOpenRef.current = true;
@@ -496,12 +532,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       [shiftAnim],
     );
 
- /**
- * 버벅 제거 핵심:
- * - 내부 탭에서는 “snapToIndex(0)” 하지 말고
- * - shift만 0으로 리셋 + (키보드 닫기는 Layout이 담당)
- * - 탭 연타 방지
- */
     const handleTouchInsideResetOnly = useCallback(() => {
       if (touchLockRef.current) return;
       lockTouchBriefly();
@@ -554,23 +584,25 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const handlePressSave = async () => {
       if (isClosing) return;
 
-    const text = scheduleRef.current || '';
-    if (!text.trim()) {
-      showToast('일정 내용을 입력해주세요.');
-      return;
-    }
+      const text = scheduleRef.current || '';
+      if (!text.trim()) {
+        showToast('일정 제목을 입력해주세요.');
+        return;
+      }
 
-    const lengthResult = validateLength(text.trim(), {max: 200});
-    if (!lengthResult.valid) {
-      showToast(lengthResult.message);
-      return;
-    }
+      const lengthResult = validateLength(text.trim(), {max: 200});
+      if (!lengthResult.valid) {
+        showToast(lengthResult.message);
+        return;
+      }
 
       const count = safeSelectedIds.length;
 
-      if (currentKind === KIND.INDIVIDUAL && count === 0) {
-        showToast('개별 일정은 구성원 1명 이상 선택해주세요.');
-        return;
+      if (currentKind === KIND.INDIVIDUAL) {
+        if (count === 0 && currentUserId == null) {
+          showToast('사용자 정보를 찾을 수 없어 일정을 저장할 수 없어요.');
+          return;
+        }
       }
 
       if (currentKind === KIND.FAMILY && count === 0) {
@@ -615,21 +647,31 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     };
 
     const footerProps = useMemo(() => {
-      return editingSchedule
-        ? {
-            onCancel: handlePressDelete,
-            onSave: handlePressSave,
-            cancelLabel: '삭제하기',
-            saveLabel: '저장하기',
-            autoCloseOnSave: false,
-          }
-        : {
-            onSave: handlePressSave,
-            saveLabel: '저장하기',
-            showCancel: false,
-            autoCloseOnSave: false,
-          };
-    }, [editingSchedule, handlePressDelete, handlePressSave]);
+      const saveStyle = getBottomSheetPrimarySaveButtonStyle(
+        getResponsiveHeight,
+        getResponsiveIconSize,
+      );
+      if (editingSchedule) {
+        return {
+          onCancel: handlePressDelete,
+          onSave: handlePressSave,
+          cancelLabel: '삭제하기',
+          saveLabel: '저장하기',
+          showCancel: true,
+          autoCloseOnSave: false,
+          saveButtonStyle: saveStyle,
+          buttonRowStyle: {marginTop: 0},
+        };
+      }
+      return {
+        onSave: handlePressSave,
+        saveLabel: '저장하기',
+        showCancel: false,
+        autoCloseOnSave: false,
+        saveButtonStyle: saveStyle,
+        buttonRowStyle: {marginTop: 0},
+      };
+    }, [editingSchedule, handlePressSave, handlePressDelete]);
 
     const memberChipData = useMemo(() => {
       const normalized = (familyUserList || [])
@@ -642,19 +684,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
       return [{type: 'ALL', userId: -1, name: '전체'}, ...normalized];
     }, [familyUserList]);
-
-    const selectedCount = useMemo(() => {
-      if (isAnniversaryMode) return 0;
-      if (currentKind === KIND.FAMILY && isAllSelected)
-        return allFamilyUserIds.length || safeSelectedIds.length;
-      return safeSelectedIds.length;
-    }, [
-      isAnniversaryMode,
-      currentKind,
-      isAllSelected,
-      allFamilyUserIds.length,
-      safeSelectedIds.length,
-    ]);
 
     const renderChip = useCallback(
       item => {
@@ -683,13 +712,16 @@ const ScheduleEditorBottomSheetModal = forwardRef(
             onPress={onPress}
             disabled={disabledByMode}
             style={[
-              styles.chip,
-              selected && styles.chipSelected,
-              disabledByMode && styles.chipDisabled,
+              styles.memberChip,
+              selected && styles.memberChipSelected,
+              disabledByMode && styles.memberChipDisabled,
             ]}>
             <AppText
               allowFontScaling={false}
-              style={[styles.chipText, selected && styles.chipTextSelected]}
+              style={[
+                styles.memberChipText,
+                selected && styles.memberChipTextSelected,
+              ]}
               numberOfLines={1}>
               {item.name}
             </AppText>
@@ -709,127 +741,154 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const deleteTitle = useMemo(() => '일정을 삭제할까요?', []);
     const deleteSubText = useMemo(() => '삭제하면 되돌릴 수 없어요.', []);
 
+    const segmentValue =
+      currentKind === KIND.ANNIVERSARY ? KIND.INDIVIDUAL : currentKind;
+
+    const showParticipants = !isAnniversaryMode;
+
     return (
       <>
         <BottomSheetLayout
           modalRef={modalRef}
-          snapPoints={snapPoints}
+          snapPoints={sheetSnapPoints}
           sheetKey={sheetKey}
-          title={editingSchedule ? '일정 수정' : '일정 추가'}
-          subtitle="가족과 일정을 공유해요."
-          useInternalScroll={true}
+          animationConfigs={sheetAnimationConfigs}
+          containerStyle={{paddingHorizontal: getResponsiveWidth(20)}}
+          useInternalScroll={false}
           keyboardBehavior={Platform.OS === 'ios' ? 'interactive' : 'none'}
-          keyboardBlurBehavior="restore"
           androidKeyboardInputMode="adjustResize"
           enableKeyboardPolicy={true}
           keyboardOpenSnapIndex={1}
           keyboardCloseSnapIndex={0}
-          useTouchOverlay={true}
           dismissKeyboardOnPress={true}
           onTouchInside={handleTouchInsideResetOnly}
           onDismiss={handleSheetDismiss}
-          disableContentBottomPadding={true}
-        >
-          {/* 하단 여백은 BottomSheetFooterButtons의 bottomSafe만 사용(중복 방지) */}
-          <SafeAreaView edges={[]} style={{backgroundColor: COLORS.bg}}>
-            <BottomSheetView>
-              <Animated.View
-                style={{
-                  transform: [{translateY: shiftAnim}],
-                }}
-              >
-                <View style={styles.content}>
-                  <AppText allowFontScaling={false} style={styles.sectionTitle}>
-                    구분
+          disableContentBottomPadding={true}>
+          <BottomSheetScrollView
+            style={{flex: 1}}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="always"
+            contentContainerStyle={{paddingBottom: getResponsiveHeight(8)}}>
+            <Animated.View style={{transform: [{translateY: shiftAnim}]}}>
+              <View style={styles.content}>
+                <View style={styles.heroCenter}>
+                  <AppText allowFontScaling={false} style={styles.heroTitle}>
+                    {editingSchedule ? '일정 수정' : '일정 추가'}
                   </AppText>
+                  {!!dateLabelShort && (
+                    <View style={styles.dateBadge}>
+                      <AppText
+                        allowFontScaling={false}
+                        style={styles.dateBadgeText}>
+                        {dateLabelShort}
+                      </AppText>
+                    </View>
+                  )}
+                </View>
 
-                  <SlideSegment
-                    items={KIND_SEGMENTS}
-                    value={currentKind}
-                    onChange={setKindSafe}
-                    padding={getResponsiveWidth(6)}
-                    gap={getResponsiveWidth(6)}
-                    containerStyle={styles.segmentWrap}
-                    thumbStyle={styles.segmentThumb}
-                    textStyle={styles.segmentText}
-                    activeTextStyle={styles.segmentTextActive}
-                  />
+                <View style={styles.formColumn}>
+                  <View style={styles.fieldBlock}>
+                    <AppText allowFontScaling={false} style={styles.sectionLabel}>
+                      일정 제목
+                    </AppText>
+                    <View style={styles.singleLineUnderlineWrap}>
+                      <BottomSheetTextInput
+                        allowFontScaling={false}
+                        ref={inputRef}
+                        key={`input-${inputKey}`}
+                        defaultValue={scheduleRef.current}
+                        onChangeText={text => {
+                          if (!isClosing) scheduleRef.current = text;
+                        }}
+                        onFocus={() => {
+                          tapToResetRef.current = false;
+                          ensureVisible(inputRef);
+                        }}
+                        placeholder="무슨 일정인가요?"
+                        placeholderTextColor={COLORS.muted}
+                        style={styles.scheduleTitleInput}
+                        multiline
+                        underlineColorAndroid="transparent"
+                      />
+                    </View>
+                  </View>
 
-                  <View style={{marginTop: getResponsiveHeight(18)}}>
-                    <View style={styles.sectionRow}>
-                      <AppText allowFontScaling={false} style={styles.sectionTitle}>
+                  <View style={styles.typeBlock}>
+                    <AppText allowFontScaling={false} style={styles.sectionLabel}>
+                      유형
+                    </AppText>
+                    <View style={styles.segmentTrack}>
+                      <TouchableOpacity
+                        activeOpacity={0.92}
+                        onPress={() => handleKindChange(KIND.INDIVIDUAL)}
+                        style={[
+                          styles.segmentCell,
+                          segmentValue === KIND.INDIVIDUAL &&
+                            styles.segmentCellActive,
+                        ]}>
+                        <AppText
+                          allowFontScaling={false}
+                          style={[
+                            styles.segmentLabel,
+                            segmentValue === KIND.INDIVIDUAL &&
+                              styles.segmentLabelActive,
+                          ]}>
+                          개별
+                        </AppText>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        activeOpacity={0.92}
+                        onPress={() => handleKindChange(KIND.FAMILY)}
+                        style={[
+                          styles.segmentCell,
+                          segmentValue === KIND.FAMILY && styles.segmentCellActive,
+                        ]}>
+                        <AppText
+                          allowFontScaling={false}
+                          style={[
+                            styles.segmentLabel,
+                            segmentValue === KIND.FAMILY && styles.segmentLabelActive,
+                          ]}>
+                          가족
+                        </AppText>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  {showParticipants ? (
+                    <View style={styles.participantBlock}>
+                      <AppText
+                        allowFontScaling={false}
+                        style={styles.sectionLabel}>
                         구성원
                       </AppText>
-
-                      {isAnniversaryMode ? null : (
-                        <AppText allowFontScaling={false} style={styles.countText}>
-                          {selectedCount}명 선택
-                        </AppText>
-                      )}
-                    </View>
-
-                    <View style={styles.memberCard}>
-                      <View style={styles.chipWrap}>
+                      <ScrollView
+                        horizontal
+                        nestedScrollEnabled
+                        keyboardShouldPersistTaps="handled"
+                        showsHorizontalScrollIndicator={false}
+                        bounces={false}
+                        contentContainerStyle={styles.chipScrollContent}
+                        style={styles.chipScroll}>
                         {memberChipData.map(renderChip)}
-                      </View>
+                      </ScrollView>
                     </View>
-
-                    <View style={styles.tipRow}>
-                      <View style={styles.tipDot} />
-                      <AppText allowFontScaling={false} style={styles.tipText}>
-                        {isIndividualMode ? '개별: 1명 이상' : null}
-                        {isFamilyMode ? '가족: 전체 또는 여러 명' : null}
-                        {isAnniversaryMode
-                          ? '기념일: 구성원은 “전체”로 고정돼요.'
-                          : null}
-                      </AppText>
-                    </View>
-                  </View>
-
-                  <View style={{marginTop: getResponsiveHeight(18)}}>
-                    <AppText
-                      allowFontScaling={false}
-                      style={[styles.sectionTitle, {marginBottom: 3}]}
-                    >
-                      내용
-                    </AppText>
-
-                    <BottomSheetTextInput
-                      allowFontScaling={false}
-                      ref={inputRef}
-                      key={`input-${inputKey}`}
-                      defaultValue={scheduleRef.current}
-                      onChangeText={text => {
-                        if (!isClosing) scheduleRef.current = text;
-                      }}
-                      onFocus={() => {
-                        tapToResetRef.current = false;
-                        ensureVisible(inputRef);
-                      }}
-                      placeholder="예) 병원 예약, 가족 모임"
-                      placeholderTextColor={COLORS.muted}
-                      style={styles.input}
-                      multiline
-                    />
-                  </View>
-
-                  <BottomSheetFooterButtons
-                    bottomSafe={bottomSafe}
-                    includeBottomSafePadding={true}
-                    excludeSafeForMeasure={false}
-                    onLayoutHeight={undefined}
-                    style={[
-                      styles.footerFlow,
-                      Platform.OS === 'android' && {
-                        paddingBottom: getResponsiveHeight(12),
-                      },
-                    ]}
-                    {...footerProps}
-                  />
+                  ) : null}
                 </View>
-              </Animated.View>
-            </BottomSheetView>
-          </SafeAreaView>
+              </View>
+            </Animated.View>
+          </BottomSheetScrollView>
+          <BottomSheetFooterButtons
+            bottomSafe={bottomSafe}
+            includeBottomSafePadding={true}
+            excludeSafeForMeasure={false}
+            onLayoutHeight={undefined}
+            style={[
+              styles.footerFlow,
+              Platform.OS === 'android' && {paddingBottom: getResponsiveHeight(12)},
+            ]}
+            {...footerProps}
+          />
         </BottomSheetLayout>
 
         <CustomModal
@@ -860,136 +919,151 @@ ScheduleEditorBottomSheetModal.displayName = 'ScheduleEditorBottomSheetModal';
 export default ScheduleEditorBottomSheetModal;
 
 const styles = StyleSheet.create({
-  content: {
-    paddingTop: getResponsiveHeight(2),
-    paddingBottom: getResponsiveHeight(12),
-  },
+  ...getBottomSheetEditorSharedStyles(
+    getResponsiveFontSize,
+    getResponsiveHeight,
+    getResponsiveWidth,
+  ),
 
-  footerFlow: {
-    paddingTop: getResponsiveHeight(12),
-    paddingBottom: getResponsiveHeight(2),
-  },
-
-  sectionTitle: {
-    fontSize: BOTTOMSHEET_STYLE().sectionLabel.fontSize,
-    fontFamily: BOTTOMSHEET_STYLE().sectionLabel.fontFamily,
-    color: BOTTOMSHEET_STYLE().sectionLabel.color,
-    marginBottom: BOTTOMSHEET_STYLE().sectionLabel.marginBottom,
-    marginTop: BOTTOMSHEET_STYLE().sectionLabel.marginTop,
-  },
-
-  segmentWrap: {
-    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    overflow: 'hidden',
-  },
-
-  segmentThumb: {
-    backgroundColor: COLORS.pill,
-    borderRadius: 999,
-  },
-
-  segmentText: {
-    fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-SemiBold',
-    color: COLORS.sub,
-    letterSpacing: -0.2,
-  },
-
-  segmentTextActive: {
-    color: COLORS.pillText,
-  },
-
-  sectionRow: {
-    flexDirection: 'row',
+  /** 중앙 묶음: 제목 + 날짜 pill */
+  heroCenter: {
+    alignSelf: 'stretch',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    marginBottom: getResponsiveHeight(26),
+  },
+  heroTitle: {
+    fontSize: getResponsiveFontSize(18),
+    fontFamily: 'Pretendard-SemiBold',
+    color: COLORS.text,
+    letterSpacing: -0.35,
+    textAlign: 'center',
   },
 
-  countText: {
+  dateBadge: {
+    marginTop: getResponsiveHeight(6),
+    paddingHorizontal: getResponsiveWidth(10),
+    paddingVertical: getResponsiveHeight(4),
+    borderRadius: 999,
+    backgroundColor: '#F2F2F7',
+    alignSelf: 'center',
+  },
+  dateBadgeText: {
     fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-SemiBold',
-    color: COLORS.sub,
-  },
-
-  memberCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: 18,
-    paddingHorizontal: getResponsiveWidth(12),
-    paddingVertical: getResponsiveHeight(12),
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    ...shadow,
-  },
-
-  chipWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingTop: getResponsiveHeight(2),
-  },
-
-  chip: {
-    height: getResponsiveHeight(34),
-    paddingHorizontal: getResponsiveWidth(12),
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    marginRight: getResponsiveWidth(8),
-    marginBottom: getResponsiveHeight(8),
-    maxWidth: getResponsiveWidth(140),
-  },
-  chipSelected: {
-    backgroundColor: COLORS.pill,
-    borderColor: COLORS.pill,
-  },
-  chipDisabled: {opacity: 0.45},
-
-  chipText: {
-    fontSize: getResponsiveFontSize(12.5),
-    fontFamily: 'Pretendard-SemiBold',
-    color: COLORS.sub,
-    letterSpacing: -0.2,
-  },
-  chipTextSelected: {color: COLORS.pillText},
-
-  tipRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(8),
-    marginTop: getResponsiveHeight(4),
-  },
-  tipDot: {
-    width: getResponsiveWidth(6),
-    height: getResponsiveWidth(6),
-    borderRadius: 999,
-    backgroundColor: COLORS.brandDeep,
-  },
-  tipText: {
-    fontSize: getResponsiveFontSize(11.5),
     fontFamily: 'Pretendard-Medium',
     color: COLORS.sub,
+    letterSpacing: -0.15,
   },
 
-  input: {
-    minHeight: getResponsiveHeight(120),
-    borderRadius: 14,
-    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    paddingHorizontal: getResponsiveWidth(12),
-    paddingVertical:
-      Platform.OS === 'android'
-        ? getResponsiveHeight(10)
-        : getResponsiveHeight(12),
+  /** 좌측 정렬 폼 영역 */
+  formColumn: {
+    alignSelf: 'stretch',
+    width: '100%',
+  },
+
+  typeBlock: {
+    alignSelf: 'stretch',
+    width: '100%',
+    marginBottom: getResponsiveHeight(FLOW),
+  },
+
+  /** 섹션 구분 — 유형 / 구성원 */
+  sectionLabel: {
+    alignSelf: 'flex-start',
+    fontSize: getResponsiveFontSize(12),
+    fontFamily: 'Pretendard-SemiBold',
+    color: COLORS.caption,
+    letterSpacing: -0.1,
+    marginBottom: getResponsiveHeight(8),
+  },
+
+  /** 유형: 단일 트랙 세그먼트 (칩과 다른 패턴) */
+  segmentTrack: {
+    flexDirection: 'row',
+    alignSelf: 'stretch',
+    backgroundColor: 'rgba(120, 120, 128, 0.14)',
+    borderRadius: 11,
+    padding: 3,
+  },
+  segmentCell: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: getResponsiveHeight(9),
+    borderRadius: 9,
+  },
+  segmentCellActive: {
+    backgroundColor: '#FFFFFF',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 1},
+        shadowOpacity: 0.12,
+        shadowRadius: 3,
+      },
+      android: {elevation: 2},
+    }),
+  },
+  segmentLabel: {
     fontSize: getResponsiveFontSize(14),
-    fontFamily: 'Pretendard-Regular',
-    color: COLORS.text,
-    textAlignVertical: 'top',
+    fontFamily: 'Pretendard-SemiBold',
+    color: 'rgba(60, 60, 67, 0.72)',
+    letterSpacing: -0.25,
+  },
+  segmentLabelActive: {
+    color: COLORS.navy,
+  },
+
+  participantBlock: {
+    alignSelf: 'stretch',
+    width: '100%',
+    marginBottom: getResponsiveHeight(FLOW),
+    marginTop: getResponsiveHeight(2),
+    paddingTop: getResponsiveHeight(12),
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: 'rgba(60, 60, 67, 0.1)',
+  },
+
+  chipScroll: {
+    alignSelf: 'stretch',
+    maxHeight: getResponsiveHeight(40),
+  },
+  chipScrollContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: getResponsiveHeight(4),
+    paddingRight: getResponsiveWidth(8),
+    paddingLeft: 0,
+    gap: getResponsiveWidth(10),
+  },
+
+  /** 구성원: 둥근 사각 태그 (유형 세그먼트와 형태 구분) */
+  memberChip: {
+    height: getResponsiveHeight(32),
+    paddingHorizontal: getResponsiveWidth(12),
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(0, 0, 0, 0.07)',
+    backgroundColor: '#F9FAFB',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 0,
+    flexShrink: 0,
+    maxWidth: getResponsiveWidth(160),
+  },
+  memberChipSelected: {
+    backgroundColor: COLORS.navy,
+    borderColor: COLORS.navy,
+  },
+  memberChipDisabled: {opacity: 0.45},
+
+  memberChipText: {
+    fontSize: getResponsiveFontSize(12.5),
+    fontFamily: 'Pretendard-Medium',
+    color: '#374151',
+    letterSpacing: -0.15,
+  },
+  memberChipTextSelected: {
+    color: '#FFFFFF',
+    fontFamily: 'Pretendard-SemiBold',
   },
 });

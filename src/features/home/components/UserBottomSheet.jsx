@@ -16,16 +16,15 @@ import React, {
   useCallback,
 } from 'react';
 import { Platform, View, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Image, Keyboard, Animated, Dimensions } from 'react-native';
-import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {
   BottomSheetTextInput as GorhomBottomSheetTextInput,
-  BottomSheetView as GorhomBottomSheetView,
+  BottomSheetScrollView,
 } from '@gorhom/bottom-sheet';
 
 // @gorhom/bottom-sheet가 Metro 해석 시 undefined일 수 있음 → RN 기본 컴포넌트로 폴백
 const BottomSheetTextInput = GorhomBottomSheetTextInput ?? TextInput;
-const BottomSheetView = GorhomBottomSheetView ?? View;
 import {launchImageLibrary} from 'react-native-image-picker';
 import {useSelector} from 'react-redux';
 import {useReduxFontMode} from 'hooks/useReduxFontMode';
@@ -579,144 +578,138 @@ function UserBottomSheetModalBase(
         sheetKey={sheetKey}
         title="프로필 편집"
         headerCentered={true}
-        useInternalScroll={true}
+        useInternalScroll={false}
         keyboardBehavior={Platform.OS === 'ios' ? 'interactive' : 'none'}
         androidKeyboardInputMode="adjustResize"
         enableKeyboardPolicy={true}
         keyboardOpenSnapIndex={1}
         keyboardCloseSnapIndex={0}
-        dismissKeyboardOnPress={true} // Layout이 키보드 내림 담당
-        onTouchInside={handleTouchInsideResetOnly} // 내부 탭은 shift만 리셋
+        dismissKeyboardOnPress={true}
+        onTouchInside={handleTouchInsideResetOnly}
         onDismiss={handleDismiss}
         containerStyle={{paddingHorizontal: getResponsiveWidth(20)}}
-        disableContentBottomPadding={true}
-      >
-        <SafeAreaView
-          edges={[]}
-          style={{backgroundColor: BOTTOM_SHEET_EDITOR_COLORS.bg}}>
-          <BottomSheetView>
-            <Animated.View style={{transform: [{translateY: shiftAnim}]}}>
-              <View style={styles.body}>
-                <TouchableOpacity
-                  style={styles.profileTouchArea}
-                  onPress={handleImagePick}
-                  activeOpacity={0.9}
-                  disabled={isSaving}
-                >
-                  <View style={styles.profileimageContainer}>
-                    <FastImage
-                      fallback={true}
-                      source={
-                        previewImage
-                          ? {uri: previewImage}
-                          : IMG_DEFAULT
-                      }
-                      style={styles.profileImage}
- // blurRadius={keyboardOpenRef.current ? 0 : 4}
-                      blurRadius={4}
-                    />
-                    <View style={styles.profileOverlay} />
-                    <View style={styles.profileRing} />
-                    <View style={styles.profileBadge}>
-                      <Image
-                        style={styles.profileBadgeIcon}
-                        source={IMG_PENCIL ?? IMG_DEFAULT}
-                      />
-                    </View>
-                  </View>
-                  <AppText allowFontScaling={false} style={styles.profileEditText}>
-                    사진 변경
-                  </AppText>
-                </TouchableOpacity>
-
-                <View style={styles.fieldBlock}>
-                  <AppText allowFontScaling={false} style={styles.sectionLabel}>
-                    별명
-                  </AppText>
-                  <View style={styles.nameUnderlineWrap}>
-                    <BottomSheetTextInput
-                      allowFontScaling={false}
-                      ref={nameInputRef}
-                      key={`name-${nameKey}`}
-                      style={styles.inputName}
-                      defaultValue={nameRef.current}
-                      onChangeText={text => {
-                        nameRef.current = text;
-                      }}
-                      placeholder="가족들이 부르는 이름을 적어주세요."
-                      placeholderTextColor={BOTTOM_SHEET_EDITOR_COLORS.muted}
-                      returnKeyType="next"
-                      underlineColorAndroid="transparent"
-                      onFocus={() => {
-                        tapToResetRef.current = false;
-                        ensureVisible(nameInputRef);
-                      }}
-                      onSubmitEditing={() => traitInputRef.current?.focus?.()}
-                      editable={!isSaving}
+        disableContentBottomPadding={true}>
+        <BottomSheetScrollView
+          style={{flex: 1}}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="always"
+          contentContainerStyle={{paddingBottom: getResponsiveHeight(8)}}>
+          <Animated.View style={{transform: [{translateY: shiftAnim}]}}>
+            <View style={styles.body}>
+              <TouchableOpacity
+                style={styles.profileTouchArea}
+                onPress={handleImagePick}
+                activeOpacity={0.9}
+                disabled={isSaving}>
+                <View style={styles.profileimageContainer}>
+                  <FastImage
+                    fallback={true}
+                    source={
+                      previewImage
+                        ? {uri: previewImage}
+                        : IMG_DEFAULT
+                    }
+                    style={styles.profileImage}
+                    blurRadius={4}
+                  />
+                  <View style={styles.profileOverlay} />
+                  <View style={styles.profileRing} />
+                  <View style={styles.profileBadge}>
+                    <Image
+                      style={styles.profileBadgeIcon}
+                      source={IMG_PENCIL ?? IMG_DEFAULT}
                     />
                   </View>
                 </View>
+                <AppText allowFontScaling={false} style={styles.profileEditText}>
+                  사진 변경
+                </AppText>
+              </TouchableOpacity>
 
-                <View style={styles.fieldBlock}>
-                  <AppText allowFontScaling={false} style={styles.sectionLabel}>
-                    한 줄 소개
-                  </AppText>
-                  <View style={styles.inputUnderlineWrap}>
-                    <BottomSheetTextInput
-                      allowFontScaling={false}
-                      ref={traitInputRef}
-                      key={`trait-${traitKey}`}
-                      style={styles.inputTrait}
-                      defaultValue={traitRef.current}
-                      multiline
-                      scrollEnabled={true}
-                      nestedScrollEnabled={Platform.OS === 'android'}
-                      onChangeText={text => {
-                        traitRef.current = text;
-                      }}
-                      placeholder="성격, 분위기, 기억에 남는 포인트를 가볍게 적어보세요."
-                      placeholderTextColor={BOTTOM_SHEET_EDITOR_COLORS.muted}
-                      underlineColorAndroid="transparent"
-                      onFocus={() => {
-                        tapToResetRef.current = false;
-                        ensureVisible(traitInputRef);
-                      }}
-                      editable={!isSaving}
-                    />
-                  </View>
+              <View style={styles.fieldBlock}>
+                <AppText allowFontScaling={false} style={styles.sectionLabel}>
+                  별명
+                </AppText>
+                <View style={styles.nameUnderlineWrap}>
+                  <BottomSheetTextInput
+                    allowFontScaling={false}
+                    ref={nameInputRef}
+                    key={`name-${nameKey}`}
+                    style={styles.inputName}
+                    defaultValue={nameRef.current}
+                    onChangeText={text => {
+                      nameRef.current = text;
+                    }}
+                    placeholder="가족들이 부르는 이름을 적어주세요."
+                    placeholderTextColor={BOTTOM_SHEET_EDITOR_COLORS.muted}
+                    returnKeyType="next"
+                    underlineColorAndroid="transparent"
+                    onFocus={() => {
+                      tapToResetRef.current = false;
+                      ensureVisible(nameInputRef);
+                    }}
+                    onSubmitEditing={() => traitInputRef.current?.focus?.()}
+                    editable={!isSaving}
+                  />
                 </View>
-
-                <BottomSheetFooterButtons
-                  bottomSafe={bottomSafe}
-                  includeBottomSafePadding={true}
-                  excludeSafeForMeasure={false}
-                  onLayoutHeight={undefined}
-                  style={[
-                    styles.footerFlow,
-                    Platform.OS === 'android' && {
-                      paddingBottom: getResponsiveHeight(12),
-                    },
-                  ]}
-                  {...footerProps}
-                />
-
-                {isSaving && (
-                  <View style={styles.loadingOverlay} pointerEvents="none">
-                    <View style={styles.loadingBox}>
-                      <ActivityIndicator
-                        size="small"
-                        color={BOTTOM_SHEET_EDITOR_COLORS.sub}
-                      />
-                      <AppText allowFontScaling={false} style={styles.loadingText}>
-                        저장 중...
-                      </AppText>
-                    </View>
-                  </View>
-                )}
               </View>
-            </Animated.View>
-          </BottomSheetView>
-        </SafeAreaView>
+
+              <View style={styles.fieldBlock}>
+                <AppText allowFontScaling={false} style={styles.sectionLabel}>
+                  한 줄 소개
+                </AppText>
+                <View style={styles.inputUnderlineWrap}>
+                  <BottomSheetTextInput
+                    allowFontScaling={false}
+                    ref={traitInputRef}
+                    key={`trait-${traitKey}`}
+                    style={styles.inputTrait}
+                    defaultValue={traitRef.current}
+                    multiline
+                    scrollEnabled={true}
+                    nestedScrollEnabled={Platform.OS === 'android'}
+                    onChangeText={text => {
+                      traitRef.current = text;
+                    }}
+                    placeholder="성격, 분위기, 기억에 남는 포인트를 가볍게 적어보세요."
+                    placeholderTextColor={BOTTOM_SHEET_EDITOR_COLORS.muted}
+                    underlineColorAndroid="transparent"
+                    onFocus={() => {
+                      tapToResetRef.current = false;
+                      ensureVisible(traitInputRef);
+                    }}
+                    editable={!isSaving}
+                  />
+                </View>
+              </View>
+
+              {isSaving && (
+                <View style={styles.loadingOverlay} pointerEvents="none">
+                  <View style={styles.loadingBox}>
+                    <ActivityIndicator
+                      size="small"
+                      color={BOTTOM_SHEET_EDITOR_COLORS.sub}
+                    />
+                    <AppText allowFontScaling={false} style={styles.loadingText}>
+                      저장 중...
+                    </AppText>
+                  </View>
+                </View>
+              )}
+            </View>
+          </Animated.View>
+        </BottomSheetScrollView>
+        <BottomSheetFooterButtons
+          bottomSafe={bottomSafe}
+          includeBottomSafePadding={true}
+          excludeSafeForMeasure={false}
+          onLayoutHeight={undefined}
+          style={[
+            styles.footerFlow,
+            Platform.OS === 'android' && {paddingBottom: getResponsiveHeight(12)},
+          ]}
+          {...footerProps}
+        />
       </BottomSheetLayout>
 
       <ToastModal

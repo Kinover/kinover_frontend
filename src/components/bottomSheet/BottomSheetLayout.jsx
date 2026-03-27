@@ -79,6 +79,7 @@ export default function BottomSheetLayout({
   enableDynamicSizing = false,
   /** 동적 높이 상한(px). 미지정 시 화면 높이의 약 92% */
   maxDynamicContentSize: maxDynamicContentSizeProp,
+
 }) {
   const styles = useScaledStyleSheet(rf => ({
 
