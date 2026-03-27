@@ -28,12 +28,14 @@ export default function FamilyChatRoom({route}) {
   const roomFromStore = useSelector(state => selectChatRoomById(state, chatRoomId));
 
   const [localRoom, setLocalRoom] = useState(initialChatRoom);
-  const [loading, setLoading] = useState(false);
 
- // 템플릿에 넘길 chatRoom 결정
+ // 템플릿에 넘길 chatRoom 결정 (목록/단건 fetch 전에도 route의 chatRoomId로 훅·fetch가 동작하도록 최소 스텁 유지)
   const chatRoom = useMemo(() => {
-    return roomFromStore || localRoom || null;
-  }, [roomFromStore, localRoom]);
+    const base = roomFromStore || localRoom || null;
+    if (!chatRoomId) return base;
+    if (!base) return {chatRoomId};
+    return {...base, chatRoomId: base.chatRoomId ?? chatRoomId};
+  }, [roomFromStore, localRoom, chatRoomId]);
 
  // title 결정
   const title = useMemo(() => {
@@ -50,11 +52,13 @@ export default function FamilyChatRoom({route}) {
 
     (async () => {
       try {
-        setLoading(true);
         const res = await dispatch(fetchChatRoomThunk(chatRoomId));
-        if (alive && res?.payload) setLocalRoom(res.payload);
-      } finally {
-        if (alive) setLoading(false);
+        if (alive && fetchChatRoomThunk.fulfilled.match(res)) {
+          setLocalRoom(res.payload);
+        }
+      } catch (e) {
+        // thunk 자체가 throw하는 경우(네트워크 등) — 화면은 스텁(chatRoomId만 있는) 상태로 유지
+        console.error('❌ fetchChatRoomThunk 실패:', e);
       }
     })();
 
@@ -64,14 +68,6 @@ export default function FamilyChatRoom({route}) {
   }, [dispatch, chatRoomId, roomFromStore, localRoom]);
 
   if (!chatRoomId) {
-    return (
-      <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
-        <ActivityIndicator />
-      </View>
-    );
-  }
-
-  if (!chatRoom && loading) {
     return (
       <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
         <ActivityIndicator />

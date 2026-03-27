@@ -16,6 +16,7 @@ import {useSelector, useDispatch} from 'react-redux';
 import ScheduleEditorBottomSheetModal from '../components/ScheduleEditorBottomSheet';
 import CalendarToggle from '../components/Calendar';
 import Schedule from '../components/Schedule';
+import SchedulePeopleFilterModal from '../components/SchedulePeopleFilterModal';
 
 import {
   getResponsiveHeight,
@@ -27,6 +28,7 @@ import YellowSpinner from 'components/yellowSpinner';
 
 import {useScheduleDate} from '../hooks/useScheduleDate';
 import {useScheduleCounts} from '../hooks/useScheduleCounts';
+import {useScheduleCountsFilteredByUsers} from '../hooks/useScheduleCountsFilteredByUsers';
 import {useScheduleEditor} from '../hooks/useScheduleEditor';
 
 import useHolidayMap from '../hooks/useHolidayMap';
@@ -40,6 +42,7 @@ import {
 
 import {hapticLight} from 'utils/haptic';
 import DropShadow from 'react-native-drop-shadow';
+import {SCHEDULE_CARD_SHADOW} from '../constants/scheduleDropShadow';
 import {BACKGROUND_COLORS, LAYOUT_STYLE} from 'styles/style';
 
 import ScheduleGuideModal from '../components/ScheduleGuideModal';
@@ -142,6 +145,13 @@ export default function ScheduleScreen() {
 
   const [selectedUserIds, setSelectedUserIds] = useState([]);
 
+  /** 달력·목록 “누구 일정만 볼지” 필터 (빈 배열 = 전체) */
+  const [scheduleViewFilterUserIds, setScheduleViewFilterUserIds] = useState(
+    [],
+  );
+  const [peopleFilterModalVisible, setPeopleFilterModalVisible] =
+    useState(false);
+
  /** =========================
  * 날짜 관련
    ========================= */
@@ -182,12 +192,22 @@ export default function ScheduleScreen() {
  * 일정 개수 / 로딩
    ========================= */
   const {
-    scheduleCountPerDay,
+    scheduleCountPerDay: baseScheduleCountPerDay,
     isLoading,
     refreshTrigger,
     setRefreshTrigger,
     bumpCount,
   } = useScheduleCounts(familyId, year, month);
+
+  const {scheduleCountPerDay: scheduleCountPerDayForCalendar, loadingFiltered} =
+    useScheduleCountsFilteredByUsers({
+      familyId,
+      year,
+      month,
+      baseCountPerDay: baseScheduleCountPerDay,
+      filterUserIds: scheduleViewFilterUserIds,
+      refreshTrigger,
+    });
 
  /** =========================
  * Pull to Refresh
@@ -280,9 +300,10 @@ export default function ScheduleScreen() {
         : toLongArray(rawParticipantIds);
 
       if (type === 'FAMILY' && participantIds.length === 0) {
-        participantIds = (familyUserList || [])
+        const fallbackIds = (familyUserList || [])
           .map(u => u?.userId)
           .filter(id => id != null && id !== '');
+        participantIds = STORE_MOCK_ENABLED ? fallbackIds : toLongArray(fallbackIds);
       }
 
       const payload = {
@@ -452,11 +473,14 @@ export default function ScheduleScreen() {
           <CalendarToggle
             selectedDate={selectedDate}
             setSelectedDate={setSelectedDate}
-            scheduleCountPerDay={scheduleCountPerDay}
+            scheduleCountPerDay={scheduleCountPerDayForCalendar}
             holidayMap={holidayMap}
             birthdayMap={birthdayMap}
             mode={calendarMode}
             setMode={setCalendarMode}
+            onPressPeopleFilter={() => setPeopleFilterModalVisible(true)}
+            peopleFilterActive={scheduleViewFilterUserIds.length > 0}
+            peopleFilterLoading={loadingFiltered}
           />
         </View>
 
@@ -468,9 +492,19 @@ export default function ScheduleScreen() {
           familyId={familyId}
           familyUserList={familyUserList}
           currentUserId={currentUserId}
+          viewFilterUserIds={scheduleViewFilterUserIds}
         />
       </ScrollView>
       </View>
+
+      <SchedulePeopleFilterModal
+        visible={peopleFilterModalVisible}
+        onClose={() => setPeopleFilterModalVisible(false)}
+        onApply={setScheduleViewFilterUserIds}
+        familyUserList={familyUserList}
+        currentUserId={currentUserId}
+        selectedUserIds={scheduleViewFilterUserIds}
+      />
 
       <ScheduleEditorBottomSheetModal
         ref={bottomSheetRef}
@@ -478,6 +512,7 @@ export default function ScheduleScreen() {
         familyUserList={familyUserList}
         familyId={familyId}
         date={formattedDate}
+        currentUserId={currentUserId}
         selectedUserIds={selectedUserIds}
         setSelectedUserIds={setSelectedUserIds}
         title={title}
@@ -491,15 +526,7 @@ export default function ScheduleScreen() {
       <View style={styles.fabContainer} pointerEvents="box-none">
         <DropShadow
           pointerEvents="box-none"
-          style={[
-            styles.fabShadow,
-            {
-              shadowColor: '#000',
-              shadowOffset: {width: 0, height: 3},
-              shadowOpacity: 0.08,
-              shadowRadius: 3,
-            },
-          ]}>
+          style={[styles.fabShadow, SCHEDULE_CARD_SHADOW]}>
           {/* 가이드 측정용: 버튼과 동일 위치/크기 (터치 통과) */}
           <View
             ref={guideFabRef}

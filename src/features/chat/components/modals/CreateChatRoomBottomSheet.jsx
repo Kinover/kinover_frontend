@@ -525,7 +525,6 @@ export default function CreateChatRoomBottomSheet({
         enableKeyboardPolicy={true}
         keyboardOpenSnapIndex={1}
         keyboardCloseSnapIndex={0}
-        useTouchOverlay={true}
         dismissKeyboardOnPress={true}
         onTouchInside={handleTouchInside}
         onDismiss={handleDismiss}
@@ -590,8 +589,8 @@ export default function CreateChatRoomBottomSheet({
                 bottomGap={getResponsiveHeight(8)}
                 onCancel={handleCancel}
                 onSave={handleSave}
-                cancelLabel="되돌리기"
-                saveLabel={isSubmitting ? '저장 중...' : '저장하기'}
+                cancelLabel="취소"
+                saveLabel={isSubmitting ? '저장 중...' : '저장'}
                 showCancel={true}
                 bottomSheetRef={modalRef}
                 autoCloseOnSave={false}

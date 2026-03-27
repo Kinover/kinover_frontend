@@ -15,7 +15,8 @@ import React, {
   useMemo,
   useCallback,
 } from 'react';
-import { Platform, View, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Image, Keyboard, Animated, Dimensions, SafeAreaView } from 'react-native';
+import { Platform, View, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Image, Keyboard, Animated, Dimensions } from 'react-native';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {
   BottomSheetTextInput as GorhomBottomSheetTextInput,
@@ -32,11 +33,10 @@ import {useReduxFontMode} from 'hooks/useReduxFontMode';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
+  getResponsiveWidth,
+  getResponsiveIconSize,
 } from 'utils/responsive';
-import {
-  getKeyboardSafeGap,
-  getUserBottomSheetSnapPoints,
-} from 'utils/layoutMetrics';
+import {getKeyboardSafeGap, getUserBottomSheetSnapPoints} from 'utils/layoutMetrics';
 import FastImage from '@d11/react-native-fast-image';
 import {
   convertPhUriToFileUri,
@@ -48,9 +48,14 @@ import {getPresignedUrls, uploadFileToS3} from 'api/imageUrlApi';
 
 import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
 import {normalizeImageForSave} from 'utils/normalizeImageForSave';
-import {BOTTOMSHEET_STYLE, COLORS} from 'styles/style';
-
 import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
+import {
+  BOTTOM_SHEET_EDITOR_COLORS,
+  BOTTOM_SHEET_EDITOR_FLOW,
+  getBottomSheetEditorBottomSafe,
+  getBottomSheetEditorSharedStyles,
+  getBottomSheetPrimarySaveButtonStyle,
+} from 'components/bottomSheet/bottomSheetEditorSharedStyles';
 
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 
@@ -76,127 +81,102 @@ function UserBottomSheetModalBase(
       .toLowerCase();
   }, []);
 
-  const styles = useMemo(
-    () =>
-      StyleSheet.create({
-        body: {
-          paddingTop: getResponsiveHeight(6),
-          paddingBottom: getResponsiveHeight(10),
-        },
-        footerFlow: {
-          paddingTop: getResponsiveHeight(10),
-          paddingBottom: getResponsiveHeight(2),
-        },
-        profileTouchArea: {
-          width: '45%',
-          alignSelf: 'center',
-          alignItems: 'center',
-          marginBottom: getResponsiveHeight(18),
-          marginTop: getResponsiveHeight(6),
-        },
-        profileimageContainer: {
-          width: 88,
-          height: 88,
-          borderRadius: 44,
-          overflow: 'hidden',
-          backgroundColor: '#F3F4F6',
-          justifyContent: 'center',
-          alignItems: 'center',
-        },
-        profileImage: {width: '100%', height: '100%'},
-        profileRing: {
-          position: 'absolute',
-          borderRadius: 44,
-          borderWidth: 1,
-          borderColor: '#E5E7EB',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-        },
-        profileBadge: {
-          position: 'absolute',
-          width: 24,
-          height: 24,
-          borderRadius: 12,
-          backgroundColor: '#FFFFFF',
-          borderWidth: 1,
-          borderColor: '#E5E7EB',
-          justifyContent: 'center',
-          alignItems: 'center',
-          elevation: 1,
-          shadowColor: '#000',
-          shadowOffset: {width: 0, height: 1},
-          shadowOpacity: 0.12,
-          shadowRadius: 2,
-        },
-        profileBadgeIcon: {width: 14, height: 14},
-        profileEditText: {
-          marginTop: getResponsiveHeight(6),
-          fontSize: getResponsiveFontSize(12.5),
-          fontFamily: 'Pretendard-Medium',
-          color: BOTTOMSHEET_STYLE().sectionLabel.color,
-        },
-        fieldBlock: {marginBottom: getResponsiveHeight(12)},
-        label: {
-          fontSize: BOTTOMSHEET_STYLE().sectionLabel.fontSize,
-          fontFamily: BOTTOMSHEET_STYLE().sectionLabel.fontFamily,
-          color: BOTTOMSHEET_STYLE().sectionLabel.color,
-          marginBottom: BOTTOMSHEET_STYLE().sectionLabel.marginBottom,
-          marginTop: BOTTOMSHEET_STYLE().sectionLabel.marginTop,
-        },
-        input: {
-          backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
-          borderRadius: 10,
-          paddingHorizontal: 12,
-          paddingVertical:
-            Platform.OS === 'android'
-              ? getResponsiveHeight(7)
-              : getResponsiveHeight(9),
-          fontSize: getResponsiveFontSize(14),
-          includeFontPadding: false,
-          fontFamily: 'Pretendard-Regular',
-          borderWidth: 1,
-          borderColor: '#E5E7EB',
-          color: '#111827',
-        },
-        textArea: {
-          height: getResponsiveHeight(96),
-          textAlignVertical: 'top',
-        },
-        profileOverlay: {
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.18)',
-        },
-        loadingOverlay: {
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          top: getResponsiveHeight(8),
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-        loadingBox: {
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: 12,
-          paddingVertical: 6,
-          borderRadius: 999,
-          backgroundColor: '#F3F4F6',
-        },
-        loadingText: {
-          marginLeft: 6,
-          fontSize: getResponsiveFontSize(12),
-          fontFamily: 'Pretendard-Medium',
-          color: '#4B5563',
-        },
-      }),
-    [],
-  );
+  const styles = useMemo(() => {
+    const shared = getBottomSheetEditorSharedStyles(
+      getResponsiveFontSize,
+      getResponsiveHeight,
+      getResponsiveWidth,
+    );
+    return StyleSheet.create({
+      ...shared,
+      body: shared.content,
+      nameUnderlineWrap: shared.singleLineUnderlineWrap,
+      inputUnderlineWrap: shared.fieldBoxWrap,
+      inputName: shared.profileNicknameInput,
+      inputTrait: shared.profileTraitInput,
+      profileTouchArea: {
+        width: '45%',
+        alignSelf: 'center',
+        alignItems: 'center',
+        marginBottom: getResponsiveHeight(BOTTOM_SHEET_EDITOR_FLOW),
+        marginTop: getResponsiveHeight(6),
+      },
+      profileimageContainer: {
+        width: 76,
+        height: 76,
+        borderRadius: 38,
+        overflow: 'hidden',
+        backgroundColor: '#F3F4F6',
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      profileImage: {width: '100%', height: '100%'},
+      profileRing: {
+        position: 'absolute',
+        borderRadius: 38,
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+      },
+      profileBadge: {
+        position: 'absolute',
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1,
+        borderColor: '#E5E7EB',
+        justifyContent: 'center',
+        alignItems: 'center',
+        elevation: 1,
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 1},
+        shadowOpacity: 0.12,
+        shadowRadius: 2,
+      },
+      profileBadgeIcon: {width: 14, height: 14},
+      profileEditText: {
+        marginTop: getResponsiveHeight(6),
+        fontSize: getResponsiveFontSize(12),
+        fontFamily: 'Pretendard-Medium',
+        color: BOTTOM_SHEET_EDITOR_COLORS.caption,
+        letterSpacing: -0.15,
+      },
+      profileOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.18)',
+      },
+      loadingOverlay: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        top: getResponsiveHeight(8),
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
+      loadingBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 999,
+        backgroundColor: '#F3F4F6',
+      },
+      loadingText: {
+        marginLeft: 6,
+        fontSize: getResponsiveFontSize(12),
+        fontFamily: 'Pretendard-Medium',
+        color: BOTTOM_SHEET_EDITOR_COLORS.sub,
+      },
+    });
+  }, []);
 
  // input 데이터는 ref로 (불필요 리렌더 방지)
   const nameRef = useRef('');
@@ -219,6 +199,12 @@ function UserBottomSheetModalBase(
   const traitInputRef = useRef(null);
 
   const fontMode = useReduxFontMode();
+  const insets = useSafeAreaInsets();
+  const bottomSafe = useMemo(
+    () => getBottomSheetEditorBottomSafe(insets.bottom, getResponsiveHeight),
+    [insets.bottom],
+  );
+
   const familyUserList = useSelector(
     state => state?.userFamily?.familyUserList ?? [],
   );
@@ -254,13 +240,14 @@ function UserBottomSheetModalBase(
     };
   }, []);
 
-  const snapPoints = useMemo(() => {
-    return getUserBottomSheetSnapPoints(fontMode);
-  }, [fontMode]);
-
   const sheetKey = useMemo(() => {
     return `user-flow-${String(fontMode ?? '')}-${selectedUser?.userId ?? 'none'}`;
   }, [fontMode, selectedUser?.userId]);
+
+  const sheetSnapPoints = useMemo(
+    () => getUserBottomSheetSnapPoints(fontMode),
+    [fontMode],
+  );
 
   const closeSheet = useCallback(() => {
     if (isClosing) return;
@@ -442,6 +429,7 @@ function UserBottomSheetModalBase(
 
     if (!/\.[a-zA-Z0-9]+$/.test(fileName)) fileName = `${fileName}.jpg`;
 
+    const prevPreview = previewImage;
     setPreviewImage(fileUri);
 
     try {
@@ -462,6 +450,7 @@ function UserBottomSheetModalBase(
       setPreviewImage(`${CLOUD_FRONT}${fileName}`);
     } catch (err) {
       console.error('❌ 프로필 이미지 업로드 실패:', err);
+      setPreviewImage(prevPreview);
       showToast('이미지 업로드 중 문제가 발생했어요.');
     }
   }, [showToast]);
@@ -555,7 +544,11 @@ function UserBottomSheetModalBase(
       onSave: handleSave,
       saveLabel: isSaving ? '저장 중...' : '적용하기',
       autoCloseOnSave: false,
-      disabled: isSaving,
+      saveButtonStyle: getBottomSheetPrimarySaveButtonStyle(
+        getResponsiveHeight,
+        getResponsiveIconSize,
+      ),
+      buttonRowStyle: {marginTop: 0},
     }),
     [handleCancel, handleSave, isSaving],
   );
@@ -582,24 +575,25 @@ function UserBottomSheetModalBase(
     <>
       <BottomSheetLayout
         modalRef={modalRef}
-        snapPoints={snapPoints}
-        defaultSnapPoints={snapPoints}
+        snapPoints={sheetSnapPoints}
         sheetKey={sheetKey}
         title="프로필 편집"
-        subtitle="가족이 기억할 ‘별명’과 ‘특징’을 남겨요."
+        headerCentered={true}
         useInternalScroll={true}
         keyboardBehavior={Platform.OS === 'ios' ? 'interactive' : 'none'}
-        keyboardBlurBehavior="restore"
         androidKeyboardInputMode="adjustResize"
         enableKeyboardPolicy={true}
         keyboardOpenSnapIndex={1}
         keyboardCloseSnapIndex={0}
-        useTouchOverlay={true}
         dismissKeyboardOnPress={true} // Layout이 키보드 내림 담당
         onTouchInside={handleTouchInsideResetOnly} // 내부 탭은 shift만 리셋
         onDismiss={handleDismiss}
+        containerStyle={{paddingHorizontal: getResponsiveWidth(20)}}
+        disableContentBottomPadding={true}
       >
-        <SafeAreaView style={{backgroundColor: '#fff'}}>
+        <SafeAreaView
+          edges={[]}
+          style={{backgroundColor: BOTTOM_SHEET_EDITOR_COLORS.bg}}>
           <BottomSheetView>
             <Animated.View style={{transform: [{translateY: shiftAnim}]}}>
               <View style={styles.body}>
@@ -636,67 +630,83 @@ function UserBottomSheetModalBase(
                 </TouchableOpacity>
 
                 <View style={styles.fieldBlock}>
-                  <AppText allowFontScaling={false} style={styles.label}>
+                  <AppText allowFontScaling={false} style={styles.sectionLabel}>
                     별명
                   </AppText>
-                  <BottomSheetTextInput
-                    allowFontScaling={false}
-                    ref={nameInputRef}
-                    key={`name-${nameKey}`}
-                    style={styles.input}
-                    defaultValue={nameRef.current}
-                    onChangeText={text => {
-                      nameRef.current = text;
-                    }}
-                    placeholder="가족들이 부르는 이름을 적어주세요."
-                    placeholderTextColor={COLORS.textTertiary}
-                    returnKeyType="next"
-                    onFocus={() => {
-                      tapToResetRef.current = false;
-                      ensureVisible(nameInputRef);
-                    }}
-                    onSubmitEditing={() => traitInputRef.current?.focus?.()}
-                    editable={!isSaving}
-                  />
+                  <View style={styles.nameUnderlineWrap}>
+                    <BottomSheetTextInput
+                      allowFontScaling={false}
+                      ref={nameInputRef}
+                      key={`name-${nameKey}`}
+                      style={styles.inputName}
+                      defaultValue={nameRef.current}
+                      onChangeText={text => {
+                        nameRef.current = text;
+                      }}
+                      placeholder="가족들이 부르는 이름을 적어주세요."
+                      placeholderTextColor={BOTTOM_SHEET_EDITOR_COLORS.muted}
+                      returnKeyType="next"
+                      underlineColorAndroid="transparent"
+                      onFocus={() => {
+                        tapToResetRef.current = false;
+                        ensureVisible(nameInputRef);
+                      }}
+                      onSubmitEditing={() => traitInputRef.current?.focus?.()}
+                      editable={!isSaving}
+                    />
+                  </View>
                 </View>
 
                 <View style={styles.fieldBlock}>
-                  <AppText allowFontScaling={false} style={styles.label}>
+                  <AppText allowFontScaling={false} style={styles.sectionLabel}>
                     한 줄 소개
                   </AppText>
-                  <BottomSheetTextInput
-                    allowFontScaling={false}
-                    ref={traitInputRef}
-                    key={`trait-${traitKey}`}
-                    style={[styles.input, styles.textArea]}
-                    defaultValue={traitRef.current}
-                    multiline
-                    onChangeText={text => {
-                      traitRef.current = text;
-                    }}
-                    placeholder="성격, 분위기, 기억에 남는 포인트를 가볍게 적어보세요."
-                    placeholderTextColor={COLORS.textTertiary}
-                    onFocus={() => {
-                      tapToResetRef.current = false;
-                      ensureVisible(traitInputRef);
-                    }}
-                    editable={!isSaving}
-                  />
+                  <View style={styles.inputUnderlineWrap}>
+                    <BottomSheetTextInput
+                      allowFontScaling={false}
+                      ref={traitInputRef}
+                      key={`trait-${traitKey}`}
+                      style={styles.inputTrait}
+                      defaultValue={traitRef.current}
+                      multiline
+                      scrollEnabled={true}
+                      nestedScrollEnabled={Platform.OS === 'android'}
+                      onChangeText={text => {
+                        traitRef.current = text;
+                      }}
+                      placeholder="성격, 분위기, 기억에 남는 포인트를 가볍게 적어보세요."
+                      placeholderTextColor={BOTTOM_SHEET_EDITOR_COLORS.muted}
+                      underlineColorAndroid="transparent"
+                      onFocus={() => {
+                        tapToResetRef.current = false;
+                        ensureVisible(traitInputRef);
+                      }}
+                      editable={!isSaving}
+                    />
+                  </View>
                 </View>
 
                 <BottomSheetFooterButtons
-                  bottomSafe={0}
-                  includeBottomSafePadding={Platform.OS === 'ios'}
+                  bottomSafe={bottomSafe}
+                  includeBottomSafePadding={true}
                   excludeSafeForMeasure={false}
                   onLayoutHeight={undefined}
-                  style={styles.footerFlow}
+                  style={[
+                    styles.footerFlow,
+                    Platform.OS === 'android' && {
+                      paddingBottom: getResponsiveHeight(12),
+                    },
+                  ]}
                   {...footerProps}
                 />
 
                 {isSaving && (
                   <View style={styles.loadingOverlay} pointerEvents="none">
                     <View style={styles.loadingBox}>
-                      <ActivityIndicator size="small" color="#4B5563" />
+                      <ActivityIndicator
+                        size="small"
+                        color={BOTTOM_SHEET_EDITOR_COLORS.sub}
+                      />
                       <AppText allowFontScaling={false} style={styles.loadingText}>
                         저장 중...
                       </AppText>

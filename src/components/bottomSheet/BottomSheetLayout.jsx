@@ -38,6 +38,7 @@ export default function BottomSheetLayout({
   animationConfigs,
 
   keyboardBehavior = Platform.OS === 'ios' ? 'interactive' : 'none',
+  keyboardBlurBehavior = 'none',
   androidKeyboardInputMode =
     Platform.OS === 'android' ? 'adjustResize' : 'adjustNothing',
 
@@ -50,6 +51,9 @@ export default function BottomSheetLayout({
 
   title,
   subtitle,
+
+  headerCentered = false,
+  headerAccessory,
 
   children,
 
@@ -70,6 +74,11 @@ export default function BottomSheetLayout({
   androidBottomPadding,
   disableContentBottomPadding = false,
   onHeaderLayout,
+
+  /** true면 콘텐츠 높이에 맞춰 시트 높이 자동 (snapPoints 무시) */
+  enableDynamicSizing = false,
+  /** 동적 높이 상한(px). 미지정 시 화면 높이의 약 92% */
+  maxDynamicContentSize: maxDynamicContentSizeProp,
 }) {
   const styles = useScaledStyleSheet(rf => ({
 
@@ -81,11 +90,18 @@ export default function BottomSheetLayout({
   header: {
     paddingBottom: getResponsiveHeight(6),
   },
+  headerCentered: {
+    alignItems: 'center',
+  },
   title: {
     fontFamily: BOTTOMSHEET_STYLE()?.title?.fontFamily || 'Pretendard-SemiBold',
     fontSize: BOTTOMSHEET_STYLE()?.title?.fontSize || rf(16),
     color: BOTTOMSHEET_STYLE()?.title?.color || '#111827',
     letterSpacing: -0.2,
+  },
+  titleCentered: {
+    textAlign: 'center',
+    alignSelf: 'stretch',
   },
   subtitle: {
     marginTop: getResponsiveHeight(3),
@@ -95,6 +111,10 @@ export default function BottomSheetLayout({
       BOTTOMSHEET_STYLE()?.subtitle?.fontSize || rf(12.5),
     color: BOTTOMSHEET_STYLE()?.subtitle?.color || '#6B7280',
     lineHeight: rf(18),
+  },
+  subtitleCentered: {
+    textAlign: 'center',
+    alignSelf: 'stretch',
   },
 
   scrollWrap: {},
@@ -166,15 +186,24 @@ export default function BottomSheetLayout({
     return Math.max(0, baseBottom);
   }, [disableContentBottomPadding, baseBottom, androidBottomPadding]);
 
+  const defaultMaxDynamicContentSize = useMemo(
+    () => Math.round(WINDOW_H * 0.92),
+    [],
+  );
+  const maxDynamicContentSize =
+    maxDynamicContentSizeProp ?? defaultMaxDynamicContentSize;
+
   const resolvedSnapPoints = useMemo(() => {
+    if (enableDynamicSizing) return [];
     if (Array.isArray(snapPoints) && snapPoints.length > 0) return snapPoints;
     return defaultSnapPoints;
-  }, [snapPoints, defaultSnapPoints]);
+  }, [enableDynamicSizing, snapPoints, defaultSnapPoints]);
 
   const modalKey = useMemo(() => {
     if (sheetKey != null) return String(sheetKey);
+    if (enableDynamicSizing) return 'bs-dynamic';
     return `bs-${(resolvedSnapPoints || []).join('|')}`;
-  }, [sheetKey, resolvedSnapPoints]);
+  }, [sheetKey, resolvedSnapPoints, enableDynamicSizing]);
 
  // 키보드 “보이는 상태” state
   const [keyboardVisible, setKeyboardVisible] = useState(false);
@@ -333,6 +362,10 @@ export default function BottomSheetLayout({
 
       if (shouldSkip()) return;
 
+      if (enableDynamicSizing) {
+        return;
+      }
+
       if (Platform.OS === 'android') {
         requestAnimationFrame(() => {
           if (shouldSkip()) return;
@@ -348,6 +381,10 @@ export default function BottomSheetLayout({
       scheduleKeyboardVisible(false);
 
       if (shouldSkip()) return;
+
+      if (enableDynamicSizing) {
+        return;
+      }
 
       const restoreIndex =
         beforeKeyboardIndexRef.current ?? keyboardCloseSnapIndex;
@@ -370,6 +407,7 @@ export default function BottomSheetLayout({
     };
   }, [
     enableKeyboardPolicy,
+    enableDynamicSizing,
     keyboardOpenSnapIndex,
     keyboardCloseSnapIndex,
     resolvedSnapPoints,
@@ -400,6 +438,56 @@ export default function BottomSheetLayout({
     snapToIndexOnTouchInside ||
     !!onTouchInside;
 
+  const containerBoxStyle = useMemo(
+    () => [
+      styles.container,
+      enableDynamicSizing
+        ? {flexGrow: 0, alignSelf: 'stretch', maxHeight: WINDOW_H}
+        : {flex: 1, maxHeight: WINDOW_H},
+      containerStyle,
+    ],
+    [enableDynamicSizing, WINDOW_H, containerStyle],
+  );
+
+  const innerTouchWrapperStyle = enableDynamicSizing
+    ? {alignSelf: 'stretch'}
+    : {flex: 1};
+
+  const scrollStyle = useMemo(
+    () => [
+      styles.scrollWrap,
+      enableDynamicSizing ? null : {flex: 1},
+      innerContentStyle,
+    ],
+    [enableDynamicSizing, innerContentStyle, styles.scrollWrap],
+  );
+
+  const scrollContentContainerStyle = useMemo(
+    () => [
+      styles.scrollContent,
+      enableDynamicSizing ? null : {flexGrow: 1},
+      {paddingBottom: contentBottomPad},
+      contentStyle,
+    ],
+    [enableDynamicSizing, contentBottomPad, contentStyle, styles.scrollContent],
+  );
+
+  const nonScrollContentStyle = useMemo(
+    () => [
+      animatedContentStyle,
+      enableDynamicSizing
+        ? {paddingBottom: contentBottomPad, alignSelf: 'stretch'}
+        : {flex: 1, paddingBottom: contentBottomPad},
+      innerContentStyle,
+    ],
+    [
+      enableDynamicSizing,
+      animatedContentStyle,
+      contentBottomPad,
+      innerContentStyle,
+    ],
+  );
+
   return (
     <BottomSheetModal
       key={modalKey}
@@ -410,36 +498,50 @@ export default function BottomSheetLayout({
         backgroundColor: 'rgba(156,163,175,0.45)',
       }}
       snapPoints={resolvedSnapPoints}
-      enableDynamicSizing={false}
+      enableDynamicSizing={enableDynamicSizing}
+      maxDynamicContentSize={
+        enableDynamicSizing ? maxDynamicContentSize : undefined
+      }
       enableContentPanningGesture={enableContentPanningGesture}
       animationConfigs={animationConfigs}
       keyboardBehavior={keyboardBehavior}
+      keyboardBlurBehavior={keyboardBlurBehavior}
       androidKeyboardInputMode={androidKeyboardInputMode}
       backdropComponent={renderBackdrop}
       onDismiss={handleDismiss}
       onChange={onChangeIndex}
       enablePanDownToClose={true}
       bottomInset={bottomInsetForModal}>
-      <BottomSheetView
-        style={[
-          styles.container,
-          {flex: 1, maxHeight: WINDOW_H},
-          containerStyle,
-        ]}>
-        {(title || subtitle) && (
+      <BottomSheetView style={containerBoxStyle}>
+        {(title || subtitle || headerAccessory) && (
           <View
-            style={[styles.header, headerStyle]}
+            style={[
+              styles.header,
+              headerStyle,
+              headerCentered && styles.headerCentered,
+            ]}
             onLayout={e => {
               const h = e?.nativeEvent?.layout?.height ?? 0;
               onHeaderLayout?.(h);
             }}>
             {!!title && (
-              <AppText allowFontScaling={false} style={styles.title}>
+              <AppText
+                allowFontScaling={false}
+                style={[
+                  styles.title,
+                  headerCentered && styles.titleCentered,
+                ]}>
                 {title}
               </AppText>
             )}
+            {headerAccessory}
             {!!subtitle && (
-              <AppText allowFontScaling={false} style={styles.subtitle}>
+              <AppText
+                allowFontScaling={false}
+                style={[
+                  styles.subtitle,
+                  headerCentered && styles.subtitleCentered,
+                ]}>
                 {subtitle}
               </AppText>
             )}
@@ -450,16 +552,11 @@ export default function BottomSheetLayout({
           onPress={handleTouchInside}
           accessible={false}
           disabled={!touchWrapperEnabled}>
-          <View style={{flex: 1}}>
+          <View style={innerTouchWrapperStyle}>
             {useInternalScroll ? (
               <BottomSheetScrollView
-                style={[styles.scrollWrap, {flex: 1}, innerContentStyle]}
-                contentContainerStyle={[
-                  styles.scrollContent,
-                  {flexGrow: 1},
-                  {paddingBottom: contentBottomPad},
-                  contentStyle,
-                ]}
+                style={scrollStyle}
+                contentContainerStyle={scrollContentContainerStyle}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="always"
                 keyboardDismissMode="none">
@@ -471,11 +568,7 @@ export default function BottomSheetLayout({
               </BottomSheetScrollView>
             ) : (
               <Animated.View
-                style={[
-                  animatedContentStyle,
-                  {flex: 1, paddingBottom: contentBottomPad},
-                  innerContentStyle,
-                ]}
+                style={nonScrollContentStyle}
                 pointerEvents="box-none">
                 {children}
               </Animated.View>
