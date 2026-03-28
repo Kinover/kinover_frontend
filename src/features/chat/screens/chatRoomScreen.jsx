@@ -1,11 +1,12 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {View, ActivityIndicator} from 'react-native';
+import {View} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 
 import ChatRoomScreenTemplate from './chatRoomScreenTemplate';
 import {fetchChatRoomThunk} from '../store/chatRoomThunk';
 import {selectChatRoomById} from '../store/chatRoomSelector';
+import YellowSpinner from 'components/yellowSpinner';
 
 const toId = v => (v == null ? null : String(v));
 
@@ -66,7 +67,7 @@ export default function FamilyChatRoom({route}) {
   if (!chatRoomId) {
     return (
       <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
-        <ActivityIndicator />
+        <YellowSpinner />
       </View>
     );
   }
@@ -74,7 +75,7 @@ export default function FamilyChatRoom({route}) {
   if (!chatRoom && loading) {
     return (
       <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
-        <ActivityIndicator />
+        <YellowSpinner />
       </View>
     );
   }

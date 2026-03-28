@@ -591,7 +591,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         await handleSave();
       } catch (e) {
         setIsClosing(false);
-        showToast('저장 실패! 콘솔에서 에러 로그 확인해줘.');
+        showToast('일정을 저장하지 못했어요. 잠시 후 다시 시도해주세요.');
       }
     };
 
@@ -605,7 +605,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         await handleDelete();
       } catch (e) {
         setIsClosing(false);
-        showToast('삭제 실패! 콘솔에서 에러 로그 확인해줘.');
+        showToast('일정을 삭제하지 못했어요. 잠시 후 다시 시도해주세요.');
       }
     };
 

@@ -31,6 +31,7 @@ import {BACKGROUND_COLORS} from 'styles/style';
 import HeaderSection from '../components/HeaderSection';
 import MemberGridSection from '../components/MemberGridSection';
 import YellowSpinner from 'components/yellowSpinner';
+import ToastModal from 'components/modal/ToastModal';
 
 import {
   requestNotificationPermission,
@@ -85,6 +86,7 @@ export default function HomeScreen() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [didInitialLoad, setDidInitialLoad] = useState(false);
+  const [errorToastVisible, setErrorToastVisible] = useState(false);
 
  // AppAlert "실제 표시 여부"를 HomeScreen에서 추적
   const [isAppAlertVisible, setIsAppAlertVisible] = useState(false);
@@ -217,9 +219,12 @@ export default function HomeScreen() {
         const usersTask = awaitAction(dispatch(fetchFamilyUserListThunk(familyId)));
         const statusTask = awaitAction(dispatch(fetchFamilyStatusThunk(familyId)));
 
-        await Promise.allSettled([userTask, familyTask, usersTask, statusTask]);
+        const results = await Promise.allSettled([userTask, familyTask, usersTask, statusTask]);
+        const allFailed = results.every(r => r.status === 'rejected');
+        if (allFailed && mounted) setErrorToastVisible(true);
       } catch (e) {
         console.log('[HomeScreen] initial load error:', e);
+        if (mounted) setErrorToastVisible(true);
       }
     })();
 
@@ -237,9 +242,12 @@ export default function HomeScreen() {
       const statusTask = awaitAction(dispatch(fetchFamilyStatusThunk(familyId)));
       const familyTask = awaitAction(dispatch(fetchFamilyThunk(familyId)));
 
-      await Promise.allSettled([userTask, usersTask, statusTask, familyTask]);
+      const results = await Promise.allSettled([userTask, usersTask, statusTask, familyTask]);
+      const allFailed = results.every(r => r.status === 'rejected');
+      if (allFailed) setErrorToastVisible(true);
     } catch (e) {
       console.log('[HomeScreen] refresh family data error:', e);
+      setErrorToastVisible(true);
     }
   }, [dispatch, familyId]);
 
@@ -358,9 +366,8 @@ export default function HomeScreen() {
         </ScrollView>
       </View>
 
-      {/* 이벤트 모달이 탭 터치를 막는지 확인하기 위해 임시로 비활성화 */}
       <AppAlertHost
-        enabled={false}
+        enabled={true}
         event={activeEvent}
         onVisibleChange={setIsAppAlertVisible}
       />
@@ -390,6 +397,13 @@ export default function HomeScreen() {
         onSave={handleSave}
         onCancel={dismissUserSheet}
         onDismiss={clearSelectedUser}
+      />
+
+      <ToastModal
+        visible={errorToastVisible}
+        message="데이터를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
+        onClose={() => setErrorToastVisible(false)}
+        duration={3000}
       />
     </View>
   );
