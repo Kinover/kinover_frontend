@@ -251,16 +251,16 @@ export default function HomeScreen() {
     }
   }, [dispatch, familyId]);
 
-  const onPullRefresh = useCallback(() => {
+  const onPullRefresh = useCallback(async () => {
     if (!familyId) return;
     if (refreshing) return;
 
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 350);
-
-    requestAnimationFrame(() => {
-      doRefreshMembers();
-    });
+    try {
+      await doRefreshMembers();
+    } finally {
+      setRefreshing(false);
+    }
   }, [doRefreshMembers, familyId, refreshing]);
 
   useEffect(() => {

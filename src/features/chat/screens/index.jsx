@@ -262,9 +262,14 @@ export default function CommunicationScreen({navigation}) {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
           ListEmptyComponent={
-            <AppText style={styles.noChatMessage}>
-              {'아직 채팅방이 없어요.\n가족과의 첫 대화를 시작해볼까요?'}
-            </AppText>
+            <View style={{alignItems: 'center', marginTop: getResponsiveHeight(80)}}>
+              <AppText style={[styles.noChatMessage, {fontSize: getResponsiveFontSize(30), marginTop: 0, marginBottom: getResponsiveHeight(8)}]}>
+                💬
+              </AppText>
+              <AppText style={[styles.noChatMessage, {marginTop: 0}]}>
+                {'아직 채팅방이 없어요.\n가족과의 첫 대화를 시작해볼까요?'}
+              </AppText>
+            </View>
           }
           keyExtractor={item => String(item?.chatRoomId)}
         />
