@@ -92,9 +92,27 @@ export default function MemoryFeed({
   postContainer: {},
 
   emptyWrapper: {paddingTop: getResponsiveHeight(60), alignItems: 'center'},
+  emptyIcon: {fontSize: getResponsiveFontSize(38), marginBottom: getResponsiveHeight(8)},
   emptyText: {
     fontSize: EMPTY_STYLE().emptyFontSize,
     fontFamily: EMPTY_STYLE().emptyFontFamily,
+    color: EMPTY_STYLE().emptyColor,
+  },
+  emptySubText: {
+    marginTop: getResponsiveHeight(4),
+    fontSize: getResponsiveFontSize(11),
+    fontFamily: 'Pretendard-Regular',
+    color: EMPTY_STYLE().emptyColor,
+  },
+
+  gestureHintRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingVertical: getResponsiveHeight(6),
+  },
+  gestureHintText: {
+    fontSize: getResponsiveFontSize(11),
+    fontFamily: 'Pretendard-Regular',
     color: EMPTY_STYLE().emptyColor,
   },
 
@@ -237,11 +255,13 @@ export default function MemoryFeed({
     return id != null ? id : null;
   }, [selectedCategoryTitle, categoryList]);
 
-  const doFetch = useCallback(() => {
-    dispatch(fetchCategoryThunk());
+  const doFetch = useCallback(async () => {
     // fetchMemoryThunk가 number를 기대하면 여기서 Number로 변환 필요
     // 일단 안전하게 원본 그대로 넘김(서버 로직에 맞춰)
-    dispatch(fetchMemoryThunk(selectedCategoryId));
+    await Promise.allSettled([
+      dispatch(fetchCategoryThunk()),
+      dispatch(fetchMemoryThunk(selectedCategoryId)),
+    ]);
   }, [dispatch, selectedCategoryId]);
 
   /* -------------------------
@@ -253,14 +273,14 @@ export default function MemoryFeed({
     }, [doFetch]),
   );
 
-  const onRefresh = useCallback(() => {
+  const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 350);
-
-    requestAnimationFrame(() => {
-      doFetch();
+    try {
+      await doFetch();
+    } finally {
+      setRefreshing(false);
       resetScrollToTop(false);
-    });
+    }
   }, [doFetch, resetScrollToTop]);
 
   const isLoading = memoryLoading && !refreshing;
@@ -599,6 +619,13 @@ export default function MemoryFeed({
           sortKey={sortKey}
           onChangeSort={setSortKey}
         />
+        {isAllPhotos && (
+          <View style={styles.gestureHintRow}>
+            <AppText style={styles.gestureHintText}>
+              핀치로 크기 조절  ·  좌우 스와이프로 탭 전환
+            </AppText>
+          </View>
+        )}
       </View>
     ),
     [
@@ -608,18 +635,20 @@ export default function MemoryFeed({
       headerPeriodLabel,
       onPressPeriodFilter,
       sortKey,
+      isAllPhotos,
+      styles,
     ],
   );
 
   const listEmptyComponent = useMemo(
     () => (
       <View style={styles.emptyWrapper}>
-        <AppText style={styles.emptyText}>
-          아직 등록된 게시글이 없어요.
-        </AppText>
+        <AppText style={styles.emptyIcon}>📷</AppText>
+        <AppText style={styles.emptyText}>아직 게시글이 없어요.</AppText>
+        <AppText style={styles.emptySubText}>소중한 순간을 기록해보세요.</AppText>
       </View>
     ),
-    [],
+    [styles],
   );
 
   /* =========================

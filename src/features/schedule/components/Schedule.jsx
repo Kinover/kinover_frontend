@@ -3,7 +3,7 @@ import { View, TouchableOpacity, StyleSheet, Animated, Alert, ScrollView, Intera
 import {useDispatch, useSelector} from 'react-redux';
 
 import AppText from 'components/AppText';
-import {getResponsiveWidth, getResponsiveHeight} from 'utils/responsive';
+import {getResponsiveWidth, getResponsiveHeight, getResponsiveFontSize} from 'utils/responsive';
 
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 
@@ -901,9 +901,14 @@ function Schedule({
           })}
 
           {scheduleList.length === 0 && (
-            <AppText allowFontScaling={false} style={styles.emptyText}>
-              {'일정이 비어 있어요.\n새로운 일정을 추가해볼까요?'}
-            </AppText>
+            <View style={{alignItems: 'center', marginTop: getResponsiveHeight(48)}}>
+              <AppText allowFontScaling={false} style={[styles.emptyText, {fontSize: getResponsiveFontSize(30), marginTop: 0, marginBottom: getResponsiveHeight(8)}]}>
+                📅
+              </AppText>
+              <AppText allowFontScaling={false} style={[styles.emptyText, {marginTop: 0}]}>
+                {'일정이 비어 있어요.\n새로운 일정을 추가해볼까요?'}
+              </AppText>
+            </View>
           )}
         </View>
       </View>
