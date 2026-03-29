@@ -5,11 +5,11 @@ import DropShadow from 'react-native-drop-shadow';
 
 import AppText from 'components/AppText';
 import {
-  getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveWidth,
 } from 'utils/responsive';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {COLORS} from 'styles/style';
 
 const FASTIMAGE_DEFAULTS = {
@@ -55,6 +55,7 @@ const Chip = memo(function Chip({text}) {
       ]}>
       <View style={[styles.chipDot, {backgroundColor: dynamicStyle.dot}]} />
       <AppText
+        size={10.8}
         style={[styles.chipText, {color: dynamicStyle.text}]}
         numberOfLines={1}>
         {text}
@@ -81,6 +82,13 @@ const MemoryFeedListItem = memo(function MemoryFeedListItem({
   onPressOutCard,
   firstPostRef,
 }) {
+  // fontMode가 바뀔 때 재계산 — StyleSheet.create()는 최초 1회 고정이라 사용 불가
+  const fontStyles = useScaledStyleSheet(rf => ({
+    dateText:        {fontSize: rf(15), lineHeight: rf(18)},
+    metaCompactText: {fontSize: rf(13), lineHeight: rf(15)},
+    contentText:     {fontSize: rf(14), lineHeight: rf(19)},
+  }));
+
   const mediaSource = useMemo(() => {
     if (firstIsVideo && firstThumbUri) {
       return {uri: firstThumbUri, ...FASTIMAGE_DEFAULTS};
@@ -104,8 +112,8 @@ const MemoryFeedListItem = memo(function MemoryFeedListItem({
           onPress={() => onPressPost(postId)}
           style={styles.cardPress}>
           <View style={styles.cardHeader}>
-            <AppText style={styles.dateText}>{dateLabel}</AppText>
-            <AppText style={styles.metaCompactText}>{mediaLabel}</AppText>
+            <AppText style={[styles.dateText, fontStyles.dateText]}>{dateLabel}</AppText>
+            <AppText style={[styles.metaCompactText, fontStyles.metaCompactText]}>{mediaLabel}</AppText>
           </View>
 
           <View style={styles.mediaWrap}>
@@ -134,7 +142,7 @@ const MemoryFeedListItem = memo(function MemoryFeedListItem({
           <View style={styles.contentArea}>
             {bodyText ? (
               <AppText
-                style={styles.contentText}
+                style={[styles.contentText, fontStyles.contentText]}
                 numberOfLines={3}
                 ellipsizeMode="tail">
                 {bodyText}
@@ -179,17 +187,15 @@ const styles = StyleSheet.create({
     marginBottom: getResponsiveHeight(7),
   },
   metaCompactText: {
-    fontSize: getResponsiveFontSize(13),
+    // fontSize/lineHeight → fontStyles.metaCompactText (useScaledStyleSheet)
     fontFamily: 'Pretendard-Regular',
-    lineHeight: getResponsiveFontSize(15),
     textAlignVertical: 'bottom',
     color: COLORS.textDefault,
     marginLeft: getResponsiveWidth(8),
   },
   dateText: {
-    fontSize: getResponsiveFontSize(15),
+    // fontSize/lineHeight → fontStyles.dateText (useScaledStyleSheet)
     fontFamily: 'Pretendard-Regular',
-    lineHeight: getResponsiveFontSize(18),
     textAlignVertical: 'bottom',
     color: COLORS.textPrimary,
     letterSpacing: 0.2,
@@ -260,7 +266,7 @@ const styles = StyleSheet.create({
     marginRight: getResponsiveWidth(4.5),
   },
   chipText: {
-    fontSize: getResponsiveFontSize(10.8),
+    // fontSize → AppText size={10.8} prop
     fontFamily: 'Pretendard-SemiBold',
     letterSpacing: 0.1,
     flexShrink: 1,
@@ -270,10 +276,9 @@ const styles = StyleSheet.create({
     paddingTop: getResponsiveHeight(14),
   },
   contentText: {
+    // fontSize/lineHeight → fontStyles.contentText (useScaledStyleSheet)
     fontFamily: 'Pretendard-Regular',
-    fontSize: getResponsiveFontSize(14),
     color: COLORS.textPrimary,
-    lineHeight: getResponsiveHeight(19),
     letterSpacing: 0.1,
   },
 });

@@ -6,11 +6,11 @@ import { View, TouchableOpacity, StyleSheet, Image, Modal, Pressable, Platform, 
 
 import AppText from 'components/AppText';
 import {
-  getResponsiveFontSize,
   getResponsiveWidth,
   getResponsiveHeight,
   getResponsiveIconSize,
 } from 'utils/responsive';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 
 import {BUTTON_STYLES, COLORS} from 'styles/style';
 
@@ -63,6 +63,13 @@ export default React.forwardRef(function PostFilterBar({
   onChangeSort,
   sortOptions = DEFAULT_SORT_OPTIONS,
 }, ref) {
+  // fontMode가 바뀔 때 재계산 — StyleSheet.create()는 최초 1회 고정이라 사용 불가
+  const fontStyles = useScaledStyleSheet(rf => ({
+    categoryText:     {fontSize: rf(12), lineHeight: rf(17)},
+    pillText:         {fontSize: rf(12)},
+    dropdownItemText: {fontSize: rf(12)},
+  }));
+
   const [sortModalOpen, setSortModalOpen] = useState(false);
 
   const sortBtnRef = useRef(null);
@@ -198,6 +205,7 @@ export default React.forwardRef(function PostFilterBar({
           <AppText
             style={[
               styles.categoryText,
+              fontStyles.categoryText,
               isCategoryActive && styles.categoryTextActive,
             ]}
             numberOfLines={1}
@@ -237,6 +245,7 @@ export default React.forwardRef(function PostFilterBar({
             <AppText
               style={[
                 styles.pillText,
+                fontStyles.pillText,
                 {color: isPeriodActive ? TEXT_MAIN : TEXT_SUB},
                 isPeriodActive && styles.pillTextActive,
               ]}
@@ -259,6 +268,7 @@ export default React.forwardRef(function PostFilterBar({
             <AppText
               style={[
                 styles.pillText,
+                fontStyles.pillText,
                 {color: isSortActive ? TEXT_MAIN : TEXT_SUB},
                 isSortActive && styles.pillTextActive,
               ]}
@@ -308,7 +318,7 @@ export default React.forwardRef(function PostFilterBar({
           activeOpacity={0.75}
           onPress={() => pickSort(opt.key)}>
           <AppText
-            style={[styles.dropdownItemText, active && styles.dropdownItemTextActive]}
+            style={[styles.dropdownItemText, fontStyles.dropdownItemText, active && styles.dropdownItemTextActive]}
             numberOfLines={1}
             ellipsizeMode="tail">
             {opt.title}
@@ -368,9 +378,8 @@ const styles = StyleSheet.create({
     borderRadius: 99,
   },
   categoryText: {
+    // fontSize/lineHeight → fontStyles.categoryText (useScaledStyleSheet)
     fontFamily: 'Pretendard-Medium',
-    fontSize: getResponsiveFontSize(12),
-    lineHeight: getResponsiveHeight(17),
     color: COLORS.textTertiary,
   },
   categoryTextActive: {
@@ -405,7 +414,7 @@ const styles = StyleSheet.create({
   },
 
   pillText: {
-    fontSize: getResponsiveFontSize(12),
+    // fontSize → fontStyles.pillText (useScaledStyleSheet)
     fontFamily: 'Pretendard-Medium',
   },
   pillTextActive: {
@@ -473,8 +482,8 @@ const styles = StyleSheet.create({
   },
 
   dropdownItemText: {
+    // fontSize → fontStyles.dropdownItemText (useScaledStyleSheet)
     flexShrink: 1,
-    fontSize: getResponsiveFontSize(12),
     fontFamily: 'Pretendard-Medium',
     color: COLORS.iconSecondary,
   },
@@ -497,7 +506,6 @@ const styles = StyleSheet.create({
 
   checkMark: {
     marginLeft: getResponsiveWidth(8),
-    fontSize: getResponsiveFontSize(13),
     fontFamily: 'Pretendard-Bold',
     color: COLORS.textPrimary,
   },
