@@ -96,21 +96,24 @@ const ANDROID_BONUS =
     : {width: 1.0, height: 1.0, icon: 1.0, font: 1.0};
 
 const MODE_SCALE = {
+  // 일반 사용자 기준값
   [RESPONSIVE_MODE.NORMAL]: {width: 1, height: 1, icon: 1, font: 1},
-  [RESPONSIVE_MODE.LARGE]: {width: 1, height: 1.06, icon: 1.08, font: 1.12},
+  // 좀 더 크게 — 체감상 확실히 다르되 레이아웃이 무너지지 않는 수준
+  [RESPONSIVE_MODE.LARGE]: {width: 1, height: 1.1, icon: 1.12, font: 1.2},
+  // 노인/시력 약한 사용자 전용 — 16px 기준 약 24px, 접근성 등급 수준
   [RESPONSIVE_MODE.EXTRA_LARGE]: {
     width: 1,
-    height: 1.08,
-    icon: 1.1,
-    font: 1.25,
+    height: 1.2,
+    icon: 1.22,
+    font: 1.5,
   },
 };
 
 const MAX = {
   width: 1.18,
-  height: 1.18,
-  icon: 1.25,
-  font: 1.35,
+  height: 1.28, // EXTRA_LARGE height 1.2 + Android 보너스 허용
+  icon: 1.35,   // EXTRA_LARGE icon 1.22 + Android 보너스 허용
+  font: 1.6,    // EXTRA_LARGE font 1.5 + Android 보너스(×1.03) = 1.545, 여유 포함
 };
 
 const modeScale = () => {

@@ -156,6 +156,18 @@ export default function SettingScreen() {
         paddingTop: getResponsiveHeight(4),
         paddingBottom: getResponsiveHeight(8),
       },
+      fontLabelRow: {
+        width: getResponsiveWidth(300),
+        alignSelf: 'center',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        marginTop: getResponsiveHeight(6),
+      },
+      fontLabel: {
+        fontSize: rf(10.5),
+        color: '#A0A0A0',
+        fontFamily: 'Pretendard-Regular',
+      },
     };
   });
 
@@ -330,12 +342,22 @@ export default function SettingScreen() {
           </View>
         </View>
 
-        <View
-          style={styles.fontSliderWrap}>
+        <View style={styles.fontSliderWrap}>
           <FontModeSliderBlue
             value={sliderStep}
             onComplete={step => applyFontMode(valueToMode(step))}
           />
+          <View style={styles.fontLabelRow}>
+            <AppText allowFontScaling={false} style={styles.fontLabel}>
+              보통
+            </AppText>
+            <AppText allowFontScaling={false} style={styles.fontLabel}>
+              크게
+            </AppText>
+            <AppText allowFontScaling={false} style={styles.fontLabel}>
+              매우 크게
+            </AppText>
+          </View>
         </View>
       </View>
 
