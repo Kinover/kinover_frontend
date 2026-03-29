@@ -83,7 +83,7 @@ export default function RenameChatRoomModal({
       visible={visible}
       onClose={onClose}
       onConfirm={handleConfirm}
-      confirmText="변경"
+      confirmText="저장"
       closeText="취소"
       title="채팅방 이름 변경"
       subText={

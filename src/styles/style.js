@@ -118,9 +118,9 @@ export const getBottomSheetStyle = () => ({
     color: COLORS.textSecondary,
   },
   sectionLabel: {
-    fontSize: getResponsiveFontSize(14.5),
+    fontSize: getResponsiveFontSize(14),
     fontFamily: 'Pretendard-SemiBold',
-    color: COLORS.textPrimary,
+    color: COLORS.textSecondary,
     marginBottom: getResponsiveHeight(6),
     marginTop: getResponsiveHeight(10),
   },

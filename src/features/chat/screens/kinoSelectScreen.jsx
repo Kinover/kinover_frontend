@@ -155,7 +155,6 @@ export default function KinoSelectScreen() {
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: getResponsiveHeight(106),
     position: 'relative',
   },
 

@@ -54,6 +54,10 @@ export const CHAT_BATCH_DEBOUNCE_MS = 80;
 /** 재연결 대기: base * (attempt+1), 최대 RECONNECT_DELAY_MAX_MS */
 export const RECONNECT_DELAY_BASE_MS = 1000;
 export const RECONNECT_DELAY_MAX_MS = 5000;
+/** Heartbeat ping 전송 주기 (ms) */
+export const WS_HEARTBEAT_INTERVAL_MS = 30000;
+/** ping 전송 후 pong 대기 타임아웃 (ms) */
+export const WS_HEARTBEAT_TIMEOUT_MS = 10000;
 
 // ==================== 애니메이션 (ms) ====================
 export const ANIM_DURATION_SHORT = 120;

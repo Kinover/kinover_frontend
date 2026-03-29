@@ -49,7 +49,7 @@ export default function CategoryModal({visible, content, onClose, onConfirm}) {
       onRequestClose={onClose}
       closeOnBackdropPress={true}
       onConfirm={onConfirm}
-      closeText="취소하기"
+      closeText="취소"
       confirmText="추가하기"
       title="새 카테고리를 입력해주세요">
       {content}

@@ -55,6 +55,7 @@ export default function CustomModal({
  /** 기존 오버라이드 */
   modalBoxStyle,
   contentStyle,
+  subTextStyle,
   closeTextStyle,
   confirmTextStyle,
   buttonBottomStyle,
@@ -224,7 +225,9 @@ export default function CustomModal({
         : null;
 
     return (
-      <AppText style={[styles.subText, extraStyle]} allowFontScaling={false}>
+      <AppText
+        style={[styles.subText, extraStyle, subTextStyle]}
+        allowFontScaling={false}>
         {subText}
       </AppText>
     );
@@ -244,7 +247,7 @@ export default function CustomModal({
       />
 
       <Animated.View
-        style={[modalStyle, modalWrapperStyle]}
+        style={[modalStyle, styles.modalOuter, modalWrapperStyle]}
         pointerEvents="box-none">
         {useShadow ? (
           <DropShadow style={styles.shadow}>
@@ -429,6 +432,11 @@ function makeStyles(fontScale) {
     overlay: {
       flex: 1,
       justifyContent: 'center',
+      alignItems: 'center',
+    },
+    /** 오버레이 가로 중앙: DropShadow(자식)이 화면 전체 너비로 펼쳐질 때 박스가 왼쪽으로 치우치는 현상 방지 */
+    modalOuter: {
+      width: '100%',
       alignItems: 'center',
     },
     dim: {

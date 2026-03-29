@@ -32,45 +32,47 @@ export const getSheetSnapPointsByTier = ({
   return [`${safeBase}%`, `${safeOpen}%`];
 };
 
-export const getUserBottomSheetSnapPoints = fontMode =>
-  getSheetSnapPointsByTier({
+export const getUserBottomSheetSnapPoints = fontMode => {
+  const [first] = getSheetSnapPointsByTier({
     fontMode,
-    normal: ['66%', '92%'],
-    large: ['70%', '93%'],
-    xl: ['74%', '94%'],
+    normal: ['62%', '88%'],
+    large: ['66%', '89%'],
+    xl: ['70%', '90%'],
   });
+  return [first];
+};
 
 export const getCreateRoomBottomSheetSnapPoints = (fontMode, externalSnapPoints) => {
-  if (Array.isArray(externalSnapPoints) && externalSnapPoints.length >= 2) {
-    return externalSnapPoints;
-  }
-  if (Array.isArray(externalSnapPoints) && externalSnapPoints.length === 1) {
-    return [externalSnapPoints[0], '92%'];
+  if (Array.isArray(externalSnapPoints) && externalSnapPoints.length >= 1) {
+    return [externalSnapPoints[0]];
   }
 
-  return getSheetSnapPointsByTier({
+  const [first] = getSheetSnapPointsByTier({
     fontMode,
     normal: ['56.5%', '92%'],
     large: ['68%', '93%'],
     xl: ['72%', '94%'],
   });
+  return [first];
 };
 
-/** 구성원 칩이 많아서 다음 줄로 넘어갈 때 바텀시트를 더 높게 열기 위한 스냅 */
+/** 구성원이 많을 때만 살짝 더 높게 (칩 스크롤 여유) */
 const SCHEDULE_SNAP_MANY_MEMBERS = {
-  normal: ['78%', '97%'],
-  large: ['80%', '98%'],
-  xl: ['82%', '99%'],
+  normal: ['64%', '88%'],
+  large: ['66%', '89%'],
+  xl: ['68%', '90%'],
 };
 
+/** 일정 편집 바텀시트 — 기본은 화면을 덜 덮도록 낮은 스냅 */
 export const getScheduleBottomSheetSnapPoints = (fontMode, memberCount = 0) => {
   const hasManyMembers = memberCount >= 5;
-  return getSheetSnapPointsByTier({
+  const [first] = getSheetSnapPointsByTier({
     fontMode,
-    normal: hasManyMembers ? SCHEDULE_SNAP_MANY_MEMBERS.normal : ['70%', '97%'],
-    large: hasManyMembers ? SCHEDULE_SNAP_MANY_MEMBERS.large : ['72%', '98%'],
-    xl: hasManyMembers ? SCHEDULE_SNAP_MANY_MEMBERS.xl : ['74%', '99%'],
+    normal: hasManyMembers ? SCHEDULE_SNAP_MANY_MEMBERS.normal : ['54%', '84%'],
+    large: hasManyMembers ? SCHEDULE_SNAP_MANY_MEMBERS.large : ['56%', '85%'],
+    xl: hasManyMembers ? SCHEDULE_SNAP_MANY_MEMBERS.xl : ['58%', '86%'],
   });
+  return [first];
 };
 
 export const getKeyboardSafeGap = () => getResponsiveHeight(12);

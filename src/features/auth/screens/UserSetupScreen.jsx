@@ -216,7 +216,7 @@ export default function UserSetupScreen() {
         date={birthDate || new Date(2000, 0, 1)}
         mode="date"
         title="생년월일 선택"
-        confirmText="선택"
+        confirmText="확인"
         cancelText="취소"
         maximumDate={maxDate}
         minimumDate={minDate}

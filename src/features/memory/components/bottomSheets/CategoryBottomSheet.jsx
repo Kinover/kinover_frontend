@@ -1,4 +1,4 @@
-// src/screens/xxx/CategoryBottomSheetModal.js
+// src/features/memory/components/bottomSheets/CategoryBottomSheet.jsx
 /* eslint-disable react-native/no-inline-styles */
 
 import AppText from 'components/AppText';
@@ -11,90 +11,114 @@ import React, {
   useMemo,
   useCallback,
 } from 'react';
-import { View, StyleSheet, TouchableOpacity, SafeAreaView, Platform, ScrollView } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Pressable,
+  Platform,
+  ScrollView,
+  LayoutAnimation,
+  UIManager,
+  TouchableOpacity,
+  useWindowDimensions,
+} from 'react-native';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
+  getResponsiveIconSize,
 } from 'utils/responsive';
+import {
+  BOTTOM_SHEET_EDITOR_COLORS,
+  getBottomSheetEditorBottomSafe,
+  getBottomSheetPrimarySaveButtonStyle,
+} from 'components/bottomSheet/bottomSheetEditorSharedStyles';
 
 import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
-import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
-import {BOTTOMSHEET_STYLE, BUTTON_STYLES, COLORS} from 'styles/style';
-
 import {useReduxFontMode} from 'hooks/useReduxFontMode';
 import {FONT_MODE} from 'store/uiSlice';
+import {hapticSuccess} from 'utils/haptic';
 
-/** 폰트모드별 UI 스케일(체감용) */
+if (
+  Platform.OS === 'android' &&
+  UIManager.setLayoutAnimationEnabledExperimental
+) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
 const getFontScaleLevel = fontMode => {
   if (fontMode === FONT_MODE.EXTRA_LARGE) return 'XL';
   if (fontMode === FONT_MODE.LARGE) return 'L';
   return 'N';
 };
 
-const MAX_VISIBLE_ITEMS_BASE = 8;
-
-// "전체"도 id를 확실히 가짐
 const ALL_CATEGORY = {id: 'ALL', title: '전체'};
 
-// id 키 통일: id / categoryId 둘 다 지원
 const getCatId = cat => {
   const v = cat?.id ?? cat?.categoryId ?? null;
   return v != null ? String(v) : null;
 };
 
-// 밖으로 내보낼 때는 항상 id를 박아줌(훅이 id 기반으로 안정적으로 비교 가능)
-const normalizeCategory = cat => {
-  if (!cat) return null;
-  const id = getCatId(cat);
-  const title = cat?.title ?? '전체';
-  return {
-    ...cat,
-    id: id != null ? id : cat?.id,
-    title,
-  };
-};
-
-// 카테고리명 → hue (0–360) — 우측 pill 색상용
-const hashToHue = (text = '') => {
-  let n = 0;
-  for (let i = 0; i < text.length; i++) n = (n * 31 + text.charCodeAt(i)) >>> 0;
-  return n % 360;
+const normalizeIds = ids => {
+  if (ids == null || !Array.isArray(ids) || ids.length === 0) return null;
+  return ids.map(String);
 };
 
 const UI = {
-  bg: '#FFFFFF',
-  panel: '#FFFFFF',
-  card: '#FFFFFF',
-
-  optionBg: '#F6F7FB',
-  optionBgHover: '#F2F4F7',
-
-  text: '#0B1220',
-  sub: '#667085',
-  muted: '#98A2B3',
-
-  line: 'rgba(15, 23, 42, 0.10)',
-  lineSoft: 'rgba(15, 23, 42, 0.06)',
-
-  brand: '#FFC84D',
-  brandDeep: '#FFB020',
-
-  selectedBg: BUTTON_STYLES().saveBg,
-  selectedText: '#FFFFFF',
-
-  countBg: '#F2F4F7',
-  countText: '#475467',
+  bg: BOTTOM_SHEET_EDITOR_COLORS.bg,
+  navy: BOTTOM_SHEET_EDITOR_COLORS.navy,
+  chipIdleBg: '#F1F5F9',
+  chipIdleText: '#64748B',
+  chipSelectedText: '#FFFFFF',
 };
 
-const shadow = Platform.select({});
+const CHIP_GAP = 10;
+const CHIP_RADIUS = 12;
+
+const PRIMARY_SAVE_BTN_STYLE = getBottomSheetPrimarySaveButtonStyle(
+  getResponsiveHeight,
+  getResponsiveIconSize,
+);
+
+const SP = {
+  titleToState: 8,
+  stateToChips: 12,
+  chipsToFooter: 24,
+};
+
+function CategoryChip({label, selected, onPress, padV, padH, fontSize}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityState={{selected}}
+      style={({pressed}) => [
+        styles.chip,
+        selected ? styles.chipSelected : styles.chipIdle,
+        {paddingVertical: padV, paddingHorizontal: padH},
+        pressed && {opacity: selected ? 0.92 : 0.85},
+      ]}>
+      <AppText
+        allowFontScaling={false}
+        numberOfLines={1}
+        style={[
+          styles.chipLabelBase,
+          {fontSize},
+          selected ? styles.chipLabelSelected : styles.chipLabelIdle,
+        ]}>
+        {label}
+      </AppText>
+    </Pressable>
+  );
+}
 
 const CategoryBottomSheetModal = forwardRef(
   (
     {
       categoryList = [],
-      selectedCategory,
+      selectedCategoryIds,
       onSelectCategory,
       guideListRef,
       onDismiss,
@@ -102,84 +126,124 @@ const CategoryBottomSheetModal = forwardRef(
     ref,
   ) => {
     const modalRef = useRef(null);
+    const insets = useSafeAreaInsets();
 
-    const [tempSelected, setTempSelected] = useState(selectedCategory);
+    const [tempIds, setTempIds] = useState(() =>
+      normalizeIds(selectedCategoryIds),
+    );
     const isClosingRef = useRef(false);
 
     const fontMode = useReduxFontMode();
     const level = useMemo(() => getFontScaleLevel(fontMode), [fontMode]);
+    const {height: windowHeight} = useWindowDimensions();
 
- // 폰트모드에 따른 레이아웃 계산
+    const bottomSafe = useMemo(
+      () => getBottomSheetEditorBottomSafe(insets.bottom, getResponsiveHeight),
+      [insets.bottom],
+    );
+
     const layout = useMemo(() => {
-      const itemH =
+      const chipPadV =
         level === 'XL'
-          ? getResponsiveHeight(60)
+          ? getResponsiveHeight(8)
           : level === 'L'
-          ? getResponsiveHeight(54)
-          : getResponsiveHeight(48);
-
-      const gap =
+            ? getResponsiveHeight(8)
+            : getResponsiveHeight(8);
+      const chipPadH =
         level === 'XL'
-          ? getResponsiveHeight(10)
+          ? getResponsiveWidth(14)
           : level === 'L'
-          ? getResponsiveHeight(9)
-          : getResponsiveHeight(8);
+            ? getResponsiveWidth(14)
+            : getResponsiveWidth(14);
 
-      const maxVisible =
-        level === 'XL' ? 7 : level === 'L' ? 7 : MAX_VISIBLE_ITEMS_BASE;
-
-      const snap = level === 'XL' ? ['72%'] : level === 'L' ? ['68%'] : ['62%'];
-
-      const listExtra =
+      const chipFont =
         level === 'XL'
-          ? getResponsiveHeight(18)
+          ? getResponsiveFontSize(14.5)
           : level === 'L'
-          ? getResponsiveHeight(12)
-          : getResponsiveHeight(8);
+            ? getResponsiveFontSize(14)
+            : getResponsiveFontSize(13.5);
+
+      const chipLineHeight = chipPadV * 2 + chipFont;
+
+      const listExtra = getResponsiveHeight(8);
 
       return {
-        ITEM_HEIGHT: itemH,
-        GAP: gap,
-        MAX_VISIBLE_ITEMS: maxVisible,
-        snapPoints: snap,
+        chipPadV,
+        chipPadH,
+        chipFont,
+        chipLineHeight,
         listExtra,
       };
     }, [level]);
 
- // 데이터 구성: [전체 + 카테고리들]
     const data = useMemo(
       () => [ALL_CATEGORY, ...(categoryList || [])],
       [categoryList],
     );
 
-    const totalCount = useMemo(() => {
-      return Array.isArray(categoryList) ? categoryList.length : 0;
-    }, [categoryList]);
+    /** 칩 전체 높이(2열 랩) + 상한: 넘으면 이 높이로 고정 후 스크롤 */
+    const chipArea = useMemo(() => {
+      const cols = 2;
+      const count = Math.max(1, data.length);
+      const rows = Math.ceil(count / cols);
+      const totalContentH =
+        rows * layout.chipLineHeight +
+        Math.max(0, rows - 1) * CHIP_GAP +
+        layout.listExtra;
 
-    const maxListHeight = useMemo(() => {
-      const visible = Math.min(
-        layout.MAX_VISIBLE_ITEMS,
-        Math.max(1, data.length),
+      const maxScrollCap = Math.min(
+        Math.round(windowHeight * 0.42),
+        getResponsiveHeight(340),
       );
-      const base =
-        layout.ITEM_HEIGHT * visible + layout.GAP * Math.max(0, visible - 1);
 
-      return base + layout.listExtra;
-    }, [data.length, layout]);
+      const viewportHeight = Math.min(totalContentH, maxScrollCap);
+      const needsScroll = totalContentH > maxScrollCap + 0.5;
+
+      return {
+        viewportHeight,
+        needsScroll,
+        totalContentH,
+      };
+    }, [data.length, layout, windowHeight]);
 
     useEffect(() => {
-      setTempSelected(selectedCategory);
-    }, [selectedCategory]);
+      setTempIds(normalizeIds(selectedCategoryIds));
+    }, [selectedCategoryIds]);
 
-    const sheetKey = useMemo(() => {
-      const snapKey = (layout.snapPoints || []).join('|');
-      return `category-${fontMode}-${snapKey}`;
-    }, [fontMode, layout.snapPoints]);
+    const sheetKey = useMemo(
+      () => `category-${fontMode}-${level}`,
+      [fontMode, level],
+    );
+
+    const stateSubtitle = useMemo(() => {
+      if (tempIds == null) {
+        return '전체 선택됨';
+      }
+      if (tempIds.length === 1) {
+        const id = tempIds[0];
+        const found = (categoryList || []).find(
+          c => getCatId(c) === String(id),
+        );
+        return found?.title ? `${found.title} 선택됨` : '1개 선택됨';
+      }
+      return `${tempIds.length}개 선택됨`;
+    }, [tempIds, categoryList]);
+
+    const headerAccessory = useMemo(
+      () => (
+        <View style={styles.headerStateWrap}>
+          <AppText allowFontScaling={false} style={styles.headerStateText}>
+            {stateSubtitle}
+          </AppText>
+        </View>
+      ),
+      [stateSubtitle],
+    );
 
     useImperativeHandle(ref, () => ({
       present: () => {
         isClosingRef.current = false;
-        setTempSelected(selectedCategory);
+        setTempIds(normalizeIds(selectedCategoryIds));
 
         modalRef.current?.present?.();
         requestAnimationFrame(() => {
@@ -209,169 +273,111 @@ const CategoryBottomSheetModal = forwardRef(
       });
     }, [fontMode, sheetKey]);
 
-    const isSameCategory = useCallback((a, b) => {
-      if (!a && !b) return true;
-      if (!a || !b) return false;
+    const isAllSelected = tempIds == null;
 
-      const aId = getCatId(a);
-      const bId = getCatId(b);
-
-      if (aId && bId) return aId === bId;
-
- // fallback
-      return (a?.title ?? '') === (b?.title ?? '');
+    const handlePressAll = useCallback(() => {
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setTempIds(null);
     }, []);
 
-    const handlePressItem = useCallback(cat => {
-      setTempSelected(cat);
+    const handlePressCategory = useCallback(cat => {
+      const id = getCatId(cat);
+      if (!id || id === 'ALL') return;
+
+      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+      setTempIds(prev => {
+        if (prev == null) return [id];
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        const arr = [...next];
+        return arr.length === 0 ? null : arr;
+      });
     }, []);
 
-    const handleCancel = useCallback(() => {
-      setTempSelected(selectedCategory);
-      closeSheet();
-    }, [closeSheet, selectedCategory]);
-
- // Apply: 밖으로 나갈 때 normalize 해서 id를 박아줌
     const handleApply = useCallback(() => {
-      const next = normalizeCategory(tempSelected || ALL_CATEGORY);
-      onSelectCategory?.(next);
+      hapticSuccess();
+      const payload = tempIds == null || tempIds.length === 0 ? null : [...tempIds];
+      onSelectCategory?.(payload);
       closeSheet();
-    }, [closeSheet, onSelectCategory, tempSelected]);
+    }, [closeSheet, onSelectCategory, tempIds]);
 
     const handleDismiss = useCallback(() => {
-      setTempSelected(selectedCategory);
+      setTempIds(normalizeIds(selectedCategoryIds));
       onDismiss?.();
-    }, [selectedCategory, onDismiss]);
-
-    const isOnlyAll = data.length <= 1;
+    }, [selectedCategoryIds, onDismiss]);
 
     return (
       <BottomSheetLayout
         modalRef={modalRef}
-        snapPoints={layout.snapPoints}
+        enableDynamicSizing
         sheetKey={sheetKey}
         enableContentPanningGesture={false}
         keyboardBehavior="none"
         androidKeyboardInputMode="adjustNothing"
         closeOnPressOutside={true}
         onDismiss={handleDismiss}
-        title="카테고리"
-        subtitle="원하는 추억들만 모아봐요."
+        title="카테고리 선택"
+        headerAccessory={headerAccessory}
+        headerStyle={styles.headerGroup}
         useInternalScroll={false}
-        disableContentBottomPadding={true}>
-        <SafeAreaView edges={[]} style={{flex: 1, backgroundColor: UI.bg}}>
+        disableContentBottomPadding={true}
+        containerStyle={{paddingHorizontal: getResponsiveWidth(20)}}>
+        <SafeAreaView edges={[]} style={{alignSelf: 'stretch', backgroundColor: UI.bg}}>
           <View style={styles.sheetBody}>
             <View style={styles.content}>
-            <View style={styles.headerRow}>
-              <View style={styles.headerLeft}>
-                <AppText style={styles.headerTitle}>
-                  목록
-                </AppText>
-                <AppText style={styles.countChipText}>
-                  ({totalCount}개)
-                </AppText>
-              </View>
-
-              <View style={styles.pill}>
-                <View
-                  style={[
-                    styles.pillDot,
-                    {
-                      backgroundColor: (() => {
-                        const title = tempSelected?.title ?? '전체';
-                        if (title === '전체') return UI.sub;
-                        const h = hashToHue(title);
-                        return `hsl(${h}, 52%, 42%)`;
-                      })(),
-                    },
-                  ]}
-                />
-                <AppText
-                  style={[
-                    styles.pillText,
-                    {
-                      color: (() => {
-                        const title = tempSelected?.title ?? '전체';
-                        if (title === '전체') return UI.sub;
-                        const h = hashToHue(title);
-                        return `hsl(${h}, 44%, 26%)`;
-                      })(),
-                    },
-                  ]}>
-                  {tempSelected?.title ?? '전체'}
-                </AppText>
-              </View>
-            </View>
-
-            {isOnlyAll ? (
-              <View style={styles.emptyBox}>
-                <AppText style={styles.emptyTitle}>
-                  카테고리가 없어요
-                </AppText>
-                <AppText style={styles.emptyDesc}>
-                  지금은 ‘전체’로 보거나, 업로드할 때 새로 만들 수 있어요.
-                </AppText>
-              </View>
-            ) : (
               <View
-                style={[styles.listViewport, {maxHeight: maxListHeight}]}
+                style={[styles.chipViewport, {height: chipArea.viewportHeight}]}
                 ref={guideListRef}
                 collapsable={false}>
                 <ScrollView
                   bounces={false}
-                  showsVerticalScrollIndicator={true}
-                  contentContainerStyle={styles.scrollContent}>
+                  scrollEnabled={chipArea.needsScroll}
+                  showsVerticalScrollIndicator={chipArea.needsScroll}
+                  nestedScrollEnabled
+                  style={styles.chipScroll}
+                  contentContainerStyle={styles.chipScrollContent}>
                   {data.map((cat, index) => {
-                    const isSelected = isSameCategory(cat, tempSelected);
-
- // key도 id/categoryId 둘 다 지원
                     const idKey = getCatId(cat);
-                    const key = idKey != null ? idKey : `${cat.title}-${index}`;
+                    const isAllRow = idKey === 'ALL';
+                    const isSelected = isAllRow
+                      ? isAllSelected
+                      : !isAllSelected &&
+                        tempIds != null &&
+                        idKey != null &&
+                        tempIds.includes(idKey);
+
+                    const key =
+                      idKey != null ? idKey : `${cat.title ?? 'c'}-${index}`;
 
                     return (
-                      <TouchableOpacity
+                      <CategoryChip
                         key={key}
-                        activeOpacity={0.9}
-                        onPress={() => handlePressItem(cat)}
-                        style={[
-                          styles.itemRow,
-                          {height: layout.ITEM_HEIGHT},
-                          index !== 0 && {marginTop: layout.GAP},
-                          isSelected && styles.itemRowSelected,
-                        ]}>
-                        <AppText
-                          style={[
-                            styles.itemText,
-                            level === 'XL' && {
-                              fontSize: getResponsiveFontSize(16),
-                            },
-                            level === 'L' && {
-                              fontSize: getResponsiveFontSize(15),
-                            },
-                            isSelected && styles.itemTextSelected,
-                          ]}
-                          numberOfLines={1}>
-                          {cat.title}
-                        </AppText>
-                      </TouchableOpacity>
+                        label={cat.title}
+                        selected={isSelected}
+                        padV={layout.chipPadV}
+                        padH={layout.chipPadH}
+                        fontSize={layout.chipFont}
+                        onPress={() =>
+                          isAllRow ? handlePressAll() : handlePressCategory(cat)
+                        }
+                      />
                     );
                   })}
                 </ScrollView>
               </View>
-            )}
             </View>
 
-            <BottomSheetFooterButtons
-              onCancel={handleCancel}
-              onSave={handleApply}
-              saveLabel="적용하기"
-              autoCloseOnSave={false}
-              bottomSafe={0}
-              includeBottomSafePadding={Platform.OS === 'ios'}
-              excludeSafeForMeasure={false}
-              style={styles.footerFlow}
-              bottomGap={0}
-            />
+            <View style={[styles.footerSticky, {paddingBottom: bottomSafe}]}>
+              <TouchableOpacity
+                onPress={handleApply}
+                activeOpacity={0.88}
+                style={styles.applyButton}>
+                <AppText allowFontScaling={false} style={styles.applyLabel}>
+                  적용하기
+                </AppText>
+              </TouchableOpacity>
+            </View>
           </View>
         </SafeAreaView>
       </BottomSheetLayout>
@@ -383,126 +389,85 @@ CategoryBottomSheetModal.displayName = 'CategoryBottomSheetModal';
 export default CategoryBottomSheetModal;
 
 const styles = StyleSheet.create({
-  sheetBody: {
-    flex: 1,
-    justifyContent: 'space-between',
+  headerGroup: {
+    paddingBottom: 0,
   },
-  content: {
-    paddingTop: getResponsiveHeight(2),
-    paddingBottom: getResponsiveHeight(8),
+  headerStateWrap: {
+    marginTop: getResponsiveHeight(SP.titleToState),
   },
-
-  panel: {
-    backgroundColor: UI.panel,
-    borderRadius: 18,
-    padding: getResponsiveWidth(14),
-    borderWidth: 1,
-    borderColor: UI.lineSoft,
-    ...shadow,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: BOTTOMSHEET_STYLE().sectionLabel.marginBottom,
-    marginTop: BOTTOMSHEET_STYLE().sectionLabel.marginTop,
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'center',
-    gap: getResponsiveWidth(4),
-  },
-  headerTitle: {
-    fontSize: BOTTOMSHEET_STYLE().sectionLabel.fontSize,
-    fontFamily: BOTTOMSHEET_STYLE().sectionLabel.fontFamily,
-    color: BOTTOMSHEET_STYLE().sectionLabel.color,
-    lineHeight: BOTTOMSHEET_STYLE().sectionLabel.fontSize,
-  },
-  countChipText: {
-    fontSize: getResponsiveFontSize(11.5),
-    fontFamily: 'Pretendard-SemiBold',
-    color: COLORS.textTertiary,
-    lineHeight: getResponsiveFontSize(12),
-  },
-  pill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(6),
-    paddingHorizontal: getResponsiveWidth(10),
-    paddingVertical: getResponsiveHeight(6),
-    borderRadius: 999,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: UI.lineSoft,
-  },
-  pillDot: {
-    width: getResponsiveWidth(6),
-    height: getResponsiveWidth(6),
-    borderRadius: 999,
-  },
-  pillText: {
-    fontSize: getResponsiveFontSize(11.5),
-    fontFamily: 'Pretendard-SemiBold',
-    letterSpacing: -0.2,
-  },
-  listViewport: {
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  scrollContent: {},
-  itemRow: {
-    paddingHorizontal: getResponsiveWidth(14),
-    borderRadius: 14,
-    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
-    borderWidth: 1,
-    borderColor: UI.lineSoft,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  itemRowSelected: {
-    backgroundColor: UI.selectedBg,
-    borderColor: 'rgba(17, 24, 39, 0.18)',
-  },
-  itemText: {
-    flex: 1,
-    paddingRight: getResponsiveWidth(10),
-    fontSize:
-      Platform.OS === 'android'
-        ? getResponsiveFontSize(14)
-        : getResponsiveFontSize(15),
-    fontFamily: 'Pretendard-Medium',
-    color: UI.text,
-    letterSpacing: -0.2,
-  },
-  itemTextSelected: {
-    fontFamily: 'Pretendard-SemiBold',
-    color: UI.selectedText,
-  },
-  emptyBox: {
-    paddingVertical: getResponsiveHeight(16),
-    paddingHorizontal: getResponsiveWidth(12),
-    borderRadius: 16,
-    backgroundColor: UI.card,
-    borderWidth: 1,
-    borderColor: UI.lineSoft,
-  },
-  emptyTitle: {
-    fontSize: getResponsiveFontSize(14.5),
-    fontFamily: 'Pretendard-SemiBold',
-    color: UI.text,
-    letterSpacing: -0.2,
-  },
-  emptyDesc: {
-    marginTop: getResponsiveHeight(6),
+  headerStateText: {
     fontSize: getResponsiveFontSize(12.5),
     fontFamily: 'Pretendard-Medium',
-    color: UI.sub,
+    color: '#94A3B8',
+    letterSpacing: -0.2,
     lineHeight: getResponsiveFontSize(18),
   },
-  footerFlow: {
-    paddingTop: getResponsiveHeight(10),
+
+  sheetBody: {
+    flexGrow: 0,
+    alignSelf: 'stretch',
+  },
+  content: {
+    flexGrow: 0,
+    minHeight: 0,
+    paddingTop: 0,
     paddingBottom: 0,
+  },
+
+  chipViewport: {
+    alignSelf: 'stretch',
+    marginTop: getResponsiveHeight(SP.stateToChips),
+  },
+  chipScroll: {
+    flex: 1,
+    alignSelf: 'stretch',
+  },
+  chipScrollContent: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+    gap: CHIP_GAP,
+    paddingBottom: 0,
+  },
+
+  chip: {
+    borderRadius: CHIP_RADIUS,
+    maxWidth: '100%',
+    justifyContent: 'center',
+  },
+  chipIdle: {
+    backgroundColor: UI.chipIdleBg,
+  },
+  chipSelected: {
+    backgroundColor: UI.navy,
+  },
+  chipLabelBase: {
+    letterSpacing: -0.2,
+    flexShrink: 1,
+  },
+  chipLabelIdle: {
+    fontFamily: 'Pretendard-Medium',
+    color: UI.chipIdleText,
+  },
+  chipLabelSelected: {
+    fontFamily: 'Pretendard-SemiBold',
+    color: UI.chipSelectedText,
+  },
+
+  footerSticky: {
+    backgroundColor: UI.bg,
+    paddingTop: getResponsiveHeight(SP.chipsToFooter),
+  },
+  applyButton: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...PRIMARY_SAVE_BTN_STYLE,
+  },
+  applyLabel: {
+    fontSize: getResponsiveFontSize(15),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#FFFFFF',
+    letterSpacing: -0.2,
   },
 });

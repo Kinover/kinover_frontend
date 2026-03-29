@@ -10,7 +10,10 @@ import {View} from 'react-native';
 import {createStackNavigator} from '@react-navigation/stack';
 
 import TabNavigator from './tabNavigator';
-import {TabsWithOptionalGuideHost} from 'contexts/GuideOverlayContext';
+import {
+  GuideOverlayProvider,
+  TabsWithOptionalGuideHost,
+} from 'contexts/GuideOverlayContext';
 import SettingScreen from 'features/setting/screens/SettingScreen';
 import NotificationSettingScreen from 'features/setting/screens/NotificationSettingScreen';
 import NotificationScreen from 'features/notification/screens/NotificationScreen';
@@ -21,15 +24,17 @@ import {getResponsiveHeight} from 'utils/responsive';
 
 const Stack = createStackNavigator();
 
-/** 탭 화면 (가이드 오버레이는 App 루트 GuideOverlayRoot에서 렌더) */
+/** 가이드 없을 땐 탭만 렌더(자식 1개) → 탭바 히트 영역 꼬임 방지. 가이드 있을 때만 Host 추가 */
 function TabsWithGuideOverlay(props) {
   return (
-    <View style={{flex: 1}}>
-      <TabsWithOptionalGuideHost
-        TabNavigatorComponent={TabNavigator}
-        tabNavigatorProps={props}
-      />
-    </View>
+    <GuideOverlayProvider>
+      <View style={{flex: 1}} pointerEvents="box-none">
+        <TabsWithOptionalGuideHost
+          TabNavigatorComponent={TabNavigator}
+          tabNavigatorProps={props}
+        />
+      </View>
+    </GuideOverlayProvider>
   );
 }
 
@@ -47,7 +52,7 @@ const createHeaderOptions = (navigation, route) => ({
     elevation: 0,
     borderBottomWidth: 0,
   },
-  headerTitle: route?.name === '알림화면' ? '알림' : '',
+  headerTitle: '',
   headerLeft: () => (
     <RenderHeaderBackButton navigation={navigation} route={route} />
   ),

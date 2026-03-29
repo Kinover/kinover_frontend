@@ -2,7 +2,16 @@
 // src/features/post/components/MemoryDetailBottomSheet.js
 
 import React, {useMemo, useCallback, useState, useEffect, useRef} from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, FlatList, Image, Platform, Pressable } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  Animated,
+  FlatList,
+  Image,
+  Platform,
+  Pressable,
+  Keyboard,
+} from 'react-native';
 
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -10,7 +19,6 @@ import {
   BottomSheetModal,
   BottomSheetBackdrop,
   BottomSheetFlatList,
-  BottomSheetFooter,
   BottomSheetTextInput,
   BottomSheetView,
 } from '@gorhom/bottom-sheet';
@@ -21,14 +29,8 @@ import RNLinearGradient from 'react-native-linear-gradient';
 
 const {Swipeable} = require('react-native-gesture-handler');
 
-import {
-  getResponsiveFontSize,
-  getResponsiveHeight,
-  getResponsiveWidth,
-} from 'utils/responsive';
+import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
 import {COLORS, EMPTY_STYLE} from 'styles/style';
-import {getAndroidBottomSheetFooterInsetPx} from 'utils/layoutMetrics';
-
 const ACTION_W = getResponsiveWidth(70);
 const INPUT_H = getResponsiveHeight(46);
 const INPUT_SIDE_PAD = getResponsiveWidth(16);
@@ -123,7 +125,6 @@ function MentionText({text, familyUsers, textStyle, mentionStyle = null}) {
  * Footer (불투명 배경 바)
  * ========================= */
 function CommentFooter({
-  footerProps,
   styles,
   initialText,
   onSubmitComment,
@@ -138,10 +139,24 @@ function CommentFooter({
   const inputRef = useRef(null);
   const rawBottomInset = Number(insets.bottom || 0);
   const footerBasePad = getResponsiveHeight(8);
-  const footerSafeBottom =
-    Platform.OS === 'android'
-      ? getAndroidBottomSheetFooterInsetPx(rawBottomInset)
-      : Math.max(rawBottomInset, 0);
+  const [keyboardOpen, setKeyboardOpen] = useState(false);
+
+  useEffect(() => {
+    const showEvt =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvt =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const subShow = Keyboard.addListener(showEvt, () => setKeyboardOpen(true));
+    const subHide = Keyboard.addListener(hideEvt, () => setKeyboardOpen(false));
+    return () => {
+      subShow.remove();
+      subHide.remove();
+    };
+  }, []);
+
+  const contentBottomPad = keyboardOpen
+    ? 0
+    : Math.max(rawBottomInset, 0) + getResponsiveHeight(16);
 
   const [cursor, setCursor] = useState(0);
   const [draftText, setDraftText] = useState(initialText || '');
@@ -228,9 +243,12 @@ function CommentFooter({
   const canSubmitComment = !disabled && String(draftText || '').trim().length > 0;
 
   return (
-    <BottomSheetFooter
-      {...footerProps}
-      bottomInset={footerSafeBottom}>
+    <View
+      style={{paddingBottom: contentBottomPad, backgroundColor: '#F9F9F9'}}
+      onLayout={e => {
+        const h = e?.nativeEvent?.layout?.height ?? 0;
+        if (h > 0) onFooterLayoutHeight?.(h);
+      }}>
       <View
         style={[
           styles.footerBar,
@@ -238,11 +256,7 @@ function CommentFooter({
             paddingTop: footerBasePad,
             paddingBottom: footerBasePad,
           },
-        ]}
-        onLayout={e => {
-          const h = e?.nativeEvent?.layout?.height ?? 0;
-          if (h > 0) onFooterLayoutHeight?.(h);
-        }}>
+        ]}>
         {!!activeMention && mentionCandidates.length > 0 && !disabled && (
           <View
             style={[
@@ -329,7 +343,7 @@ function CommentFooter({
           </TouchableOpacity>
         </View>
       </View>
-    </BottomSheetFooter>
+    </View>
   );
 }
 
@@ -819,23 +833,7 @@ export default function MemoryDetailBottomSheet({
       bottomInset={0}
       android_keyboardInputMode="adjustResize"
       keyboardBehavior="interactive"
-      keyboardBlurBehavior={isAndroid ? 'none' : 'restore'}
-      enableFooterMarginAdjustment={true}
-      footerComponent={props => (
-        <CommentFooter
-          footerProps={props}
-          styles={styles}
-          initialText={commentText}
-          onChangeComment={onChangeComment}
-          onSubmitComment={onSubmitComment}
-          familyUsers={familyUsers}
-          myUserId={myUserId ?? user?.userId}
-          disabled={disabled}
-          onFooterLayoutHeight={h => {
-            setFooterLayoutH(prev => (Math.abs(prev - h) > 1 ? h : prev));
-          }}
-        />
-      )}>
+      keyboardBlurBehavior={isAndroid ? 'none' : 'restore'}>
       <BottomSheetView style={{flex: 1, width: '100%'}}>
         <View style={styles.commentSheetHeader}>
           <View style={styles.commentHeaderRow}>
@@ -858,36 +856,51 @@ export default function MemoryDetailBottomSheet({
           <View style={styles.commentSheetDivider} />
         </View>
 
-        <BottomSheetFlatList
-          ref={listRef}
-          style={styles.commentList}
-          data={commentList}
-          keyExtractor={item => String(item.commentId)}
-          renderItem={renderCommentItem}
-          onScroll={handleListScroll}
-          scrollEventThrottle={16}
-          showsVerticalScrollIndicator={false}
-          nestedScrollEnabled={true}
-          alwaysBounceVertical={false}
-          keyboardShouldPersistTaps="handled"
-          scrollEnabled={!disabled}
-          ListEmptyComponent={
-            <View
-              style={[
-                styles.emptyContainer,
-                {paddingBottom: emptyBottomOffset},
-              ]}>
-              <AppText style={styles.emptyText}>
-                아직 댓글이 없어요.
-                {'\n'}첫 댓글을 남겨보세요!
-              </AppText>
-            </View>
-          }
-          contentContainerStyle={{
-            flexGrow: 1,
-            paddingBottom: footerLayoutH + getResponsiveHeight(12),
-          }}
-        />
+        <View style={{flex: 1, width: '100%'}}>
+          <BottomSheetFlatList
+            ref={listRef}
+            style={styles.commentList}
+            data={commentList}
+            keyExtractor={item => String(item.commentId)}
+            renderItem={renderCommentItem}
+            onScroll={handleListScroll}
+            scrollEventThrottle={16}
+            showsVerticalScrollIndicator={false}
+            nestedScrollEnabled={true}
+            alwaysBounceVertical={false}
+            keyboardShouldPersistTaps="handled"
+            scrollEnabled={!disabled}
+            ListEmptyComponent={
+              <View
+                style={[
+                  styles.emptyContainer,
+                  {paddingBottom: emptyBottomOffset},
+                ]}>
+                <AppText style={styles.emptyText}>
+                  아직 댓글이 없어요.
+                  {'\n'}첫 댓글을 남겨보세요!
+                </AppText>
+              </View>
+            }
+            contentContainerStyle={{
+              flexGrow: 1,
+              paddingBottom: footerLayoutH + getResponsiveHeight(12),
+            }}
+          />
+
+          <CommentFooter
+            styles={styles}
+            initialText={commentText}
+            onChangeComment={onChangeComment}
+            onSubmitComment={onSubmitComment}
+            familyUsers={familyUsers}
+            myUserId={myUserId ?? user?.userId}
+            disabled={disabled}
+            onFooterLayoutHeight={h => {
+              setFooterLayoutH(prev => (Math.abs(prev - h) > 1 ? h : prev));
+            }}
+          />
+        </View>
 
         {showTopFade && (
             <RNLinearGradient
@@ -901,7 +914,7 @@ export default function MemoryDetailBottomSheet({
           <RNLinearGradient
             pointerEvents="none"
             colors={['rgba(249,249,249,0)', backgroundColor]}
-            style={styles.bottomFade}
+            style={[styles.bottomFade, {bottom: footerLayoutH}]}
           />
         )}
       </BottomSheetView>

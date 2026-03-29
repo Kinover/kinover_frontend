@@ -1,9 +1,18 @@
 import 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
-import React, {useEffect, useRef, useState} from 'react';
-import { View, StyleSheet, Image, AppState, ActivityIndicator, Platform, StatusBar, Dimensions } from 'react-native';
-import AppText from 'components/AppText';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {
+  View,
+  StyleSheet,
+  Image,
+  AppState,
+  ActivityIndicator,
+  Platform,
+  StatusBar,
+  Dimensions,
+  Pressable,
+} from 'react-native';
 import {
   GestureHandlerRootView,
 } from 'react-native-gesture-handler';
@@ -32,9 +41,10 @@ import {
 } from './navigation/navigationService';
 import {setResponsiveMode} from 'utils/responsive';
 import {
-  checkAndAuthBiometric,
+  checkAndAuthBiometricAppLock,
   getBiometricAvailability,
 } from '../utils/biometrics';
+import {useLogout} from 'features/auth/hooks/useLogout';
 import {setBioLockEnabled} from 'store/uiSlice';
 import useNetworkStatus, {registerReconnectCallback} from 'hooks/useNetworkStatus';
 import {reconnectIfNeeded} from 'features/chat/hooks/ChatSocket';
@@ -65,6 +75,24 @@ function KinoverSplashView({loop = false, onAnimationFinish}) {
   );
 }
 
+/** 최초 설치 후 한 번만: 플래그는 App에서 읽기 직후 저장됨. 애니 종료·타임아웃으로 닫기 */
+function SplashFirstRun({onFinish}) {
+  const doneRef = useRef(false);
+
+  const finish = useCallback(() => {
+    if (doneRef.current) return;
+    doneRef.current = true;
+    onFinish();
+  }, [onFinish]);
+
+  useEffect(() => {
+    const t = setTimeout(() => finish(), 6000);
+    return () => clearTimeout(t);
+  }, [finish]);
+
+  return <KinoverSplashView loop={false} onAnimationFinish={finish} />;
+}
+
 function ResponsiveModeBridge() {
   const fontMode = useReduxFontMode();
 
@@ -79,6 +107,7 @@ function ResponsiveModeBridge() {
 // 생체인식 잠금 — 백그라운드 갔다 오면 다시 인증 요구
 function AppLockGate({readyForAuth}) {
   const dispatch = useDispatch();
+  const logout = useLogout();
   const bioOn = useSelector(state => !!state.ui?.bioLockEnabled);
   const rehydrated = useSelector(state => !!state?._persist?.rehydrated);
 
@@ -116,11 +145,23 @@ function AppLockGate({readyForAuth}) {
         return;
       }
 
-      const res = await checkAndAuthBiometric();
+      const res = await checkAndAuthBiometricAppLock();
 
       if (res?.success) {
         setLocked(false);
         authedThisSessionRef.current = true;
+      } else if (res?.reason === 'NOT_AVAILABLE') {
+        dispatch(setBioLockEnabled(false));
+        setLocked(false);
+        authedThisSessionRef.current = true;
+      } else if (res?.requireLogout) {
+        try {
+          await logout();
+        } catch (e) {
+          null;
+        }
+        setLocked(false);
+        authedThisSessionRef.current = false;
       } else {
         setLocked(true);
         authedThisSessionRef.current = false;
@@ -166,38 +207,15 @@ function AppLockGate({readyForAuth}) {
   if (!readyForAuth) return null;
   if (!locked) return null;
 
-  if (authing) {
-    return (
-      <View style={styles.lockOverlay} pointerEvents="auto">
-        <KinoverSplashView loop={true} />
-      </View>
-    );
-  }
-
   return (
     <View style={styles.lockOverlay} pointerEvents="auto">
-      <View style={styles.lockCard}>
-        <AppText allowFontScaling={false} style={styles.lockTitle}>
-          앱 잠금
-        </AppText>
-        <AppText allowFontScaling={false} style={styles.lockDesc}>
-          생체인식으로 잠금을 해제해줘요
-        </AppText>
-        <View style={{height: 16}} />
-        {authing ? (
-          <ActivityIndicator size="small" color="#111827" />
-        ) : (
-          <AppText allowFontScaling={false} style={styles.lockHint}>
-            화면을 잠시 터치하면 다시 시도해요
-          </AppText>
-        )}
-      </View>
-
+      <ActivityIndicator size="large" color="#111827" />
       {!authing ? (
-        <View
+        <Pressable
           style={StyleSheet.absoluteFillObject}
-          onStartShouldSetResponder={() => true}
-          onResponderRelease={() => runAuth()}
+          onPress={() => runAuth()}
+          accessibilityRole="button"
+          accessibilityLabel="잠금 해제 다시 시도"
         />
       ) : null}
     </View>
@@ -265,6 +283,7 @@ function DevForceResetLogin() {
 
 // 나중에 다크모드 켜면 여기서 바꿀 거
 export default function App() {
+  const [splashHydrated, setSplashHydrated] = useState(false);
   const [splashDone, setSplashDone] = useState(false);
   const [showSplash, setShowSplash] = useState(false);
   const isDarkMode = false;
@@ -277,27 +296,26 @@ export default function App() {
           setShowSplash(false);
           setSplashDone(true);
         } else {
+          await AsyncStorage.setItem(SPLASH_KEY, '1');
           setShowSplash(true);
           setSplashDone(false);
         }
       } catch {
         setShowSplash(false);
         setSplashDone(true);
+      } finally {
+        setSplashHydrated(true);
       }
     })();
   }, []);
 
-  const onSplashFinish = async () => {
+  const onSplashFinish = useCallback(() => {
     setSplashDone(true);
     setShowSplash(false);
-    try {
-      await AsyncStorage.setItem(SPLASH_KEY, '1');
-    } catch (e) {
-      null;
-    }
-  };
+  }, []);
 
-  const readyForAuth = !showSplash || splashDone;
+  const readyForAuth =
+    splashHydrated && (!showSplash || splashDone);
 
   return (
     <GestureHandlerRootView style={styles.root}>
@@ -325,11 +343,10 @@ export default function App() {
                   onReady={() => {
                     flushPendingNavigation();
                   }}>
-                  {showSplash && !splashDone ? (
-                    <KinoverSplashView
-                      loop={false}
-                      onAnimationFinish={onSplashFinish}
-                    />
+                  {!splashHydrated ? (
+                    <View style={styles.splashGatePlaceholder} />
+                  ) : showSplash && !splashDone ? (
+                    <SplashFirstRun onFinish={onSplashFinish} />
                   ) : (
                     <GuideOverlayProvider>
                       <View style={styles.guideRootWrap}>
@@ -360,6 +377,10 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: '#FFFFFF', // 투명 시스템바 뒤로 하얀 띠 비치는 것 방지
+  },
+  splashGatePlaceholder: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   guideRootWrap: {
     flex: 1,
@@ -406,38 +427,5 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.25)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-
-  lockCard: {
-    width: '78%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 18,
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.08)',
-  },
-
-  lockTitle: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: 16,
-    color: '#111827',
-    letterSpacing: -0.2,
-  },
-
-  lockDesc: {
-    marginTop: 6,
-    fontFamily: 'Pretendard-Regular',
-    fontSize: 13,
-    color: '#6B7280',
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-
-  lockHint: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: 12.5,
-    color: '#374151',
   },
 });

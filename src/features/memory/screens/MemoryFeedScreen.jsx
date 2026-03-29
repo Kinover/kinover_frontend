@@ -2,7 +2,7 @@
 // src/screens/memory/MemoryFeed.jsx
 
 import React, {useCallback, useMemo, useRef, useState, useEffect} from 'react';
-import { View, StyleSheet, FlatList, LayoutAnimation, UIManager, Platform, RefreshControl, Dimensions, Animated } from 'react-native';
+import { View, FlatList, LayoutAnimation, UIManager, Platform, RefreshControl, Dimensions, Animated } from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
@@ -75,8 +75,14 @@ function feedPostKey(item, index) {
 /* =========================
  * Main
  * ========================= */
+const isUuidString = v =>
+  typeof v === 'string' &&
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
+
 export default function MemoryFeed({
   selectedCategoryTitle,
+  /** null | string[] — null이면 전체 */
+  selectedCategoryIds = null,
   isCategoryOpen = false,
   startDate,
   endDate,
@@ -86,7 +92,7 @@ export default function MemoryFeed({
   filterBarRef,
   firstPostRef,
 }) {
-  const styles = useScaledStyleSheet(rf => ({
+  const styles = useScaledStyleSheet(_rf => ({
 
   container: {flex: 1, backgroundColor: BG},
   postContainer: {},
@@ -244,16 +250,17 @@ export default function MemoryFeed({
     [normalizeMediaUrl, videoThumbMap, refreshing],
   );
 
+  /** API: UUID 하나일 때만 서버에 categoryId 전달, 복수면 전체 조회 후 클라이언트 필터 */
   const selectedCategoryId = useMemo(() => {
-    if (!selectedCategoryTitle || selectedCategoryTitle === '전체') return null;
-
-    const found = categoryList.find(c => c?.title === selectedCategoryTitle);
-    if (!found) return null;
-
-    // 서버/리덕스가 categoryId로 주든 id로 주든 OK
-    const id = getCatId(found);
-    return id != null ? id : null;
-  }, [selectedCategoryTitle, categoryList]);
+    if (selectedCategoryIds == null || selectedCategoryIds.length === 0) {
+      return null;
+    }
+    if (selectedCategoryIds.length === 1) {
+      const id = String(selectedCategoryIds[0]);
+      return isUuidString(id) ? id : null;
+    }
+    return null;
+  }, [selectedCategoryIds]);
 
   const doFetch = useCallback(async () => {
     // fetchMemoryThunk가 number를 기대하면 여기서 Number로 변환 필요
@@ -339,19 +346,14 @@ export default function MemoryFeed({
    * Filtering / Sorting
    * ------------------------- */
   const filteredMemoryList = useMemo(() => {
-    let list =
-      selectedCategoryTitle === '전체'
-        ? memoryList
-        : memoryList.filter(memory => {
-            const cat = categoryList.find(
-              c => getCatId(c) === String(memory.categoryId),
-            );
-            return cat?.title === selectedCategoryTitle;
-          });
-
+    let list = memoryList;
+    if (selectedCategoryIds != null && selectedCategoryIds.length > 0) {
+      const idSet = new Set(selectedCategoryIds.map(String));
+      list = memoryList.filter(m => idSet.has(String(m.categoryId)));
+    }
     list = filterPostsByDateRange(list, startDate, endDate);
     return list;
-  }, [memoryList, categoryList, selectedCategoryTitle, startDate, endDate]);
+  }, [memoryList, selectedCategoryIds, startDate, endDate]);
 
   const sortedMemoryList = useMemo(() => {
     const list = [...filteredMemoryList];
@@ -427,7 +429,7 @@ export default function MemoryFeed({
     if (refreshing) return;
     resetScrollToTop(false);
   }, [
-    selectedCategoryTitle,
+    selectedCategoryIds,
     startDate,
     endDate,
     selectedTab,

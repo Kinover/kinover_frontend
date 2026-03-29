@@ -97,7 +97,7 @@ export default function ChangeKinoModal({visible, onClose, onConfirm}) {
       showCloseButton={true}
       onConfirm={handleConfirm}
       confirmText="교체하기"
-      closeText="취소하기"
+      closeText="취소"
       title="키노를 교체하시겠어요?"
       subText={
         '지금까지의 대화는 저장되지 않아요.\n새로운 키노와 처음부터 다시 시작해요.'

@@ -209,14 +209,20 @@ export default function StateScreen() {
 
   gridWrap: {
     flex: 1,
+    minHeight: 0,
+    alignSelf: 'stretch',
     paddingHorizontal: EDGE_GUTTER,
-    justifyContent: 'flex-start',
+    justifyContent: 'center',
   },
 
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: ROW_GAP,
+  },
+
+  rowLast: {
+    marginBottom: 0,
   },
 
   ring: {
@@ -265,11 +271,13 @@ export default function StateScreen() {
     return Math.floor(available / 2);
   }, []);
 
- // 그리드 영역 높이 측정 → 4행으로 나눠 카드 높이 계산
+ // flex로 받은 세로 공간 측정 → 4행 균등 분배 (행 사이 간격 ROW_GAP 3개, 마지막 행은 margin 없음)
   const [contentHeight, setContentHeight] = useState(0);
-  const rowHeight =
-    contentHeight > 0 ? (contentHeight - ROW_GAP * 3) / 4 : CARD_H_DEFAULT;
-  const cardHeight = Math.max(getResponsiveHeight(80), rowHeight - ROW_GAP);
+  const cardHeight = useMemo(() => {
+    if (contentHeight <= 0) return CARD_H_DEFAULT;
+    const h = (contentHeight - ROW_GAP * 3) / 4;
+    return Math.max(getResponsiveHeight(80), h);
+  }, [contentHeight]);
 
   const handleConfirm = () => {
     if (!selectedEmotion) return;
@@ -300,7 +308,9 @@ export default function StateScreen() {
       subtitle="선택한 감정은 24시간 동안 유지돼요."
       backgroundColor="#F9F9F9"
       actionLabel="선택 완료"
+      actionButtonBackgroundColor="#000000"
       onActionPress={handleConfirm}
+      balanceVerticalSpacing
     >
       <View
         style={styles.gridWrap}
@@ -309,7 +319,12 @@ export default function StateScreen() {
           if (typeof h === 'number' && h > 0) setContentHeight(h);
         }}>
         {rows.map((rowItems, rowIndex) => (
-          <View key={rowIndex} style={styles.row}>
+          <View
+            key={rowIndex}
+            style={[
+              styles.row,
+              rowIndex === rows.length - 1 && styles.rowLast,
+            ]}>
             {rowItems.map((item, colIndex) => (
               <EmotionItem
                 key={item.id}

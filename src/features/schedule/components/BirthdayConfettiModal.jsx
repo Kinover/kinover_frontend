@@ -252,7 +252,7 @@ export default function BirthdayModal({
       visible={visible}
       onClose={onClose}
       onConfirm={handleConfirm}
-      closeText="닫기"
+      closeText="취소"
       confirmText={sendingMessage ? '전송 중...' : '메시지 보내기'}
       title={`${parsed.heroNames} 생일`}
       subText={subtitle}

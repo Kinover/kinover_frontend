@@ -2,14 +2,15 @@
 // src/features/chat/components/CreateChatRoomBottomSheet.jsx
 
 import React, {useMemo, useCallback, useState, useEffect, useRef} from 'react';
-import { View, StyleSheet, Platform, TouchableOpacity, Keyboard, InteractionManager, SafeAreaView } from 'react-native';
+import { View, StyleSheet, Platform, TouchableOpacity, Keyboard, InteractionManager } from 'react-native';
 import AppText from 'components/AppText';
 
 import {useReduxFontMode} from 'hooks/useReduxFontMode';
 
 import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
 import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
-import {BottomSheetTextInput, BottomSheetView} from '@gorhom/bottom-sheet';
+import {BottomSheetTextInput, BottomSheetScrollView} from '@gorhom/bottom-sheet';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
@@ -17,7 +18,7 @@ import {
   getResponsiveWidth,
   getResponsiveFontSize,
 } from 'utils/responsive';
-import {getCreateRoomBottomSheetSnapPoints} from 'utils/layoutMetrics';
+import {getCreateRoomBottomSheetSnapPoints, getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
 import {BOTTOMSHEET_STYLE} from 'styles/style';
 
 import ToastModal from 'components/modal/ToastModal';
@@ -39,7 +40,7 @@ export default function CreateChatRoomBottomSheet({
   const styles = useScaledStyleSheet(rf => ({
 
   body: {
-    paddingTop: getResponsiveHeight(6),
+    paddingTop: getResponsiveHeight(20),
     paddingBottom: getResponsiveHeight(6),
   },
 
@@ -64,20 +65,25 @@ export default function CreateChatRoomBottomSheet({
   },
 
   inputWrap: {
-    width: '100%',
-    borderRadius: getResponsiveWidth(14),
-    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
-    borderWidth: 1,
-    borderColor: '#E6EAF2',
-    paddingHorizontal: getResponsiveWidth(14),
-    paddingVertical:
-      Platform.OS === 'ios' ? getResponsiveHeight(12) : getResponsiveHeight(8),
+    alignSelf: 'stretch',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: 'rgba(60, 60, 67, 0.28)',
+    paddingBottom: 2,
   },
   input: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: rf(14.5),
-    color: '#111827',
-    padding: 0,
+    minHeight: getResponsiveHeight(36),
+    paddingHorizontal: 0,
+    paddingTop: Platform.OS === 'android' ? 2 : 4,
+    paddingBottom: 2,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    includeFontPadding: false,
+    fontSize: rf(15),
+    fontFamily: 'Pretendard-Regular',
+    color: '#0B1220',
+    lineHeight: rf(22),
+    letterSpacing: -0.18,
+    textAlignVertical: 'top',
   },
 
   memberCard: {
@@ -152,8 +158,24 @@ export default function CreateChatRoomBottomSheet({
     color: '#566073',
   },
 
+  footerFlow: {
+    alignSelf: 'stretch',
+    width: '100%',
+    paddingTop: getResponsiveHeight(20),
+    paddingBottom: getResponsiveHeight(2),
+  },
+
   }));
   const fontMode = useReduxFontMode();
+  const insets = useSafeAreaInsets();
+  const bottomSafe = useMemo(
+    () => Math.max(Number(insets.bottom || 0), getResponsiveHeight(24)),
+    [insets.bottom],
+  );
+  const androidFooterBottomPad = useMemo(() => {
+    if (Platform.OS !== 'android') return 0;
+    return Math.max(getAndroidNavBottomInsetEstimate(), getResponsiveHeight(8));
+  }, []);
 
  // roomName: ref로만 관리
   const roomNameRef = useRef(String(initialRoomName ?? ''));
@@ -517,88 +539,92 @@ export default function CreateChatRoomBottomSheet({
         defaultSnapPoints={resolvedSnapPoints}
         sheetKey={sheetKey}
         title="채팅방 생성"
-        subtitle="가족을 초대해 대화를 나눠요."
-        useInternalScroll={true}
+        headerCentered={true}
+        useInternalScroll={false}
+        disableContentBottomPadding={true}
+        containerStyle={{paddingHorizontal: getResponsiveWidth(20)}}
         keyboardBehavior={Platform.OS === 'ios' ? 'interactive' : 'none'}
         keyboardBlurBehavior="restore"
         androidKeyboardInputMode="adjustResize"
         enableKeyboardPolicy={true}
-        keyboardOpenSnapIndex={1}
+        keyboardOpenSnapIndex={0}
         keyboardCloseSnapIndex={0}
         dismissKeyboardOnPress={true}
         onTouchInside={handleTouchInside}
         onDismiss={handleDismiss}
       >
-        <SafeAreaView style={{backgroundColor: '#fff'}}>
-          <BottomSheetView>
-            <View style={styles.body}>
+        <BottomSheetScrollView
+          style={{flex: 1}}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="always"
+          contentContainerStyle={{paddingBottom: getResponsiveHeight(8)}}>
+          <View style={styles.body}>
+            <View style={styles.sectionRow}>
+              <AppText allowFontScaling={false} style={styles.label}>
+                채팅방명
+              </AppText>
+            </View>
+
+            <View style={styles.inputWrap}>
+              <BottomSheetTextInput
+                key={`room-${roomNameKey}`}
+                defaultValue={roomNameRef.current}
+                onChangeText={t => {
+                  roomNameRef.current = String(t).slice(0, maxRoomNameLength);
+                }}
+                placeholder="비워두면 기본 이름으로 생성돼요"
+                placeholderTextColor="#B0B6C3"
+                style={styles.input}
+                returnKeyType="done"
+                autoCorrect={false}
+                autoCapitalize="none"
+                onSubmitEditing={() => Keyboard.dismiss()}
+                editable={!isSubmitting}
+              />
+            </View>
+
+            <View style={{marginTop: getResponsiveHeight(18)}}>
               <View style={styles.sectionRow}>
                 <AppText style={styles.label}>
-                  채팅방 이름(선택)
+                  구성원
+                </AppText>
+                <AppText style={styles.countText}>
+                  {selectedCount}명 선택
                 </AppText>
               </View>
 
-              <View style={styles.inputWrap}>
-                <BottomSheetTextInput
-                  key={`room-${roomNameKey}`}
-                  defaultValue={roomNameRef.current}
-                  onChangeText={t => {
-                    roomNameRef.current = String(t).slice(0, maxRoomNameLength);
-                  }}
-                  placeholder="비워두면 기본 이름으로 생성돼요"
-                  placeholderTextColor="#B0B6C3"
-                  style={styles.input}
-                  returnKeyType="done"
-                  autoCorrect={false}
-                  autoCapitalize="none"
-                  onSubmitEditing={() => Keyboard.dismiss()}
-                  editable={!isSubmitting}
-                />
-              </View>
-
-              <View style={{marginTop: getResponsiveHeight(18)}}>
-                <View style={styles.sectionRow}>
-                  <AppText style={styles.label}>
-                    구성원
-                  </AppText>
-                  <AppText style={styles.countText}>
-                    {selectedCount}명 선택
-                  </AppText>
-                </View>
-
-                <View style={styles.memberCard}>
-                  <View style={styles.chipWrap}>
-                    {memberChipData.map(renderMemberChip)}
-                  </View>
-                </View>
-
-                <View style={styles.tipRow}>
-                  <View style={styles.tipDot} />
-                  <AppText style={styles.tipText}>
-                    최소 1명은 선택해야 저장할 수 있어요.
-                  </AppText>
+              <View style={styles.memberCard}>
+                <View style={styles.chipWrap}>
+                  {memberChipData.map(renderMemberChip)}
                 </View>
               </View>
 
-              <BottomSheetFooterButtons
-                bottomSafe={0}
-                includeBottomSafePadding={true}
-                excludeSafeForMeasure={false}
-                onLayoutHeight={undefined}
-                style={{paddingTop: getResponsiveHeight(10)}}
-                bottomGap={getResponsiveHeight(8)}
-                onCancel={handleCancel}
-                onSave={handleSave}
-                cancelLabel="취소"
-                saveLabel={isSubmitting ? '저장 중...' : '저장'}
-                showCancel={true}
-                bottomSheetRef={modalRef}
-                autoCloseOnSave={false}
-                disabled={isSubmitting}
-              />
+              <View style={styles.tipRow}>
+                <View style={styles.tipDot} />
+                <AppText style={styles.tipText}>
+                  최소 1명은 선택해야 저장할 수 있어요.
+                </AppText>
+              </View>
             </View>
-          </BottomSheetView>
-        </SafeAreaView>
+          </View>
+        </BottomSheetScrollView>
+        <BottomSheetFooterButtons
+          bottomSafe={bottomSafe}
+          includeBottomSafePadding={Platform.OS !== 'android'}
+          excludeSafeForMeasure={false}
+          onLayoutHeight={undefined}
+          style={[
+            styles.footerFlow,
+            Platform.OS === 'android' && {paddingBottom: androidFooterBottomPad},
+          ]}
+          onCancel={handleCancel}
+          onSave={handleSave}
+          cancelLabel="취소"
+          saveLabel={isSubmitting ? '저장 중...' : '저장'}
+          showCancel={true}
+          autoCloseOnSave={false}
+          disabled={isSubmitting}
+        />
       </BottomSheetLayout>
 
       <ToastModal

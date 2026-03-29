@@ -2,7 +2,7 @@
 // src/screens/memory/MemoryScreen.js
 
 import React, {useMemo, useState, useRef, useCallback, useEffect} from 'react';
-import {View, StyleSheet, TouchableOpacity, Animated, Image} from 'react-native';
+import {View, TouchableOpacity, Animated, Image} from 'react-native';
 
 import MemoryFeed from './MemoryFeedScreen';
 import AnimatedAlbumTabSelector from '../components/filters/AlbumTabSelector';
@@ -14,7 +14,6 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveIconSize,
-  getResponsiveFontSize,
 } from 'utils/responsive';
 
 import {useMemoryScreen} from '../hooks/useMemoryScreen';
@@ -82,19 +81,13 @@ export default function MemoryScreen() {
   const selectedTab = useSelector(state => state.memory.ui.selectedTab);
 
   const {
-    selectedCategory,
- // 여기서 selectedCategoryTitle은 "안 받는다" (stale 가능성 제거)
+    selectedCategoryIds,
+    selectedCategoryTitle,
     categoryList,
     categorySheetRef,
     handleSelectCategory,
     navigateToImageSelect,
   } = useMemoryScreen();
-
- // title은 항상 selectedCategory에서 즉시 계산 (단일 소스)
-  const computedSelectedCategoryTitle = useMemo(() => {
-    const t = selectedCategory?.title;
-    return t && String(t).trim().length > 0 ? t : '전체';
-  }, [selectedCategory]);
 
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false);
@@ -268,11 +261,8 @@ export default function MemoryScreen() {
   );
 
   const handleSelectCategoryWithReset = useCallback(
-    cat => {
- // 여기서 cat이 들어오는지부터 확인하면 디버깅 끝남
- // console.log('[MemoryScreen] onSelectCategory:', cat);
-
-      handleSelectCategory?.(cat);
+    ids => {
+      handleSelectCategory?.(ids);
       setIsCategorySheetOpen(false);
       requestAnimationFrame(() => forceShowHeaderAndTabBar(true));
     },
@@ -350,8 +340,8 @@ export default function MemoryScreen() {
       </Animated.View>
 
       <MemoryFeed
- // 여기만 바뀜: 훅에서 온 title 말고 "selectedCategory 기반 title"
-        selectedCategoryTitle={computedSelectedCategoryTitle}
+        selectedCategoryTitle={selectedCategoryTitle}
+        selectedCategoryIds={selectedCategoryIds}
         isCategoryOpen={isCategorySheetOpen}
         startDate={startDate}
         endDate={endDate}
@@ -366,7 +356,7 @@ export default function MemoryScreen() {
       <CategoryBottomSheetModal
         ref={categorySheetRef}
         categoryList={categoryList}
-        selectedCategory={selectedCategory}
+        selectedCategoryIds={selectedCategoryIds}
         onSelectCategory={handleSelectCategoryWithReset}
         onDismiss={() => setIsCategorySheetOpen(false)}
         onCancel={() => {}}

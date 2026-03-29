@@ -58,7 +58,7 @@ export default function LeaveChatRoomModal({visible, onClose, onConfirm}) {
         }, 100); // 100ms 정도만 주면 충분해
       }}
       confirmText="나가기"
-      closeText="취소하기"
+      closeText="취소"
       title="채팅방을 나갈까요?"
     />
   );

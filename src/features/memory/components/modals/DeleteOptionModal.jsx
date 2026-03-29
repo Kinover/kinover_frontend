@@ -62,7 +62,7 @@ export default function ImageDeleteModal({
       visible={visible}
       onClose={onClose}
       onConfirm={onConfirm}
-      closeText="취소하기"
+      closeText="취소"
       confirmText="삭제하기"
       title={title}
       subText={subText}

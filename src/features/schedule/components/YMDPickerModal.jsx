@@ -221,7 +221,9 @@ export default function YMDPickerModal({
 
                 {/* 월 */}
                 <View style={styles.col}>
-                  <AppText style={styles.colLabel}>월</AppText>
+                  <AppText allowFontScaling={false} style={styles.colLabel}>
+                    월
+                  </AppText>
                   <View style={styles.pickerBox}>
                     <RNPickerSelect
                       value={month}

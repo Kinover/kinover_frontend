@@ -603,7 +603,7 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
             onPress={confirmIOSActionSheet}
             style={styles.sheetHeaderBtn}>
             <AppText style={[styles.sheetHeaderText, {color: 'black'}]}>
-              선택
+              확인
             </AppText>
           </TouchableOpacity>
         </View>
@@ -646,7 +646,7 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
       }}
       onConfirm={onConfirm}
       title="기간 설정"
-      confirmText="적용하기"
+      confirmText="적용"
       closeText="취소"
       overlayChildren={iosOverlay}>
       <View style={styles.container}>

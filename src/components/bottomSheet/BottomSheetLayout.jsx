@@ -2,6 +2,12 @@
 /* eslint-disable react-native/no-inline-styles */
 
 import React, {useMemo, useCallback, useEffect, useRef, useState} from 'react';
+import {Easing} from 'react-native-reanimated';
+
+const DEFAULT_ANIMATION_CONFIGS = {
+  duration: 180,
+  easing: Easing.out(Easing.cubic),
+};
 import { View, StyleSheet, Animated, Platform, Dimensions, Keyboard, TouchableWithoutFeedback, InteractionManager } from 'react-native';
 
 import AppText from 'components/AppText';
@@ -35,7 +41,7 @@ export default function BottomSheetLayout({
   useInternalScroll = true,
 
   enableContentPanningGesture = false,
-  animationConfigs,
+  animationConfigs = DEFAULT_ANIMATION_CONFIGS,
 
   keyboardBehavior = Platform.OS === 'ios' ? 'interactive' : 'none',
   keyboardBlurBehavior = 'none',

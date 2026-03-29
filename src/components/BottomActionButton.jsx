@@ -27,6 +27,11 @@ export default function BottomActionButton({
   variant = 'fixed', // 'fixed' | 'scroll'
   disabled = false,
   useAppFontScaling = true,
+  /** scroll일 때: 부모가 paddingBottom(세이프 포함)을 주면 false로 두고 0 */
+  scrollInsetsBottom = true,
+  /** 미지정 시 테마 저장 버튼 색(BUTTON_STYLES().saveBg) */
+  backgroundColor,
+  labelColor = 'white',
 }) {
   const fontMode = useReduxFontMode();
 
@@ -55,7 +60,7 @@ export default function BottomActionButton({
       },
 
       button: {
-        backgroundColor: BUTTON_STYLES().saveBg,
+        backgroundColor: backgroundColor ?? BUTTON_STYLES().saveBg,
         height: h(50),
         width: '100%',
         borderRadius: icon(14),
@@ -69,13 +74,18 @@ export default function BottomActionButton({
         lineHeight: h(30),
         textAlign: 'center',
         fontFamily: BUTTON_STYLES().fontFamily,
-        color: 'white',
+        color: labelColor,
       },
       buttonTextDisabled: {
         color: 'rgba(255,255,255,0.9)',
       },
     });
-  }, [useAppFontScaling, ...(useAppFontScaling ? [fontMode] : [])]);
+  }, [
+    useAppFontScaling,
+    backgroundColor,
+    labelColor,
+    ...(useAppFontScaling ? [fontMode] : []),
+  ]);
 
   const insets = useSafeAreaInsets();
 
@@ -106,7 +116,9 @@ export default function BottomActionButton({
       style={[
         styles.buttonContainer,
         isFixed ? styles.fixedContainer : styles.scrollContainer,
-        isFixed ? {bottom: bottomOffset} : {paddingBottom: insets.bottom},
+        isFixed
+          ? {bottom: bottomOffset}
+          : {paddingBottom: scrollInsetsBottom ? insets.bottom : 0},
       ]}>
       <TouchableOpacity
         style={[styles.button, disabled && styles.buttonDisabled]}

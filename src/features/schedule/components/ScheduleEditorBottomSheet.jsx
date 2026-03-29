@@ -49,6 +49,7 @@ import {
   getBottomSheetEditorSharedStyles,
   getBottomSheetPrimarySaveButtonStyle,
 } from 'components/bottomSheet/bottomSheetEditorSharedStyles';
+import {BOTTOMSHEET_STYLE} from 'styles/style';
 import {Easing} from 'react-native-reanimated';
 
 const {height: WINDOW_H} = Dimensions.get('window');
@@ -387,8 +388,8 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
     const sheetAnimationConfigs = useMemo(
       () => ({
-        duration: 250,
-        easing: Easing.inOut(Easing.cubic),
+        duration: 180,
+        easing: Easing.out(Easing.cubic),
       }),
       [],
     );
@@ -758,7 +759,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
           keyboardBehavior={Platform.OS === 'ios' ? 'interactive' : 'none'}
           androidKeyboardInputMode="adjustResize"
           enableKeyboardPolicy={true}
-          keyboardOpenSnapIndex={1}
+          keyboardOpenSnapIndex={0}
           keyboardCloseSnapIndex={0}
           dismissKeyboardOnPress={true}
           onTouchInside={handleTouchInsideResetOnly}
@@ -969,11 +970,7 @@ const styles = StyleSheet.create({
   /** 섹션 구분 — 유형 / 구성원 */
   sectionLabel: {
     alignSelf: 'flex-start',
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-SemiBold',
-    color: COLORS.caption,
-    letterSpacing: -0.1,
-    marginBottom: getResponsiveHeight(8),
+    ...BOTTOMSHEET_STYLE().sectionLabel,
   },
 
   /** 유형: 단일 트랙 세그먼트 (칩과 다른 패턴) */

@@ -19,6 +19,9 @@ export function BottomSheetButtons({
   showCancel = true,
   bottomSheetRef,
   autoCloseOnSave = true,
+  saveButtonStyle,
+  cancelButtonStyle,
+  buttonRowStyle,
 }) {
   const [saving, setSaving] = React.useState(false);
 
@@ -60,11 +63,15 @@ export function BottomSheetButtons({
   };
 
   return (
-    <View style={styles.buttonRow}>
+    <View style={[styles.buttonRow, buttonRowStyle]}>
       {showCancel && (
         <TouchableOpacity
-          style={[styles.button, styles.cancelButton,    cancelLabel === '삭제하기' && {borderColor: '#EF4444'}, // 추가
-        ]}
+          style={[
+            styles.button,
+            styles.cancelButton,
+            cancelButtonStyle,
+            cancelLabel === '삭제하기' && {borderColor: '#EF4444'},
+          ]}
           onPress={handleCancelPress}
           disabled={saving}
           activeOpacity={0.85}>
@@ -81,7 +88,12 @@ export function BottomSheetButtons({
       )}
 
       <TouchableOpacity
-        style={[styles.button, styles.saveButton, saving && {opacity: 0.6}]}
+        style={[
+          styles.button,
+          styles.saveButton,
+          saveButtonStyle,
+          saving && {opacity: 0.6},
+        ]}
         onPress={handleSavePress}
         disabled={saving}
         activeOpacity={0.85}>

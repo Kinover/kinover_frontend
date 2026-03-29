@@ -29,6 +29,10 @@ import {useYMDPicker} from '../hooks/useYMDPicker';
 import DropShadow from 'react-native-drop-shadow';
 import FastImage from '@d11/react-native-fast-image';
 
+import {
+  SCHEDULE_CARD_SHADOW,
+  getScheduleShadowBoxBaseStyle,
+} from '../constants/scheduleDropShadow';
 import {COLORS, DEFAULT_STYLE} from 'styles/style';
 
 import MiniCalendarPickerModal from './MiniCalendarPickerModal';
@@ -148,6 +152,9 @@ export default function CalendarToggle({
   birthdayMap: birthdayMapProp = null,
   mode: modeProp = null,
   setMode: setModeProp = null,
+  onPressPeopleFilter,
+  peopleFilterActive = false,
+  peopleFilterLoading = false,
 }) {
   const styles = useScaledStyleSheet(rf => ({
 
@@ -156,9 +163,7 @@ export default function CalendarToggle({
     marginBottom: getResponsiveHeight(5),
   },
   shadowBox: {
-    alignSelf: 'center',
-    backgroundColor: 'transparent',
-    marginBottom: getResponsiveHeight(10),
+    ...getScheduleShadowBoxBaseStyle(),
   },
   calendarTouchWrap: {
     width: '100%',
@@ -185,9 +190,20 @@ export default function CalendarToggle({
   },
 
   headerLeft: {
+    flex: 1,
+    minWidth: 0,
+  },
+  /** 달력 아이콘 + 월/주 라벨 — `iconBtn`과 동일 토큰, 너비는 내용만큼만 (아이콘은 날짜 왼쪽 = LTR 관례) */
+  headerLeftDatePicker: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: getResponsiveWidth(8),
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
+    paddingHorizontal: getResponsiveWidth(10),
+    minHeight: getResponsiveWidth(32),
   },
   headerRight: {
     flexDirection: 'row',
@@ -195,6 +211,7 @@ export default function CalendarToggle({
     gap: getResponsiveWidth(10),
   },
   monthText: {
+    flexShrink: 1,
     fontFamily: DEFAULT_STYLE().sectionTitle.fontFamily,
     fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
     color: COLORS.textPrimary,
@@ -225,24 +242,30 @@ export default function CalendarToggle({
     height: getResponsiveWidth(15),
     resizeMode: 'contain',
   },
-  modeToggle: {
-    flexDirection: 'row',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 999,
-    padding: 2,
+  peopleFilterBtn: {
+    position: 'relative',
   },
-  toggleChip: {
-    paddingVertical: getResponsiveHeight(6.5),
-    paddingHorizontal: getResponsiveWidth(12),
-    borderRadius: 999,
+  peopleFilterIcon: {
+    width: getResponsiveWidth(18),
+    height: getResponsiveWidth(18),
+    resizeMode: 'contain',
   },
-  toggleText: {
+  peopleFilterBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: COLOR.ANNIV,
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+  /** 주/월 전환 — `iconBtn`과 동일 크기·배경·모서리 */
+  toggleTextInIcon: {
     fontSize: rf(12.5),
-    color: '#6B7280',
-  },
-  toggleTextActive: {
-    color: '#111827',
     fontFamily: 'Pretendard-SemiBold',
+    color: '#111827',
   },
 
   weekRow: {
@@ -432,7 +455,9 @@ export default function CalendarToggle({
   const monthH = useSharedValue(0);
   const weekH = useSharedValue(0);
 
-  const EST_MONTH_H = cellSize * 6 + GAP * 5;
+  const monthWeekRows = Math.max(1, Math.ceil(monthDates.length / 7));
+  const EST_MONTH_H =
+    cellSize * monthWeekRows + GAP * Math.max(0, monthWeekRows - 1);
   const EST_WEEK_H = cellSize;
 
   const containerH = useSharedValue(
@@ -520,9 +545,8 @@ export default function CalendarToggle({
     );
   };
 
-  const computedMaxYear = useMemo(() => {
-    return new Date().getFullYear();
-  }, []);
+  /** 일정은 미래 날짜도 필요 — 피커 상한만 둠 (하한 1950과 대칭) */
+  const computedMaxYear = useMemo(() => 2100, []);
 
   return (
     <View style={[styles.container, {paddingHorizontal: OUTER_HPAD}]}>
@@ -532,29 +556,49 @@ export default function CalendarToggle({
           styles.shadowBox,
           {
             width: cardWidth,
-            shadowColor: '#000',
-            shadowOffset: {width: 0, height: 3},
-            shadowOpacity: 0.08,
-            shadowRadius: 3,
+            ...SCHEDULE_CARD_SHADOW,
           },
         ]}>
         <View style={styles.cardInnerHeader}>
           <View style={styles.headerLeft}>
             <TouchableOpacity
-              style={styles.iconBtn}
+              style={styles.headerLeftDatePicker}
               onPress={openYMD}
-              hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
+              activeOpacity={0.72}
+              hitSlop={{top: 4, bottom: 4, left: 2, right: 2}}>
               <Image
                 style={styles.calendarIcon}
                 source={require('../../../assets/icons/calendar.png')}
               />
+              <AppText
+                allowFontScaling={false}
+                style={styles.monthText}
+                numberOfLines={1}>
+                {headerLabel}
+              </AppText>
             </TouchableOpacity>
-            <AppText allowFontScaling={false} style={styles.monthText}>
-              {headerLabel}
-            </AppText>
           </View>
 
           <View style={styles.headerRight}>
+            {typeof onPressPeopleFilter === 'function' ? (
+              <TouchableOpacity
+                style={[
+                  styles.iconBtn,
+                  styles.peopleFilterBtn,
+                  peopleFilterLoading ? {opacity: 0.55} : null,
+                ]}
+                onPress={onPressPeopleFilter}
+                hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
+                <Image
+                  source={require('../../../assets/icons/tabs/2/user.png')}
+                  style={styles.peopleFilterIcon}
+                />
+                {peopleFilterActive ? (
+                  <View style={styles.peopleFilterBadge} />
+                ) : null}
+              </TouchableOpacity>
+            ) : null}
+
             <View style={styles.navButtons}>
               <TouchableOpacity
                 style={styles.iconBtn}
@@ -583,18 +627,14 @@ export default function CalendarToggle({
               </TouchableOpacity>
             </View>
 
-            <View style={styles.modeToggle}>
-              <TouchableOpacity
-                style={[styles.toggleChip, styles.toggleActive]}
-                onPress={toggleMode}
-                hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
-                <AppText
-                  allowFontScaling={false}
-                  style={[styles.toggleText, styles.toggleTextActive]}>
-                  {mode === 'month' ? '주' : '월'}
-                </AppText>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={styles.iconBtn}
+              onPress={toggleMode}
+              hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
+              <AppText allowFontScaling={false} style={styles.toggleTextInIcon}>
+                {mode === 'month' ? '주' : '월'}
+              </AppText>
+            </TouchableOpacity>
           </View>
         </View>
       </DropShadow>
@@ -605,10 +645,7 @@ export default function CalendarToggle({
           styles.shadowBox,
           {
             width: cardWidth,
-            shadowColor: '#000',
-            shadowOffset: {width: 0, height: 3},
-            shadowOpacity: 0.08,
-            shadowRadius: 3,
+            ...SCHEDULE_CARD_SHADOW,
           },
         ]}>
         {/* 모달 열리면 panHandlers 자체를 안 붙임 (더 안전) */}

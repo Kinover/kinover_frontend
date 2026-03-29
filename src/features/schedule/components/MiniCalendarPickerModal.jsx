@@ -2,17 +2,13 @@
 // src/features/schedule/components/MiniCalendarPickerModal.jsx
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import { View, TouchableOpacity, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import {View, TouchableOpacity, Platform, useWindowDimensions} from 'react-native';
 
 import DateTimePicker, {DateTimePickerAndroid} from '@react-native-community/datetimepicker';
 
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
-import {
-  getResponsiveFontSize,
-  getResponsiveHeight,
-  getResponsiveWidth,
-} from 'utils/responsive';
+import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
 
 import {FONT_MODE} from 'store/uiSlice';
 import {useReduxFontMode} from 'hooks/useReduxFontMode';
@@ -70,6 +66,15 @@ export default function MiniCalendarPickerModal({
 
   modalBoxStyle: {},
   contentStyle: {marginTop: getResponsiveHeight(10)},
+  /** 타이틀 아래 선택 날짜 — 모달 기본 subText보다 크고 진하게 */
+  modalSelectedDateText: {
+    fontSize: rf(16.5),
+    lineHeight: rf(24),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#111827',
+    marginBottom: getResponsiveHeight(14),
+    paddingHorizontal: getResponsiveWidth(8),
+  },
   panel: {alignItems: 'center', justifyContent: 'center', width: '100%'},
 
   pickerBox: {
@@ -249,11 +254,12 @@ export default function MiniCalendarPickerModal({
       onClose={handleCancel}
       onConfirm={handleConfirm}
       closeText="취소"
-      confirmText="선택하기"
+      confirmText="확인"
       showCloseButton={true}
       closeOnBackdropPress={closeOnPressOutside}
       modalBoxStyle={styles.modalBoxStyle}
-      contentStyle={styles.contentStyle}>
+      contentStyle={styles.contentStyle}
+      subTextStyle={styles.modalSelectedDateText}>
       <View style={styles.panel}>
         {Platform.OS === 'ios' ? (
           <>

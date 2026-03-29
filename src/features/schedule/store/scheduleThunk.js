@@ -17,6 +17,7 @@ import {
   getStoreMockScheduleList,
   getStoreMockScheduleCountPerDay,
 } from '../../home/utils/storeMockData';
+import {normalizeScheduleListResponse} from '../utils/scheduleFilterHelpers';
 
 /**
  * 로딩 흔들림 방지용
@@ -519,6 +520,21 @@ export const deleteScheduleThunk = (scheduleId, refresh) => {
 };
 
 /* ---------------------- 날짜별 일정 개수 ---------------------- */
+/** Redux 없이 일별 일정 배열만 조회 (달력 사람 필터용 일괄 집계) */
+export async function fetchSchedulesForFamilyAndDateApi(familyId, date) {
+  if (STORE_MOCK_ENABLED) {
+    return normalizeScheduleListResponse(getStoreMockScheduleList(date));
+  }
+  const isGuest = await getGuestMode().catch(() => false);
+  if (isGuest) {
+    return normalizeScheduleListResponse(
+      makeDummyScheduleList({familyId, date, userId: null}),
+    );
+  }
+  const data = await fetchSchedulesForFamilyAndDateCore(familyId, date);
+  return normalizeScheduleListResponse(data);
+}
+
 export const getScheduleCountPerDayThunk = createAsyncThunk(
   'schedule/getCountPerDay',
   async ({familyId, year, month}, thunkAPI) => {

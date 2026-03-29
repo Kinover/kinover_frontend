@@ -7,6 +7,8 @@ import {
   CHAT_BATCH_DEBOUNCE_MS,
   RECONNECT_DELAY_BASE_MS,
   RECONNECT_DELAY_MAX_MS,
+  WS_HEARTBEAT_INTERVAL_MS,
+  WS_HEARTBEAT_TIMEOUT_MS,
 } from 'config/constants';
 import {receiveMessageThunk} from '../store/messageThunk';
 import {applyReadPointer} from '../store/chatRoomSlice';
@@ -30,6 +32,11 @@ let batchTimer = null;
 // 전송 큐: 끊김 순간 보낸 메시지를 복구 후 순차 전송
 const MAX_OUTGOING_QUEUE = 120;
 let outgoingQueue = [];
+
+// Heartbeat: 소켓이 살아있는지 주기적으로 확인
+let heartbeatInterval = null;
+let heartbeatTimeout = null;
+let lastReceivedAt = 0;
 
 function flushMessageBatch() {
   if (batchTimer) {
@@ -83,8 +90,48 @@ function flushOutgoingQueue() {
   }
 }
 
+function clearHeartbeat() {
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = null;
+  }
+  if (heartbeatTimeout) {
+    clearTimeout(heartbeatTimeout);
+    heartbeatTimeout = null;
+  }
+}
+
+function startHeartbeat() {
+  clearHeartbeat();
+  heartbeatInterval = setInterval(() => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      clearHeartbeat();
+      reconnectIfNeeded();
+      return;
+    }
+    try {
+      ws.send(JSON.stringify({type: 'ping'}));
+    } catch (e) {
+      clearHeartbeat();
+      reconnectIfNeeded();
+      return;
+    }
+    // pong 또는 어떤 메시지든 WS_HEARTBEAT_TIMEOUT_MS 내에 안 오면 소켓 죽었다 판단
+    heartbeatTimeout = setTimeout(() => {
+      const elapsed = Date.now() - lastReceivedAt;
+      if (elapsed >= WS_HEARTBEAT_TIMEOUT_MS) {
+        clearHeartbeat();
+        if (ws) {
+          try { ws.close(); } catch (e) { null; }
+        }
+      }
+    }, WS_HEARTBEAT_TIMEOUT_MS);
+  }, WS_HEARTBEAT_INTERVAL_MS);
+}
+
 function cleanupWsOnly() {
   clearReconnectTimer();
+  clearHeartbeat();
   if (batchTimer) {
     clearTimeout(batchTimer);
     batchTimer = null;
@@ -123,16 +170,27 @@ async function openSocket() {
 
   ws.onopen = () => {
     reconnectAttempt = 0;
-    console.log('✅ [GLOBAL WS] connected');
+    lastReceivedAt = Date.now();
+    startHeartbeat();
     flushOutgoingQueue();
   };
 
   ws.onmessage = e => {
+    lastReceivedAt = Date.now();
+    if (heartbeatTimeout) {
+      clearTimeout(heartbeatTimeout);
+      heartbeatTimeout = null;
+    }
     try {
       const data = JSON.parse(e.data);
       const payload =
         data?.payload && typeof data.payload === 'object' ? data.payload : data;
       const type = data?.type ?? payload?.type ?? 'message:new';
+
+ // =========================
+ // pong 처리 (heartbeat 응답)
+ // =========================
+      if (type === 'pong') return;
 
  // =========================
  // A) 읽음 브로드캐스트 처리 (실시간 unreadCount 갱신용)

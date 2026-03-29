@@ -189,8 +189,9 @@ export default function useChatRoomTemplate({
   }, [chatRoomId, latestCreatedAtLocal, messageList?.length, isAtBottomRef, sendReadIfNeeded]);
 
   useEffect(() => {
-    if (!isUserScrolling && messageList.length > 0) scrollToBottom();
-  }, [messageList.length, isUserScrolling, scrollToBottom]);
+    const len = Array.isArray(messageList) ? messageList.length : 0;
+    if (!isUserScrolling && len > 0) scrollToBottom();
+  }, [messageList, isUserScrolling, scrollToBottom]);
 
   return {
     chatRoomId,

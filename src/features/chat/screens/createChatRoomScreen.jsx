@@ -38,7 +38,7 @@ export default function CreateChatRoom({navigation}) {
 
  /**
  * 1) 헤더는 타이틀만(체크버튼 제거)
- * - 저장은 바텀시트 내부 "저장하기"로 처리하니까
+ * - 저장은 바텀시트 내부 "저장"으로 처리하니까
  */
   useLayoutEffect(() => {
     navigation.setOptions({

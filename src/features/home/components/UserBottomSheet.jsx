@@ -35,7 +35,7 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import {getKeyboardSafeGap, getUserBottomSheetSnapPoints} from 'utils/layoutMetrics';
+import {getKeyboardSafeGap, getUserBottomSheetSnapPoints, getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
 import FastImage from '@d11/react-native-fast-image';
 import {
   convertPhUriToFileUri,
@@ -203,6 +203,11 @@ function UserBottomSheetModalBase(
     () => getBottomSheetEditorBottomSafe(insets.bottom, getResponsiveHeight),
     [insets.bottom],
   );
+
+  const androidFooterBottomPad = useMemo(() => {
+    if (Platform.OS !== 'android') return 0;
+    return Math.max(getAndroidNavBottomInsetEstimate(), getResponsiveHeight(8));
+  }, []);
 
   const familyUserList = useSelector(
     state => state?.userFamily?.familyUserList ?? [],
@@ -582,7 +587,7 @@ function UserBottomSheetModalBase(
         keyboardBehavior={Platform.OS === 'ios' ? 'interactive' : 'none'}
         androidKeyboardInputMode="adjustResize"
         enableKeyboardPolicy={true}
-        keyboardOpenSnapIndex={1}
+        keyboardOpenSnapIndex={0}
         keyboardCloseSnapIndex={0}
         dismissKeyboardOnPress={true}
         onTouchInside={handleTouchInsideResetOnly}
@@ -701,12 +706,12 @@ function UserBottomSheetModalBase(
         </BottomSheetScrollView>
         <BottomSheetFooterButtons
           bottomSafe={bottomSafe}
-          includeBottomSafePadding={true}
+          includeBottomSafePadding={Platform.OS !== 'android'}
           excludeSafeForMeasure={false}
           onLayoutHeight={undefined}
           style={[
             styles.footerFlow,
-            Platform.OS === 'android' && {paddingBottom: getResponsiveHeight(12)},
+            Platform.OS === 'android' && {paddingBottom: androidFooterBottomPad},
           ]}
           {...footerProps}
         />
