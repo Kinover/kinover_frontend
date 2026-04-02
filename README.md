@@ -9,12 +9,12 @@
 
 - **React Native 0.78.0**
 - **React 19**
-- **Redux Toolkit + Thunk + Redux Persist** – 전역 상태 및 로컬 복원 관리
+- **Redux Toolkit + RTK Query + Redux Persist** – 전역 상태, 서버 상태 캐싱/무효화, 로컬 복원 관리
 - **React Navigation** – 화면 전환, 탭/스택 네비게이션 구성
 - **WebSocket (native)** – 실시간 채팅, 접속 상태 동기화
 - **Axios** – 백엔드 REST API 통신
 - **Kakao Login / Apple Login** – 소셜 로그인 연동
-- **AsyncStorage / Keychain** – 앱 상태 및 인증 정보 저장
+- **MMKV / AsyncStorage / Keychain** – persist 성능 최적화 + 앱 설정/인증 정보 저장
 - **S3 Presigned URL** – 이미지 업로드 처리
 - **Reanimated / Bottom Sheet / Lottie** – 인터랙션 및 모션 UI
 - **Custom Components** – Modal / Toast / Loader 등 공통 UI 컴포넌트 모듈화
@@ -24,6 +24,7 @@
 ## 주요 기능
 
 - 실시간 채팅 기능 구현 (WebSocket 기반)
+- RTK Query 기반 서버 상태 관리 및 캐시 동기화
 - 게시글 업로드 및 이미지 첨부 처리
 - AI 챗봇 대화 UI 및 흐름 처리
 - 가족 일정 공유 화면 및 기능 구현
