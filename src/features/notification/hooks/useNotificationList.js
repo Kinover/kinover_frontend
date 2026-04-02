@@ -4,9 +4,14 @@ import {useLastCheckedDate} from './useLastCheckedDate';
 import {useNotificationRows} from './useNotificationRows';
 import {useNotificationPress} from './useNotificationPress';
 
-export const useNotificationList = () => {
-  const {notifications = [], isLoading, error, lastCheckedAt} =
-    useNotificationState();
+export const useNotificationList = stateOverride => {
+  const internalState = useNotificationState();
+  const {
+    notifications = [],
+    isLoading,
+    error,
+    lastCheckedAt,
+  } = stateOverride ?? internalState;
 
   const lastChecked = useLastCheckedDate(lastCheckedAt);
   const rows = useNotificationRows(notifications, lastChecked);

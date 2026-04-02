@@ -1,6 +1,6 @@
 // src/features/schedule/store/scheduleSlice.js
 import {createSlice} from '@reduxjs/toolkit';
-import {getScheduleCountPerDayThunk} from './scheduleThunk';
+import {scheduleApi} from '../services/scheduleApi';
 
 const initialState = {
   scheduleId: '',
@@ -41,17 +41,23 @@ const scheduleSlice = createSlice({
   },
   extraReducers: builder => {
     builder
-      .addCase(getScheduleCountPerDayThunk.fulfilled, (state, action) => {
+      .addMatcher(
+        scheduleApi.endpoints.getScheduleCountPerDay.matchFulfilled,
+        (state, action) => {
         const payload = action?.payload;
         state.scheduleCountPerDay =
           payload && typeof payload === 'object' && !Array.isArray(payload)
             ? payload
             : {};
-      })
-      .addCase(getScheduleCountPerDayThunk.rejected, (state, action) => {
+        },
+      )
+      .addMatcher(
+        scheduleApi.endpoints.getScheduleCountPerDay.matchRejected,
+        (state, action) => {
         state.error =
           action?.payload ?? action?.error?.message ?? 'COUNT_FAILED';
-      });
+        },
+      );
   },
 });
 

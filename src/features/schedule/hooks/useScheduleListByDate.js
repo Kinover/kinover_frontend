@@ -1,8 +1,7 @@
 // src/hooks/schedule/useScheduleListByDate.js
 import {useEffect, useMemo} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
-import {fetchSchedulesForFamilyAndDateThunk} from '../store/scheduleThunk';
-import {selectScheduleList, selectSchedulesByDate} from '../store/scheduleSelectors';
+import {useSelector} from 'react-redux';
+import {useGetSchedulesQuery} from '../services/scheduleApi';
 import {selectFamilyId} from 'store/selectors';
 
 export const useScheduleListByDate = (
@@ -10,12 +9,8 @@ export const useScheduleListByDate = (
   refreshTrigger,
   familyIdOverride,
 ) => {
-  const dispatch = useDispatch();
   const reduxFamilyId = useSelector(selectFamilyId);
   const familyId = familyIdOverride ?? reduxFamilyId;
-  const scheduleList = useSelector(state =>
-    selectSchedulesByDate(state, selectedDate),
-  );
 
   const formatLocalYMD = d => {
     const y = d.getFullYear();
@@ -29,10 +24,18 @@ export const useScheduleListByDate = (
     [selectedDate],
   );
 
+  const {data: queriedScheduleList = [], refetch} = useGetSchedulesQuery(
+    {familyId, date: selectedYMD},
+    {
+      skip: !familyId || !selectedYMD,
+    },
+  );
+
   useEffect(() => {
     if (!familyId || !selectedYMD) return;
-    dispatch(fetchSchedulesForFamilyAndDateThunk(familyId, selectedYMD));
-  }, [dispatch, familyId, selectedYMD, refreshTrigger]);
+    if (refreshTrigger == null) return;
+    refetch();
+  }, [familyId, selectedYMD, refreshTrigger, refetch]);
 
  // ----------------------------
  // 더미 데이터 (UI 테스트용)
@@ -83,12 +86,12 @@ export const useScheduleListByDate = (
   }, [selectedYMD]);
 
   const effectiveScheduleList = useMemo(() => {
-    const base = Array.isArray(scheduleList) ? scheduleList : [];
+    const base = Array.isArray(queriedScheduleList) ? queriedScheduleList : [];
  // 서버 데이터 있으면 서버 데이터 우선, 없으면 더미
  // return base.length > 0 ? base : dummyList;
     return base;
 
-  }, [scheduleList, dummyList]);
+  }, [queriedScheduleList, dummyList]);
 
  // ----------------------------
  // 타입 분류(백엔드 필드가 뭐든 최대한 흡수)

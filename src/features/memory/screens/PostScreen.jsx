@@ -8,10 +8,9 @@ import {useDispatch, useSelector} from 'react-redux';
 import BottomSheet, {BottomSheetBackdrop} from '@gorhom/bottom-sheet';
 import LinearGradient from 'react-native-linear-gradient';
 
-import {fetchPostByIdThunk} from '../store/memoryThunk';
 import {setMemorySelectedTab} from '../store/memorySlice';
-import {fetchCategoryThunk} from '../store/categoryThunk';
 import {deleteCommentThunk} from '../store/commentThunk';
+import {useGetCategoriesQuery, useGetPostByIdQuery} from '../services/memoryApi';
 
 import useHideTabBar from 'hooks/useHideTabBar';
 import usePostPageViewModel from '../hooks/usePostPageViewModel';
@@ -129,12 +128,14 @@ export default function PostPage({route}) {
   const isLeavingRef = useRef(false);
 
   const {postId, imageIndex = 0} = route?.params || {};
-  const familyId = useSelector(s => s.family?.familyId);
-
-  const postFromStore = useSelector(state =>
+  const fallbackPostFromStore = useSelector(state =>
     postId ? state.memory?.postsById?.[String(postId)] : null,
   );
-  const categoryList = useSelector(state => state.category?.categoryList || []);
+  const fallbackCategoryList = useSelector(state => state.category?.categoryList || []);
+  const {data: postQueryData} = useGetPostByIdQuery(postId, {skip: !postId});
+  const {data: categoryQueryData = []} = useGetCategoriesQuery();
+  const postFromStore = postQueryData ?? fallbackPostFromStore;
+  const categoryList = categoryQueryData?.length ? categoryQueryData : fallbackCategoryList;
 
   const safeMemory = useMemo(
     () => ({
@@ -251,20 +252,11 @@ export default function PostPage({route}) {
     return `${Math.min(i + 1, total)}/${total}`;
   }, [vm.currentImageIndex, mediaCount]);
 
- /** ---------------- fetch ---------------- */
-  useEffect(() => {
-    if (postId && !postFromStore) dispatch(fetchPostByIdThunk(postId));
-  }, [postId, postFromStore, dispatch]);
-
   useEffect(() => {
     if (didInitIndexRef.current) return;
     if (Number.isFinite(imageIndex)) vm.setCurrentImageIndex(imageIndex);
     didInitIndexRef.current = true;
   }, [imageIndex, vm]);
-
-  useEffect(() => {
-    if (!categoryList?.length && familyId) dispatch(fetchCategoryThunk(familyId));
-  }, [categoryList?.length, familyId, dispatch]);
 
  /** 데이터 로드 후 desc 기본값 0 동기화 */
   useEffect(() => {

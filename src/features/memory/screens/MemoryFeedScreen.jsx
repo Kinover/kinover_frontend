@@ -16,8 +16,7 @@ import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 
-import {fetchMemoryThunk} from '../store/memoryThunk';
-import {fetchCategoryThunk} from '../store/categoryThunk';
+import {useGetCategoriesQuery, useGetPostsQuery} from '../services/memoryApi';
 
 import {
   getResponsiveHeight,
@@ -140,10 +139,10 @@ export default function MemoryFeed({
    * Redux States
    * ------------------------- */
   const memoryState = useSelector(state => state.memory || {});
-  const memoryList = memoryState.memoryList || [];
   const memoryLoading = !!memoryState.loading;
+  const fallbackMemoryList = memoryState.memoryList || [];
 
-  const categoryList = useSelector(state => state.category?.categoryList || []);
+  const fallbackCategoryList = useSelector(state => state.category?.categoryList || []);
 
   const selectedTab = useSelector(
     state => state.memory?.ui?.selectedTab ?? 'feed',
@@ -272,14 +271,28 @@ export default function MemoryFeed({
     return null;
   }, [selectedCategoryIds]);
 
+  const {
+    data: categoryQueryData,
+    refetch: refetchCategories,
+  } = useGetCategoriesQuery();
+  const {
+    data: postsQueryData,
+    isFetching: isPostsFetching,
+    refetch: refetchPosts,
+  } = useGetPostsQuery({categoryId: selectedCategoryId || undefined});
+  const categoryList = Array.isArray(categoryQueryData)
+    ? categoryQueryData
+    : fallbackCategoryList;
+  const memoryList = Array.isArray(postsQueryData)
+    ? postsQueryData
+    : fallbackMemoryList;
+
   const doFetch = useCallback(async () => {
-    // fetchMemoryThunk가 number를 기대하면 여기서 Number로 변환 필요
-    // 일단 안전하게 원본 그대로 넘김(서버 로직에 맞춰)
     await Promise.allSettled([
-      dispatch(fetchCategoryThunk()),
-      dispatch(fetchMemoryThunk(selectedCategoryId)),
+      refetchCategories(),
+      refetchPosts(),
     ]);
-  }, [dispatch, selectedCategoryId]);
+  }, [refetchCategories, refetchPosts]);
 
   /* -------------------------
    * Effects
@@ -300,7 +313,7 @@ export default function MemoryFeed({
     }
   }, [doFetch, resetScrollToTop]);
 
-  const isLoading = memoryLoading && !refreshing;
+  const isLoading = (isPostsFetching || memoryLoading) && !refreshing;
 
   const getCategoryLabel = useCallback(
     id => {

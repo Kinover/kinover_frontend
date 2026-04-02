@@ -1,6 +1,6 @@
 // src/features/notification/screens/NotificationScreen.js
 import React, {useCallback, useEffect, useLayoutEffect, useMemo} from 'react';
-import { View, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import {View, ScrollView, TouchableOpacity, Dimensions} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -13,7 +13,7 @@ import YellowSpinner from 'components/yellowSpinner';
 import {useNotificationList} from '../hooks/useNotificationList';
 import {EMPTY_STYLE, getHeaderStyles, LAYOUT_STYLE} from 'styles/style';
 import {useFocusEffect, useNavigation, useRoute, StackActions, CommonActions} from '@react-navigation/native';
-import {useDispatch} from 'react-redux';
+import {useDispatch, useStore} from 'react-redux';
 import {
   getLastFromTabForGlobalScreen,
   setLastFromTabForGlobalScreen,
@@ -22,11 +22,11 @@ import {
 import {RenderHeaderBackButton} from 'app/navigation/helpers/tabHeaderHelpers';
 
 import {
-  fetchNotificationsThunk,
-  fetchHasUnreadThunk,
-  syncAppBadgeThunk,
-  markNotificationsReadThunk,
-} from '../store/notificationThunk';
+  useGetHasUnreadQuery,
+  useGetNotificationsQuery,
+  useMarkNotificationsReadMutation,
+} from '../services/notificationApi';
+import {syncAppBadge} from '../utils/syncAppBadge';
 
 export default function NotificationScreen() {
   const styles = useScaledStyleSheet(rf => ({
@@ -118,8 +118,30 @@ export default function NotificationScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const dispatch = useDispatch();
+  const store = useStore();
+  const {
+    data: notificationsPayload,
+    isLoading: isNotificationsLoading,
+    error: notificationsError,
+    refetch: refetchNotifications,
+  } = useGetNotificationsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
+  const {refetch: refetchHasUnread} = useGetHasUnreadQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
+  const [markNotificationsRead] = useMarkNotificationsReadMutation();
 
-  const {isLoading, error, rows, handlePress} = useNotificationList();
+  const {isLoading, error, rows, handlePress} = useNotificationList({
+    notifications: notificationsPayload?.notifications ?? [],
+    isLoading: isNotificationsLoading,
+    error:
+      notificationsError?.data ??
+      notificationsError?.error ??
+      notificationsError?.message ??
+      null,
+    lastCheckedAt: notificationsPayload?.lastCheckedAt ?? null,
+  });
 
   // 진입 시 복귀할 탭 저장 (params 있으면 사용, 없으면 이미 safeNavigate가 저장한 값 유지 — '홈'으로 덮어쓰지 않음)
   useEffect(() => {
@@ -169,12 +191,12 @@ export default function NotificationScreen() {
 
       (async () => {
         try {
-          await dispatch(fetchNotificationsThunk());
-          await dispatch(markNotificationsReadThunk());
-          await dispatch(fetchHasUnreadThunk());
+          await refetchNotifications();
+          await markNotificationsRead().unwrap();
+          await refetchHasUnread();
 
           if (!alive) return;
-          await dispatch(syncAppBadgeThunk());
+          await syncAppBadge({dispatch, getState: store.getState});
         } catch (e) {
           null;
         }
@@ -183,7 +205,7 @@ export default function NotificationScreen() {
       return () => {
         alive = false;
       };
-    }, [dispatch]),
+    }, [dispatch, markNotificationsRead, refetchHasUnread, refetchNotifications, store]),
   );
 
   if (isLoading) {

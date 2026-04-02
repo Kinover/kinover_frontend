@@ -13,12 +13,10 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 import CategoryModal from '../components/modals/CategoryModal';
-import {fetchCategoryThunk} from '../store/categoryThunk';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {EMPTY_STYLE, HEADER_STYLES, COLORS} from 'styles/style';
 import uuid from 'react-native-uuid';
-
-import {fetchPostByIdThunk} from '../store/memoryThunk';
+import {useGetCategoriesQuery, useGetPostByIdQuery} from '../services/memoryApi';
 
 import CheckBadge from 'components/CheckBadge';
 
@@ -135,8 +133,7 @@ export default function CategorySelectPage({route}) {
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
-  const familyId = useSelector(state => state.family.familyId);
-  const {categoryList} = useSelector(state => state.category);
+  const fallbackCategoryList = useSelector(state => state.category?.categoryList || []);
 
   const mode = route?.params?.mode ?? '등록'; // '수정' | '등록'
   const postId = route?.params?.postId ?? null;
@@ -150,9 +147,13 @@ export default function CategorySelectPage({route}) {
   );
 
  /** 수정모드: 게시글 원본 데이터(스토어) */
-  const postFromStore = useSelector(state =>
+  const fallbackPostFromStore = useSelector(state =>
     postId ? state.memory?.postsById?.[postId] : null,
   );
+  const {data: categoryQueryData = []} = useGetCategoriesQuery();
+  const {data: postQueryData} = useGetPostByIdQuery(postId, {skip: !postId});
+  const categoryList = categoryQueryData?.length ? categoryQueryData : fallbackCategoryList;
+  const postFromStore = postQueryData ?? fallbackPostFromStore;
 
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -160,22 +161,6 @@ export default function CategorySelectPage({route}) {
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [newCategory, setNewCategory] = useState('');
 
- /** -----------------------
- * 수정모드면 post fetch
- * ---------------------- */
-  useEffect(() => {
-    if (!isEditMode) return;
-    if (!postId) return;
-    if (!postFromStore) dispatch(fetchPostByIdThunk(postId));
-  }, [dispatch, isEditMode, postId, postFromStore]);
-
- /** -----------------------
- * 카테고리 목록 조회
- * ---------------------- */
- // 카테고리 목록 조회 (A안: 토큰 기반)
-  useEffect(() => {
-    dispatch(fetchCategoryThunk());
-  }, [dispatch]);
  /** -----------------------
  * 기본 선택 세팅
  * - 수정모드면 "게시글의 카테고리"를 우선으로 선택

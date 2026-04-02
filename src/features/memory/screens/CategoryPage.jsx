@@ -5,7 +5,7 @@ import React, {useState, useLayoutEffect, useEffect, useMemo} from 'react';
 import { View, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
 import CustomInput from 'components/CustomInput';
 import {useNavigation} from '@react-navigation/native';
-import {useDispatch, useSelector} from 'react-redux';
+import {useSelector} from 'react-redux';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
@@ -14,7 +14,10 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 import CategoryModal from '../components/modals/CategoryModal';
-import {createCategoryThunk, fetchCategoryThunk} from '../store/categoryThunk';
+import {
+  useCreateCategoryMutation,
+  useGetCategoriesQuery,
+} from '../services/memoryApi';
 import {EMPTY_STYLE} from 'styles/style';
 
 function CategoryHeaderTitle() {
@@ -69,9 +72,16 @@ export default function CategoryPage() {
 
   }));
   const navigation = useNavigation();
-  const dispatch = useDispatch();
-  const familyId = useSelector(state => state.family.familyId);
-  const {categoryList} = useSelector(state => state.category);
+  const fallbackCategoryList = useSelector(state => state.category?.categoryList || []);
+  const {
+    data: categoryQueryData = [],
+    refetch: refetchCategories,
+  } = useGetCategoriesQuery();
+  const [createCategory] = useCreateCategoryMutation();
+  const categoryList =
+    Array.isArray(categoryQueryData) && categoryQueryData.length > 0
+      ? categoryQueryData
+      : fallbackCategoryList;
 
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -84,10 +94,6 @@ export default function CategoryPage() {
   }, [categoryList]);
 
   useEffect(() => {
-    dispatch(fetchCategoryThunk(familyId));
-  }, [dispatch, familyId]);
-
-  useEffect(() => {
     if (fullCategoryList.length > 0) {
       setSelectedCategory(fullCategoryList[0]);
       setSelectedIndex(0);
@@ -97,18 +103,10 @@ export default function CategoryPage() {
   const handleAddCategory = async () => {
     if (newCategory.trim()) {
       try {
-        const resultAction = await dispatch(
-          createCategoryThunk({
-            title: newCategory.trim(),
-            familyId,
-          }),
-        );
-        if (createCategoryThunk.fulfilled.match(resultAction)) {
-          setNewCategory('');
-          setAddModalVisible(false);
-        } else {
-          throw new Error('카테고리 생성 실패');
-        }
+        await createCategory({title: newCategory.trim()}).unwrap();
+        await refetchCategories();
+        setNewCategory('');
+        setAddModalVisible(false);
       } catch {
         alert('카테고리 생성 실패');
       }

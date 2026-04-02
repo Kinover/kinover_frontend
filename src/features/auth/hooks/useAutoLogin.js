@@ -3,10 +3,8 @@ import {useEffect, useRef} from 'react';
 import {useDispatch, useSelector, useStore} from 'react-redux';
 
 import {getToken, deleteLoginInfo, setHasFamily} from 'utils/storage';
-import {fetchUserThunk} from 'features/home/store/userThunk';
-import {fetchFamilyThunk} from 'features/home/store/familyThunk';
-import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
 import {baseApi} from 'services/baseApi';
+import {homeApi} from 'features/home/services/homeApi';
 import {startChatSocket, stopChatSocket} from 'features/chat/hooks/ChatSocket';
 import {setLoginSuccess, setLogout, setAuthChecked} from '../store/loginSlice';
 
@@ -57,11 +55,13 @@ export function useAutoLogin(shouldRun = true) {
 
         let userResult = null;
         try {
-          const r = dispatch(fetchUserThunk());
-          userResult =
-            typeof r?.unwrap === 'function'
-              ? await withTimeout(r.unwrap(), 8000)
-              : await withTimeout(r, 8000);
+          const req = dispatch(
+            homeApi.endpoints.getUser.initiate(undefined, {
+              forceRefetch: true,
+            }),
+          );
+          userResult = await withTimeout(req.unwrap(), 8000);
+          req.unsubscribe();
 
           console.log('✅ fetchUser ok');
         } catch (e) {
@@ -86,14 +86,21 @@ export function useAutoLogin(shouldRun = true) {
           
           await setHasFamily(hasFamilyValue);
           if (hasFamilyValue) {
-            const r2 = dispatch(fetchFamilyThunk(familyId));
-            if (typeof r2?.unwrap === 'function') await r2.unwrap();
-            else await r2;
+            const familyReq = dispatch(
+              homeApi.endpoints.getFamily.initiate(familyId, {forceRefetch: true}),
+            );
+            await familyReq.unwrap();
+            familyReq.unsubscribe();
             console.log('✅ fetchFamily ok');
 
             const userId = raw?.userId ?? raw?.id ?? null;
             if (userId) {
-              dispatch(fetchFamilyUserListThunk(familyId));
+              const familyUsersReq = dispatch(
+                homeApi.endpoints.getFamilyUsers.initiate(familyId, {
+                  forceRefetch: true,
+                }),
+              );
+              familyUsersReq.unwrap().finally(() => familyUsersReq.unsubscribe());
               // RTK Query: ChatRoom 태그 무효화 → getChatRooms 자동 fetch
               dispatch(baseApi.util.invalidateTags(['ChatRoom']));
             }

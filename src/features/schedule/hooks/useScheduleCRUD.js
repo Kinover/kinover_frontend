@@ -1,11 +1,10 @@
 // src/hooks/schedule/useScheduleCrud.js
 import {useCallback} from 'react';
-import {useDispatch} from 'react-redux';
 import {
-  addScheduleThunk,
-  updateScheduleThunk,
-  deleteScheduleThunk,
-} from '../store/scheduleThunk';
+  useAddScheduleMutation,
+  useDeleteScheduleMutation,
+  useUpdateScheduleMutation,
+} from '../services/scheduleApi';
 
 export const useScheduleCrud = ({
   familyId,
@@ -19,7 +18,9 @@ export const useScheduleCrud = ({
   closeSheet,
   selectedDateKey,  // "YYYY-MM-DD" 포맷 (달력 key랑 동일)
 }) => {
-  const dispatch = useDispatch();
+  const [addSchedule] = useAddScheduleMutation();
+  const [updateSchedule] = useUpdateScheduleMutation();
+  const [deleteSchedule] = useDeleteScheduleMutation();
 
   const onSubmit = useCallback(
     async finalTitle => {
@@ -35,22 +36,10 @@ export const useScheduleCrud = ({
 
       try {
         if (editingSchedule) {
- // 일정 수정
-          await dispatch(
-            updateScheduleThunk(
-              {
-                ...payload,
-                scheduleId: editingSchedule.scheduleId,
-              },
-              {
-                familyId,
-                date: formattedDate,
-                year,
-                month,
-                userId: selectedUserId,
-              },
-            ),
-          ).unwrap();
+          await updateSchedule({
+            ...payload,
+            scheduleId: editingSchedule.scheduleId,
+          }).unwrap();
 
  // 수정은 보통 같은 날짜 안에서 내용만 바꾸니까
  // 날짜가 바뀌지 않는 한 bumpCount 필요 없음
@@ -58,15 +47,7 @@ export const useScheduleCrud = ({
         } else {
           bumpCount(selectedDateKey, 1);
 
-          await dispatch(
-            addScheduleThunk(payload, {
-              familyId,
-              date: formattedDate,
-              year,
-              month,
-              userId: selectedUserId,
-            }),
-          ).unwrap();
+          await addSchedule(payload).unwrap();
         }
       } finally {
  // 서버 데이터도 다시 불러와서 정합성 맞추기
@@ -85,7 +66,8 @@ export const useScheduleCrud = ({
       selectedDateKey,
       setRefreshTrigger,
       closeSheet,
-      dispatch,
+      addSchedule,
+      updateSchedule,
     ],
   );
 
@@ -103,15 +85,7 @@ export const useScheduleCrud = ({
  // 낙관적 -1 (달력 색 바로 반영)
       bumpCount(deleteKey, -1);
 
-      await dispatch(
-        deleteScheduleThunk(editingSchedule.scheduleId, {
-          familyId,
-          date: formattedDate,
-          year,
-          month,
-          userId: selectedUserId,
-        }),
-      ).unwrap();
+      await deleteSchedule(editingSchedule.scheduleId).unwrap();
     } finally {
       setRefreshTrigger(prev => prev + 1);
       closeSheet();
@@ -127,7 +101,7 @@ export const useScheduleCrud = ({
     selectedDateKey,
     setRefreshTrigger,
     closeSheet,
-    dispatch,
+    deleteSchedule,
   ]);
 
   return {

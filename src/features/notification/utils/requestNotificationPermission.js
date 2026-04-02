@@ -13,11 +13,6 @@ import {CommonActions} from '@react-navigation/native';
 import {chatApi} from 'features/chat/services/chatApi';
 import {notificationApi} from '../services/notificationApi';
 
-import {
-  fetchUnreadCountThunk,
-  fetchHasUnreadThunk,
-} from '../store/notificationThunk';
-
 import {applyAppBadgeCount} from 'utils/appBadge';
 
 import notifee, {AndroidStyle, EventType} from '@notifee/react-native';
@@ -201,8 +196,20 @@ async function syncBellUnreadFromServer(force = false) {
     if (!force && now - lastBellSyncAt < BELL_SYNC_THROTTLE_MS) return;
     lastBellSyncAt = now;
 
-    await appStore.dispatch(fetchUnreadCountThunk()); // bell unreadCount
-    appStore.dispatch(fetchHasUnreadThunk()); // bell hasUnread
+    const unreadCountReq = appStore.dispatch(
+      notificationApi.endpoints.getUnreadCount.initiate(undefined, {
+        forceRefetch: true,
+      }),
+    );
+    const hasUnreadReq = appStore.dispatch(
+      notificationApi.endpoints.getHasUnread.initiate(undefined, {
+        forceRefetch: true,
+      }),
+    );
+
+    await Promise.allSettled([unreadCountReq.unwrap(), hasUnreadReq.unwrap()]);
+    unreadCountReq.unsubscribe();
+    hasUnreadReq.unsubscribe();
   } catch {
     null;
   }

@@ -11,7 +11,7 @@ import {
   Image,
 } from 'react-native';
 
-import {useSelector, useDispatch} from 'react-redux';
+import {useSelector} from 'react-redux';
 
 import ScheduleEditorBottomSheetModal from '../components/ScheduleEditorBottomSheet';
 import CalendarToggle from '../components/Calendar';
@@ -35,10 +35,10 @@ import useHolidayMap from '../hooks/useHolidayMap';
 import {useLocalDateKey} from '../hooks/useLocalDateKey';
 
 import {
-  addScheduleThunk,
-  updateScheduleThunk,
-  deleteScheduleThunk,
-} from '../store/scheduleThunk';
+  useAddScheduleMutation,
+  useDeleteScheduleMutation,
+  useUpdateScheduleMutation,
+} from '../services/scheduleApi';
 
 import {hapticLight} from 'utils/haptic';
 import DropShadow from 'react-native-drop-shadow';
@@ -71,7 +71,7 @@ const toLongArray = raw => {
 };
 
 export default function ScheduleScreen() {
-  const styles = useScaledStyleSheet(rf => ({
+  const styles = useScaledStyleSheet(_rf => ({
 
   container: {flex: 1, backgroundColor: '#F9F9F9'},
   mainContentWrap: {flex: 1},
@@ -115,7 +115,9 @@ export default function ScheduleScreen() {
   },
 
   }));
-  const dispatch = useDispatch();
+  const [addSchedule] = useAddScheduleMutation();
+  const [updateSchedule] = useUpdateScheduleMutation();
+  const [deleteSchedule] = useDeleteScheduleMutation();
   const guideCalendarRef = useRef(null);
   const guideFabRef = useRef(null);
   const blockOpenUntilRef = useRef(0);
@@ -231,13 +233,11 @@ export default function ScheduleScreen() {
   const {
     editingSchedule,
     selectedUserId, // 조회/필터용(단일)
-    setSelectedUserId,
     title,
     setTitle,
     bottomSheetRef,
     openSheet,
     closeSheet,
-    handleCancelEdit,
   } = useScheduleEditor(currentUserId);
 
  /** =========================
@@ -334,21 +334,13 @@ export default function ScheduleScreen() {
         }
       }
 
-      const refresh = {
-        familyId: payload.familyId,
-        date: payload.date,
-        year,
-        month,
-        userId: selectedUserId,
-      };
-
       try {
         if (editingSchedule) {
-          await dispatch(updateScheduleThunk(payload, refresh));
+          await updateSchedule(payload).unwrap();
         } else {
           bumpCount(selectedDateKey, 1);
           try {
-            await dispatch(addScheduleThunk(payload, refresh));
+            await addSchedule(payload).unwrap();
           } catch (e) {
             bumpCount(selectedDateKey, -1);
             throw e;
@@ -371,7 +363,6 @@ export default function ScheduleScreen() {
       }
     },
     [
-      dispatch,
       familyId,
       familyUserList,
       formattedDate,
@@ -384,19 +375,13 @@ export default function ScheduleScreen() {
       setRefreshTrigger,
       closeSheet,
       blockOpenFor,
+      addSchedule,
+      updateSchedule,
     ],
   );
 
   const onDelete = useCallback(async () => {
     if (!editingSchedule?.scheduleId) return;
-
-    const refresh = {
-      familyId,
-      date: formattedDate,
-      year,
-      month,
-      userId: selectedUserId,
-    };
 
     try {
       const deleteKey =
@@ -406,7 +391,7 @@ export default function ScheduleScreen() {
 
       bumpCount(deleteKey, -1);
 
-      await dispatch(deleteScheduleThunk(editingSchedule.scheduleId, refresh));
+      await deleteSchedule(editingSchedule.scheduleId).unwrap();
     } catch (e) {
       console.log('=== [Schedule delete error] ===');
       console.log('status:', e?.response?.status);
@@ -418,7 +403,6 @@ export default function ScheduleScreen() {
       closeSheet();
     }
   }, [
-    dispatch,
     editingSchedule,
     familyId,
     formattedDate,
@@ -430,6 +414,7 @@ export default function ScheduleScreen() {
     setRefreshTrigger,
     closeSheet,
     blockOpenFor,
+    deleteSchedule,
   ]);
 
   const handleFabPress = useCallback(() => {

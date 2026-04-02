@@ -2,6 +2,10 @@
 import React, {memo, useCallback} from 'react';
 import { Platform, TouchableOpacity, View, Image } from 'react-native';
 import {useSelector} from 'react-redux';
+import {
+  useGetHasUnreadQuery,
+  useGetUnreadCountQuery,
+} from 'features/notification/services/notificationApi';
 
 import AppText from 'components/AppText';
 import {
@@ -61,6 +65,30 @@ function useTabHeaderBadgeStyles() {
       textAlignVertical: 'center',
     },
   }));
+}
+
+function useNotificationBadgeState() {
+  const fallbackHasUnread = useSelector(state => state.notification.hasUnread);
+  const fallbackUnreadCount = useSelector(
+    state => state.notification.unreadCount || 0,
+  );
+
+  const {data: hasUnreadData} = useGetHasUnreadQuery(undefined, {
+    refetchOnFocus: true,
+  });
+  const {data: unreadCountData} = useGetUnreadCountQuery(undefined, {
+    refetchOnFocus: true,
+  });
+
+  const hasUnread =
+    typeof hasUnreadData?.hasUnread === 'boolean'
+      ? hasUnreadData.hasUnread
+      : !!fallbackHasUnread;
+  const unreadCount = Number(
+    unreadCountData?.unreadCount ?? fallbackUnreadCount ?? 0,
+  );
+
+  return {hasUnread, unreadCount: Number.isFinite(unreadCount) ? unreadCount : 0};
 }
 
 /* =========================================================
@@ -151,8 +179,7 @@ export const TabBarIcon = memo(function TabBarIcon({
   tabName,
   tintColor,
 }) {
-  const hasUnread = useSelector(state => state.notification.hasUnread);
-  const unreadCount = useSelector(state => state.notification.unreadCount || 0);
+  const {hasUnread, unreadCount} = useNotificationBadgeState();
 
   const isAlarmTab = tabName === '알림';
   const badgeCount = isAlarmTab ? unreadCount : 0;
@@ -302,11 +329,10 @@ export const RenderHeaderBook = memo(function RenderHeaderBook({
  * - 다른 화면: 큰 원 배경 = #FFFFFF
  * ========================================================= */
 export const RenderHeaderHome = memo(function RenderHeaderHome({
-  navigation,
+  navigation: _navigation,
   currentScreen,
 }) {
-  const hasUnread = useSelector(state => state.notification.hasUnread);
-  const unreadCount = useSelector(state => state.notification.unreadCount || 0);
+  const {hasUnread, unreadCount} = useNotificationBadgeState();
 
   const isHome = currentScreen === '홈';
 

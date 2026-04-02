@@ -16,7 +16,7 @@
 // import 경로: features/chat/services/chatApi
 
 import {markReadThunk} from './chatReadThunk';
-import {syncAppBadgeThunk} from 'features/notification/store/notificationThunk';
+import {syncAppBadge} from 'features/notification/utils/syncAppBadge';
 
 /**
  * 채팅 읽음 처리 후 앱 뱃지 동기화
@@ -24,7 +24,7 @@ import {syncAppBadgeThunk} from 'features/notification/store/notificationThunk';
  */
 export const markReadAndSyncBadgeThunk =
   ({chatRoomId, lastReadAt, userId}) =>
-  async dispatch => {
+  async (dispatch, getState) => {
     await dispatch(markReadThunk({chatRoomId, lastReadAt, userId}));
-    await dispatch(syncAppBadgeThunk());
+    await syncAppBadge({dispatch, getState});
   };

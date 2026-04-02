@@ -7,7 +7,7 @@ import {
   RefreshControl,
   Platform,
 } from 'react-native';
-import {useDispatch, useSelector} from 'react-redux';
+import {useSelector} from 'react-redux';
 import {useReduxFontMode} from 'hooks/useReduxFontMode';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -15,12 +15,13 @@ import {FONT_MODE} from 'store/uiSlice';
 
 import FamilyCodeModal from '../components/FamilyCodeModal';
 import UserBottomSheetModal from '../components/UserBottomSheet';
-
-import {fetchFamilyThunk, fetchFamilyStatusThunk} from '../store/familyThunk';
-import {fetchFamilyUserListThunk} from '../store/familyUserThunk';
-import {modifyUserThunk} from '../store/userThunk';
-
-import {fetchUserThunk} from '../store/userThunk';
+import {
+  useGetFamilyQuery,
+  useGetFamilyStatusQuery,
+  useGetFamilyUsersQuery,
+  useGetUserQuery,
+  useModifyUserMutation,
+} from '../services/homeApi';
 
 import {
   getResponsiveHeight,
@@ -58,29 +59,66 @@ import {
   getStoreMockLastActiveMap,
 } from '../utils/storeMockData';
 
-const awaitAction = async action => {
-  if (!action) return null;
-  if (typeof action.unwrap === 'function') return action.unwrap();
-  if (typeof action.then === 'function') return action;
-  return action;
+const parseFamilyStatus = data => {
+  if (!Array.isArray(data)) {
+    return {onlineUserIds: [], lastActiveMap: {}};
+  }
+
+  const onlineUserIds = data.filter(u => u?.online).map(u => u.userId);
+  const lastActiveMap = data.reduce((acc, curr) => {
+    if (curr?.userId != null) {
+      acc[curr.userId] = curr.lastActiveAt;
+    }
+    return acc;
+  }, {});
+
+  return {onlineUserIds, lastActiveMap};
 };
 
 export default function HomeScreen() {
-  const dispatch = useDispatch();
   const userSheetRef = useRef(null);
   const guideProfileRef = useRef(null);
   const guideMoodRef = useRef(null);
   const guideInviteRef = useRef(null);
 
-  const user = useSelector(state => state.user);
-  const family = useSelector(state => state.family);
-  const familyUserList = useSelector(state => state.userFamily.familyUserList);
-  const {onlineUserIds, lastActiveMap} = useSelector(state => state.family);
+  const fallbackUser = useSelector(state => state.user);
+  const [modifyUser] = useModifyUserMutation();
+  const {
+    data: userData,
+    isLoading: isUserLoading,
+    isError: isUserError,
+    refetch: refetchUser,
+  } = useGetUserQuery(undefined, {skip: STORE_MOCK_ENABLED});
+  const user = userData ?? fallbackUser;
 
   const fontMode = useReduxFontMode();
 
-  const familyId =
-    family?.familyId || user?.familyId || user?.family?.familyId || null;
+  const familyId = user?.familyId || user?.family?.familyId || null;
+  const {
+    data: familyData,
+    isLoading: isFamilyLoading,
+    isError: isFamilyError,
+    refetch: refetchFamily,
+  } = useGetFamilyQuery(familyId, {
+    skip: STORE_MOCK_ENABLED || !familyId,
+  });
+  const {
+    data: familyUserList = [],
+    isLoading: isFamilyUsersLoading,
+    isError: isFamilyUsersError,
+    refetch: refetchFamilyUsers,
+  } = useGetFamilyUsersQuery(familyId, {
+    skip: STORE_MOCK_ENABLED || !familyId,
+  });
+  const {
+    data: familyStatusData = [],
+    isLoading: isFamilyStatusLoading,
+    isError: isFamilyStatusError,
+    refetch: refetchFamilyStatus,
+  } = useGetFamilyStatusQuery(familyId, {
+    skip: STORE_MOCK_ENABLED || !familyId,
+  });
+  const {onlineUserIds, lastActiveMap} = parseFamilyStatus(familyStatusData);
 
   const [isVisible, setIsVisible] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -161,16 +199,6 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
-    console.log('[HomeScreen] user snapshot:', {
-      userId: user?.userId,
-      familyId: user?.familyId,
-      status: user?.status,
-      name: user?.name,
-      birth: user?.birth,
-    });
-  }, [user]);
-
-  useEffect(() => {
     const unsubscribe = handleNotificationListeners();
     return () => {
       if (typeof unsubscribe === 'function') unsubscribe();
@@ -213,43 +241,43 @@ export default function HomeScreen() {
 
       if (mounted) setDidInitialLoad(true);
 
-      try {
-        const userTask = awaitAction(dispatch(fetchUserThunk()));
-        const familyTask = awaitAction(dispatch(fetchFamilyThunk(familyId)));
-        const usersTask = awaitAction(dispatch(fetchFamilyUserListThunk(familyId)));
-        const statusTask = awaitAction(dispatch(fetchFamilyStatusThunk(familyId)));
-
-        const results = await Promise.allSettled([userTask, familyTask, usersTask, statusTask]);
-        const allFailed = results.every(r => r.status === 'rejected');
-        if (allFailed && mounted) setErrorToastVisible(true);
-      } catch (e) {
-        console.log('[HomeScreen] initial load error:', e);
-        if (mounted) setErrorToastVisible(true);
+      if (
+        mounted &&
+        (isUserError || isFamilyError || isFamilyUsersError || isFamilyStatusError)
+      ) {
+        setErrorToastVisible(true);
       }
     })();
 
     return () => {
       mounted = false;
     };
-  }, [dispatch, user?.userId, familyId]);
+  }, [
+    user?.userId,
+    familyId,
+    isUserError,
+    isFamilyError,
+    isFamilyUsersError,
+    isFamilyStatusError,
+  ]);
 
   const doRefreshMembers = useCallback(async () => {
     if (!familyId) return;
 
     try {
-      const userTask = awaitAction(dispatch(fetchUserThunk()));
-      const usersTask = awaitAction(dispatch(fetchFamilyUserListThunk(familyId)));
-      const statusTask = awaitAction(dispatch(fetchFamilyStatusThunk(familyId)));
-      const familyTask = awaitAction(dispatch(fetchFamilyThunk(familyId)));
-
-      const results = await Promise.allSettled([userTask, usersTask, statusTask, familyTask]);
+      const results = await Promise.allSettled([
+        refetchUser(),
+        refetchFamily(),
+        refetchFamilyUsers(),
+        refetchFamilyStatus(),
+      ]);
       const allFailed = results.every(r => r.status === 'rejected');
       if (allFailed) setErrorToastVisible(true);
     } catch (e) {
       console.log('[HomeScreen] refresh family data error:', e);
       setErrorToastVisible(true);
     }
-  }, [dispatch, familyId]);
+  }, [familyId, refetchFamily, refetchFamilyStatus, refetchFamilyUsers, refetchUser]);
 
   const onPullRefresh = useCallback(async () => {
     if (!familyId) return;
@@ -299,21 +327,22 @@ export default function HomeScreen() {
     const trimmedImage = (imageUrl || '').trim();
     if (trimmedImage) payload.image = trimmedImage;
 
-    await dispatch(modifyUserThunk(payload));
+    await modifyUser(payload).unwrap();
 
     if (familyId) {
-      dispatch(fetchFamilyUserListThunk(familyId)).catch(e =>
-        console.log('[HomeScreen] post-save family users refresh error:', e),
-      );
-      dispatch(fetchFamilyStatusThunk(familyId)).catch(e =>
-        console.log('[HomeScreen] post-save family status refresh error:', e),
-      );
+      refetchFamilyUsers();
+      refetchFamilyStatus();
     }
 
     dismissUserSheet();
   };
 
-  const isLoading = !STORE_MOCK_ENABLED && !didInitialLoad;
+  const isLoading =
+    !STORE_MOCK_ENABLED &&
+    (!didInitialLoad ||
+      isUserLoading ||
+      (familyId &&
+        (isFamilyLoading || isFamilyUsersLoading || isFamilyStatusLoading)));
 
   if (isLoading) {
     return (

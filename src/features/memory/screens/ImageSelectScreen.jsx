@@ -34,9 +34,9 @@ import {
 } from 'utils/photoUriConverter';
 
 import {requestMediaPermission} from 'utils/requestMediaPermission';
+import {useGetPostByIdQuery} from '../services/memoryApi';
 
-import {useDispatch, useSelector} from 'react-redux';
-import {fetchPostByIdThunk} from '../store/memoryThunk';
+import {useSelector} from 'react-redux';
 
 import MediaViewer from '../components/media/MediaViewer';
 
@@ -289,14 +289,14 @@ export default function ImageSelectPage() {
   }));
   const navigation = useNavigation();
   const route = useRoute();
-  const dispatch = useDispatch();
-
   const {postId = null, mode = '등록'} = route?.params || {};
   const isEditMode = mode === '수정';
 
-  const postFromStore = useSelector(state =>
+  const fallbackPostFromStore = useSelector(state =>
     postId ? state.memory?.postsById?.[postId] : null,
   );
+  const {data: postQueryData} = useGetPostByIdQuery(postId, {skip: !postId});
+  const postFromStore = postQueryData ?? fallbackPostFromStore;
 
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -356,12 +356,6 @@ export default function ImageSelectPage() {
       isRemote: true,
     };
   }, []);
-
-  useEffect(() => {
-    if (!isEditMode) return;
-    if (!postId) return;
-    if (!postFromStore) dispatch(fetchPostByIdThunk(postId));
-  }, [dispatch, isEditMode, postId, postFromStore]);
 
   const didInitRef = useRef(false);
   useEffect(() => {

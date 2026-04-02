@@ -10,12 +10,14 @@ import {
 } from 'utils/responsive';
 import CustomSwitch from 'components/customSwitch';
 import useHideTabBar from 'hooks/useHideTabBar';
-import {useDispatch, useSelector} from 'react-redux';
+import {useSelector} from 'react-redux';
 import {RenderHeaderBackButton} from 'app/navigation/helpers/tabHeaderHelpers';
 
 import {useToggleAllChatRoomNotificationMutation} from 'features/chat/services/chatApi';
-import {toggleCommentNotificationThunk} from 'features/memory/store/commentThunk';
-import {togglePostNotificationThunk} from 'features/memory/store/memoryThunk';
+import {
+  useToggleCommentNotificationMutation,
+  useTogglePostNotificationMutation,
+} from 'features/memory/services/memoryApi';
 
 // 토스트 모달 import
 import ToastModal from 'components/modal/ToastModal';
@@ -57,11 +59,12 @@ export default function NotificationSettingScreen() {
   }));
   const navigation = useNavigation();
   const route = useRoute();
-  const dispatch = useDispatch();
   const userId = useSelector(
     state => state.user.userId?.toString?.() || state.user.userId,
   );
   const [toggleAllChatRoomNotification] = useToggleAllChatRoomNotificationMutation();
+  const [togglePostNotification] = useTogglePostNotificationMutation();
+  const [toggleCommentNotification] = useToggleCommentNotificationMutation();
 
   const [allNotification, setAllNotification] = useState(true);
   const [chatNotification, setChatNotification] = useState(true);
@@ -108,8 +111,8 @@ export default function NotificationSettingScreen() {
 
     try {
       await toggleAllChatRoomNotification({userId, isOn: newValue}).unwrap();
-      await dispatch(togglePostNotificationThunk({userId, isOn: newValue}));
-      await dispatch(toggleCommentNotificationThunk({userId, isOn: newValue}));
+      await togglePostNotification({userId, isOn: newValue}).unwrap();
+      await toggleCommentNotification({userId, isOn: newValue}).unwrap();
 
  // 성공 시 토스트
       setToastMessage(
@@ -144,7 +147,7 @@ export default function NotificationSettingScreen() {
 
     if (!userId) return;
     try {
-      await dispatch(togglePostNotificationThunk({userId, isOn: newValue}));
+      await togglePostNotification({userId, isOn: newValue}).unwrap();
 
       setToastMessage(
         newValue ? '게시물 알림이 켜졌어요' : '게시물 알림이 꺼졌어요',
@@ -161,7 +164,7 @@ export default function NotificationSettingScreen() {
 
     if (!userId) return;
     try {
-      await dispatch(toggleCommentNotificationThunk({userId, isOn: newValue}));
+      await toggleCommentNotification({userId, isOn: newValue}).unwrap();
 
       setToastMessage(
         newValue ? '댓글 알림이 켜졌어요' : '댓글 알림이 꺼졌어요',

@@ -52,9 +52,9 @@ import {useDispatch, useSelector} from 'react-redux';
 import {createCategoryThunk} from '../store/categoryThunk';
 import formatDuration from 'utils/formatDuration';
 import {getVideoThumbnail} from 'utils/videoThumbnail';
+import {useGetPostByIdQuery} from '../services/memoryApi';
 
-// post 단건 조회 thunk
-import {fetchPostByIdThunk, deletePostImageThunk} from '../store/memoryThunk';
+import {deletePostImageThunk} from '../store/memoryThunk';
 
 // MediaViewer 적용
 import MediaViewer from '../components/media/MediaViewer';
@@ -228,18 +228,11 @@ export default function CreatePostPage({navigation, route}) {
   const isEditMode = mode === '수정';
 
  /** 수정모드: 게시글 원본 데이터(스토어) */
-  const postFromStore = useSelector(state =>
+  const fallbackPostFromStore = useSelector(state =>
     postId ? state.memory?.postsById?.[postId] : null,
   );
-
- /** -----------------------------
- * 수정모드면 post fetch
- * ---------------------------- */
-  useEffect(() => {
-    if (!isEditMode) return;
-    if (!postId) return;
-    if (!postFromStore) dispatch(fetchPostByIdThunk(postId));
-  }, [dispatch, isEditMode, postId, postFromStore]);
+  const {data: postQueryData} = useGetPostByIdQuery(postId, {skip: !postId});
+  const postFromStore = postQueryData ?? fallbackPostFromStore;
 
  /** -----------------------------
  * 초기값(글/미디어) 세팅

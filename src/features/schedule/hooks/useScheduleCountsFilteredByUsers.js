@@ -1,5 +1,6 @@
 import {useEffect, useMemo, useState} from 'react';
-import {fetchSchedulesForFamilyAndDateApi} from '../store/scheduleThunk';
+import appStore from 'store';
+import {scheduleApi} from '../services/scheduleApi';
 import {scheduleItemMatchesViewFilter} from '../utils/scheduleFilterHelpers';
 
 const pad2 = n => String(n).padStart(2, '0');
@@ -11,6 +12,20 @@ function getYmdListForMonth(year, month) {
     list.push(`${year}-${pad2(month)}-${pad2(d)}`);
   }
   return list;
+}
+
+async function fetchSchedulesForFamilyAndDateApi(familyId, date) {
+  const req = appStore.dispatch(
+    scheduleApi.endpoints.getSchedules.initiate(
+      {familyId, date},
+      {forceRefetch: true},
+    ),
+  );
+  try {
+    return await req.unwrap();
+  } finally {
+    req.unsubscribe();
+  }
 }
 
 /**

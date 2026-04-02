@@ -11,10 +11,7 @@ import {
 import {getResponsiveHeight} from 'utils/responsive';
 import StateScreen from 'features/home/screens/stateScreen';
 
-import {
-  fetchHasUnreadThunk,
-  fetchUnreadCountThunk,
-} from 'features/notification/store/notificationThunk';
+import {notificationApi} from 'features/notification/services/notificationApi';
 import {useDispatch, useSelector} from 'react-redux';
 import {useIsFocused} from '@react-navigation/native';
 
@@ -44,12 +41,25 @@ const HomeStack = ({route}) => {
     if (!userId) return;
     if (!isFocused) return;
 
- // 알림화면에서는 목록 조회(fetchNotificationsThunk)로 읽음 처리할 거라서
+ // 알림화면에서는 목록 조회 + 읽음 처리 mutation이 수행되므로
  // 여기서 hasUnread 조회는 하지 않음(중복 호출/깜빡임 방지)
     if (currentRouteName === '알림화면') return;
 
-    dispatch(fetchUnreadCountThunk());
-    dispatch(fetchHasUnreadThunk());
+    const unreadCountReq = dispatch(
+      notificationApi.endpoints.getUnreadCount.initiate(undefined, {
+        forceRefetch: true,
+      }),
+    );
+    const hasUnreadReq = dispatch(
+      notificationApi.endpoints.getHasUnread.initiate(undefined, {
+        forceRefetch: true,
+      }),
+    );
+
+    return () => {
+      unreadCountReq.unsubscribe();
+      hasUnreadReq.unsubscribe();
+    };
   }, [dispatch, userId, isFocused, currentRouteName]);
 
   return (
