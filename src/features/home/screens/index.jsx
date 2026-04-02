@@ -43,7 +43,7 @@ import useWebSocketStatus from 'hooks/useWebSocketStatus';
 import useFamilyStatusSocket from 'hooks/useFamilyStatusSocket';
 import {useDoubleBackToExit} from 'hooks/useDoubleBackToExit';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import mmkvStorage from 'utils/mmkvStorage';
 import HomeGuideModal from '../components/HomeGuideModal';
 import AppAlertHost from 'components/modal/AppAlertHost';
 import useActiveAppEvent from 'hooks/useActiveAppEvent';
@@ -109,10 +109,10 @@ export default function HomeScreen() {
     let mounted = true;
     (async () => {
       try {
-        const value = await AsyncStorage.getItem(KEY_FIRST_ENTRY_AFTER_SETUP);
+        const value = await mmkvStorage.getItem(KEY_FIRST_ENTRY_AFTER_SETUP);
         if (value === '1') {
           if (mounted) setSkipAppAlertForFirstEntry(true);
-          await AsyncStorage.removeItem(KEY_FIRST_ENTRY_AFTER_SETUP);
+          await mmkvStorage.removeItem(KEY_FIRST_ENTRY_AFTER_SETUP);
         } else {
           if (mounted) setSkipAppAlertForFirstEntry(false);
         }

@@ -1,6 +1,6 @@
 // src/features/common/guide/useGuide.js
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useState, useEffect, useCallback, useRef} from 'react';
+import mmkvStorage from 'utils/mmkvStorage';
 
 // 가입/가족 참가/가족 생성 직후에만 올리는 전역 트리거
 export const KEY_GUIDE_ENTRY_TRIGGER = '@kinover/guide/entry_trigger_v1';
@@ -26,7 +26,7 @@ export const GUIDE_SHOWN_KEYS = [
  */
 export async function resetGuideShownKeys() {
   try {
-    await AsyncStorage.multiRemove(GUIDE_SHOWN_KEYS);
+    await mmkvStorage.multiRemove(GUIDE_SHOWN_KEYS);
   } catch (e) {
     // no-op
   }
@@ -47,7 +47,7 @@ export default function useGuide(storageKey, enabled = false, options = {}) {
   const closeAndRemember = useCallback(async () => {
     setVisible(false);
     try {
-      await AsyncStorage.setItem(storageKey, '1');
+      await mmkvStorage.setItem(storageKey, '1');
     } catch (e) {
       // no-op
     }
@@ -77,12 +77,12 @@ export default function useGuide(storageKey, enabled = false, options = {}) {
         }
 
         // 이미 본 가이드는 다시 띄우지 않는다.
-        const shown = await AsyncStorage.getItem(storageKey);
+        const shown = await mmkvStorage.getItem(storageKey);
         if (shown === '1') return;
 
         // 회원가입/설정 완료 직후에만 가이드를 띄운다.
-        const entryTrigger = await AsyncStorage.getItem(KEY_GUIDE_ENTRY_TRIGGER);
-        const firstEntry = await AsyncStorage.getItem(KEY_FIRST_ENTRY_AFTER_SETUP);
+        const entryTrigger = await mmkvStorage.getItem(KEY_GUIDE_ENTRY_TRIGGER);
+        const firstEntry = await mmkvStorage.getItem(KEY_FIRST_ENTRY_AFTER_SETUP);
         if (entryTrigger !== '1' && firstEntry !== '1') return;
 
         requestAnimationFrame(() => setVisible(true));

@@ -1,14 +1,38 @@
 import * as Keychain from 'react-native-keychain';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import {emitAuthFlagsChanged} from 'utils/authFlagsEvent';
+import mmkvStorage from 'utils/mmkvStorage';
 
 const HAS_FAMILY_KEY = 'hasFamily';
 const GUEST_MODE_KEY = 'isGuestMode';
 const NEEDS_SIGNUP_KEY = 'needsSignup';
+const STORAGE_BOOTSTRAP_KEY = '@kinover/storage/bootstrap_v1';
+
+export const ensureStorageDefaultsOnce = async () => {
+  try {
+    const bootstrapped = await mmkvStorage.getItem(STORAGE_BOOTSTRAP_KEY);
+    if (bootstrapped === '1') return;
+
+    const [needsSignup, guestMode] = await Promise.all([
+      mmkvStorage.getItem(NEEDS_SIGNUP_KEY),
+      mmkvStorage.getItem(GUEST_MODE_KEY),
+    ]);
+
+    if (needsSignup == null) {
+      await mmkvStorage.setItem(NEEDS_SIGNUP_KEY, JSON.stringify(false));
+    }
+    if (guestMode == null) {
+      await mmkvStorage.setItem(GUEST_MODE_KEY, JSON.stringify(false));
+    }
+
+    await mmkvStorage.setItem(STORAGE_BOOTSTRAP_KEY, '1');
+  } catch (error) {
+    console.error('스토리지 기본값 초기화 실패:', error);
+  }
+};
 
 export const setNeedsSignup = async needsSignup => {
   try {
-    await AsyncStorage.setItem(NEEDS_SIGNUP_KEY, JSON.stringify(!!needsSignup));
+    await mmkvStorage.setItem(NEEDS_SIGNUP_KEY, JSON.stringify(!!needsSignup));
     console.log('needsSignup 상태 업데이트 완료:', !!needsSignup);
     emitAuthFlagsChanged();
   } catch (error) {
@@ -18,7 +42,7 @@ export const setNeedsSignup = async needsSignup => {
 
 export const getNeedsSignup = async () => {
   try {
-    const value = await AsyncStorage.getItem(NEEDS_SIGNUP_KEY);
+    const value = await mmkvStorage.getItem(NEEDS_SIGNUP_KEY);
     return value != null ? JSON.parse(value) : false;
   } catch (error) {
     console.error('needsSignup 불러오기 실패:', error);
@@ -38,7 +62,7 @@ export const saveLoginSession = async ({token, needsSignup}) => {
     await Keychain.setGenericPassword('jwtToken', token);
 
     if (typeof needsSignup === 'boolean') {
-      await AsyncStorage.setItem(NEEDS_SIGNUP_KEY, JSON.stringify(!!needsSignup));
+      await mmkvStorage.setItem(NEEDS_SIGNUP_KEY, JSON.stringify(!!needsSignup));
     }
 
     console.log('로그인 세션 저장 완료(A):', {needsSignup});
@@ -63,7 +87,7 @@ export const saveToken = async token => {
 
 export const setHasFamily = async hasFamily => {
   try {
-    await AsyncStorage.setItem(HAS_FAMILY_KEY, JSON.stringify(hasFamily));
+    await mmkvStorage.setItem(HAS_FAMILY_KEY, JSON.stringify(hasFamily));
     console.log('hasFamily 상태 업데이트 완료:', hasFamily);
     emitAuthFlagsChanged();
   } catch (error) {
@@ -73,7 +97,7 @@ export const setHasFamily = async hasFamily => {
 
 export const getHasFamily = async () => {
   try {
-    const value = await AsyncStorage.getItem(HAS_FAMILY_KEY);
+    const value = await mmkvStorage.getItem(HAS_FAMILY_KEY);
     return value != null ? JSON.parse(value) : null;
   } catch (error) {
     console.error('hasFamily 불러오기 실패:', error);
@@ -94,8 +118,8 @@ export const getToken = async () => {
 export const deleteLoginInfo = async () => {
   try {
     await Keychain.resetGenericPassword();
-    await AsyncStorage.removeItem(HAS_FAMILY_KEY);
-    await AsyncStorage.removeItem(NEEDS_SIGNUP_KEY);
+    await mmkvStorage.removeItem(HAS_FAMILY_KEY);
+    await mmkvStorage.removeItem(NEEDS_SIGNUP_KEY);
     console.log('로그인 정보 삭제 완료');
     emitAuthFlagsChanged();
   } catch (error) {
@@ -106,7 +130,7 @@ export const deleteLoginInfo = async () => {
 // Guest Mode는 그대로 두되, enableGuestMode()가 deleteLoginInfo()를 호출하니 emit은 자동으로 됨
 export const setGuestMode = async isGuestMode => {
   try {
-    await AsyncStorage.setItem(GUEST_MODE_KEY, JSON.stringify(!!isGuestMode));
+    await mmkvStorage.setItem(GUEST_MODE_KEY, JSON.stringify(!!isGuestMode));
     console.log('게스트 모드 상태 업데이트 완료:', !!isGuestMode);
   } catch (error) {
     console.error('게스트 모드 업데이트 실패:', error);
@@ -115,7 +139,7 @@ export const setGuestMode = async isGuestMode => {
 
 export const getGuestMode = async () => {
   try {
-    const value = await AsyncStorage.getItem(GUEST_MODE_KEY);
+    const value = await mmkvStorage.getItem(GUEST_MODE_KEY);
     return value != null ? JSON.parse(value) : false;
   } catch (error) {
     console.error('게스트 모드 불러오기 실패:', error);
@@ -126,7 +150,7 @@ export const getGuestMode = async () => {
 export const enableGuestMode = async () => {
   try {
     await deleteLoginInfo();
-    await AsyncStorage.setItem(GUEST_MODE_KEY, JSON.stringify(true));
+    await mmkvStorage.setItem(GUEST_MODE_KEY, JSON.stringify(true));
     console.log('게스트 모드 ON 완료');
   } catch (error) {
     console.error('게스트 모드 ON 실패:', error);
@@ -135,7 +159,7 @@ export const enableGuestMode = async () => {
 
 export const disableGuestMode = async () => {
   try {
-    await AsyncStorage.setItem(GUEST_MODE_KEY, JSON.stringify(false));
+    await mmkvStorage.setItem(GUEST_MODE_KEY, JSON.stringify(false));
     console.log('게스트 모드 OFF 완료');
   } catch (error) {
     console.error('게스트 모드 OFF 실패:', error);

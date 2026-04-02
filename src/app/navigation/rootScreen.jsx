@@ -5,7 +5,12 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 
 import AuthNavigator from './authNavigator';
 import RootNavigator from './rootNavigator';
-import {setGuestMode, getHasFamily, getNeedsSignup} from 'utils/storage';
+import {
+  setGuestMode,
+  getHasFamily,
+  getNeedsSignup,
+  ensureStorageDefaultsOnce,
+} from 'utils/storage';
 import {useAutoLogin} from 'features/auth/hooks/useAutoLogin';
 import {onAuthFlagsChanged} from 'utils/authFlagsEvent';
 import AppText from 'components/AppText';
@@ -35,6 +40,7 @@ export default function RootScreen() {
   const authChecked = useSelector(state => state.login?.authChecked);
   const isLogin = useSelector(state => state.login?.isLoggedIn);
   const loginLoading = useSelector(state => !!state.login?.loading);
+  const user = useSelector(state => state.user);
 
   const [bootDone, setBootDone] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
@@ -65,6 +71,7 @@ export default function RootScreen() {
 
     (async () => {
       try {
+        await ensureStorageDefaultsOnce();
         await setGuestMode(false);
       } catch {null}
 
@@ -107,6 +114,14 @@ export default function RootScreen() {
 
   useAutoLogin(shouldRunAutoLogin);
 
+  // 스토리지 값이 비어 있어도 fetchUser 결과로 hasFamily를 안전하게 추론
+  const derivedFamilyId = user?.familyId ?? null;
+  const effectiveHasFamily = hasFamily != null
+    ? hasFamily
+    : authChecked && isLogin && user?.userId != null
+    ? derivedFamilyId != null
+    : null;
+
   // 어디로 갈지 결정
   let target = null;
   if (rehydrated && bootDone) {
@@ -120,9 +135,9 @@ export default function RootScreen() {
       target = {flow: 'AuthFlow', initialRouteName: '온보딩화면'};
     } else if (needsSignup) {
       target = {flow: 'AuthFlow', initialRouteName: '약관동의화면'};
-    } else if (hasFamily === true) {
+    } else if (effectiveHasFamily === true) {
       target = {flow: 'AppFlow', initialRouteName: 'Tabs'};
-    } else if (hasFamily === false) {
+    } else if (effectiveHasFamily === false) {
       target = {flow: 'AuthFlow', initialRouteName: '약관동의화면'};
     } else {
       // hasFamily 미확정(null) 상태에서는 Tabs로 먼저 보내지 않고 로딩 유지

@@ -14,7 +14,7 @@
 - **WebSocket (native)** – 실시간 채팅, 접속 상태 동기화
 - **Axios** – 백엔드 REST API 통신
 - **Kakao Login / Apple Login** – 소셜 로그인 연동
-- **MMKV / AsyncStorage / Keychain** – persist 성능 최적화 + 앱 설정/인증 정보 저장
+- **MMKV / Keychain** – persist 성능 최적화 + 앱 설정/인증 정보 저장
 - **S3 Presigned URL** – 이미지 업로드 처리
 - **Reanimated / Bottom Sheet / Lottie** – 인터랙션 및 모션 UI
 - **Custom Components** – Modal / Toast / Loader 등 공통 UI 컴포넌트 모듈화

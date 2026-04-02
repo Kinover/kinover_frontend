@@ -23,7 +23,7 @@ import {MenuProvider} from 'react-native-popup-menu';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {BottomSheetModalProvider} from '@gorhom/bottom-sheet';
 import LottieView from 'lottie-react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import mmkvStorage from 'utils/mmkvStorage';
 
 import {
   deleteLoginInfo,
@@ -255,7 +255,7 @@ function DevForceResetLogin() {
 
         await persistor.purge();
 
- // 1) Keychain/AsyncStorage login 관련 제거
+ // 1) Keychain/MMKV login 관련 제거
         await deleteLoginInfo();
 
  // 2) guest/signup 플래그 정리
@@ -291,12 +291,12 @@ export default function App() {
   useEffect(() => {
     (async () => {
       try {
-        const shown = await AsyncStorage.getItem(SPLASH_KEY);
+        const shown = await mmkvStorage.getItem(SPLASH_KEY);
         if (shown === '1') {
           setShowSplash(false);
           setSplashDone(true);
         } else {
-          await AsyncStorage.setItem(SPLASH_KEY, '1');
+          await mmkvStorage.setItem(SPLASH_KEY, '1');
           setShowSplash(true);
           setSplashDone(false);
         }

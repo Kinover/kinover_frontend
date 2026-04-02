@@ -1,6 +1,6 @@
 // src/hooks/useAppAlertPopup.js
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import mmkvStorage from 'utils/mmkvStorage';
 
 const KEY_PREFIX = '@kinover/alert/dismissed/';
 
@@ -64,7 +64,7 @@ export default function useAppAlertPopup(event, {enabled = true} = {}) {
     if (!isWithinWindow(event?.startAt, event?.endAt)) return false;
 
     try {
-      const raw = await AsyncStorage.getItem(storageKey);
+      const raw = await mmkvStorage.getItem(storageKey);
       const stored = parseStored(raw);
       if (isDismissed(stored)) return false;
       return true;
@@ -86,7 +86,7 @@ export default function useAppAlertPopup(event, {enabled = true} = {}) {
     async value => {
       if (!storageKey) return;
       try {
-        await AsyncStorage.setItem(storageKey, value);
+        await mmkvStorage.setItem(storageKey, value);
       } catch (e) {null}
     },
     [storageKey],

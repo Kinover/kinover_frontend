@@ -39,6 +39,26 @@ const storage = {
     }
     return Promise.resolve();
   },
+
+  getAllKeys: () => {
+    if (mmkv) {
+      return Promise.resolve(mmkv.getAllKeys());
+    }
+    return Promise.resolve(Array.from(memoryFallback.keys()));
+  },
+
+  multiRemove: keys => {
+    if (!Array.isArray(keys) || keys.length === 0) {
+      return Promise.resolve();
+    }
+
+    if (mmkv) {
+      keys.forEach(key => mmkv.delete(key));
+    } else {
+      keys.forEach(key => memoryFallback.delete(key));
+    }
+    return Promise.resolve();
+  },
 };
 
 export default storage;

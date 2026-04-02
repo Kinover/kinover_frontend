@@ -10,7 +10,7 @@ import {
   Text,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import mmkvStorage from 'utils/mmkvStorage';
 import {useDispatch} from 'react-redux';
 
 import BottomActionButton from 'components/BottomActionButton';
@@ -120,7 +120,7 @@ export default function SetupFinishScreen() {
   const handleButtonClick = useCallback(async () => {
     try {
       // 0) 첫 진입 플래그 먼저 설정 (홈 마운트 전에 있어야 감정 모달 안 뜨고 가이드만 뜸)
-      await AsyncStorage.setItem(KEY_FIRST_ENTRY_AFTER_SETUP, '1');
+      await mmkvStorage.setItem(KEY_FIRST_ENTRY_AFTER_SETUP, '1');
 
       // 1) 가족 생성/참가 완료 상태 저장
       await setHasFamily(true);
@@ -137,7 +137,7 @@ export default function SetupFinishScreen() {
       }
 
       await resetGuideShownKeys();
-      await AsyncStorage.setItem(KEY_GUIDE_ENTRY_TRIGGER, '1');
+      await mmkvStorage.setItem(KEY_GUIDE_ENTRY_TRIGGER, '1');
 
       // 4) 메인 진입 트리거
       emitAuthFlagsChanged({hasFamily: true});
@@ -160,8 +160,10 @@ export default function SetupFinishScreen() {
   useEffect(() => {
     (async () => {
       try {
-        await AsyncStorage.setItem(KEY_FIRST_ENTRY_AFTER_SETUP, '1');
-      } catch (_) {}
+        await mmkvStorage.setItem(KEY_FIRST_ENTRY_AFTER_SETUP, '1');
+      } catch (_) {
+        null;
+      }
     })();
   }, []);
 

@@ -5,7 +5,6 @@ import {persistReducer, persistStore} from 'redux-persist';
 import rootReducer from './rootReducer';
 import {baseApi} from '../services/baseApi';
 import mmkvStorage from 'utils/mmkvStorage';
-import {migratePersistStorageIfNeeded} from 'utils/migratePersistStorage';
 
 const persistConfig = {
   key: 'root',
@@ -29,14 +28,7 @@ export const store = configureStore({
     }).concat(baseApi.middleware), // RTK Query 캐시 생명주기 관리
 });
 
-export const persistor = persistStore(store, {manualPersist: true});
-
-async function bootstrapPersistor() {
-  await migratePersistStorageIfNeeded();
-  persistor.persist();
-}
-
-bootstrapPersistor();
+export const persistor = persistStore(store);
 
 
 export default store;
