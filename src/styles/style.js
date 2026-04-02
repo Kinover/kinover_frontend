@@ -12,7 +12,7 @@ export const COLORS = {
   brandPrimaryStrong: '#F59E0B',
   brandPrimarySoft: '#FEF3C7',
 
-  textPrimary: '#111827',
+  textPrimary: 'black',
   textDefault: '#1F2937',
   textSecondary: '#6B7280',
   textTertiary: '#9CA3AF',
@@ -125,7 +125,7 @@ export const getBottomSheetStyle = () => ({
     marginTop: getResponsiveHeight(10),
   },
   inactive: {
- // color: ' #F6F7FB',
+    // color: ' #F6F7FB',
     color: COLORS.surfaceDisabled,
   },
 });

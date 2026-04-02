@@ -3,7 +3,6 @@
  *  * 가족 정보 조회, 수정, 생성, 참여 등의 비동기 로직을 관리합니다.
  */
 
-import {apiClient} from 'utils/apiClient';
 import {
   setOnlineUserIds,
   setLastActiveMap,
@@ -11,6 +10,7 @@ import {
   setFamilyLoading,
   setFamilyError,
 } from './familySlice';
+import {homeApi} from '../services/homeApi';
 
 // ==================== Utils ====================
 
@@ -71,17 +71,17 @@ export const fetchFamilyThunk = familyId => {
   return async dispatch => {
     dispatch(setFamilyLoading(true));
     try {
-      const res = await apiClient.post(
-        `/family/${familyId}`,
-        {},
-        {headers: {'Content-Type': 'application/json'}},
+      const req = dispatch(
+        homeApi.endpoints.getFamily.initiate(familyId, {forceRefetch: true}),
       );
+      const data = await req.unwrap();
+      req.unsubscribe();
 
-      dispatch(setFamily(res.data));
+      dispatch(setFamily(data));
       dispatch(setFamilyError(null));
-      console.log('✅ 가족 정보 조회 성공:', res.data);
+      console.log('✅ 가족 정보 조회 성공:', data);
 
-      return res.data;
+      return data;
     } catch (error) {
       const msg = extractErrorMessage(error, '가족 정보 조회 실패');
 
@@ -113,15 +113,15 @@ export const modifyFamily = family => {
   return async dispatch => {
     dispatch(setFamilyLoading(true));
     try {
-      const res = await apiClient.post('/family/modify', family, {
-        headers: {'Content-Type': 'application/json'},
-      });
+      const req = dispatch(homeApi.endpoints.modifyFamily.initiate(family));
+      const data = await req.unwrap();
+      req.unsubscribe();
 
-      dispatch(setFamily(res.data));
+      dispatch(setFamily(data));
       dispatch(setFamilyError(null));
-      console.log('✅ 가족 정보 수정 성공:', res.data);
+      console.log('✅ 가족 정보 수정 성공:', data);
 
-      return res.data;
+      return data;
     } catch (error) {
       const msg = extractErrorMessage(error, '가족 정보 수정 실패');
 
@@ -147,19 +147,21 @@ export const fetchFamilyStatusThunk = familyId => {
   return async dispatch => {
     dispatch(setFamilyLoading(true));
     try {
-      const res = await apiClient.get('/family/family-status', {
-        params: {familyId},
-      });
+      const req = dispatch(
+        homeApi.endpoints.getFamilyStatus.initiate(familyId, {forceRefetch: true}),
+      );
+      const data = await req.unwrap();
+      req.unsubscribe();
 
-      const {onlineUserIds, lastActiveMap} = parseFamilyStatus(res.data);
+      const {onlineUserIds, lastActiveMap} = parseFamilyStatus(data);
 
       dispatch(setOnlineUserIds(onlineUserIds));
       dispatch(setLastActiveMap(lastActiveMap));
       dispatch(setFamilyError(null));
 
-      console.log('✅ 접속 상태 조회 성공:', res.data);
+      console.log('✅ 접속 상태 조회 성공:', data);
 
-      return res.data;
+      return data;
     } catch (error) {
       const msg = extractErrorMessage(error, '접속 상태 조회 실패');
 
@@ -188,15 +190,17 @@ export const joinFamilyThunk = familyId => {
     try {
       console.log('➡️ joinFamilyThunk 요청:', {familyId});
 
-      const res = await apiClient.post(`/family/join/${familyId}`, null);
+      const req = dispatch(homeApi.endpoints.joinFamily.initiate(familyId));
+      const data = await req.unwrap();
+      req.unsubscribe();
 
-      console.log('✅ 가족 참여 성공:', res.data);
+      console.log('✅ 가족 참여 성공:', data);
 
  // 참여 후 가족 정보 최신화
       await dispatch(fetchFamilyThunk(familyId));
 
       dispatch(setFamilyError(null));
-      return res.data;
+      return data;
     } catch (error) {
       const msg = extractErrorMessage(error, '가족 참여에 실패했어요.');
 
@@ -226,11 +230,10 @@ export const createFamilyAndJoinThunk = () => {
     try {
       console.log('➡️ createFamilyAndJoinThunk 요청');
 
-      const res = await apiClient.post('/family/create-and-join', null, {
-        headers: {'Content-Type': 'application/json'},
-      });
+      const req = dispatch(homeApi.endpoints.createFamilyAndJoin.initiate());
+      const createdFamily = await req.unwrap();
+      req.unsubscribe();
 
-      const createdFamily = res.data;
       const newFamilyId = createdFamily?.familyId ?? null;
 
       console.log('✅ 가족 생성+참여 성공:', createdFamily);
@@ -271,14 +274,14 @@ export const createFamilyThunk = () => {
   return async dispatch => {
     dispatch(setFamilyLoading(true));
     try {
-      const res = await apiClient.post('/family/add', null, {
-        headers: {'Content-Type': 'application/json'},
-      });
+      const req = dispatch(homeApi.endpoints.createFamily.initiate());
+      const data = await req.unwrap();
+      req.unsubscribe();
 
-      console.log('✅ 새 가족 생성 성공:', res.data);
+      console.log('✅ 새 가족 생성 성공:', data);
 
       const newFamilyId =
-        res.data?.familyId !== undefined ? res.data.familyId : res.data;
+        data?.familyId !== undefined ? data.familyId : data;
 
       dispatch(setFamilyError(null));
       return newFamilyId;

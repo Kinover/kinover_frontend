@@ -6,7 +6,7 @@ import {pauseForBackground, resumeFromBackground} from 'features/chat/hooks/Chat
 import {fetchUserThunk} from 'features/home/store/userThunk';
 import {fetchFamilyThunk, fetchFamilyStatusThunk} from 'features/home/store/familyThunk';
 import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
-import {fetchChatRoomListThunk} from 'features/chat/store/chatRoomThunk';
+import {baseApi} from 'services/baseApi';
 
 export function AppStateResourceBridge() {
   const dispatch = useDispatch();
@@ -51,9 +51,8 @@ export function AppStateResourceBridge() {
         dispatch(fetchFamilyStatusThunk(familyId)).catch(e =>
           console.log('[AppStateResourceBridge] family status refresh error:', e),
         );
-        dispatch(fetchChatRoomListThunk(familyId, userId)).catch(e =>
-          console.log('[AppStateResourceBridge] chat room refresh error:', e),
-        );
+        // RTK Query: ChatRoom 태그 무효화 → 활성 getChatRooms 쿼리 자동 refetch
+        dispatch(baseApi.util.invalidateTags(['ChatRoom']));
       }
     },
   });

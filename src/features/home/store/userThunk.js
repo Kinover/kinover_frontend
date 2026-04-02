@@ -4,7 +4,6 @@
  */
 
 import {createAsyncThunk} from '@reduxjs/toolkit';
-import {apiClient} from 'utils/apiClient';
 import {deleteLoginInfo} from 'utils/storage';
 import {
   setUser,
@@ -14,6 +13,7 @@ import {
   updateUser,
 } from './userSlice';
 import {updateFamilyUser} from './userFamilySlice';
+import {homeApi} from '../services/homeApi';
 
 // ==================== Utils ====================
 
@@ -58,17 +58,21 @@ export const fetchUserThunk = createAsyncThunk(
     dispatch(setUserError(null));
 
     try {
-      const res = await apiClient.get('/user/userinfo', {
-        headers: {'Content-Type': 'application/json'},
-      });
+      const req = dispatch(
+        homeApi.endpoints.getUser.initiate(undefined, {
+          forceRefetch: true,
+        }),
+      );
+      const data = await req.unwrap();
+      req.unsubscribe();
 
-      console.log('[fetchUserThunk] dto:', res.data);
+      console.log('[fetchUserThunk] dto:', data);
 
  // Redux store 업데이트
-      dispatch(setUser(res.data));
+      dispatch(setUser(data));
 
  // 호출부에서 사용할 수 있도록 DTO 반환
-      return res.data;
+      return data;
     } catch (error) {
       const msg = extractErrorMessage(error, '유저 정보 조회 실패');
 
@@ -99,9 +103,9 @@ export const modifyUserThunk = updatedUser => {
   return async (dispatch, getState) => {
     dispatch(setUserLoading(true));
     try {
-      const res = await apiClient.post('/user/modify', updatedUser, {
-        headers: {'Content-Type': 'application/json'},
-      });
+      const req = dispatch(homeApi.endpoints.modifyUser.initiate(updatedUser));
+      const data = await req.unwrap();
+      req.unsubscribe();
 
  // 본인 정보 수정인 경우 본인 상태도 업데이트
       const currentUserId = getCurrentUserId(getState);
@@ -110,13 +114,13 @@ export const modifyUserThunk = updatedUser => {
         updatedUser?.userId != null &&
         String(updatedUser.userId) === String(currentUserId)
       ) {
-        dispatch(updateUser(res.data));
+        dispatch(updateUser(data));
       } else {
  // 가족 구성원 정보 수정인 경우
-        dispatch(updateFamilyUser(res.data));
+        dispatch(updateFamilyUser(data));
       }
 
-      console.log('✅ 프로필 수정 완료:', res.data);
+      console.log('✅ 프로필 수정 완료:', data);
     } catch (error) {
       const msg = extractErrorMessage(error, '프로필 수정 실패');
 
@@ -156,15 +160,17 @@ export const deleteUserThunk = createAsyncThunk(
         return rejectWithValue('userId가 없습니다.');
       }
 
-      const res = await apiClient.post(`/user/delete/${userId}`);
+      const req = dispatch(homeApi.endpoints.deleteUser.initiate(userId));
+      const data = await req.unwrap();
+      req.unsubscribe();
 
-      console.log('✅ 회원 탈퇴 성공:', res.data);
+      console.log('✅ 회원 탈퇴 성공:', data);
 
  // 사용자 상태 완전 초기화
       dispatch(resetUser());
       await deleteLoginInfo();
 
-      return res.data;
+      return data;
     } catch (error) {
       const errorMsg = extractErrorMessage(error, '알 수 없는 오류');
 

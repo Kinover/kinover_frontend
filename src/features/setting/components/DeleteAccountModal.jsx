@@ -1,6 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, {useState, useCallback, useMemo} from 'react';
-import { StyleSheet, TextInput, Platform, View } from 'react-native';
+import { StyleSheet, Platform, View } from 'react-native';
+import CustomInput from 'components/CustomInput';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
@@ -199,7 +200,7 @@ export default function DeleteAccountModal({visible, onClose}) {
             <AppText allowFontScaling={false} style={styles.inputLabel}>
               입력
             </AppText>
-            <TextInput
+            <CustomInput
               allowFontScaling={false}
               autoFocus
               placeholder={`"${REQUIRED_TEXT}" 입력`}

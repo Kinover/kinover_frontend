@@ -22,7 +22,6 @@ import {
   View,
   TouchableOpacity,
   Image,
-  TextInput,
   ActivityIndicator,
   Pressable,
   Dimensions,
@@ -31,6 +30,7 @@ import {
   BackHandler,
 } from 'react-native';
 
+import CustomInput from 'components/CustomInput';
 import {useFocusEffect} from '@react-navigation/native';
 import FastImage from '@d11/react-native-fast-image';
 
@@ -825,7 +825,7 @@ export default function CreatePostPage({navigation, route}) {
           </View>
         )}
 
-        <TextInput
+        <CustomInput
           textAlignVertical="top"
           style={styles.input}
           multiline

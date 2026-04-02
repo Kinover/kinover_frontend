@@ -22,6 +22,7 @@ export function BottomSheetButtons({
   saveButtonStyle,
   cancelButtonStyle,
   buttonRowStyle,
+  saveDisabled = false,
 }) {
   const [saving, setSaving] = React.useState(false);
 
@@ -92,10 +93,10 @@ export function BottomSheetButtons({
           styles.button,
           styles.saveButton,
           saveButtonStyle,
-          saving && {opacity: 0.6},
+          (saving || saveDisabled) && {opacity: 0.4},
         ]}
         onPress={handleSavePress}
-        disabled={saving}
+        disabled={saving || saveDisabled}
         activeOpacity={0.85}>
         <AppText allowFontScaling={false} style={styles.buttonText}>
           {saving ? '저장 중...' : saveLabel}

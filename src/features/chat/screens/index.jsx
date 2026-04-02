@@ -8,9 +8,9 @@ import {useDispatch, useSelector} from 'react-redux';
 
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
-  fetchChatRoomListThunk,
-  createChatRoomThunk,
-} from '../store/chatRoomThunk';
+  useGetChatRoomsQuery,
+  useCreateChatRoomMutation,
+} from '../services/chatApi';
 import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
 
 import ChatRoomItem from '../components/rooms/chatRoomItem';
@@ -58,6 +58,29 @@ export default function CommunicationScreen({navigation}) {
     lineHeight: rf(20),
     paddingHorizontal: getResponsiveWidth(10),
   },
+  emptyWrapper: {
+    paddingTop: getResponsiveHeight(80),
+    alignItems: 'center',
+    paddingHorizontal: getResponsiveWidth(20),
+  },
+  emptyIcon: {
+    fontSize: getResponsiveFontSize(38),
+    marginBottom: getResponsiveHeight(8),
+  },
+  emptyText: {
+    fontSize: EMPTY_STYLE().emptyFontSize,
+    fontFamily: EMPTY_STYLE().emptyFontFamily,
+    color: EMPTY_STYLE().emptyColor,
+    textAlign: 'center',
+  },
+  emptySubText: {
+    marginTop: getResponsiveHeight(4),
+    fontSize: getResponsiveFontSize(11),
+    fontFamily: 'Pretendard-Regular',
+    color: EMPTY_STYLE().emptyColor,
+    textAlign: 'center',
+    lineHeight: getResponsiveHeight(18),
+  },
   loaderWrapper: {
     flex: 1,
     justifyContent: 'center',
@@ -104,7 +127,17 @@ export default function CommunicationScreen({navigation}) {
   const {userId, login} = useSelector(s => s.user);
   const {familyId} = useSelector(s => s.family);
 
-  const {chatRoomList, loading, listRevision} = useSelector(s => s.chatRoom);
+  // RTK Query: 채팅방 목록 (onQueryFulfilled에서 chatRoomSlice.setChatRoomList 동기화)
+  const {isLoading, refetch} = useGetChatRoomsQuery(
+    {familyId, userId},
+    {skip: !familyId || !userId},
+  );
+  // 실제 목록은 WS 핸들러가 slice에도 업데이트하므로 slice에서 읽음
+  const {chatRoomList, listRevision} = useSelector(s => s.chatRoom);
+  const loading = isLoading;
+
+  // RTK Query: 채팅방 생성 mutation
+  const [createChatRoom] = useCreateChatRoomMutation();
 
   const familyUserList = useSelector(s => s.userFamily.familyUserList);
 
@@ -114,19 +147,13 @@ export default function CommunicationScreen({navigation}) {
  /** =========================
  * 데이터 로딩
    ========================= */
-  const load = useCallback(async () => {
-    if (STORE_MOCK_ENABLED) {
-      return dispatch(fetchChatRoomListThunk(null, null));
-    }
-    if (familyId != null && userId != null) {
-      return dispatch(fetchChatRoomListThunk(familyId, userId));
-    }
-    return null;
-  }, [dispatch, familyId, userId]);
-
+  // RTK Query가 familyId/userId 변경 시 자동 refetch
+  // login 상태 변경 시도 refetch
   useEffect(() => {
-    load();
-  }, [load, login]);
+    if (familyId != null && userId != null) {
+      refetch();
+    }
+  }, [login]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (familyId != null) {
@@ -137,11 +164,11 @@ export default function CommunicationScreen({navigation}) {
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      await load();
+      await refetch();
     } finally {
       setRefreshing(false);
     }
-  }, [load]);
+  }, [refetch]);
 
  /** =========================
  * 리스트 렌더
@@ -203,18 +230,16 @@ export default function CommunicationScreen({navigation}) {
           ? roomName.trim()
           : autoRoomName;
 
-      await dispatch(
-        createChatRoomThunk({
-          roomName: finalRoomName,
-          userIds: userIds.join(','),
-          familyId,
-        }),
-      ).unwrap();
+      // RTK Query mutation: 성공 시 invalidateTags(['ChatRoom']) → 자동 refetch
+      await createChatRoom({
+        roomName: finalRoomName,
+        userIds,
+        familyId,
+      }).unwrap();
 
       setToastVisible(true);
-      await load();
     },
-    [dispatch, familyId, familyUserList, load],
+    [createChatRoom, familyId, familyUserList],
   );
 
  /** =========================
@@ -262,12 +287,11 @@ export default function CommunicationScreen({navigation}) {
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
           }
           ListEmptyComponent={
-            <View style={{alignItems: 'center', marginTop: getResponsiveHeight(80)}}>
-              <AppText style={[styles.noChatMessage, {fontSize: getResponsiveFontSize(30), marginTop: 0, marginBottom: getResponsiveHeight(8)}]}>
-                💬
-              </AppText>
-              <AppText style={[styles.noChatMessage, {marginTop: 0}]}>
-                {'아직 채팅방이 없어요.\n가족과의 첫 대화를 시작해볼까요?'}
+            <View style={styles.emptyWrapper}>
+              <AppText style={styles.emptyIcon}>💬</AppText>
+              <AppText style={styles.emptyText}>아직 채팅방이 없어요.</AppText>
+              <AppText style={styles.emptySubText}>
+                오른쪽 아래 버튼을 눌러{'\n'}가족과의 첫 대화를 시작해보세요.
               </AppText>
             </View>
           }

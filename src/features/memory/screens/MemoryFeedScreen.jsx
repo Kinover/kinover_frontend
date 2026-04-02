@@ -2,7 +2,16 @@
 // src/screens/memory/MemoryFeed.jsx
 
 import React, {useCallback, useMemo, useRef, useState, useEffect} from 'react';
-import { View, FlatList, LayoutAnimation, UIManager, Platform, RefreshControl, Dimensions, Animated } from 'react-native';
+import {
+  View,
+  FlatList,
+  LayoutAnimation,
+  UIManager,
+  Platform,
+  RefreshControl,
+  Dimensions,
+  Animated,
+} from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
@@ -10,7 +19,11 @@ import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 import {fetchMemoryThunk} from '../store/memoryThunk';
 import {fetchCategoryThunk} from '../store/categoryThunk';
 
-import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
+import {
+  getResponsiveHeight,
+  getResponsiveFontSize,
+  getResponsiveWidth,
+} from 'utils/responsive';
 
 import SkeletonPhotoGridItem from '../components/skeletons/SkeletonPhotoGridItem';
 import SkeletonMemoryItem from '../components/skeletons/SkeletonMemoryItem';
@@ -18,11 +31,7 @@ import SkeletonMemoryItem from '../components/skeletons/SkeletonMemoryItem';
 import {filterPostsByDateRange} from '../utils/postDateFilter';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
-import {
-  BACKGROUND_COLORS,
-  EMPTY_STYLE,
-  LAYOUT_STYLE,
-} from 'styles/style';
+import {BACKGROUND_COLORS, EMPTY_STYLE, LAYOUT_STYLE} from 'styles/style';
 
 import {getVideoThumbnail} from 'utils/videoThumbnail';
 import {toCdnUrl} from 'utils/mediaUrl';
@@ -93,35 +102,36 @@ export default function MemoryFeed({
   firstPostRef,
 }) {
   const styles = useScaledStyleSheet(_rf => ({
+    container: {flex: 1, backgroundColor: BG},
+    postContainer: {},
 
-  container: {flex: 1, backgroundColor: BG},
-  postContainer: {},
+    emptyWrapper: {paddingTop: getResponsiveHeight(60), alignItems: 'center'},
+    emptyIcon: {
+      fontSize: getResponsiveFontSize(38),
+      marginBottom: getResponsiveHeight(8),
+    },
+    emptyText: {
+      fontSize: EMPTY_STYLE().emptyFontSize,
+      fontFamily: EMPTY_STYLE().emptyFontFamily,
+      color: EMPTY_STYLE().emptyColor,
+    },
+    emptySubText: {
+      marginTop: getResponsiveHeight(4),
+      fontSize: getResponsiveFontSize(11),
+      fontFamily: 'Pretendard-Regular',
+      color: EMPTY_STYLE().emptyColor,
+    },
 
-  emptyWrapper: {paddingTop: getResponsiveHeight(60), alignItems: 'center'},
-  emptyIcon: {fontSize: getResponsiveFontSize(38), marginBottom: getResponsiveHeight(8)},
-  emptyText: {
-    fontSize: EMPTY_STYLE().emptyFontSize,
-    fontFamily: EMPTY_STYLE().emptyFontFamily,
-    color: EMPTY_STYLE().emptyColor,
-  },
-  emptySubText: {
-    marginTop: getResponsiveHeight(4),
-    fontSize: getResponsiveFontSize(11),
-    fontFamily: 'Pretendard-Regular',
-    color: EMPTY_STYLE().emptyColor,
-  },
-
-  gestureHintRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    paddingVertical: getResponsiveHeight(6),
-  },
-  gestureHintText: {
-    fontSize: getResponsiveFontSize(11),
-    fontFamily: 'Pretendard-Regular',
-    color: EMPTY_STYLE().emptyColor,
-  },
-
+    gestureHintRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      paddingVertical: getResponsiveHeight(6),
+    },
+    gestureHintText: {
+      fontSize: getResponsiveFontSize(11),
+      fontFamily: 'Pretendard-Regular',
+      color: EMPTY_STYLE().emptyColor,
+    },
   }));
   const dispatch = useDispatch();
   const navigation = useNavigation();
@@ -400,7 +410,9 @@ export default function MemoryFeed({
       .map(memory => {
         const rawFirstUri = memory?.imageUrls?.[0] || null;
         const firstUri = rawFirstUri ? normalizeMediaUrl(rawFirstUri) : null;
-        const firstIsVideo = firstUri ? inferIsVideo(memory, 0, firstUri) : false;
+        const firstIsVideo = firstUri
+          ? inferIsVideo(memory, 0, firstUri)
+          : false;
         return firstIsVideo && firstUri ? firstUri : null;
       })
       .filter(Boolean);
@@ -576,9 +588,7 @@ export default function MemoryFeed({
       <AlbumMediaTile
         uri={item?.uri}
         isVideo={!!item?.isVideo}
-        thumbUri={
-          item?.isVideo && item?.uri ? videoThumbMap[item.uri] : null
-        }
+        thumbUri={item?.isVideo && item?.uri ? videoThumbMap[item.uri] : null}
         duration={item?.duration}
         tileWidth={tileWidth}
         postId={item?.postId}
@@ -624,7 +634,7 @@ export default function MemoryFeed({
         {isAllPhotos && (
           <View style={styles.gestureHintRow}>
             <AppText style={styles.gestureHintText}>
-              핀치로 크기 조절  ·  좌우 스와이프로 탭 전환
+              핀치로 크기 조절 · 좌우 스와이프로 탭 전환
             </AppText>
           </View>
         )}
@@ -647,7 +657,9 @@ export default function MemoryFeed({
       <View style={styles.emptyWrapper}>
         <AppText style={styles.emptyIcon}>📷</AppText>
         <AppText style={styles.emptyText}>아직 게시글이 없어요.</AppText>
-        <AppText style={styles.emptySubText}>소중한 순간을 기록해보세요.</AppText>
+        <AppText style={styles.emptySubText}>
+          소중한 순간을 기록해보세요.
+        </AppText>
       </View>
     ),
     [styles],

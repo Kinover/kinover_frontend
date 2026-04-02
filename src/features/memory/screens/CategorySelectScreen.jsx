@@ -1,7 +1,8 @@
 // src/features/memory/screens/CategorySelectScreen.jsx
 
 import React, {useState, useLayoutEffect, useEffect, useMemo} from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Image, TextInput, Platform } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Image, Platform } from 'react-native';
+import CustomInput from 'components/CustomInput';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import AppText from 'components/AppText';
@@ -354,7 +355,7 @@ export default function CategorySelectPage({route}) {
         }}
         onConfirm={handleAddCategory}
         content={
-          <TextInput
+          <CustomInput
             placeholder="예: 2026 가족 여행"
             placeholderTextColor={EMPTY_STYLE().emptyColor}
             style={styles.input}

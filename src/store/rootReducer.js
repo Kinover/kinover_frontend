@@ -16,9 +16,13 @@ import statusReducer from '../features/home/store/statusSlice';
 import notificationReducer from '../features/notification/store/notificationSlice';
 
 import uiReducer from './uiSlice';
+import {baseApi} from '../services/baseApi';
 
 const rootReducer = combineReducers({
-  ui: uiReducer, // 추가 (맨 위든 아래든 상관 없음)
+  ui: uiReducer,
+
+  // RTK Query 캐시 (채팅 API)
+  [baseApi.reducerPath]: baseApi.reducer,
 
   family: familyReducer,
   memory: memoryReducer,

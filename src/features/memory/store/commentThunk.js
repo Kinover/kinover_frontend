@@ -2,27 +2,27 @@
 // 댓글 조회·추가: /posts/:postId/comments (서버에서 많이 쓰는 형태)
 // 댓글 삭제: /comments/:commentId
 
-import {apiClient} from 'utils/apiClient';
-import {POSTS, COMMENTS} from 'config/apiEndpoints';
 import {
   setCommentList,
   setCommentLoading,
   setCommentError,
 } from './commentSlice';
+import {memoryApi} from '../services/memoryApi';
 
 // 댓글 조회 (게시글별)
 export const fetchCommentsThunk = postId => {
   return async dispatch => {
     dispatch(setCommentLoading(true));
-    const url = POSTS.comments(postId);
-    console.log('📨 댓글 목록 불러오기 요청:', url);
+    console.log('📨 댓글 목록 불러오기 요청:', postId);
 
     try {
-      const res = await apiClient.get(url, {
-        headers: {'Content-Type': 'application/json'},
-      });
+      const req = dispatch(
+        memoryApi.endpoints.getComments.initiate(postId, {forceRefetch: true}),
+      );
+      const res = await req.unwrap();
+      req.unsubscribe();
 
-      const data = Array.isArray(res?.data) ? res.data : res?.data?.data ?? [];
+      const data = Array.isArray(res) ? res : res?.data ?? [];
       dispatch(setCommentList(data));
       console.log('✅ 댓글 목록 조회 성공');
     } catch (error) {
@@ -50,7 +50,6 @@ export const createCommentThunk = commentData => {
     }
 
     dispatch(setCommentLoading(true));
-    const url = POSTS.comments(postId);
     const body = {
       content: String(commentData?.content ?? '').trim(),
       ...(commentData?.authorId != null && {authorId: commentData.authorId}),
@@ -58,12 +57,12 @@ export const createCommentThunk = commentData => {
         mentionUserIds: commentData.mentionUserIds,
       }),
     };
-    console.log('📨 댓글 추가 요청:', url, body);
+    console.log('📨 댓글 추가 요청:', postId, body);
 
     try {
-      await apiClient.post(url, body, {
-        headers: {'Content-Type': 'application/json'},
-      });
+      const req = dispatch(memoryApi.endpoints.createComment.initiate({postId, ...body}));
+      await req.unwrap();
+      req.unsubscribe();
 
       console.log('✅ 댓글 추가 성공');
       dispatch(fetchCommentsThunk(postId));
@@ -87,11 +86,12 @@ export const deleteCommentThunk = (commentId, postId) => {
   return async dispatch => {
     dispatch(setCommentLoading(true));
     const id = String(commentId).trim();
-    const url = COMMENTS.delete(id);
-    console.log('🗑 댓글 삭제 요청:', url);
+    console.log('🗑 댓글 삭제 요청:', id);
 
     try {
-      await apiClient.delete(url);
+      const req = dispatch(memoryApi.endpoints.deleteComment.initiate(id));
+      await req.unwrap();
+      req.unsubscribe();
 
       console.log('✅ 댓글 삭제 성공');
       if (postId) dispatch(fetchCommentsThunk(postId));
@@ -116,10 +116,11 @@ export const toggleCommentNotificationThunk = ({userId, isOn}) => {
     try {
       console.log(`🔔 댓글 알림 설정 요청: userId=${userId}, isOn=${isOn}`);
 
-      await apiClient.patch('/comments/notification/comment', null, {
-        headers: {'Content-Type': 'application/json'},
-        params: {userId, isOn},
-      });
+      const req = dispatch(
+        memoryApi.endpoints.toggleCommentNotification.initiate({userId, isOn}),
+      );
+      await req.unwrap();
+      req.unsubscribe();
 
       console.log('✅ 댓글 알림 설정 변경 성공');
     } catch (error) {

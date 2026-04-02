@@ -1,13 +1,12 @@
 // src/features/schedule/store/scheduleThunk.js
 import {createAsyncThunk} from '@reduxjs/toolkit';
-import {apiClient} from 'utils/apiClient';
-import {SCHEDULES} from 'config/apiEndpoints';
 import {
   setScheduleList,
   setScheduleLoading,
   setScheduleError,
   setScheduleCountPerDay, // 추가: count를 reducer로 직접 넣기용
 } from './scheduleSlice';
+import {scheduleApi} from '../services/scheduleApi';
 
 // 게스트 모드 확인
 import {getGuestMode} from 'utils/storage';
@@ -18,34 +17,35 @@ import {
   getStoreMockScheduleCountPerDay,
 } from '../../home/utils/storeMockData';
 import {normalizeScheduleListResponse} from '../utils/scheduleFilterHelpers';
+import appStore from 'store';
 
 /**
  * 로딩 흔들림 방지용
  * - CRUD(add/modify/remove)에서만 setScheduleLoading(true/false)를 건드리고,
  * - refresh로 태우는 "조회" thunks는 로딩을 건드리지 않도록 분리
  */
-const fetchSchedulesForFamilyAndDateCore = async (familyId, date) => {
-  const res = await apiClient.post(
-    SCHEDULES.get,
-    {familyId, date},
-    {
-      headers: {'Content-Type': 'application/json'},
-    },
+const fetchSchedulesForFamilyAndDateCore = async (dispatch, familyId, date) => {
+  const req = dispatch(
+    scheduleApi.endpoints.getSchedules.initiate(
+      {familyId, date},
+      {forceRefetch: true},
+    ),
   );
-
-  return res.data;
+  const data = await req.unwrap();
+  req.unsubscribe();
+  return data;
 };
 
-const fetchSchedulesForUserAndDateCore = async (familyId, userId, date) => {
-  const res = await apiClient.post(
-    SCHEDULES.get,
-    {familyId, userId, date},
-    {
-      headers: {'Content-Type': 'application/json'},
-    },
+const fetchSchedulesForUserAndDateCore = async (dispatch, familyId, userId, date) => {
+  const req = dispatch(
+    scheduleApi.endpoints.getSchedules.initiate(
+      {familyId, userId, date},
+      {forceRefetch: true},
+    ),
   );
-
-  return res.data;
+  const data = await req.unwrap();
+  req.unsubscribe();
+  return data;
 };
 
 /** =========================
@@ -181,7 +181,7 @@ const refreshAfterMutation = async (dispatch, refresh) => {
       (async () => {
         try {
           console.log('📅 [리프레시] 가족 스케줄 조회:', {familyId, date});
-          const data = await fetchSchedulesForFamilyAndDateCore(familyId, date);
+          const data = await fetchSchedulesForFamilyAndDateCore(dispatch, familyId, date);
           dispatch(setScheduleList(data));
         } catch (e) {
           const msg =
@@ -203,6 +203,7 @@ const refreshAfterMutation = async (dispatch, refresh) => {
         try {
           console.log('👤 [리프레시] 유저 스케줄 조회:', {familyId, userId, date});
           const data = await fetchSchedulesForUserAndDateCore(
+            dispatch,
             familyId,
             userId,
             date,
@@ -253,7 +254,7 @@ export const fetchSchedulesForFamilyAndDateThunk = (familyId, date) => {
     console.log('📅 [가족 스케줄] 요청 시작:', {familyId, date});
 
     try {
-      const data = await fetchSchedulesForFamilyAndDateCore(familyId, date);
+      const data = await fetchSchedulesForFamilyAndDateCore(dispatch, familyId, date);
       console.log('✅ [가족 스케줄] 응답 데이터:', data);
       dispatch(setScheduleList(data));
       return data;
@@ -294,6 +295,7 @@ export const fetchSchedulesForUserAndDateThunk = (familyId, userId, date) => {
 
     try {
       const data = await fetchSchedulesForUserAndDateCore(
+        dispatch,
         familyId,
         userId,
         date,
@@ -364,14 +366,14 @@ export const addScheduleThunk = (scheduleData, refresh) => {
     console.log('📝 [스케줄 추가] 요청 시작:', scheduleData);
 
     try {
-      const res = await apiClient.post(SCHEDULES.add, scheduleData, {
-        headers: {'Content-Type': 'application/json'},
-      });
+      const req = dispatch(scheduleApi.endpoints.addSchedule.initiate(scheduleData));
+      const data = await req.unwrap();
+      req.unsubscribe();
 
-      console.log('✅ [스케줄 추가] 성공:', res.data);
+      console.log('✅ [스케줄 추가] 성공:', data);
 
       await refreshAfterMutation(dispatch, refresh);
-      return res.data;
+      return data;
     } catch (error) {
       const msg =
         error?.response?.data?.message ||
@@ -434,14 +436,16 @@ export const updateScheduleThunk = (updatedScheduleData, refresh) => {
     console.log('✏️ [스케줄 수정] 요청 시작:', updatedScheduleData);
 
     try {
-      const res = await apiClient.put(SCHEDULES.modify, updatedScheduleData, {
-        headers: {'Content-Type': 'application/json'},
-      });
+      const req = dispatch(
+        scheduleApi.endpoints.updateSchedule.initiate(updatedScheduleData),
+      );
+      const data = await req.unwrap();
+      req.unsubscribe();
 
-      console.log('✅ [스케줄 수정] 성공:', res.data);
+      console.log('✅ [스케줄 수정] 성공:', data);
 
       await refreshAfterMutation(dispatch, refresh);
-      return res.data;
+      return data;
     } catch (error) {
       const msg =
         error?.response?.data?.message ||
@@ -497,12 +501,14 @@ export const deleteScheduleThunk = (scheduleId, refresh) => {
     console.log('🗑️ [스케줄 삭제] 요청 시작:', scheduleId);
 
     try {
-      const res = await apiClient.delete(SCHEDULES.remove(scheduleId));
+      const req = dispatch(scheduleApi.endpoints.deleteSchedule.initiate(scheduleId));
+      const data = await req.unwrap();
+      req.unsubscribe();
 
-      console.log('✅ [스케줄 삭제] 성공:', res.data);
+      console.log('✅ [스케줄 삭제] 성공:', data);
 
       await refreshAfterMutation(dispatch, refresh);
-      return res.data;
+      return data;
     } catch (error) {
       const msg =
         error?.response?.data?.message ||
@@ -531,13 +537,21 @@ export async function fetchSchedulesForFamilyAndDateApi(familyId, date) {
       makeDummyScheduleList({familyId, date, userId: null}),
     );
   }
-  const data = await fetchSchedulesForFamilyAndDateCore(familyId, date);
+  const req = appStore.dispatch(
+    scheduleApi.endpoints.getSchedules.initiate(
+      {familyId, date},
+      {forceRefetch: true},
+    ),
+  );
+  const data = await req.unwrap();
+  req.unsubscribe();
   return normalizeScheduleListResponse(data);
 }
 
 export const getScheduleCountPerDayThunk = createAsyncThunk(
   'schedule/getCountPerDay',
   async ({familyId, year, month}, thunkAPI) => {
+    const {dispatch} = thunkAPI;
     if (STORE_MOCK_ENABLED) {
       return getStoreMockScheduleCountPerDay(year, month);
     }
@@ -548,11 +562,14 @@ export const getScheduleCountPerDayThunk = createAsyncThunk(
     }
 
     try {
-      const res = await apiClient.get(SCHEDULES.countPerDay, {
-        params: {familyId, year, month},
-      });
-
-      const originalData = res.data; // { "2025-06-26": 1, ... }
+      const req = dispatch(
+        scheduleApi.endpoints.getScheduleCountPerDay.initiate(
+          {familyId, year, month},
+          {forceRefetch: true},
+        ),
+      );
+      const originalData = await req.unwrap(); // { "2025-06-26": 1, ... }
+      req.unsubscribe();
       const normalized = {};
 
  // 문자열 키는 그대로 사용

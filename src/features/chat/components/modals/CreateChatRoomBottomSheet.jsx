@@ -2,14 +2,25 @@
 // src/features/chat/components/CreateChatRoomBottomSheet.jsx
 
 import React, {useMemo, useCallback, useState, useEffect, useRef} from 'react';
-import { View, StyleSheet, Platform, TouchableOpacity, Keyboard, InteractionManager } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Platform,
+  TouchableOpacity,
+  Keyboard,
+  InteractionManager,
+  ScrollView,
+} from 'react-native';
 import AppText from 'components/AppText';
 
 import {useReduxFontMode} from 'hooks/useReduxFontMode';
 
 import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
 import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
-import {BottomSheetTextInput, BottomSheetScrollView} from '@gorhom/bottom-sheet';
+import {
+  BottomSheetScrollView,
+} from '@gorhom/bottom-sheet';
+import CustomInput from 'components/CustomInput';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -18,7 +29,10 @@ import {
   getResponsiveWidth,
   getResponsiveFontSize,
 } from 'utils/responsive';
-import {getCreateRoomBottomSheetSnapPoints, getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
+import {
+  getCreateRoomBottomSheetSnapPoints,
+  getAndroidNavBottomInsetEstimate,
+} from 'utils/layoutMetrics';
 import {BOTTOMSHEET_STYLE} from 'styles/style';
 
 import ToastModal from 'components/modal/ToastModal';
@@ -38,133 +52,151 @@ export default function CreateChatRoomBottomSheet({
   snapPoints: externalSnapPoints,
 }) {
   const styles = useScaledStyleSheet(rf => ({
+    body: {
+      paddingTop: getResponsiveHeight(20),
+      paddingBottom: getResponsiveHeight(6),
+    },
 
-  body: {
-    paddingTop: getResponsiveHeight(20),
-    paddingBottom: getResponsiveHeight(6),
-  },
+    label: {
+      fontSize: BOTTOMSHEET_STYLE().sectionLabel.fontSize,
+      fontFamily: BOTTOMSHEET_STYLE().sectionLabel.fontFamily,
+      color: BOTTOMSHEET_STYLE().sectionLabel.color,
+      marginBottom: BOTTOMSHEET_STYLE().sectionLabel.marginBottom,
+      marginTop: BOTTOMSHEET_STYLE().sectionLabel.marginTop,
+    },
 
-  label: {
-    fontSize: BOTTOMSHEET_STYLE().sectionLabel.fontSize,
-    fontFamily: BOTTOMSHEET_STYLE().sectionLabel.fontFamily,
-    color: BOTTOMSHEET_STYLE().sectionLabel.color,
-    marginBottom: BOTTOMSHEET_STYLE().sectionLabel.marginBottom,
-    marginTop: BOTTOMSHEET_STYLE().sectionLabel.marginTop,
-  },
+    sectionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
 
-  sectionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
+    countText: {
+      fontSize: rf(12),
+      fontFamily: 'Pretendard-SemiBold',
+      color: '#566073',
+    },
 
-  countText: {
-    fontSize: rf(12),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#566073',
-  },
+    inputWrap: {
+      alignSelf: 'stretch',
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: 'rgba(60, 60, 67, 0.28)',
+      paddingBottom: 2,
+    },
+    input: {
+      minHeight: getResponsiveHeight(36),
+      paddingHorizontal: 0,
+      paddingTop: Platform.OS === 'android' ? 2 : 4,
+      paddingBottom: 2,
+      borderWidth: 0,
+      backgroundColor: 'transparent',
+      includeFontPadding: false,
+      fontSize: rf(15),
+      fontFamily: 'Pretendard-Regular',
+      color: '#0B1220',
+      lineHeight: rf(22),
+      letterSpacing: -0.18,
+      textAlignVertical: 'top',
+    },
 
-  inputWrap: {
-    alignSelf: 'stretch',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(60, 60, 67, 0.28)',
-    paddingBottom: 2,
-  },
-  input: {
-    minHeight: getResponsiveHeight(36),
-    paddingHorizontal: 0,
-    paddingTop: Platform.OS === 'android' ? 2 : 4,
-    paddingBottom: 2,
-    borderWidth: 0,
-    backgroundColor: 'transparent',
-    includeFontPadding: false,
-    fontSize: rf(15),
-    fontFamily: 'Pretendard-Regular',
-    color: '#0B1220',
-    lineHeight: rf(22),
-    letterSpacing: -0.18,
-    textAlignVertical: 'top',
-  },
+    chipScroll: {
+      alignSelf: 'stretch',
+      maxHeight: getResponsiveHeight(40),
+      marginTop: getResponsiveHeight(6),
+    },
 
-  memberCard: {
-    minHeight: getResponsiveHeight(120),
-    marginTop: getResponsiveHeight(6),
-    backgroundColor: '#FFFFFF',
-    borderRadius: getResponsiveWidth(18),
-    paddingHorizontal: getResponsiveWidth(12),
-    paddingVertical: getResponsiveHeight(12),
-    borderWidth: 1,
-    borderColor: 'rgba(15, 23, 42, 0.08)',
-  },
+    chipScrollContent: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: getResponsiveHeight(4),
+      paddingRight: getResponsiveWidth(8),
+      paddingLeft: 0,
+      gap: getResponsiveWidth(10),
+    },
 
-  chipWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
+    selectedTagsRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      marginTop: getResponsiveHeight(10),
+      gap: getResponsiveWidth(6),
+    },
+    selectedTag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: getResponsiveWidth(8),
+      paddingVertical: getResponsiveHeight(3),
+      borderRadius: 999,
+      backgroundColor: 'rgba(0,0,0,0.07)',
+    },
+    selectedTagText: {
+      fontSize: rf(11.5),
+      fontFamily: 'Pretendard-SemiBold',
+      color: '#0B1220',
+      letterSpacing: -0.15,
+    },
 
-  chip: {
-    height: getResponsiveHeight(34),
-    paddingHorizontal: getResponsiveWidth(12),
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(15, 23, 42, 0.08)',
-    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    marginRight: getResponsiveWidth(8),
-    maxWidth: getResponsiveWidth(140),
-  },
+    chip: {
+      height: getResponsiveHeight(32),
+      paddingHorizontal: getResponsiveWidth(12),
+      borderRadius: 8,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: 'rgba(0, 0, 0, 0.07)',
+      backgroundColor: '#F9FAFB',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexShrink: 0,
+      maxWidth: getResponsiveWidth(160),
+    },
 
-  chipSelected: {
-    backgroundColor: 'black',
-    borderColor: 'black',
-  },
+    chipSelected: {
+      backgroundColor: '#000000',
+      borderColor: '#000000',
+    },
 
-  chipDisabled: {
-    opacity: 0.45,
-  },
+    chipDisabled: {
+      opacity: 0.45,
+    },
 
-  chipText: {
-    fontSize: rf(12.5),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#566073',
-    letterSpacing: -0.2,
-  },
+    chipText: {
+      fontSize: rf(12.5),
+      fontFamily: 'Pretendard-Medium',
+      color: '#374151',
+      letterSpacing: -0.15,
+    },
 
-  chipTextSelected: {
-    color: '#FFFFFF',
-  },
+    chipTextSelected: {
+      color: '#FFFFFF',
+      fontFamily: 'Pretendard-SemiBold',
+    },
 
-  chipTextDisabled: {
-    color: '#9CA3AF',
-  },
+    chipTextDisabled: {
+      color: '#9CA3AF',
+    },
 
-  tipRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(8),
-    marginTop: getResponsiveHeight(6),
-  },
-  tipDot: {
-    width: getResponsiveWidth(6),
-    height: getResponsiveWidth(6),
-    borderRadius: 999,
-    backgroundColor: '#FFB020',
-  },
-  tipText: {
-    fontSize: rf(11.5),
-    fontFamily: 'Pretendard-Medium',
-    color: '#566073',
-  },
+    tipRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: getResponsiveWidth(8),
+      marginTop: getResponsiveHeight(6),
+    },
+    tipDot: {
+      width: getResponsiveWidth(6),
+      height: getResponsiveWidth(6),
+      borderRadius: 999,
+      backgroundColor: '#FFB020',
+    },
+    tipText: {
+      fontSize: rf(11.5),
+      fontFamily: 'Pretendard-Medium',
+      color: '#566073',
+    },
 
-  footerFlow: {
-    alignSelf: 'stretch',
-    width: '100%',
-    paddingTop: getResponsiveHeight(20),
-    paddingBottom: getResponsiveHeight(2),
-  },
-
+    footerFlow: {
+      alignSelf: 'stretch',
+      width: '100%',
+      paddingTop: getResponsiveHeight(20),
+      paddingBottom: getResponsiveHeight(2),
+    },
   }));
   const fontMode = useReduxFontMode();
   const insets = useSafeAreaInsets();
@@ -177,7 +209,7 @@ export default function CreateChatRoomBottomSheet({
     return Math.max(getAndroidNavBottomInsetEstimate(), getResponsiveHeight(8));
   }, []);
 
- // roomName: ref로만 관리
+  // roomName: ref로만 관리
   const roomNameRef = useRef(String(initialRoomName ?? ''));
   const [roomNameKey, setRoomNameKey] = useState(0);
 
@@ -185,17 +217,17 @@ export default function CreateChatRoomBottomSheet({
     Array.isArray(initialSelectedIds) ? initialSelectedIds : [],
   );
 
- // Toast
+  // Toast
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const toastTimerRef = useRef(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
- // 키보드 열림 추적
+  // 키보드 열림 추적
   const keyboardOpenRef = useRef(false);
 
- // inside tap throttle
+  // inside tap throttle
   const touchLockRef = useRef(false);
   const touchLockTimerRef = useRef(null);
   const lockTouchBriefly = useCallback(() => {
@@ -206,7 +238,7 @@ export default function CreateChatRoomBottomSheet({
     }, 180);
   }, []);
 
- // 키보드 닫힘 이후 실행할 지연 액션
+  // 키보드 닫힘 이후 실행할 지연 액션
   const pendingActionRef = useRef(null);
 
   const pendingInteractionRef = useRef(null);
@@ -228,7 +260,7 @@ export default function CreateChatRoomBottomSheet({
     setToastVisible(false);
   }, []);
 
- // initialRoomName 변경 시 ref 갱신 + input 리마운트
+  // initialRoomName 변경 시 ref 갱신 + input 리마운트
   useEffect(() => {
     roomNameRef.current = String(initialRoomName ?? '');
     setRoomNameKey(k => k + 1);
@@ -238,7 +270,7 @@ export default function CreateChatRoomBottomSheet({
     setSelectedIds(Array.isArray(initialSelectedIds) ? initialSelectedIds : []);
   }, [initialSelectedIds]);
 
- // 키보드 상태 tracking + pending flush
+  // 키보드 상태 tracking + pending flush
   useEffect(() => {
     const onShow = () => {
       keyboardOpenRef.current = true;
@@ -288,7 +320,7 @@ export default function CreateChatRoomBottomSheet({
     };
   }, []);
 
- // cleanup
+  // cleanup
   useEffect(() => {
     return () => {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
@@ -307,7 +339,7 @@ export default function CreateChatRoomBottomSheet({
     };
   }, []);
 
- // enabledMembers / enabledIds
+  // enabledMembers / enabledIds
   const enabledMembers = useMemo(
     () => (members || []).filter(m => !m?.disabled),
     [members],
@@ -347,7 +379,19 @@ export default function CreateChatRoomBottomSheet({
 
   const canSave = useMemo(() => selectedIds.length > 0, [selectedIds.length]);
 
- // snapPoints
+  const selectedNames = useMemo(() => {
+    return (members || [])
+      .filter(m => m?.id != null && selectedIds.includes(m.id) && !m?.disabled)
+      .map(m => String(m.name ?? '').trim())
+      .filter(Boolean);
+  }, [members, selectedIds]);
+
+  const roomNamePlaceholder = useMemo(() => {
+    if (selectedNames.length === 0) return '비워두면 기본 이름으로 생성돼요';
+    return `예: ${selectedNames.join(', ')}`;
+  }, [selectedNames]);
+
+  // snapPoints
   const resolvedSnapPoints = useMemo(() => {
     return getCreateRoomBottomSheetSnapPoints(fontMode, externalSnapPoints);
   }, [externalSnapPoints, fontMode]);
@@ -356,7 +400,7 @@ export default function CreateChatRoomBottomSheet({
     return `create-room-fixed-${String(fontMode ?? '')}`;
   }, [fontMode]);
 
- // 키보드 열려있을 때 상태 변경 지연
+  // 키보드 열려있을 때 상태 변경 지연
   const runAfterKeyboardHide = useCallback(fn => {
     if (keyboardOpenRef.current) {
       pendingActionRef.current = fn;
@@ -500,7 +544,7 @@ export default function CreateChatRoomBottomSheet({
               item.disabled && styles.chipTextDisabled,
             ]}
             numberOfLines={1}>
-            {item.name}
+            {selected ? `✓ ${item.name}` : item.name}
           </AppText>
         </TouchableOpacity>
       );
@@ -523,7 +567,7 @@ export default function CreateChatRoomBottomSheet({
     }
   }, [hideToast]);
 
- // 내부 탭: 토스트만 닫기(키보드 dismiss/snap은 Layout)
+  // 내부 탭: 토스트만 닫기(키보드 dismiss/snap은 Layout)
   const handleTouchInside = useCallback(() => {
     if (!keyboardOpenRef.current) return;
     if (touchLockRef.current) return;
@@ -551,8 +595,7 @@ export default function CreateChatRoomBottomSheet({
         keyboardCloseSnapIndex={0}
         dismissKeyboardOnPress={true}
         onTouchInside={handleTouchInside}
-        onDismiss={handleDismiss}
-      >
+        onDismiss={handleDismiss}>
         <BottomSheetScrollView
           style={{flex: 1}}
           showsVerticalScrollIndicator={false}
@@ -566,13 +609,13 @@ export default function CreateChatRoomBottomSheet({
             </View>
 
             <View style={styles.inputWrap}>
-              <BottomSheetTextInput
+              <CustomInput bottomSheet
                 key={`room-${roomNameKey}`}
                 defaultValue={roomNameRef.current}
                 onChangeText={t => {
                   roomNameRef.current = String(t).slice(0, maxRoomNameLength);
                 }}
-                placeholder="비워두면 기본 이름으로 생성돼요"
+                placeholder={roomNamePlaceholder}
                 placeholderTextColor="#B0B6C3"
                 style={styles.input}
                 returnKeyType="done"
@@ -585,26 +628,29 @@ export default function CreateChatRoomBottomSheet({
 
             <View style={{marginTop: getResponsiveHeight(18)}}>
               <View style={styles.sectionRow}>
-                <AppText style={styles.label}>
-                  구성원
-                </AppText>
-                <AppText style={styles.countText}>
-                  {selectedCount}명 선택
-                </AppText>
+                <AppText style={styles.label}>구성원</AppText>
               </View>
 
-              <View style={styles.memberCard}>
-                <View style={styles.chipWrap}>
-                  {memberChipData.map(renderMemberChip)}
+              <ScrollView
+                horizontal
+                nestedScrollEnabled
+                keyboardShouldPersistTaps="handled"
+                showsHorizontalScrollIndicator={false}
+                bounces={false}
+                contentContainerStyle={styles.chipScrollContent}
+                style={styles.chipScroll}>
+                {memberChipData.map(renderMemberChip)}
+              </ScrollView>
+
+              {selectedNames.length > 0 && (
+                <View style={styles.selectedTagsRow}>
+                  {selectedNames.map(name => (
+                    <View key={name} style={styles.selectedTag}>
+                      <AppText style={styles.selectedTagText}>{name}</AppText>
+                    </View>
+                  ))}
                 </View>
-              </View>
-
-              <View style={styles.tipRow}>
-                <View style={styles.tipDot} />
-                <AppText style={styles.tipText}>
-                  최소 1명은 선택해야 저장할 수 있어요.
-                </AppText>
-              </View>
+              )}
             </View>
           </View>
         </BottomSheetScrollView>
@@ -615,7 +661,9 @@ export default function CreateChatRoomBottomSheet({
           onLayoutHeight={undefined}
           style={[
             styles.footerFlow,
-            Platform.OS === 'android' && {paddingBottom: androidFooterBottomPad},
+            Platform.OS === 'android' && {
+              paddingBottom: androidFooterBottomPad,
+            },
           ]}
           onCancel={handleCancel}
           onSave={handleSave}
@@ -624,6 +672,7 @@ export default function CreateChatRoomBottomSheet({
           showCancel={true}
           autoCloseOnSave={false}
           disabled={isSubmitting}
+          saveDisabled={!canSave}
         />
       </BottomSheetLayout>
 
@@ -635,4 +684,3 @@ export default function CreateChatRoomBottomSheet({
     </>
   );
 }
-

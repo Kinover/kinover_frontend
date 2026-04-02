@@ -1,10 +1,10 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {View} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import {useDispatch, useSelector} from 'react-redux';
+import {useSelector} from 'react-redux';
 
 import ChatRoomScreenTemplate from './chatRoomScreenTemplate';
-import {fetchChatRoomThunk} from '../store/chatRoomThunk';
+import {useLazyGetChatRoomQuery} from '../services/chatApi';
 import {selectChatRoomById} from '../store/chatRoomSelector';
 import YellowSpinner from 'components/yellowSpinner';
 
@@ -12,7 +12,7 @@ const toId = v => (v == null ? null : String(v));
 
 export default function FamilyChatRoom({route}) {
   const navigation = useNavigation();
-  const dispatch = useDispatch();
+  const [fetchChatRoom] = useLazyGetChatRoomQuery();
 
   const params = route?.params || {};
 
@@ -53,20 +53,18 @@ export default function FamilyChatRoom({route}) {
 
     (async () => {
       try {
-        const res = await dispatch(fetchChatRoomThunk(chatRoomId));
-        if (alive && fetchChatRoomThunk.fulfilled.match(res)) {
-          setLocalRoom(res.payload);
-        }
+        const data = await fetchChatRoom(chatRoomId).unwrap();
+        if (alive) setLocalRoom(data);
       } catch (e) {
         // thunk 자체가 throw하는 경우(네트워크 등) — 화면은 스텁(chatRoomId만 있는) 상태로 유지
-        console.error('❌ fetchChatRoomThunk 실패:', e);
+        console.error('❌ fetchChatRoom 실패:', e);
       }
     })();
 
     return () => {
       alive = false;
     };
-  }, [dispatch, chatRoomId, roomFromStore, localRoom]);
+  }, [fetchChatRoom, chatRoomId, roomFromStore, localRoom]);
 
   if (!chatRoomId) {
     return (

@@ -13,7 +13,7 @@ import {
 import {useDispatch, useSelector} from 'react-redux';
 
 import AppText from 'components/AppText';
-import {getResponsiveWidth, getResponsiveHeight, getResponsiveFontSize} from 'utils/responsive';
+import {getResponsiveWidth, getResponsiveHeight} from 'utils/responsive';
 
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 
@@ -31,7 +31,7 @@ import FastImage from '@d11/react-native-fast-image';
 import DropShadow from 'react-native-drop-shadow';
 import BirthdayConfettiModal from './BirthdayConfettiModal';
 import CustomModal from 'components/modal/CustomModal';
-import {fetchChatRoomListThunk} from 'features/chat/store/chatRoomThunk';
+import {useGetChatRoomsQuery} from 'features/chat/services/chatApi';
 import {sendMessageWsThunk} from 'features/chat/store/messageThunk';
 import {toCdnUrl} from 'utils/mediaUrl';
 
@@ -543,9 +543,13 @@ function Schedule({
       ? state.chatRoom.chatRoomList
       : [],
   );
-  const chatRoomLoading = useSelector(state => !!state?.chatRoom?.loading);
   const effectiveFamilyId = familyIdProp ?? fallbackFamilyId;
   const effectiveUserId = currentUserId ?? fallbackUserId;
+  const {isLoading: chatRoomLoading, refetch: refetchChatRooms} =
+    useGetChatRoomsQuery(
+      {familyId: effectiveFamilyId, userId: effectiveUserId},
+      {skip: !effectiveFamilyId || effectiveUserId == null},
+    );
 
   const hookResult =
     useScheduleListByDate(selectedDate, refreshTrigger, familyIdProp) || {};
@@ -631,11 +635,9 @@ function Schedule({
       });
 
       if (!effectiveFamilyId || effectiveUserId == null) return;
-      await dispatch(
-        fetchChatRoomListThunk(effectiveFamilyId, effectiveUserId),
-      );
+      await refetchChatRooms();
     },
-    [effectiveFamilyId, effectiveUserId, dispatch],
+    [effectiveFamilyId, effectiveUserId, refetchChatRooms],
   );
 
   const handlePickChatRoomAndSend = useCallback(
@@ -705,13 +707,13 @@ function Schedule({
     if (chatRoomItems.length > 0) return;
     if (!effectiveFamilyId || effectiveUserId == null) return;
 
-    dispatch(fetchChatRoomListThunk(effectiveFamilyId, effectiveUserId));
+    refetchChatRooms();
   }, [
     chatRoomPickerVisible,
     chatRoomItems.length,
     effectiveFamilyId,
     effectiveUserId,
-    dispatch,
+    refetchChatRooms,
   ]);
 
   // type 판별 로직

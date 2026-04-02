@@ -1,6 +1,6 @@
 // NotificationSettingScreen.js
 import React, {useState, useEffect, useLayoutEffect} from 'react';
-import { View, StyleSheet, ScrollView } from 'react-native';
+import {View, ScrollView} from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -13,7 +13,7 @@ import useHideTabBar from 'hooks/useHideTabBar';
 import {useDispatch, useSelector} from 'react-redux';
 import {RenderHeaderBackButton} from 'app/navigation/helpers/tabHeaderHelpers';
 
-import {toggleAllChatRoomNotificationThunk} from 'features/chat/store/chatRoomThunk';
+import {useToggleAllChatRoomNotificationMutation} from 'features/chat/services/chatApi';
 import {toggleCommentNotificationThunk} from 'features/memory/store/commentThunk';
 import {togglePostNotificationThunk} from 'features/memory/store/memoryThunk';
 
@@ -22,7 +22,7 @@ import ToastModal from 'components/modal/ToastModal';
 import {SETTING_STYLES} from 'styles/style';
 
 export default function NotificationSettingScreen() {
-  const styles = useScaledStyleSheet(rf => ({
+  const styles = useScaledStyleSheet(() => ({
 
   container: {
     backgroundColor: '#fff',
@@ -61,6 +61,7 @@ export default function NotificationSettingScreen() {
   const userId = useSelector(
     state => state.user.userId?.toString?.() || state.user.userId,
   );
+  const [toggleAllChatRoomNotification] = useToggleAllChatRoomNotificationMutation();
 
   const [allNotification, setAllNotification] = useState(true);
   const [chatNotification, setChatNotification] = useState(true);
@@ -106,9 +107,7 @@ export default function NotificationSettingScreen() {
     }
 
     try {
-      await dispatch(
-        toggleAllChatRoomNotificationThunk({userId, isOn: newValue}),
-      );
+      await toggleAllChatRoomNotification({userId, isOn: newValue}).unwrap();
       await dispatch(togglePostNotificationThunk({userId, isOn: newValue}));
       await dispatch(toggleCommentNotificationThunk({userId, isOn: newValue}));
 
@@ -128,9 +127,7 @@ export default function NotificationSettingScreen() {
 
     if (!userId) return;
     try {
-      await dispatch(
-        toggleAllChatRoomNotificationThunk({userId, isOn: newValue}),
-      );
+      await toggleAllChatRoomNotification({userId, isOn: newValue}).unwrap();
 
       setToastMessage(
         newValue ? '채팅방 알림이 켜졌어요' : '채팅방 알림이 꺼졌어요',

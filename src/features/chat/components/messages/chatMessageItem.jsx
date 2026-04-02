@@ -55,6 +55,9 @@ function isRoomSystemNoticeMessage(message) {
   const imgs = getImageUrls(message);
   if (Array.isArray(imgs) && imgs.length > 0) return false;
 
+  // 서버에서 systemMessage: true 플래그로 명시적으로 구분
+  if (message.systemMessage === true) return true;
+
   const rawType = String(message.messageType ?? message.type ?? '').toLowerCase();
   if (
     [
@@ -69,11 +72,7 @@ function isRoomSystemNoticeMessage(message) {
     return true;
   }
 
-  const c = String(message.content ?? '').trim();
-  if (!c) return false;
-  return /님이\s*나갔습니다|나갔습니다\.?$|님이\s*입장했습니다|님이\s*초대되었습니다|퇴장했습니다/i.test(
-    c,
-  );
+  return false;
 }
 
 function ChatMessageItem({

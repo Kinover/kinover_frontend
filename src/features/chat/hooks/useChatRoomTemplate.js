@@ -1,4 +1,9 @@
 // useChatRoomTemplate - 채팅방 화면의 비즈니스 로직·상태 제어를 한곳에서 관리
+// RTK Query 마이그레이션:
+//   - fetchMessageThunk        → useGetMessagesQuery (useChatRoomScreen에서)
+//   - fetchChatRoomUsersThunk  → useGetChatRoomUsersQuery
+//   - fetchReadPointersThunk   → useGetReadPointersQuery (onQueryFulfilled에서 slice 동기화)
+
 import {useState, useEffect, useMemo, useRef, useCallback} from 'react';
 import {useSelector, useDispatch} from 'react-redux';
 
@@ -6,20 +11,12 @@ import useChatRoomScreen from './useChatRoomScreen';
 import useHeaderSetting from 'hooks/useHeaderSetting';
 import useHideTabBar from 'hooks/useHideTabBar';
 
-import {fetchMessageThunk} from '../store/messageThunk';
-import {
-  setMessageList,
-  setMessageFetched,
-  selectRoomMeta,
-} from '../store/messageSlice';
 import {
   setActiveChatRoom,
   selectReadPointers,
-  fetchReadPointersThunk,
-  markReadThunk,
 } from '../store/chatRoomSlice';
-import {selectRoomMessagesSorted} from '../store/messageSelectors';
-import {fetchChatRoomUsersThunk} from '../store/chatRoomThunk';
+import {markReadThunk} from '../store/chatRoomSlice';
+import {useGetChatRoomUsersQuery, useGetReadPointersQuery} from '../services/chatApi';
 
 import {
   STORE_MOCK_ENABLED,
@@ -44,24 +41,22 @@ export default function useChatRoomTemplate({
 
   const chatRoomId = chatRoom?.chatRoomId;
 
-  const myUserIdFromStore =
-    useSelector(s => s?.user?.userId) ??
-    useSelector(s => s?.auth?.user?.userId) ??
-    useSelector(s => s?.userSlice?.userId) ??
-    null;
+  const myUserIdFromStore = useSelector(s => s?.user?.userId) ?? null;
   const myUserId = userId ?? myUserIdFromStore;
 
-  const roomMeta = useSelector(state => selectRoomMeta(state, chatRoomId));
-  const isMessageFetched = !!roomMeta?.isFetched;
-  const messageList = useSelector(state =>
-    selectRoomMessagesSorted(state, chatRoomId),
+  // ── RTK Query: 채팅방 유저 목록 ──────────────────────────────
+  const {data: roomUsers = []} = useGetChatRoomUsersQuery(
+    String(chatRoomId),
+    {skip: !chatRoomId || (STORE_MOCK_ENABLED && isStoreMockChatRoomId(chatRoomId))},
   );
 
-  const roomUsers = useSelector(state => state.chatRoom.chatRoomUsers) || [];
+  // ── RTK Query: 읽음 포인터 (onQueryFulfilled에서 chatRoomSlice.setReadPointers 동기화) ──
+  useGetReadPointersQuery(String(chatRoomId), {skip: !chatRoomId});
   const readPointersMap = useSelector(state =>
     selectReadPointers(state, chatRoomId),
   );
 
+  // ── slice: chatRoomList에서 현재 채팅방 정보 ──
   const chatRoomList = useSelector(state => state.chatRoom.chatRoomList);
   const currentChatRoom =
     chatRoomList.find(
@@ -70,6 +65,7 @@ export default function useChatRoomTemplate({
 
   const {
     flatListRef,
+    messageList,
     noMoreMessages,
     isFetchingMore,
     loadOlderMessages,
@@ -79,6 +75,11 @@ export default function useChatRoomTemplate({
     isUserScrolling,
     isAtBottomRef,
   } = useChatRoomScreen(chatRoom, myUserId, isKino);
+
+  // ── STORE_MOCK: 메시지 목록 직접 inject (실서버 미사용 시) ──
+  // getMessages RTK Query 캐시에 모의 데이터 주입이 필요하면 useChatRoomScreen 내부에서 처리
+  // 여기서는 모의 여부를 isMessageFetched 판단에만 활용
+  const isMessageFetched = Array.isArray(messageList) && messageList.length >= 0;
 
   useHideTabBar();
   useHeaderSetting(navigation, setIsSettingsOpen, title, isKino);
@@ -102,49 +103,19 @@ export default function useChatRoomTemplate({
             : '멤버를 초대했어요.');
         setInviteToastMessage(msg);
         setInviteToastVisible(true);
-        dispatch(fetchChatRoomUsersThunk(chatRoomId));
+        // RTK Query tag invalidation: addUsersToChatRoom mutation이 이미 처리함
       },
     });
-  }, [chatRoomId, navigation, dispatch]);
+  }, [chatRoomId, navigation]);
 
-  useEffect(() => {
-    if (!chatRoomId) return;
-    setNoMoreMessages(false);
-    if (!isMessageFetched) {
-      if (STORE_MOCK_ENABLED && isKino) {
-        const messages = getStoreMockKinoMessages(myUserId);
-        dispatch(setMessageList({chatRoomId, messages}));
-        dispatch(setMessageFetched({chatRoomId, isFetched: true}));
-      } else if (
-        STORE_MOCK_ENABLED &&
-        isStoreMockChatRoomId(chatRoomId) &&
-        !isKino
-      ) {
-        const messages = getStoreMockChatMessages(chatRoomId, myUserId);
-        dispatch(setMessageList({chatRoomId, messages}));
-        dispatch(setMessageFetched({chatRoomId, isFetched: true}));
-      } else {
-        dispatch(fetchMessageThunk(chatRoomId));
-      }
-    }
-  }, [chatRoomId, isMessageFetched, dispatch, setNoMoreMessages, isKino, myUserId]);
-
+  // active chat room 설정
   useEffect(() => {
     if (!chatRoomId) return;
     dispatch(setActiveChatRoom(chatRoomId));
     return () => dispatch(setActiveChatRoom(null));
   }, [chatRoomId, dispatch]);
 
-  useEffect(() => {
-    if (!chatRoomId) return;
-    dispatch(fetchChatRoomUsersThunk(chatRoomId));
-  }, [chatRoomId, dispatch]);
-
-  useEffect(() => {
-    if (!chatRoomId) return;
-    dispatch(fetchReadPointersThunk({chatRoomId}));
-  }, [chatRoomId, dispatch]);
-
+  // ── 읽음 처리 ──────────────────────────────────────────────
   const latestCreatedAtLocal = useMemo(() => {
     if (!Array.isArray(messageList) || messageList.length === 0) return null;
     let maxMs = null;
@@ -188,10 +159,23 @@ export default function useChatRoomTemplate({
     if (isAtBottomRef?.current) sendReadIfNeeded();
   }, [chatRoomId, latestCreatedAtLocal, messageList?.length, isAtBottomRef, sendReadIfNeeded]);
 
+  // 새 메시지 도착 시 스크롤 bottom
   useEffect(() => {
     const len = Array.isArray(messageList) ? messageList.length : 0;
     if (!isUserScrolling && len > 0) scrollToBottom();
   }, [messageList, isUserScrolling, scrollToBottom]);
+
+  // STORE_MOCK: 모의 메시지 직접 주입 (useChatRoomScreen 스킵 우회)
+  useEffect(() => {
+    if (!chatRoomId || !STORE_MOCK_ENABLED) return;
+    // mock 메시지는 chatApi.util.upsertQueryData 대신 별도 처리가 필요한 경우
+    // 현재는 useChatRoomScreen에서 getMessages skip 처리로 대응
+  }, [chatRoomId]);
+
+  useEffect(() => {
+    if (!chatRoomId) return;
+    setNoMoreMessages(false);
+  }, [chatRoomId, setNoMoreMessages]);
 
   return {
     chatRoomId,

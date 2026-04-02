@@ -1,12 +1,12 @@
 // src/screens/memory/store/memoryThunk.js
 import {apiClient} from 'utils/apiClient';
-import {POSTS} from 'config/apiEndpoints';
 import {
   setMemoryList,
   setMemoryLoading,
   setMemoryError,
   setPostDetail,
 } from './memorySlice';
+import {memoryApi} from '../services/memoryApi';
 
 import {getGuestMode} from 'utils/storage'; // 추가
 import {STORE_MOCK_ENABLED, getStoreMockMemoryList} from '../../home/utils/storeMockData';
@@ -124,11 +124,14 @@ export const fetchMemoryThunk = categoryId => {
         params: Object.keys(params).length ? params : undefined,
       });
 
-      const res = await apiClient.get(POSTS.list, {
-        params: Object.keys(params).length ? params : undefined,
-      });
-
-      const data = res?.data;
+      const req = dispatch(
+        memoryApi.endpoints.getPosts.initiate(
+          {categoryId: params?.categoryId},
+          {forceRefetch: true},
+        ),
+      );
+      const data = await req.unwrap();
+      req.unsubscribe();
       if (!Array.isArray(data)) {
         console.log('⚠️ posts list response is not array:', data);
       }
@@ -177,11 +180,11 @@ export const deletePostThunk = (postId, categoryId) => {
         return true;
       }
 
-      const res = await apiClient.delete(POSTS.delete(postId), {
-        headers: {'Content-Type': 'application/json'},
-      });
+      const req = dispatch(memoryApi.endpoints.deletePost.initiate(postId));
+      await req.unwrap();
+      req.unsubscribe();
 
-      console.log('✅ 게시글 삭제 성공:', res.status);
+      console.log('✅ 게시글 삭제 성공');
 
  // 삭제 후 목록 갱신
       await dispatch(fetchMemoryThunk(categoryId));
@@ -234,18 +237,22 @@ export const deletePostImageThunk = (
         return {ok: true, guest: true};
       }
 
-      const res = await apiClient.delete(POSTS.deleteImage(postId), {
-        headers: {'Content-Type': 'application/json'},
-        data: {imageUrl: imageUrlToDelete},
-      });
+      const req = dispatch(
+        memoryApi.endpoints.deletePostImage.initiate({
+          postId,
+          imageUrl: imageUrlToDelete,
+        }),
+      );
+      const data = await req.unwrap();
+      req.unsubscribe();
 
-      console.log('✅ 이미지 삭제 성공:', res.status);
+      console.log('✅ 이미지 삭제 성공');
 
       if (options?.refresh) {
         await dispatch(fetchMemoryThunk(categoryId));
       }
 
-      return res.data;
+      return data;
     } catch (error) {
       const msg =
         error?.response?.data?.message ||
@@ -277,10 +284,11 @@ export const togglePostNotificationThunk = ({userId, isOn}) => {
 
       console.log(`🔔 게시글 알림 설정 요청: userId=${userId}, isOn=${isOn}`);
 
-      await apiClient.patch(POSTS.notificationPostGlobal, null, {
-        headers: {'Content-Type': 'application/json'},
-        params: {userId, isOn},
-      });
+      const req = dispatch(
+        memoryApi.endpoints.togglePostNotification.initiate({userId, isOn}),
+      );
+      await req.unwrap();
+      req.unsubscribe();
 
       console.log('✅ 게시글 알림 설정 변경 성공');
       return true;
@@ -333,13 +341,15 @@ export const fetchPostByIdThunk = postId => {
         return existingPost;
       }
 
-      const res = await apiClient.get(POSTS.one(postId), {
-        headers: {'Content-Type': 'application/json'},
-      });
+      const req = dispatch(
+        memoryApi.endpoints.getPostById.initiate(postId, {forceRefetch: true}),
+      );
+      const data = await req.unwrap();
+      req.unsubscribe();
 
-      dispatch(setPostDetail(res.data));
+      dispatch(setPostDetail(data));
       console.log('✅ 특정 게시글 조회 성공:', postId);
-      return res.data;
+      return data;
     } catch (error) {
       const msg =
         error?.response?.data?.message ||

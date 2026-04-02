@@ -1,38 +1,42 @@
 /* =========================================================
- * 채팅 설정 슬라이드 패널 (Modal)
+ * 채팅 설정 화면
+ * - 알림 토글, 채팅방명 변경, 멤버, 미디어 모아보기, 채팅방 나가기
  * - 멤버 추가 화면 복귀 시 route params로 초대 결과 토스트
- * - invitedToast / invitedCount / invitedMessage
- * - Modal은 useRoute 없이 navigation.getState()로 params 읽음
  * ========================================================= */
 
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
 
-import { View, TouchableOpacity, StyleSheet, Image, Platform, ActivityIndicator, Modal, FlatList, Pressable } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  ScrollView,
+  Dimensions,
+  Modal,
+  Pressable,
+} from 'react-native';
 
 import AppText from 'components/AppText';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  Layout,
-  FadeInUp,
-  FadeOutUp,
 } from 'react-native-reanimated';
 
 import {useSelector, useDispatch} from 'react-redux';
 import {useReduxFontMode} from 'hooks/useReduxFontMode';
 
+// chatRoomThunk 교체: RTK Query mutations 사용
 import {
-  fetchChatRoomUsersThunk,
-  renameChatRoomForMeThunk,
-  toggleChatRoomNotificationThunk,
-  fetchChatRoomMediaThunk,
-} from '../store/chatRoomThunk';
+  useRenameChatRoomForMeMutation,
+  useToggleChatRoomNotificationMutation,
+} from '../services/chatApi';
 
 import LeaveChatRoomModal from '../components/modals/leaveChatRoomModal';
 import RenameChatRoomModal from '../components/modals/renameChatRoomModal';
 import ChangeKinoModal from '../components/modals/changeKinoModal';
-import MediaModal from '../components/messages/mediaModal';
+import CustomSwitch from 'components/customSwitch';
 
 import {
   getResponsiveHeight,
@@ -44,35 +48,16 @@ import {
 import {
   bumpChatRoomToTop,
   updateChatRoomNameInList,
+  setChatRoomNotificationState,
 } from '../store/chatRoomSlice';
 
 import ToastModal from 'components/modal/ToastModal';
-import formatDuration from 'utils/formatDuration';
 import {resetRoomMessageList} from '../store/messageSlice';
-import {BACKGROUND_COLORS, COLORS} from 'styles/style';
+import {chatApi} from '../services/chatApi';
+import {COLORS, HEADER_STYLES} from 'styles/style';
 import {FONT_MODE} from 'store/uiSlice';
 
-/** 설정 행(Pressable) */
-const SectionRowButton = React.memo(function SectionRowButton({
-  onPress,
-  children,
-  styles,
-  disabled = false,
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      android_ripple={{color: 'rgba(17,24,39,0.06)'}}
-      style={({pressed}) => [
-        styles.sectionRowBtn,
-        pressed && !disabled && styles.sectionRowPressed,
-        disabled && {opacity: 0.55},
-      ]}>
-      {children}
-    </Pressable>
-  );
-});
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function ChatSettings({
   isOpen,
@@ -83,13 +68,15 @@ export default function ChatSettings({
   isKino,
   onOpenAddMember,
 }) {
-  const tint_color = 'black';
   const dispatch = useDispatch();
 
-  const fontMode = useReduxFontMode();
-  const hideHeaderSubtitle = fontMode === FONT_MODE.EXTRA_LARGE;
+  // RTK Query mutations
+  const [renameChatRoomForMe] = useRenameChatRoomForMeMutation();
+  const [toggleChatRoomNotification] = useToggleChatRoomNotificationMutation();
 
-  // 글자 크기는 getResponsiveFontSize만 사용 (fontMul 이중 배율 없음).
+  const fontMode = useReduxFontMode();
+  const hideSubtitle = fontMode === FONT_MODE.EXTRA_LARGE;
+
   const styles = useMemo(
     () => makeStyles(n => getResponsiveFontSize(n)),
     [fontMode],
@@ -99,20 +86,12 @@ export default function ChatSettings({
     useState(false);
   const [isLeaveModalVisible, setIsLeaveModalVisible] = useState(false);
   const [isRenameModalVisible, setIsRenameModalVisible] = useState(false);
-
   const [newRoomName, setNewRoomName] = useState('');
-  const [showMembers, setShowMembers] = useState(false);
   const [isAlarmOn, setIsAlarmOn] = useState(true);
-
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  const chatRoomUsers = useSelector(state => state.chatRoom.chatRoomUsers);
   const userId = useSelector(state => state.user.userId);
-  const familyMembers = useSelector(
-    state => state.userFamily.familyUserList || [],
-  );
-
   const chatRoomList = useSelector(state => state.chatRoom.chatRoomList || []);
   const rid = chatRoomId == null ? null : String(chatRoomId);
   const currentRoom = chatRoomList.find(
@@ -120,19 +99,10 @@ export default function ChatSettings({
   );
   const currentRoomName = currentRoom?.roomName ?? '';
 
-  const COLS = 3;
-
-  const isAllFamilyInChat =
-    Array.isArray(familyMembers) &&
-    familyMembers.length > 0 &&
-    Array.isArray(chatRoomUsers) &&
-    chatRoomUsers.length >= familyMembers.length;
-
- // =========================================================
- // 패널 애니메이션
- // =========================================================
-  const panelW = getResponsiveWidth(310);
-  const translateX = useSharedValue(panelW);
+  // =========================================================
+  // 패널 애니메이션
+  // =========================================================
+  const translateX = useSharedValue(SCREEN_WIDTH);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{translateX: translateX.value}],
@@ -150,31 +120,27 @@ export default function ChatSettings({
 
   useEffect(() => {
     clearCloseTimer();
-
     if (isOpen) {
       setInternalVisible(true);
       translateX.value = withTiming(0, {duration: 240});
     } else {
-      translateX.value = withTiming(panelW, {duration: 240});
+      translateX.value = withTiming(SCREEN_WIDTH, {duration: 240});
       closeTimerRef.current = setTimeout(() => setInternalVisible(false), 240);
     }
-
     return () => clearCloseTimer();
-  }, [isOpen, panelW, translateX]);
+  }, [isOpen, translateX]);
 
   useEffect(() => () => clearCloseTimer(), []);
 
- // =========================================================
- // 현재 라우트 / params
- // =========================================================
+  // =========================================================
+  // 현재 라우트 / params
+  // =========================================================
   const getCurrentRouteInfo = useCallback(() => {
- // navigation 없으면 getState는 undefined
     const state = navigation?.getState?.();
     const routes = state?.routes || [];
     const index =
       typeof state?.index === 'number' ? state.index : routes.length - 1;
     const current = routes?.[index];
-
     return {
       currentRouteName: current?.name,
       currentParams: current?.params || {},
@@ -182,8 +148,6 @@ export default function ChatSettings({
   }, [navigation]);
 
   const clearInvitedToastParams = useCallback(() => {
- // 초대 토스트용 params만 제거
- // 가능하면 현재 route에 setParams
     try {
       navigation?.setParams?.({
         invitedToast: undefined,
@@ -191,7 +155,6 @@ export default function ChatSettings({
         invitedMessage: undefined,
       });
     } catch (e) {
- // setParams 실패 시 merge navigate로 동일 처리
       const {currentRouteName} = getCurrentRouteInfo();
       if (!currentRouteName) return;
       try {
@@ -212,7 +175,6 @@ export default function ChatSettings({
 
   useEffect(() => {
     if (!isOpen) return;
-
     const {currentParams} = getCurrentRouteInfo();
     const invitedToast = currentParams?.invitedToast;
     const invitedCount = currentParams?.invitedCount;
@@ -224,15 +186,10 @@ export default function ChatSettings({
         (typeof invitedCount === 'number'
           ? `${invitedCount}명을 초대했어요.`
           : '멤버를 초대했어요.');
-
       setToastMessage(msg);
       setToastVisible(true);
-
       clearInvitedToastParams();
-
-      if (chatRoomId) {
-        dispatch(fetchChatRoomUsersThunk(chatRoomId));
-      }
+      // RTK Query: addUsersToChatRoom mutation이 ChatRoomUsers tag 무효화 → 자동 refetch
     }
   }, [
     isOpen,
@@ -242,173 +199,7 @@ export default function ChatSettings({
     clearInvitedToastParams,
   ]);
 
- // =========================================================
- // 미디어 미리보기
- // =========================================================
-  const [mediaType, setMediaType] = useState('ALL');
-  const [mediaItems, setMediaItems] = useState([]);
-  const [mediaLoading, setMediaLoading] = useState(false);
-  const [mediaOpened, setMediaOpened] = useState(false);
-
-  const MEDIA_PREVIEW_LIMIT = 9;
-
-  const [mediaModalVisible, setMediaModalVisible] = useState(false);
-  const [modalMediaItems, setModalMediaItems] = useState([]);
-  const [modalInitialIndex, setModalInitialIndex] = useState(0);
-
-  const fetchingFirstRef = useRef(false);
-
-  const gridGap = getResponsiveWidth(6);
-  const innerBoxPad = getResponsiveWidth(14);
-
-  const gridInnerWidth = useMemo(() => {
-    return panelW - getResponsiveWidth(34) * 2 - 2;
-  }, [panelW]);
-
-  const cellSize = useMemo(() => {
-    const usable = gridInnerWidth - gridGap * (COLS - 1);
-    return Math.max(0, Math.floor(usable / COLS));
-  }, [gridInnerWidth, gridGap, COLS]);
-
-  const pickThumbUri = item =>
-    item?.thumbnailUrl ||
-    item?.thumbUrl ||
-    item?.imageUrl ||
-    item?.videoThumbnailUrl ||
-    item?.url ||
-    (Array.isArray(item?.imageUrls) ? item.imageUrls[0] : null) ||
-    (Array.isArray(item?.mediaUrls) ? item.mediaUrls[0] : null) ||
-    null;
-
-  const pickMediaUri = item =>
-    item?.url ||
-    item?.imageUrl ||
-    item?.videoUrl ||
-    (Array.isArray(item?.imageUrls) ? item.imageUrls[0] : null) ||
-    (Array.isArray(item?.mediaUrls) ? item.mediaUrls[0] : null) ||
-    null;
-
-  const normalizeMediaType = item => {
-    const t = String(item?.messageType || item?.type || '').toUpperCase();
-    if (t.includes('VIDEO')) return 'VIDEO';
-    if (t.includes('IMAGE') || t.includes('PHOTO')) return 'IMAGE';
-    return 'FILE';
-  };
-
-  const getMediaKey = item =>
-    item?.messageId ||
-    item?.id ||
-    item?.uuid ||
-    item?.mediaId ||
-    pickMediaUri(item) ||
-    null;
-
-  const fetchMediaFirst = async (nextType = mediaType) => {
-    if (!chatRoomId) return;
-    if (fetchingFirstRef.current) return;
-
-    fetchingFirstRef.current = true;
-    setMediaLoading(true);
-
-    try {
-      const res = await dispatch(
-        fetchChatRoomMediaThunk({
-          chatRoomId,
-          type: nextType,
-          before: null,
-          limit: 30,
-        }),
-      ).unwrap();
-
-      const items = Array.isArray(res?.items) ? res.items : [];
-      setMediaItems(items);
-    } catch (e) {
-      console.warn('[fetchMediaFirst] 실패:', e);
-      setMediaItems([]);
-    } finally {
-      setMediaLoading(false);
-      fetchingFirstRef.current = false;
-    }
-  };
-
-  const onChangeMediaType = async t => {
-    const upper = String(t).toUpperCase();
-    setMediaType(upper);
-    await fetchMediaFirst(upper);
-  };
-
-  const mediaGridData = useMemo(() => {
-    if (!Array.isArray(mediaItems)) return [];
-    return mediaItems.slice(0, MEDIA_PREVIEW_LIMIT);
-  }, [mediaItems]);
-
-  const showMoreButton =
-    mediaOpened &&
-    Array.isArray(mediaItems) &&
-    mediaItems.length > MEDIA_PREVIEW_LIMIT;
-
-  const openMediaModal = useCallback(
-    (pressedItem, pressedIndexInGrid) => {
-      const pressedKind = normalizeMediaType(pressedItem);
-      const pressedUri = pickMediaUri(pressedItem);
-      if (!pressedUri) return;
-      if (pressedKind === 'FILE') return;
-
-      const allowKind =
-        mediaType === 'ALL'
-          ? ['IMAGE', 'VIDEO']
-          : mediaType === 'IMAGE'
-          ? ['IMAGE']
-          : ['VIDEO'];
-
-      const list = (mediaItems || [])
-        .map(it => {
-          const kind = normalizeMediaType(it);
-          const url = pickMediaUri(it);
-          const thumb = pickThumbUri(it) || url;
-          return {kind, url, thumb};
-        })
-        .filter(x => allowKind.includes(x.kind) && !!x.url);
-
-      if (!list.length) return;
-
-      const foundIndex = list.findIndex(
-        x => String(x.url) === String(pressedUri),
-      );
-      const nextIndex =
-        foundIndex >= 0 ? foundIndex : Math.max(0, pressedIndexInGrid || 0);
-
-      setModalMediaItems(list);
-      setModalInitialIndex(nextIndex);
-      setMediaModalVisible(true);
-    },
-    [mediaItems, mediaType],
-  );
-
-  const closeMediaModal = useCallback(() => {
-    setMediaModalVisible(false);
-    setTimeout(() => {
-      setModalMediaItems([]);
-      setModalInitialIndex(0);
-    }, 0);
-  }, []);
-
-  const goToMediaPage = useCallback(() => {
-    if (!chatRoomId) return;
-    onClose();
-    setTimeout(() => {
-      navigation.navigate('채팅방미디어모아보기화면', {
-        chatRoomId,
-        initialType: mediaType,
-      });
-    }, 220);
-  }, [chatRoomId, navigation, mediaType, onClose]);
-
- // =========================================================
- // =========================================================
-  useEffect(() => {
-    if (isOpen && chatRoomId) dispatch(fetchChatRoomUsersThunk(chatRoomId));
-  }, [isOpen, chatRoomId, dispatch]);
+  // fetchChatRoomUsersThunk 제거: useGetChatRoomUsersQuery(chatRoomId)가 useChatRoomTemplate에서 자동 처리
 
   useEffect(() => {
     if (!currentRoom) return;
@@ -421,64 +212,39 @@ export default function ChatSettings({
     return () => clearTimeout(timer);
   }, [toastVisible]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    if (!chatRoomId) return;
-    if (!mediaOpened) return;
-    fetchMediaFirst(mediaType);
- // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, chatRoomId, mediaOpened]);
-
-  const handleToggleAlarm = () => {
+  const handleToggleAlarm = async () => {
     const newIsOn = !isAlarmOn;
-    setIsAlarmOn(newIsOn);
-
-    dispatch(
-      toggleChatRoomNotificationThunk({
-        chatRoomId,
-        userId,
-        isOn: newIsOn,
-      }),
-    )
-      .unwrap()
-      .then(() => {
-        setToastMessage(newIsOn ? '알림을 켰어요.' : '알림을 껐어요.');
-        setToastVisible(true);
-      })
-      .catch(err => {
-        console.warn('[알림 설정] 실패:', err);
-        setIsAlarmOn(!newIsOn);
-        setToastMessage(
-          '알림 설정을 바꾸지 못했어요.\n잠시 후 다시 시도해 주세요.',
-        );
-        setToastVisible(true);
-      });
+    setIsAlarmOn(newIsOn); // optimistic UI
+    try {
+      await toggleChatRoomNotification({chatRoomId, userId, isOn: newIsOn}).unwrap();
+      // slice에 즉시 반영
+      dispatch(setChatRoomNotificationState({chatRoomId, isOn: newIsOn}));
+      setToastMessage(newIsOn ? '알림을 켰어요.' : '알림을 껐어요.');
+      setToastVisible(true);
+    } catch {
+      setIsAlarmOn(!newIsOn); // rollback
+      setToastMessage('알림 설정을 바꾸지 못했어요.\n잠시 후 다시 시도해 주세요.');
+      setToastVisible(true);
+    }
   };
 
-  const handleRenameChatRoom = () => {
+  const handleRenameChatRoom = async () => {
     const nextName = newRoomName.trim();
     if (!nextName) return;
-
-    dispatch(renameChatRoomForMeThunk({chatRoomId, roomName: nextName}))
-      .unwrap()
-      .then(() => {
-        dispatch(updateChatRoomNameInList({chatRoomId, newRoomName: nextName}));
-        setIsRenameModalVisible(false);
-        setNewRoomName('');
-        setToastMessage('채팅방 이름을 바꿨어요.');
-        setToastVisible(true);
-      })
-      .catch(err => {
-        const msg =
-          typeof err === 'string'
-            ? err
-            : err?.message
-            ? err.message
-            : JSON.stringify(err);
-
-        setToastMessage(`이름 변경 실패: ${msg}`);
-        setToastVisible(true);
-      });
+    try {
+      await renameChatRoomForMe({chatRoomId, roomName: nextName}).unwrap();
+      // slice에도 즉시 반영 (invalidateTags → refetch 전 UI 업데이트)
+      dispatch(updateChatRoomNameInList({chatRoomId, newRoomName: nextName}));
+      setIsRenameModalVisible(false);
+      setNewRoomName('');
+      setToastMessage('채팅방 이름을 바꿨어요.');
+      setToastVisible(true);
+    } catch (err) {
+      const msg =
+        typeof err === 'string' ? err : err?.message ? err.message : JSON.stringify(err);
+      setToastMessage(`이름 변경 실패: ${msg}`);
+      setToastVisible(true);
+    }
   };
 
   const openAddMember = () => {
@@ -490,7 +256,6 @@ export default function ChatSettings({
           invitedCount: count,
           invitedMessage: message,
         });
-
       },
     });
   };
@@ -508,356 +273,23 @@ export default function ChatSettings({
 
   const handleGoToKinoSelect = () => {
     if (!chatRoomId) return;
-
     dispatch(resetRoomMessageList(chatRoomId));
+    // RTK Query Messages 캐시 무효화 → 재진입 시 새로 fetch
+    dispatch(chatApi.util.invalidateTags([{type: 'Messages', id: String(chatRoomId)}]));
     dispatch(bumpChatRoomToTop(chatRoomId));
-
     onClose();
     setTimeout(() => navigation.navigate('키노선택화면', {chatRoomId}), 260);
   };
 
-  const listData = useMemo(() => [], []);
-  const renderEmpty = useCallback(() => null, []);
-
-  const MediaPreviewGrid = useMemo(() => {
-    if (!mediaOpened) return null;
-
-    if (mediaLoading) {
-      return (
-        <View style={styles.mediaLoadingBox}>
-          <ActivityIndicator />
-          <AppText allowFontScaling={false} style={styles.helperText}>
-            불러오는 중…
-          </AppText>
-        </View>
-      );
-    }
-
-    if (mediaItems.length === 0) {
-      return (
-        <AppText allowFontScaling={false} style={styles.helperText}>
-          아직 미디어가 없어요.
-        </AppText>
-      );
-    }
-
-    return (
-      <View style={{marginTop: getResponsiveHeight(10)}}>
-        <View style={styles.gridWrapCenter}>
-          <FlatList
-            data={mediaGridData}
-            keyExtractor={(item, index) =>
-              `${String(getMediaKey(item) ?? 'noid')}_${index}`
-            }
-            numColumns={COLS}
-            scrollEnabled={false}
-            showsVerticalScrollIndicator={false}
-            removeClippedSubviews={false}
-            columnWrapperStyle={{
-              columnGap: gridGap,
-              marginBottom: gridGap,
-            }}
-            renderItem={({item, index}) => {
-              const thumb = pickThumbUri(item) || pickMediaUri(item);
-              const kind = normalizeMediaType(item);
-
-              return (
-                <TouchableOpacity
-                  style={[
-                    styles.mediaCell,
-                    {width: cellSize, height: cellSize},
-                  ]}
-                  activeOpacity={0.9}
-                  onPress={() => openMediaModal(item, index)}>
-                  {thumb ? (
-                    <Image source={{uri: thumb}} style={styles.mediaThumb} />
-                  ) : (
-                    <View style={styles.mediaPlaceholder}>
-                      <AppText
-                        allowFontScaling={false}
-                        style={styles.mediaPlaceholderText}>
-                        {kind === 'VIDEO' ? 'VIDEO' : 'FILE'}
-                      </AppText>
-                    </View>
-                  )}
-
-                  {kind === 'VIDEO' && (
-                    <View style={styles.videoBadge}>
-                      <AppText
-                        allowFontScaling={false}
-                        style={styles.videoBadgeText}>
-                        {formatDuration(item?.duration)}
-                      </AppText>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            }}
-          />
-        </View>
-
-        {showMoreButton && (
-          <TouchableOpacity
-            style={styles.moreButton}
-            onPress={goToMediaPage}
-            activeOpacity={0.9}>
-            <AppText allowFontScaling={false} style={styles.moreButtonText}>
-              더 보기
-            </AppText>
-          </TouchableOpacity>
-        )}
-      </View>
-    );
-  }, [
-    mediaOpened,
-    mediaLoading,
-    mediaItems,
-    mediaGridData,
-    cellSize,
-    gridGap,
-    showMoreButton,
-    goToMediaPage,
-    openMediaModal,
-    COLS,
-    styles,
-  ]);
-
-  const SectionDivider = useCallback(() => {
-    return <View style={styles.sectionDivider} />;
-  }, [styles]);
-
-  const Header = useMemo(() => {
-    return (
-      <View>
-        {!isKino && (
-          <View style={styles.sectionWrap}>
-            <SectionRowButton
-              styles={styles}
-              onPress={() => setIsRenameModalVisible(true)}>
-              <View style={styles.sectionRow}>
-                <View style={styles.sectionTextBox}>
-                  <AppText allowFontScaling={false} style={styles.sectionTitle}>
-                    채팅 이름 변경
-                  </AppText>
-                  {!hideHeaderSubtitle && (
-                    <AppText allowFontScaling={false} style={styles.sectionDesc}>
-                      이 채팅방에서만 보이는 이름을 바꿀 수 있어요.
-                    </AppText>
-                  )}
-                </View>
-              </View>
-            </SectionRowButton>
-          </View>
-        )}
-
-        {!isKino && <SectionDivider />}
-
-        {!isKino && (
-          <View style={styles.sectionWrap}>
-            <SectionRowButton
-              styles={styles}
-              onPress={() => setShowMembers(prev => !prev)}>
-              <View style={styles.sectionRow}>
-                <View style={styles.sectionTextBox}>
-                  <AppText allowFontScaling={false} style={styles.sectionTitle}>
-                    멤버
-                  </AppText>
-                  {!hideHeaderSubtitle && (
-                    <AppText allowFontScaling={false} style={styles.sectionDesc}>
-                      함께하는 멤버를 확인할 수 있어요.
-                    </AppText>
-                  )}
-                </View>
-
-                <Image
-                  source={require('assets/images/down-yellow.png')}
-                  style={[
-                    styles.chevronDown,
-                    {transform: [{rotate: showMembers ? '180deg' : '0deg'}]},
-                  ]}
-                  tintColor={tint_color}
-                />
-              </View>
-            </SectionRowButton>
-
-            {showMembers && (
-              <Animated.View
-                layout={Layout.duration(180)}
-                entering={FadeInUp.duration(160)}
-                exiting={FadeOutUp.duration(140)}
-                style={{
-                  overflow: 'hidden',
-                  paddingHorizontal: getResponsiveWidth(20),
-                }}>
-                <View style={styles.memberBox}>
-                  {chatRoomUsers?.map((user, idx) => (
-                    <View
-                      key={`${user?.userId ?? 'u'}_${idx}`}
-                      style={styles.memberItem}>
-                      <Image
-                        source={{uri: user.image}}
-                        style={styles.memberImage}
-                      />
-                      <AppText allowFontScaling={false} style={styles.memberName}>
-                        {user.name}
-                      </AppText>
-                    </View>
-                  ))}
-
-                  {!isAllFamilyInChat && (
-                    <TouchableOpacity
-                      onPress={() => {
-                        onClose(); // 설정 패널 닫기
-                        onOpenAddMember?.(); // 부모에서 멤버 추가 플로우 열기
-                      }}
-                      style={styles.inviteBtn}
-                      activeOpacity={0.9}>
-                      <Image
-                        source={require('assets/images/addMember_bt.png')}
-                        style={styles.addIcon}
-                      />
-                      <AppText allowFontScaling={false} style={styles.inviteText}>
-                        멤버 초대하기
-                      </AppText>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </Animated.View>
-            )}
-          </View>
-        )}
-
-        {isKino ? (
-          <View style={styles.sectionWrap}>
-            <SectionRowButton
-              styles={styles}
-              onPress={() => setIsChangeKinoModalVisible(true)}>
-              <View style={styles.sectionRow}>
-                <View style={styles.sectionTextBox}>
-                  <AppText allowFontScaling={false} style={styles.sectionTitle}>
-                    키노 변경
-                  </AppText>
-                  {!hideHeaderSubtitle && (
-                    <AppText allowFontScaling={false} style={styles.sectionDesc}>
-                      이 채팅에 연결된 키노를 바꿀 수 있어요.
-                    </AppText>
-                  )}
-                </View>
-              </View>
-            </SectionRowButton>
-          </View>
-        ) : (
-          <>
-            <SectionDivider />
-
-            <View style={styles.sectionWrap}>
-              <SectionRowButton
-                styles={styles}
-                onPress={() => {
-                  const next = !mediaOpened;
-                  setMediaOpened(next);
-                  if (next) fetchMediaFirst(mediaType);
-                }}>
-                <View style={styles.sectionRow}>
-                  <View style={styles.sectionTextBox}>
-                    <AppText allowFontScaling={false} style={styles.sectionTitle}>
-                      미디어 모아보기
-                    </AppText>
-                    {!hideHeaderSubtitle && (
-                      <AppText allowFontScaling={false} style={styles.sectionDesc}>
-                        사진·동영상을 한곳에서 볼 수 있어요.
-                      </AppText>
-                    )}
-                  </View>
-
-                  <Image
-                    tintColor={tint_color}
-                    source={require('assets/images/down-yellow.png')}
-                    style={[
-                      styles.chevronDown,
-                      {transform: [{rotate: mediaOpened ? '180deg' : '0deg'}]},
-                    ]}
-                  />
-                </View>
-              </SectionRowButton>
-
-              {mediaOpened && (
-                <Animated.View
-                  layout={Layout.duration(180)}
-                  entering={FadeInUp.duration(160)}
-                  exiting={FadeOutUp.duration(140)}
-                  style={{
-                    overflow: 'hidden',
-                    paddingHorizontal: getResponsiveWidth(20),
-                  }}>
-                  <View
-                    style={[styles.mediaBox, {paddingHorizontal: innerBoxPad}]}>
-                    <View style={styles.mediaTabs}>
-                      {['ALL', 'IMAGE', 'VIDEO'].map(t => {
-                        const active = mediaType === t;
-                        return (
-                          <TouchableOpacity
-                            key={t}
-                            onPress={() => onChangeMediaType(t)}
-                            style={[
-                              styles.mediaTab,
-                              active && styles.mediaTabActive,
-                            ]}
-                            activeOpacity={0.9}>
-                            <AppText
-                              allowFontScaling={false}
-                              style={[
-                                styles.mediaTabText,
-                                active && styles.mediaTabTextActive,
-                              ]}>
-                              {t === 'ALL'
-                                ? '전체'
-                                : t === 'IMAGE'
-                                ? '사진'
-                                : '동영상'}
-                            </AppText>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-
-                    {MediaPreviewGrid}
-                  </View>
-                </Animated.View>
-              )}
-            </View>
-          </>
-        )}
-
-        <View style={{height: getResponsiveHeight(10)}} />
-      </View>
-    );
-  }, [
-    isKino,
-    mediaOpened,
-    mediaType,
-    showMembers,
-    chatRoomUsers,
-    isAllFamilyInChat,
-    handleShowMembers,
-    MediaPreviewGrid,
-    innerBoxPad,
-    fetchMediaFirst,
-    onChangeMediaType,
-    SectionDivider,
-    styles,
-    hideHeaderSubtitle,
-    tint_color,
-  ]);
-
-  const Footer = useMemo(
-    () => <View style={{height: getResponsiveHeight(10)}} />,
-    [],
-  );
+  const goToMediaPage = useCallback(() => {
+    if (!chatRoomId) return;
+    onClose();
+    setTimeout(() => {
+      navigation.navigate('채팅방미디어모아보기화면', {chatRoomId});
+    }, 220);
+  }, [chatRoomId, navigation, onClose]);
 
   if (!internalVisible) return null;
-
-  const LEAVE_BAR_H = getResponsiveHeight(66);
 
   return (
     <Modal
@@ -872,7 +304,6 @@ export default function ChatSettings({
           onClose={() => setIsLeaveModalVisible(false)}
           onConfirm={handleLeaveConfirm}
         />
-
         <RenameChatRoomModal
           visible={isRenameModalVisible}
           onClose={() => {
@@ -884,99 +315,284 @@ export default function ChatSettings({
           setNewRoomName={setNewRoomName}
           currentRoomName={currentRoomName}
         />
-
         <ChangeKinoModal
           visible={isChangeKinoModalVisible}
           onClose={() => setIsChangeKinoModalVisible(false)}
           onConfirm={handleGoToKinoSelect}
         />
-
         <ToastModal
           visible={toastVisible}
           message={toastMessage}
           onClose={() => setToastVisible(false)}
         />
-
-        <MediaModal
-          visible={mediaModalVisible}
-          mediaItems={modalMediaItems}
-          initialIndex={modalInitialIndex}
-          onClose={closeMediaModal}
-        />
       </View>
 
-      <TouchableOpacity
-        style={styles.backdrop}
-        onPress={onClose}
-        activeOpacity={1}
-      />
-
       <Animated.View style={[styles.container, animatedStyle]}>
+        {/* 헤더 */}
         <View style={styles.header}>
-          <View style={styles.headerTextBox}>
-            <AppText allowFontScaling={false} style={styles.headerTitle}>
-              채팅 설정
+          <TouchableOpacity
+            onPress={onClose}
+            style={styles.backBtn}
+            activeOpacity={0.7}>
+            <Image
+              source={require('assets/icons/caretDown_black.png')}
+              style={styles.backIcon}
+              // tintColor="#1A1A1A"
+            />
+          </TouchableOpacity>
+          <View style={styles.headerTitle} pointerEvents="none">
+            <AppText
+              allowFontScaling={false}
+              numberOfLines={1}
+              style={styles.headerTitleText}>
+              채팅방 설정
             </AppText>
-
-            {!hideHeaderSubtitle && (
-              <AppText allowFontScaling={false} style={styles.headerSubtitle}>
-                알림·이름·미디어 등을 관리할 수 있어요.
-              </AppText>
-            )}
           </View>
-
-          <Pressable
-            onPress={handleToggleAlarm}
-            android_ripple={{color: 'rgba(17,24,39,0.08)', borderless: true}}
-            hitSlop={10}
-            style={({pressed}) => [
-              styles.alarmPressable,
-              pressed && styles.alarmPressed,
-            ]}>
-            <View style={styles.alarmBtn}>
-              <Image
-                tintColor={tint_color}
-                style={styles.alarmIcon}
-                source={
-                  isAlarmOn
-                    ? require('assets/images/navigator_alarm-button.png')
-                    : require('assets/images/navigator_alarm-button-off4.png')
-                }
-              />
-            </View>
-          </Pressable>
         </View>
 
-        <FlatList
-          data={listData}
-          renderItem={() => null}
-          keyExtractor={(_, idx) => `empty_${idx}`}
+        <ScrollView
           showsVerticalScrollIndicator={false}
-          removeClippedSubviews={false}
-          contentContainerStyle={{
-            paddingBottom: isKino
-              ? getResponsiveHeight(24)
-              : LEAVE_BAR_H + getResponsiveHeight(28),
-          }}
-          ListHeaderComponent={Header}
-          ListFooterComponent={Footer}
-        />
+          contentContainerStyle={styles.scrollContent}>
+          {/* 알림 섹션 */}
+          <AppText allowFontScaling={false} style={styles.sectionLabel}>
+            알림
+          </AppText>
+          <View style={styles.card}>
+            <Pressable
+              onPress={handleToggleAlarm}
+              android_ripple={{color: 'rgba(17,24,39,0.06)'}}
+              accessibilityRole="switch"
+              accessibilityLabel={isAlarmOn ? '알림 켜짐' : '알림 꺼짐'}
+              accessibilityState={{checked: isAlarmOn}}
+              style={({pressed}) => [
+                styles.cardRow,
+                pressed && styles.cardRowPressed,
+              ]}>
+              <View style={[styles.iconBox, {backgroundColor: '#FEF9C3'}]}>
+                {isAlarmOn ? (
+                  <Image
+                    source={require('../../../assets/images/navigator_alarm-button.png')}
+                    style={{
+                      width: getResponsiveIconSize(20),
+                      height: getResponsiveIconSize(20),
+                      resizeMode: 'contain',
+                    }}
+                  />
+                ) : (
+                  <Image
+                    source={require('../../../assets/images/navigator_alarm-button-off3.png')}
+                    style={{
+                      width: getResponsiveIconSize(20),
+                      height: getResponsiveIconSize(20),
+                      resizeMode: 'contain',
+                      tintColor: COLORS.brandPrimary,
+                    }}
+                  />
+                )}
+              </View>
+              <View style={styles.rowTextBox}>
+                <AppText allowFontScaling={false} style={styles.rowTitle}>
+                  알림
+                </AppText>
+                {!hideSubtitle && (
+                  <AppText allowFontScaling={false} style={styles.rowSubtitle}>
+                    새 메시지 알림을 받아요
+                  </AppText>
+                )}
+              </View>
+              <CustomSwitch
+                isEnabled={isAlarmOn}
+                toggleSwitch={handleToggleAlarm}
+              />
+            </Pressable>
+          </View>
 
-        {!isKino && (
-          <View style={[styles.leaveStickyWrap, {height: LEAVE_BAR_H}]}>
-            <View style={styles.leaveStickyInner}>
-              <View style={styles.leaveDivider} />
-              <TouchableOpacity
-                style={styles.leaveStickyBtn}
+          {/* 채팅방 관리 섹션 */}
+          {!isKino && (
+            <>
+              <AppText allowFontScaling={false} style={styles.sectionLabel}>
+                채팅방 관리
+              </AppText>
+              <View style={styles.card}>
+                {/* 채팅방명 변경 */}
+                <Pressable
+                  onPress={() => setIsRenameModalVisible(true)}
+                  android_ripple={{color: 'rgba(17,24,39,0.06)'}}
+                  style={({pressed}) => [
+                    styles.cardRow,
+                    pressed && styles.cardRowPressed,
+                  ]}>
+                  <View style={[styles.iconBox, {backgroundColor: '#EFF6FF'}]}>
+                    <Image
+                      source={require('../../../assets/images/pencil.png')}
+                      style={{
+                        width: getResponsiveIconSize(21),
+                        height: getResponsiveIconSize(21),
+                        resizeMode: 'contain',
+                        tintColor: COLORS.brandPrimary,
+                      }}
+                    />
+                  </View>
+                  <View style={styles.rowTextBox}>
+                    <AppText allowFontScaling={false} style={styles.rowTitle}>
+                      채팅방명 변경
+                    </AppText>
+                    {!hideSubtitle && (
+                      <AppText
+                        allowFontScaling={false}
+                        style={styles.rowSubtitle}>
+                        나만 보이는 이름으로 바꿔요
+                      </AppText>
+                    )}
+                  </View>
+                  <Image
+                    source={require('assets/images/rightArrow-gray.png')}
+                    style={styles.chevronRight}
+                  />
+                </Pressable>
+
+                <View style={styles.rowDivider} />
+
+                {/* 멤버 */}
+                <Pressable
+                  onPress={handleShowMembers}
+                  android_ripple={{color: 'rgba(17,24,39,0.06)'}}
+                  style={({pressed}) => [
+                    styles.cardRow,
+                    pressed && styles.cardRowPressed,
+                  ]}>
+                  <View style={[styles.iconBox, {backgroundColor: '#F3F4F6'}]}>
+                    <Image
+                      source={require('../../../assets/images/navigator_family-button.png')}
+                      style={{
+                        width: getResponsiveIconSize(21),
+                        height: getResponsiveIconSize(21),
+                        resizeMode: 'contain',
+                        tintColor: COLORS.brandPrimary,
+                      }}
+                    />
+                  </View>
+                  <View style={styles.rowTextBox}>
+                    <AppText allowFontScaling={false} style={styles.rowTitle}>
+                      멤버
+                    </AppText>
+                    {!hideSubtitle && (
+                      <AppText
+                        allowFontScaling={false}
+                        style={styles.rowSubtitle}>
+                        함께하는 멤버를 확인해요
+                      </AppText>
+                    )}
+                  </View>
+                  <Image
+                    source={require('assets/images/rightArrow-gray.png')}
+                    style={styles.chevronRight}
+                  />
+                </Pressable>
+
+                <View style={styles.rowDivider} />
+
+                {/* 미디어 모아보기 */}
+                <Pressable
+                  onPress={goToMediaPage}
+                  android_ripple={{color: 'rgba(17,24,39,0.06)'}}
+                  style={({pressed}) => [
+                    styles.cardRow,
+                    pressed && styles.cardRowPressed,
+                  ]}>
+                  <View style={[styles.iconBox, {backgroundColor: '#FFF1F2'}]}>
+                    <AppText style={styles.iconEmoji}>🖼️</AppText>
+                  </View>
+                  <View style={styles.rowTextBox}>
+                    <AppText allowFontScaling={false} style={styles.rowTitle}>
+                      미디어 모아보기
+                    </AppText>
+                    {!hideSubtitle && (
+                      <AppText
+                        allowFontScaling={false}
+                        style={styles.rowSubtitle}>
+                        사진·동영상을 한곳에서 봐요
+                      </AppText>
+                    )}
+                  </View>
+                  <Image
+                    source={require('assets/images/rightArrow-gray.png')}
+                    style={styles.chevronRight}
+                  />
+                </Pressable>
+              </View>
+            </>
+          )}
+
+          {/* 키노 설정 섹션 */}
+          {isKino && (
+            <>
+              <AppText allowFontScaling={false} style={styles.sectionLabel}>
+                키노 설정
+              </AppText>
+              <View style={styles.card}>
+                <Pressable
+                  onPress={() => setIsChangeKinoModalVisible(true)}
+                  android_ripple={{color: 'rgba(17,24,39,0.06)'}}
+                  style={({pressed}) => [
+                    styles.cardRow,
+                    pressed && styles.cardRowPressed,
+                  ]}>
+                  <View style={[styles.iconBox, {backgroundColor: '#EFF6FF'}]}>
+                    <Image
+                      source={require('assets/images/blueKino.png')}
+                      style={styles.iconImg}
+                    />
+                  </View>
+                  <View style={styles.rowTextBox}>
+                    <AppText allowFontScaling={false} style={styles.rowTitle}>
+                      키노 변경
+                    </AppText>
+                    {!hideSubtitle && (
+                      <AppText
+                        allowFontScaling={false}
+                        style={styles.rowSubtitle}>
+                        이 채팅에 연결된 키노를 바꿀 수 있어요
+                      </AppText>
+                    )}
+                  </View>
+                  <Image
+                    source={require('assets/images/rightArrow-gray.png')}
+                    style={styles.chevronRight}
+                  />
+                </Pressable>
+              </View>
+            </>
+          )}
+
+          {/* 채팅방 나가기 */}
+          {!isKino && (
+            <View style={styles.card}>
+              <Pressable
                 onPress={() => setIsLeaveModalVisible(true)}
-                activeOpacity={0.9}>
-                <AppText allowFontScaling={false} style={styles.leaveText}>
+                android_ripple={{color: 'rgba(17,24,39,0.06)'}}
+                style={({pressed}) => [
+                  styles.cardRow,
+                  pressed && styles.cardRowPressed,
+                ]}>
+                <View style={[styles.iconBox, {backgroundColor: '#FFF1F2'}]}>
+                  <AppText style={styles.iconEmoji}>🚪</AppText>
+                </View>
+                <AppText
+                  allowFontScaling={false}
+                  style={[styles.rowTitle, styles.leaveText]}>
                   채팅방 나가기
                 </AppText>
-              </TouchableOpacity>
+                <Image
+                  source={require('assets/images/rightArrow-gray.png')}
+                  style={[styles.chevronRight, {tintColor: '#EF4444'}]}
+                />
+              </Pressable>
             </View>
-          </View>
-        )}
+          )}
+
+          <View style={styles.bottomPad} />
+        </ScrollView>
       </Animated.View>
     </Modal>
   );
@@ -984,306 +600,144 @@ export default function ChatSettings({
 
 const makeStyles = rf =>
   StyleSheet.create({
-    backdrop: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(0,0,0,0.38)',
-    },
-
     container: {
       position: 'absolute',
       top: 0,
-      right: 0,
-      width: getResponsiveWidth(310),
-      height: '100%',
-      backgroundColor: '#FFFFFF',
-      borderLeftWidth: 1,
-      borderColor: '#EEF2F7',
-      paddingBottom: 0,
-    },
-
-    header: {
-      paddingHorizontal: getResponsiveWidth(20),
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      marginTop: getResponsiveHeight(75),
-      marginBottom: getResponsiveHeight(30),
-      alignItems: 'center',
-    },
-
-    headerTextBox: {flexShrink: 1, paddingRight: getResponsiveWidth(10)},
-
-    headerTitle: {
-      fontSize: rf(19),
-      fontFamily: 'Pretendard-SemiBold',
-      color: COLORS.textPrimary,
-      lineHeight: rf(24),
-    },
-
-    headerSubtitle: {
-      marginTop: getResponsiveHeight(4),
-      fontSize: rf(12),
-      fontFamily: 'Pretendard-Regular',
-      color: COLORS.textSecondary,
-      lineHeight: rf(17),
-    },
-
-    alarmBtn: {
-      width: getResponsiveIconSize(34),
-      height: getResponsiveIconSize(34),
-      borderRadius: getResponsiveIconSize(12),
-      backgroundColor: BACKGROUND_COLORS.secondaryBg,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-
-    alarmIcon: {
-      width: getResponsiveIconSize(18),
-      height: getResponsiveIconSize(18),
-      resizeMode: 'contain',
-    },
-
-    sectionWrap: {
-      paddingVertical: getResponsiveHeight(14),
-    },
-
-    sectionDivider: {
-      height: 1,
-      width: '93%',
-      alignSelf: 'center',
-      backgroundColor: '#EEF2F7',
-    },
-
-    sectionRowBtn: {
-      borderRadius: getResponsiveIconSize(12),
-      paddingHorizontal: getResponsiveWidth(6),
-      paddingVertical: getResponsiveHeight(10),
-      marginHorizontal: getResponsiveWidth(-6),
-    },
-
-    sectionRowPressed: {
-      backgroundColor: 'rgba(17,24,39,0.06)',
-    },
-
-    sectionRow: {
-      paddingHorizontal: getResponsiveWidth(20),
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-
-    sectionTextBox: {flex: 1, paddingRight: getResponsiveWidth(10)},
-
-    sectionTitle: {
-      fontSize: rf(14),
-      fontFamily: 'Pretendard-SemiBold',
-      color: COLORS.textPrimary,
-      lineHeight: rf(19),
-    },
-
-    sectionDesc: {
-      marginTop: getResponsiveHeight(4),
-      fontSize: rf(11),
-      fontFamily: 'Pretendard-Regular',
-      color: COLORS.textSecondary,
-      lineHeight: rf(15),
-    },
-
-    chevronDown: {
-      width: getResponsiveIconSize(14),
-      height: getResponsiveIconSize(14),
-      resizeMode: 'contain',
-      opacity: 0.85,
-    },
-
-    memberBox: {
-      marginTop: getResponsiveHeight(12),
-      backgroundColor: '#F9FAFB',
-      borderRadius: getResponsiveIconSize(12),
-      borderWidth: 1,
-      borderColor: '#EEF2F7',
-      paddingHorizontal: getResponsiveWidth(12),
-      paddingVertical: getResponsiveHeight(10),
-    },
-
-    memberItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: getResponsiveHeight(6),
-    },
-
-    memberImage: {
-      width: getResponsiveIconSize(34),
-      height: getResponsiveIconSize(34),
-      borderRadius: getResponsiveIconSize(17),
-      marginRight: getResponsiveWidth(10),
-      backgroundColor: '#FFFFFF',
-    },
-
-    memberName: {
-      fontSize: rf(13.5),
-      fontFamily: 'Pretendard-Medium',
-      color: '#111827',
-    },
-
-    inviteBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      marginTop: getResponsiveHeight(6),
-    },
-
-    addIcon: {
-      width: getResponsiveIconSize(34),
-      height: getResponsiveIconSize(34),
-      resizeMode: 'contain',
-      marginRight: getResponsiveWidth(10),
-    },
-
-    inviteText: {
-      fontSize: rf(13),
- // color: '#F59E0B',
-      color: 'black',
-
-      fontFamily: 'Pretendard-Medium',
-    },
-
-    mediaBox: {
-      marginTop: getResponsiveHeight(12),
-      backgroundColor: BACKGROUND_COLORS.secondaryBg,
-      paddingVertical: getResponsiveHeight(12),
-      borderRadius: getResponsiveIconSize(12),
-      borderWidth: 1,
-      borderColor: '#EEF2F7',
-    },
-
-    mediaTabs: {
-      flexDirection: 'row',
-      columnGap: getResponsiveWidth(6),
-    },
-
-    mediaTab: {
-      paddingVertical: getResponsiveHeight(6),
-      paddingHorizontal: getResponsiveWidth(10),
-      borderRadius: getResponsiveIconSize(14),
-      backgroundColor: '#F3F4F6',
-    },
-
-    mediaTabActive: {backgroundColor: 'black'},
-
-    mediaTabText: {
-      fontSize: rf(12),
-      fontFamily: 'Pretendard-Medium',
-      color: '#6B7280',
-    },
-
-    mediaTabTextActive: {color: 'white'},
-
-    mediaLoadingBox: {
-      paddingVertical: getResponsiveHeight(14),
-      alignItems: 'center',
-      justifyContent: 'center',
-      rowGap: getResponsiveHeight(8),
-    },
-
-    helperText: {
-      alignSelf: 'center',
-      fontSize: rf(11.5),
-      color: '#6B7280',
-      fontFamily: 'Pretendard-Regular',
-      paddingVertical: getResponsiveHeight(8),
-      marginVertical: getResponsiveHeight(30),
-    },
-
-    gridWrapCenter: {
-      width: '100%',
-      alignItems: 'center',
-    },
-
-    mediaCell: {
-      borderRadius: getResponsiveIconSize(10),
-      overflow: 'hidden',
-      backgroundColor: '#F3F4F6',
-    },
-
-    mediaThumb: {width: '100%', height: '100%', resizeMode: 'cover'},
-
-    mediaPlaceholder: {flex: 1, alignItems: 'center', justifyContent: 'center'},
-
-    mediaPlaceholderText: {
-      fontSize: rf(11),
-      color: '#6B7280',
-      fontFamily: 'Pretendard-Medium',
-    },
-
-    videoBadge: {
-      position: 'absolute',
-      right: getResponsiveWidth(6),
-      bottom: getResponsiveHeight(6),
-      backgroundColor: 'rgba(0,0,0,0.55)',
-      paddingHorizontal: getResponsiveWidth(6),
-      paddingVertical: getResponsiveHeight(3),
-      borderRadius: getResponsiveIconSize(10),
-    },
-
-    videoBadgeText: {
-      fontSize: rf(10),
-      color: '#FFFFFF',
-      fontFamily: 'Pretendard-Medium',
-    },
-
-    moreButton: {
-      marginTop: getResponsiveHeight(6),
-      paddingVertical: getResponsiveHeight(10),
-      borderRadius: getResponsiveIconSize(12),
-      backgroundColor: '#FFFFFF',
-      borderWidth: 1,
-      borderColor: '#EEF2F7',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexDirection: 'row',
-      columnGap: getResponsiveWidth(6),
-    },
-
-    moreButtonText: {
-      fontSize: rf(12.5),
-      color: '#374151',
-      fontFamily: 'Pretendard-Medium',
-    },
-
-    leaveStickyWrap: {
-      position: 'absolute',
-      height: getResponsiveHeight(30),
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: '#F5F5F5',
     },
 
-    leaveStickyInner: {
-      paddingHorizontal: getResponsiveWidth(20),
-      backgroundColor: '#FFFFFF',
+    header: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      height: getResponsiveHeight(107.5),
+      paddingBottom: getResponsiveHeight(14),
+      backgroundColor: 'white',
     },
 
-    leaveDivider: {
+    backBtn: {
+      marginLeft:
+        HEADER_STYLES().headerLeftIconLeftPadding - getResponsiveWidth(3),
+    },
+
+    backIcon: {
+      width: HEADER_STYLES().headerLeftIconWidth,
+      height: HEADER_STYLES().headerLeftIconWidth,
+      resizeMode: 'contain',
+    },
+
+    headerTitle: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      top: 0,
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+      paddingBottom: getResponsiveHeight(14),
+    },
+
+    headerTitleText: {
+      fontFamily: 'Pretendard-Medium',
+      fontSize: rf(20),
+      color: COLORS.textDefault,
+    },
+
+    scrollContent: {
+      paddingHorizontal: getResponsiveWidth(16),
+      paddingTop: getResponsiveHeight(4),
+    },
+
+    sectionLabel: {
+      fontSize: rf(12),
+      fontFamily: 'Pretendard-Regular',
+      color: '#9CA3AF',
+      marginBottom: getResponsiveHeight(8),
+      marginLeft: getResponsiveWidth(4),
+      marginTop: getResponsiveHeight(8),
+    },
+
+    card: {
+      backgroundColor: '#FFFFFF',
+      borderRadius: getResponsiveIconSize(16),
+      marginBottom: getResponsiveHeight(8),
+      overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 1},
+      shadowOpacity: 0.05,
+      shadowRadius: 4,
+      elevation: 1,
+    },
+
+    cardRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: getResponsiveWidth(16),
+      paddingVertical: getResponsiveHeight(14),
+    },
+
+    cardRowPressed: {
+      backgroundColor: 'rgba(17,24,39,0.04)',
+    },
+
+    rowDivider: {
       height: 1,
-      backgroundColor: '#EEF2F7',
-      marginBottom: getResponsiveHeight(10),
+      backgroundColor: '#F3F4F6',
+      marginLeft: getResponsiveWidth(16 + 44 + 12),
     },
 
-    leaveStickyBtn: {
-      paddingVertical: getResponsiveHeight(10),
-      alignItems: 'flex-start',
+    iconBox: {
+      width: getResponsiveIconSize(44),
+      height: getResponsiveIconSize(44),
+      borderRadius: getResponsiveIconSize(12),
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: getResponsiveWidth(12),
+    },
+
+    iconEmoji: {
+      fontSize: rf(22),
+      lineHeight: rf(28),
+    },
+
+    iconImg: {
+      width: getResponsiveIconSize(26),
+      height: getResponsiveIconSize(26),
+      resizeMode: 'contain',
+    },
+
+    rowTextBox: {
+      flex: 1,
+    },
+
+    rowTitle: {
+      fontSize: rf(14),
+      fontFamily: 'Pretendard-SemiBold',
+      color: COLORS.textPrimary,
+    },
+
+    rowSubtitle: {
+      marginTop: getResponsiveHeight(2),
+      fontSize: rf(11.5),
+      fontFamily: 'Pretendard-Regular',
+      color: '#9CA3AF',
+    },
+
+    chevronRight: {
+      width: getResponsiveIconSize(16),
+      height: getResponsiveIconSize(16),
+      resizeMode: 'contain',
+      tintColor: '#D1D5DB',
     },
 
     leaveText: {
-      fontFamily: 'Pretendard-Medium',
       color: '#EF4444',
-      fontSize: rf(13.5),
-    },
-    alarmPressable: {
-      borderRadius: getResponsiveIconSize(12), // 알림 버튼 터치 영역
+      flex: 1,
     },
 
-    alarmPressed: {
-      backgroundColor: 'rgba(17,24,39,0.06)', // 눌렀을 때 배경
+    bottomPad: {
+      height: getResponsiveHeight(40),
     },
   });

@@ -39,7 +39,8 @@ import {useScheduleBottomSheetModal} from '../hooks/useScheduleBottomSheetModal'
 import ToastModal from 'components/modal/ToastModal';
 import CustomModal from 'components/modal/CustomModal';
 import {validateLength} from 'utils/validation';
-import {BottomSheetTextInput, BottomSheetScrollView} from '@gorhom/bottom-sheet';
+import {BottomSheetScrollView} from '@gorhom/bottom-sheet';
+import CustomInput from 'components/CustomInput';
 import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
 import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
 import {
@@ -745,7 +746,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const segmentValue =
       currentKind === KIND.ANNIVERSARY ? KIND.INDIVIDUAL : currentKind;
 
-    const showParticipants = !isAnniversaryMode;
+    const showParticipants = currentKind === KIND.FAMILY;
 
     return (
       <>
@@ -781,7 +782,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                       <AppText
                         allowFontScaling={false}
                         style={styles.dateBadgeText}>
-                        {dateLabelShort}
+                        {'📅 ' + dateLabelShort}
                       </AppText>
                     </View>
                   )}
@@ -793,7 +794,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                       일정 제목
                     </AppText>
                     <View style={styles.singleLineUnderlineWrap}>
-                      <BottomSheetTextInput
+                      <CustomInput bottomSheet
                         allowFontScaling={false}
                         ref={inputRef}
                         key={`input-${inputKey}`}

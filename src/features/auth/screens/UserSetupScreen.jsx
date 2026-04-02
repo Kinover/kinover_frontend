@@ -5,8 +5,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  TextInput,
 } from 'react-native';
+import CustomInput from 'components/CustomInput';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useRoute} from '@react-navigation/native';
 
@@ -159,8 +159,7 @@ export default function UserSetupScreen() {
           이름 <Text allowFontScaling={false} style={styles.star}>*</Text>
         </Text>
 
-        {/* 이름 입력: TextInput 유지 */}
-        <TextInput
+        <CustomInput
           allowFontScaling={false}
           style={styles.input}
           placeholder="이름을 입력하세요"
@@ -168,7 +167,7 @@ export default function UserSetupScreen() {
           value={name}
           onChangeText={text => {
             setName(text);
-            if (error) setError(''); // 입력 시작하면 에러 지워주기(선택)
+            if (error) setError('');
           }}
           autoCorrect={false}
           autoCapitalize="none"

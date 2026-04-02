@@ -7,7 +7,7 @@ import { View, ActivityIndicator } from 'react-native';
 import {useSelector, useDispatch} from 'react-redux';
 import {CommonActions} from '@react-navigation/native';
 
-import {createChatRoomThunk} from '../store/chatRoomThunk';
+import {useCreateChatRoomMutation} from '../services/chatApi';
 import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
 
 import {
@@ -28,6 +28,8 @@ import CreateChatRoomBottomSheet from '../components/modals/CreateChatRoomBottom
 export default function CreateChatRoom({navigation}) {
   const dispatch = useDispatch();
   const modalRef = useRef(null);
+
+  const [createChatRoom] = useCreateChatRoomMutation();
 
   const family = useSelector(state => state.family);
   const currentUserId = useSelector(state => state.user.userId);
@@ -103,13 +105,12 @@ export default function CreateChatRoom({navigation}) {
       const finalRoomName =
         roomName && roomName.trim().length > 0 ? roomName.trim() : autoRoomName;
 
-      await dispatch(
-        createChatRoomThunk({
-          roomName: finalRoomName,
-          userIds: idsStr,
-          familyId: family.familyId,
-        }),
-      ).unwrap();
+      // RTK Query mutation: 성공 시 invalidateTags(['ChatRoom']) → 목록 자동 갱신
+      await createChatRoom({
+        roomName: finalRoomName,
+        userIds,
+        familyId: family.familyId,
+      }).unwrap();
 
  // 성공 토스트
       setToastVisible(true);

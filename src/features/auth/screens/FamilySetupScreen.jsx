@@ -1,7 +1,8 @@
 // src/features/auth/screens/FamilySetupScreen.js
 
 import React, {useState, useCallback} from 'react';
-import {View, Text, TextInput, StyleSheet, TouchableOpacity} from 'react-native';
+import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
+import CustomInput from 'components/CustomInput';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch} from 'react-redux';
@@ -133,7 +134,7 @@ export default function FamilySetupScreen() {
  *
           </Text>
         </Text>
-        <TextInput
+        <CustomInput
           allowFontScaling={false}
           style={styles.input}
           placeholder="가족 코드를 입력하세요"

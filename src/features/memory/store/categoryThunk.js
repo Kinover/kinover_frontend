@@ -1,14 +1,12 @@
 // src/features/memory/store/categoryThunk.js
 import {createAsyncThunk} from '@reduxjs/toolkit';
-import {apiClient} from 'utils/apiClient';
-import {CATEGORIES} from 'config/apiEndpoints';
 import {getGuestMode} from 'utils/storage'; // 추가
 import {STORE_MOCK_ENABLED} from '../../home/utils/storeMockData';
+import {memoryApi} from '../services/memoryApi';
 
 // =======================
 // Guest Dummy
 // =======================
-const GUEST_CATEGORY_ID_ALL = 'GUEST_ALL';
 const makeGuestCategories = () => [
  // 네 UI가 "전체"를 따로 만들 수도 있어서, 여기서는 실제로는 2~3개만 주는 게 안전
   {categoryId: 'GUEST_CAT_1', title: '일상'},
@@ -16,23 +14,9 @@ const makeGuestCategories = () => [
   {categoryId: 'GUEST_CAT_3', title: '기록'},
 ];
 
-// A안: 토큰 기반
-const getCategoryApi = async () => {
-  const res = await apiClient.get(CATEGORIES.list);
-  return res.data;
-};
-
-const createCategoryApi = async title => {
-  const body = {title};
-  const res = await apiClient.post(CATEGORIES.create, body, {
-    headers: {'Content-Type': 'application/json'},
-  });
-  return res.data;
-};
-
 export const fetchCategoryThunk = createAsyncThunk(
   'category/fetch',
-  async (_, {rejectWithValue}) => {
+  async (_, {rejectWithValue, dispatch}) => {
     try {
       console.log('📥 [fetchCategoryThunk] start');
 
@@ -51,7 +35,13 @@ export const fetchCategoryThunk = createAsyncThunk(
         return dummy;
       }
 
-      const data = await getCategoryApi();
+      const req = dispatch(
+        memoryApi.endpoints.getCategories.initiate(undefined, {
+          forceRefetch: true,
+        }),
+      );
+      const data = await req.unwrap();
+      req.unsubscribe();
       return data;
     } catch (e) {
       const payload = e?.response?.data?.message || e?.response?.data || e?.message;
@@ -63,7 +53,7 @@ export const fetchCategoryThunk = createAsyncThunk(
 
 export const createCategoryThunk = createAsyncThunk(
   'category/create',
-  async ({title}, {rejectWithValue}) => {
+  async ({title}, {rejectWithValue, dispatch}) => {
     try {
       console.log('📥 [createCategoryThunk] 요청:', {title});
 
@@ -78,7 +68,9 @@ export const createCategoryThunk = createAsyncThunk(
         return newCategory;
       }
 
-      const newCategory = await createCategoryApi(title);
+      const req = dispatch(memoryApi.endpoints.createCategory.initiate({title}));
+      const newCategory = await req.unwrap();
+      req.unsubscribe();
       return newCategory;
     } catch (e) {
       const payload = {

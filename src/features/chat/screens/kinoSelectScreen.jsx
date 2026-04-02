@@ -5,12 +5,11 @@ import React, {useEffect, useRef, useState, useCallback, useMemo} from 'react';
 import { View, TouchableOpacity, Image, StyleSheet, Animated, useWindowDimensions } from 'react-native';
 import AppText from 'components/AppText';
 import Carousel from 'react-native-reanimated-carousel';
-import {useDispatch} from 'react-redux';
 import {useNavigation, useRoute} from '@react-navigation/native';
 
 import KinoConfirmModal from '../components/modals/kinoConfirmModal';
 import useHideTabBar from 'hooks/useHideTabBar';
-import {updateKinoPersonalityThunk} from '../store/chatRoomThunk';
+import {useUpdateKinoPersonalityMutation} from '../services/chatApi';
 
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
@@ -170,8 +169,8 @@ export default function KinoSelectScreen() {
   },
 
   character: {
-    width: getResponsiveWidth(165),
-    height: getResponsiveWidth(165),
+    width: getResponsiveWidth(145),
+    height: getResponsiveWidth(145),
   },
 
   arrowButton: {
@@ -236,10 +235,10 @@ export default function KinoSelectScreen() {
   },
 
   }));
-  const dispatch = useDispatch();
   const navigation = useNavigation();
   const route = useRoute();
   const {chatRoomId} = route.params;
+  const [updateKinoPersonality] = useUpdateKinoPersonalityMutation();
 
   const {width: screenW} = useWindowDimensions();
   const length = KINOS.length;
@@ -272,12 +271,10 @@ export default function KinoSelectScreen() {
     const selectedKinoType = KINOS[currentIndex].kinoType;
     const selectedPersonality = KINO_TYPE_TO_PERSONALITY[selectedKinoType];
 
-    dispatch(
-      updateKinoPersonalityThunk({
-        chatRoomId,
-        personality: selectedPersonality, // 이걸로 보내야 서버가 바뀜
-      }),
-    )
+    updateKinoPersonality({
+      chatRoomId,
+      personality: selectedPersonality, // 이걸로 보내야 서버가 바뀜
+    })
       .unwrap()
       .then(() => {
         navigation.reset({

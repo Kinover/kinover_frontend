@@ -1,8 +1,12 @@
 // src/features/chat/hooks/useChatRoomScreen.js
+// RTK Query 마이그레이션:
+//   - messageList: useSelector(selectRoomMessages) → useGetMessagesQuery
+//   - fetchMoreMessages: dispatch(fetchMoreMessagesThunk) → useLazyGetMessagesQuery
+
 import {useEffect, useRef, useState, useCallback, useMemo} from 'react';
-import {useDispatch, useSelector} from 'react-redux';
-import {fetchMoreMessagesThunk} from '../store/messageThunk';
-import {initRoom, selectRoomMessages, selectRoomMeta} from '../store/messageSlice';
+import {useDispatch} from 'react-redux';
+import {initRoom} from '../store/messageSlice';
+import {useGetMessagesQuery, useLazyGetMessagesQuery} from '../services/chatApi';
 
 export default function useChatRoomScreen(chatRoom, _userId, _isKino) {
   const dispatch = useDispatch();
@@ -12,8 +16,14 @@ export default function useChatRoomScreen(chatRoom, _userId, _isKino) {
     return id == null ? null : String(id);
   }, [chatRoom?.chatRoomId]);
 
-  const messageList = useSelector(state => selectRoomMessages(state, roomId));
-  const roomMeta = useSelector(state => selectRoomMeta(state, roomId));
+  // RTK Query 캐시에서 메시지 읽기
+  const {data: messageList = []} = useGetMessagesQuery(
+    {chatRoomId: roomId},
+    {skip: !roomId},
+  );
+
+  // 페이지네이션용 lazy query
+  const [fetchMoreMessages] = useLazyGetMessagesQuery();
 
   const flatListRef = useRef(null);
   const isAtBottomRef = useRef(true);
@@ -40,23 +50,35 @@ export default function useChatRoomScreen(chatRoom, _userId, _isKino) {
 
     setIsFetchingMore(true);
 
-    const before =
-      roomMeta?.cursor ?? messageList[messageList.length - 1]?.createdAt;
-
-    const {payload} = await dispatch(fetchMoreMessagesThunk(roomId, before));
-
-    if (!payload || payload.length < 20) {
+    // 가장 오래된 메시지의 createdAt을 before 커서로 사용
+    const before = messageList[messageList.length - 1]?.createdAt;
+    if (!before) {
       setNoMoreMessages(true);
+      setIsFetchingMore(false);
+      return;
     }
 
-    setIsFetchingMore(false);
+    try {
+      const result = await fetchMoreMessages(
+        {chatRoomId: roomId, before},
+        /* preferCacheValue */ false,
+      ).unwrap();
+
+      // 20개 미만이면 더 이상 불러올 메시지 없음
+      if (!result || result.length < 20) {
+        setNoMoreMessages(true);
+      }
+    } catch {
+      // 에러는 apiClient 인터셉터가 처리
+    } finally {
+      setIsFetchingMore(false);
+    }
   }, [
-    dispatch,
+    fetchMoreMessages,
     roomId,
     isFetchingMore,
     noMoreMessages,
     messageList,
-    roomMeta?.cursor,
   ]);
 
   useEffect(() => {
@@ -67,11 +89,7 @@ export default function useChatRoomScreen(chatRoom, _userId, _isKino) {
     isAtBottomRef.current = true;
     setIsUserScrolling(false);
     setNoMoreMessages(false);
-
-    if (!roomMeta?.isFetched) {
-      setTimeout(scrollToBottom, 0);
-    }
-  }, [roomId, dispatch, roomMeta?.isFetched, scrollToBottom]);
+  }, [roomId, dispatch]);
 
   useEffect(() => {
     if (!messageList || messageList.length === 0) return;

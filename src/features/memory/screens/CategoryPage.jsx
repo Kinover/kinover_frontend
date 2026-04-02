@@ -2,7 +2,8 @@
 /* eslint-disable no-alert */
 /* eslint-disable react-native/no-inline-styles */
 import React, {useState, useLayoutEffect, useEffect, useMemo} from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Image, TextInput } from 'react-native';
+import { View, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
+import CustomInput from 'components/CustomInput';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import AppText from 'components/AppText';
@@ -186,7 +187,7 @@ export default function CategoryPage() {
                 borderRadius: 8,
                 padding: 10,
               }}>
-              <TextInput
+              <CustomInput
                 placeholder="예: 2025 가족 여행"
                 placeholderTextColor={EMPTY_STYLE().emptyColor}
                 style={{

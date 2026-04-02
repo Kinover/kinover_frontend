@@ -1,7 +1,7 @@
 // store/messageActions.js
-// import {addMessage} from './messageSlice';
-import { addMessage } from '../store/messageSlice';
-import { applyMessagePreview,bumpListRevision } from '../store/chatRoomSlice';
+import {chatApi} from '../services/chatApi';
+import {upsertMessageDraft} from './messageUtils';
+import {applyMessagePreview, bumpListRevision} from '../store/chatRoomSlice';
 
 const buildPreviewPayload = (msg, fallbackText = '') => {
   const type = String(msg?.messageType ?? msg?.type ?? 'text').toLowerCase();
@@ -25,7 +25,12 @@ const buildPreviewPayload = (msg, fallbackText = '') => {
 export const addMessageAndUpdateRoom =
   ({chatRoomId, message, currentUserId}) =>
   dispatch => {
-    dispatch(addMessage({chatRoomId, message}));
+    const rid = String(chatRoomId);
+    dispatch(
+      chatApi.util.updateQueryData('getMessages', {chatRoomId: rid}, draft => {
+        upsertMessageDraft(draft, message);
+      }),
+    );
 
     const preview = buildPreviewPayload(message);
     if (!preview) return;
@@ -40,7 +45,7 @@ export const addMessageAndUpdateRoom =
 
     dispatch(
       applyMessagePreview({
-        chatRoomId: String(chatRoomId),
+        chatRoomId: rid,
         message: preview,
         isSelf,
       }),

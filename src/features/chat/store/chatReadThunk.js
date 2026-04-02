@@ -1,11 +1,8 @@
 // src/features/chat/store/chatReadThunk.js
 // 읽음 처리 관련 async thunk (chatRoomSlice와 분리하여 순환 의존 방지)
 import {createAsyncThunk} from '@reduxjs/toolkit';
-import {apiClient} from 'utils/apiClient';
-import {getToken} from 'utils/storage';
 import {toId} from './chatStoreUtils';
-
-const API_BASE = '/chatRoom';
+import {chatReadApi} from '../services/chatReadApi';
 
 /**
  * markReadThunk
@@ -18,9 +15,8 @@ const API_BASE = '/chatRoom';
  */
 export const markReadThunk = createAsyncThunk(
   'chatRoom/markRead',
-  async ({chatRoomId, lastReadAt, userId}, {rejectWithValue}) => {
+  async ({chatRoomId, lastReadAt, userId}, {rejectWithValue, dispatch}) => {
     try {
-      const token = await getToken();
       const rid = toId(chatRoomId);
       if (!rid) return rejectWithValue('chatRoomId가 없습니다.');
 
@@ -44,10 +40,14 @@ export const markReadThunk = createAsyncThunk(
       if (!normalized) return rejectWithValue('lastReadAt이 올바르지 않습니다.');
 
       const body = {lastReadAt: normalized};
-
-      await apiClient.post(`${API_BASE}/${rid}/read`, body, {
-        headers: {Authorization: `Bearer ${token}`},
-      });
+      const req = dispatch(
+        chatReadApi.endpoints.markReadRestSync.initiate({
+          chatRoomId: rid,
+          lastReadAt: body.lastReadAt,
+        }),
+      );
+      await req.unwrap();
+      req.unsubscribe();
 
       return {
         chatRoomId: rid,
@@ -67,21 +67,23 @@ export const markReadThunk = createAsyncThunk(
  */
 export const fetchReadPointersThunk = createAsyncThunk(
   'chatRoom/fetchReadPointers',
-  async ({chatRoomId}, {rejectWithValue}) => {
+  async ({chatRoomId}, {rejectWithValue, dispatch}) => {
     try {
-      const token = await getToken();
       const rid = toId(chatRoomId);
       if (!rid) return rejectWithValue('chatRoomId가 없습니다.');
 
-      const res = await apiClient.get(`${API_BASE}/${rid}/readPointers`, {
-        headers: {Authorization: `Bearer ${token}`},
-      });
+      const req = dispatch(
+        chatReadApi.endpoints.getReadPointersSync.initiate(rid, {
+          forceRefetch: true,
+        }),
+      );
+      const data = await req.unwrap();
+      req.unsubscribe();
 
-      const data = res.data || {};
       const pointers =
-        data.pointers ||
-        data.readPointers ||
-        data.items ||
+        data?.pointers ||
+        data?.readPointers ||
+        data?.items ||
         (Array.isArray(data) ? data : []);
 
       return {chatRoomId: rid, pointers: Array.isArray(pointers) ? pointers : []};

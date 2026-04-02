@@ -1,5 +1,5 @@
 // src/features/notification/requestNotificationPermission.js
-import store from 'store';
+import appStore from 'store';
 import {
   PermissionsAndroid,
   Platform,
@@ -7,10 +7,11 @@ import {
   InteractionManager,
 } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
-import { apiClient } from 'utils/apiClient';
 import {getToken as getJWT} from 'utils/storage';
 import {navigate, navigationRef} from 'app/navigation/navigationRef';
 import {CommonActions} from '@react-navigation/native';
+import {chatApi} from 'features/chat/services/chatApi';
+import {notificationApi} from '../services/notificationApi';
 
 import {
   fetchUnreadCountThunk,
@@ -20,7 +21,6 @@ import {
 import {applyAppBadgeCount} from 'utils/appBadge';
 
 import notifee, {AndroidStyle, EventType} from '@notifee/react-native';
-import {API_BASE_URL} from 'config/constants';
 
 // ToastModal 컨트롤용
 let toastHandler = null;
@@ -31,11 +31,6 @@ const showToast = msg => {
   toastHandler && toastHandler(msg);
 };
 
-const REGISTER_URL = `${API_BASE_URL}/fcm/register`;
-
-// ChatRoom 단건조회 API
-const CHATROOM_BASE = `${API_BASE_URL}/chatRoom`;
-
 async function fetchChatRoomDetail(chatRoomId) {
   if (!chatRoomId) return null;
 
@@ -43,10 +38,14 @@ async function fetchChatRoomDetail(chatRoomId) {
   if (!accessToken) return null;
 
   try {
-    const res = await apiClient.get(`${CHATROOM_BASE}/${chatRoomId}`, {
-      headers: {Authorization: `Bearer ${accessToken}`},
-    });
-    return res?.data ?? null;
+    const req = appStore.dispatch(
+      chatApi.endpoints.getChatRoom.initiate(chatRoomId, {
+        forceRefetch: true,
+      }),
+    );
+    const data = await req.unwrap();
+    req.unsubscribe();
+    return data ?? null;
   } catch (e) {
     console.log('❌ chatRoom 단건조회 실패:', e?.response || e);
     return null;
@@ -202,8 +201,8 @@ async function syncBellUnreadFromServer(force = false) {
     if (!force && now - lastBellSyncAt < BELL_SYNC_THROTTLE_MS) return;
     lastBellSyncAt = now;
 
-    await store.dispatch(fetchUnreadCountThunk()); // bell unreadCount
-    store.dispatch(fetchHasUnreadThunk()); // bell hasUnread
+    await appStore.dispatch(fetchUnreadCountThunk()); // bell unreadCount
+    appStore.dispatch(fetchHasUnreadThunk()); // bell hasUnread
   } catch {
     null;
   }
@@ -501,17 +500,15 @@ export async function getFcmTokenAndSend() {
       return;
     }
 
-    const res = await apiClient.post(
-      REGISTER_URL,
-      {fcmToken},
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      },
+    const req = appStore.dispatch(
+      notificationApi.endpoints.registerFcmToken.initiate({
+        fcmToken,
+        accessToken,
+      }),
     );
-    console.log('✅ FCM 토큰 서버 등록 성공:', res.status);
+    await req.unwrap();
+    req.unsubscribe();
+    console.log('✅ FCM 토큰 서버 등록 성공');
   } catch (err) {
     console.log('❌ FCM 토큰 서버 등록 실패:', err?.response || err);
     showToast('서버 전송 중 오류가 발생했어요.');
@@ -634,16 +631,14 @@ export function handleNotificationListeners() {
     if (!accessToken) return;
 
     try {
-      await apiClient.post(
-        REGISTER_URL,
-        {fcmToken: token},
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        },
+      const req = appStore.dispatch(
+        notificationApi.endpoints.registerFcmToken.initiate({
+          fcmToken: token,
+          accessToken,
+        }),
       );
+      await req.unwrap();
+      req.unsubscribe();
     } catch (e) {
       console.log('토큰 갱신 실패:', e);
       showToast('알림 토큰 갱신에 실패했어요.');

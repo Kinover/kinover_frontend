@@ -1,8 +1,7 @@
 // src/features/notification/store/notificationThunk.js
 import {createAsyncThunk} from '@reduxjs/toolkit';
 import {applyAppBadgeCount} from 'utils/appBadge';
-import {apiClient} from 'utils/apiClient';
-import {USER} from 'config/apiEndpoints';
+import {notificationApi} from '../services/notificationApi';
 
 // 채팅 unread 총합 selector
 import {selectChatUnreadTotal} from 'features/chat/store/chatRoomSelector';
@@ -14,10 +13,16 @@ import {selectChatUnreadTotal} from 'features/chat/store/chatRoomSelector';
  */
 export const fetchNotificationsThunk = createAsyncThunk(
   'notification/fetchNotifications',
-  async (_, {rejectWithValue}) => {
+  async (_, {rejectWithValue, dispatch}) => {
     try {
-      const res = await apiClient.get(USER.notifications);
-      return res.data;
+      const req = dispatch(
+        notificationApi.endpoints.getNotifications.initiate(undefined, {
+          forceRefetch: true,
+        }),
+      );
+      const data = await req.unwrap();
+      req.unsubscribe();
+      return data;
     } catch (error) {
       const status = error?.response?.status;
       const data = error?.response?.data;
@@ -35,10 +40,16 @@ export const fetchNotificationsThunk = createAsyncThunk(
  */
 export const fetchHasUnreadThunk = createAsyncThunk(
   'notification/fetchHasUnread',
-  async (_, {rejectWithValue}) => {
+  async (_, {rejectWithValue, dispatch}) => {
     try {
-      const res = await apiClient.get(USER.notificationsUnread);
-      return res.data?.hasUnread ?? false;
+      const req = dispatch(
+        notificationApi.endpoints.getHasUnread.initiate(undefined, {
+          forceRefetch: true,
+        }),
+      );
+      const data = await req.unwrap();
+      req.unsubscribe();
+      return data?.hasUnread ?? false;
     } catch (error) {
       const status = error?.response?.status;
       const data = error?.response?.data;
@@ -56,10 +67,16 @@ export const fetchHasUnreadThunk = createAsyncThunk(
  */
 export const fetchUnreadCountThunk = createAsyncThunk(
   'notification/fetchUnreadCount',
-  async (_, {rejectWithValue}) => {
+  async (_, {rejectWithValue, dispatch}) => {
     try {
-      const res = await apiClient.get(USER.notificationsUnreadCount);
-      return Number(res.data?.unreadCount ?? 0);
+      const req = dispatch(
+        notificationApi.endpoints.getUnreadCount.initiate(undefined, {
+          forceRefetch: true,
+        }),
+      );
+      const data = await req.unwrap();
+      req.unsubscribe();
+      return Number(data?.unreadCount ?? 0);
     } catch (error) {
       const status = error?.response?.status;
       const data = error?.response?.data;
@@ -77,10 +94,14 @@ export const fetchUnreadCountThunk = createAsyncThunk(
  */
 export const markNotificationsReadThunk = createAsyncThunk(
   'notification/markRead',
-  async (_, {rejectWithValue}) => {
+  async (_, {rejectWithValue, dispatch}) => {
     try {
-      const res = await apiClient.post(USER.notificationsMarkRead, {});
-      return res.data;
+      const req = dispatch(
+        notificationApi.endpoints.markNotificationsRead.initiate(),
+      );
+      const data = await req.unwrap();
+      req.unsubscribe();
+      return data;
     } catch (error) {
       const status = error?.response?.status;
       const data = error?.response?.data;

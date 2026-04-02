@@ -6,7 +6,7 @@ import {getToken, deleteLoginInfo, setHasFamily} from 'utils/storage';
 import {fetchUserThunk} from 'features/home/store/userThunk';
 import {fetchFamilyThunk} from 'features/home/store/familyThunk';
 import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
-import {fetchChatRoomListThunk} from 'features/chat/store/chatRoomThunk';
+import {baseApi} from 'services/baseApi';
 import {startChatSocket, stopChatSocket} from 'features/chat/hooks/ChatSocket';
 import {setLoginSuccess, setLogout, setAuthChecked} from '../store/loginSlice';
 
@@ -94,7 +94,8 @@ export function useAutoLogin(shouldRun = true) {
             const userId = raw?.userId ?? raw?.id ?? null;
             if (userId) {
               dispatch(fetchFamilyUserListThunk(familyId));
-              dispatch(fetchChatRoomListThunk(familyId, userId));
+              // RTK Query: ChatRoom 태그 무효화 → getChatRooms 자동 fetch
+              dispatch(baseApi.util.invalidateTags(['ChatRoom']));
             }
           } else {
             console.log('👀 familyId is null -> no family (create/join flow)');

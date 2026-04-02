@@ -15,16 +15,23 @@ import React, {
   useMemo,
   useCallback,
 } from 'react';
-import { Platform, View, TextInput, StyleSheet, TouchableOpacity, ActivityIndicator, Image, Keyboard, Animated, Dimensions } from 'react-native';
+import {
+  Platform,
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  Image,
+  Keyboard,
+  Animated,
+  Dimensions,
+} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {
-  BottomSheetTextInput as GorhomBottomSheetTextInput,
   BottomSheetScrollView,
 } from '@gorhom/bottom-sheet';
-
-// @gorhom/bottom-sheet가 Metro 해석 시 undefined일 수 있음 → RN 기본 컴포넌트로 폴백
-const BottomSheetTextInput = GorhomBottomSheetTextInput ?? TextInput;
+import CustomInput from 'components/CustomInput';
 import {launchImageLibrary} from 'react-native-image-picker';
 import {useSelector} from 'react-redux';
 import {useReduxFontMode} from 'hooks/useReduxFontMode';
@@ -35,7 +42,11 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import {getKeyboardSafeGap, getUserBottomSheetSnapPoints, getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
+import {
+  getKeyboardSafeGap,
+  getUserBottomSheetSnapPoints,
+  getAndroidNavBottomInsetEstimate,
+} from 'utils/layoutMetrics';
 import FastImage from '@d11/react-native-fast-image';
 import {
   convertPhUriToFileUri,
@@ -89,14 +100,36 @@ function UserBottomSheetModalBase(
     return StyleSheet.create({
       ...shared,
       body: shared.content,
-      nameUnderlineWrap: shared.singleLineUnderlineWrap,
+      nameUnderlineWrap: {
+        ...shared.singleLineUnderlineWrap,
+        borderBottomWidth: 1.5,
+        borderBottomColor: 'rgba(11, 18, 32, 0.1)',
+
+        // borderBottomColor: 'rgba(11, 18, 32, 0.35)',
+      },
       inputUnderlineWrap: shared.fieldBoxWrap,
+      traitCounter: {
+        alignSelf: 'flex-end',
+        marginTop: getResponsiveHeight(4),
+        fontSize: getResponsiveFontSize(11),
+        fontFamily: 'Pretendard-Regular',
+        color: BOTTOM_SHEET_EDITOR_COLORS.muted,
+        letterSpacing: -0.1,
+      },
+      traitCounterOver: {
+        color: '#EF4444',
+      },
       inputName: shared.profileNicknameInput,
       inputTrait: shared.profileTraitInput,
       profileTouchArea: {
-        width: '45%',
         alignSelf: 'center',
         alignItems: 'center',
+        paddingVertical: getResponsiveHeight(10),
+        paddingHorizontal: getResponsiveWidth(24),
+        // borderRadius: 14,
+        // borderWidth: 1,
+        // borderStyle: 'dashed',
+        // borderColor: 'rgba(0,0,0,0.14)',
         marginBottom: getResponsiveHeight(BOTTOM_SHEET_EDITOR_FLOW),
         marginTop: getResponsiveHeight(6),
       },
@@ -177,7 +210,7 @@ function UserBottomSheetModalBase(
     });
   }, []);
 
- // input 데이터는 ref로 (불필요 리렌더 방지)
+  // input 데이터는 ref로 (불필요 리렌더 방지)
   const nameRef = useRef('');
   const traitRef = useRef('');
   const imageUrlRef = useRef('');
@@ -185,6 +218,8 @@ function UserBottomSheetModalBase(
   const [previewImage, setPreviewImage] = useState('');
   const [nameKey, setNameKey] = useState(0);
   const [traitKey, setTraitKey] = useState(0);
+  const [traitLength, setTraitLength] = useState(0);
+  const TRAIT_MAX = 50;
 
   const initialDataRef = useRef({name: '', trait: '', image: ''});
   const modalRef = useRef(null);
@@ -213,13 +248,13 @@ function UserBottomSheetModalBase(
     state => state?.userFamily?.familyUserList ?? [],
   );
 
- // 콘텐츠 영역만” 올릴 shift
+  // 콘텐츠 영역만” 올릴 shift
   const shiftAnim = useRef(new Animated.Value(0)).current;
   const keyboardHeightRef = useRef(0);
   const keyboardOpenRef = useRef(false);
   const tapToResetRef = useRef(false);
 
- // 내부 탭 연타 방지
+  // 내부 탭 연타 방지
   const touchLockRef = useRef(false);
   const touchLockTimerRef = useRef(null);
   const lockTouchBriefly = useCallback(() => {
@@ -237,7 +272,7 @@ function UserBottomSheetModalBase(
 
   const hideToast = useCallback(() => setToastVisible(false), []);
 
- // cleanup
+  // cleanup
   useEffect(() => {
     return () => {
       if (touchLockTimerRef.current) clearTimeout(touchLockTimerRef.current);
@@ -245,7 +280,9 @@ function UserBottomSheetModalBase(
   }, []);
 
   const sheetKey = useMemo(() => {
-    return `user-flow-${String(fontMode ?? '')}-${selectedUser?.userId ?? 'none'}`;
+    return `user-flow-${String(fontMode ?? '')}-${
+      selectedUser?.userId ?? 'none'
+    }`;
   }, [fontMode, selectedUser?.userId]);
 
   const sheetSnapPoints = useMemo(
@@ -280,7 +317,7 @@ function UserBottomSheetModalBase(
     dismiss: () => closeSheet(),
   }));
 
- // selectedUser 바뀔 때 입력 초기화 (snap 금지)
+  // selectedUser 바뀔 때 입력 초기화 (snap 금지)
   useEffect(() => {
     if (!selectedUser) return;
     if (isClosing) return;
@@ -305,18 +342,19 @@ function UserBottomSheetModalBase(
     setPreviewImage(preview);
     setNameKey(k => k + 1);
     setTraitKey(k => k + 1);
+    setTraitLength(t.length);
 
- // shift도 0으로 리셋
+    // shift도 0으로 리셋
     Animated.timing(shiftAnim, {
       toValue: 0,
       duration: 120,
       useNativeDriver: true,
     }).start();
 
- // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedUser]);
 
- // 키보드 이벤트: 높이 추적 + shift 리셋만
+  // 키보드 이벤트: 높이 추적 + shift 리셋만
   useEffect(() => {
     const onShow = e => {
       keyboardOpenRef.current = true;
@@ -351,7 +389,7 @@ function UserBottomSheetModalBase(
     };
   }, [shiftAnim]);
 
- // 입력이 키보드에 가리면 “콘텐츠만” 올리기
+  // 입력이 키보드에 가리면 “콘텐츠만” 올리기
   const ensureVisible = useCallback(
     refNode => {
       if (tapToResetRef.current) return;
@@ -393,12 +431,12 @@ function UserBottomSheetModalBase(
     [shiftAnim],
   );
 
- /**
- * 버벅 제거 핵심:
- * - 내부 탭에서는 snapToIndex 절대 금지
- * - shift만 0으로 리셋
- * - 키보드 dismiss는 Layout이 담당(dismissKeyboardOnPress=true)
- */
+  /**
+   * 버벅 제거 핵심:
+   * - 내부 탭에서는 snapToIndex 절대 금지
+   * - shift만 0으로 리셋
+   * - 키보드 dismiss는 Layout이 담당(dismissKeyboardOnPress=true)
+   */
   const handleTouchInsideResetOnly = useCallback(() => {
     if (!keyboardOpenRef.current) return; // 키보드 없으면 굳이 할 게 없음
     if (touchLockRef.current) return;
@@ -464,8 +502,11 @@ function UserBottomSheetModalBase(
     setIsSaving(true);
 
     try {
-      const {name: initialName, trait: initialTrait, image: initialImage} =
-        initialDataRef.current;
+      const {
+        name: initialName,
+        trait: initialTrait,
+        image: initialImage,
+      } = initialDataRef.current;
 
       const trimmedName = (nameRef.current || '').trim();
       const finalName =
@@ -479,7 +520,11 @@ function UserBottomSheetModalBase(
       const normalizedFinalName = normalizeNickname(finalName);
       const hasDuplicateNickname = (familyUserList || []).some(member => {
         const memberId = member?.userId ?? member?.id ?? null;
-        if (myId != null && memberId != null && String(memberId) === String(myId)) {
+        if (
+          myId != null &&
+          memberId != null &&
+          String(memberId) === String(myId)
+        ) {
           return false;
         }
         const candidate = member?.nickname ?? member?.name ?? '';
@@ -538,7 +583,7 @@ function UserBottomSheetModalBase(
 
     hideToast();
 
- // snap/keyboard 건드리지 말기
+    // snap/keyboard 건드리지 말기
     onCancel?.();
   }, [onCancel, hideToast]);
 
@@ -546,6 +591,7 @@ function UserBottomSheetModalBase(
     () => ({
       onCancel: handleCancel,
       onSave: handleSave,
+      cancelLabel: '변경 취소',
       saveLabel: isSaving ? '저장 중...' : '적용하기',
       autoCloseOnSave: false,
       saveButtonStyle: getBottomSheetPrimarySaveButtonStyle(
@@ -609,11 +655,7 @@ function UserBottomSheetModalBase(
                 <View style={styles.profileimageContainer}>
                   <FastImage
                     fallback={true}
-                    source={
-                      previewImage
-                        ? {uri: previewImage}
-                        : IMG_DEFAULT
-                    }
+                    source={previewImage ? {uri: previewImage} : IMG_DEFAULT}
                     style={styles.profileImage}
                     blurRadius={4}
                   />
@@ -626,7 +668,9 @@ function UserBottomSheetModalBase(
                     />
                   </View>
                 </View>
-                <AppText allowFontScaling={false} style={styles.profileEditText}>
+                <AppText
+                  allowFontScaling={false}
+                  style={styles.profileEditText}>
                   사진 변경
                 </AppText>
               </TouchableOpacity>
@@ -636,7 +680,7 @@ function UserBottomSheetModalBase(
                   별명
                 </AppText>
                 <View style={styles.nameUnderlineWrap}>
-                  <BottomSheetTextInput
+                  <CustomInput bottomSheet
                     allowFontScaling={false}
                     ref={nameInputRef}
                     key={`name-${nameKey}`}
@@ -664,7 +708,7 @@ function UserBottomSheetModalBase(
                   한 줄 소개
                 </AppText>
                 <View style={styles.inputUnderlineWrap}>
-                  <BottomSheetTextInput
+                  <CustomInput bottomSheet
                     allowFontScaling={false}
                     ref={traitInputRef}
                     key={`trait-${traitKey}`}
@@ -675,6 +719,7 @@ function UserBottomSheetModalBase(
                     nestedScrollEnabled={Platform.OS === 'android'}
                     onChangeText={text => {
                       traitRef.current = text;
+                      setTraitLength(text.length);
                     }}
                     placeholder="성격, 분위기, 기억에 남는 포인트를 가볍게 적어보세요."
                     placeholderTextColor={BOTTOM_SHEET_EDITOR_COLORS.muted}
@@ -686,6 +731,14 @@ function UserBottomSheetModalBase(
                     editable={!isSaving}
                   />
                 </View>
+                <AppText
+                  allowFontScaling={false}
+                  style={[
+                    styles.traitCounter,
+                    traitLength > TRAIT_MAX && styles.traitCounterOver,
+                  ]}>
+                  {traitLength}/{TRAIT_MAX}
+                </AppText>
               </View>
 
               {isSaving && (
@@ -695,7 +748,9 @@ function UserBottomSheetModalBase(
                       size="small"
                       color={BOTTOM_SHEET_EDITOR_COLORS.sub}
                     />
-                    <AppText allowFontScaling={false} style={styles.loadingText}>
+                    <AppText
+                      allowFontScaling={false}
+                      style={styles.loadingText}>
                       저장 중...
                     </AppText>
                   </View>
@@ -711,7 +766,9 @@ function UserBottomSheetModalBase(
           onLayoutHeight={undefined}
           style={[
             styles.footerFlow,
-            Platform.OS === 'android' && {paddingBottom: androidFooterBottomPad},
+            Platform.OS === 'android' && {
+              paddingBottom: androidFooterBottomPad,
+            },
           ]}
           {...footerProps}
         />

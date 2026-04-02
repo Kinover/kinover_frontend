@@ -95,11 +95,22 @@ export default function NotificationScreen() {
     alignItems: 'center',
     paddingVertical: getResponsiveHeight(60),
   },
+  emptyIcon: {
+    fontSize: getResponsiveFontSize(38),
+    marginBottom: getResponsiveHeight(8),
+  },
   empty: {
     textAlign: 'center',
     fontSize: EMPTY_STYLE().emptyFontSize,
     fontFamily: EMPTY_STYLE().emptyFontFamily,
     color: EMPTY_STYLE().emptyColor,
+  },
+  emptySubText: {
+    marginTop: getResponsiveHeight(4),
+    fontSize: getResponsiveFontSize(11),
+    fontFamily: 'Pretendard-Regular',
+    color: EMPTY_STYLE().emptyColor,
+    textAlign: 'center',
   },
 
   }));
@@ -265,8 +276,12 @@ export default function NotificationScreen() {
 
       {!hasNotifications && (
         <View style={[styles.emptyWrapper, {minHeight: Dimensions.get('window').height * 0.72}]}>
+          <AppText allowFontScaling={false} style={styles.emptyIcon}>🔔</AppText>
           <AppText allowFontScaling={false} style={styles.empty}>
             아직 새로운 소식이 없어요.
+          </AppText>
+          <AppText allowFontScaling={false} style={styles.emptySubText}>
+            가족이 활동하면 여기서 알려드려요.
           </AppText>
         </View>
       )}

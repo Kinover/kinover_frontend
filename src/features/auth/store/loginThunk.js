@@ -1,8 +1,8 @@
 // src/features/auth/store/loginThunk.js
-import {apiClient} from 'utils/apiClient';
 import {saveToken, setHasFamily, getGuestMode} from 'utils/storage';
 import {setLoginLoading, setLoginError, setLoginSuccess} from './loginSlice';
 import {fetchUserThunk} from 'features/home/store/userThunk';
+import {authApi} from '../services/authApi';
 
 // 게스트 토큰(로컬 전용)
 const GUEST_TOKEN = 'GUEST_TOKEN_LOCAL_ONLY';
@@ -63,15 +63,11 @@ export const loginThunk = kakaoAccessToken => {
           ? {accessToken: kakaoAccessToken}
           : kakaoAccessToken;
 
-      const response = await apiClient.post('/login/kakao', requestBody, {
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        timeout: 10000,
-      });
+      const req = dispatch(authApi.endpoints.loginKakao.initiate(requestBody));
+      const response = await req.unwrap();
+      req.unsubscribe();
 
-      const token = response?.data?.token ?? null;
+      const token = response?.token ?? null;
       if (!token) throw new Error('서버에서 토큰이 내려오지 않았어요(token 없음)');
 
       await saveToken(token);
@@ -84,7 +80,7 @@ export const loginThunk = kakaoAccessToken => {
       );
 
       return {
-        ...response.data,
+        ...response,
         token,
         hasFamily: finalHasFamily,
         familyId,
@@ -127,19 +123,11 @@ export const appleLoginThunk = identityToken => {
       console.log('📤 [APPLE] send identityToken...');
 
  // baseURL이 https://kinover.shop/api 라면 여기서는 '/login/apple'가 맞음
-      const response = await apiClient.post(
-        '/login/apple',
-        {identityToken},
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          timeout: 10000,
-        },
-      );
+      const req = dispatch(authApi.endpoints.loginApple.initiate({identityToken}));
+      const response = await req.unwrap();
+      req.unsubscribe();
 
-      const token = response?.data?.token ?? null;
+      const token = response?.token ?? null;
       if (!token) throw new Error('서버에서 토큰이 내려오지 않았어요(token 없음)');
 
  // 1) 토큰 저장
@@ -161,7 +149,7 @@ export const appleLoginThunk = identityToken => {
       });
 
       return {
-        ...response.data,
+        ...response,
         token,
         hasFamily: finalHasFamily,
         familyId,

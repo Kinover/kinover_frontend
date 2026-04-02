@@ -1,5 +1,6 @@
 import React, {useState, useEffect} from 'react';
-import { TextInput, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import CustomInput from 'components/CustomInput';
 import CustomModal from 'components/modal/CustomModal';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
@@ -94,7 +95,7 @@ export default function RenameChatRoomModal({
           {fieldError}
         </AppText>
       ) : null}
-      <TextInput
+      <CustomInput
         placeholder={currentRoomName || '채팅방 이름'}
         value={newRoomName}
         onChangeText={t => {

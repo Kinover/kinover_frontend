@@ -3,12 +3,12 @@
  *  * 가족 구성원 목록 조회 및 수정 등의 비동기 로직을 관리합니다.
  */
 
-import {apiClient} from 'utils/apiClient';
 import {
   setFamilyUserList,
   setUserFamilyLoading,
   setUserFamilyError,
 } from './userFamilySlice';
+import {homeApi} from '../services/homeApi';
 
 // ==================== Utils ====================
 
@@ -40,15 +40,13 @@ export const fetchFamilyUserListThunk = familyId => {
   return async dispatch => {
     dispatch(setUserFamilyLoading(true));
     try {
-      const res = await apiClient.post(
-        `/userFamily/familyUsers/${familyId}`,
-        {},
-        {
-          headers: {'Content-Type': 'application/json'},
-        },
+      const req = dispatch(
+        homeApi.endpoints.getFamilyUsers.initiate(familyId, {forceRefetch: true}),
       );
+      const data = await req.unwrap();
+      req.unsubscribe();
 
-      const list = Array.isArray(res.data) ? res.data : [];
+      const list = Array.isArray(data) ? data : [];
       dispatch(setFamilyUserList(list));
       console.log('[fetchFamilyUserListThunk] 가족 구성원 목록:', list);
     } catch (error) {
@@ -81,11 +79,10 @@ export const modifyFamilyUserThunk = user => {
   return async (dispatch, getState) => {
     dispatch(setUserFamilyLoading(true));
     try {
-      const res = await apiClient.post('/user/modify', user, {
-        headers: {'Content-Type': 'application/json'},
-      });
+      const req = dispatch(homeApi.endpoints.modifyUser.initiate(user));
+      const updatedUser = await req.unwrap();
+      req.unsubscribe();
 
-      const updatedUser = res.data;
       const {familyUserList} = getState().userFamily;
 
       const updatedList = (familyUserList || []).map(member =>
@@ -100,7 +97,7 @@ export const modifyFamilyUserThunk = user => {
       );
 
       dispatch(setFamilyUserList(updatedList));
-      console.log('✅ 프로필 수정 완료:', res.data);
+      console.log('✅ 프로필 수정 완료:', updatedUser);
     } catch (error) {
       const msg = extractErrorMessage(error, '프로필 수정 실패');
 

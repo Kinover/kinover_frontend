@@ -11,16 +11,16 @@ export {markReadThunk, fetchReadPointersThunk} from './chatReadThunk';
  * Initial State
  * ========================= */
 const initialChatRoomState = {
-  chatRoomList: [],
-  chatRoomUsers: [],
-  loading: false,
-  error: null,
+  // RTK Query 마이그레이션 후 제거됨:
+  //   chatRoomUsers → useGetChatRoomUsersQuery(chatRoomId)
+  //   loading, error → RTK Query isLoading / isError
+  //   mediaByRoom → useGetChatRoomMediaQuery({chatRoomId, type})
+
+  chatRoomList: [], // WS 핸들러(applyMessagePreview 등)가 직접 업데이트 → slice 유지
 
   activeChatRoomId: null,
   listRevision: 0,
   pendingTopRoomId: null,
-
-  mediaByRoom: {},
 
   /**
    * 읽음 포인터 저장
@@ -119,20 +119,6 @@ const chatRoomSlice = createSlice({
       state.listRevision += 1;
     },
 
-    setChatRoomUsers(state, action) {
-      state.chatRoomUsers = Array.isArray(action.payload)
-        ? [...action.payload]
-        : [];
-    },
-
-    setChatRoomLoading(state, action) {
-      state.loading = !!action.payload;
-    },
-
-    setChatRoomError(state, action) {
-      state.error = action.payload || null;
-    },
-
     setActiveChatRoom(state, action) {
       state.activeChatRoomId = action.payload ? toId(action.payload) : null;
     },
@@ -149,31 +135,6 @@ const chatRoomSlice = createSlice({
         };
         state.listRevision += 1;
       }
-    },
-
-    resetChatRoomMedia(state, action) {
-      const {chatRoomId, type} = action.payload || {};
-      const rid = toId(chatRoomId);
-      if (!rid) return;
-
-      state.mediaByRoom[rid] = {
-        items: [],
-        nextBefore: null,
-        loading: false,
-        error: null,
-        type: String(type || 'ALL').toUpperCase(),
-        hasMore: true,
-      };
-
-      state.listRevision += 1;
-    },
-
-    clearChatRoomMedia(state, action) {
-      const rid = toId(action.payload);
-      if (!rid) return;
-
-      if (state.mediaByRoom?.[rid]) delete state.mediaByRoom[rid];
-      state.listRevision += 1;
     },
 
     applyMessagePreview(state, action) {
@@ -335,9 +296,6 @@ export const {
   bumpChatRoomToTop,
   clearPendingTopRoom,
   setChatRoomList,
-  setChatRoomUsers,
-  setChatRoomLoading,
-  setChatRoomError,
   setActiveChatRoom,
   applyMessagePreview,
   markRoomRead,
@@ -346,8 +304,6 @@ export const {
   setChatRoomNotificationState,
   setReadPointers,
   applyReadPointer,
-  resetChatRoomMedia,
-  clearChatRoomMedia,
 } = chatRoomSlice.actions;
 
 export default chatRoomSlice.reducer;
