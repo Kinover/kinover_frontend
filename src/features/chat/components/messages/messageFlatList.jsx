@@ -51,48 +51,23 @@ export default function MessageFlatList({
     return Number.isNaN(t) ? 0 : t;
   };
 
-  // ✅ 메시지별 “안읽은 사람 수”
-  const calcUnreadCount = useCallback(message => {
-    if (!message) return 0;
-
-    const createdAtMs = toMsLocal(message.createdAt);
-    if (!createdAtMs) return 0;
-
-    const senderId =
-      message?.sender?.userId ??
-      message?.senderId ??
-      message?.userId ??
-      null;
-
+  // 참가자/리드포인터를 미리 정규화해서 메시지 렌더 루프에서 반복 계산을 줄인다.
+  const participantIds = useMemo(() => {
     const users = Array.isArray(mentionUsers) ? mentionUsers : [];
-    if (users.length === 0) return 0;
+    return users
+      .map(u => u?.userId ?? u?.id ?? null)
+      .filter(v => v != null)
+      .map(v => String(v));
+  }, [mentionUsers]);
 
-    const map = readPointersMap || {};
-
-    let count = 0;
-
-    for (const u of users) {
-      const uid = u?.userId ?? u?.id ?? null;
-      if (uid == null) continue;
-
-      // ✅ 보낸 사람 제외
-      if (senderId != null && String(uid) === String(senderId)) continue;
-
-      const lastReadAt = map?.[String(uid)] ?? null;
-
-      // lastReadAt이 없으면 = 안읽음
-      if (!lastReadAt) {
-        count += 1;
-        continue;
-      }
-
-      const lastReadMs = toMsLocal(lastReadAt);
-      if (lastReadMs < createdAtMs) count += 1;
-    }
-
-    if (!Number.isFinite(count) || count < 0) return 0;
-    return count;
-  }, [mentionUsers, readPointersMap]);
+  const readAtMsByUserId = useMemo(() => {
+    const map = new Map();
+    const pointers = readPointersMap || {};
+    participantIds.forEach(uid => {
+      map.set(uid, toMsLocal(pointers[uid]));
+    });
+    return map;
+  }, [participantIds, readPointersMap]);
 
   // =========================
   // 유저 메시지 이후 키노 타이핑
@@ -170,6 +145,32 @@ export default function MessageFlatList({
   }, [finalMessages]);
 
   const decoratedMessages = useMemo(() => {
+    const countUnread = message => {
+      if (!message) return 0;
+      if (participantIds.length === 0) return 0;
+
+      const createdAtMs = toMsLocal(message?.createdAt);
+      if (!createdAtMs) return 0;
+
+      const senderId =
+        message?.sender?.userId ??
+        message?.senderId ??
+        message?.userId ??
+        null;
+      const senderIdStr = senderId == null ? null : String(senderId);
+
+      let count = 0;
+      for (const uid of participantIds) {
+        if (senderIdStr && uid === senderIdStr) continue;
+
+        const lastReadMs = readAtMsByUserId.get(uid) || 0;
+        if (!lastReadMs || lastReadMs < createdAtMs) count += 1;
+      }
+
+      if (!Number.isFinite(count) || count < 0) return 0;
+      return count;
+    };
+
     return finalMessages.map((item, index) => {
       const prev = finalMessages[index + 1];
       const prevDate = prev?.createdAt
@@ -181,7 +182,7 @@ export default function MessageFlatList({
       const shouldShowDate = curDate !== prevDate;
       const isGrouped = String(prev?.senderId) === String(item?.senderId);
       const isLocalKino = item?.localType === 'kinoTyping';
-      const unreadCount = isLocalKino ? 0 : calcUnreadCount(item);
+      const unreadCount = isLocalKino ? 0 : countUnread(item);
       const itemStableId =
         item?.clientMessageId ||
         item?.messageId ||
@@ -196,7 +197,7 @@ export default function MessageFlatList({
         forceShowTime,
       };
     });
-  }, [finalMessages, calcUnreadCount, latestRealMessageId]);
+  }, [finalMessages, latestRealMessageId, participantIds, readAtMsByUserId]);
 
   const renderMessageItem = useCallback(
     ({item}) => (

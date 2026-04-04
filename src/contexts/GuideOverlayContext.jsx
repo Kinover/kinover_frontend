@@ -2,6 +2,7 @@
  * 가이드 오버레이를 탭 네비게이터 위(전체 화면)에 View로 띄우기 위한 컨텍스트.
  * iOS/Android 모두 RN Modal 대신 View 사용 → 닫은 뒤 탭 터치 막힘 방지.
  */
+
 import React, {createContext, useContext, useState, useCallback} from 'react';
 import GuideModalCarousel from 'components/modal/GuideModal';
 

@@ -153,6 +153,7 @@ export default function MemoryFeed({
    * ------------------------- */
   const [gridColumns, setGridColumns] = useState(4);
   const [videoThumbMap, setVideoThumbMap] = useState({});
+  const videoThumbMapRef = useRef({});
   const thumbLoadingRef = useRef(new Set());
 
   const [refreshing, setRefreshing] = useState(false);
@@ -233,6 +234,10 @@ export default function MemoryFeed({
     return u || null;
   }, []);
 
+  useEffect(() => {
+    videoThumbMapRef.current = videoThumbMap;
+  }, [videoThumbMap]);
+
   const ensureVideoThumbByUri = useCallback(
     async rawUri => {
       if (refreshing) return;
@@ -241,7 +246,7 @@ export default function MemoryFeed({
       if (!uri) return;
 
       try {
-        if (videoThumbMap[uri]) return;
+        if (videoThumbMapRef.current[uri]) return;
         if (thumbLoadingRef.current.has(uri)) return;
 
         thumbLoadingRef.current.add(uri);
@@ -256,7 +261,7 @@ export default function MemoryFeed({
         thumbLoadingRef.current.delete(uri);
       }
     },
-    [normalizeMediaUrl, videoThumbMap, refreshing],
+    [normalizeMediaUrl, refreshing],
   );
 
   /** API: UUID 하나일 때만 서버에 categoryId 전달, 복수면 전체 조회 후 클라이언트 필터 */
@@ -315,12 +320,19 @@ export default function MemoryFeed({
 
   const isLoading = (isPostsFetching || memoryLoading) && !refreshing;
 
+  const categoryTitleMap = useMemo(() => {
+    const map = new Map();
+    (categoryList || []).forEach(cat => {
+      const cid = getCatId(cat);
+      if (!cid) return;
+      map.set(cid, cat?.title || '카테고리 없음');
+    });
+    return map;
+  }, [categoryList]);
+
   const getCategoryLabel = useCallback(
-    id => {
-      const found = categoryList.find(cat => getCatId(cat) === String(id));
-      return found ? found.title : '카테고리 없음';
-    },
-    [categoryList],
+    id => categoryTitleMap.get(String(id)) || '카테고리 없음',
+    [categoryTitleMap],
   );
 
   const formatDate = useCallback(dateStr => {
@@ -389,6 +401,16 @@ export default function MemoryFeed({
 
     return list;
   }, [filteredMemoryList, sortKey]);
+
+  const mediaStatsByPostId = useMemo(() => {
+    const map = new Map();
+    (sortedMemoryList || []).forEach(memory => {
+      const postId = memory?.postId;
+      if (postId == null) return;
+      map.set(postId, getMediaStats(memory));
+    });
+    return map;
+  }, [sortedMemoryList, getMediaStats]);
 
   const allMedia = useMemo(() => {
     const postsSorted = [...filteredMemoryList].sort((a, b) => {
@@ -549,7 +571,9 @@ export default function MemoryFeed({
    * ========================= */
   const renderFeedItem = useCallback(
     ({item: memory, index}) => {
-      const {mediaCount} = getMediaStats(memory);
+      const mediaCount =
+        mediaStatsByPostId.get(memory?.postId)?.mediaCount ??
+        getMediaStats(memory).mediaCount;
       const rawFirstUri = memory?.imageUrls?.[0] || null;
       const firstUri = rawFirstUri ? normalizeMediaUrl(rawFirstUri) : null;
       const firstIsVideo = firstUri ? inferIsVideo(memory, 0, firstUri) : false;
@@ -586,6 +610,7 @@ export default function MemoryFeed({
       getCategoryLabel,
       getMediaStats,
       inferIsVideo,
+      mediaStatsByPostId,
       normalizeMediaUrl,
       pressInCard,
       pressOutCard,
