@@ -46,6 +46,51 @@ const getMessageType = message => {
   return String(t).toLowerCase();
 };
 
+const getMessageStableId = message => {
+  if (!message) return 'no-message';
+  return (
+    message?.clientMessageId ??
+    message?.messageId ??
+    `${message?.senderId ?? message?.userId ?? 'x'}_${message?.createdAt ?? ''}`
+  );
+};
+
+const normalizeImageUrls = message => {
+  const urls = getImageUrls(message);
+  return urls.map(v => String(v));
+};
+
+const areStringArraysEqual = (a = [], b = []) => {
+  if (a === b) return true;
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+};
+
+const areMentionUsersEqual = (prevUsers = [], nextUsers = []) => {
+  if (prevUsers === nextUsers) return true;
+  if (!Array.isArray(prevUsers) || !Array.isArray(nextUsers)) return false;
+  if (prevUsers.length !== nextUsers.length) return false;
+
+  for (let i = 0; i < prevUsers.length; i += 1) {
+    const prev = prevUsers[i] || {};
+    const next = nextUsers[i] || {};
+
+    const prevId = String(prev?.userId ?? prev?.id ?? '');
+    const nextId = String(next?.userId ?? next?.id ?? '');
+    if (prevId !== nextId) return false;
+
+    const prevName = String(prev?.userName ?? prev?.name ?? prev?.nickName ?? '');
+    const nextName = String(next?.userName ?? next?.name ?? next?.nickName ?? '');
+    if (prevName !== nextName) return false;
+  }
+
+  return true;
+};
+
 /** 퇴장/입장 등 서버 시스템 알림 — 날짜 구분선과 같은 중앙 pill */
 function isRoomSystemNoticeMessage(message) {
   if (!message) return false;
@@ -243,4 +288,74 @@ function ChatMessageItem({
   );
 }
 
-export default memo(ChatMessageItem);
+function areEqualChatMessageItemProps(prevProps, nextProps) {
+  if (prevProps === nextProps) return true;
+
+  if (prevProps.currentUserId !== nextProps.currentUserId) return false;
+  if (prevProps.isKino !== nextProps.isKino) return false;
+  if (prevProps.shouldShowDate !== nextProps.shouldShowDate) return false;
+  if (prevProps.isGrouped !== nextProps.isGrouped) return false;
+  if (prevProps.kinoType !== nextProps.kinoType) return false;
+  if (prevProps.unreadCount !== nextProps.unreadCount) return false;
+  if (prevProps.forceShowTime !== nextProps.forceShowTime) return false;
+  if (!areMentionUsersEqual(prevProps.mentionUsers, nextProps.mentionUsers)) {
+    return false;
+  }
+
+  const prevMsg = prevProps.message;
+  const nextMsg = nextProps.message;
+
+  if (prevMsg === nextMsg) return true;
+  if (!prevMsg || !nextMsg) return false;
+
+  if (getMessageStableId(prevMsg) !== getMessageStableId(nextMsg)) return false;
+
+  if (String(prevMsg?.content ?? '') !== String(nextMsg?.content ?? '')) return false;
+  if (String(prevMsg?.createdAt ?? '') !== String(nextMsg?.createdAt ?? '')) {
+    return false;
+  }
+  if (String(prevMsg?.localType ?? '') !== String(nextMsg?.localType ?? '')) {
+    return false;
+  }
+  if (String(prevMsg?.messageType ?? prevMsg?.type ?? '') !== String(nextMsg?.messageType ?? nextMsg?.type ?? '')) {
+    return false;
+  }
+  if (String(prevMsg?.uploadStatus ?? '') !== String(nextMsg?.uploadStatus ?? '')) {
+    return false;
+  }
+  if (String(prevMsg?.senderName ?? '') !== String(nextMsg?.senderName ?? '')) {
+    return false;
+  }
+  if (String(prevMsg?.senderImage ?? '') !== String(nextMsg?.senderImage ?? '')) {
+    return false;
+  }
+  if ((prevMsg?.systemMessage ?? false) !== (nextMsg?.systemMessage ?? false)) {
+    return false;
+  }
+
+  const prevSenderId = String(
+    prevMsg?.senderId ??
+      prevMsg?.senderID ??
+      prevMsg?.userId ??
+      prevMsg?.sender?.id ??
+      prevMsg?.sender?.userId ??
+      '',
+  );
+  const nextSenderId = String(
+    nextMsg?.senderId ??
+      nextMsg?.senderID ??
+      nextMsg?.userId ??
+      nextMsg?.sender?.id ??
+      nextMsg?.sender?.userId ??
+      '',
+  );
+  if (prevSenderId !== nextSenderId) return false;
+
+  const prevImages = normalizeImageUrls(prevMsg);
+  const nextImages = normalizeImageUrls(nextMsg);
+  if (!areStringArraysEqual(prevImages, nextImages)) return false;
+
+  return true;
+}
+
+export default memo(ChatMessageItem, areEqualChatMessageItemProps);
