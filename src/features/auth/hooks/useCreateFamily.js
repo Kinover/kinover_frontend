@@ -1,10 +1,9 @@
 // src/hooks/useCreateFamily.js
 import {useCallback, useState} from 'react';
-import {useDispatch} from 'react-redux';
-import {createFamilyThunk} from 'features/home/store/familyThunk';
+import {useCreateFamilyMutation} from 'features/home/services/homeApi';
 
 export function useCreateFamily() {
-  const dispatch = useDispatch();
+  const [createFamilyMutation] = useCreateFamilyMutation();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -13,15 +12,15 @@ export function useCreateFamily() {
     setLoading(true);
     setError(null);
     try {
-      const newFamilyId = await dispatch(createFamilyThunk());
-      return newFamilyId;
+      const result = await createFamilyMutation().unwrap();
+      return result?.familyId ?? result;
     } catch (e) {
-      setError(e.response?.data?.message || e.message);
+      setError(e?.data?.message || e?.message);
       return null;
     } finally {
       setLoading(false);
     }
-  }, [dispatch]);
+  }, [createFamilyMutation]);
 
   return {createFamily, loading, error};
 }

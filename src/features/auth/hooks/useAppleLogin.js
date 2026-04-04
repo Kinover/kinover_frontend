@@ -11,31 +11,26 @@ import {
   setLoginError,
   setLoginLoading,
   setAuthChecked,
-  setLoginSuccess,
   setLogout,
 } from '../store/loginSlice';
 
 import {deleteLoginInfo} from 'utils/storage';
 
-const withTimeout = (promise, ms = 8000) =>
-  Promise.race([
-    promise,
-    new Promise((_, reject) =>
-      setTimeout(() => reject(new Error(`timeout ${ms}ms`)), ms),
-    ),
-  ]);
-
 export function useAppleLogin() {
   const dispatch = useDispatch();
   const store = useStore();
   const socketUnsubRef = useRef(null);
+  const inFlightRef = useRef(false);
 
   const login = useCallback(async () => {
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
  // iOS만
     if (Platform.OS !== 'ios') {
       const msg = '애플 로그인은 iOS에서만 지원돼요.';
       dispatch(setLoginError(msg));
       Alert.alert('애플 로그인', msg);
+      inFlightRef.current = false;
       return;
     }
 
@@ -46,11 +41,13 @@ export function useAppleLogin() {
         '이 기기/환경에서는 애플 로그인을 지원하지 않아요. (시뮬레이터/Capability/서명 설정 확인)';
       dispatch(setLoginError(msg));
       Alert.alert('애플 로그인', msg);
+      inFlightRef.current = false;
       return;
     }
 
     dispatch(setLoginLoading(true));
     dispatch(setLoginError(null));
+    let loginConfirmed = false;
 
     try {
       console.log('🍎 Apple login pressed');
@@ -71,22 +68,24 @@ export function useAppleLogin() {
       }
 
  // 2) 서버 로그인은 thunk에서 처리 (카카오랑 동일)
-      const r = dispatch(appleLoginThunk(identityToken));
+      const loginAction = dispatch(appleLoginThunk(identityToken));
       const loginResult =
-        typeof r?.unwrap === 'function'
-          ? await withTimeout(r.unwrap(), 12000)
-          : await withTimeout(r, 12000);
+        typeof loginAction?.unwrap === 'function'
+          ? await loginAction.unwrap()
+          : await loginAction;
+      loginConfirmed = true;
 
- // 3) 카카오 흐름이랑 동일하게 “로그인 성공 확정” 한 번 더 박아도 됨(중복이어도 안전)
-      dispatch(setLoginSuccess());
-
- // 4) 소켓은 가족 있을 때만
+ // 3) 소켓은 가족 있을 때만
       const hasFamily = !!loginResult?.hasFamily;
       if (hasFamily && !socketUnsubRef.current) {
-        socketUnsubRef.current = startChatSocket(dispatch, store.getState);
+        try {
+          socketUnsubRef.current = startChatSocket(dispatch, store.getState);
+        } catch (socketError) {
+          console.log('⚠️ startChatSocket fail (ignored):', socketError?.message);
+        }
       }
 
- // 5) 마지막에 authChecked true
+ // 4) 마지막에 authChecked true
       dispatch(setAuthChecked(true));
 
       console.log('🍎 Apple login success:', {
@@ -95,6 +94,13 @@ export function useAppleLogin() {
       });
     } catch (e) {
       console.log('❌ Apple login fail:', e);
+      const alreadyLoggedIn = loginConfirmed || !!store.getState()?.login?.isLoggedIn;
+
+      if (alreadyLoggedIn) {
+        dispatch(setLoginError(null));
+        dispatch(setAuthChecked(true));
+        return;
+      }
 
       try {
         await deleteLoginInfo();
@@ -115,6 +121,7 @@ export function useAppleLogin() {
       Alert.alert('애플 로그인 실패', e?.message ?? '애플 로그인 실패');
     } finally {
       dispatch(setLoginLoading(false));
+      inFlightRef.current = false;
     }
   }, [dispatch, store]);
 

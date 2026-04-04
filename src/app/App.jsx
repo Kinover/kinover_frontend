@@ -24,6 +24,7 @@ import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {BottomSheetModalProvider} from '@gorhom/bottom-sheet';
 import LottieView from 'lottie-react-native';
 import mmkvStorage from 'utils/mmkvStorage';
+import * as Keychain from 'react-native-keychain';
 
 import {
   deleteLoginInfo,
@@ -55,6 +56,7 @@ import {
 } from '../contexts/GuideOverlayContext';
 
 const SPLASH_KEY = 'SPLASH_SHOWN_V1';
+const SPLASH_KEYCHAIN_SERVICE = 'kinover.splash.once';
 
 function KinoverSplashView({loop = false, onAnimationFinish}) {
   return (
@@ -291,12 +293,35 @@ export default function App() {
   useEffect(() => {
     (async () => {
       try {
-        const shown = await mmkvStorage.getItem(SPLASH_KEY);
-        if (shown === '1') {
+        const shownFromMMKV = await mmkvStorage.getItem(SPLASH_KEY);
+        let shown = shownFromMMKV === '1';
+
+        // MMKV 플래그가 비어 있어도 키체인 플래그가 있으면 1회 노출 완료로 간주
+        if (!shown) {
+          try {
+            const creds = await Keychain.getInternetCredentials(
+              SPLASH_KEYCHAIN_SERVICE,
+            );
+            shown = !!creds && creds.password === '1';
+          } catch {
+            null;
+          }
+        }
+
+        if (shown) {
           setShowSplash(false);
           setSplashDone(true);
         } else {
           await mmkvStorage.setItem(SPLASH_KEY, '1');
+          try {
+            await Keychain.setInternetCredentials(
+              SPLASH_KEYCHAIN_SERVICE,
+              'shown',
+              '1',
+            );
+          } catch {
+            null;
+          }
           setShowSplash(true);
           setSplashDone(false);
         }

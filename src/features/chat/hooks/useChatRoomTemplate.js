@@ -15,8 +15,7 @@ import {
   setActiveChatRoom,
   selectReadPointers,
 } from '../store/chatRoomSlice';
-import {markReadThunk} from '../store/chatRoomSlice';
-import {useGetChatRoomUsersQuery, useGetReadPointersQuery} from '../services/chatApi';
+import {useGetChatRoomUsersQuery, useGetReadPointersQuery, useMarkReadRestMutation} from '../services/chatApi';
 
 import {
   STORE_MOCK_ENABLED,
@@ -35,6 +34,7 @@ export default function useChatRoomTemplate({
   navigation,
 }) {
   const dispatch = useDispatch();
+  const [markReadRest] = useMarkReadRestMutation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [inviteToastVisible, setInviteToastVisible] = useState(false);
   const [inviteToastMessage, setInviteToastMessage] = useState('');
@@ -139,14 +139,12 @@ export default function useChatRoomTemplate({
     if (!chatRoomId || !latestCreatedAtLocal || myUserId == null) return;
     if (lastSentReadAtRef.current === latestCreatedAtLocal) return;
     lastSentReadAtRef.current = latestCreatedAtLocal;
-    dispatch(
-      markReadThunk({
-        chatRoomId,
-        lastReadAt: latestCreatedAtLocal,
-        userId: myUserId,
-      }),
-    );
-  }, [chatRoomId, latestCreatedAtLocal, dispatch, myUserId]);
+    markReadRest({
+      chatRoomId,
+      lastReadAt: latestCreatedAtLocal,
+      userId: myUserId,
+    });
+  }, [chatRoomId, latestCreatedAtLocal, markReadRest, myUserId]);
 
   useEffect(() => {
     if (!chatRoomId) return;

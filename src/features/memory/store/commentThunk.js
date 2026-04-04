@@ -62,7 +62,6 @@ export const createCommentThunk = commentData => {
     try {
       const req = dispatch(memoryApi.endpoints.createComment.initiate({postId, ...body}));
       await req.unwrap();
-      req.unsubscribe();
 
       console.log('✅ 댓글 추가 성공');
       dispatch(fetchCommentsThunk(postId));
@@ -91,7 +90,6 @@ export const deleteCommentThunk = (commentId, postId) => {
     try {
       const req = dispatch(memoryApi.endpoints.deleteComment.initiate(id));
       await req.unwrap();
-      req.unsubscribe();
 
       console.log('✅ 댓글 삭제 성공');
       if (postId) dispatch(fetchCommentsThunk(postId));
@@ -120,7 +118,6 @@ export const toggleCommentNotificationThunk = ({userId, isOn}) => {
         memoryApi.endpoints.toggleCommentNotification.initiate({userId, isOn}),
       );
       await req.unwrap();
-      req.unsubscribe();
 
       console.log('✅ 댓글 알림 설정 변경 성공');
     } catch (error) {

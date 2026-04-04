@@ -9,7 +9,6 @@ import BottomSheet, {BottomSheetBackdrop} from '@gorhom/bottom-sheet';
 import LinearGradient from 'react-native-linear-gradient';
 
 import {setMemorySelectedTab} from '../store/memorySlice';
-import {deleteCommentThunk} from '../store/commentThunk';
 import {useGetCategoriesQuery, useGetPostByIdQuery} from '../services/memoryApi';
 
 import useHideTabBar from 'hooks/useHideTabBar';
@@ -223,10 +222,8 @@ export default function PostPage({route}) {
     openDeletePostConfirm,
   } = usePostConfirmDelete({
     postId,
-    dispatch,
     vm,
     toast,
-    deleteCommentThunk,
   });
 
  /** ---------------- 저장 로직 분리 (훅 내부 busy만 사용하도록 정리) ---------------- */

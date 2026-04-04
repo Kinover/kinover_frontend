@@ -5,6 +5,7 @@ import mmkvStorage from 'utils/mmkvStorage';
 const HAS_FAMILY_KEY = 'hasFamily';
 const GUEST_MODE_KEY = 'isGuestMode';
 const NEEDS_SIGNUP_KEY = 'needsSignup';
+const ACCESS_TOKEN_KEY = '@kinover/auth/accessToken';
 const STORAGE_BOOTSTRAP_KEY = '@kinover/storage/bootstrap_v1';
 
 export const ensureStorageDefaultsOnce = async () => {
@@ -53,35 +54,50 @@ export const getNeedsSignup = async () => {
 // A 방식: 로그인 세션 저장은 "토큰 중심"으로!
 // hasFamily는 여기서 저장하지 말고, 로그인 성공 후 fetchUser로 확정해서 setHasFamily로 저장
 export const saveLoginSession = async ({token, needsSignup}) => {
+  if (typeof token !== 'string' || token.trim() === '') {
+    console.error('토큰은 문자열이어야 합니다.');
+    return;
+  }
+
   try {
-    if (typeof token !== 'string') {
-      console.error('토큰은 문자열이어야 합니다.');
-      return;
-    }
+    await Keychain.setGenericPassword('jwtToken', token, {
+      accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+    });
+  } catch (error) {
+    console.error('로그인 세션 Keychain 저장 실패:', error);
+  }
 
-    await Keychain.setGenericPassword('jwtToken', token);
-
+  try {
+    await mmkvStorage.setItem(ACCESS_TOKEN_KEY, token);
     if (typeof needsSignup === 'boolean') {
       await mmkvStorage.setItem(NEEDS_SIGNUP_KEY, JSON.stringify(!!needsSignup));
     }
-
     console.log('로그인 세션 저장 완료(A):', {needsSignup});
     emitAuthFlagsChanged();
   } catch (error) {
-    console.error('로그인 세션 저장 실패:', error);
+    console.error('로그인 세션 MMKV 저장 실패:', error);
   }
 };
 
 export const saveToken = async token => {
+  if (typeof token !== 'string' || token.trim() === '') {
+    console.error('토큰은 문자열이어야 합니다.');
+    return;
+  }
+
   try {
-    if (typeof token === 'string') {
-      await Keychain.setGenericPassword('jwtToken', token);
-      console.log('토큰 저장 완료');
-    } else {
-      console.error('토큰은 문자열이어야 합니다.');
-    }
+    await Keychain.setGenericPassword('jwtToken', token, {
+      accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+    });
   } catch (error) {
-    console.error('로그인 정보 저장 실패:', error);
+    console.error('토큰 Keychain 저장 실패:', error);
+  }
+
+  try {
+    await mmkvStorage.setItem(ACCESS_TOKEN_KEY, token);
+    console.log('토큰 저장 완료');
+  } catch (error) {
+    console.error('토큰 MMKV 저장 실패:', error);
   }
 };
 
@@ -107,17 +123,36 @@ export const getHasFamily = async () => {
 
 export const getToken = async () => {
   try {
-    const credentials = await Keychain.getGenericPassword();
-    return credentials?.password ?? null;
+    const [keychainResult, mmkvResult] = await Promise.allSettled([
+      Keychain.getGenericPassword(),
+      mmkvStorage.getItem(ACCESS_TOKEN_KEY),
+    ]);
+
+    const keychainToken =
+      keychainResult.status === 'fulfilled'
+        ? keychainResult.value?.password ?? null
+        : null;
+    if (keychainToken) return keychainToken;
+
+    const mmkvToken =
+      mmkvResult.status === 'fulfilled' ? mmkvResult.value ?? null : null;
+    return mmkvToken;
   } catch (error) {
-    console.error('토큰 불러오기 실패:', error);
-    return null;
+    console.error('토큰 불러오기 실패(Keychain):', error);
+    try {
+      const mmkvToken = await mmkvStorage.getItem(ACCESS_TOKEN_KEY);
+      return mmkvToken ?? null;
+    } catch (fallbackError) {
+      console.error('토큰 불러오기 실패(MMKV fallback):', fallbackError);
+      return null;
+    }
   }
 };
 
 export const deleteLoginInfo = async () => {
   try {
     await Keychain.resetGenericPassword();
+    await mmkvStorage.removeItem(ACCESS_TOKEN_KEY);
     await mmkvStorage.removeItem(HAS_FAMILY_KEY);
     await mmkvStorage.removeItem(NEEDS_SIGNUP_KEY);
     console.log('로그인 정보 삭제 완료');

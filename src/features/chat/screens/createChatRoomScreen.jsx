@@ -4,11 +4,11 @@
 import React, {useState, useEffect, useLayoutEffect, useRef, useCallback} from 'react';
 import { View, ActivityIndicator } from 'react-native';
 
-import {useSelector, useDispatch} from 'react-redux';
+import {useSelector} from 'react-redux';
 import {CommonActions} from '@react-navigation/native';
 
 import {useCreateChatRoomMutation} from '../services/chatApi';
-import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
+import {useGetFamilyUsersQuery} from 'features/home/services/homeApi';
 
 import {
   getResponsiveWidth,
@@ -26,15 +26,16 @@ const Text = AppText;
 import CreateChatRoomBottomSheet from '../components/modals/CreateChatRoomBottomSheet';
 
 export default function CreateChatRoom({navigation}) {
-  const dispatch = useDispatch();
   const modalRef = useRef(null);
 
   const [createChatRoom] = useCreateChatRoomMutation();
 
   const family = useSelector(state => state.family);
   const currentUserId = useSelector(state => state.user.userId);
-  const familyUserList = useSelector(state => state.userFamily.familyUserList);
-  const loading = useSelector(state => state.userFamily.loading);
+  const {data: familyUserList = [], isFetching: loading} = useGetFamilyUsersQuery(
+    family.familyId,
+    {skip: !family.familyId},
+  );
 
   const [toastVisible, setToastVisible] = useState(false);
 
@@ -52,15 +53,6 @@ export default function CreateChatRoom({navigation}) {
       headerRight: () => null,
     });
   }, [navigation]);
-
- /**
- * 2) 가족 유저 목록 가져오기 (기존 코드 그대로)
- */
-  useEffect(() => {
-    if (family.familyId) {
-      dispatch(fetchFamilyUserListThunk(family.familyId));
-    }
-  }, [dispatch, family.familyId]);
 
  /**
  * 3) 이 화면 들어오면 바텀시트 자동으로 열기
@@ -125,7 +117,7 @@ export default function CreateChatRoom({navigation}) {
         );
       }, 1200);
     },
-    [dispatch, family.familyId, familyUserList, navigation],
+    [family.familyId, familyUserList, navigation],
   );
 
   return (

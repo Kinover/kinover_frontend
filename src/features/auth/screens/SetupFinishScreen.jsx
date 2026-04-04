@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import mmkvStorage from 'utils/mmkvStorage';
-import {useDispatch} from 'react-redux';
+import {useStore} from 'react-redux';
 
 import BottomActionButton from 'components/BottomActionButton';
 import {
@@ -28,7 +28,7 @@ import {
   resetGuideShownKeys,
 } from 'hooks/useGuide';
 
-import {fetchUserThunk} from 'features/home/store/userThunk';
+import {homeApi} from 'features/home/services/homeApi';
 
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 
@@ -96,26 +96,14 @@ const styles = StyleSheet.create({
 });
 
 export default function SetupFinishScreen() {
-  const dispatch = useDispatch();
+  const store = useStore();
 
   const fetchUserOnce = useCallback(async () => {
-    const r = dispatch(fetchUserThunk());
-
-    // thunk가 unwrap 지원하는 케이스
-    if (r && typeof r.unwrap === 'function') {
-      await withTimeout(r.unwrap(), 8000);
-      return;
-    }
-
-    // 일반 promise 형태
-    if (r && typeof r.then === 'function') {
-      await withTimeout(r, 8000);
-      return;
-    }
-
-    // 혹시 promise가 아니면 한 프레임 양보
-    await sleep(0);
-  }, [dispatch]);
+    const result = store.dispatch(
+      homeApi.endpoints.getUser.initiate(undefined, {forceRefetch: true}),
+    );
+    await withTimeout(result.unwrap(), 8000);
+  }, [store]);
 
   const handleButtonClick = useCallback(async () => {
     try {

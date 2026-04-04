@@ -10,7 +10,7 @@ import {
   Dimensions,
 } from 'react-native';
 
-import {useDispatch, useSelector} from 'react-redux';
+import {useSelector} from 'react-redux';
 import {useNavigation} from '@react-navigation/native';
 
 import {
@@ -18,7 +18,7 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 import useHideTabBar from 'hooks/useHideTabBar';
-import {modifyUserThunk} from '../store/userThunk';
+import {useModifyUserMutation} from '../services/homeApi';
 import CharacterSelectionCard from 'components/cards/CharacterSelectionCard';
 import SelectionFrameLayout from 'components/layouts/SelectionFrameLayout';
 
@@ -253,7 +253,7 @@ export default function StateScreen() {
 
   }));
   const navigation = useNavigation();
-  const dispatch = useDispatch();
+  const [modifyUser] = useModifyUserMutation();
   const user = useSelector(state => state.user);
   const [selectedEmotion, setSelectedEmotion] = useState(
     user?.emotion || 'NEUTRAL',
@@ -281,13 +281,12 @@ export default function StateScreen() {
 
   const handleConfirm = () => {
     if (!selectedEmotion) return;
-    dispatch(
-      modifyUserThunk({
-        userId: user?.userId,
-        trait: user?.trait,
-        emotion: selectedEmotion,
-      }),
-    )
+    modifyUser({
+      userId: user?.userId,
+      trait: user?.trait,
+      emotion: selectedEmotion,
+    })
+      .unwrap()
       .then(() => navigation.goBack())
       .catch(err => console.error('❌ 감정 저장 실패:', err));
   };

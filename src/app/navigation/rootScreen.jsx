@@ -128,9 +128,8 @@ export default function RootScreen() {
     if (isGuest) {
       target = {flow: 'AppFlow', initialRouteName: 'Tabs'};
     } else if (!authChecked) {
-      if (authTimeout) {
-        target = {flow: 'AuthFlow', initialRouteName: '온보딩화면'};
-      }
+      // 자동로그인 진행 중에는 timeout으로 온보딩으로 강제 이동하지 않음
+      target = null;
     } else if (!isLogin) {
       target = {flow: 'AuthFlow', initialRouteName: '온보딩화면'};
     } else if (needsSignup) {
@@ -159,9 +158,19 @@ export default function RootScreen() {
   }
 
   if (target.flow === 'AuthFlow') {
-    return <AuthNavigator initialRouteName={target.initialRouteName} />;
+    return (
+      <AuthNavigator
+        key={`AuthFlow:${target.initialRouteName}`}
+        initialRouteName={target.initialRouteName}
+      />
+    );
   }
-  return <RootNavigator initialRouteName={target.initialRouteName} />;
+  return (
+    <RootNavigator
+      key={`AppFlow:${target.initialRouteName}`}
+      initialRouteName={target.initialRouteName}
+    />
+  );
 }
 
 const styles = StyleSheet.create({

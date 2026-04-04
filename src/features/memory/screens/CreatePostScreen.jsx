@@ -48,13 +48,10 @@ import {HEADER_STYLES} from 'styles/style';
 import {uploadPostApi} from 'api/uploadPostApi';
 import updatePostApi from 'api/updatePostApi';
 
-import {useDispatch, useSelector} from 'react-redux';
-import {createCategoryThunk} from '../store/categoryThunk';
+import {useSelector} from 'react-redux';
 import formatDuration from 'utils/formatDuration';
 import {getVideoThumbnail} from 'utils/videoThumbnail';
-import {useGetPostByIdQuery} from '../services/memoryApi';
-
-import {deletePostImageThunk} from '../store/memoryThunk';
+import {useGetPostByIdQuery, useCreateCategoryMutation, useDeletePostImageMutation} from '../services/memoryApi';
 
 // MediaViewer 적용
 import MediaViewer from '../components/media/MediaViewer';
@@ -207,7 +204,8 @@ export default function CreatePostPage({navigation, route}) {
   },
 
   }));
-  const dispatch = useDispatch();
+  const [createCategory] = useCreateCategoryMutation();
+  const [deletePostImage] = useDeletePostImageMutation();
   const {userId} = useSelector(s => s.user);
   const {familyId} = useSelector(s => s.family);
 
@@ -507,20 +505,13 @@ export default function CreatePostPage({navigation, route}) {
       let finalCategoryId = selectedCategory.categoryId;
 
       if (selectedCategory.isTemporary) {
-        const action = await dispatch(
-          createCategoryThunk({
-            title: selectedCategory.title,
-            familyId,
-          }),
-        );
-
-        if (action.meta.requestStatus !== 'fulfilled') {
+        try {
+          const result = await createCategory({title: selectedCategory.title}).unwrap();
+          finalCategoryId = result?.categoryId ?? selectedCategory.categoryId;
+        } catch (e) {
           showToast('카테고리 생성에 실패했어요.');
           return;
         }
-
-        finalCategoryId =
-          action.payload?.categoryId ?? selectedCategory.categoryId;
       }
 
       const now = Date.now();
@@ -609,21 +600,9 @@ export default function CreatePostPage({navigation, route}) {
       if (isEditMode && removedFileNames.length > 0) {
         for (const fileName of removedFileNames) {
           try {
-            const action = await dispatch(
-              deletePostImageThunk({
-                postId,
-                imageUrl: fileName,
-                familyId,
-                refresh: false,
-              }),
-            );
-
-            if (action?.meta?.requestStatus === 'rejected') {
-              showToast('삭제 처리 중 오류가 발생했어요.');
-              return;
-            }
+            await deletePostImage({postId, imageUrl: fileName}).unwrap();
           } catch (e) {
-            logAxiosError('deletePostImageThunk', e);
+            logAxiosError('deletePostImage', e);
             showToast('삭제 처리 중 오류가 발생했어요.');
             return;
           }
@@ -678,7 +657,8 @@ export default function CreatePostPage({navigation, route}) {
     text,
     familyId,
     userId,
-    dispatch,
+    createCategory,
+    deletePostImage,
     showToast,
     inferContentTypeByExt,
     inferPostType,

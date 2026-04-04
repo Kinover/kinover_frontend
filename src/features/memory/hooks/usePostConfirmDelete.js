@@ -1,5 +1,6 @@
 // src/features/post/hooks/usePostConfirmDelete.js
 import {useCallback, useState} from 'react';
+import {useDeleteCommentMutation} from '../services/memoryApi';
 
 /**
  * 삭제 확인 모달 전담
@@ -7,11 +8,10 @@ import {useCallback, useState} from 'react';
  */
 export default function usePostConfirmDelete({
   postId,
-  dispatch,
   vm,
   toast,
-  deleteCommentThunk,
 }) {
+  const [deleteComment] = useDeleteCommentMutation();
   const [confirmVisible, setConfirmVisible] = useState(false);
   const [pendingDeleteType, setPendingDeleteType] = useState(null); // 'image' | 'post' | 'comment'
   const [pendingCommentId, setPendingCommentId] = useState(null);
@@ -55,7 +55,7 @@ export default function usePostConfirmDelete({
         toast?.('게시글을 삭제했어요');
       } else if (pendingDeleteType === 'comment') {
         if (pendingCommentId && postId) {
-          await dispatch(deleteCommentThunk(pendingCommentId, postId));
+          await deleteComment(String(pendingCommentId)).unwrap();
           toast?.('댓글을 삭제했어요');
         }
       }
@@ -75,8 +75,7 @@ export default function usePostConfirmDelete({
     toast,
     pendingCommentId,
     postId,
-    dispatch,
-    deleteCommentThunk,
+    deleteComment,
   ]);
 
   return {

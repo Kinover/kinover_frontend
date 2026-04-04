@@ -39,6 +39,7 @@ import {
   useDeleteScheduleMutation,
   useUpdateScheduleMutation,
 } from '../services/scheduleApi';
+import {useGetFamilyUsersQuery} from '../../home/services/homeApi';
 
 import {hapticLight} from 'utils/haptic';
 import DropShadow from 'react-native-drop-shadow';
@@ -130,14 +131,24 @@ export default function ScheduleScreen() {
     blockOpenUntilRef.current = Date.now() + ms;
   }, []);
 
-  const {familyId: reduxFamilyId} = useSelector(state => state.family);
+  const reduxFamilyId = useSelector(
+    state => state.family?.familyId ?? state.user?.familyId ?? null,
+  );
   const reduxFamilyUserList = useSelector(
     state => state.userFamily.familyUserList,
   );
   const familyId = STORE_MOCK_ENABLED ? 'mock-family' : reduxFamilyId;
+  const {data: queriedFamilyUserList = []} = useGetFamilyUsersQuery(familyId, {
+    skip: STORE_MOCK_ENABLED || !familyId,
+    refetchOnMountOrArgChange: true,
+  });
   const familyUserList = STORE_MOCK_ENABLED
     ? getStoreMockFamilyUserListForSchedule()
-    : reduxFamilyUserList;
+    : Array.isArray(queriedFamilyUserList) && queriedFamilyUserList.length > 0
+    ? queriedFamilyUserList
+    : Array.isArray(reduxFamilyUserList)
+    ? reduxFamilyUserList
+    : [];
   const reduxUserId = useSelector(state => state.user.userId);
   const currentUserId = STORE_MOCK_ENABLED
     ? getStoreMockUser()?.userId ?? reduxUserId

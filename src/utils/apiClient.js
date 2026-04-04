@@ -41,6 +41,7 @@ apiClient.interceptors.request.use(async config => {
  // 로그인/회원가입 계열은 Authorization 주입하지 않음
   if (!isAuthExcluded(config?.url)) {
     const token = await getToken();
+    config.__hadAuthToken = !!token;
     if (token) {
       const t = String(token).trim().replace(/^Bearer\s+/i, '');
       config.headers = {
@@ -48,6 +49,8 @@ apiClient.interceptors.request.use(async config => {
         Authorization: `Bearer ${t}`,
       };
     }
+  } else {
+    config.__hadAuthToken = false;
   }
 
   return config;
@@ -72,7 +75,12 @@ apiClient.interceptors.response.use(
     const reqUrl = error?.config?.url || '';
     const excluded = isAuthExcluded(reqUrl);
 
-    if (status === 401 && !excluded) {
+    const hadAuthToken = Boolean(
+      error?.config?.__hadAuthToken ||
+      error?.config?.headers?.Authorization,
+    );
+
+    if (status === 401 && !excluded && hadAuthToken) {
       const isExpired =
         msg.includes('TOKEN_EXPIRED') ||
         msg.includes('EXPIRED') ||

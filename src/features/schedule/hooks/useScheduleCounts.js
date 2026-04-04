@@ -32,7 +32,12 @@ export const useScheduleCounts = (familyId, year, month) => {
   }, []);
 
   useEffect(() => {
-    const raw = countData || {};
+    const raw =
+      countData?.countPerDay ??
+      countData?.data?.countPerDay ??
+      countData?.data ??
+      countData ??
+      {};
     const normalized = {};
     Object.keys(raw).forEach(key => {
       const [y, m, d] = key.split('-');

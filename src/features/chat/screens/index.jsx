@@ -4,14 +4,14 @@
 import React, {useEffect, useCallback, useState, useRef, useMemo} from 'react';
 import { StyleSheet, View, TouchableOpacity, FlatList, RefreshControl, Image } from 'react-native';
 import AppText from 'components/AppText';
-import {useDispatch, useSelector} from 'react-redux';
+import {useSelector} from 'react-redux';
 
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   useGetChatRoomsQuery,
   useCreateChatRoomMutation,
 } from '../services/chatApi';
-import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
+import {useGetFamilyUsersQuery} from 'features/home/services/homeApi';
 
 import ChatRoomItem from '../components/rooms/chatRoomItem';
 import SkeletonChatRoomItem from '../components/rooms/SkeletonChatRoomItem';
@@ -121,7 +121,6 @@ export default function CommunicationScreen({navigation}) {
   },
 
   }));
-  const dispatch = useDispatch();
   const modalRef = useRef(null);
 
   const {userId, login} = useSelector(s => s.user);
@@ -139,7 +138,7 @@ export default function CommunicationScreen({navigation}) {
   // RTK Query: 채팅방 생성 mutation
   const [createChatRoom] = useCreateChatRoomMutation();
 
-  const familyUserList = useSelector(s => s.userFamily.familyUserList);
+  const {data: familyUserList = []} = useGetFamilyUsersQuery(familyId, {skip: !familyId});
 
   const [refreshing, setRefreshing] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
@@ -155,11 +154,6 @@ export default function CommunicationScreen({navigation}) {
     }
   }, [login]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (familyId != null) {
-      dispatch(fetchFamilyUserListThunk(familyId));
-    }
-  }, [dispatch, familyId]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

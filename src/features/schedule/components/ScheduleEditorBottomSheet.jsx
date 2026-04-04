@@ -165,6 +165,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const [toastVisible, setToastVisible] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const [isClosing, setIsClosing] = useState(false);
+    const [isTitleFocused, setIsTitleFocused] = useState(false);
 
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 
@@ -325,7 +326,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       } else {
         (setSelectedUserIdsProp ?? setLocalSelectedUserIds)([]);
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [editingKey]);
 
     const scheduleType = useMemo(
@@ -793,7 +793,11 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                     <AppText allowFontScaling={false} style={styles.sectionLabel}>
                       일정 제목
                     </AppText>
-                    <View style={styles.singleLineUnderlineWrap}>
+                    <View
+                      style={[
+                        styles.singleLineUnderlineWrap,
+                        isTitleFocused && styles.singleLineUnderlineWrapFocused,
+                      ]}>
                       <CustomInput bottomSheet
                         allowFontScaling={false}
                         ref={inputRef}
@@ -803,8 +807,12 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                           if (!isClosing) scheduleRef.current = text;
                         }}
                         onFocus={() => {
+                          setIsTitleFocused(true);
                           tapToResetRef.current = false;
                           ensureVisible(inputRef);
+                        }}
+                        onBlur={() => {
+                          setIsTitleFocused(false);
                         }}
                         placeholder="무슨 일정인가요?"
                         placeholderTextColor={COLORS.muted}
@@ -1009,6 +1017,38 @@ const styles = StyleSheet.create({
   },
   segmentLabelActive: {
     color: COLORS.navy,
+  },
+
+  /** 일정 제목 인풋 외곽 라인: 채팅방 이름 변경 모달과 동일한 톤 */
+  singleLineUnderlineWrap: {
+    alignSelf: 'stretch',
+    borderWidth: 1,
+    borderColor: '#DADADA',
+    borderRadius: getResponsiveWidth(12),
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(8),
+    marginTop: getResponsiveHeight(4),
+  },
+  singleLineUnderlineWrapFocused: {
+    borderColor: '#FFC84D',
+  },
+  scheduleTitleInput: {
+    minHeight: getResponsiveHeight(36),
+    maxHeight: getResponsiveHeight(96),
+    paddingHorizontal: 0,
+    paddingTop: Platform.OS === 'android' ? 2 : 4,
+    paddingBottom: 2,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    includeFontPadding: false,
+    fontSize: getResponsiveFontSize(15),
+    fontFamily: 'Pretendard-Regular',
+    color: COLORS.text,
+    lineHeight: getResponsiveFontSize(22),
+    letterSpacing: -0.18,
+    textAlign: 'left',
+    textAlignVertical: 'top',
   },
 
   participantBlock: {

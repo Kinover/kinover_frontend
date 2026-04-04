@@ -2,6 +2,7 @@
 import {useEffect, useMemo} from 'react';
 import {useSelector} from 'react-redux';
 import {useGetSchedulesQuery} from '../services/scheduleApi';
+import {normalizeScheduleListResponse} from '../utils/scheduleFilterHelpers';
 import {selectFamilyId} from 'store/selectors';
 
 export const useScheduleListByDate = (
@@ -24,7 +25,7 @@ export const useScheduleListByDate = (
     [selectedDate],
   );
 
-  const {data: queriedScheduleList = [], refetch} = useGetSchedulesQuery(
+  const {data: queriedScheduleListRaw, refetch} = useGetSchedulesQuery(
     {familyId, date: selectedYMD},
     {
       skip: !familyId || !selectedYMD,
@@ -86,12 +87,12 @@ export const useScheduleListByDate = (
   }, [selectedYMD]);
 
   const effectiveScheduleList = useMemo(() => {
-    const base = Array.isArray(queriedScheduleList) ? queriedScheduleList : [];
+    const base = normalizeScheduleListResponse(queriedScheduleListRaw);
  // 서버 데이터 있으면 서버 데이터 우선, 없으면 더미
  // return base.length > 0 ? base : dummyList;
     return base;
 
-  }, [queriedScheduleList, dummyList]);
+  }, [queriedScheduleListRaw, dummyList]);
 
  // ----------------------------
  // 타입 분류(백엔드 필드가 뭐든 최대한 흡수)

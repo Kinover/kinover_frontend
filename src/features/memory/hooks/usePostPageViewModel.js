@@ -3,24 +3,30 @@ import {useState, useEffect, useMemo, useCallback} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {useNavigation} from '@react-navigation/native';
 
+import {createCommentThunk} from '../store/commentThunk';
 import {
-  fetchCommentsThunk,
-  createCommentThunk,
-  deleteCommentThunk,
-} from '../store/commentThunk';
-import {deletePostThunk, deletePostImageThunk} from '../store/memoryThunk';
-import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
+  useDeletePostMutation,
+  useDeletePostImageMutation,
+  useGetCommentsQuery,
+  useDeleteCommentMutation,
+} from '../services/memoryApi';
+import {useGetFamilyUsersQuery} from 'features/home/services/homeApi';
 
 export default function usePostPageViewModel(memory) {
   const dispatch = useDispatch();
   const navigation = useNavigation();
 
-  const rawFamilyUsers = useSelector(s => s.userFamily.familyUserList);
   const user = useSelector(state => state.user);
   const familyId = useSelector(state => state.family.familyId);
-  const {commentList} = useSelector(state => state.comment);
 
   const safePostId = memory?.postId ?? null;
+
+  const {data: rawFamilyUsers = []} = useGetFamilyUsersQuery(familyId, {skip: !familyId});
+  const {data: commentList = []} = useGetCommentsQuery(safePostId, {skip: !safePostId});
+
+  const [deletePost] = useDeletePostMutation();
+  const [deletePostImage] = useDeletePostImageMutation();
+  const [deleteComment] = useDeleteCommentMutation();
 
   const safeImages = useMemo(
     () => memory?.imageUrls ?? [],
@@ -69,18 +75,6 @@ export default function usePostPageViewModel(memory) {
       return Math.min(idx, safeImages.length - 1);
     });
   }, [safeImages]);
-
- // 댓글 목록 fetch
-  useEffect(() => {
-    if (safePostId) dispatch(fetchCommentsThunk(safePostId));
-  }, [dispatch, safePostId]);
-
-  // 멘션 후보: 게시글 진입 시 가족 목록이 비어 있으면 한 번 로드
-  useEffect(() => {
-    if (familyId && (!rawFamilyUsers || rawFamilyUsers.length === 0)) {
-      dispatch(fetchFamilyUserListThunk(familyId)).catch(() => {});
-    }
-  }, [dispatch, familyId, rawFamilyUsers?.length]);
 
  /**
  * 댓글 전송 (멘션 확장)
@@ -143,8 +137,7 @@ export default function usePostPageViewModel(memory) {
 
     setIsDeletingComment(true);
     try {
- // 너의 thunk 시그니처: (commentId, postId)
-      await dispatch(deleteCommentThunk(commentToDelete, safePostId));
+      await deleteComment(String(commentToDelete)).unwrap();
 
       setToastMessage('댓글을 삭제했어요');
       setToastVisible(true);
@@ -156,30 +149,29 @@ export default function usePostPageViewModel(memory) {
     }
   }, [
     commentToDelete,
-    safePostId,
     isDeletingComment,
-    dispatch,
+    deleteComment,
     closeDeleteCommentModal,
   ]);
 
   const handleDeletePost = useCallback(async () => {
-    if (!safePostId || !familyId) return;
+    if (!safePostId) return;
     try {
-      await dispatch(deletePostThunk(safePostId, familyId));
+      await deletePost(safePostId).unwrap();
       navigation.goBack();
       setToastMessage('게시글이 삭제되었어요');
       setToastVisible(true);
     } catch (error) {
       console.warn('게시글 삭제 실패:', error);
     }
-  }, [dispatch, safePostId, familyId, navigation]);
+  }, [deletePost, safePostId, navigation]);
 
   const handleDeleteImage = useCallback(async () => {
-    if (!safePostId || !familyId || localImages.length === 0) return;
+    if (!safePostId || localImages.length === 0) return;
 
     const targetImage = localImages[currentImageIndex];
     try {
-      await dispatch(deletePostImageThunk(safePostId, targetImage, familyId));
+      await deletePostImage({postId: safePostId, imageUrl: targetImage}).unwrap();
 
       const updated = localImages.filter((_, i) => i !== currentImageIndex);
       setLocalImages(updated);
@@ -197,9 +189,8 @@ export default function usePostPageViewModel(memory) {
       console.warn('이미지 삭제 실패:', e);
     }
   }, [
-    dispatch,
+    deletePostImage,
     safePostId,
-    familyId,
     localImages,
     currentImageIndex,
     handleDeletePost,

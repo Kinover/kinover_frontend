@@ -5,17 +5,14 @@ import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 import CustomInput from 'components/CustomInput';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
-import {useDispatch} from 'react-redux';
-
 import ToastModal from 'components/modal/ToastModal';
 import BottomActionButton from 'components/BottomActionButton';
 
-// 변경: addUserToFamily 제거, join/create-and-join 사용
 import {
-  fetchFamilyThunk,
-  joinFamilyThunk,
-  createFamilyAndJoinThunk,
-} from 'features/home/store/familyThunk';
+  useLazyGetFamilyQuery,
+  useJoinFamilyMutation,
+  useCreateFamilyAndJoinMutation,
+} from 'features/home/services/homeApi';
 
 import {
   validateLength,
@@ -25,7 +22,10 @@ import {COLORS} from 'styles/style';
 
 export default function FamilySetupScreen() {
   const navigation = useNavigation();
-  const dispatch = useDispatch();
+
+  const [triggerGetFamily] = useLazyGetFamilyQuery();
+  const [joinFamily] = useJoinFamilyMutation();
+  const [createFamilyAndJoin] = useCreateFamilyAndJoinMutation();
 
   const [familyCode, setFamilyCode] = useState('');
   const [fieldError, setFieldError] = useState('');
@@ -60,10 +60,10 @@ export default function FamilySetupScreen() {
     setFieldError('');
 
     try {
-      await dispatch(fetchFamilyThunk(trimmed));
+      await triggerGetFamily(trimmed).unwrap();
 
- // 2) 참여 (토큰 유저로 서버가 처리)
-      await dispatch(joinFamilyThunk(trimmed));
+      // 2) 참여 (토큰 유저로 서버가 처리)
+      await joinFamily(trimmed).unwrap();
 
       console.log('🎉 가족 참여 성공');
       navigation.navigate('설정완료화면', {familyId: trimmed});
@@ -85,13 +85,8 @@ export default function FamilySetupScreen() {
     setCreating(true);
 
     try {
-      const newFamilyId = await dispatch(createFamilyAndJoinThunk());
-
- // thunk 구현에 따라 familyId가 문자열로 오거나, 객체로 올 수도 있으니 안전 처리
-      const id =
-        typeof newFamilyId === 'string'
-          ? newFamilyId
-          : newFamilyId?.familyId || null;
+      const result = await createFamilyAndJoin().unwrap();
+      const id = result?.familyId ?? (typeof result === 'string' ? result : null);
 
       if (!id) {
         const msg = '가족 생성에 실패했어요. 잠시 후 다시 시도해 주세요.';
@@ -100,11 +95,6 @@ export default function FamilySetupScreen() {
       }
 
       console.log('🎉 새 가족 생성+참여 성공, familyId:', id);
-
- // create-and-join에서 이미 setFamily까지 했으면 fetchFamily는 굳이 안 해도 됨
- // 그래도 확실히 하고 싶으면 아래 주석 해제
- // await dispatch(fetchFamilyThunk(id));
-
       navigation.navigate('설정완료화면', {familyId: id});
     } catch (err) {
       const msg =

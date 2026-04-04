@@ -1,5 +1,5 @@
 // src/features/auth/store/loginThunk.js
-import {saveToken, setHasFamily, getGuestMode} from 'utils/storage';
+import {saveToken, setHasFamily, getGuestMode, setNeedsSignup} from 'utils/storage';
 import {setLoginLoading, setLoginError, setLoginSuccess} from './loginSlice';
 import {fetchUserThunk} from 'features/home/store/userThunk';
 import {authApi} from '../services/authApi';
@@ -35,6 +35,32 @@ async function finalizeHasFamilyAfterLogin(dispatch, getState) {
   return {familyId, finalHasFamily};
 }
 
+const inferNeedsSignup = response => {
+  return !!(
+    response?.needsSignup ||
+    response?.needSignup ||
+    response?.signupRequired ||
+    response?.isNewUser
+  );
+};
+
+const isSignupRequiredError = error => {
+  const status = Number(error?.response?.status);
+  const msg = String(
+    error?.response?.data?.message ??
+      (typeof error?.response?.data === 'string' ? error?.response?.data : '') ??
+      error?.message ??
+      '',
+  ).toUpperCase();
+
+  return (
+    status === 404 ||
+    msg.includes('SIGNUP') ||
+    msg.includes('NEEDS_SIGNUP') ||
+    msg.includes('USER_NOT_FOUND')
+  );
+};
+
 /**
  * 카카오 로그인 thunk
  * @param {string|object} kakaoAccessToken - 보통 string(accessToken)
@@ -65,19 +91,42 @@ export const loginThunk = kakaoAccessToken => {
 
       const req = dispatch(authApi.endpoints.loginKakao.initiate(requestBody));
       const response = await req.unwrap();
-      req.unsubscribe();
 
       const token = response?.token ?? null;
       if (!token) throw new Error('서버에서 토큰이 내려오지 않았어요(token 없음)');
 
       await saveToken(token);
+      const needsSignup = inferNeedsSignup(response);
 
       dispatch(setLoginSuccess());
 
-      const {familyId, finalHasFamily} = await finalizeHasFamilyAfterLogin(
-        dispatch,
-        getState,
-      );
+      if (needsSignup) {
+        await setNeedsSignup(true);
+        await setHasFamily(false);
+
+        return {
+          ...response,
+          token,
+          hasFamily: false,
+          familyId: null,
+          needsSignup: true,
+        };
+      }
+
+      await setNeedsSignup(false);
+      let familyId = null;
+      let finalHasFamily = false;
+      try {
+        const resolved = await finalizeHasFamilyAfterLogin(dispatch, getState);
+        familyId = resolved?.familyId ?? null;
+        finalHasFamily = !!resolved?.finalHasFamily;
+      } catch (e) {
+        if (!isSignupRequiredError(e)) throw e;
+        await setNeedsSignup(true);
+        await setHasFamily(false);
+        familyId = null;
+        finalHasFamily = false;
+      }
 
       return {
         ...response,
@@ -125,7 +174,6 @@ export const appleLoginThunk = identityToken => {
  // baseURL이 https://kinover.shop/api 라면 여기서는 '/login/apple'가 맞음
       const req = dispatch(authApi.endpoints.loginApple.initiate({identityToken}));
       const response = await req.unwrap();
-      req.unsubscribe();
 
       const token = response?.token ?? null;
       if (!token) throw new Error('서버에서 토큰이 내려오지 않았어요(token 없음)');
@@ -136,11 +184,35 @@ export const appleLoginThunk = identityToken => {
  // 2) 토큰 인증 성공 처리
       dispatch(setLoginSuccess());
 
+      const needsSignup = inferNeedsSignup(response);
+      if (needsSignup) {
+        await setNeedsSignup(true);
+        await setHasFamily(false);
+        return {
+          ...response,
+          token,
+          hasFamily: false,
+          familyId: null,
+          needsSignup: true,
+        };
+      }
+
+      await setNeedsSignup(false);
+
  // 3) userinfo로 hasFamily 확정(SSOT: familyId)
-      const {familyId, finalHasFamily} = await finalizeHasFamilyAfterLogin(
-        dispatch,
-        getState,
-      );
+      let familyId = null;
+      let finalHasFamily = false;
+      try {
+        const resolved = await finalizeHasFamilyAfterLogin(dispatch, getState);
+        familyId = resolved?.familyId ?? null;
+        finalHasFamily = !!resolved?.finalHasFamily;
+      } catch (e) {
+        if (!isSignupRequiredError(e)) throw e;
+        await setNeedsSignup(true);
+        await setHasFamily(false);
+        familyId = null;
+        finalHasFamily = false;
+      }
 
       console.log('✅ [APPLE] login done:', {
         token: token ? 'OK' : 'NO',

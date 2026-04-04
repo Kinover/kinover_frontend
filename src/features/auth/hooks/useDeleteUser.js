@@ -1,8 +1,8 @@
 // src/features/auth/hooks/useDeleteUser.js
 
 import {useCallback, useState} from 'react';
-import {useDispatch} from 'react-redux';
-import {deleteUserThunk} from 'features/home/store/userThunk';
+import {useDispatch, useSelector} from 'react-redux';
+import {useDeleteUserMutation} from 'features/home/services/homeApi';
 import {deleteLoginInfo} from 'utils/storage';
 import {resetUi} from 'store/uiSlice';
 import {setLogout} from '../store/loginSlice';
@@ -11,6 +11,8 @@ import {resetGuideShownKeys} from 'hooks/useGuide';
 
 export function useDeleteUser(onSuccess) {
   const dispatch = useDispatch();
+  const [deleteUser] = useDeleteUserMutation();
+  const userId = useSelector(state => state.user?.userId);
   const [loading, setLoading] = useState(false);
 
   const [toastVisible, setToastVisible] = useState(false);
@@ -29,7 +31,7 @@ export function useDeleteUser(onSuccess) {
     try {
       setLoading(true);
 
-      const result = await dispatch(deleteUserThunk()).unwrap();
+      const result = await deleteUser(userId).unwrap();
 
  // 로컬 저장소 정리 (Keychain + hasFamily)
       await deleteLoginInfo();

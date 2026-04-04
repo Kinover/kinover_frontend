@@ -12,12 +12,12 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
-import {useDispatch, useSelector} from 'react-redux';
+import {useSelector} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import useHideTabBar from 'hooks/useHideTabBar';
-import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
+import {useGetFamilyUsersQuery} from 'features/home/services/homeApi';
 import {
   useGetChatRoomUsersQuery,
   useAddUsersToChatRoomMutation,
@@ -84,10 +84,8 @@ export default function AddChatMemberScreen({navigation, route}) {
   }));
 
   const {chatRoomId, onInvited} = route.params || {};
-  const dispatch = useDispatch();
   const familyId = useSelector(state => state.family?.familyId);
-  const familyUserList = useSelector(state => state.userFamily?.familyUserList || []);
-  const familyUserLoading = useSelector(state => !!state.userFamily?.loading);
+  const {data: familyUserList = [], isLoading: isFamilyUsersLoading} = useGetFamilyUsersQuery(familyId, {skip: !familyId});
   const [selected, setSelected] = useState([]);
 
   const {data: roomUsers = [], isLoading: roomUsersLoading} =
@@ -98,9 +96,6 @@ export default function AddChatMemberScreen({navigation, route}) {
 
   useHideTabBar({stayHidden: true});
 
-  useEffect(() => {
-    if (familyId) dispatch(fetchFamilyUserListThunk(familyId));
-  }, [dispatch, familyId]);
 
   const selectableUsers = (familyUserList || []).filter(
     user => !(roomUsers || []).find(u => String(u.userId) === String(user.userId)),
@@ -143,7 +138,7 @@ export default function AddChatMemberScreen({navigation, route}) {
     });
   }, [navigation, styles, handleInvite]);
 
-  if (familyUserLoading || roomUsersLoading) {
+  if (isFamilyUsersLoading || roomUsersLoading) {
     return (
       <View style={[styles.container, {justifyContent: 'center', alignItems: 'center'}]}>
         <ActivityIndicator size="large" color="#F8B500" />
