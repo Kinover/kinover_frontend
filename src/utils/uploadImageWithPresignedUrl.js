@@ -21,7 +21,6 @@ function getContentTypeByFileName(fileName) {
  * 3) (필요하면) 최종 접근 URL(fileUrl)을 리턴
  */
 export async function uploadImageWithPresignedUrl(fileUri, fileName) {
-  try {
     const token = await getToken(); // 토큰 필요 없으면 이 부분 삭제해도 됨
 
     const contentType = getContentTypeByFileName(fileName);
@@ -55,7 +54,5 @@ export async function uploadImageWithPresignedUrl(fileUri, fileName) {
     await uploadFileToS3(uploadUrl, fileUri, fileName);
 
     return fileUrl;
-  } catch (err) {
-    throw err;
-  }
+
 }

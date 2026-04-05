@@ -15,33 +15,26 @@ const inferContentTypeByName = fileName => {
 
 // 여러 Presigned URL 요청
 export const getPresignedUrls = async filesOrNames => {
-  try {
-    const isArray = Array.isArray(filesOrNames);
-    const first = isArray ? filesOrNames[0] : null;
+  const isArray = Array.isArray(filesOrNames);
+  const first = isArray ? filesOrNames[0] : null;
 
-    const isNewFormat =
-      isArray &&
-      first &&
-      typeof first === 'object' &&
-      typeof first.fileName === 'string';
+  const isNewFormat =
+    isArray &&
+    first &&
+    typeof first === 'object' &&
+    typeof first.fileName === 'string';
 
-    const payload = isNewFormat
-      ? {files: filesOrNames}
-      : {fileNames: filesOrNames};
+  const payload = isNewFormat
+    ? {files: filesOrNames}
+    : {fileNames: filesOrNames};
 
-    const response = await apiClient.post('/image/upload-urls', payload, {
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+  const response = await apiClient.post('/image/upload-urls', payload, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
 
-    return response.data; // Array<string | {url: string}>
-  } catch (error) {
-      'Presigned URL 목록 요청 실패:',
-      error.response?.data || error.message,
-    );
-    throw error;
-  }
+  return response.data; // Array<string | {url: string}>
 };
 
 export const uploadFileToS3 = async (
@@ -50,53 +43,42 @@ export const uploadFileToS3 = async (
   contentTypeOrFileName,
   maybeFileName,
 ) => {
-  try {
-    let fileName = maybeFileName;
-    let contentType = contentTypeOrFileName;
+  let fileName = maybeFileName;
+  let contentType = contentTypeOrFileName;
 
- // (uploadUrl, fileUri, fileName) 형태
-    if (!maybeFileName) {
-      fileName = contentTypeOrFileName;
-      contentType = inferContentTypeByName(fileName);
-    } else {
-      contentType = contentType || inferContentTypeByName(fileName);
-    }
-
- // file:// 제거
-    const path = String(fileUri || '').startsWith('file://')
-      ? String(fileUri).replace('file://', '')
-      : String(fileUri);
-
-    const stat = await RNBlobUtil.fs.stat(path);
-    const contentLength = Number(stat?.size || 0);
-
-      contentType,
-      contentLength,
-      path,
-      fileName,
-    });
-
-    const res = await RNBlobUtil.fetch(
-      'PUT',
-      uploadUrl,
-      {
-        'Content-Type': contentType,
-        'Content-Length': String(contentLength),
-      },
-      RNBlobUtil.wrap(path),
-    );
-
-    const info = res?.info?.() || {};
-    const status = info.status;
-
- // 403일 때 S3가 XML로 이유를 줌 (SignatureDoesNotMatch / AccessDenied 등)
-    if (status !== 200 && status !== 204) {
-      const bodyText = res?.data || '';
-      throw new Error(`S3 업로드 실패: ${status}`);
-    }
-
-    return true;
-  } catch (err) {
-    throw err;
+  // (uploadUrl, fileUri, fileName) 형태
+  if (!maybeFileName) {
+    fileName = contentTypeOrFileName;
+    contentType = inferContentTypeByName(fileName);
+  } else {
+    contentType = contentType || inferContentTypeByName(fileName);
   }
+
+  // file:// 제거
+  const path = String(fileUri || '').startsWith('file://')
+    ? String(fileUri).replace('file://', '')
+    : String(fileUri);
+
+  const stat = await RNBlobUtil.fs.stat(path);
+  const contentLength = Number(stat?.size || 0);
+
+  const res = await RNBlobUtil.fetch(
+    'PUT',
+    uploadUrl,
+    {
+      'Content-Type': contentType,
+      'Content-Length': String(contentLength),
+    },
+    RNBlobUtil.wrap(path),
+  );
+
+  const info = res?.info?.() || {};
+  const status = info.status;
+
+  // 403일 때 S3가 XML로 이유를 줌 (SignatureDoesNotMatch / AccessDenied 등)
+  if (status !== 200 && status !== 204) {
+    throw new Error(`S3 업로드 실패: ${status}`);
+  }
+
+  return true;
 };

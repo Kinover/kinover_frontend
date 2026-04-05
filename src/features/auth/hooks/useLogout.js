@@ -18,35 +18,19 @@ export const useLogout = () => {
 
   const logout = useCallback(async () => {
  // 0) 소켓 끊기
-    try {
       stopChatSocket();
-    } catch (e) {
-      null;
-    }
 
  // 1) 외부/서버 정리(실패해도 진행)
-    try {
       await deleteFcmToken();
-    } catch (e) {
-    }
-
-    try {
       await KakaoLogin.logout();
-    } catch (e) {
-    }
 
  // 2) 로컬 로그인정보 삭제 (needsSignup 포함)
-    try {
       await deleteLoginInfo();
-    } catch (e) {
-    }
 
  // 3) persist 완전 초기화
-    try {
       await persistor.purge();
       await persistor.flush();
-    } catch (e) {
-    }
+  
 
  // 4) 타이밍 안정화
     await nextTick();

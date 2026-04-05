@@ -67,6 +67,7 @@ export default function ChatRoomScreenTemplate({
         userId={myUserId}
         enableMediaPicker={!isKinoRoom}
         mentionUsers={roomUsers}
+        enableMention={!isKinoRoom}
       />
 
       <ToastModal

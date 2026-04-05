@@ -131,7 +131,11 @@ export default function PostPage({route}) {
     postId ? state.memory?.postsById?.[String(postId)] : null,
   );
   const fallbackCategoryList = useSelector(state => state.category?.categoryList || []);
-  const {data: postQueryData} = useGetPostByIdQuery(postId, {skip: !postId});
+  const {data: postQueryData} = useGetPostByIdQuery(postId, {
+    skip: !postId,
+    refetchOnMountOrArgChange: true,
+    refetchOnFocus: true,
+  });
   const {data: categoryQueryData = []} = useGetCategoriesQuery();
   const postFromStore = postQueryData ?? fallbackPostFromStore;
   const categoryList = categoryQueryData?.length ? categoryQueryData : fallbackCategoryList;

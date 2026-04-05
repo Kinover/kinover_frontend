@@ -771,7 +771,7 @@ function Schedule({
 
     return {
       type: TYPE.INDIVIDUAL,
-      pillText: '개별',
+      pillText: '개인',
       icon: '',
       iconBg: COLOR.GRAY_BG,
       pillBg: COLOR.GRAY_PILL,

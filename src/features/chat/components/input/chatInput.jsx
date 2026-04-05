@@ -108,6 +108,7 @@ const ChatInput = forwardRef(function ChatInput(
     userId,
     enableMediaPicker = true,
     mentionUsers: mentionUsersProp = [],
+    enableMention = true,
   },
   ref,
 ) {
@@ -203,8 +204,8 @@ const ChatInput = forwardRef(function ChatInput(
   }, [chatUsersRaw, userId]);
 
   const activeMention = useMemo(
-    () => findActiveMentionQuery(message || '', cursor),
-    [message, cursor],
+    () => (enableMention ? findActiveMentionQuery(message || '', cursor) : null),
+    [enableMention, message, cursor],
   );
 
   const mentionCandidates = useMemo(() => {
@@ -543,7 +544,9 @@ const ChatInput = forwardRef(function ChatInput(
 
  // ===== 1) TEXT =====
       if (text) {
-        const mentionUserIds = extractMentionUserIds(text, mentionUsers);
+        const mentionUserIds = enableMention
+          ? extractMentionUserIds(text, mentionUsers)
+          : [];
 
         const clientMessageId = makeClientId();
         const optimisticId = `client-${clientMessageId}`;
@@ -684,6 +687,7 @@ const ChatInput = forwardRef(function ChatInput(
     resolveUploadUri,
     compressUploadUri,
     mentionUsers,
+    enableMention,
   ]);
 
  // ====== pinch gesture (grid columns) ======
@@ -845,7 +849,9 @@ const ChatInput = forwardRef(function ChatInput(
                 setCursor(c => Math.min(c, t.length));
               }
             }}
-            placeholder="@이름 으로 멘션 가능"
+            placeholder={
+              enableMention ? '@이름 으로 멘션 가능' : '메시지를 입력하세요'
+            }
             placeholderTextColor="#999"
             returnKeyType="send"
             editable={!isSending && !sendingLockRef.current}

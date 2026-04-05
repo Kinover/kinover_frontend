@@ -3,7 +3,7 @@
 export const APP_EVENTS = [
   {
     id: 'home_event_2026_01',
-    enabled: true,
+    enabled: false,
     priority: 100,
     title: '키노버 새 소식',
     message: '가족 초대 기능이 업데이트 되었어요!\n지금 확인해볼까요?',

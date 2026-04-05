@@ -37,16 +37,12 @@ export function AppStateResourceBridge() {
 
       if (!isLogin || !userId) return;
 
-      dispatch(fetchUserThunk()).catch(e =>
-      );
+      dispatch(fetchUserThunk())
 
       if (familyId) {
-        dispatch(fetchFamilyThunk(familyId)).catch(e =>
-        );
-        dispatch(fetchFamilyUserListThunk(familyId)).catch(e =>
-        );
-        dispatch(fetchFamilyStatusThunk(familyId)).catch(e =>
-        );
+        dispatch(fetchFamilyThunk(familyId))
+        dispatch(fetchFamilyUserListThunk(familyId))
+        dispatch(fetchFamilyStatusThunk(familyId))
         // RTK Query: ChatRoom 태그 무효화 → 활성 getChatRooms 쿼리 자동 refetch
         dispatch(baseApi.util.invalidateTags(['ChatRoom']));
       }

@@ -46,7 +46,7 @@ export default function RootScreen() {
   const [isGuest, setIsGuest] = useState(false);
   const [hasFamily, setHasFamily] = useState(null);
   const [needsSignup, setNeedsSignup] = useState(false);
-  const [authTimeout, setAuthTimeout] = useState(false);
+  const [_authTimeout, setAuthTimeout] = useState(false);
 
   async function refreshAuthFlags() {
     try {

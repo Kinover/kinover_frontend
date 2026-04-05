@@ -1,6 +1,13 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Platform, Image } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Platform,
+  Image,
+} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -44,158 +51,156 @@ export default function ReceiveChat({
   unreadCount = 0,
 }) {
   const styles = useScaledStyleSheet(rf => ({
+    receivedContainer: {flexDirection: 'row', alignItems: 'flex-start'},
 
-  receivedContainer: {flexDirection: 'row', alignItems: 'flex-start'},
+    receivedUserImage: {
+      width: AVATAR_W,
+      height: AVATAR_W,
+      borderRadius: getResponsiveWidth(25),
+      backgroundColor: '#ddd',
+      marginRight: getResponsiveWidth(8),
+    },
+    avatarSpacer: {
+      width: AVATAR_W,
+      marginRight: getResponsiveWidth(10),
+    },
 
-  receivedUserImage: {
-    width: AVATAR_W,
-    height: AVATAR_W,
-    borderRadius: getResponsiveWidth(25),
-    backgroundColor: '#ddd',
-    marginRight: getResponsiveWidth(8),
-  },
-  avatarSpacer: {
-    width: AVATAR_W,
-    marginRight: getResponsiveWidth(10),
-  },
+    textContainer: {flex: 1, flexDirection: 'column'},
 
-  textContainer: {flex: 1, flexDirection: 'column'},
+    userName: {
+      fontFamily: 'Pretendard-Medium',
+      fontSize: CHATROOM_STYLE().messageFontSize,
+      color: '#444',
+      marginBottom: getResponsiveHeight(7),
+    },
 
-  userName: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: CHATROOM_STYLE().messageFontSize,
-    color: '#444',
-    marginBottom: getResponsiveHeight(7),
-  },
+    messageLine: {flexDirection: 'row', alignItems: 'flex-end', flexShrink: 1},
 
-  messageLine: {flexDirection: 'row', alignItems: 'flex-end', flexShrink: 1},
+    receivedBubble: {
+      backgroundColor: '#FFECC3',
+      borderRadius: getResponsiveIconSize(20),
+      maxWidth: getResponsiveWidth(260),
+      flexShrink: 1,
+    },
 
-  receivedBubble: {
-    backgroundColor: '#FFECC3',
-    borderRadius: getResponsiveIconSize(20),
-    maxWidth: getResponsiveWidth(260),
-    flexShrink: 1,
-  },
+    textPadding: {
+      paddingVertical: getResponsiveHeight(10),
+      paddingHorizontal: getResponsiveWidth(14.5),
+    },
+    imagePadding: {
+      paddingVertical: getResponsiveHeight(4.5),
+      paddingHorizontal: getResponsiveWidth(4.5),
+    },
 
-  textPadding: {
-    paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(14.5),
-  },
-  imagePadding: {
-    paddingVertical: getResponsiveHeight(4.5),
-    paddingHorizontal: getResponsiveWidth(4.5),
-  },
+    receivedText: {
+      fontFamily: CHATROOM_STYLE().messageFontFamily,
+      fontSize: CHATROOM_STYLE().messageFontSize,
+      color: 'black',
+      flexWrap: 'wrap',
+      lineHeight: rf(17),
+    },
 
-  receivedText: {
-    fontFamily: CHATROOM_STYLE().messageFontFamily,
-    fontSize: CHATROOM_STYLE().messageFontSize,
-    color: 'black',
-    flexWrap: 'wrap',
-    lineHeight: rf(17),
-  },
+    mentionText: {
+      color: '#FFC84D',
+      fontFamily: 'Pretendard-SemiBold',
+    },
 
-  mentionText: {
-    color: '#FFC84D',
-    fontFamily: 'Pretendard-SemiBold',
-  },
+    metaLine: {
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      justifyContent: 'flex-end',
+      marginLeft: getResponsiveWidth(5),
+    },
+    unreadCountText: {
+      fontSize: rf(11),
+      color: '#FFC84D',
+      fontFamily: 'Pretendard-SemiBold',
+      ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+    },
 
-  metaLine: {
-    flexDirection: 'column',
-    alignItems: 'flex-start',
-    justifyContent: 'flex-end',
-    marginLeft: getResponsiveWidth(5),
-  },
-  unreadCountText: {
-    fontSize: rf(11),
-    color: '#FFC84D',
-    fontFamily: 'Pretendard-SemiBold',
-    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
-  },
+    receivedTime: {
+      fontSize: rf(10.5),
+      color: '#666',
+      lineHeight: rf(13),
+      ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+    },
 
-  receivedTime: {
-    fontSize: rf(10.5),
-    color: '#666',
-    lineHeight: rf(13),
-    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
-  },
+    imageGrid: {gap: getResponsiveWidth(4)},
+    thumbWrap: {position: 'relative'},
+    imageItem: {
+      width: getResponsiveWidth(70),
+      height: getResponsiveWidth(70),
+      borderRadius: 8,
+      margin: 2,
+      backgroundColor: '#F3F4F6',
+    },
+    thumbFallback: {backgroundColor: '#E5E7EB'},
 
-  imageGrid: {gap: getResponsiveWidth(4)},
-  thumbWrap: {position: 'relative'},
-  imageItem: {
-    width: getResponsiveWidth(70),
-    height: getResponsiveWidth(70),
-    borderRadius: 8,
-    margin: 2,
-    backgroundColor: '#F3F4F6',
-  },
-  thumbFallback: {backgroundColor: '#E5E7EB'},
+    singleBase: {
+      borderRadius: 10,
+      backgroundColor: '#F3F4F6',
+    },
 
-  singleBase: {
-    borderRadius: 10,
-    backgroundColor: '#F3F4F6',
-  },
+    moreOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 8,
+    },
+    moreOverlayText: {
+      color: '#fff',
+      fontSize: rf(16),
+      fontFamily: 'Pretendard-SemiBold',
+    },
 
-  moreOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  moreOverlayText: {
-    color: '#fff',
-    fontSize: rf(16),
-    fontFamily: 'Pretendard-SemiBold',
-  },
+    playOverlay: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    playTriangle: {
+      width: 0,
+      height: 0,
+      borderLeftWidth: 12,
+      borderTopWidth: 8,
+      borderBottomWidth: 8,
+      borderLeftColor: 'rgba(255,255,255,0.95)',
+      borderTopColor: 'transparent',
+      borderBottomColor: 'transparent',
+      marginLeft: 3,
+    },
 
-  playOverlay: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playTriangle: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 12,
-    borderTopWidth: 8,
-    borderBottomWidth: 8,
-    borderLeftColor: 'rgba(255,255,255,0.95)',
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    marginLeft: 3,
-  },
-
-  playOverlaySingle: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playTriangleBig: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 22,
-    borderTopWidth: 14,
-    borderBottomWidth: 14,
-    borderLeftColor: 'rgba(255,255,255,0.95)',
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    marginLeft: 5,
-  },
-
+    playOverlaySingle: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    playTriangleBig: {
+      width: 0,
+      height: 0,
+      borderLeftWidth: 22,
+      borderTopWidth: 14,
+      borderBottomWidth: 14,
+      borderLeftColor: 'rgba(255,255,255,0.95)',
+      borderTopColor: 'transparent',
+      borderBottomColor: 'transparent',
+      marginLeft: 5,
+    },
   }));
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
 
- // 타입 먼저 계산 (useEffect보다 위에 있어야 함)
+  // 타입 먼저 계산 (useEffect보다 위에 있어야 함)
   const normalizedType = useMemo(
     () => String(messageType ?? 'text').toLowerCase(),
     [messageType],
@@ -204,7 +209,7 @@ export default function ReceiveChat({
   const isVideo = normalizedType === 'video';
   const isMedia = isImage || isVideo;
 
- // 미디어 url 정리도 먼저 (ratio 계산에서 쓰니까 위로)
+  // 미디어 url 정리도 먼저 (ratio 계산에서 쓰니까 위로)
   const safeMediaRaw = useMemo(() => {
     if (Array.isArray(mediaUrls)) return mediaUrls.filter(Boolean);
     if (mediaUrls) return [mediaUrls].filter(Boolean);
@@ -223,7 +228,7 @@ export default function ReceiveChat({
   const hasExtra = safeMediaUrls.length > 9;
   const displayMedia = hasExtra ? safeMediaUrls.slice(0, 9) : safeMediaUrls;
 
- // videoThumbMap을 ratio effect보다 먼저 선언해야 함
+  // videoThumbMap을 ratio effect보다 먼저 선언해야 함
   const [videoThumbMap, setVideoThumbMap] = useState({});
 
   useEffect(() => {
@@ -260,12 +265,12 @@ export default function ReceiveChat({
     };
   }, [isVideo, safeMediaUrls]);
 
- // 단건 비율 상태
+  // 단건 비율 상태
   const SINGLE_W = getResponsiveWidth(200);
   const SINGLE_MAX_H = getResponsiveWidth(500);
   const [singleRatio, setSingleRatio] = useState(null);
 
- // 단건 비율 계산 (선언 순서 정리 완료)
+  // 단건 비율 계산 (선언 순서 정리 완료)
   useEffect(() => {
     if (!isMedia) return;
     if (safeMediaUrls.length !== 1) return;
@@ -275,7 +280,7 @@ export default function ReceiveChat({
 
     let alive = true;
 
- // uri 바뀌면 일단 초기화 (레이아웃 점프/잔상 방지)
+    // uri 바뀌면 일단 초기화 (레이아웃 점프/잔상 방지)
     setSingleRatio(null);
 
     if (isImage) {
@@ -308,7 +313,7 @@ export default function ReceiveChat({
           },
         );
       } else {
- // 썸네일 아직 없으면 기본값으로 먼저 렌더
+        // 썸네일 아직 없으면 기본값으로 먼저 렌더
         setSingleRatio(16 / 9);
       }
     }
@@ -318,7 +323,7 @@ export default function ReceiveChat({
     };
   }, [isMedia, isImage, isVideo, safeMediaUrls, videoThumbMap]);
 
- // 시간 표시 로직
+  // 시간 표시 로직
   const [showTime, setShowTime] = useState(false);
   const idRef = useRef(Math.random().toString(36).slice(2));
 
@@ -331,7 +336,7 @@ export default function ReceiveChat({
     return () => unregisterTimeLast(key, idRef.current);
   }, [key, timeMs]);
 
- // preload
+  // preload
   useEffect(() => {
     if (!isImage) return;
     if (!displayMedia.length) return;
@@ -397,12 +402,6 @@ export default function ReceiveChat({
                   source={thumbSource}
                   style={styles.imageItem}
                   resizeMode={FastImage.resizeMode.cover}
-                  onError={e =>
-                      '❌ ReceiveChat thumb error:',
-                      item,
-                      e?.nativeEvent,
-                    )
-                  }
                 />
               ) : (
                 <View style={[styles.imageItem, styles.thumbFallback]} />
@@ -452,12 +451,6 @@ export default function ReceiveChat({
                 {width: SINGLE_W, height: finalH, aspectRatio: finalRatio},
               ]}
               resizeMode={FastImage.resizeMode.contain}
-              onError={e =>
-                  '❌ ReceiveChat single thumb error:',
-                  uri,
-                  e?.nativeEvent,
-                )
-              }
             />
           ) : (
             <View
@@ -501,18 +494,12 @@ export default function ReceiveChat({
               cache: FastImage.cacheControl.immutable,
             }}
             style={styles.receivedUserImage}
-            onError={e =>
-            }
           />
         </TouchableOpacity>
       )}
 
       <View style={styles.textContainer}>
-        {!isGrouped && (
-          <AppText style={styles.userName}>
-            {userName}
-          </AppText>
-        )}
+        {!isGrouped && <AppText style={styles.userName}>{userName}</AppText>}
 
         <View style={styles.messageLine}>
           {isMedia && safeMediaUrls.length === 1 ? (
@@ -538,9 +525,7 @@ export default function ReceiveChat({
           {(showTime || unreadCount > 0) && (
             <View style={styles.metaLine}>
               {unreadCount > 0 && (
-                <AppText style={styles.unreadCountText}>
-                  {unreadCount}
-                </AppText>
+                <AppText style={styles.unreadCountText}>{unreadCount}</AppText>
               )}
               {showTime && (
                 <AppText style={styles.receivedTime}>
@@ -572,4 +557,3 @@ export default function ReceiveChat({
 }
 
 const AVATAR_W = getResponsiveWidth(38);
-

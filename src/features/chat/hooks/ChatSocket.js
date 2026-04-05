@@ -181,7 +181,6 @@ async function openSocket() {
       clearTimeout(heartbeatTimeout);
       heartbeatTimeout = null;
     }
-    try {
       const data = JSON.parse(e.data);
       const payload =
         data?.payload && typeof data.payload === 'object' ? data.payload : data;
@@ -226,14 +225,11 @@ async function openSocket() {
 
       messageBatch.push(payload);
       scheduleFlush();
-    } catch (err) {
-    }
+   
   };
 
-  ws.onerror = err => {
-  };
 
-  ws.onclose = e => {
+  ws.onclose = () => {
     ws = null;
 
 

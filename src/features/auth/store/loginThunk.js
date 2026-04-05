@@ -213,11 +213,6 @@ export const appleLoginThunk = identityToken => {
         finalHasFamily = false;
       }
 
-        token: token ? 'OK' : 'NO',
-        familyId,
-        hasFamily: finalHasFamily,
-      });
-
       return {
         ...response,
         token,
@@ -230,11 +225,6 @@ export const appleLoginThunk = identityToken => {
         (typeof error?.response?.data === 'string' ? error.response.data : null) ||
         error?.message ||
         '애플 로그인에 실패했어요';
-
-        message,
-        status: error?.response?.status,
-        response: error?.response?.data ?? null,
-      });
 
       dispatch(setLoginError(String(message)));
       throw error;

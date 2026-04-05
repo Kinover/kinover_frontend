@@ -1,6 +1,14 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Platform, ActivityIndicator, Image } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Platform,
+  ActivityIndicator,
+  Image,
+} from 'react-native';
 import AppText from 'components/AppText';
 import FastImage from '@d11/react-native-fast-image';
 
@@ -40,161 +48,159 @@ export default function SendChat({
 
   mentionUsers = [],
 
- // 이 메시지를 안 읽은 사람 수
+  // 이 메시지를 안 읽은 사람 수
   unreadCount = 0,
 }) {
   const styles = useScaledStyleSheet(rf => ({
+    sendContainer: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'flex-end',
+    },
 
-  sendContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'flex-end',
-  },
+    metaLine: {
+      flexDirection: 'column',
+      alignItems: 'flex-end',
+      justifyContent: 'flex-end',
+      marginRight: getResponsiveWidth(5),
+      marginBottom: getResponsiveHeight(2),
+    },
+    unreadCountText: {
+      fontSize: rf(11),
+      color: '#FFC84D',
+      fontFamily: 'Pretendard-SemiBold',
+      ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+    },
 
-  metaLine: {
-    flexDirection: 'column',
-    alignItems: 'flex-end',
-    justifyContent: 'flex-end',
-    marginRight: getResponsiveWidth(5),
-    marginBottom: getResponsiveHeight(2),
-  },
-  unreadCountText: {
-    fontSize: rf(11),
-    color: '#FFC84D',
-    fontFamily: 'Pretendard-SemiBold',
-    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
-  },
+    sendBubble: {
+      backgroundColor: '#FFECC3',
+      borderRadius: getResponsiveIconSize(20),
+      maxWidth: getResponsiveWidth(260),
+      flexShrink: 1,
+      alignSelf: 'flex-end',
+    },
+    textPadding: {
+      paddingVertical: getResponsiveHeight(10),
+      paddingHorizontal: getResponsiveWidth(14.5),
+    },
+    imagePadding: {
+      paddingVertical: getResponsiveHeight(4.5),
+      paddingHorizontal: getResponsiveWidth(4.5),
+    },
+    sendText: {
+      fontFamily: CHATROOM_STYLE().messageFontFamily,
+      fontSize: CHATROOM_STYLE().messageFontSize,
+      color: 'black',
+      lineHeight: rf(17),
+    },
+    mentionText: {
+      color: '#FFC84D',
+      fontFamily: 'Pretendard-SemiBold',
+    },
 
-  sendBubble: {
-    backgroundColor: '#FFECC3',
-    borderRadius: getResponsiveIconSize(20),
-    maxWidth: getResponsiveWidth(260),
-    flexShrink: 1,
-    alignSelf: 'flex-end',
-  },
-  textPadding: {
-    paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(14.5),
-  },
-  imagePadding: {
-    paddingVertical: getResponsiveHeight(4.5),
-    paddingHorizontal: getResponsiveWidth(4.5),
-  },
-  sendText: {
-    fontFamily: CHATROOM_STYLE().messageFontFamily,
-    fontSize: CHATROOM_STYLE().messageFontSize,
-    color: 'black',
-    lineHeight: rf(17),
-  },
-  mentionText: {
-    color: '#FFC84D',
-    fontFamily: 'Pretendard-SemiBold',
-  },
+    sendTime: {
+      fontSize: rf(10.5),
+      color: '#666',
+      ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
+    },
 
-  sendTime: {
-    fontSize: rf(10.5),
-    color: '#666',
-    ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
-  },
+    imageGrid: {gap: getResponsiveWidth(4)},
+    thumbWrap: {position: 'relative'},
 
-  imageGrid: {gap: getResponsiveWidth(4)},
-  thumbWrap: {position: 'relative'},
+    imageItem: {
+      width: getResponsiveWidth(70),
+      height: getResponsiveWidth(70),
+      borderRadius: 4,
+      margin: 2,
+      backgroundColor: '#F3F4F6',
+    },
+    thumbFallback: {backgroundColor: '#E5E7EB'},
 
-  imageItem: {
-    width: getResponsiveWidth(70),
-    height: getResponsiveWidth(70),
-    borderRadius: 4,
-    margin: 2,
-    backgroundColor: '#F3F4F6',
-  },
-  thumbFallback: {backgroundColor: '#E5E7EB'},
+    singleWrapper: {position: 'relative', alignSelf: 'flex-end'},
+    singleBase: {
+      borderRadius: 10,
+      backgroundColor: '#F3F4F6',
+    },
 
-  singleWrapper: {position: 'relative', alignSelf: 'flex-end'},
-  singleBase: {
-    borderRadius: 10,
-    backgroundColor: '#F3F4F6',
-  },
+    moreOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderRadius: 4,
+    },
+    moreOverlayText: {
+      color: '#fff',
+      fontSize: rf(16),
+      fontFamily: 'Pretendard-SemiBold',
+    },
 
-  moreOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 4,
-  },
-  moreOverlayText: {
-    color: '#fff',
-    fontSize: rf(16),
-    fontFamily: 'Pretendard-SemiBold',
-  },
+    loadingOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.35)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingText: {
+      marginTop: 6,
+      color: '#fff',
+      fontFamily: 'Pretendard-Medium',
+      fontSize: rf(12),
+    },
+    failText: {
+      color: '#fff',
+      fontFamily: 'Pretendard-SemiBold',
+      fontSize: rf(13),
+    },
 
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: 6,
-    color: '#fff',
-    fontFamily: 'Pretendard-Medium',
-    fontSize: rf(12),
-  },
-  failText: {
-    color: '#fff',
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: rf(13),
-  },
+    playOverlay: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    playTriangle: {
+      width: 0,
+      height: 0,
+      borderLeftWidth: 12,
+      borderTopWidth: 8,
+      borderBottomWidth: 8,
+      borderLeftColor: 'rgba(255,255,255,0.95)',
+      borderTopColor: 'transparent',
+      borderBottomColor: 'transparent',
+      marginLeft: 3,
+    },
 
-  playOverlay: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playTriangle: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 12,
-    borderTopWidth: 8,
-    borderBottomWidth: 8,
-    borderLeftColor: 'rgba(255,255,255,0.95)',
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    marginLeft: 3,
-  },
-
-  playOverlaySingle: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  playTriangleBig: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: 22,
-    borderTopWidth: 14,
-    borderBottomWidth: 14,
-    borderLeftColor: 'rgba(255,255,255,0.95)',
-    borderTopColor: 'transparent',
-    borderBottomColor: 'transparent',
-    marginLeft: 5,
-  },
-
+    playOverlaySingle: {
+      position: 'absolute',
+      left: 0,
+      top: 0,
+      right: 0,
+      bottom: 0,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    playTriangleBig: {
+      width: 0,
+      height: 0,
+      borderLeftWidth: 22,
+      borderTopWidth: 14,
+      borderBottomWidth: 14,
+      borderLeftColor: 'rgba(255,255,255,0.95)',
+      borderTopColor: 'transparent',
+      borderBottomColor: 'transparent',
+      marginLeft: 5,
+    },
   }));
   // <AppText />는 접근성 정책 포함 AppText로 통일
   const Text = AppText;
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
- // 타입 먼저 계산 (useEffect보다 위)
+  // 타입 먼저 계산 (useEffect보다 위)
   const normalizedType = useMemo(
     () => String(messageType ?? 'text').toLowerCase(),
     [messageType],
@@ -206,7 +212,7 @@ export default function SendChat({
   const isUploading = uploadStatus === 'uploading';
   const isFailed = uploadStatus === 'failed';
 
- // 미디어 url 정리도 위에서
+  // 미디어 url 정리도 위에서
   const safeMediaRaw = useMemo(() => {
     if (Array.isArray(mediaUrls)) return mediaUrls.filter(Boolean);
     if (mediaUrls) return [mediaUrls].filter(Boolean);
@@ -220,7 +226,7 @@ export default function SendChat({
   const hasExtra = safeMediaUrls.length > 9;
   const displayMedia = hasExtra ? safeMediaUrls.slice(0, 9) : safeMediaUrls;
 
- // 영상 썸네일 맵 (ratio 계산에서 쓰니까 위로)
+  // 영상 썸네일 맵 (ratio 계산에서 쓰니까 위로)
   const [videoThumbMap, setVideoThumbMap] = useState({});
 
   useEffect(() => {
@@ -258,7 +264,7 @@ export default function SendChat({
     };
   }, [isVideo, safeMediaUrls]);
 
- // 단건(1장) 원본 비율 렌더를 위한 ratio
+  // 단건(1장) 원본 비율 렌더를 위한 ratio
   const SINGLE_W = getResponsiveWidth(200);
   const SINGLE_MAX_H = getResponsiveWidth(500);
   const [singleRatio, setSingleRatio] = useState(null);
@@ -272,7 +278,7 @@ export default function SendChat({
 
     let alive = true;
 
- // uri 바뀔 때 잔상 방지
+    // uri 바뀔 때 잔상 방지
     setSingleRatio(null);
 
     if (isImage) {
@@ -305,7 +311,7 @@ export default function SendChat({
           },
         );
       } else {
- // 썸네일 늦게 나와도 레이아웃 잡히게
+        // 썸네일 늦게 나와도 레이아웃 잡히게
         setSingleRatio(16 / 9);
       }
     }
@@ -315,7 +321,7 @@ export default function SendChat({
     };
   }, [isMedia, isImage, isVideo, safeMediaUrls, videoThumbMap]);
 
- // 이미지 preload (그리드만)
+  // 이미지 preload (그리드만)
   useEffect(() => {
     if (!isImage) return;
     if (!displayMedia.length) return;
@@ -324,7 +330,7 @@ export default function SendChat({
     );
   }, [isImage, displayMedia]);
 
- // 시간 표시 로직
+  // 시간 표시 로직
   const [showTime, setShowTime] = useState(false);
   const idRef = useRef(Math.random().toString(36).slice(2));
 
@@ -364,14 +370,10 @@ export default function SendChat({
           {isUploading ? (
             <>
               <ActivityIndicator color="#fff" />
-              <AppText style={styles.loadingText}>
-                전송 중…
-              </AppText>
+              <AppText style={styles.loadingText}>전송 중…</AppText>
             </>
           ) : (
-            <AppText style={styles.failText}>
-              전송 실패
-            </AppText>
+            <AppText style={styles.failText}>전송 실패</AppText>
           )}
         </View>
       );
@@ -409,7 +411,10 @@ export default function SendChat({
   );
 
   const renderGrid = () => (
-    <ChatBubble alignment="right" paddingVariant="media" backgroundColor="#FFECC3">
+    <ChatBubble
+      alignment="right"
+      paddingVariant="media"
+      backgroundColor="#FFECC3">
       <FlatList
         data={displayMedia}
         keyExtractor={(item, index) => String(item) + index}
@@ -433,8 +438,6 @@ export default function SendChat({
                     source={thumbSource}
                     style={styles.imageItem}
                     resizeMode={FastImage.resizeMode.cover}
-                    onError={e =>
-                    }
                   />
                 ) : (
                   <View style={[styles.imageItem, styles.thumbFallback]} />
@@ -463,7 +466,7 @@ export default function SendChat({
     </ChatBubble>
   );
 
- // 단건(1장) 원본 비율 렌더
+  // 단건(1장) 원본 비율 렌더
   const renderSingle = () => {
     const uri = safeMediaUrls[0];
     const thumbSource = getThumbSource(uri);
@@ -494,8 +497,6 @@ export default function SendChat({
                   },
                 ]}
                 resizeMode={FastImage.resizeMode.contain}
-                onError={e =>
-                }
               />
             ) : (
               <View
@@ -530,14 +531,10 @@ export default function SendChat({
       {(showTime && !!chatTime) || unreadCount > 0 ? (
         <View style={styles.metaLine}>
           {unreadCount > 0 && (
-            <AppText style={styles.unreadCountText}>
-              {unreadCount}
-            </AppText>
+            <AppText style={styles.unreadCountText}>{unreadCount}</AppText>
           )}
           {showTime && !!chatTime && (
-            <AppText style={styles.sendTime}>
-              {formatTime(chatTime)}
-            </AppText>
+            <AppText style={styles.sendTime}>{formatTime(chatTime)}</AppText>
           )}
         </View>
       ) : null}
@@ -549,7 +546,10 @@ export default function SendChat({
           renderGrid()
         )
       ) : hasText ? (
-        <ChatBubble alignment="right" paddingVariant="text" backgroundColor="#FFECC3">
+        <ChatBubble
+          alignment="right"
+          paddingVariant="text"
+          backgroundColor="#FFECC3">
           <MentionText
             text={message}
             users={mentionUsers}
@@ -569,4 +569,3 @@ export default function SendChat({
     </View>
   );
 }
-

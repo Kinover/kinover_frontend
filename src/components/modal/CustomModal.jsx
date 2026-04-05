@@ -51,6 +51,8 @@ export default function CustomModal({
 
  /** overlay 레벨 요소 */
   overlayChildren,
+  /** 모달 박스 바깥(아래) 영역 */
+  footerOutside,
 
  /** 기존 오버라이드 */
   modalBoxStyle,
@@ -388,6 +390,12 @@ export default function CustomModal({
             </View>
           </View>
         )}
+
+        {!!footerOutside && (
+          <View style={styles.footerOutsideWrap} pointerEvents="box-none">
+            {footerOutside}
+          </View>
+        )}
       </Animated.View>
 
       {!!overlayChildren && (
@@ -438,6 +446,11 @@ function makeStyles(fontScale) {
     modalOuter: {
       width: '100%',
       alignItems: 'center',
+    },
+    footerOutsideWrap: {
+      marginTop: getResponsiveHeight(10),
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     dim: {
       ...StyleSheet.absoluteFillObject,

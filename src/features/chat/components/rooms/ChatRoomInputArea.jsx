@@ -7,6 +7,7 @@ export default function ChatRoomInputArea({
   userId,
   enableMediaPicker,
   mentionUsers,
+  enableMention = true,
 }) {
   return (
     <ChatInput
@@ -14,6 +15,7 @@ export default function ChatRoomInputArea({
       userId={userId}
       enableMediaPicker={enableMediaPicker}
       mentionUsers={mentionUsers}
+      enableMention={enableMention}
     />
   );
 }

@@ -20,9 +20,8 @@ const useFamilyStatusSocket = familyId => {
     if (!token || !fid) return;
 
     if (socketRef.current) {
-      try {
-        socketRef.current.close();
-      } catch {}
+      socketRef.current.close();
+
       socketRef.current = null;
     }
 
@@ -39,22 +38,18 @@ const useFamilyStatusSocket = familyId => {
     socket.onopen = () => {};
 
     socket.onmessage = event => {
-      try {
-        const list = JSON.parse(event.data);
-        if (!Array.isArray(list)) return;
+      const list = JSON.parse(event.data);
+      if (!Array.isArray(list)) return;
 
-        const onlineIds = list
-          .filter(u => u?.online === true)
-          .map(u => u.userId);
+      const onlineIds = list.filter(u => u?.online === true).map(u => u.userId);
 
-        const lastActiveMap = list.reduce((acc, u) => {
-          acc[String(u.userId)] = u.lastActiveAt ?? null;
-          return acc;
-        }, {});
+      const lastActiveMap = list.reduce((acc, u) => {
+        acc[String(u.userId)] = u.lastActiveAt ?? null;
+        return acc;
+      }, {});
 
-        dispatch(setOnlineUserIds(onlineIds));
-        dispatch(setLastActiveMap(lastActiveMap));
-      } catch (e) {}
+      dispatch(setOnlineUserIds(onlineIds));
+      dispatch(setLastActiveMap(lastActiveMap));
     };
 
     socket.onerror = () => {};
@@ -66,9 +61,7 @@ const useFamilyStatusSocket = familyId => {
 
   const closeSocket = useCallback(() => {
     if (socketRef.current) {
-      try {
         socketRef.current.close();
-      } catch {}
       socketRef.current = null;
     }
   }, []);

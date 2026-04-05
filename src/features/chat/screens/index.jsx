@@ -124,8 +124,16 @@ export default function CommunicationScreen({navigation}) {
   }));
   const modalRef = useRef(null);
 
-  const {userId} = useSelector(s => s.user);
-  const {familyId} = useSelector(s => s.family);
+  const user = useSelector(s => s.user || {});
+  const loginAuthChecked = useSelector(s => !!s.login?.authChecked);
+  const familyState = useSelector(s => s.family || {});
+
+  const userId = user?.userId ?? user?.id ?? null;
+  const familyId =
+    familyState?.familyId ??
+    user?.familyId ??
+    user?.family?.familyId ??
+    null;
 
   // RTK Query: 채팅방 목록 (onQueryFulfilled에서 chatRoomSlice.setChatRoomList 동기화)
   const {isLoading, refetch} = useGetChatRoomsQuery(
@@ -135,7 +143,8 @@ export default function CommunicationScreen({navigation}) {
   // 실제 목록은 WS 핸들러가 slice에도 업데이트하므로 slice에서 읽음
   const {chatRoomList, listRevision} = useSelector(s => s.chatRoom);
   // familyId/userId 미확보 구간(autoLogin 진행 중)도 로딩으로 처리 → 빈 화면 대신 스켈레톤 표시
-  const loading = isLoading || !familyId || !userId;
+  // auth 확인이 끝난 뒤에는 식별자가 비어도 무한 스켈레톤에 머물지 않게 한다.
+  const loading = isLoading || (!loginAuthChecked && (!familyId || !userId));
 
   // RTK Query: 채팅방 생성 mutation
   const [createChatRoom] = useCreateChatRoomMutation();

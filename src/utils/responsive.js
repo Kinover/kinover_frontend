@@ -56,16 +56,6 @@ const bump = key => {
   if (total - responsiveStats.lastTotal >= 3000 && now - responsiveStats.lastLogAt > 15000) {
     responsiveStats.lastTotal = total;
     responsiveStats.lastLogAt = now;
-    // 콘솔로만 측정(프로덕션 영향 최소)
-    // eslint-disable-next-line no-console
-      width: responsiveStats.width,
-      height: responsiveStats.height,
-      icon: responsiveStats.icon,
-      font: responsiveStats.font,
-      mode: String(
-        (typeof getResponsiveMode === 'function' && getResponsiveMode()) || '',
-      ),
-    });
   }
 };
 

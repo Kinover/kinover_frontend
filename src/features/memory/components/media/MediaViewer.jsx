@@ -13,7 +13,6 @@ import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 const {CameraRoll} = require('@react-native-camera-roll/camera-roll');
 
 import {
-  getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
@@ -22,6 +21,22 @@ import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 import Animated, {useSharedValue, useAnimatedStyle, withTiming, runOnJS} from 'react-native-reanimated';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
+const zoomStyles = StyleSheet.create({
+  zoomContainer: {
+    width: screenWidth,
+    height: screenHeight,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  zoomImageWrap: {
+    width: screenWidth,
+    height: screenHeight,
+  },
+  zoomImage: {
+    width: '100%',
+    height: '100%',
+  },
+});
 
 /* ================= utils ================= */
 
@@ -193,9 +208,9 @@ function ZoomableImage({
   }));
 
   return (
-    <View style={styles.zoomContainer}>
+    <View style={zoomStyles.zoomContainer}>
       <GestureDetector gesture={composed}>
-        <Animated.View style={[styles.zoomImageWrap, style]}>
+        <Animated.View style={[zoomStyles.zoomImageWrap, style]}>
           <FastImage
             pointerEvents="none"
             source={{
@@ -203,9 +218,9 @@ function ZoomableImage({
               priority: FastImage.priority.high,
               cache: FastImage.cacheControl.immutable,
             }}
-            style={styles.zoomImage}
+            style={zoomStyles.zoomImage}
             resizeMode={FastImage.resizeMode.contain}
-            onError={e =>
+            onError={() =>null
             }
           />
         </Animated.View>
@@ -408,7 +423,7 @@ export default function MediaViewer({
     onClose?.();
   }, [saving, onClose]);
 
-  const handleSaveAll = useCallback(async () => {
+  const _handleSaveAll = useCallback(async () => {
     if (saving || !media.length) return;
 
     setSaving(true);

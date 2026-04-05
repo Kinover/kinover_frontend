@@ -74,8 +74,8 @@ const UI = {
   chipSelectedText: '#FFFFFF',
 };
 
-const CHIP_GAP = 10;
-const CHIP_RADIUS = 12;
+const CHIP_GAP = getResponsiveWidth(10);
+const CHIP_RADIUS = 16;
 
 const PRIMARY_SAVE_BTN_STYLE = getBottomSheetPrimarySaveButtonStyle(
   getResponsiveHeight,
@@ -88,7 +88,7 @@ const SP = {
   chipsToFooter: 24,
 };
 
-function CategoryChip({label, selected, onPress, padV, padH, fontSize}) {
+function CategoryChip({label, selected, onPress, padV, padH, fontSize, width}) {
   return (
     <Pressable
       onPress={onPress}
@@ -97,7 +97,7 @@ function CategoryChip({label, selected, onPress, padV, padH, fontSize}) {
       style={({pressed}) => [
         styles.chip,
         selected ? styles.chipSelected : styles.chipIdle,
-        {paddingVertical: padV, paddingHorizontal: padH},
+        {paddingVertical: padV, paddingHorizontal: padH, width},
         pressed && {opacity: selected ? 0.92 : 0.85},
       ]}>
       <AppText
@@ -110,6 +110,13 @@ function CategoryChip({label, selected, onPress, padV, padH, fontSize}) {
         ]}>
         {label}
       </AppText>
+      {selected && (
+        <AppText
+          allowFontScaling={false}
+          style={[styles.chipCheck, {right: padH, fontSize}]}>
+          ✓
+        </AppText>
+      )}
     </Pressable>
   );
 }
@@ -135,7 +142,7 @@ const CategoryBottomSheetModal = forwardRef(
 
     const fontMode = useReduxFontMode();
     const level = useMemo(() => getFontScaleLevel(fontMode), [fontMode]);
-    const {height: windowHeight} = useWindowDimensions();
+    const {width: windowWidth, height: windowHeight} = useWindowDimensions();
 
     const bottomSafe = useMemo(
       () => getBottomSheetEditorBottomSafe(insets.bottom, getResponsiveHeight),
@@ -145,23 +152,23 @@ const CategoryBottomSheetModal = forwardRef(
     const layout = useMemo(() => {
       const chipPadV =
         level === 'XL'
-          ? getResponsiveHeight(8)
+          ? getResponsiveHeight(17)
           : level === 'L'
-            ? getResponsiveHeight(8)
-            : getResponsiveHeight(8);
+            ? getResponsiveHeight(16)
+            : getResponsiveHeight(15);
       const chipPadH =
         level === 'XL'
-          ? getResponsiveWidth(14)
+          ? getResponsiveWidth(16)
           : level === 'L'
-            ? getResponsiveWidth(14)
-            : getResponsiveWidth(14);
+            ? getResponsiveWidth(16)
+            : getResponsiveWidth(16);
 
       const chipFont =
         level === 'XL'
-          ? getResponsiveFontSize(14.5)
+          ? getResponsiveFontSize(15)
           : level === 'L'
-            ? getResponsiveFontSize(14)
-            : getResponsiveFontSize(13.5);
+            ? getResponsiveFontSize(14.5)
+            : getResponsiveFontSize(14);
 
       const chipLineHeight = chipPadV * 2 + chipFont;
 
@@ -180,6 +187,12 @@ const CategoryBottomSheetModal = forwardRef(
       () => [ALL_CATEGORY, ...(categoryList || [])],
       [categoryList],
     );
+
+    const chipWidth = useMemo(() => {
+      const containerPadH = getResponsiveWidth(20);
+      const w = windowWidth > 0 ? windowWidth : 375;
+      return Math.floor((w - containerPadH * 2 - CHIP_GAP) / 2);
+    }, [windowWidth]);
 
     /** 칩 전체 높이(2열 랩) + 상한: 넘으면 이 높이로 고정 후 스크롤 */
     const chipArea = useMemo(() => {
@@ -358,6 +371,7 @@ const CategoryBottomSheetModal = forwardRef(
                         padV={layout.chipPadV}
                         padH={layout.chipPadH}
                         fontSize={layout.chipFont}
+                        width={chipWidth}
                         onPress={() =>
                           isAllRow ? handlePressAll() : handlePressCategory(cat)
                         }
@@ -432,17 +446,22 @@ const styles = StyleSheet.create({
 
   chip: {
     borderRadius: CHIP_RADIUS,
-    maxWidth: '100%',
     justifyContent: 'center',
+    alignItems: 'center',
   },
   chipIdle: {
     backgroundColor: UI.chipIdleBg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   chipSelected: {
     backgroundColor: UI.navy,
+    borderWidth: 1,
+    borderColor: UI.navy,
   },
   chipLabelBase: {
     letterSpacing: -0.2,
+    textAlign: 'center',
     flexShrink: 1,
   },
   chipLabelIdle: {
@@ -452,6 +471,12 @@ const styles = StyleSheet.create({
   chipLabelSelected: {
     fontFamily: 'Pretendard-SemiBold',
     color: UI.chipSelectedText,
+  },
+  chipCheck: {
+    position: 'absolute',
+    color: '#FFFFFF',
+    fontFamily: 'Pretendard-SemiBold',
+    includeFontPadding: false,
   },
 
   footerSticky: {

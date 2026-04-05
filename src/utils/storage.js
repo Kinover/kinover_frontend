@@ -27,6 +27,7 @@ export const ensureStorageDefaultsOnce = async () => {
 
     await mmkvStorage.setItem(STORAGE_BOOTSTRAP_KEY, '1');
   } catch (error) {
+    null;
   }
 };
 
@@ -35,6 +36,7 @@ export const setNeedsSignup = async needsSignup => {
     await mmkvStorage.setItem(NEEDS_SIGNUP_KEY, JSON.stringify(!!needsSignup));
     emitAuthFlagsChanged();
   } catch (error) {
+    null;
   }
 };
 
@@ -59,15 +61,20 @@ export const saveLoginSession = async ({token, needsSignup}) => {
       accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
     });
   } catch (error) {
+    null;
   }
 
   try {
     await mmkvStorage.setItem(ACCESS_TOKEN_KEY, token);
     if (typeof needsSignup === 'boolean') {
-      await mmkvStorage.setItem(NEEDS_SIGNUP_KEY, JSON.stringify(!!needsSignup));
+      await mmkvStorage.setItem(
+        NEEDS_SIGNUP_KEY,
+        JSON.stringify(!!needsSignup),
+      );
     }
     emitAuthFlagsChanged();
   } catch (error) {
+    null;
   }
 };
 
@@ -81,11 +88,13 @@ export const saveToken = async token => {
       accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
     });
   } catch (error) {
+    null;
   }
 
   try {
     await mmkvStorage.setItem(ACCESS_TOKEN_KEY, token);
   } catch (error) {
+    null;
   }
 };
 
@@ -94,6 +103,7 @@ export const setHasFamily = async hasFamily => {
     await mmkvStorage.setItem(HAS_FAMILY_KEY, JSON.stringify(hasFamily));
     emitAuthFlagsChanged();
   } catch (error) {
+    null;
   }
 };
 
@@ -140,6 +150,7 @@ export const deleteLoginInfo = async () => {
     await mmkvStorage.removeItem(NEEDS_SIGNUP_KEY);
     emitAuthFlagsChanged();
   } catch (error) {
+    null;
   }
 };
 
@@ -148,6 +159,7 @@ export const setGuestMode = async isGuestMode => {
   try {
     await mmkvStorage.setItem(GUEST_MODE_KEY, JSON.stringify(!!isGuestMode));
   } catch (error) {
+    null;
   }
 };
 
@@ -164,7 +176,7 @@ export const enableGuestMode = async () => {
   try {
     await deleteLoginInfo();
     await mmkvStorage.setItem(GUEST_MODE_KEY, JSON.stringify(true));
-  } catch (error) {
+  } catch (error) {    null;
   }
 };
 
@@ -172,6 +184,7 @@ export const disableGuestMode = async () => {
   try {
     await mmkvStorage.setItem(GUEST_MODE_KEY, JSON.stringify(false));
   } catch (error) {
+    null;
   }
 };
 

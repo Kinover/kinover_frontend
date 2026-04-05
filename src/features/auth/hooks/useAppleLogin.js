@@ -85,9 +85,6 @@ export function useAppleLogin() {
  // 4) 마지막에 authChecked true
       dispatch(setAuthChecked(true));
 
-        hasFamily,
-        familyId: loginResult?.familyId ?? null,
-      });
     } catch (e) {
       const alreadyLoggedIn = loginConfirmed || !!store.getState()?.login?.isLoggedIn;
 

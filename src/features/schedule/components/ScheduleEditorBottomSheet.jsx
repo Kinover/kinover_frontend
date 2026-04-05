@@ -32,7 +32,10 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import {getKeyboardSafeGap, getScheduleBottomSheetSnapPoints} from 'utils/layoutMetrics';
+import {
+  getKeyboardSafeGap,
+  getScheduleBottomSheetSnapPoints,
+} from 'utils/layoutMetrics';
 import {useReduxFontMode} from 'hooks/useReduxFontMode';
 
 import {useScheduleBottomSheetModal} from '../hooks/useScheduleBottomSheetModal';
@@ -86,7 +89,8 @@ const uniqIds = arr =>
   );
 
 const idEq = (a, b) => a === b || String(a) === String(b);
-const hasId = (ids, id) => (Array.isArray(ids) ? ids : []).some(x => idEq(x, id));
+const hasId = (ids, id) =>
+  (Array.isArray(ids) ? ids : []).some(x => idEq(x, id));
 
 const normalizeKind = raw => {
   const t = String(raw ?? '').toLowerCase();
@@ -174,9 +178,24 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const shiftAnim = useRef(new Animated.Value(0)).current;
     const keyboardHeightRef = useRef(0);
     const inputRef = useRef(null);
+    const blurTitleInput = useCallback(() => {
+      inputRef.current?.blur?.();
+      setIsTitleFocused(false);
+    }, []);
 
     const tapToResetRef = useRef(false);
     const keyboardOpenRef = useRef(false);
+    const titleFocusInteractionRef = useRef(false);
+    const titleFocusInteractionTimerRef = useRef(null);
+    const markTitleFocusInteraction = useCallback(() => {
+      titleFocusInteractionRef.current = true;
+      if (titleFocusInteractionTimerRef.current) {
+        clearTimeout(titleFocusInteractionTimerRef.current);
+      }
+      titleFocusInteractionTimerRef.current = setTimeout(() => {
+        titleFocusInteractionRef.current = false;
+      }, 220);
+    }, []);
 
     const touchLockRef = useRef(false);
     const touchLockTimerRef = useRef(null);
@@ -186,6 +205,14 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       touchLockTimerRef.current = setTimeout(() => {
         touchLockRef.current = false;
       }, 180);
+    }, []);
+    useEffect(() => {
+      return () => {
+        if (touchLockTimerRef.current) clearTimeout(touchLockTimerRef.current);
+        if (titleFocusInteractionTimerRef.current) {
+          clearTimeout(titleFocusInteractionTimerRef.current);
+        }
+      };
     }, []);
 
     const showToast = msg => {
@@ -405,6 +432,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       if (closingRef.current) return;
       closingRef.current = true;
       setIsClosing(true);
+      setIsTitleFocused(false);
       modalRef.current?.dismiss?.();
       setTimeout(() => {
         closingRef.current = false;
@@ -414,6 +442,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const handleSheetDismiss = useCallback(() => {
       setIsClosing(false);
       closingRef.current = false;
+      setIsTitleFocused(false);
 
       tapToResetRef.current = false;
       keyboardHeightRef.current = 0;
@@ -432,6 +461,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       present: () => {
         setIsClosing(false);
         closingRef.current = false;
+        setIsTitleFocused(false);
 
         tapToResetRef.current = false;
         keyboardOpenRef.current = false;
@@ -535,9 +565,11 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     );
 
     const handleTouchInsideResetOnly = useCallback(() => {
+      if (!keyboardOpenRef.current && !isTitleFocused) return;
+      if (titleFocusInteractionRef.current) return;
       if (touchLockRef.current) return;
       lockTouchBriefly();
-
+      blurTitleInput();
       tapToResetRef.current = true;
 
       Animated.timing(shiftAnim, {
@@ -547,7 +579,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       }).start(() => {
         tapToResetRef.current = false;
       });
-    }, [shiftAnim, lockTouchBriefly]);
+    }, [shiftAnim, lockTouchBriefly, isTitleFocused, blurTitleInput]);
 
     const toggleUser = userId => {
       if (isClosing) return;
@@ -555,6 +587,13 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       if (userId == null || String(userId).trim() === '') return;
 
       const id = userId;
+      if (currentKind === KIND.INDIVIDUAL) {
+        // 개별 일정은 1명만 선택 가능(라디오 선택처럼 동작)
+        if (hasId(safeSelectedIds, id)) return;
+        setSelectedUserIdsSafe([id]);
+        return;
+      }
+
       if (hasId(safeSelectedIds, id)) {
         setSelectedUserIdsSafe(safeSelectedIds.filter(x => !idEq(x, id)));
       } else {
@@ -567,7 +606,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       if (isAnniversaryMode) return;
 
       if (currentKind === KIND.INDIVIDUAL) {
-        showToast('개별 일정은 “전체” 선택을 사용할 수 없어요.');
+        showToast('개인 일정은 “전체” 선택을 사용할 수 없어요.');
         return;
       }
 
@@ -615,7 +654,9 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       const familyId = basePayload?.familyId;
       const date = basePayload?.date;
       if (!familyId || !date) {
-        showToast('familyId/date가 없어서 저장할 수 없어요. (부모에서 내려줘야 함)');
+        showToast(
+          'familyId/date가 없어서 저장할 수 없어요. (부모에서 내려줘야 함)',
+        );
         return;
       }
 
@@ -684,8 +725,11 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         }))
         .filter(x => x.userId != null && x.userId !== '');
 
-      return [{type: 'ALL', userId: -1, name: '전체'}, ...normalized];
-    }, [familyUserList]);
+      if (currentKind === KIND.FAMILY) {
+        return [{type: 'ALL', userId: -1, name: '전체'}, ...normalized];
+      }
+      return normalized;
+    }, [familyUserList, currentKind]);
 
     const renderChip = useCallback(
       item => {
@@ -746,7 +790,8 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const segmentValue =
       currentKind === KIND.ANNIVERSARY ? KIND.INDIVIDUAL : currentKind;
 
-    const showParticipants = currentKind === KIND.FAMILY;
+    const showParticipants =
+      currentKind === KIND.FAMILY || currentKind === KIND.INDIVIDUAL;
 
     return (
       <>
@@ -790,7 +835,9 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
                 <View style={styles.formColumn}>
                   <View style={styles.fieldBlock}>
-                    <AppText allowFontScaling={false} style={styles.sectionLabel}>
+                    <AppText
+                      allowFontScaling={false}
+                      style={styles.sectionLabel}>
                       일정 제목
                     </AppText>
                     <View
@@ -798,15 +845,20 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                         styles.singleLineUnderlineWrap,
                         isTitleFocused && styles.singleLineUnderlineWrapFocused,
                       ]}>
-                      <CustomInput bottomSheet
+                      <CustomInput
+                        bottomSheet
                         allowFontScaling={false}
+                        disableFocusStyle={true}
+                        disableBaseStyle={true}
                         ref={inputRef}
                         key={`input-${inputKey}`}
                         defaultValue={scheduleRef.current}
                         onChangeText={text => {
                           if (!isClosing) scheduleRef.current = text;
                         }}
+                        onTouchStart={markTitleFocusInteraction}
                         onFocus={() => {
+                          markTitleFocusInteraction();
                           setIsTitleFocused(true);
                           tapToResetRef.current = false;
                           ensureVisible(inputRef);
@@ -817,14 +869,15 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                         placeholder="무슨 일정인가요?"
                         placeholderTextColor={COLORS.muted}
                         style={styles.scheduleTitleInput}
-                        multiline
                         underlineColorAndroid="transparent"
                       />
                     </View>
                   </View>
 
                   <View style={styles.typeBlock}>
-                    <AppText allowFontScaling={false} style={styles.sectionLabel}>
+                    <AppText
+                      allowFontScaling={false}
+                      style={styles.sectionLabel}>
                       유형
                     </AppText>
                     <View style={styles.segmentTrack}>
@@ -843,7 +896,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                             segmentValue === KIND.INDIVIDUAL &&
                               styles.segmentLabelActive,
                           ]}>
-                          개별
+                          개인
                         </AppText>
                       </TouchableOpacity>
                       <TouchableOpacity
@@ -851,13 +904,15 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                         onPress={() => handleKindChange(KIND.FAMILY)}
                         style={[
                           styles.segmentCell,
-                          segmentValue === KIND.FAMILY && styles.segmentCellActive,
+                          segmentValue === KIND.FAMILY &&
+                            styles.segmentCellActive,
                         ]}>
                         <AppText
                           allowFontScaling={false}
                           style={[
                             styles.segmentLabel,
-                            segmentValue === KIND.FAMILY && styles.segmentLabelActive,
+                            segmentValue === KIND.FAMILY &&
+                              styles.segmentLabelActive,
                           ]}>
                           가족
                         </AppText>
@@ -895,7 +950,9 @@ const ScheduleEditorBottomSheetModal = forwardRef(
             onLayoutHeight={undefined}
             style={[
               styles.footerFlow,
-              Platform.OS === 'android' && {paddingBottom: getResponsiveHeight(12)},
+              Platform.OS === 'android' && {
+                paddingBottom: getResponsiveHeight(12),
+              },
             ]}
             {...footerProps}
           />
@@ -1027,28 +1084,28 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveWidth(12),
     backgroundColor: '#FFFFFF',
     paddingHorizontal: getResponsiveWidth(12),
-    paddingVertical: getResponsiveHeight(8),
+    paddingVertical: getResponsiveHeight(5),
     marginTop: getResponsiveHeight(4),
   },
   singleLineUnderlineWrapFocused: {
     borderColor: '#FFC84D',
   },
   scheduleTitleInput: {
-    minHeight: getResponsiveHeight(36),
-    maxHeight: getResponsiveHeight(96),
+    minHeight: getResponsiveHeight(30),
+    maxHeight: getResponsiveHeight(80),
     paddingHorizontal: 0,
-    paddingTop: Platform.OS === 'android' ? 2 : 4,
-    paddingBottom: 2,
+    paddingTop: 0,
+    paddingBottom: 0,
     borderWidth: 0,
     backgroundColor: 'transparent',
     includeFontPadding: false,
     fontSize: getResponsiveFontSize(15),
     fontFamily: 'Pretendard-Regular',
     color: COLORS.text,
-    lineHeight: getResponsiveFontSize(22),
+    lineHeight: getResponsiveFontSize(20),
     letterSpacing: -0.18,
     textAlign: 'left',
-    textAlignVertical: 'top',
+    textAlignVertical: 'center',
   },
 
   participantBlock: {

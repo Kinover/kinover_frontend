@@ -129,6 +129,7 @@ export default function SetupFinishScreen() {
       // 4) 메인 진입 트리거
       emitAuthFlagsChanged({hasFamily: true});
     } catch (e) {
+      null;
     }
   }, [fetchUserOnce]);
 

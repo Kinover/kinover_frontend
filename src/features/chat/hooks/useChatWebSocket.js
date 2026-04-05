@@ -65,9 +65,11 @@ export default function useChatWebSocket({
         const msg = JSON.parse(event.data);
         onMessage?.(msg);
       } catch (e) {
+        null;
       }
     };
 
+    // eslint-disable-next-line unused-imports/no-unused-vars
     ws.onerror = e => {
  // RN에서 e.message가 없을 때도 많아서 그대로 출력
     };

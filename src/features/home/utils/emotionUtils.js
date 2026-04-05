@@ -4,25 +4,19 @@
  * 감정 enum에 따른 이미지 및 색상 매핑을 제공합니다.
  */
 
-// ==================== Constants ====================
-
-/** 감정 유효 기간 (24시간) */
-const EMOTION_EXPIRE_MS = 24 * 60 * 60 * 1000;
-
 /** 감정 이벤트 ID (앱 알림에서 감정 선택 모달 숨김 조건용) */
 export const EMOTION_PICK_EVENT_ID = 'emotion_pick_today_2026_01';
 
 /**
- * 감정이 유효한지 확인 (24시간 이내 선택한 감정인지)
+ * 감정이 유효한지 확인
+ * 백엔드에서 24시간 경과 시 emotion=null을 내려주므로,
+ * 프론트는 값 존재 여부만 확인한다.
  * @param {string|null} emotion - 감정 코드
- * @param {string|number|null} emotionUpdatedAt - 감정 선택 시각
+ * @param {string|number|null} emotionUpdatedAt - 호환용(미사용)
  * @returns {boolean}
  */
 export function isEmotionValid(emotion, emotionUpdatedAt) {
-  if (!emotion || !emotionUpdatedAt) return false;
-  const t = new Date(emotionUpdatedAt).getTime();
-  if (Number.isNaN(t)) return false;
-  return Date.now() - t <= EMOTION_EXPIRE_MS;
+  return !!emotion;
 }
 
 /** 감정 타입 정의 */

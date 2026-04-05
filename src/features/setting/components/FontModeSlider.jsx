@@ -21,9 +21,10 @@ import {COLORS} from 'styles/style';
 export function FontModeSliderBlue({
   value, // 0|1|2
   onComplete, // (step) => void
+  trackWidth = null,
 }) {
   // ---------- size tokens (이미지 느낌 비율) ----------
-  const TRACK_W = getResponsiveWidth(300);
+  const TRACK_W = trackWidth ?? getResponsiveWidth(300);
   const TRACK_H = getResponsiveHeight(18); // 트랙이 “두툼한 바” 느낌
   const THUMB = getResponsiveWidth(25); // 엄지 큰 원
   const HOLE = getResponsiveWidth(10); // 트랙의 흰 구멍

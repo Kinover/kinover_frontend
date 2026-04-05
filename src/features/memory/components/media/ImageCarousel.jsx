@@ -7,7 +7,6 @@ import Carousel from 'react-native-reanimated-carousel';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
-  getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
@@ -73,8 +72,8 @@ export default function ImageCarousel({
   currentIndex = 0,
   setCurrentIndex,
 
-  isFullScreen = false, // eslint-disable-line no-unused-vars
-  setIsFullScreen, // eslint-disable-line no-unused-vars
+  _isFullScreen = false, // eslint-disable-line no-unused-vars
+  _setIsFullScreen, // eslint-disable-line no-unused-vars
 
   onSwipeFromFirstToRight,
   onSingleTap,
@@ -435,7 +434,7 @@ export default function ImageCarousel({
                       controls
                       paused={false}
                       onEnd={() => setPlayingIndex(-1)}
-                      onError={e => {
+                      onError={() => {
                         setPlayingIndex(-1);
                       }}
                       ignoreSilentSwitch="ignore"

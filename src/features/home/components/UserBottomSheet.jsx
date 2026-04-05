@@ -100,14 +100,21 @@ function UserBottomSheetModalBase(
     return StyleSheet.create({
       ...shared,
       body: shared.content,
-      nameUnderlineWrap: {
-        ...shared.singleLineUnderlineWrap,
-        borderBottomWidth: 1.5,
-        borderBottomColor: 'rgba(11, 18, 32, 0.1)',
-
-        // borderBottomColor: 'rgba(11, 18, 32, 0.35)',
+      nameUnderlineWrap: shared.singleLineUnderlineWrap,
+      nameUnderlineWrapFocused: shared.singleLineUnderlineWrapFocused,
+      inputUnderlineWrap: {
+        alignSelf: 'stretch',
+        borderWidth: 1,
+        borderColor: '#DADADA',
+        borderRadius: getResponsiveWidth(12),
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: getResponsiveWidth(12),
+        paddingVertical: getResponsiveHeight(8),
+        marginTop: getResponsiveHeight(4),
       },
-      inputUnderlineWrap: shared.fieldBoxWrap,
+      inputUnderlineWrapFocused: {
+        borderColor: '#FFC84D',
+      },
       traitCounter: {
         alignSelf: 'flex-end',
         marginTop: getResponsiveHeight(4),
@@ -228,9 +235,21 @@ function UserBottomSheetModalBase(
   const [toastMessage, setToastMessage] = useState('');
   const [isClosing, setIsClosing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isNameFocused, setIsNameFocused] = useState(false);
+  const [isTraitFocused, setIsTraitFocused] = useState(false);
 
   const nameInputRef = useRef(null);
   const traitInputRef = useRef(null);
+  const blurAllInputs = useCallback(() => {
+    try {
+      nameInputRef.current?.blur?.();
+      traitInputRef.current?.blur?.();
+    } catch {
+      null;
+    }
+    setIsNameFocused(false);
+    setIsTraitFocused(false);
+  }, []);
 
   const fontMode = useReduxFontMode();
   const insets = useSafeAreaInsets();
@@ -293,13 +312,16 @@ function UserBottomSheetModalBase(
   const closeSheet = useCallback(() => {
     if (isClosing) return;
     setIsClosing(true);
+    blurAllInputs();
     modalRef.current?.dismiss?.();
-  }, [isClosing]);
+  }, [isClosing, blurAllInputs]);
 
   useImperativeHandle(ref, () => ({
     present: () => {
       setIsClosing(false);
       setIsSaving(false);
+      setIsNameFocused(false);
+      setIsTraitFocused(false);
       hideToast();
 
       tapToResetRef.current = false;
@@ -343,6 +365,8 @@ function UserBottomSheetModalBase(
     setNameKey(k => k + 1);
     setTraitKey(k => k + 1);
     setTraitLength(t.length);
+    setIsNameFocused(false);
+    setIsTraitFocused(false);
 
     // shift도 0으로 리셋
     Animated.timing(shiftAnim, {
@@ -438,9 +462,10 @@ function UserBottomSheetModalBase(
    * - 키보드 dismiss는 Layout이 담당(dismissKeyboardOnPress=true)
    */
   const handleTouchInsideResetOnly = useCallback(() => {
-    if (!keyboardOpenRef.current) return; // 키보드 없으면 굳이 할 게 없음
+    if (!keyboardOpenRef.current && !isNameFocused && !isTraitFocused) return;
     if (touchLockRef.current) return;
     lockTouchBriefly();
+    blurAllInputs();
 
     hideToast();
 
@@ -453,7 +478,14 @@ function UserBottomSheetModalBase(
     }).start(() => {
       tapToResetRef.current = false;
     });
-  }, [shiftAnim, lockTouchBriefly, hideToast]);
+  }, [
+    shiftAnim,
+    lockTouchBriefly,
+    hideToast,
+    blurAllInputs,
+    isNameFocused,
+    isTraitFocused,
+  ]);
 
   const handleImagePick = useCallback(async () => {
     const result = await launchImageLibrary({mediaType: 'photo'});
@@ -604,6 +636,8 @@ function UserBottomSheetModalBase(
   const handleDismiss = useCallback(() => {
     setIsClosing(false);
     setIsSaving(false);
+    setIsNameFocused(false);
+    setIsTraitFocused(false);
     hideToast();
 
     tapToResetRef.current = false;
@@ -677,9 +711,15 @@ function UserBottomSheetModalBase(
                 <AppText allowFontScaling={false} style={styles.sectionLabel}>
                   별명
                 </AppText>
-                <View style={styles.nameUnderlineWrap}>
+                <View
+                  style={[
+                    styles.nameUnderlineWrap,
+                    isNameFocused && styles.nameUnderlineWrapFocused,
+                  ]}>
                   <CustomInput bottomSheet
                     allowFontScaling={false}
+                    disableFocusStyle={true}
+                    disableBaseStyle={true}
                     ref={nameInputRef}
                     key={`name-${nameKey}`}
                     style={styles.inputName}
@@ -692,8 +732,12 @@ function UserBottomSheetModalBase(
                     returnKeyType="next"
                     underlineColorAndroid="transparent"
                     onFocus={() => {
+                      setIsNameFocused(true);
                       tapToResetRef.current = false;
                       ensureVisible(nameInputRef);
+                    }}
+                    onBlur={() => {
+                      setIsNameFocused(false);
                     }}
                     onSubmitEditing={() => traitInputRef.current?.focus?.()}
                     editable={!isSaving}
@@ -705,9 +749,15 @@ function UserBottomSheetModalBase(
                 <AppText allowFontScaling={false} style={styles.sectionLabel}>
                   한 줄 소개
                 </AppText>
-                <View style={styles.inputUnderlineWrap}>
+                <View
+                  style={[
+                    styles.inputUnderlineWrap,
+                    isTraitFocused && styles.inputUnderlineWrapFocused,
+                  ]}>
                   <CustomInput bottomSheet
                     allowFontScaling={false}
+                    disableFocusStyle={true}
+                    disableBaseStyle={true}
                     ref={traitInputRef}
                     key={`trait-${traitKey}`}
                     style={styles.inputTrait}
@@ -723,8 +773,12 @@ function UserBottomSheetModalBase(
                     placeholderTextColor={BOTTOM_SHEET_EDITOR_COLORS.muted}
                     underlineColorAndroid="transparent"
                     onFocus={() => {
+                      setIsTraitFocused(true);
                       tapToResetRef.current = false;
                       ensureVisible(traitInputRef);
+                    }}
+                    onBlur={() => {
+                      setIsTraitFocused(false);
                     }}
                     editable={!isSaving}
                   />

@@ -9,6 +9,7 @@ const safeTrigger = type => {
   try {
     HapticFeedback?.trigger?.(type, options);
   } catch (e) {
+    null;
   }
 };
 

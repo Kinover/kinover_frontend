@@ -79,12 +79,19 @@ export function getBottomSheetEditorSharedStyles(rf, rh, rw) {
       paddingBottom: rh(2),
     },
 
-    /** 일정 제목 · 프로필 별명 — 단일 언더라인 */
+    /** 일정 제목 · 프로필 별명 · 채팅방명 — 단일 입력 공통 외곽 */
     singleLineUnderlineWrap: {
       alignSelf: 'stretch',
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: 'rgba(60, 60, 67, 0.28)',
-      paddingBottom: 2,
+      borderWidth: 1,
+      borderColor: '#DADADA',
+      borderRadius: rw(12),
+      backgroundColor: '#FFFFFF',
+      paddingHorizontal: rw(12),
+      paddingVertical: rh(5),
+      marginTop: rh(4),
+    },
+    singleLineUnderlineWrapFocused: {
+      borderColor: '#FFC84D',
     },
 
     /** 멀티라인 필드 박스 (프로필 한 줄 소개 등) */
@@ -120,18 +127,19 @@ export function getBottomSheetEditorSharedStyles(rf, rh, rw) {
 
     /** 프로필 별명 */
     profileNicknameInput: {
-      minHeight: rh(40),
+      minHeight: rh(30),
       paddingHorizontal: 0,
-      paddingTop: Platform.OS === 'android' ? 2 : 4,
-      paddingBottom: 2,
+      paddingTop: 0,
+      paddingBottom: 0,
       borderWidth: 0,
       backgroundColor: 'transparent',
       includeFontPadding: false,
-      fontSize: rf(18),
-      fontFamily: 'Pretendard-SemiBold',
+      fontSize: rf(15),
+      fontFamily: 'Pretendard-Regular',
       color: C.text,
-      lineHeight: rf(25),
-      letterSpacing: -0.2,
+      lineHeight: rf(20),
+      letterSpacing: -0.18,
+      textAlignVertical: 'center',
     },
 
     /** 프로필 한 줄 소개 (2줄 고정 + 내부 스크롤) */

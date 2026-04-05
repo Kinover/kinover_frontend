@@ -20,7 +20,7 @@ module.exports = {
   rules: {
     'unused-imports/no-unused-imports': 'error',
     'unused-imports/no-unused-vars': [
-      'warn',
+      'error',
       {
         vars: 'all',
         varsIgnorePattern: '^_',
@@ -40,6 +40,8 @@ module.exports = {
 
     // ❌ react-native 타입 파일 때문에 자꾸 깨져서 끔
     'import/namespace': 'off',
+
+    
   },
 
   settings: {

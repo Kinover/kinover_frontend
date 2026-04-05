@@ -28,14 +28,6 @@ import Animated, {
 } from 'react-native-reanimated';
 
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
-const EMOTION_EXPIRE_MS = 24 * 60 * 60 * 1000;
-
-function isEmotionValid(emotion, emotionUpdatedAt) {
-  if (!emotion || !emotionUpdatedAt) return false;
-  const t = new Date(emotionUpdatedAt).getTime();
-  if (Number.isNaN(t)) return false;
-  return Date.now() - t <= EMOTION_EXPIRE_MS;
-}
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
@@ -171,13 +163,13 @@ export default function HeaderSection({user, onUserPress, onInvitePress, guideRe
 
  /**
  * =========================
- * Emotion (valid 24h)
+ * Emotion
  * =========================
  */
   const emotionKey = useMemo(() => {
-    if (!isEmotionValid(user?.emotion, user?.emotionUpdatedAt)) return null;
-    return String(user?.emotion ?? '').toUpperCase();
-  }, [user?.emotion, user?.emotionUpdatedAt]);
+    if (!user?.emotion) return null;
+    return String(user.emotion).toUpperCase();
+  }, [user?.emotion]);
 
   const emotionImage = useMemo(() => {
     return emotionKey ? getEmotionImage(emotionKey) : null;

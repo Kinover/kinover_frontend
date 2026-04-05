@@ -45,10 +45,8 @@ export function useKakaoLogin() {
 
  // 소켓은 '메인 진입'에서만 필요하면 hasFamily일 때만 시작
       if (hasFamilyFromLogin && !socketUnsubRef.current) {
-        try {
           socketUnsubRef.current = startChatSocket(dispatch, store.getState);
-        } catch (socketError) {
-        }
+      
       }
 
  // 마지막에 authChecked true

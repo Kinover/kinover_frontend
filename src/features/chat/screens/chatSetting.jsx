@@ -52,8 +52,6 @@ import {
 } from '../store/chatRoomSlice';
 
 import ToastModal from 'components/modal/ToastModal';
-import {resetRoomMessageList} from '../store/messageSlice';
-import {chatApi} from '../services/chatApi';
 import {COLORS, HEADER_STYLES} from 'styles/style';
 import {FONT_MODE} from 'store/uiSlice';
 
@@ -66,7 +64,6 @@ export default function ChatSettings({
   chatRoomId,
   navigation,
   isKino,
-  onOpenAddMember,
 }) {
   const dispatch = useDispatch();
 
@@ -273,9 +270,6 @@ export default function ChatSettings({
 
   const handleGoToKinoSelect = () => {
     if (!chatRoomId) return;
-    dispatch(resetRoomMessageList(chatRoomId));
-    // RTK Query Messages 캐시 무효화 → 재진입 시 새로 fetch
-    dispatch(chatApi.util.invalidateTags([{type: 'Messages', id: String(chatRoomId)}]));
     dispatch(bumpChatRoomToTop(chatRoomId));
     onClose();
     setTimeout(() => navigation.navigate('키노선택화면', {chatRoomId}), 260);

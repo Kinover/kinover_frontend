@@ -48,7 +48,7 @@ import {HEADER_STYLES} from 'styles/style';
 import {uploadPostApi} from 'api/uploadPostApi';
 import updatePostApi from 'api/updatePostApi';
 
-import {useSelector} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import formatDuration from 'utils/formatDuration';
 import {getVideoThumbnail} from 'utils/videoThumbnail';
 import {useGetPostByIdQuery, useCreateCategoryMutation, useDeletePostImageMutation} from '../services/memoryApi';
@@ -199,6 +199,7 @@ export default function CreatePostPage({navigation, route}) {
   }));
   const [createCategory] = useCreateCategoryMutation();
   const [deletePostImage] = useDeletePostImageMutation();
+  const dispatch = useDispatch();
   const {userId} = useSelector(s => s.user);
   const {familyId} = useSelector(s => s.family);
 
@@ -222,7 +223,10 @@ export default function CreatePostPage({navigation, route}) {
   const fallbackPostFromStore = useSelector(state =>
     postId ? state.memory?.postsById?.[postId] : null,
   );
-  const {data: postQueryData} = useGetPostByIdQuery(postId, {skip: !postId});
+  const {data: postQueryData} = useGetPostByIdQuery(postId, {
+    skip: !postId,
+    refetchOnMountOrArgChange: true,
+  });
   const postFromStore = postQueryData ?? fallbackPostFromStore;
 
  /** -----------------------------
@@ -613,6 +617,13 @@ export default function CreatePostPage({navigation, route}) {
 
         try {
           await updatePostApi(postId, payload);
+          // 수정 후 목록/상세 캐시를 즉시 무효화해 최신 본문/미디어를 반영한다.
+          dispatch(
+            memoryApi.util.invalidateTags([
+              'Memory',
+              {type: 'Memory', id: String(postId)},
+            ]),
+          );
         } catch (e) {
           logAxiosError('updatePostApi', e);
           showToast('수정 요청 중 서버 오류가 발생했어요.');
@@ -629,6 +640,8 @@ export default function CreatePostPage({navigation, route}) {
 
         try {
           await uploadPostApi(payload);
+          // 등록 후 메모리 목록 캐시를 무효화해 새 글이 즉시 반영되게 한다.
+          dispatch(memoryApi.util.invalidateTags(['Memory']));
         } catch (e) {
           logAxiosError('uploadPostApi', e);
           showToast('업로드 요청 중 서버 오류가 발생했어요.');
@@ -662,6 +675,7 @@ export default function CreatePostPage({navigation, route}) {
     isEditMode,
     postId,
     removedUrlsFromRoute,
+    dispatch,
   ]);
 
  /* =========================

@@ -1,5 +1,5 @@
-import React, {useState, forwardRef} from 'react';
-import {TextInput} from 'react-native';
+import React, {useState, forwardRef, useEffect} from 'react';
+import {TextInput, Keyboard, Platform} from 'react-native';
 import {BottomSheetTextInput} from '@gorhom/bottom-sheet';
 
 /**
@@ -10,6 +10,8 @@ import {BottomSheetTextInput} from '@gorhom/bottom-sheet';
  * - borderRadius는 style prop에서 유지
  *
  * @param {boolean} bottomSheet - @gorhom/bottom-sheet 내부에서 사용 시 true
+ * @param {boolean} disableFocusStyle - true면 내부 포커스 테두리 비활성화
+ * @param {boolean} disableBaseStyle - true면 기본 회색 외곽 비활성화
  */
 const CustomInput = forwardRef(function CustomInput(
   {
@@ -18,6 +20,8 @@ const CustomInput = forwardRef(function CustomInput(
     onFocus: onFocusProp,
     onBlur: onBlurProp,
     bottomSheet = false,
+    disableFocusStyle = false,
+    disableBaseStyle = false,
     ...props
   },
   ref,
@@ -25,6 +29,14 @@ const CustomInput = forwardRef(function CustomInput(
   const [focused, setFocused] = useState(false);
 
   const InputComponent = bottomSheet ? BottomSheetTextInput : TextInput;
+
+  useEffect(() => {
+    const sub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setFocused(false),
+    );
+    return () => sub.remove();
+  }, []);
 
   const handleFocus = e => {
     setFocused(true);
@@ -40,9 +52,9 @@ const CustomInput = forwardRef(function CustomInput(
     <InputComponent
       ref={ref}
       style={[
-        defaultStyle,
         style,
-        focused && editable && focusedStyle,
+        !disableBaseStyle && defaultStyle,
+        !disableFocusStyle && focused && editable && focusedStyle,
         !editable && disabledStyle,
       ]}
       editable={editable}
@@ -55,11 +67,11 @@ const CustomInput = forwardRef(function CustomInput(
 
 const defaultStyle = {
   borderWidth: 1,
-  borderColor: '#E0E0E0',
+  borderColor: '#DADADA',
 };
 
 const focusedStyle = {
-  borderWidth: 2,
+  borderWidth: 1,
   borderColor: '#FFC84D',
 };
 

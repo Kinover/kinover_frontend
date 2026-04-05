@@ -3,7 +3,6 @@ import {StyleSheet, Platform} from 'react-native';
 import CustomModal from 'components/modal/CustomModal';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
-  getResponsiveFontSize,
   getResponsiveWidth,
 } from 'utils/responsive';
 

@@ -34,6 +34,9 @@ import {
   getAndroidNavBottomInsetEstimate,
 } from 'utils/layoutMetrics';
 import {BOTTOMSHEET_STYLE} from 'styles/style';
+import {
+  getBottomSheetEditorSharedStyles,
+} from 'components/bottomSheet/bottomSheetEditorSharedStyles';
 
 import ToastModal from 'components/modal/ToastModal';
 import {validateLength} from 'utils/validation';
@@ -51,6 +54,11 @@ export default function CreateChatRoomBottomSheet({
   maxRoomNameLength = 30,
   snapPoints: externalSnapPoints,
 }) {
+  const shared = getBottomSheetEditorSharedStyles(
+    getResponsiveFontSize,
+    getResponsiveHeight,
+    getResponsiveWidth,
+  );
   const styles = useScaledStyleSheet(rf => ({
     body: {
       paddingTop: getResponsiveHeight(20),
@@ -78,25 +86,26 @@ export default function CreateChatRoomBottomSheet({
     },
 
     inputWrap: {
-      alignSelf: 'stretch',
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: 'rgba(60, 60, 67, 0.28)',
-      paddingBottom: 2,
+      ...shared.singleLineUnderlineWrap,
+    },
+    inputWrapFocused: {
+      ...shared.singleLineUnderlineWrapFocused,
     },
     input: {
-      minHeight: getResponsiveHeight(36),
+      minHeight: getResponsiveHeight(30),
       paddingHorizontal: 0,
-      paddingTop: Platform.OS === 'android' ? 2 : 4,
-      paddingBottom: 2,
+      paddingTop: 0,
+      paddingBottom: 0,
       borderWidth: 0,
       backgroundColor: 'transparent',
       includeFontPadding: false,
       fontSize: rf(15),
       fontFamily: 'Pretendard-Regular',
       color: '#0B1220',
-      lineHeight: rf(22),
+      lineHeight: rf(20),
       letterSpacing: -0.18,
-      textAlignVertical: 'top',
+      textAlign: 'left',
+      textAlignVertical: 'center',
     },
 
     chipScroll: {
@@ -223,6 +232,19 @@ export default function CreateChatRoomBottomSheet({
   const toastTimerRef = useRef(null);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRoomNameFocused, setIsRoomNameFocused] = useState(false);
+  const roomNameInputRef = useRef(null);
+  const roomNameFocusInteractionRef = useRef(false);
+  const roomNameFocusInteractionTimerRef = useRef(null);
+  const markRoomNameFocusInteraction = useCallback(() => {
+    roomNameFocusInteractionRef.current = true;
+    if (roomNameFocusInteractionTimerRef.current) {
+      clearTimeout(roomNameFocusInteractionTimerRef.current);
+    }
+    roomNameFocusInteractionTimerRef.current = setTimeout(() => {
+      roomNameFocusInteractionRef.current = false;
+    }, 220);
+  }, []);
 
   // 키보드 열림 추적
   const keyboardOpenRef = useRef(false);
@@ -278,6 +300,7 @@ export default function CreateChatRoomBottomSheet({
 
     const onHide = () => {
       keyboardOpenRef.current = false;
+      // setIsRoomNameFocused(false);
 
       if (pendingActionRef.current) {
         const fn = pendingActionRef.current;
@@ -324,6 +347,9 @@ export default function CreateChatRoomBottomSheet({
     return () => {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
       if (touchLockTimerRef.current) clearTimeout(touchLockTimerRef.current);
+      if (roomNameFocusInteractionTimerRef.current) {
+        clearTimeout(roomNameFocusInteractionTimerRef.current);
+      }
 
       pendingActionRef.current = null;
 
@@ -488,6 +514,7 @@ export default function CreateChatRoomBottomSheet({
   const handleCancel = useCallback(() => {
     roomNameRef.current = String(initialRoomName ?? '');
     setRoomNameKey(k => k + 1);
+    setIsRoomNameFocused(false);
 
     setSelectedIds(Array.isArray(initialSelectedIds) ? initialSelectedIds : []);
     hideToast();
@@ -553,6 +580,8 @@ export default function CreateChatRoomBottomSheet({
   const handleDismiss = useCallback(() => {
     hideToast();
     setIsSubmitting(false);
+    setIsRoomNameFocused(false);
+    keyboardOpenRef.current = false;
     pendingActionRef.current = null;
 
     if (pendingInteractionRef.current) {
@@ -567,11 +596,14 @@ export default function CreateChatRoomBottomSheet({
 
   // 내부 탭: 토스트만 닫기(키보드 dismiss/snap은 Layout)
   const handleTouchInside = useCallback(() => {
-    if (!keyboardOpenRef.current) return;
+    if (!keyboardOpenRef.current && !isRoomNameFocused) return;
+    if (roomNameFocusInteractionRef.current) return;
     if (touchLockRef.current) return;
     lockTouchBriefly();
+    roomNameInputRef.current?.blur?.();
+    setIsRoomNameFocused(false);
     hideToast();
-  }, [hideToast, lockTouchBriefly]);
+  }, [hideToast, lockTouchBriefly, isRoomNameFocused]);
 
   return (
     <>
@@ -606,13 +638,27 @@ export default function CreateChatRoomBottomSheet({
               </AppText>
             </View>
 
-            <View style={styles.inputWrap}>
-              <CustomInput bottomSheet
+            <View
+              style={[
+                styles.inputWrap,
+                isRoomNameFocused && styles.inputWrapFocused,
+              ]}>
+              <CustomInput
+                bottomSheet
+                disableFocusStyle={true}
+                disableBaseStyle={true}
+                ref={roomNameInputRef}
                 key={`room-${roomNameKey}`}
                 defaultValue={roomNameRef.current}
                 onChangeText={t => {
                   roomNameRef.current = String(t).slice(0, maxRoomNameLength);
                 }}
+                onTouchStart={markRoomNameFocusInteraction}
+                onFocus={() => {
+                  markRoomNameFocusInteraction();
+                  setIsRoomNameFocused(true);
+                }}
+                onBlur={() => setIsRoomNameFocused(false)}
                 placeholder={roomNamePlaceholder}
                 placeholderTextColor="#B0B6C3"
                 style={styles.input}

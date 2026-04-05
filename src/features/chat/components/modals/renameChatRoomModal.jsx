@@ -1,5 +1,5 @@
 import React, {useState, useEffect} from 'react';
-import { StyleSheet } from 'react-native';
+import {StyleSheet, View} from 'react-native';
 import CustomInput from 'components/CustomInput';
 import CustomModal from 'components/modal/CustomModal';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -56,9 +56,13 @@ export default function RenameChatRoomModal({
 
   }));
   const [fieldError, setFieldError] = useState('');
+  const [isNameFocused, setIsNameFocused] = useState(false);
 
   useEffect(() => {
-    if (visible) setFieldError('');
+    if (visible) {
+      setFieldError('');
+      setIsNameFocused(false);
+    }
   }, [visible]);
 
   const handleConfirm = () => {
@@ -95,16 +99,30 @@ export default function RenameChatRoomModal({
           {fieldError}
         </AppText>
       ) : null}
-      <CustomInput
-        placeholder={currentRoomName || '채팅방 이름'}
-        value={newRoomName}
-        onChangeText={t => {
-          setNewRoomName(t);
-          if (fieldError) setFieldError('');
-        }}
-        style={styles.textInput}
-        placeholderTextColor="#999"
-      />
+      <View
+        style={[
+          styles.textInput,
+          isNameFocused && {borderColor: '#FFC84D'},
+        ]}>
+        <CustomInput
+          disableFocusStyle={true}
+          disableBaseStyle={true}
+          placeholder={currentRoomName || '채팅방 이름'}
+          value={newRoomName}
+          onChangeText={t => {
+            setNewRoomName(t);
+            if (fieldError) setFieldError('');
+          }}
+          onFocus={() => setIsNameFocused(true)}
+          onBlur={() => setIsNameFocused(false)}
+          style={{
+            borderWidth: 0,
+            paddingVertical: 0,
+            paddingHorizontal: 0,
+          }}
+          placeholderTextColor="#999"
+        />
+      </View>
     </CustomModal>
   );
 }

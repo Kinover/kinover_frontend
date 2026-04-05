@@ -9,10 +9,10 @@ import {
   getResponsiveFontSize,
 } from 'utils/responsive';
 
-import ReceiveChat from './receiveChat';
-import SendChat from './sendChat';
-import ReceiveKinoChat from './receiveKinoChat';
-import SendKinoChat from './sendKinoChat';
+import ReceiveChat from './messages/receiveChat';
+import SendChat from './messages/sendChat';
+import ReceiveKinoChat from './messages/receiveKinoChat';
+import SendKinoChat from './messages/sendKinoChat';
 
 const getSenderId = message => {
   if (!message) return null;

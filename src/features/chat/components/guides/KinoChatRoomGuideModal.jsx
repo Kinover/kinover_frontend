@@ -5,7 +5,6 @@ import { View, StyleSheet, TouchableOpacity, Modal } from 'react-native';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
-  getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';

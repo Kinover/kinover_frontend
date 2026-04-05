@@ -40,7 +40,6 @@ import CustomSwitch from 'components/customSwitch';
 
 import {setFontMode, FONT_MODE, setBioLockEnabled} from 'store/uiSlice';
 import {persistor} from 'store';
-import {FontModeSliderBlue} from '../components/FontModeSlider';
 
 export default function SettingScreen() {
   const navigation = useNavigation();
@@ -156,36 +155,46 @@ export default function SettingScreen() {
         paddingTop: getResponsiveHeight(4),
         paddingBottom: getResponsiveHeight(8),
       },
-      fontLabelRow: {
-        width: getResponsiveWidth(300),
-        alignSelf: 'center',
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: getResponsiveHeight(6),
+      fontRowSliderWrap: {
+        width: getResponsiveWidth(220),
+        alignItems: 'flex-end',
       },
-      fontLabel: {
+      fontSegmentWrap: {
+        flexDirection: 'row',
+        borderRadius: getResponsiveWidth(999),
+        backgroundColor: '#F3F4F6',
+        padding: getResponsiveWidth(3),
+      },
+      fontSegmentBtn: {
+        minWidth: getResponsiveWidth(56),
+        paddingVertical: getResponsiveHeight(6),
+        paddingHorizontal: getResponsiveWidth(8),
+        borderRadius: getResponsiveWidth(999),
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
+      fontSegmentBtnActive: {
+        backgroundColor: '#FFFFFF',
+      },
+      fontSegmentText: {
         fontSize: rf(10.5),
-        color: '#A0A0A0',
-        fontFamily: 'Pretendard-Regular',
+        color: '#7B808A',
+        fontFamily: 'Pretendard-Medium',
+      },
+      fontSegmentTextActive: {
+        color: '#111827',
+        fontFamily: 'Pretendard-SemiBold',
       },
     };
   });
 
-  const modeToValue = useCallback(m => {
-    if (m === FONT_MODE.EXTRA_LARGE) return 2;
-    if (m === FONT_MODE.LARGE) return 1;
-    return 0;
-  }, []);
-
-  const valueToMode = useCallback(v => {
-    if (v >= 2) return FONT_MODE.EXTRA_LARGE;
-    if (v >= 1) return FONT_MODE.LARGE;
-    return FONT_MODE.NORMAL;
-  }, []);
-
-  const sliderStep = useMemo(
-    () => modeToValue(fontMode),
-    [fontMode, modeToValue],
+  const fontModeOptions = useMemo(
+    () => [
+      {mode: FONT_MODE.NORMAL, label: '보통'},
+      {mode: FONT_MODE.LARGE, label: '크게'},
+      {mode: FONT_MODE.EXTRA_LARGE, label: '매우 크게'},
+    ],
+    [],
   );
 
   const openLink = useCallback(async url => {
@@ -340,23 +349,30 @@ export default function SettingScreen() {
               글씨 크기
             </AppText>
           </View>
-        </View>
-
-        <View style={styles.fontSliderWrap}>
-          <FontModeSliderBlue
-            value={sliderStep}
-            onComplete={step => applyFontMode(valueToMode(step))}
-          />
-          <View style={styles.fontLabelRow}>
-            <AppText allowFontScaling={false} style={styles.fontLabel}>
-              보통
-            </AppText>
-            <AppText allowFontScaling={false} style={styles.fontLabel}>
-              크게
-            </AppText>
-            <AppText allowFontScaling={false} style={styles.fontLabel}>
-              매우 크게
-            </AppText>
+          <View style={styles.fontRowSliderWrap}>
+            <View style={styles.fontSegmentWrap}>
+              {fontModeOptions.map(option => {
+                const active = fontMode === option.mode;
+                return (
+                  <Pressable
+                    key={option.mode}
+                    onPress={() => applyFontMode(option.mode)}
+                    style={[
+                      styles.fontSegmentBtn,
+                      active && styles.fontSegmentBtnActive,
+                    ]}>
+                    <AppText
+                      allowFontScaling={false}
+                      style={[
+                        styles.fontSegmentText,
+                        active && styles.fontSegmentTextActive,
+                      ]}>
+                      {option.label}
+                    </AppText>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
         </View>
       </View>

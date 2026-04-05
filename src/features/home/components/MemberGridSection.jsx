@@ -39,14 +39,6 @@ import Animated, {
 } from 'react-native-reanimated';
 
 const AVATAR = getResponsiveIconSize(60);
-const EMOTION_EXPIRE_MS = 24 * 60 * 60 * 1000;
-
-function isEmotionValid(emotion, emotionUpdatedAt) {
-  if (!emotion || !emotionUpdatedAt) return false;
-  const t = new Date(emotionUpdatedAt).getTime();
-  if (Number.isNaN(t)) return false;
-  return Date.now() - t <= EMOTION_EXPIRE_MS;
-}
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
@@ -85,13 +77,7 @@ const MemberGridItem = memo(function MemberGridItem({
     ? `${formatRelativeKorean(lastRaw)} 접속`
     : null;
 
-  let finalEmotion = safeMember.emotion;
-  let finalEmotionUpdatedAt = safeMember.emotionUpdatedAt;
-
-  if (!isEmotionValid(finalEmotion, finalEmotionUpdatedAt)) {
-    finalEmotion = null;
-    finalEmotionUpdatedAt = null;
-  }
+  const finalEmotion = safeMember.emotion ?? null;
 
   const emotionImage = finalEmotion ? getEmotionImage(finalEmotion) : null;
   const hasEmotion = !!emotionImage;

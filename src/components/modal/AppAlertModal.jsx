@@ -77,6 +77,12 @@ export default function AppAlertModal({
     color: 'white',
     textDecorationLine: 'underline',
   },
+  outsideDismissText: {
+    fontSize: rf(13),
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textDecorationLine: 'underline',
+  },
 
   buttonRow: {},
   closeText: {color: '#111827'},
@@ -102,15 +108,6 @@ export default function AppAlertModal({
   const handleClose = useCallback(() => {
     onRequestClose?.();
   }, [onRequestClose]);
-
- /** 왼쪽 버튼(secondaryText, 예: "오늘 하루 보지 않기") 클릭 시: 저장 후 닫기 */
-  const handleLeftButton = useCallback(() => {
-    if (onSecondary) {
-      onSecondary();
-    } else {
-      onRequestClose?.();
-    }
-  }, [onSecondary, onRequestClose]);
 
   const handlePrimary = useCallback(() => {
     onPrimary?.();
@@ -145,9 +142,9 @@ export default function AppAlertModal({
       visible={visible}
       showCloseButton
       onRequestClose={handleClose}
-      onClose={handleLeftButton}
+      onClose={handleClose}
       onConfirm={handlePrimary}
-      closeText={secondaryText}
+      closeText={undefined}
       confirmText={primaryText}
       closeOnBackdropPress
       title={resolvedTitle}
@@ -159,7 +156,16 @@ export default function AppAlertModal({
       closeTextStyle={styles.closeText}
       useViewOverlayOnIOS
       footerOutside={
-        tertiaryText ? (
+        secondaryText ? (
+          <TouchableOpacity
+            activeOpacity={0.85}
+            onPress={onSecondary}
+            hitSlop={{top: 8, bottom: 8, left: 12, right: 12}}>
+            <AppText allowFontScaling={false} style={styles.outsideDismissText}>
+              {secondaryText}
+            </AppText>
+          </TouchableOpacity>
+        ) : tertiaryText ? (
           <TouchableOpacity activeOpacity={0.85} onPress={handleTertiary}>
             <AppText allowFontScaling={false} style={styles.tertiaryText}>
               {tertiaryText}

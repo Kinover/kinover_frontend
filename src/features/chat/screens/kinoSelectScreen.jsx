@@ -6,10 +6,12 @@ import { View, TouchableOpacity, Image, StyleSheet, Animated, useWindowDimension
 import AppText from 'components/AppText';
 import Carousel from 'react-native-reanimated-carousel';
 import {useNavigation, useRoute} from '@react-navigation/native';
+import {useDispatch} from 'react-redux';
 
 import KinoConfirmModal from '../components/modals/kinoConfirmModal';
 import useHideTabBar from 'hooks/useHideTabBar';
-import {useUpdateKinoPersonalityMutation} from '../services/chatApi';
+import {chatApi, useUpdateKinoPersonalityMutation} from '../services/chatApi';
+import {resetRoomMessageList} from '../store/messageSlice';
 
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
@@ -237,6 +239,7 @@ export default function KinoSelectScreen() {
   }));
   const navigation = useNavigation();
   const route = useRoute();
+  const dispatch = useDispatch();
   const {chatRoomId} = route.params;
   const [updateKinoPersonality] = useUpdateKinoPersonalityMutation();
 
@@ -270,6 +273,7 @@ export default function KinoSelectScreen() {
   const handleKinoSelect = () => {
     const selectedKinoType = KINOS[currentIndex].kinoType;
     const selectedPersonality = KINO_TYPE_TO_PERSONALITY[selectedKinoType];
+    const rid = String(chatRoomId);
 
     updateKinoPersonality({
       chatRoomId,
@@ -277,6 +281,24 @@ export default function KinoSelectScreen() {
     })
       .unwrap()
       .then(() => {
+        // 키노가 실제로 변경된 시점에만 기존 대화를 초기화한다.
+        dispatch(resetRoomMessageList(rid));
+        dispatch(
+          chatApi.util.updateQueryData(
+            'getMessages',
+            {chatRoomId: rid},
+            draft => {
+              draft.splice(0, draft.length);
+            },
+          ),
+        );
+        dispatch(
+          chatApi.util.invalidateTags([
+            {type: 'Messages', id: rid},
+            {type: 'ChatRoom', id: rid},
+          ]),
+        );
+
         navigation.reset({
           index: 0,
           routes: [{name: 'Tabs', params: {screen: '소통'}}],

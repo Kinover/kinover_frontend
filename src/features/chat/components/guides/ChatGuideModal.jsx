@@ -28,7 +28,6 @@ export default function ChatGuideModal({
   storageKey = KEY_CHAT_GUIDE_SHOWN,
   targetRef,
   targetRefsByKey,
-  onAfterClose,
 }) {
   const {visible, closeAndRemember} = useGuide(
     storageKey,

@@ -62,42 +62,33 @@ export function useNavigateToWhere() {
       if (tab) {
         // e.g. navigation.navigate('Tabs', { screen: 'HomeTab', params: { screen:'...', params }})
         // 여기서는 "tab이 현재 네비에 존재한다" 가정하에 시도
-        try {
-          if (screen) {
-            navigation.navigate(tab, {screen, params});
-          } else {
-            navigation.navigate(tab, params);
-          }
-          return;
-        } catch (e) {
+        if (screen) {
+          navigation.navigate(tab, {screen, params});
+        } else {
+          navigation.navigate(tab, params);
         }
+        return;
       }
 
       // 2-2) screen만 있으면: 현재 스택에서 이동/교체가 가장 안전
       if (screen) {
-        try {
-          if (replace && navigation?.dispatch) {
-            navigation.dispatch(StackActions.replace(screen, params));
-          } else {
-            navigation.navigate(screen, params);
-          }
-          return;
-        } catch (e) {
+        if (replace && navigation?.dispatch) {
+          navigation.dispatch(StackActions.replace(screen, params));
+        } else {
+          navigation.navigate(screen, params);
         }
+        return;
       }
 
       // 2-3) root만 있는데 root가 없는 경우: 아무것도 못함
       if (root && !hasRoot) {
-          `[useNavigateToWhere] root("${root}")가 현재 네비게이터에 없습니다. routeNames=`,
+        `[useNavigateToWhere] root("${root}")가 현재 네비게이터에 없습니다. routeNames=`,
           routeNames,
-        );
+          null;
         return;
       }
 
-        root,
-        tab,
-        screen,
-      });
+      root, tab, screen, null;
     },
     [navigation],
   );

@@ -19,8 +19,6 @@ import {useGetChatRoomUsersQuery, useGetReadPointersQuery, useMarkReadRestMutati
 
 import {
   STORE_MOCK_ENABLED,
-  getStoreMockKinoMessages,
-  getStoreMockChatMessages,
   isStoreMockChatRoomId,
 } from '../../home/utils/storeMockData';
 

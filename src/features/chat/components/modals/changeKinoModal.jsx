@@ -4,7 +4,6 @@ import CustomModal from 'components/modal/CustomModal';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveHeight,
-  getResponsiveFontSize,
   getResponsiveWidth,
 } from 'utils/responsive';
 

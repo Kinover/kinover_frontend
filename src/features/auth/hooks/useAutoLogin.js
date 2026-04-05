@@ -63,7 +63,8 @@ export function useAutoLogin(shouldRun = true) {
     let cancelled = false;
 
     const run = async () => {
-      const isManualLoginCompleted = () => !!store.getState()?.login?.isLoggedIn;
+      const isManualLoginCompleted = () =>
+        !!store.getState()?.login?.isLoggedIn;
 
       try {
         const token = await withTimeout(getToken(), 6000);
@@ -86,7 +87,6 @@ export function useAutoLogin(shouldRun = true) {
           );
           userResult = await withTimeout(req.unwrap(), 8000);
           req.unsubscribe();
-
         } catch (e) {
           if (isManualLoginCompleted()) return;
           if (isAuthFailure(e)) {
@@ -109,51 +109,49 @@ export function useAutoLogin(shouldRun = true) {
           dispatch(setUser(raw));
         }
 
-        try {
- // familyId 추출 보강 (DTO 구조 흔들려도 안전)
-          const familyId = raw?.familyId ?? raw?.family?.familyId ?? null;
-          
-          const hasFamilyValue = familyId != null;
-          
-          await setHasFamily(hasFamilyValue);
-          if (hasFamilyValue) {
-            const familyReq = dispatch(
-              homeApi.endpoints.getFamily.initiate(familyId, {forceRefetch: true}),
-            );
-            const familyRes = await familyReq.unwrap();
-            familyReq.unsubscribe();
-            const familyData = familyRes?.data ?? familyRes;
-            if (familyData && typeof familyData === 'object') {
-              dispatch(setFamily(familyData));
-            }
+        // familyId 추출 보강 (DTO 구조 흔들려도 안전)
+        const familyId = raw?.familyId ?? raw?.family?.familyId ?? null;
 
-            const userId = raw?.userId ?? raw?.id ?? null;
-            if (userId) {
-              const familyUsersReq = dispatch(
-                homeApi.endpoints.getFamilyUsers.initiate(familyId, {
-                  forceRefetch: true,
-                }),
-              );
-              familyUsersReq
-                .unwrap()
-                .then(familyUsersRes => {
-                  const users =
-                    (Array.isArray(familyUsersRes) && familyUsersRes) ||
-                    familyUsersRes?.data ||
-                    familyUsersRes?.users ||
-                    familyUsersRes?.data?.users ||
-                    [];
-                  if (Array.isArray(users)) {
-                    dispatch(setFamilyUserList(users));
-                  }
-                })
-                .finally(() => familyUsersReq.unsubscribe());
-              // RTK Query: ChatRoom 태그 무효화 → getChatRooms 자동 fetch
-              dispatch(baseApi.util.invalidateTags(['ChatRoom']));
-            }
-          } else {
+        const hasFamilyValue = familyId != null;
+
+        await setHasFamily(hasFamilyValue);
+        if (hasFamilyValue) {
+          const familyReq = dispatch(
+            homeApi.endpoints.getFamily.initiate(familyId, {
+              forceRefetch: true,
+            }),
+          );
+          const familyRes = await familyReq.unwrap();
+          familyReq.unsubscribe();
+          const familyData = familyRes?.data ?? familyRes;
+          if (familyData && typeof familyData === 'object') {
+            dispatch(setFamily(familyData));
           }
-        } catch (e) {
+
+          const userId = raw?.userId ?? raw?.id ?? null;
+          if (userId) {
+            const familyUsersReq = dispatch(
+              homeApi.endpoints.getFamilyUsers.initiate(familyId, {
+                forceRefetch: true,
+              }),
+            );
+            familyUsersReq
+              .unwrap()
+              .then(familyUsersRes => {
+                const users =
+                  (Array.isArray(familyUsersRes) && familyUsersRes) ||
+                  familyUsersRes?.data ||
+                  familyUsersRes?.users ||
+                  familyUsersRes?.data?.users ||
+                  [];
+                if (Array.isArray(users)) {
+                  dispatch(setFamilyUserList(users));
+                }
+              })
+              .finally(() => familyUsersReq.unsubscribe());
+            // RTK Query: ChatRoom 태그 무효화 → getChatRooms 자동 fetch
+            dispatch(baseApi.util.invalidateTags(['ChatRoom']));
+          }
         }
 
         if (cancelled) return;
@@ -189,7 +187,7 @@ export function useAutoLogin(shouldRun = true) {
     };
   }, [dispatch, store, rehydrated, authChecked, shouldRun, loginLoading]);
 
- // 언마운트 시에만 소켓 정리
+  // 언마운트 시에만 소켓 정리
   useEffect(() => {
     return () => {
       if (socketUnsubRef.current) {
