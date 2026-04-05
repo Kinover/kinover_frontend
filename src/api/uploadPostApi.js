@@ -16,7 +16,6 @@ export const uploadPostApi = async (postData) => {
 
     return response.data;
   } catch (error) {
-    console.error('📛 게시글 업로드 실패:', error.response?.data || error.message);
     throw error;
   }
 };

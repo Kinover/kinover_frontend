@@ -434,7 +434,6 @@ export default function SendChat({
                     style={styles.imageItem}
                     resizeMode={FastImage.resizeMode.cover}
                     onError={e =>
-                      console.log('❌ SendChat thumb error:', item, e?.nativeEvent)
                     }
                   />
                 ) : (
@@ -496,7 +495,6 @@ export default function SendChat({
                 ]}
                 resizeMode={FastImage.resizeMode.contain}
                 onError={e =>
-                  console.log('❌ SendChat single thumb error:', uri, e?.nativeEvent)
                 }
               />
             ) : (

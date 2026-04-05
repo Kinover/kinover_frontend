@@ -298,7 +298,6 @@ export default function CreateChatRoomBottomSheet({
             try {
               fn?.();
             } catch (e) {
-              console.error('❌ pending action error:', e);
             }
           },
         );
@@ -472,7 +471,6 @@ export default function CreateChatRoomBottomSheet({
       hideToast();
       modalRef?.current?.dismiss?.();
     } catch (e) {
-      console.error('❌ 채팅방 생성 실패:', e);
       showToast('채팅방 생성에 실패했어요. 다시 시도해주세요.');
     } finally {
       setIsSubmitting(false);

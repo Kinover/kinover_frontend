@@ -288,7 +288,7 @@ export default function StateScreen() {
     })
       .unwrap()
       .then(() => navigation.goBack())
-      .catch(err => console.error('❌ 감정 저장 실패:', err));
+      .catch(() => {});
   };
 
  // 8개 감정을 2열×4행으로 나눔

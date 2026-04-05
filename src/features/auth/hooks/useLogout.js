@@ -28,20 +28,17 @@ export const useLogout = () => {
     try {
       await deleteFcmToken();
     } catch (e) {
-      console.log('⚠️ deleteFcmToken 실패(무시):', e);
     }
 
     try {
       await KakaoLogin.logout();
     } catch (e) {
-      console.log('⚠️ Kakao logout 실패(무시):', e);
     }
 
  // 2) 로컬 로그인정보 삭제 (needsSignup 포함)
     try {
       await deleteLoginInfo();
     } catch (e) {
-      console.log('⚠️ deleteLoginInfo 실패:', e);
     }
 
  // 3) persist 완전 초기화
@@ -49,7 +46,6 @@ export const useLogout = () => {
       await persistor.purge();
       await persistor.flush();
     } catch (e) {
-      console.log('⚠️ purge/flush 실패:', e);
     }
 
  // 4) 타이밍 안정화

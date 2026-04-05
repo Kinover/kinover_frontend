@@ -253,7 +253,6 @@ function DevForceResetLogin() {
  // 로그인 초기화 테스트할 때 위 플래그 true로 바꿔서 씀
     (async () => {
       try {
-        console.log('🧹 [DEV] force reset start');
 
         await persistor.purge();
 
@@ -269,9 +268,7 @@ function DevForceResetLogin() {
         dispatch(setLogout());
         dispatch(setAuthChecked(true));
 
-        console.log('✅ [DEV] force reset done');
       } catch (e) {
-        console.log('❌ [DEV] force reset error:', e?.message);
         dispatch(setLogout());
         dispatch(setAuthChecked(true));
       }

@@ -7,7 +7,6 @@ export const getCategoryApi = async () => {
 
     return response.data; // [{ categoryId, title, familyId, createdAt }, ...]
   } catch (error) {
-    console.error(
       '카테고리 불러오기 실패:',
       error.response?.data || error.message
     );

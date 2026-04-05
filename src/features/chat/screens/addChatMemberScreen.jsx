@@ -118,7 +118,6 @@ export default function AddChatMemberScreen({navigation, route}) {
       }
       navigation.goBack();
     } catch (err) {
-      console.error('유저 초대 실패:', err?.data || err?.message || err);
     }
   }, [addUsersToChatRoom, chatRoomId, navigation, onInvited, selected]);
 

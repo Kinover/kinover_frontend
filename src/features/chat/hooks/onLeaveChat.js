@@ -23,7 +23,6 @@ export const onLeaveChat = (dispatch, navigation, chatRoomId, showToast) => {
       navigation.goBack();
     })
     .catch(err => {
-      console.error('❌ 나가기 실패:', err);
       if (showToast) {
         const msg =
           typeof err === 'string'

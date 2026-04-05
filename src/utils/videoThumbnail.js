@@ -45,7 +45,6 @@ export async function getVideoThumbnail(uri) {
     thumbCache.set(key, thumb);
     return thumb;
   } catch (e) {
-    console.log('❌ createThumbnail failed:', key, e?.message || e);
     thumbCache.set(key, null);
     return null;
   }

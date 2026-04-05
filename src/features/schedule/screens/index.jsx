@@ -332,7 +332,6 @@ export default function ScheduleScreen() {
       };
 
       if (!payload.familyId || !payload.date || !payload.type) {
-        console.log('❌ [Schedule onSubmit] 필수값 누락:', payload);
         return;
       }
 
@@ -360,11 +359,6 @@ export default function ScheduleScreen() {
       } catch (e) {
  // config.headers는 로깅하지 말 것 (토큰 등 민감 정보 포함)
         if (__DEV__) {
-          console.log('=== [Schedule submit error] ===');
-          console.log('status:', e?.response?.status);
-          console.log('data:', e?.response?.data);
-          console.log('url:', e?.config?.url);
-          console.log('method:', e?.config?.method);
         }
         throw e;
       } finally {
@@ -404,9 +398,6 @@ export default function ScheduleScreen() {
 
       await deleteSchedule(editingSchedule.scheduleId).unwrap();
     } catch (e) {
-      console.log('=== [Schedule delete error] ===');
-      console.log('status:', e?.response?.status);
-      console.log('data:', e?.response?.data);
       throw e;
     } finally {
       blockOpenFor();

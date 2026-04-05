@@ -66,7 +66,6 @@ export const fetchUserThunk = createAsyncThunk(
       const data = await req.unwrap();
       req.unsubscribe();
 
-      console.log('[fetchUserThunk] dto:', data);
 
  // Redux store 업데이트
       dispatch(setUser(data));
@@ -120,11 +119,9 @@ export const modifyUserThunk = updatedUser => {
         dispatch(updateFamilyUser(data));
       }
 
-      console.log('✅ 프로필 수정 완료:', data);
     } catch (error) {
       const msg = extractErrorMessage(error, '프로필 수정 실패');
 
-      console.error('❌ 프로필 수정 실패:', msg);
       dispatch(setUserError(msg));
     } finally {
       dispatch(setUserLoading(false));
@@ -164,7 +161,6 @@ export const deleteUserThunk = createAsyncThunk(
       const data = await req.unwrap();
       req.unsubscribe();
 
-      console.log('✅ 회원 탈퇴 성공:', data);
 
  // 사용자 상태 완전 초기화
       dispatch(resetUser());
@@ -174,7 +170,6 @@ export const deleteUserThunk = createAsyncThunk(
     } catch (error) {
       const errorMsg = extractErrorMessage(error, '알 수 없는 오류');
 
-      console.error('❌ 회원 탈퇴 실패:', errorMsg);
       return rejectWithValue(errorMsg);
     }
   },

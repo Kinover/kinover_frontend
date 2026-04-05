@@ -91,7 +91,6 @@ export default function UserSetupScreen() {
           : null,
       };
 
-      console.log('📡 updateUserProfile payload:', payload);
 
       await updateUserProfile(payload);
 
@@ -100,7 +99,6 @@ export default function UserSetupScreen() {
         screen: '가족설정화면',
       });
     } catch (e) {
-      console.log('❌ 프로필 업데이트 실패:', e);
       setError('정보 저장 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.');
     } finally {
       setLoading(false);

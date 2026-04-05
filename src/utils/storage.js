@@ -27,17 +27,14 @@ export const ensureStorageDefaultsOnce = async () => {
 
     await mmkvStorage.setItem(STORAGE_BOOTSTRAP_KEY, '1');
   } catch (error) {
-    console.error('스토리지 기본값 초기화 실패:', error);
   }
 };
 
 export const setNeedsSignup = async needsSignup => {
   try {
     await mmkvStorage.setItem(NEEDS_SIGNUP_KEY, JSON.stringify(!!needsSignup));
-    console.log('needsSignup 상태 업데이트 완료:', !!needsSignup);
     emitAuthFlagsChanged();
   } catch (error) {
-    console.error('needsSignup 업데이트 실패:', error);
   }
 };
 
@@ -46,7 +43,6 @@ export const getNeedsSignup = async () => {
     const value = await mmkvStorage.getItem(NEEDS_SIGNUP_KEY);
     return value != null ? JSON.parse(value) : false;
   } catch (error) {
-    console.error('needsSignup 불러오기 실패:', error);
     return false;
   }
 };
@@ -55,7 +51,6 @@ export const getNeedsSignup = async () => {
 // hasFamily는 여기서 저장하지 말고, 로그인 성공 후 fetchUser로 확정해서 setHasFamily로 저장
 export const saveLoginSession = async ({token, needsSignup}) => {
   if (typeof token !== 'string' || token.trim() === '') {
-    console.error('토큰은 문자열이어야 합니다.');
     return;
   }
 
@@ -64,7 +59,6 @@ export const saveLoginSession = async ({token, needsSignup}) => {
       accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
     });
   } catch (error) {
-    console.error('로그인 세션 Keychain 저장 실패:', error);
   }
 
   try {
@@ -72,16 +66,13 @@ export const saveLoginSession = async ({token, needsSignup}) => {
     if (typeof needsSignup === 'boolean') {
       await mmkvStorage.setItem(NEEDS_SIGNUP_KEY, JSON.stringify(!!needsSignup));
     }
-    console.log('로그인 세션 저장 완료(A):', {needsSignup});
     emitAuthFlagsChanged();
   } catch (error) {
-    console.error('로그인 세션 MMKV 저장 실패:', error);
   }
 };
 
 export const saveToken = async token => {
   if (typeof token !== 'string' || token.trim() === '') {
-    console.error('토큰은 문자열이어야 합니다.');
     return;
   }
 
@@ -90,24 +81,19 @@ export const saveToken = async token => {
       accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
     });
   } catch (error) {
-    console.error('토큰 Keychain 저장 실패:', error);
   }
 
   try {
     await mmkvStorage.setItem(ACCESS_TOKEN_KEY, token);
-    console.log('토큰 저장 완료');
   } catch (error) {
-    console.error('토큰 MMKV 저장 실패:', error);
   }
 };
 
 export const setHasFamily = async hasFamily => {
   try {
     await mmkvStorage.setItem(HAS_FAMILY_KEY, JSON.stringify(hasFamily));
-    console.log('hasFamily 상태 업데이트 완료:', hasFamily);
     emitAuthFlagsChanged();
   } catch (error) {
-    console.error('hasFamily 업데이트 실패:', error);
   }
 };
 
@@ -116,7 +102,6 @@ export const getHasFamily = async () => {
     const value = await mmkvStorage.getItem(HAS_FAMILY_KEY);
     return value != null ? JSON.parse(value) : null;
   } catch (error) {
-    console.error('hasFamily 불러오기 실패:', error);
     return null;
   }
 };
@@ -138,12 +123,10 @@ export const getToken = async () => {
       mmkvResult.status === 'fulfilled' ? mmkvResult.value ?? null : null;
     return mmkvToken;
   } catch (error) {
-    console.error('토큰 불러오기 실패(Keychain):', error);
     try {
       const mmkvToken = await mmkvStorage.getItem(ACCESS_TOKEN_KEY);
       return mmkvToken ?? null;
     } catch (fallbackError) {
-      console.error('토큰 불러오기 실패(MMKV fallback):', fallbackError);
       return null;
     }
   }
@@ -155,10 +138,8 @@ export const deleteLoginInfo = async () => {
     await mmkvStorage.removeItem(ACCESS_TOKEN_KEY);
     await mmkvStorage.removeItem(HAS_FAMILY_KEY);
     await mmkvStorage.removeItem(NEEDS_SIGNUP_KEY);
-    console.log('로그인 정보 삭제 완료');
     emitAuthFlagsChanged();
   } catch (error) {
-    console.error('로그인 정보 삭제 실패:', error);
   }
 };
 
@@ -166,9 +147,7 @@ export const deleteLoginInfo = async () => {
 export const setGuestMode = async isGuestMode => {
   try {
     await mmkvStorage.setItem(GUEST_MODE_KEY, JSON.stringify(!!isGuestMode));
-    console.log('게스트 모드 상태 업데이트 완료:', !!isGuestMode);
   } catch (error) {
-    console.error('게스트 모드 업데이트 실패:', error);
   }
 };
 
@@ -177,7 +156,6 @@ export const getGuestMode = async () => {
     const value = await mmkvStorage.getItem(GUEST_MODE_KEY);
     return value != null ? JSON.parse(value) : false;
   } catch (error) {
-    console.error('게스트 모드 불러오기 실패:', error);
     return false;
   }
 };
@@ -186,18 +164,14 @@ export const enableGuestMode = async () => {
   try {
     await deleteLoginInfo();
     await mmkvStorage.setItem(GUEST_MODE_KEY, JSON.stringify(true));
-    console.log('게스트 모드 ON 완료');
   } catch (error) {
-    console.error('게스트 모드 ON 실패:', error);
   }
 };
 
 export const disableGuestMode = async () => {
   try {
     await mmkvStorage.setItem(GUEST_MODE_KEY, JSON.stringify(false));
-    console.log('게스트 모드 OFF 완료');
   } catch (error) {
-    console.error('게스트 모드 OFF 실패:', error);
   }
 };
 
@@ -211,7 +185,6 @@ export const toggleGuestMode = async () => {
 
     return next;
   } catch (error) {
-    console.error('게스트 모드 토글 실패:', error);
     return false;
   }
 };

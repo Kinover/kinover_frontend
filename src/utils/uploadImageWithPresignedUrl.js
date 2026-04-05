@@ -56,7 +56,6 @@ export async function uploadImageWithPresignedUrl(fileUri, fileName) {
 
     return fileUrl;
   } catch (err) {
-    console.error('🚨 uploadImageWithPresignedUrl 에러:', err.message);
     throw err;
   }
 }

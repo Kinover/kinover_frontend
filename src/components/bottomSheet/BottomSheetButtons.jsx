@@ -55,7 +55,6 @@ export function BottomSheetButtons({
         }
       }
     } catch (e) {
-      console.log('BottomSheetButtons save error:', e);
  // 저장 실패 피드백
       hapticError();
     } finally {

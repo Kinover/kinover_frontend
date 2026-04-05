@@ -274,7 +274,6 @@ export default function HomeScreen() {
       const allFailed = results.every(r => r.status === 'rejected');
       if (allFailed) setErrorToastVisible(true);
     } catch (e) {
-      console.log('[HomeScreen] refresh family data error:', e);
       setErrorToastVisible(true);
     }
   }, [familyId, refetchFamily, refetchFamilyStatus, refetchFamilyUsers, refetchUser]);

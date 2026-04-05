@@ -42,7 +42,6 @@ export default function useChatWebSocket({
  // 토큰을 먼저 검사하고 encode는 나중에
     const raw = await getToken();
     if (!raw) {
-      console.warn('[WebSocket] No token found');
       return;
     }
     const token = encodeURIComponent(raw);
@@ -66,13 +65,11 @@ export default function useChatWebSocket({
         const msg = JSON.parse(event.data);
         onMessage?.(msg);
       } catch (e) {
-        console.error('[WebSocket] Invalid message format', e);
       }
     };
 
     ws.onerror = e => {
  // RN에서 e.message가 없을 때도 많아서 그대로 출력
-      console.error('[WebSocket] Error:', e);
     };
 
     ws.onclose = event => {
@@ -95,7 +92,6 @@ export default function useChatWebSocket({
       ws.send(JSON.stringify(data));
       return true;
     }
-    console.warn('[WebSocket] Not connected');
     return false;
   }, []);
 

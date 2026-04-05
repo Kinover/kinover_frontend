@@ -50,7 +50,6 @@ export function useAppleLogin() {
     let loginConfirmed = false;
 
     try {
-      console.log('🍎 Apple login pressed');
 
  // 1) 애플 로그인 요청
       const res = await appleAuth.performRequest({
@@ -58,7 +57,6 @@ export function useAppleLogin() {
         requestedScopes: [appleAuth.Scope.EMAIL, appleAuth.Scope.FULL_NAME],
       });
 
-      console.log('🍎 Apple performRequest result:', res);
 
       const identityToken = res?.identityToken;
       if (!identityToken) {
@@ -81,19 +79,16 @@ export function useAppleLogin() {
         try {
           socketUnsubRef.current = startChatSocket(dispatch, store.getState);
         } catch (socketError) {
-          console.log('⚠️ startChatSocket fail (ignored):', socketError?.message);
         }
       }
 
  // 4) 마지막에 authChecked true
       dispatch(setAuthChecked(true));
 
-      console.log('🍎 Apple login success:', {
         hasFamily,
         familyId: loginResult?.familyId ?? null,
       });
     } catch (e) {
-      console.log('❌ Apple login fail:', e);
       const alreadyLoggedIn = loginConfirmed || !!store.getState()?.login?.isLoggedIn;
 
       if (alreadyLoggedIn) {

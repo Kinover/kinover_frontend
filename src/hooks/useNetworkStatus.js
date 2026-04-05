@@ -25,7 +25,6 @@ function runReconnectCallbacks() {
     try {
       cb();
     } catch (e) {
-      console.warn('[useNetworkStatus] reconnect callback error:', e);
     }
   });
 }
@@ -89,7 +88,6 @@ export default function useNetworkStatus(options = {}) {
           }
         });
       } catch (e) {
-        console.warn('[useNetworkStatus] NetInfo not available:', e?.message);
       }
     };
 

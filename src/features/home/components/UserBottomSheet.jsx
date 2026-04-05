@@ -491,7 +491,6 @@ function UserBottomSheetModalBase(
       imageUrlRef.current = fileName;
       setPreviewImage(`${CLOUD_FRONT}${fileName}`);
     } catch (err) {
-      console.error('❌ 프로필 이미지 업로드 실패:', err);
       setPreviewImage(prevPreview);
       showToast('이미지 업로드 중 문제가 발생했어요.');
     }
@@ -548,7 +547,6 @@ function UserBottomSheetModalBase(
 
       closeSheet();
     } catch (err) {
-      console.error('❌ 프로필 저장 실패:', err);
       showToast('프로필 저장 중 문제가 발생했어요.');
       setIsSaving(false);
     }

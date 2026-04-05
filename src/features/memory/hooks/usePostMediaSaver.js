@@ -110,7 +110,6 @@ export default function usePostMediaSaver({toast}) {
         if (saved) toast?.('갤러리에 저장했어요.');
         else toast?.('저장에 실패했어요.');
       } catch (e) {
-        console.error('saveOneToGallery error:', e);
         toast?.('저장 중 오류가 발생했어요.');
       } finally {
         setIsOptionBusy(false);
@@ -154,12 +153,10 @@ export default function usePostMediaSaver({toast}) {
             });
             if (saved) okCount += 1;
           } catch (e) {
-            console.error('saveAll item error:', e);
           }
         }
         toast?.(`${okCount}개를 저장했어요`);
       } catch (e) {
-        console.error('saveAllToGallery error:', e);
         toast?.('전체 저장 중 오류가 발생했어요.');
       } finally {
         setIsOptionBusy(false);

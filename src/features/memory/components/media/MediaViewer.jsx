@@ -206,7 +206,6 @@ function ZoomableImage({
             style={styles.zoomImage}
             resizeMode={FastImage.resizeMode.contain}
             onError={e =>
-              console.log('❌ MediaViewer image error:', uri, e?.nativeEvent)
             }
           />
         </Animated.View>
@@ -468,7 +467,7 @@ export default function MediaViewer({
               resizeMode="contain"
               controls
               paused={false}
-              onError={e => console.log('❌ MediaViewer video error:', uri, e)}
+              onError={() => {}}
               ignoreSilentSwitch="ignore"
             />
           ) : (

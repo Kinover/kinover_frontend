@@ -398,7 +398,6 @@ export default function ReceiveChat({
                   style={styles.imageItem}
                   resizeMode={FastImage.resizeMode.cover}
                   onError={e =>
-                    console.log(
                       '❌ ReceiveChat thumb error:',
                       item,
                       e?.nativeEvent,
@@ -454,7 +453,6 @@ export default function ReceiveChat({
               ]}
               resizeMode={FastImage.resizeMode.contain}
               onError={e =>
-                console.log(
                   '❌ ReceiveChat single thumb error:',
                   uri,
                   e?.nativeEvent,
@@ -504,7 +502,6 @@ export default function ReceiveChat({
             }}
             style={styles.receivedUserImage}
             onError={e =>
-              console.log('❌ profile error:', profileUrl, e?.nativeEvent)
             }
           />
         </TouchableOpacity>

@@ -100,7 +100,6 @@ export const fetchMemoryThunk = categoryId => {
         const dummyAll = makeGuestPosts();
         const dummy = filterGuestPostsByCategoryId(dummyAll, categoryId);
         dispatch(setMemoryList(dummy));
-        console.log('🟡 [GUEST] fetchMemoryThunk: server skipped', {
           categoryId,
           count: dummy.length,
         });
@@ -114,11 +113,9 @@ export const fetchMemoryThunk = categoryId => {
         params.categoryId = categoryId;
       } else {
         if (categoryId != null) {
-          console.log('⚠️ categoryId 무시됨(UUID 아님):', categoryId);
         }
       }
 
-      console.log('🧪 posts list request', {
         baseURL: apiClient?.defaults?.baseURL,
         path: '/posts',
         params: Object.keys(params).length ? params : undefined,
@@ -133,13 +130,11 @@ export const fetchMemoryThunk = categoryId => {
       const data = await req.unwrap();
       req.unsubscribe();
       if (!Array.isArray(data)) {
-        console.log('⚠️ posts list response is not array:', data);
       }
 
       dispatch(setMemoryList(Array.isArray(data) ? data : []));
       return Array.isArray(data) ? data : [];
     } catch (error) {
-      console.error('❌ 게시글 목록 조회 실패:', {
         baseURL: apiClient?.defaults?.baseURL,
         status: error?.response?.status,
         data: error?.response?.data,
@@ -165,7 +160,6 @@ export const deletePostThunk = (postId, categoryId) => {
   return async (dispatch, getState) => {
     dispatch(setMemoryLoading(true));
     dispatch(setMemoryError(null));
-    console.log('🗑️ 게시글 삭제 요청 시작:', {postId, categoryId});
 
     try {
  // 게스트면 서버 호출 X, 로컬 리스트에서만 제거
@@ -176,7 +170,6 @@ export const deletePostThunk = (postId, categoryId) => {
           ? list.filter(p => String(p?.postId) !== String(postId))
           : [];
         dispatch(setMemoryList(next));
-        console.log('🟡 [GUEST] deletePostThunk: server skipped', {postId});
         return true;
       }
 
@@ -184,7 +177,6 @@ export const deletePostThunk = (postId, categoryId) => {
       await req.unwrap();
       req.unsubscribe();
 
-      console.log('✅ 게시글 삭제 성공');
 
  // 삭제 후 목록 갱신
       await dispatch(fetchMemoryThunk(categoryId));
@@ -197,12 +189,10 @@ export const deletePostThunk = (postId, categoryId) => {
         error?.message ||
         '게시글 삭제 실패';
 
-      console.error('❌ 게시글 삭제 실패:', msg);
       dispatch(setMemoryError(msg));
       throw error;
     } finally {
       dispatch(setMemoryLoading(false));
-      console.log('📤 게시글 삭제 요청 종료');
     }
   };
 };
@@ -217,7 +207,6 @@ export const deletePostImageThunk = (
   return async (dispatch, getState) => {
     dispatch(setMemoryLoading(true));
     dispatch(setMemoryError(null));
-    console.log('🗑️ 게시글 이미지 삭제 요청 시작:', {postId, imageUrlToDelete});
 
     try {
  // 게스트면 서버 호출 X, 로컬에서 이미지 제거만
@@ -233,7 +222,6 @@ export const deletePostImageThunk = (
             })
           : [];
         dispatch(setMemoryList(next));
-        console.log('🟡 [GUEST] deletePostImageThunk: server skipped', {postId});
         return {ok: true, guest: true};
       }
 
@@ -246,7 +234,6 @@ export const deletePostImageThunk = (
       const data = await req.unwrap();
       req.unsubscribe();
 
-      console.log('✅ 이미지 삭제 성공');
 
       if (options?.refresh) {
         await dispatch(fetchMemoryThunk(categoryId));
@@ -260,12 +247,10 @@ export const deletePostImageThunk = (
         error?.message ||
         '게시글 이미지 삭제 실패';
 
-      console.error('❌ 게시글 이미지 삭제 실패:', msg);
       dispatch(setMemoryError(msg));
       throw error;
     } finally {
       dispatch(setMemoryLoading(false));
-      console.log('📤 이미지 삭제 요청 종료');
     }
   };
 };
@@ -278,11 +263,9 @@ export const togglePostNotificationThunk = ({userId, isOn}) => {
  // 게스트면 서버 호출 X
       const isGuest = await getGuestMode();
       if (isGuest) {
-        console.log('🟡 [GUEST] togglePostNotificationThunk: server skipped', {userId, isOn});
         return true;
       }
 
-      console.log(`🔔 게시글 알림 설정 요청: userId=${userId}, isOn=${isOn}`);
 
       const req = dispatch(
         memoryApi.endpoints.togglePostNotification.initiate({userId, isOn}),
@@ -290,7 +273,6 @@ export const togglePostNotificationThunk = ({userId, isOn}) => {
       await req.unwrap();
       req.unsubscribe();
 
-      console.log('✅ 게시글 알림 설정 변경 성공');
       return true;
     } catch (error) {
       const msg =
@@ -299,7 +281,6 @@ export const togglePostNotificationThunk = ({userId, isOn}) => {
         error?.message ||
         '게시글 알림 설정 변경 실패';
 
-      console.error('❌ 게시글 알림 설정 변경 실패:', msg);
       dispatch(setMemoryError(msg));
       throw error;
     }
@@ -311,7 +292,6 @@ export const fetchPostByIdThunk = postId => {
   return async (dispatch, getState) => {
     dispatch(setMemoryLoading(true));
     dispatch(setMemoryError(null));
-    console.log('📥 특정 게시글 조회 요청 시작:', postId);
 
     try {
  // 게스트면 서버 호출 X
@@ -330,14 +310,12 @@ export const fetchPostByIdThunk = postId => {
           found || dummyAll.find(p => String(p?.postId) === String(postId)) || dummyAll[0];
 
         dispatch(setPostDetail(dummyFound));
-        console.log('🟡 [GUEST] fetchPostByIdThunk: server skipped', postId);
         return dummyFound;
       }
 
       const {postsById} = getState().memory || {};
       const existingPost = postsById?.[String(postId)];
       if (existingPost) {
-        console.log('✅ 이미 스토어에 있는 게시글:', postId);
         return existingPost;
       }
 
@@ -348,7 +326,6 @@ export const fetchPostByIdThunk = postId => {
       req.unsubscribe();
 
       dispatch(setPostDetail(data));
-      console.log('✅ 특정 게시글 조회 성공:', postId);
       return data;
     } catch (error) {
       const msg =
@@ -357,12 +334,10 @@ export const fetchPostByIdThunk = postId => {
         error?.message ||
         '게시글 조회 실패';
 
-      console.error('❌ 게시글 조회 실패:', msg);
       dispatch(setMemoryError(msg));
       throw error;
     } finally {
       dispatch(setMemoryLoading(false));
-      console.log('📤 게시글 조회 요청 종료');
     }
   };
 };
@@ -374,7 +349,6 @@ export const getPostFromStoreById = postId => {
     const post = state?.memory?.postsById?.[String(postId)] || null;
 
     if (post) {
-      console.log('✅ 스토어에서 해당 게시글 찾음:', postId);
       return post;
     }
 
@@ -384,11 +358,9 @@ export const getPostFromStoreById = postId => {
       : null;
 
     if (fallback) {
-      console.log('✅ memoryList에서 해당 게시글 찾음:', postId);
       return fallback;
     }
 
-    console.warn('❌ 해당 ID 게시글이 스토어에 없음:', postId);
     return null;
   };
 };

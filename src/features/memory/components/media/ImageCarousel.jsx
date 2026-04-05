@@ -436,7 +436,6 @@ export default function ImageCarousel({
                       paused={false}
                       onEnd={() => setPlayingIndex(-1)}
                       onError={e => {
-                        console.error('Video error:', e);
                         setPlayingIndex(-1);
                       }}
                       ignoreSilentSwitch="ignore"

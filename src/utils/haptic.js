@@ -9,7 +9,6 @@ const safeTrigger = type => {
   try {
     HapticFeedback?.trigger?.(type, options);
   } catch (e) {
-    console.log('[haptic] trigger failed:', type, e?.message || e);
   }
 };
 

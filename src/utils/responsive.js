@@ -58,7 +58,6 @@ const bump = key => {
     responsiveStats.lastLogAt = now;
     // 콘솔로만 측정(프로덕션 영향 최소)
     // eslint-disable-next-line no-console
-    console.log('[responsive] callStats', {
       width: responsiveStats.width,
       height: responsiveStats.height,
       icon: responsiveStats.icon,

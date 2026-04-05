@@ -34,9 +34,7 @@ export async function uploadFileToS3(uploadUrl, fileUri, fileName) {
     });
 
     if (!res.ok) throw new Error(`S3 업로드 실패: ${res.status}`);
-    console.log(`✅ 업로드 성공: ${fileName}`);
   } catch (err) {
-    console.error('🚨 파일 업로드 에러:', err.message);
     throw err;
   }
 }

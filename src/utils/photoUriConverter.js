@@ -19,7 +19,6 @@ export async function convertPhUriToFileUri(phUri, index, isVideo = false) {
     }
     return 'file://' + destPath;
   } catch (err) {
-    console.error('📛 ph:// 변환 실패:', err.message, phUri);
     return null;
   }
 }
@@ -43,7 +42,6 @@ export async function convertContentUriToFileUri(
     await RNFS.copyFile(contentUri, destPath);
     return 'file://' + destPath;
   } catch (err) {
-    console.error('📛 content:// 변환 실패:', err.message, contentUri);
     return null;
   }
 }

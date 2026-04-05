@@ -27,7 +27,6 @@ export default function useHideTabBar({stayHidden = false} = {}) {
       const tabNavigation = findTabNavigator(navigation);
 
       if (!tabNavigation) {
-        console.warn('⚠️ TabNavigator 탐색 실패!');
         return;
       }
 

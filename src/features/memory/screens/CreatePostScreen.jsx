@@ -85,13 +85,6 @@ const logAxiosError = (tag, e) => {
   }
  // config.headers는 로깅하지 말 것 (Authorization 등 민감 정보)
   if (__DEV__) {
-    console.log(`\n❌ [${tag}] AxiosError`);
-    console.log('status:', status);
-    console.log('url:', baseURL ? `${baseURL}${url}` : url);
-    console.log('method:', method);
-    console.log('request data:', reqData);
-    console.log('response data:', data);
-    console.log('raw message:', e?.message);
   }
 };
 

@@ -65,7 +65,6 @@ export default function FamilySetupScreen() {
       // 2) 참여 (토큰 유저로 서버가 처리)
       await joinFamily(trimmed).unwrap();
 
-      console.log('🎉 가족 참여 성공');
       navigation.navigate('설정완료화면', {familyId: trimmed});
     } catch (err) {
       const msg =
@@ -73,7 +72,6 @@ export default function FamilySetupScreen() {
         err?.response?.data?.message ||
         '가족 참여 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.';
 
-      console.log('❌ 가족 참여 실패:', msg);
       setFieldError(msg);
       showToast(msg);
     }
@@ -94,7 +92,6 @@ export default function FamilySetupScreen() {
         return;
       }
 
-      console.log('🎉 새 가족 생성+참여 성공, familyId:', id);
       navigation.navigate('설정완료화면', {familyId: id});
     } catch (err) {
       const msg =
@@ -102,7 +99,6 @@ export default function FamilySetupScreen() {
         err?.response?.data?.message ||
         '가족을 만드는 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.';
 
-      console.log('❌ 새 가족 생성/참여 실패:', msg);
       showToast(msg);
     } finally {
       setCreating(false);

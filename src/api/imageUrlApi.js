@@ -35,10 +35,8 @@ export const getPresignedUrls = async filesOrNames => {
       },
     });
 
-    console.log('📡 Presigned 응답 데이터:', response.data);
     return response.data; // Array<string | {url: string}>
   } catch (error) {
-    console.error(
       'Presigned URL 목록 요청 실패:',
       error.response?.data || error.message,
     );
@@ -72,7 +70,6 @@ export const uploadFileToS3 = async (
     const stat = await RNBlobUtil.fs.stat(path);
     const contentLength = Number(stat?.size || 0);
 
-    console.log('🧾 PUT headers', {
       contentType,
       contentLength,
       path,
@@ -95,14 +92,11 @@ export const uploadFileToS3 = async (
  // 403일 때 S3가 XML로 이유를 줌 (SignatureDoesNotMatch / AccessDenied 등)
     if (status !== 200 && status !== 204) {
       const bodyText = res?.data || '';
-      console.error('🚨 S3 응답 바디:', bodyText);
       throw new Error(`S3 업로드 실패: ${status}`);
     }
 
-    console.log(`✅ 업로드 성공 (${fileName}, ${contentType})`);
     return true;
   } catch (err) {
-    console.error('🚨 S3 업로드 에러:', err?.message || err);
     throw err;
   }
 };

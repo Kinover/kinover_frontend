@@ -432,7 +432,6 @@ const ChatInput = forwardRef(function ChatInput(
  // 시스템 갤러리로 뽑았으면 인앱 갤러리는 닫아주기
       setShowGallery(false);
     } catch (e) {
-      console.error(e);
       showToastFn('갤러리 선택 중 오류가 발생했어.');
     }
   }, [isSending, showToastFn]);
@@ -648,7 +647,6 @@ const ChatInput = forwardRef(function ChatInput(
         hapticError();
       }
     } catch (e) {
-      console.error(e);
       hapticError();
 
       if (hasMedia && mediaClientMessageId && mediaOptimisticId) {

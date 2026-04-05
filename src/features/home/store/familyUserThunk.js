@@ -48,12 +48,10 @@ export const fetchFamilyUserListThunk = familyId => {
 
       const list = Array.isArray(data) ? data : [];
       dispatch(setFamilyUserList(list));
-      console.log('[fetchFamilyUserListThunk] 가족 구성원 목록:', list);
     } catch (error) {
       const msg = extractErrorMessage(error, '가족 유저 목록 조회 실패');
 
       dispatch(setUserFamilyError(msg));
-      console.error('❌ 가족 유저 목록 조회 실패:', msg);
     } finally {
       dispatch(setUserFamilyLoading(false));
     }
@@ -97,12 +95,10 @@ export const modifyFamilyUserThunk = user => {
       );
 
       dispatch(setFamilyUserList(updatedList));
-      console.log('✅ 프로필 수정 완료:', updatedUser);
     } catch (error) {
       const msg = extractErrorMessage(error, '프로필 수정 실패');
 
       dispatch(setUserFamilyError(msg));
-      console.error('❌ 프로필 수정 실패:', msg);
     } finally {
       dispatch(setUserFamilyLoading(false));
     }

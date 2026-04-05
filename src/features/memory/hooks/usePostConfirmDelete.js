@@ -60,7 +60,6 @@ export default function usePostConfirmDelete({
         }
       }
     } catch (e) {
-      console.error('confirmDelete error:', e);
       toast?.('삭제 중 오류가 발생했어요.');
     } finally {
       setIsConfirmDeleting(false);

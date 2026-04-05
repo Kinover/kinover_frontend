@@ -18,7 +18,6 @@ export const fetchCategoryThunk = createAsyncThunk(
   'category/fetch',
   async (_, {rejectWithValue, dispatch}) => {
     try {
-      console.log('📥 [fetchCategoryThunk] start');
 
  // 스토어 목업: 여행 카테고리 포함 (부산 광안리 포스트용)
       if (STORE_MOCK_ENABLED) {
@@ -31,7 +30,6 @@ export const fetchCategoryThunk = createAsyncThunk(
       const isGuest = await getGuestMode();
       if (isGuest) {
         const dummy = makeGuestCategories();
-        console.log('🟡 [GUEST] fetchCategoryThunk: server skipped', dummy);
         return dummy;
       }
 
@@ -45,7 +43,6 @@ export const fetchCategoryThunk = createAsyncThunk(
       return data;
     } catch (e) {
       const payload = e?.response?.data?.message || e?.response?.data || e?.message;
-      console.log('❌ [fetchCategoryThunk] error:', payload);
       return rejectWithValue(payload);
     }
   },
@@ -55,7 +52,6 @@ export const createCategoryThunk = createAsyncThunk(
   'category/create',
   async ({title}, {rejectWithValue, dispatch}) => {
     try {
-      console.log('📥 [createCategoryThunk] 요청:', {title});
 
  // 게스트면 서버 호출 X, "생성된 척" 더미 반환
       const isGuest = await getGuestMode();
@@ -64,7 +60,6 @@ export const createCategoryThunk = createAsyncThunk(
           categoryId: `GUEST_CAT_${Date.now()}`,
           title: title ?? '새 카테고리',
         };
-        console.log('🟡 [GUEST] createCategoryThunk: server skipped', newCategory);
         return newCategory;
       }
 
@@ -81,7 +76,6 @@ export const createCategoryThunk = createAsyncThunk(
           e?.message ||
           '카테고리 생성 실패',
       };
-      console.log('❌ [createCategoryThunk] error:', payload);
       return rejectWithValue(payload);
     }
   },

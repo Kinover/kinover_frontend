@@ -282,7 +282,7 @@ export default function KinoSelectScreen() {
           routes: [{name: 'Tabs', params: {screen: '소통'}}],
         });
       })
-      .catch(err => console.error('🚨 키노 변경 실패:', err));
+      .catch(() => {});
   };
 
   const currentKinoType = useMemo(() => {

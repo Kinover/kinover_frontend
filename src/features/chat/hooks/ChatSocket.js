@@ -227,18 +227,15 @@ async function openSocket() {
       messageBatch.push(payload);
       scheduleFlush();
     } catch (err) {
-      console.log('❌ [GLOBAL WS] parse fail', err);
     }
   };
 
   ws.onerror = err => {
-    console.log('⚠️ [GLOBAL WS] error', err?.message ?? err);
   };
 
   ws.onclose = e => {
     ws = null;
 
-    console.log('🔌 [GLOBAL WS] close', e?.code, e?.reason);
 
     if (isManuallyClosed) return;
     if (isPausedByBackground) return;

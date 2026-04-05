@@ -1,10 +1,11 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/features/chat/screens/CommunicationScreen.jsx
 
-import React, {useEffect, useCallback, useState, useRef, useMemo} from 'react';
+import React, {useCallback, useState, useRef, useMemo} from 'react';
 import { StyleSheet, View, TouchableOpacity, FlatList, RefreshControl, Image } from 'react-native';
 import AppText from 'components/AppText';
 import {useSelector} from 'react-redux';
+import {useFocusEffect} from '@react-navigation/native';
 
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
@@ -123,7 +124,7 @@ export default function CommunicationScreen({navigation}) {
   }));
   const modalRef = useRef(null);
 
-  const {userId, login} = useSelector(s => s.user);
+  const {userId} = useSelector(s => s.user);
   const {familyId} = useSelector(s => s.family);
 
   // RTK Query: 채팅방 목록 (onQueryFulfilled에서 chatRoomSlice.setChatRoomList 동기화)
@@ -133,7 +134,8 @@ export default function CommunicationScreen({navigation}) {
   );
   // 실제 목록은 WS 핸들러가 slice에도 업데이트하므로 slice에서 읽음
   const {chatRoomList, listRevision} = useSelector(s => s.chatRoom);
-  const loading = isLoading;
+  // familyId/userId 미확보 구간(autoLogin 진행 중)도 로딩으로 처리 → 빈 화면 대신 스켈레톤 표시
+  const loading = isLoading || !familyId || !userId;
 
   // RTK Query: 채팅방 생성 mutation
   const [createChatRoom] = useCreateChatRoomMutation();
@@ -146,13 +148,14 @@ export default function CommunicationScreen({navigation}) {
  /** =========================
  * 데이터 로딩
    ========================= */
-  // RTK Query가 familyId/userId 변경 시 자동 refetch
-  // login 상태 변경 시도 refetch
-  useEffect(() => {
-    if (familyId != null && userId != null) {
-      refetch();
-    }
-  }, [login]); // eslint-disable-line react-hooks/exhaustive-deps
+  // 탭 포커스 시 refetch: autoLogin 완료 후 탭으로 돌아올 때 최신 목록 보장
+  useFocusEffect(
+    useCallback(() => {
+      if (familyId != null && userId != null) {
+        refetch();
+      }
+    }, [familyId, userId, refetch]),
+  );
 
 
   const onRefresh = useCallback(async () => {

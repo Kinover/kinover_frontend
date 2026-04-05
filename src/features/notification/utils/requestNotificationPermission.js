@@ -42,7 +42,6 @@ async function fetchChatRoomDetail(chatRoomId) {
     req.unsubscribe();
     return data ?? null;
   } catch (e) {
-    console.log('❌ chatRoom 단건조회 실패:', e?.response || e);
     return null;
   }
 }
@@ -360,8 +359,6 @@ async function openFromRemoteMessage(remoteMessage) {
 
   const n = normalizeRemoteMessage(remoteMessage);
 
-  console.log('[PUSH OPENED data]', remoteMessage?.data);
-  console.log('[PUSH normalized]', n);
 
   await applyBadgeFromPush(n);
 
@@ -466,9 +463,7 @@ export async function requestNotificationPermission() {
       await messaging().setAutoInitEnabled(true);
       await messaging().registerDeviceForRemoteMessages();
       const apns = await messaging().getAPNSToken();
-      console.log('[iOS] APNs token:', apns);
     } catch (e) {
-      console.log('[iOS] register/init error:', e);
     }
   }
   return ok;
@@ -515,9 +510,7 @@ export async function getFcmTokenAndSend() {
     );
     await req.unwrap();
     req.unsubscribe();
-    console.log('✅ FCM 토큰 서버 등록 성공');
   } catch (err) {
-    console.log('❌ FCM 토큰 서버 등록 실패:', err?.response || err);
     showToast('서버 전송 중 오류가 발생했어요.');
   }
 }
@@ -647,7 +640,6 @@ export function handleNotificationListeners() {
       await req.unwrap();
       req.unsubscribe();
     } catch (e) {
-      console.log('토큰 갱신 실패:', e);
       showToast('알림 토큰 갱신에 실패했어요.');
     }
   });
@@ -685,7 +677,6 @@ export function handleNotificationListeners() {
 export function registerBackgroundMessageHandler() {
   messaging().setBackgroundMessageHandler(async remoteMessage => {
     try {
-      console.log('[BG] background message:', remoteMessage);
 
       const n = normalizeRemoteMessage(remoteMessage);
 
@@ -697,7 +688,6 @@ export function registerBackgroundMessageHandler() {
         await displayNotifeeFromRemoteMessage(remoteMessage);
       }
     } catch (e) {
-      console.log('[BG] handler error:', e);
     }
   });
 }
@@ -705,10 +695,8 @@ export function registerBackgroundMessageHandler() {
 export async function deleteFcmToken() {
   try {
     await messaging().deleteToken();
-    console.log('🗑️ FCM 토큰 삭제 완료');
     showToast('푸시 알림 토큰이 삭제되었어요.');
   } catch (err) {
-    console.log('❌ FCM 토큰 삭제 실패:', err);
     showToast('토큰 삭제 중 문제가 발생했어요.');
   }
 }

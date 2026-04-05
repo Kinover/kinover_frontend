@@ -63,12 +63,10 @@ export function useAutoLogin(shouldRun = true) {
     let cancelled = false;
 
     const run = async () => {
-      console.log('🚀 AutoLogin start');
       const isManualLoginCompleted = () => !!store.getState()?.login?.isLoggedIn;
 
       try {
         const token = await withTimeout(getToken(), 6000);
-        console.log('🔐 token:', token ? 'YES' : 'NO');
 
         if (cancelled) return;
 
@@ -89,9 +87,7 @@ export function useAutoLogin(shouldRun = true) {
           userResult = await withTimeout(req.unwrap(), 8000);
           req.unsubscribe();
 
-          console.log('✅ fetchUser ok');
         } catch (e) {
-          console.log('❌ fetchUser fail:', e?.message ?? e);
           if (isManualLoginCompleted()) return;
           if (isAuthFailure(e)) {
             await deleteLoginInfo();
@@ -118,7 +114,6 @@ export function useAutoLogin(shouldRun = true) {
           const familyId = raw?.familyId ?? raw?.family?.familyId ?? null;
           
           const hasFamilyValue = familyId != null;
-          console.log('🏷️ [AUTOLOGIN] familyId=', familyId, 'hasFamily=', hasFamilyValue);
           
           await setHasFamily(hasFamilyValue);
           if (hasFamilyValue) {
@@ -127,7 +122,6 @@ export function useAutoLogin(shouldRun = true) {
             );
             const familyRes = await familyReq.unwrap();
             familyReq.unsubscribe();
-            console.log('✅ fetchFamily ok');
             const familyData = familyRes?.data ?? familyRes;
             if (familyData && typeof familyData === 'object') {
               dispatch(setFamily(familyData));
@@ -158,10 +152,8 @@ export function useAutoLogin(shouldRun = true) {
               dispatch(baseApi.util.invalidateTags(['ChatRoom']));
             }
           } else {
-            console.log('👀 familyId is null -> no family (create/join flow)');
           }
         } catch (e) {
-          console.log('⚠️ fetchFamily skip/fail:', e?.message);
         }
 
         if (cancelled) return;
@@ -170,7 +162,6 @@ export function useAutoLogin(shouldRun = true) {
           socketUnsubRef.current = startChatSocket(dispatch, store.getState);
         }
       } catch (err) {
-        console.log('🚨 AutoLogin fatal:', err?.message);
         if (isManualLoginCompleted()) return;
         if (isAuthFailure(err)) {
           await deleteLoginInfo();
@@ -184,7 +175,6 @@ export function useAutoLogin(shouldRun = true) {
       } finally {
         const checked = !!store.getState()?.login?.authChecked;
         if (!checked) {
-          console.log('✅ AutoLogin done -> authChecked true');
           dispatch(setAuthChecked(true));
         }
         runningRef.current = false;

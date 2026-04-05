@@ -142,7 +142,6 @@ export default function usePostPageViewModel(memory) {
       setToastMessage('댓글을 삭제했어요');
       setToastVisible(true);
     } catch (e) {
-      console.error('댓글 삭제 실패:', e);
     } finally {
       closeDeleteCommentModal();
       setIsDeletingComment(false);
@@ -162,7 +161,6 @@ export default function usePostPageViewModel(memory) {
       setToastMessage('게시글이 삭제되었어요');
       setToastVisible(true);
     } catch (error) {
-      console.warn('게시글 삭제 실패:', error);
     }
   }, [deletePost, safePostId, navigation]);
 
@@ -186,7 +184,6 @@ export default function usePostPageViewModel(memory) {
         setToastVisible(true);
       }
     } catch (e) {
-      console.warn('이미지 삭제 실패:', e);
     }
   }, [
     deletePostImage,

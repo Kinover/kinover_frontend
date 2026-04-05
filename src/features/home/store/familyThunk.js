@@ -79,14 +79,12 @@ export const fetchFamilyThunk = familyId => {
 
       dispatch(setFamily(data));
       dispatch(setFamilyError(null));
-      console.log('✅ 가족 정보 조회 성공:', data);
 
       return data;
     } catch (error) {
       const msg = extractErrorMessage(error, '가족 정보 조회 실패');
 
       dispatch(setFamilyError(msg));
-      console.error('❌ 가족 정보 조회 실패:', error?.response?.status, msg);
 
       throw new Error(msg);
     } finally {
@@ -119,14 +117,12 @@ export const modifyFamily = family => {
 
       dispatch(setFamily(data));
       dispatch(setFamilyError(null));
-      console.log('✅ 가족 정보 수정 성공:', data);
 
       return data;
     } catch (error) {
       const msg = extractErrorMessage(error, '가족 정보 수정 실패');
 
       dispatch(setFamilyError(msg));
-      console.error('❌ 가족 정보 수정 실패:', error?.response?.status, msg);
 
       throw new Error(msg);
     } finally {
@@ -159,14 +155,12 @@ export const fetchFamilyStatusThunk = familyId => {
       dispatch(setLastActiveMap(lastActiveMap));
       dispatch(setFamilyError(null));
 
-      console.log('✅ 접속 상태 조회 성공:', data);
 
       return data;
     } catch (error) {
       const msg = extractErrorMessage(error, '접속 상태 조회 실패');
 
       dispatch(setFamilyError(msg));
-      console.error('❌ 접속 상태 조회 실패:', msg);
 
       throw new Error(msg);
     } finally {
@@ -188,13 +182,11 @@ export const joinFamilyThunk = familyId => {
   return async dispatch => {
     dispatch(setFamilyLoading(true));
     try {
-      console.log('➡️ joinFamilyThunk 요청:', {familyId});
 
       const req = dispatch(homeApi.endpoints.joinFamily.initiate(familyId));
       const data = await req.unwrap();
       req.unsubscribe();
 
-      console.log('✅ 가족 참여 성공:', data);
 
  // 참여 후 가족 정보 최신화
       await dispatch(fetchFamilyThunk(familyId));
@@ -204,7 +196,6 @@ export const joinFamilyThunk = familyId => {
     } catch (error) {
       const msg = extractErrorMessage(error, '가족 참여에 실패했어요.');
 
-      console.error('❌ 가족 참여 실패:', error?.response?.status, msg);
       dispatch(setFamilyError(msg));
 
       throw new Error(msg);
@@ -228,7 +219,6 @@ export const createFamilyAndJoinThunk = () => {
   return async dispatch => {
     dispatch(setFamilyLoading(true));
     try {
-      console.log('➡️ createFamilyAndJoinThunk 요청');
 
       const req = dispatch(homeApi.endpoints.createFamilyAndJoin.initiate());
       const createdFamily = await req.unwrap();
@@ -236,7 +226,6 @@ export const createFamilyAndJoinThunk = () => {
 
       const newFamilyId = createdFamily?.familyId ?? null;
 
-      console.log('✅ 가족 생성+참여 성공:', createdFamily);
 
  // Redux store에 가족 정보 저장
       if (createdFamily) {
@@ -250,7 +239,6 @@ export const createFamilyAndJoinThunk = () => {
     } catch (error) {
       const msg = extractErrorMessage(error, '새 가족 생성에 실패했어요.');
 
-      console.error('❌ 가족 생성+참여 실패:', error?.response?.status, msg);
       dispatch(setFamilyError(msg));
 
       throw new Error(msg);
@@ -278,7 +266,6 @@ export const createFamilyThunk = () => {
       const data = await req.unwrap();
       req.unsubscribe();
 
-      console.log('✅ 새 가족 생성 성공:', data);
 
       const newFamilyId =
         data?.familyId !== undefined ? data.familyId : data;
@@ -288,7 +275,6 @@ export const createFamilyThunk = () => {
     } catch (error) {
       const msg = extractErrorMessage(error, '새 가족 그룹 생성에 실패했어요.');
 
-      console.error('❌ 새 가족 생성 실패:', error?.response?.status, msg);
       dispatch(setFamilyError(msg));
 
       throw new Error(msg);

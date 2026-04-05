@@ -36,9 +36,7 @@ const useFamilyStatusSocket = familyId => {
     const socket = new WebSocket(url);
     socketRef.current = socket;
 
-    socket.onopen = () => {
-      if (__DEV__) console.log('[WS /family-status] WebSocket 연결됨');
-    };
+    socket.onopen = () => {};
 
     socket.onmessage = event => {
       try {
@@ -56,14 +54,10 @@ const useFamilyStatusSocket = familyId => {
 
         dispatch(setOnlineUserIds(onlineIds));
         dispatch(setLastActiveMap(lastActiveMap));
-      } catch (e) {
-        if (__DEV__) console.error('[WS /family-status] 메시지 파싱 오류:', e);
-      }
+      } catch (e) {}
     };
 
-    socket.onerror = e => {
-      if (__DEV__) console.error('[WS /family-status] 오류:', e?.message || e);
-    };
+    socket.onerror = () => {};
 
     socket.onclose = () => {
       if (socketRef.current === socket) socketRef.current = null;

@@ -38,18 +38,14 @@ export function AppStateResourceBridge() {
       if (!isLogin || !userId) return;
 
       dispatch(fetchUserThunk()).catch(e =>
-        console.log('[AppStateResourceBridge] user refresh error:', e),
       );
 
       if (familyId) {
         dispatch(fetchFamilyThunk(familyId)).catch(e =>
-          console.log('[AppStateResourceBridge] family refresh error:', e),
         );
         dispatch(fetchFamilyUserListThunk(familyId)).catch(e =>
-          console.log('[AppStateResourceBridge] family users refresh error:', e),
         );
         dispatch(fetchFamilyStatusThunk(familyId)).catch(e =>
-          console.log('[AppStateResourceBridge] family status refresh error:', e),
         );
         // RTK Query: ChatRoom 태그 무효화 → 활성 getChatRooms 쿼리 자동 refetch
         dispatch(baseApi.util.invalidateTags(['ChatRoom']));

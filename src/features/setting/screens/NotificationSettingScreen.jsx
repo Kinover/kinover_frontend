@@ -105,7 +105,6 @@ export default function NotificationSettingScreen() {
     setCommentNotification(newValue);
 
     if (!userId) {
-      console.warn('⚠️ userId 없음 → 전체 알림 토글 취소');
       return;
     }
 
@@ -120,7 +119,6 @@ export default function NotificationSettingScreen() {
       );
       setToastVisible(true);
     } catch (e) {
-      console.log('❌ 전체 알림 토글 실패:', e);
     }
   };
 
@@ -137,7 +135,6 @@ export default function NotificationSettingScreen() {
       );
       setToastVisible(true);
     } catch (e) {
-      console.log('❌ 채팅방 알림 토글 실패:', e);
     }
   };
 
@@ -154,7 +151,6 @@ export default function NotificationSettingScreen() {
       );
       setToastVisible(true);
     } catch (e) {
-      console.log('❌ 게시물 알림 토글 실패:', e);
     }
   };
 
@@ -171,7 +167,6 @@ export default function NotificationSettingScreen() {
       );
       setToastVisible(true);
     } catch (e) {
-      console.log('❌ 댓글 알림 토글 실패:', e);
     }
   };
 

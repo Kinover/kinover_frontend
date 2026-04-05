@@ -169,7 +169,6 @@ export const appleLoginThunk = identityToken => {
         throw new Error('identityToken이 없습니다.');
       }
 
-      console.log('📤 [APPLE] send identityToken...');
 
  // baseURL이 https://kinover.shop/api 라면 여기서는 '/login/apple'가 맞음
       const req = dispatch(authApi.endpoints.loginApple.initiate({identityToken}));
@@ -214,7 +213,6 @@ export const appleLoginThunk = identityToken => {
         finalHasFamily = false;
       }
 
-      console.log('✅ [APPLE] login done:', {
         token: token ? 'OK' : 'NO',
         familyId,
         hasFamily: finalHasFamily,
@@ -233,7 +231,6 @@ export const appleLoginThunk = identityToken => {
         error?.message ||
         '애플 로그인에 실패했어요';
 
-      console.error('❌ [APPLE] login fail:', {
         message,
         status: error?.response?.status,
         response: error?.response?.data ?? null,

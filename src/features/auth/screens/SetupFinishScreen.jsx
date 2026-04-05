@@ -120,7 +120,6 @@ export default function SetupFinishScreen() {
         await sleep(300);
         await fetchUserOnce();
       } catch (e) {
-        console.log('[SetupFinishScreen] fetchUser failed:', e?.message);
         // fetch 실패해도 아래는 진행 (UX 끊기지 않게)
       }
 
@@ -130,7 +129,6 @@ export default function SetupFinishScreen() {
       // 4) 메인 진입 트리거
       emitAuthFlagsChanged({hasFamily: true});
     } catch (e) {
-      console.log('[SetupFinishScreen] start error:', e);
     }
   }, [fetchUserOnce]);
 

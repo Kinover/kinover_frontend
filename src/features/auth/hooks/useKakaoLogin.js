@@ -30,7 +30,6 @@ export function useKakaoLogin() {
     let loginConfirmed = false;
     try {
       const kakao = await KakaoLogin.login();
-      console.log('✅ Kakao Login:', kakao);
 
  // 1) 서버 로그인
       const loginAction = dispatch(loginThunk(kakao.accessToken));
@@ -49,14 +48,12 @@ export function useKakaoLogin() {
         try {
           socketUnsubRef.current = startChatSocket(dispatch, store.getState);
         } catch (socketError) {
-          console.log('⚠️ startChatSocket fail (ignored):', socketError?.message);
         }
       }
 
  // 마지막에 authChecked true
       dispatch(setAuthChecked(true));
     } catch (e) {
-      console.log('❌ Kakao login fail:', e);
       const alreadyLoggedIn = loginConfirmed || !!store.getState()?.login?.isLoggedIn;
 
       if (alreadyLoggedIn) {

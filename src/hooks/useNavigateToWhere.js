@@ -70,7 +70,6 @@ export function useNavigateToWhere() {
           }
           return;
         } catch (e) {
-          console.warn('[useNavigateToWhere] tab navigate failed:', e?.message);
         }
       }
 
@@ -84,20 +83,17 @@ export function useNavigateToWhere() {
           }
           return;
         } catch (e) {
-          console.warn('[useNavigateToWhere] screen navigate failed:', e?.message);
         }
       }
 
       // 2-3) root만 있는데 root가 없는 경우: 아무것도 못함
       if (root && !hasRoot) {
-        console.warn(
           `[useNavigateToWhere] root("${root}")가 현재 네비게이터에 없습니다. routeNames=`,
           routeNames,
         );
         return;
       }
 
-      console.warn('[useNavigateToWhere] 이동 정보가 부족합니다.', {
         root,
         tab,
         screen,

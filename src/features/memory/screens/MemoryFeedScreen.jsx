@@ -256,7 +256,6 @@ export default function MemoryFeed({
 
         if (thumbUri) setVideoThumbMap(prev => ({...prev, [uri]: thumbUri}));
       } catch (e) {
-        console.log('❌ ensureVideoThumbByUri failed:', uri, e?.message || e);
       } finally {
         thumbLoadingRef.current.delete(uri);
       }

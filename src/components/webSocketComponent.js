@@ -14,7 +14,7 @@ const WebSocketComponent = ({token, chatRoomId, userId}) => {
 
     const ws = new WebSocket(`${WS_CHAT_BASE_URL}${WS_CHAT_PATH}?token=${token}`);
 
-    ws.onopen = () => console.log('✅ WebSocket 연결 성공');
+    ws.onopen = () => {};
 
     ws.onmessage = (event) => {
       try {
@@ -36,12 +36,11 @@ const WebSocketComponent = ({token, chatRoomId, userId}) => {
         dispatch(bumpListRevision()); // 바로 렌더 트리거
 
       } catch (err) {
-        console.error('❌ 메시지 파싱 오류:', err);
       }
     };
 
-    ws.onclose = () => console.log('🔌 WebSocket 연결 종료');
-    ws.onerror = (error) => console.error('⚠️ WebSocket 오류:', error);
+    ws.onclose = () => {};
+    ws.onerror = () => {};
 
     setSocket(ws);
     return () => ws.close();

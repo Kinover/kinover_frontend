@@ -9,7 +9,6 @@ export async function updateUserProfile(payload) {
     });
     return res.data;
   } catch (err) {
-    console.error('❌ updateUserProfile Error:', err);
     throw err;
   }
 }

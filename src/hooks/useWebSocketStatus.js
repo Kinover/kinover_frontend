@@ -11,34 +11,28 @@ const useWebSocketStatus = () => {
     const connect = async () => {
       const token = await getToken();
       if (!token) {
-        console.warn('[WS /status] 토큰 없음');
         return;
       }
 
       const url = `${WS_CHAT_BASE_URL}${WS_STATUS_PATH}?token=${token}`;
-      console.log('[WS /status] 연결 시도 URL:', url);
 
       const socket = new WebSocket(url);
       socketRef.current = socket;
 
       socket.onopen = () => {
         if (!isMounted) return;
-        console.log('[WS /status] 연결됨');
       };
 
       socket.onmessage = event => {
         if (!isMounted) return;
-        console.log('[WS /status] 메시지 수신:', event.data);
       };
 
       socket.onerror = e => {
         if (!isMounted) return;
-        console.error('[WS /status] 오류:', e?.message || e);
       };
 
       socket.onclose = () => {
         if (!isMounted) return;
-        console.log('[WS /status] 연결 끊김');
       };
     };
 
@@ -47,7 +41,6 @@ const useWebSocketStatus = () => {
     return () => {
       isMounted = false;
       if (socketRef.current) {
-        console.log('[WS /status] 연결 해제 시도');
         socketRef.current.close();
         socketRef.current = null;
       }

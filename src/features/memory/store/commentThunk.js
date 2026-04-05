@@ -13,7 +13,6 @@ import {memoryApi} from '../services/memoryApi';
 export const fetchCommentsThunk = postId => {
   return async dispatch => {
     dispatch(setCommentLoading(true));
-    console.log('📨 댓글 목록 불러오기 요청:', postId);
 
     try {
       const req = dispatch(
@@ -24,7 +23,6 @@ export const fetchCommentsThunk = postId => {
 
       const data = Array.isArray(res) ? res : res?.data ?? [];
       dispatch(setCommentList(data));
-      console.log('✅ 댓글 목록 조회 성공');
     } catch (error) {
       const msg =
         error?.response?.data?.message ||
@@ -32,7 +30,6 @@ export const fetchCommentsThunk = postId => {
         error?.message ||
         '댓글 목록 조회 실패';
 
-      console.error('❌ 댓글 목록 조회 실패:', msg);
       dispatch(setCommentError(msg));
     } finally {
       dispatch(setCommentLoading(false));
@@ -45,7 +42,6 @@ export const createCommentThunk = commentData => {
   return async dispatch => {
     const postId = commentData?.postId;
     if (!postId) {
-      console.error('❌ 댓글 추가: postId 없음');
       return;
     }
 
@@ -57,13 +53,11 @@ export const createCommentThunk = commentData => {
         mentionUserIds: commentData.mentionUserIds,
       }),
     };
-    console.log('📨 댓글 추가 요청:', postId, body);
 
     try {
       const req = dispatch(memoryApi.endpoints.createComment.initiate({postId, ...body}));
       await req.unwrap();
 
-      console.log('✅ 댓글 추가 성공');
       dispatch(fetchCommentsThunk(postId));
     } catch (error) {
       const msg =
@@ -72,7 +66,6 @@ export const createCommentThunk = commentData => {
         error?.message ||
         '댓글 추가 실패';
 
-      console.error('❌ 댓글 추가 실패:', msg);
       dispatch(setCommentError(msg));
     } finally {
       dispatch(setCommentLoading(false));
@@ -85,13 +78,11 @@ export const deleteCommentThunk = (commentId, postId) => {
   return async dispatch => {
     dispatch(setCommentLoading(true));
     const id = String(commentId).trim();
-    console.log('🗑 댓글 삭제 요청:', id);
 
     try {
       const req = dispatch(memoryApi.endpoints.deleteComment.initiate(id));
       await req.unwrap();
 
-      console.log('✅ 댓글 삭제 성공');
       if (postId) dispatch(fetchCommentsThunk(postId));
     } catch (error) {
       const msg =
@@ -100,7 +91,6 @@ export const deleteCommentThunk = (commentId, postId) => {
         error?.message ||
         '댓글 삭제 실패';
 
-      console.error('❌ 댓글 삭제 실패:', msg);
       dispatch(setCommentError(msg));
     } finally {
       dispatch(setCommentLoading(false));
@@ -112,14 +102,12 @@ export const deleteCommentThunk = (commentId, postId) => {
 export const toggleCommentNotificationThunk = ({userId, isOn}) => {
   return async dispatch => {
     try {
-      console.log(`🔔 댓글 알림 설정 요청: userId=${userId}, isOn=${isOn}`);
 
       const req = dispatch(
         memoryApi.endpoints.toggleCommentNotification.initiate({userId, isOn}),
       );
       await req.unwrap();
 
-      console.log('✅ 댓글 알림 설정 변경 성공');
     } catch (error) {
       const msg =
         error?.response?.data?.message ||
@@ -127,7 +115,6 @@ export const toggleCommentNotificationThunk = ({userId, isOn}) => {
         error?.message ||
         '댓글 알림 설정 변경 실패';
 
-      console.error('❌ 댓글 알림 설정 변경 실패:', msg);
       dispatch(setCommentError(msg));
     }
   };

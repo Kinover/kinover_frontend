@@ -57,7 +57,6 @@ export default function FamilyChatRoom({route}) {
         if (alive) setLocalRoom(data);
       } catch (e) {
         // thunk 자체가 throw하는 경우(네트워크 등) — 화면은 스텁(chatRoomId만 있는) 상태로 유지
-        console.error('❌ fetchChatRoom 실패:', e);
       }
     })();
 
