@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   pressable: {
     width: '100%',
     height: getResponsiveHeight(70),
-    backgroundColor: BACKGROUND_COLORS().secondaryBg,
+    backgroundColor: 'transparent',
     justifyContent: 'center',
     alignItems: 'center',
   },

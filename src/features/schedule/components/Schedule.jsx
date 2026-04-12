@@ -6,8 +6,6 @@ import {
   StyleSheet,
   Animated,
   Alert,
-  ScrollView,
-  InteractionManager,
   Platform,
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
@@ -30,7 +28,6 @@ import {COLORS, DEFAULT_STYLE, EMPTY_STYLE} from 'styles/style';
 import FastImage from '@d11/react-native-fast-image';
 import DropShadow from 'react-native-drop-shadow';
 import BirthdayConfettiModal from './BirthdayConfettiModal';
-import CustomModal from 'components/modal/CustomModal';
 import {useGetChatRoomsQuery} from 'features/chat/services/chatApi';
 import {sendMessageWsThunk} from 'features/chat/store/messageThunk';
 import {toCdnUrl} from 'utils/mediaUrl';
@@ -280,51 +277,35 @@ function Schedule({
     minHeight: 1,
     backgroundColor: 'rgba(17, 24, 39, 0.1)',
   },
-  /** 달력 블록과 가로 정렬 — 자식 DropShadow에 cardWidth 적용 */
-  dateRow: {
-    marginTop: 0,
-    marginBottom: 0,
-    width: '100%',
-    alignItems: 'center',
-  },
-  /** CalendarToggle `shadowBox` + `SCHEDULE_CARD_SHADOW` + `width: cardWidth` 와 동일 */
-  dateDropShadow: {
-    ...getScheduleShadowBoxBaseStyle(),
-    ...SCHEDULE_CARD_SHADOW,
-  },
-  dateSurface: {
-    width: '100%',
-    borderRadius: SCHEDULE_SURFACE_RADIUS,
-    backgroundColor: '#FFFFFF',
-    paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(14),
-    overflow: 'hidden',
-  },
-  dateInner: {
+  /** 날짜 섹션 헤더 — 카드·구분선 없이 가벼운 레이블 */
+  dateSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: getResponsiveWidth(6),
+    gap: getResponsiveWidth(5),
+    paddingHorizontal: getResponsiveWidth(6),
+    paddingTop: getResponsiveHeight(14),
+    paddingBottom: getResponsiveHeight(8),
   },
-  dateTextYmd: {
-    color: COLORS.textPrimary,
-    fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
-    fontFamily: DEFAULT_STYLE().sectionTitle.fontFamily,
-    letterSpacing: -0.2,
-    lineHeight: rf(24),
-  },
-  dateTextSep: {
-    fontSize: rf(15),
-    fontFamily: 'Pretendard-Medium',
-    color: COLORS.textTertiary,
-    lineHeight: rf(24),
-  },
-  dateTextDow: {
-    fontSize: rf(15),
-    fontFamily: 'Pretendard-Medium',
+  dateSectionYmd: {
+    fontSize: rf(13),
+    fontFamily: 'Pretendard-SemiBold',
     color: COLORS.textSecondary,
     letterSpacing: -0.1,
-    lineHeight: rf(22),
+    lineHeight: rf(18),
+  },
+  dateSectionSep: {
+    fontSize: rf(12),
+    fontFamily: 'Pretendard-Regular',
+    color: COLORS.textTertiary,
+    lineHeight: rf(18),
+  },
+  dateSectionDow: {
+    fontSize: rf(13),
+    fontFamily: 'Pretendard-Regular',
+    color: COLORS.textTertiary,
+    letterSpacing: -0.1,
+    lineHeight: rf(18),
   },
   timelineWrapper: {
     position: 'relative',
@@ -464,70 +445,24 @@ function Schedule({
     color: '#111827',
     letterSpacing: 0.4,
   },
-  roomPickerModalBox: {
-    width: getResponsiveWidth(332),
-    maxWidth: '92%',
-  },
-  roomPickerContent: {
-    minHeight: getResponsiveHeight(140),
-    maxHeight: getResponsiveHeight(300),
-  },
-  roomPickerList: {
-    width: '100%',
-  },
-  roomPickerListContent: {
-    gap: getResponsiveHeight(8),
-    paddingBottom: getResponsiveHeight(4),
-  },
-  roomPickerItem: {
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.08)',
-    borderRadius: getResponsiveWidth(12),
-    paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(12),
-    backgroundColor: '#FFFFFF',
-  },
-  roomPickerItemSelected: {
-    borderColor: '#FFC84D',
-    backgroundColor: '#FFF8E6',
-  },
-  roomPickerItemDisabled: {
-    opacity: 0.6,
-  },
-  roomPickerTitle: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: rf(13.5),
-    color: '#111827',
-    marginBottom: getResponsiveHeight(4),
-  },
-  roomPickerTitleSelected: {
-    color: '#7A4E00',
-  },
-  roomPickerPreview: {
-    fontFamily: 'Pretendard-Regular',
-    fontSize: rf(12),
-    color: '#6B7280',
-  },
-  roomPickerEmptyText: {
-    paddingVertical: getResponsiveHeight(12),
-    fontFamily: 'Pretendard-Regular',
-    fontSize: rf(13),
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  roomPickerConfirmDisabled: {
-    opacity: 0.45,
-  },
   emptyText: {
-    marginTop: getResponsiveHeight(36),
-    paddingHorizontal: getResponsiveWidth(20),
+    textAlign: 'center',
     fontSize: EMPTY_STYLE().emptyFontSize,
     fontFamily: EMPTY_STYLE().emptyFontFamily,
     color: EMPTY_STYLE().emptyColor,
-    lineHeight: rf(22),
-    alignSelf: 'center',
-    textAlign: 'center',
-    textAlignVertical: 'center',
+    lineHeight:rf(18),
+  },
+  emptyWrap: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: getResponsiveHeight(60),
+  },
+  emptyCalendarIcon: {
+    width: getResponsiveWidth(30),
+    height: getResponsiveHeight(30),
+    resizeMode: 'contain',
+    tintColor: '#9CA3AF',
+    marginBottom: getResponsiveHeight(10),
   },
 
   }));
@@ -571,11 +506,8 @@ function Schedule({
       : birthdayNames.join(', ');
 
   const [birthdayModalVisible, setBirthdayModalVisible] = useState(false);
-  const [chatRoomPickerVisible, setChatRoomPickerVisible] = useState(false);
   const [selectedChatRoomId, setSelectedChatRoomId] = useState(null);
-  const [birthdayMessageDraft, setBirthdayMessageDraft] = useState('');
   const [sendingBirthdayMessage, setSendingBirthdayMessage] = useState(false);
-  const openPickerTimerRef = useRef(null);
 
   const openBirthdayModal = useCallback(() => {
     if (!hasBirthday) return;
@@ -584,21 +516,7 @@ function Schedule({
 
   const closeBirthdayModal = useCallback(() => {
     setBirthdayModalVisible(false);
-  }, []);
-
-  const closeChatRoomPicker = useCallback(() => {
-    if (sendingBirthdayMessage) return;
-    setChatRoomPickerVisible(false);
     setSelectedChatRoomId(null);
-  }, [sendingBirthdayMessage]);
-
-  useEffect(() => {
-    return () => {
-      if (openPickerTimerRef.current) {
-        clearTimeout(openPickerTimerRef.current);
-        openPickerTimerRef.current = null;
-      }
-    };
   }, []);
 
   const namesText = useMemo(() => {
@@ -618,54 +536,28 @@ function Schedule({
     [chatRoomList],
   );
 
-  const handleBirthdaySendPress = useCallback(
-    async messageText => {
+  const handleBirthdaySend = useCallback(
+    async (messageText, chatRoomId) => {
       const nextMessage = String(messageText || '').trim();
-      if (!nextMessage) return;
-
-      setBirthdayMessageDraft(nextMessage);
-      setBirthdayModalVisible(false);
-      setSelectedChatRoomId(null);
-      if (openPickerTimerRef.current) clearTimeout(openPickerTimerRef.current);
-      InteractionManager.runAfterInteractions(() => {
-        openPickerTimerRef.current = setTimeout(() => {
-          setChatRoomPickerVisible(true);
-          openPickerTimerRef.current = null;
-        }, 240);
-      });
-
-      if (!effectiveFamilyId || effectiveUserId == null) return;
-      await refetchChatRooms();
-    },
-    [effectiveFamilyId, effectiveUserId, refetchChatRooms],
-  );
-
-  const handlePickChatRoomAndSend = useCallback(
-    async roomId => {
-      if (!roomId) return;
+      if (!nextMessage || !chatRoomId) return;
       if (sendingBirthdayMessage) return;
       if (effectiveUserId == null) {
         Alert.alert('전송 실패', '사용자 정보를 확인할 수 없어요.');
         return;
       }
 
-      setSelectedChatRoomId(String(roomId));
       setSendingBirthdayMessage(true);
-
       try {
         const res = await dispatch(
           sendMessageWsThunk(
-            {
-              content: birthdayMessageDraft,
-              messageType: 'text',
-            },
-            String(roomId),
+            {content: nextMessage, messageType: 'text'},
+            String(chatRoomId),
             effectiveUserId,
           ),
         );
 
         if (res?.ok) {
-          setChatRoomPickerVisible(false);
+          setBirthdayModalVisible(false);
           setSelectedChatRoomId(null);
           Alert.alert('전송 완료', '선택한 채팅방에 축하 메시지를 보냈어요.');
           return;
@@ -681,35 +573,25 @@ function Schedule({
         setSendingBirthdayMessage(false);
       }
     },
-    [birthdayMessageDraft, effectiveUserId, dispatch, sendingBirthdayMessage],
+    [sendingBirthdayMessage, effectiveUserId, dispatch],
   );
 
-  const handlePickChatRoomOnly = useCallback(
+  const handleSelectChatRoom = useCallback(
     roomId => {
-      if (!roomId) return;
-      if (sendingBirthdayMessage) return;
+      if (!roomId || sendingBirthdayMessage) return;
       setSelectedChatRoomId(String(roomId));
     },
     [sendingBirthdayMessage],
   );
 
-  const handleConfirmPickedChatRoomSend = useCallback(() => {
-    if (sendingBirthdayMessage) return;
-    if (!selectedChatRoomId) {
-      Alert.alert('채팅방 선택', '먼저 보낼 채팅방을 선택해주세요.');
-      return;
-    }
-    handlePickChatRoomAndSend(selectedChatRoomId);
-  }, [sendingBirthdayMessage, selectedChatRoomId, handlePickChatRoomAndSend]);
-
+  /* 모달이 열릴 때 채팅방 목록 최신화 */
   useEffect(() => {
-    if (!chatRoomPickerVisible) return;
+    if (!birthdayModalVisible) return;
     if (chatRoomItems.length > 0) return;
     if (!effectiveFamilyId || effectiveUserId == null) return;
-
     refetchChatRooms();
   }, [
-    chatRoomPickerVisible,
+    birthdayModalVisible,
     chatRoomItems.length,
     effectiveFamilyId,
     effectiveUserId,
@@ -884,37 +766,21 @@ function Schedule({
   return (
     <View style={styles.container}>
       {!!dateYmd && (
-        <>
-          <View style={styles.calendarDividerWrap}>
-            <View style={[styles.calendarDividerLine, {width: cardWidth}]} />
-          </View>
-          <View style={styles.dateRow}>
-            <DropShadow
-              style={[styles.dateDropShadow, {width: cardWidth}]}>
-              <View style={styles.dateSurface}>
-                <View style={styles.dateInner}>
-                  <AppText allowFontScaling={false} style={styles.dateTextYmd}>
-                    {dateYmd}
-                  </AppText>
-                  {!!dateDow && (
-                    <>
-                      <AppText
-                        allowFontScaling={false}
-                        style={styles.dateTextSep}>
-                        ·
-                      </AppText>
-                      <AppText
-                        allowFontScaling={false}
-                        style={styles.dateTextDow}>
-                        {dateDow}요일
-                      </AppText>
-                    </>
-                  )}
-                </View>
-              </View>
-            </DropShadow>
-          </View>
-        </>
+        <View style={styles.dateSectionHeader}>
+          <AppText allowFontScaling={false} style={styles.dateSectionYmd}>
+            {dateYmd}
+          </AppText>
+          {!!dateDow && (
+            <>
+              <AppText allowFontScaling={false} style={styles.dateSectionSep}>
+                ·
+              </AppText>
+              <AppText allowFontScaling={false} style={styles.dateSectionDow}>
+                {dateDow}요일
+              </AppText>
+            </>
+          )}
+        </View>
       )}
 
       {hasBirthday && (
@@ -966,76 +832,14 @@ function Schedule({
       <BirthdayConfettiModal
         visible={birthdayModalVisible}
         onClose={closeBirthdayModal}
-        onSendMessage={handleBirthdaySendPress}
+        onSendMessage={handleBirthdaySend}
         sendingMessage={sendingBirthdayMessage}
-        title="생일 축하해요! 🎂"
-        subText="오늘은 축하를 듬뿍 받아야 하는 날이에요"
         namesText={namesText}
+        chatRoomItems={chatRoomItems}
+        selectedChatRoomId={selectedChatRoomId}
+        onSelectChatRoom={handleSelectChatRoom}
+        chatRoomLoading={chatRoomLoading}
       />
-
-      <CustomModal
-        visible={chatRoomPickerVisible}
-        onClose={closeChatRoomPicker}
-        onConfirm={handleConfirmPickedChatRoomSend}
-        closeOnBackdropPress={false}
-        closeText="취소"
-        confirmText={sendingBirthdayMessage ? '전송 중...' : '보내기'}
-        title="보낼 채팅방 선택"
-        subText="채팅방을 고른 뒤 보내기 버튼을 눌러 전송해주세요."
-        modalBoxStyle={styles.roomPickerModalBox}
-        contentStyle={styles.roomPickerContent}
-        confirmButtonStyle={
-          !selectedChatRoomId || sendingBirthdayMessage
-            ? styles.roomPickerConfirmDisabled
-            : null
-        }>
-        {chatRoomLoading && chatRoomItems.length === 0 ? (
-          <AppText allowFontScaling={false} style={styles.roomPickerEmptyText}>
-            채팅방 목록을 불러오는 중이에요...
-          </AppText>
-        ) : chatRoomItems.length === 0 ? (
-          <AppText allowFontScaling={false} style={styles.roomPickerEmptyText}>
-            보낼 수 있는 채팅방이 없어요.
-          </AppText>
-        ) : (
-          <ScrollView
-            style={styles.roomPickerList}
-            contentContainerStyle={styles.roomPickerListContent}
-            showsVerticalScrollIndicator={false}>
-            {chatRoomItems.map(room => {
-              const selected = selectedChatRoomId === room.id;
-              return (
-                <TouchableOpacity
-                  key={room.id}
-                  activeOpacity={0.88}
-                  disabled={sendingBirthdayMessage}
-                  onPress={() => handlePickChatRoomOnly(room.id)}
-                  style={[
-                    styles.roomPickerItem,
-                    selected && styles.roomPickerItemSelected,
-                    sendingBirthdayMessage && styles.roomPickerItemDisabled,
-                  ]}>
-                  <AppText
-                    allowFontScaling={false}
-                    style={[
-                      styles.roomPickerTitle,
-                      selected && styles.roomPickerTitleSelected,
-                    ]}
-                    numberOfLines={1}>
-                    {room.title}
-                  </AppText>
-                  <AppText
-                    allowFontScaling={false}
-                    style={styles.roomPickerPreview}
-                    numberOfLines={1}>
-                    {room.preview || '최근 메시지가 없어요.'}
-                  </AppText>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        )}
-      </CustomModal>
 
       <View style={styles.timelineWrapper}>
         <View style={styles.scheduleCards}>
@@ -1097,11 +901,23 @@ function Schedule({
           })}
 
           {mergedForRender.length === 0 && (
-            <AppText allowFontScaling={false} style={styles.emptyText}>
-              {unfilteredCount === 0
-                ? '일정이 비어 있어요.\n새로운 일정을 추가해볼까요?'
-                : '선택한 사람과 관련된 일정이 없어요.'}
-            </AppText>
+            unfilteredCount === 0 ? (
+              <View style={styles.emptyWrap}>
+                <Image
+                  source={require('../../../assets/icons/calendar.png')}
+                  style={styles.emptyCalendarIcon}
+                />
+                <AppText allowFontScaling={false} style={[styles.emptyText, {marginTop: 0}]}>
+                  일정이 비어 있어요.
+                  {'\n'}
+                  새로운 일정을 추가해볼까요?
+                </AppText>
+              </View>
+            ) : (
+              <AppText allowFontScaling={false} style={styles.emptyText}>
+                선택한 사람과 관련된 일정이 없어요.
+              </AppText>
+            )
           )}
         </View>
       </View>

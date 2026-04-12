@@ -12,7 +12,7 @@ import React, {
 } from 'react';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
-import { View, TouchableOpacity, StyleSheet, Platform, Image, Dimensions, Pressable } from 'react-native';
+import { View, TouchableOpacity,  Platform, Image, Dimensions, Pressable } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {launchImageLibrary} from 'react-native-image-picker';
 import DraggableFlatList from 'react-native-draggable-flatlist';
@@ -20,7 +20,6 @@ import DraggableFlatList from 'react-native-draggable-flatlist';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
-  getResponsiveFontSize,
   getResponsiveIconSize,
 } from 'utils/responsive';
 

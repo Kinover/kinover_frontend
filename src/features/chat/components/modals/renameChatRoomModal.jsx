@@ -34,7 +34,7 @@ export default function RenameChatRoomModal({
     paddingVertical: getResponsiveHeight(12),
     paddingHorizontal: getResponsiveWidth(12),
     fontSize: rf(15),
-    backgroundColor: '#fff',
+    backgroundColor: '#F5F5F5',
     fontFamily: 'Pretendard-Regular',
     marginTop: getResponsiveHeight(4),
     marginBottom: getResponsiveHeight(10),
@@ -89,7 +89,6 @@ export default function RenameChatRoomModal({
       onClose={onClose}
       onConfirm={handleConfirm}
       confirmText="저장"
-      closeText="취소"
       title="채팅방 이름 변경"
       subText={
         '이름을 바꿔도 다른 참여자에게는 보이지 않아요.\n나만 쓰는 채팅방 이름이에요.'

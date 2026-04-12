@@ -22,6 +22,7 @@ import {useReduxFontMode} from 'hooks/useReduxFontMode';
 import {MenuProvider} from 'react-native-popup-menu';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {BottomSheetModalProvider} from '@gorhom/bottom-sheet';
+import {KeyboardProvider} from 'react-native-keyboard-controller';
 import LottieView from 'lottie-react-native';
 import mmkvStorage from 'utils/mmkvStorage';
 import * as Keychain from 'react-native-keychain';
@@ -45,8 +46,9 @@ import {
   checkAndAuthBiometricAppLock,
   getBiometricAvailability,
 } from '../utils/biometrics';
+import AppText from 'components/AppText';
 import {useLogout} from 'features/auth/hooks/useLogout';
-import {setBioLockEnabled} from 'store/uiSlice';
+import {setBioLockEnabled, setFontMode, FONT_MODE} from 'store/uiSlice';
 import useNetworkStatus, {registerReconnectCallback} from 'hooks/useNetworkStatus';
 import {reconnectIfNeeded} from 'features/chat/hooks/ChatSocket';
 import {AppStateResourceBridge} from './AppStateResourceBridge';
@@ -57,6 +59,8 @@ import {
 
 const SPLASH_KEY = 'SPLASH_SHOWN_V1';
 const SPLASH_KEYCHAIN_SERVICE = 'kinover.splash.once';
+const FONT_MODE_STORAGE_KEY = 'ui:fontMode';
+const FONT_MODE_KEYCHAIN_SERVICE = 'kinover.ui.fontMode';
 
 function KinoverSplashView({loop = false, onAnimationFinish}) {
   return (
@@ -96,7 +100,48 @@ function SplashFirstRun({onFinish}) {
 }
 
 function ResponsiveModeBridge() {
+  const dispatch = useDispatch();
   const fontMode = useReduxFontMode();
+
+  useEffect(() => {
+    (async () => {
+      try {
+        let raw = await mmkvStorage.getItem(FONT_MODE_STORAGE_KEY);
+        if (
+          raw !== FONT_MODE.NORMAL &&
+          raw !== FONT_MODE.LARGE &&
+          raw !== FONT_MODE.EXTRA_LARGE
+        ) {
+          try {
+            const creds = await Keychain.getInternetCredentials(
+              FONT_MODE_KEYCHAIN_SERVICE,
+            );
+            raw = creds?.password ?? raw;
+          } catch {
+            null;
+          }
+        }
+        const saved =
+          raw === FONT_MODE.EXTRA_LARGE
+            ? FONT_MODE.EXTRA_LARGE
+            : raw === FONT_MODE.LARGE
+            ? FONT_MODE.LARGE
+            : raw === FONT_MODE.NORMAL
+            ? FONT_MODE.NORMAL
+            : null;
+        if (saved && saved !== fontMode) {
+          dispatch(setFontMode(saved));
+          return;
+        }
+        // 저장 키가 비어 있거나 손상되었으면 현재 Redux 값을 기준으로 복구
+        if (!saved && fontMode != null) {
+          await mmkvStorage.setItem(FONT_MODE_STORAGE_KEY, fontMode);
+        }
+      } catch {
+        null;
+      }
+    })();
+  }, [dispatch, fontMode]);
 
   // useEffect가 아니라 렌더와 동기화: 같은 프레임에서 getResponsiveFontSize가 Redux와 일치
   if (fontMode != null) {
@@ -119,11 +164,11 @@ function AppLockGate({readyForAuth}) {
   const authInFlightRef = useRef(false);
   const lastAppStateRef = useRef(AppState.currentState);
   const authedThisSessionRef = useRef(false);
+  const prevBioOnRef = useRef(false);
 
   async function runAuth() {
     if (!bioOn) {
       setLocked(false);
-      authedThisSessionRef.current = true;
       return;
     }
 
@@ -175,7 +220,26 @@ function AppLockGate({readyForAuth}) {
   }
 
   useEffect(() => {
-    if (!bioOn || !rehydrated || !readyForAuth) return;
+    const wasOn = prevBioOnRef.current;
+    const turnedOn = bioOn && !wasOn;
+    const turnedOff = !bioOn && wasOn;
+    prevBioOnRef.current = bioOn;
+
+    if (!rehydrated || !readyForAuth) return;
+
+    if (!bioOn) {
+      if (turnedOff) {
+        authedThisSessionRef.current = false;
+      }
+      return;
+    }
+
+    if (turnedOn) {
+      authedThisSessionRef.current = false;
+      runAuth();
+      return;
+    }
+
     if (authedThisSessionRef.current) return;
     runAuth();
   }, [bioOn, rehydrated, readyForAuth]);
@@ -217,8 +281,11 @@ function AppLockGate({readyForAuth}) {
           style={StyleSheet.absoluteFillObject}
           onPress={() => runAuth()}
           accessibilityRole="button"
-          accessibilityLabel="잠금 해제 다시 시도"
-        />
+          accessibilityLabel="잠금 해제 다시 시도">
+          <View style={styles.lockRetryHint}>
+            <AppText style={styles.lockRetryText}>탭하여 다시 시도</AppText>
+          </View>
+        </Pressable>
       ) : null}
     </View>
   );
@@ -351,6 +418,7 @@ export default function App() {
       )}
 
       <SafeAreaProvider>
+        <KeyboardProvider navigationBarTranslucent={Platform.OS === 'android'}>
         <BottomSheetModalProvider>
           <Provider store={store}>
             <PersistGate loading={null} persistor={persistor}>
@@ -388,6 +456,7 @@ export default function App() {
             </PersistGate>
           </Provider>
         </BottomSheetModalProvider>
+        </KeyboardProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
@@ -446,8 +515,18 @@ const styles = StyleSheet.create({
 
   lockOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.25)',
+    backgroundColor: 'rgba(255,255,255,0.97)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  lockRetryHint: {
+    position: 'absolute',
+    bottom: '20%',
+    alignSelf: 'center',
+  },
+  lockRetryText: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontFamily: 'Pretendard-Regular',
   },
 });

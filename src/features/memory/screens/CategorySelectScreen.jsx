@@ -17,6 +17,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {EMPTY_STYLE, HEADER_STYLES, COLORS} from 'styles/style';
 import uuid from 'react-native-uuid';
 import {useGetCategoriesQuery, useGetPostByIdQuery} from '../services/memoryApi';
+import {setTempCategoryList} from '../store/categorySlice';
 
 import CheckBadge from 'components/CheckBadge';
 
@@ -152,7 +153,26 @@ export default function CategorySelectPage({route}) {
   );
   const {data: categoryQueryData = []} = useGetCategoriesQuery();
   const {data: postQueryData} = useGetPostByIdQuery(postId, {skip: !postId});
-  const categoryList = categoryQueryData?.length ? categoryQueryData : fallbackCategoryList;
+
+  const categoryList = useMemo(() => {
+    const server = Array.isArray(categoryQueryData) ? categoryQueryData : [];
+    const local = Array.isArray(fallbackCategoryList) ? fallbackCategoryList : [];
+
+    if (!server.length) {
+      return local;
+    }
+
+    const serverIds = new Set(
+      server.map(c => String(c?.categoryId ?? '')),
+    );
+    const pendingLocal = local.filter(
+      c =>
+        c?.isTemporary &&
+        c?.categoryId != null &&
+        !serverIds.has(String(c.categoryId)),
+    );
+    return [...server, ...pendingLocal];
+  }, [categoryQueryData, fallbackCategoryList]);
   const postFromStore = postQueryData ?? fallbackPostFromStore;
 
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -221,7 +241,7 @@ export default function CategorySelectPage({route}) {
     setSelectedCategory(tempCategory);
     setSelectedIndex(updated.length - 1);
 
-    dispatch({type: 'category/setTempCategoryList', payload: updated});
+    dispatch(setTempCategoryList(updated));
   };
 
  /** -----------------------

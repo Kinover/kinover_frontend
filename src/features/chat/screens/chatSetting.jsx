@@ -4,25 +4,18 @@
  * - 멤버 추가 화면 복귀 시 route params로 초대 결과 토스트
  * ========================================================= */
 
-import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
+import React, {useEffect, useMemo, useState, useCallback} from 'react';
 
 import {
   View,
-  TouchableOpacity,
   StyleSheet,
   Image,
   ScrollView,
-  Dimensions,
-  Modal,
   Pressable,
 } from 'react-native';
+import DropShadow from 'react-native-drop-shadow';
 
 import AppText from 'components/AppText';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-} from 'react-native-reanimated';
 
 import {useSelector, useDispatch} from 'react-redux';
 import {useReduxFontMode} from 'hooks/useReduxFontMode';
@@ -41,8 +34,8 @@ import CustomSwitch from 'components/customSwitch';
 import {
   getResponsiveHeight,
   getResponsiveFontSize,
-  getResponsiveWidth,
   getResponsiveIconSize,
+  getResponsiveWidth,
 } from 'utils/responsive';
 
 import {
@@ -52,20 +45,15 @@ import {
 } from '../store/chatRoomSlice';
 
 import ToastModal from 'components/modal/ToastModal';
-import {COLORS, HEADER_STYLES} from 'styles/style';
+import {COLORS} from 'styles/style';
 import {FONT_MODE} from 'store/uiSlice';
+import {onLeaveChat} from '../hooks/onLeaveChat';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-
-export default function ChatSettings({
-  isOpen,
-  onClose,
-  onLeaveChat,
-  chatRoomId,
-  navigation,
-  isKino,
-}) {
+export default function ChatSettings({route, navigation}) {
   const dispatch = useDispatch();
+  const {chatRoomId: rawChatRoomId, isKino: rawIsKino} = route?.params || {};
+  const chatRoomId = rawChatRoomId == null ? null : String(rawChatRoomId);
+  const isKino = !!rawIsKino;
 
   // RTK Query mutations
   const [renameChatRoomForMe] = useRenameChatRoomForMeMutation();
@@ -90,60 +78,12 @@ export default function ChatSettings({
 
   const userId = useSelector(state => state.user.userId);
   const chatRoomList = useSelector(state => state.chatRoom.chatRoomList || []);
-  const rid = chatRoomId == null ? null : String(chatRoomId);
-  const currentRoom = chatRoomList.find(
-    room => String(room.chatRoomId) === rid,
-  );
+  const currentRoom = chatRoomList.find(room => String(room.chatRoomId) === chatRoomId);
   const currentRoomName = currentRoom?.roomName ?? '';
-
-  // =========================================================
-  // 패널 애니메이션
-  // =========================================================
-  const translateX = useSharedValue(SCREEN_WIDTH);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{translateX: translateX.value}],
-  }));
-
-  const [internalVisible, setInternalVisible] = useState(false);
-  const closeTimerRef = useRef(null);
-
-  const clearCloseTimer = () => {
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
-  };
-
-  useEffect(() => {
-    clearCloseTimer();
-    if (isOpen) {
-      setInternalVisible(true);
-      translateX.value = withTiming(0, {duration: 240});
-    } else {
-      translateX.value = withTiming(SCREEN_WIDTH, {duration: 240});
-      closeTimerRef.current = setTimeout(() => setInternalVisible(false), 240);
-    }
-    return () => clearCloseTimer();
-  }, [isOpen, translateX]);
-
-  useEffect(() => () => clearCloseTimer(), []);
 
   // =========================================================
   // 현재 라우트 / params
   // =========================================================
-  const getCurrentRouteInfo = useCallback(() => {
-    const state = navigation?.getState?.();
-    const routes = state?.routes || [];
-    const index =
-      typeof state?.index === 'number' ? state.index : routes.length - 1;
-    const current = routes?.[index];
-    return {
-      currentRouteName: current?.name,
-      currentParams: current?.params || {},
-    };
-  }, [navigation]);
-
   const clearInvitedToastParams = useCallback(() => {
     try {
       navigation?.setParams?.({
@@ -152,27 +92,12 @@ export default function ChatSettings({
         invitedMessage: undefined,
       });
     } catch (e) {
-      const {currentRouteName} = getCurrentRouteInfo();
-      if (!currentRouteName) return;
-      try {
-        navigation?.navigate?.({
-          name: currentRouteName,
-          params: {
-            invitedToast: undefined,
-            invitedCount: undefined,
-            invitedMessage: undefined,
-          },
-          merge: true,
-        });
-      } catch (e2) {
-        null;
-      }
+      null;
     }
-  }, [navigation, getCurrentRouteInfo]);
+  }, [navigation]);
 
   useEffect(() => {
-    if (!isOpen) return;
-    const {currentParams} = getCurrentRouteInfo();
+    const currentParams = route?.params || {};
     const invitedToast = currentParams?.invitedToast;
     const invitedCount = currentParams?.invitedCount;
     const invitedMessage = currentParams?.invitedMessage;
@@ -189,10 +114,9 @@ export default function ChatSettings({
       // RTK Query: addUsersToChatRoom mutation이 ChatRoomUsers tag 무효화 → 자동 refetch
     }
   }, [
-    isOpen,
+    route?.params,
     chatRoomId,
     dispatch,
-    getCurrentRouteInfo,
     clearInvitedToastParams,
   ]);
 
@@ -236,10 +160,8 @@ export default function ChatSettings({
       setNewRoomName('');
       setToastMessage('채팅방 이름을 바꿨어요.');
       setToastVisible(true);
-    } catch (err) {
-      const msg =
-        typeof err === 'string' ? err : err?.message ? err.message : JSON.stringify(err);
-      setToastMessage(`이름 변경 실패: ${msg}`);
+    } catch {
+      setToastMessage('이름 변경에 실패했어요. 잠시 후 다시 시도해 주세요.');
       setToastVisible(true);
     }
   };
@@ -258,12 +180,10 @@ export default function ChatSettings({
   };
 
   const handleShowMembers = () => {
-    onClose();
     openAddMember();
   };
 
   const handleLeaveConfirm = () => {
-    onClose();
     setIsLeaveModalVisible(false);
     onLeaveChat(dispatch, navigation, chatRoomId);
   };
@@ -271,87 +191,51 @@ export default function ChatSettings({
   const handleGoToKinoSelect = () => {
     if (!chatRoomId) return;
     dispatch(bumpChatRoomToTop(chatRoomId));
-    onClose();
-    setTimeout(() => navigation.navigate('키노선택화면', {chatRoomId}), 260);
+    navigation.navigate('키노선택화면', {chatRoomId});
   };
 
   const goToMediaPage = useCallback(() => {
     if (!chatRoomId) return;
-    onClose();
-    setTimeout(() => {
-      navigation.navigate('채팅방미디어모아보기화면', {chatRoomId});
-    }, 220);
-  }, [chatRoomId, navigation, onClose]);
-
-  if (!internalVisible) return null;
+    navigation.navigate('채팅방미디어모아보기화면', {chatRoomId});
+  }, [chatRoomId, navigation]);
 
   return (
-    <Modal
-      visible={internalVisible}
-      transparent
-      animationType="none"
-      statusBarTranslucent
-      onRequestClose={onClose}>
-      <View>
-        <LeaveChatRoomModal
-          visible={isLeaveModalVisible}
-          onClose={() => setIsLeaveModalVisible(false)}
-          onConfirm={handleLeaveConfirm}
-        />
-        <RenameChatRoomModal
-          visible={isRenameModalVisible}
-          onClose={() => {
-            setIsRenameModalVisible(false);
-            setNewRoomName('');
-          }}
-          onConfirm={handleRenameChatRoom}
-          newRoomName={newRoomName}
-          setNewRoomName={setNewRoomName}
-          currentRoomName={currentRoomName}
-        />
-        <ChangeKinoModal
-          visible={isChangeKinoModalVisible}
-          onClose={() => setIsChangeKinoModalVisible(false)}
-          onConfirm={handleGoToKinoSelect}
-        />
-        <ToastModal
-          visible={toastVisible}
-          message={toastMessage}
-          onClose={() => setToastVisible(false)}
-        />
-      </View>
-
-      <Animated.View style={[styles.container, animatedStyle]}>
-        {/* 헤더 */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            onPress={onClose}
-            style={styles.backBtn}
-            activeOpacity={0.7}>
-            <Image
-              source={require('assets/icons/caretDown_black.png')}
-              style={styles.backIcon}
-              // tintColor="#1A1A1A"
-            />
-          </TouchableOpacity>
-          <View style={styles.headerTitle} pointerEvents="none">
-            <AppText
-              allowFontScaling={false}
-              numberOfLines={1}
-              style={styles.headerTitleText}>
-              채팅방 설정
-            </AppText>
-          </View>
-        </View>
-
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}>
+    <View style={styles.container}>
+      <LeaveChatRoomModal
+        visible={isLeaveModalVisible}
+        onClose={() => setIsLeaveModalVisible(false)}
+        onConfirm={handleLeaveConfirm}
+      />
+      <RenameChatRoomModal
+        visible={isRenameModalVisible}
+        onClose={() => {
+          setIsRenameModalVisible(false);
+          setNewRoomName('');
+        }}
+        onConfirm={handleRenameChatRoom}
+        newRoomName={newRoomName}
+        setNewRoomName={setNewRoomName}
+        currentRoomName={currentRoomName}
+      />
+      <ChangeKinoModal
+        visible={isChangeKinoModalVisible}
+        onClose={() => setIsChangeKinoModalVisible(false)}
+        onConfirm={handleGoToKinoSelect}
+      />
+      <ToastModal
+        visible={toastVisible}
+        message={toastMessage}
+        onClose={() => setToastVisible(false)}
+      />
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}>
           {/* 알림 섹션 */}
           <AppText allowFontScaling={false} style={styles.sectionLabel}>
             알림
           </AppText>
-          <View style={styles.card}>
+          <DropShadow style={styles.cardShadow}>
+            <View style={styles.card}>
             <Pressable
               onPress={handleToggleAlarm}
               android_ripple={{color: 'rgba(17,24,39,0.06)'}}
@@ -399,7 +283,8 @@ export default function ChatSettings({
                 toggleSwitch={handleToggleAlarm}
               />
             </Pressable>
-          </View>
+            </View>
+          </DropShadow>
 
           {/* 채팅방 관리 섹션 */}
           {!isKino && (
@@ -407,7 +292,8 @@ export default function ChatSettings({
               <AppText allowFontScaling={false} style={styles.sectionLabel}>
                 채팅방 관리
               </AppText>
-              <View style={styles.card}>
+              <DropShadow style={styles.cardShadow}>
+                <View style={styles.card}>
                 {/* 채팅방명 변경 */}
                 <Pressable
                   onPress={() => setIsRenameModalVisible(true)}
@@ -495,11 +381,14 @@ export default function ChatSettings({
                     pressed && styles.cardRowPressed,
                   ]}>
                   <View style={[styles.iconBox, {backgroundColor: '#FFF1F2'}]}>
-                    <AppText style={styles.iconEmoji}>🖼️</AppText>
+                    <Image
+                      source={require('assets/icons/tabs/2/photo.png')}
+                      style={styles.iconImgYellow}
+                    />
                   </View>
                   <View style={styles.rowTextBox}>
                     <AppText allowFontScaling={false} style={styles.rowTitle}>
-                      미디어 모아보기
+                      사진 모아보기
                     </AppText>
                     {!hideSubtitle && (
                       <AppText
@@ -514,7 +403,8 @@ export default function ChatSettings({
                     style={styles.chevronRight}
                   />
                 </Pressable>
-              </View>
+                </View>
+              </DropShadow>
             </>
           )}
 
@@ -524,7 +414,8 @@ export default function ChatSettings({
               <AppText allowFontScaling={false} style={styles.sectionLabel}>
                 키노 설정
               </AppText>
-              <View style={styles.card}>
+              <DropShadow style={styles.cardShadow}>
+                <View style={styles.card}>
                 <Pressable
                   onPress={() => setIsChangeKinoModalVisible(true)}
                   android_ripple={{color: 'rgba(17,24,39,0.06)'}}
@@ -555,13 +446,15 @@ export default function ChatSettings({
                     style={styles.chevronRight}
                   />
                 </Pressable>
-              </View>
+                </View>
+              </DropShadow>
             </>
           )}
 
           {/* 채팅방 나가기 */}
           {!isKino && (
-            <View style={styles.card}>
+            <DropShadow style={styles.cardShadow}>
+              <View style={styles.card}>
               <Pressable
                 onPress={() => setIsLeaveModalVisible(true)}
                 android_ripple={{color: 'rgba(17,24,39,0.06)'}}
@@ -570,7 +463,10 @@ export default function ChatSettings({
                   pressed && styles.cardRowPressed,
                 ]}>
                 <View style={[styles.iconBox, {backgroundColor: '#FFF1F2'}]}>
-                  <AppText style={styles.iconEmoji}>🚪</AppText>
+                  <Image
+                    source={require('assets/icons/tabs/2/exit.png')}
+                    style={styles.iconImgYellowExit}
+                  />
                 </View>
                 <AppText
                   allowFontScaling={false}
@@ -582,61 +478,21 @@ export default function ChatSettings({
                   style={[styles.chevronRight, {tintColor: '#EF4444'}]}
                 />
               </Pressable>
-            </View>
+              </View>
+            </DropShadow>
           )}
 
-          <View style={styles.bottomPad} />
-        </ScrollView>
-      </Animated.View>
-    </Modal>
+        <View style={styles.bottomPad} />
+      </ScrollView>
+    </View>
   );
 }
 
 const makeStyles = rf =>
   StyleSheet.create({
     container: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
+      flex: 1,
       backgroundColor: '#F5F5F5',
-    },
-
-    header: {
-      flexDirection: 'row',
-      alignItems: 'flex-end',
-      height: getResponsiveHeight(107.5),
-      paddingBottom: getResponsiveHeight(14),
-      backgroundColor: 'white',
-    },
-
-    backBtn: {
-      marginLeft:
-        HEADER_STYLES().headerLeftIconLeftPadding - getResponsiveWidth(3),
-    },
-
-    backIcon: {
-      width: HEADER_STYLES().headerLeftIconWidth,
-      height: HEADER_STYLES().headerLeftIconWidth,
-      resizeMode: 'contain',
-    },
-
-    headerTitle: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      bottom: 0,
-      top: 0,
-      alignItems: 'center',
-      justifyContent: 'flex-end',
-      paddingBottom: getResponsiveHeight(14),
-    },
-
-    headerTitleText: {
-      fontFamily: 'Pretendard-Medium',
-      fontSize: rf(20),
-      color: COLORS.textDefault,
     },
 
     scrollContent: {
@@ -656,8 +512,11 @@ const makeStyles = rf =>
     card: {
       backgroundColor: '#FFFFFF',
       borderRadius: getResponsiveIconSize(16),
-      marginBottom: getResponsiveHeight(8),
       overflow: 'hidden',
+    },
+
+    cardShadow: {
+      marginBottom: getResponsiveHeight(8),
       shadowColor: '#000',
       shadowOffset: {width: 0, height: 1},
       shadowOpacity: 0.05,
@@ -700,6 +559,18 @@ const makeStyles = rf =>
       width: getResponsiveIconSize(26),
       height: getResponsiveIconSize(26),
       resizeMode: 'contain',
+    },
+    iconImgYellow: {
+      width: getResponsiveIconSize(22),
+      height: getResponsiveIconSize(22),
+      resizeMode: 'contain',
+      tintColor: '#FFC84D',
+    },
+    iconImgYellowExit: {
+      width: getResponsiveIconSize(19.5),
+      height: getResponsiveIconSize(19.5),
+      resizeMode: 'contain',
+      tintColor: '#FFC84D',
     },
 
     rowTextBox: {

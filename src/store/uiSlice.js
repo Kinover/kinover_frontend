@@ -7,8 +7,24 @@ export const FONT_MODE = {
   EXTRA_LARGE: 'EXTRA_LARGE',
 };
 
+const FONT_MODE_STORAGE_KEY = 'ui:fontMode';
+
+const getInitialFontMode = () => {
+  try {
+    const {MMKV} = require('react-native-mmkv');
+    const mmkv = new MMKV({id: 'kinover-redux-persist'});
+    const saved = mmkv.getString(FONT_MODE_STORAGE_KEY);
+    if (saved === FONT_MODE.EXTRA_LARGE) return FONT_MODE.EXTRA_LARGE;
+    if (saved === FONT_MODE.LARGE) return FONT_MODE.LARGE;
+    if (saved === FONT_MODE.NORMAL) return FONT_MODE.NORMAL;
+  } catch {
+    null;
+  }
+  return FONT_MODE.NORMAL;
+};
+
 const initialState = {
-  fontMode: FONT_MODE.NORMAL,
+  fontMode: getInitialFontMode(),
   bioLockEnabled: false, // 추가
 };
 

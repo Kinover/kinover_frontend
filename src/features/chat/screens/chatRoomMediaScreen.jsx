@@ -16,58 +16,53 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import {COLORS, LAYOUT_STYLE} from 'styles/style';
+import {COLORS} from 'styles/style';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
+const COLUMNS = 3;
+const SCREEN_PADDING_H = getResponsiveWidth(16);
+const GRID_GAP = getResponsiveWidth(3);
+
+const CELL_SIZE = Math.floor(
+  (SCREEN_WIDTH - SCREEN_PADDING_H * 2 - GRID_GAP * (COLUMNS - 1)) / COLUMNS,
+);
+
+const TABS = [
+  {key: 'ALL', label: '전체'},
+  {key: 'IMAGE', label: '사진'},
+  {key: 'VIDEO', label: '동영상'},
+];
 
 export default function ChatRoomMediaScreen({route}) {
   const styles = useScaledStyleSheet(rf => ({
-    page: {flex: 1, backgroundColor: '#FFFFFF'},
-    tabs: {
+    page: {flex: 1, backgroundColor: '#F5F5F5'},
+
+    tabRow: {
       flexDirection: 'row',
-      columnGap: getResponsiveWidth(8),
-      marginTop: getResponsiveHeight(10),
-      marginBottom: getResponsiveHeight(8),
+      paddingHorizontal: SCREEN_PADDING_H,
+      paddingTop: getResponsiveHeight(14),
+      paddingBottom: getResponsiveHeight(10),
+      gap: getResponsiveWidth(8),
     },
     tab: {
       paddingVertical: getResponsiveHeight(7),
-      paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal,
-      borderRadius: getResponsiveIconSize(10),
-      backgroundColor: '#F3F4F6',
+      paddingHorizontal: getResponsiveWidth(16),
+      borderRadius: getResponsiveIconSize(20),
+      backgroundColor: '#FFFFFF',
     },
-    tabActive: {backgroundColor: '#FEF3C7'},
+    tabActive: {
+      backgroundColor: '#111827',
+    },
     tabText: {
-      fontSize: rf(12),
+      fontSize: rf(13),
       fontFamily: 'Pretendard-Medium',
-      color: '#6B7280',
+      color: '#9CA3AF',
     },
-    tabTextActive: {color: '#B45309'},
-    sizeRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      columnGap: getResponsiveWidth(8),
-      marginTop: getResponsiveHeight(6),
-      marginBottom: getResponsiveHeight(8),
+    tabTextActive: {
+      color: '#FFFFFF',
+      fontFamily: 'Pretendard-SemiBold',
     },
-    sizeLabel: {
-      fontSize: rf(12),
-      fontFamily: 'Pretendard-Medium',
-      color: COLORS.textSecondary,
-      marginRight: getResponsiveWidth(6),
-    },
-    sizeBtn: {
-      paddingVertical: getResponsiveHeight(6),
-      paddingHorizontal: getResponsiveWidth(10),
-      borderRadius: getResponsiveIconSize(14),
-      backgroundColor: '#F3F4F6',
-    },
-    sizeBtnActive: {backgroundColor: '#E5E7EB'},
-    sizeBtnText: {
-      fontSize: rf(12),
-      fontFamily: 'Pretendard-Medium',
-      color: '#6B7280',
-    },
-    sizeBtnTextActive: {color: '#111827'},
+
     centerBox: {
       flex: 1,
       alignItems: 'center',
@@ -75,30 +70,33 @@ export default function ChatRoomMediaScreen({route}) {
       rowGap: getResponsiveHeight(8),
     },
     helperText: {
-      fontSize: rf(12),
+      fontSize: rf(13),
       fontFamily: 'Pretendard-Regular',
-      color: '#6B7280',
+      color: '#9CA3AF',
     },
+
     mediaCell: {
-      borderRadius: getResponsiveIconSize(10),
+      width: CELL_SIZE,
+      height: CELL_SIZE,
+      backgroundColor: '#E5E7EB',
       overflow: 'hidden',
-      backgroundColor: '#F3F4F6',
     },
     mediaThumb: {width: '100%', height: '100%', resizeMode: 'cover'},
     mediaPlaceholder: {flex: 1, alignItems: 'center', justifyContent: 'center'},
     mediaPlaceholderText: {
       fontSize: rf(11),
-      color: '#6B7280',
+      color: '#9CA3AF',
       fontFamily: 'Pretendard-Medium',
     },
+
     videoBadge: {
       position: 'absolute',
-      right: getResponsiveWidth(6),
-      bottom: getResponsiveHeight(6),
+      right: getResponsiveWidth(5),
+      bottom: getResponsiveHeight(5),
       backgroundColor: 'rgba(0,0,0,0.55)',
-      paddingHorizontal: getResponsiveWidth(6),
-      paddingVertical: getResponsiveHeight(3),
-      borderRadius: getResponsiveIconSize(10),
+      paddingHorizontal: getResponsiveWidth(5),
+      paddingVertical: getResponsiveHeight(2),
+      borderRadius: getResponsiveIconSize(6),
     },
     videoBadgeText: {
       fontSize: rf(10),
@@ -112,16 +110,11 @@ export default function ChatRoomMediaScreen({route}) {
   const [type, setType] = useState(
     ['ALL', 'IMAGE', 'VIDEO'].includes(initialType) ? initialType : 'ALL',
   );
-  const [columns, setColumns] = useState(3);
   const [mediaModalVisible, setMediaModalVisible] = useState(false);
   const [modalMediaItems, setModalMediaItems] = useState([]);
   const [modalInitialIndex, setModalInitialIndex] = useState(0);
 
-  const {
-    data: mediaData,
-    isLoading,
-    isFetching,
-  } = useGetChatRoomMediaQuery(
+  const {data: mediaData, isLoading, isFetching} = useGetChatRoomMediaQuery(
     {chatRoomId, type, before: null, limit: 200},
     {skip: !chatRoomId},
   );
@@ -159,22 +152,6 @@ export default function ChatRoomMediaScreen({route}) {
   const getMediaKey = item =>
     item?.messageId || item?.id || item?.uuid || item?.mediaId || pickMediaUri(item);
 
-  const screenPaddingH = getResponsiveWidth(18);
-  const gridGap = getResponsiveWidth(8);
-  const cellSize = useMemo(() => {
-    const usableW = SCREEN_WIDTH - screenPaddingH * 2;
-    const totalGap = gridGap * (columns - 1);
-    return Math.floor((usableW - totalGap) / columns);
-  }, [columns, gridGap, screenPaddingH]);
-  const gridWidth = useMemo(
-    () => cellSize * columns + gridGap * (columns - 1),
-    [cellSize, columns, gridGap],
-  );
-  const sideInset = useMemo(() => {
-    const usableW = SCREEN_WIDTH - screenPaddingH * 2;
-    return Math.max(0, (usableW - gridWidth) / 2);
-  }, [gridWidth, screenPaddingH]);
-
   const openMediaModal = useCallback(
     (pressedItem, pressedIndex) => {
       const pressedKind = normalizeMediaType(pressedItem);
@@ -182,11 +159,7 @@ export default function ChatRoomMediaScreen({route}) {
       if (!pressedUri || pressedKind === 'FILE') return;
 
       const allowKind =
-        type === 'ALL'
-          ? ['IMAGE', 'VIDEO']
-          : type === 'IMAGE'
-          ? ['IMAGE']
-          : ['VIDEO'];
+        type === 'ALL' ? ['IMAGE', 'VIDEO'] : type === 'IMAGE' ? ['IMAGE'] : ['VIDEO'];
 
       const list = (items || [])
         .map(it => {
@@ -210,30 +183,24 @@ export default function ChatRoomMediaScreen({route}) {
     ({item, index}) => {
       const thumb = pickThumbUri(item) || pickMediaUri(item);
       const kind = normalizeMediaType(item);
-      const isLastCol = index % columns === columns - 1;
+      const isLastCol = index % COLUMNS === COLUMNS - 1;
       return (
         <TouchableOpacity
           style={[
             styles.mediaCell,
-            {
-              width: cellSize,
-              height: cellSize,
-              marginRight: isLastCol ? 0 : gridGap,
-              marginBottom: gridGap,
-            },
+            {marginRight: isLastCol ? 0 : GRID_GAP, marginBottom: GRID_GAP},
           ]}
-          activeOpacity={0.88}
+          activeOpacity={0.85}
           onPress={() => openMediaModal(item, index)}>
           {thumb ? (
             <Image source={{uri: thumb}} style={styles.mediaThumb} />
           ) : (
             <View style={styles.mediaPlaceholder}>
               <AppText allowFontScaling={false} style={styles.mediaPlaceholderText}>
-                {kind === 'VIDEO' ? 'VIDEO' : 'FILE'}
+                {kind === 'VIDEO' ? '동영상' : '파일'}
               </AppText>
             </View>
           )}
-
           {kind === 'VIDEO' && (
             <View style={styles.videoBadge}>
               <AppText allowFontScaling={false} style={styles.videoBadgeText}>
@@ -244,44 +211,25 @@ export default function ChatRoomMediaScreen({route}) {
         </TouchableOpacity>
       );
     },
-    [cellSize, columns, gridGap, openMediaModal, styles],
+    [openMediaModal, styles],
   );
 
   return (
     <View style={styles.page}>
-      <View style={[styles.tabs, {paddingHorizontal: screenPaddingH}]}>
-        {['ALL', 'IMAGE', 'VIDEO'].map(t => {
-          const active = type === t;
+      {/* 탭 */}
+      <View style={styles.tabRow}>
+        {TABS.map(({key, label}) => {
+          const active = type === key;
           return (
             <TouchableOpacity
-              key={t}
-              onPress={() => setType(t)}
+              key={key}
+              onPress={() => setType(key)}
               style={[styles.tab, active && styles.tabActive]}
-              activeOpacity={0.9}>
-              <AppText allowFontScaling={false} style={[styles.tabText, active && styles.tabTextActive]}>
-                {t === 'ALL' ? '전체' : t === 'IMAGE' ? '사진' : '동영상'}
-              </AppText>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-
-      <View style={[styles.sizeRow, {paddingHorizontal: screenPaddingH}]}>
-        <AppText allowFontScaling={false} style={styles.sizeLabel}>
-          그리드
-        </AppText>
-        {[2, 3, 4].map(n => {
-          const active = columns === n;
-          return (
-            <TouchableOpacity
-              key={String(n)}
-              onPress={() => setColumns(n)}
-              style={[styles.sizeBtn, active && styles.sizeBtnActive]}
-              activeOpacity={0.9}>
+              activeOpacity={0.85}>
               <AppText
                 allowFontScaling={false}
-                style={[styles.sizeBtnText, active && styles.sizeBtnTextActive]}>
-                {n}x{n}
+                style={[styles.tabText, active && styles.tabTextActive]}>
+                {label}
               </AppText>
             </TouchableOpacity>
           );
@@ -290,43 +238,36 @@ export default function ChatRoomMediaScreen({route}) {
 
       {isLoading ? (
         <View style={styles.centerBox}>
-          <ActivityIndicator />
+          <ActivityIndicator color={COLORS.brandPrimary} />
           <AppText allowFontScaling={false} style={styles.helperText}>
-            미디어를 불러오는 중이에요
+            불러오는 중이에요
           </AppText>
         </View>
       ) : items.length === 0 ? (
         <View style={styles.centerBox}>
           <AppText allowFontScaling={false} style={styles.helperText}>
-            아직 모아볼 미디어가 없어요.
+            아직 모아볼 미디어가 없어요
           </AppText>
         </View>
       ) : (
         <FlatList
           data={items}
           renderItem={renderCell}
-          keyExtractor={(item, idx) => `${String(getMediaKey(item) ?? 'noid')}_${idx}`}
-          numColumns={columns}
-          key={`media-grid-${columns}`}
+          keyExtractor={(item, idx) =>
+            `${String(getMediaKey(item) ?? 'noid')}_${idx}`
+          }
+          numColumns={COLUMNS}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{
-            paddingTop: getResponsiveHeight(10),
+            paddingHorizontal: SCREEN_PADDING_H,
             paddingBottom: getResponsiveHeight(30),
-            paddingHorizontal: screenPaddingH,
-          }}
-          columnWrapperStyle={{
-            justifyContent: 'flex-start',
-            paddingLeft: sideInset,
-            paddingRight: sideInset,
           }}
           ListFooterComponent={
             isFetching ? (
               <View style={{paddingVertical: getResponsiveHeight(14), alignItems: 'center'}}>
-                <ActivityIndicator />
+                <ActivityIndicator color={COLORS.brandPrimary} />
               </View>
-            ) : (
-              <View style={{height: getResponsiveHeight(10)}} />
-            )
+            ) : null
           }
         />
       )}

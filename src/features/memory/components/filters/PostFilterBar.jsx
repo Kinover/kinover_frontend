@@ -2,7 +2,17 @@
 // src/screens/memory/components/PostFilterBar.jsx
 
 import React, {useMemo, useState, useCallback, useRef, useEffect} from 'react';
-import { View, TouchableOpacity, StyleSheet, Image, Modal, Pressable, Platform, Dimensions, Animated } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  Modal,
+  Pressable,
+  Platform,
+  Dimensions,
+  Animated,
+} from 'react-native';
 
 import AppText from 'components/AppText';
 import {
@@ -12,7 +22,7 @@ import {
 } from 'utils/responsive';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 
-import {BUTTON_STYLES, COLORS} from 'styles/style';
+import {COLORS} from 'styles/style';
 
 const {width: SCREEN_W} = Dimensions.get('window');
 const FILTER_CONTROL_H = getResponsiveHeight(34);
@@ -23,17 +33,6 @@ const DEFAULT_SORT_OPTIONS = [
 ];
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
-
-const hashToHue = (text = '') => {
-  const s = String(text).trim();
-  if (!s) return 210;
-  let hash = 0;
-  for (const ch of s) {
-    hash = ch.charCodeAt(0) + ((hash << 5) - hash);
-    hash |= 0;
-  }
-  return Math.abs(hash % 360);
-};
 
 const formatPeriodLabel = raw => {
   if (!raw) return '';
@@ -53,20 +52,23 @@ const formatPeriodLabel = raw => {
   return formatDate(segments[0]);
 };
 
-export default React.forwardRef(function PostFilterBar({
-  categoryTitle = '전체',
-  categoryOpen = false,
-  onPressCategory,
-  periodLabel,
-  onPressDateFilter,
-  sortKey = 'latest',
-  onChangeSort,
-  sortOptions = DEFAULT_SORT_OPTIONS,
-}, ref) {
+export default React.forwardRef(function PostFilterBar(
+  {
+    categoryTitle = '전체',
+    categoryOpen = false,
+    onPressCategory,
+    periodLabel,
+    onPressDateFilter,
+    sortKey = 'latest',
+    onChangeSort,
+    sortOptions = DEFAULT_SORT_OPTIONS,
+  },
+  ref,
+) {
   // fontMode가 바뀔 때 재계산 — StyleSheet.create()는 최초 1회 고정이라 사용 불가
   const fontStyles = useScaledStyleSheet(rf => ({
-    categoryText:     {fontSize: rf(12), lineHeight: rf(17)},
-    pillText:         {fontSize: rf(12)},
+    categoryText: {fontSize: rf(12), lineHeight: rf(17)},
+    pillText: {fontSize: rf(12)},
     dropdownItemText: {fontSize: rf(12)},
   }));
 
@@ -77,7 +79,6 @@ export default React.forwardRef(function PostFilterBar({
 
   const isCategoryActive = !!categoryTitle && categoryTitle !== '전체';
   const isPeriodActive = !!periodLabel;
-  const isSortActive = sortKey !== 'latest';
 
   const sortTitle = useMemo(() => {
     const found = (sortOptions || []).find(v => v.key === sortKey);
@@ -87,8 +88,6 @@ export default React.forwardRef(function PostFilterBar({
   const displayPeriodLabel = useMemo(() => {
     return periodLabel ? formatPeriodLabel(periodLabel) : '기간 선택';
   }, [periodLabel]);
-  const categoryHue = useMemo(() => hashToHue(categoryTitle), [categoryTitle]);
-
   const closeSort = useCallback(() => setSortModalOpen(false), []);
 
   const pickSort = useCallback(
@@ -112,7 +111,7 @@ export default React.forwardRef(function PostFilterBar({
     });
   }, []);
 
- // Dropdown position clamp
+  // Dropdown position clamp
   const DROPDOWN_MIN_W = getResponsiveWidth(120);
   const dropdownWidth = Math.max(DROPDOWN_MIN_W, sortAnchor.w);
   const dropdownTop = sortAnchor.y + sortAnchor.h + getResponsiveHeight(6);
@@ -123,7 +122,7 @@ export default React.forwardRef(function PostFilterBar({
     return clamp(sortAnchor.x, margin, maxLeft);
   }, [dropdownWidth, sortAnchor.x]);
 
- // caret rotate (sort open)
+  // caret rotate (sort open)
   const sortArrow = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -172,11 +171,11 @@ export default React.forwardRef(function PostFilterBar({
     [categoryArrow],
   );
 
- // tone
-  const ACTIVE_BORDER = BUTTON_STYLES().saveBg;
-  const ACTIVE_BG = 'rgba(17,24,39,0.045)';
-  const TEXT_MAIN = COLORS.textPrimary;
-  const TEXT_SUB = COLORS.textTertiary;
+  // tone — 흰색 배경 + 얇은 테두리로 회색 페이지 배경 위에서도 버튼이 뚜렷하게 보이도록
+  const INACTIVE_BG = '#FFFFFF';
+  const INACTIVE_BORDER = 'rgba(17,24,39,0.10)';
+  const INACTIVE_TEXT = '#111827';
+  const INACTIVE_ICON = '#6B7280';
 
   return (
     <>
@@ -185,9 +184,9 @@ export default React.forwardRef(function PostFilterBar({
         <TouchableOpacity
           style={[
             styles.categoryButton,
-            isCategoryActive && {
-              borderColor: `hsla(${categoryHue}, 35%, 84%, 1)`,
-              backgroundColor: `hsla(${categoryHue}, 36%, 97%, 1)`,
+            {
+              backgroundColor: INACTIVE_BG,
+              borderColor: INACTIVE_BORDER,
             },
           ]}
           onPress={onPressCategory}
@@ -196,9 +195,7 @@ export default React.forwardRef(function PostFilterBar({
             style={[
               styles.categoryDot,
               {
-                backgroundColor: isCategoryActive
-                  ? `hsla(${categoryHue}, 54%, 44%, 1)`
-                  : COLORS.textTertiary,
+                backgroundColor: INACTIVE_ICON,
               },
             ]}
           />
@@ -206,7 +203,7 @@ export default React.forwardRef(function PostFilterBar({
             style={[
               styles.categoryText,
               fontStyles.categoryText,
-              isCategoryActive && styles.categoryTextActive,
+              {color: INACTIVE_TEXT},
             ]}
             numberOfLines={1}
             ellipsizeMode="tail">
@@ -214,14 +211,15 @@ export default React.forwardRef(function PostFilterBar({
           </AppText>
           <Animated.Image
             source={require('assets/icons/down-arrow.png')}
-              style={[
+            style={[
               styles.categoryCaret,
               {
-                tintColor: isCategoryActive ? TEXT_MAIN : TEXT_SUB,
+                tintColor: INACTIVE_ICON,
               },
               categoryArrowStyle,
             ]}
           />
+          {isCategoryActive ? <View style={styles.activeDotBadge} /> : null}
         </TouchableOpacity>
 
         {/* Filters */}
@@ -230,8 +228,10 @@ export default React.forwardRef(function PostFilterBar({
           <TouchableOpacity
             style={[
               styles.pill,
-              isPeriodActive && styles.pillActive,
-              isPeriodActive && {borderColor: ACTIVE_BORDER, backgroundColor: ACTIVE_BG},
+              {
+                backgroundColor: INACTIVE_BG,
+                borderColor: INACTIVE_BORDER,
+              },
             ]}
             activeOpacity={0.75}
             onPress={onPressDateFilter}>
@@ -239,20 +239,22 @@ export default React.forwardRef(function PostFilterBar({
               source={require('assets/icons/calendar.png')}
               style={[
                 styles.icon,
-                {tintColor: isPeriodActive ? TEXT_MAIN : TEXT_SUB},
+                {
+                  tintColor: INACTIVE_ICON,
+                },
               ]}
             />
             <AppText
               style={[
                 styles.pillText,
                 fontStyles.pillText,
-                {color: isPeriodActive ? TEXT_MAIN : TEXT_SUB},
-                isPeriodActive && styles.pillTextActive,
+                {color: INACTIVE_TEXT},
               ]}
               numberOfLines={1}
               ellipsizeMode="tail">
               {displayPeriodLabel}
             </AppText>
+            {isPeriodActive ? <View style={styles.activeDotBadge} /> : null}
           </TouchableOpacity>
 
           {/* Sort */}
@@ -260,8 +262,10 @@ export default React.forwardRef(function PostFilterBar({
             ref={sortBtnRef}
             style={[
               styles.pill,
-              isSortActive && styles.pillActive,
-              isSortActive && {borderColor: ACTIVE_BORDER, backgroundColor: ACTIVE_BG},
+              {
+                backgroundColor: INACTIVE_BG,
+                borderColor: INACTIVE_BORDER,
+              },
             ]}
             activeOpacity={0.75}
             onPress={openSort}>
@@ -269,8 +273,7 @@ export default React.forwardRef(function PostFilterBar({
               style={[
                 styles.pillText,
                 fontStyles.pillText,
-                {color: isSortActive ? TEXT_MAIN : TEXT_SUB},
-                isSortActive && styles.pillTextActive,
+                {color: INACTIVE_TEXT},
               ]}
               numberOfLines={1}
               ellipsizeMode="tail">
@@ -281,7 +284,7 @@ export default React.forwardRef(function PostFilterBar({
               source={require('assets/icons/down-arrow.png')}
               style={[
                 styles.caret,
-                {tintColor: isSortActive ? TEXT_MAIN : TEXT_SUB},
+                {tintColor: INACTIVE_ICON},
                 sortArrowStyle,
               ]}
             />
@@ -298,49 +301,55 @@ export default React.forwardRef(function PostFilterBar({
         <Pressable style={styles.modalBackdrop} onPress={closeSort} />
 
         <View
-  style={[
-    styles.dropdownWrap,
-    {top: dropdownTop, left: safeLeft, width: dropdownWidth},
-  ]}>
-  {/* Android 전용: faux shadow backplate */}
-  {Platform.OS === 'android' ? (
-    <View pointerEvents="none" style={styles.dropdownShadowPlate} />
-  ) : null}
-
-  <View style={styles.dropdown}>
-    {(sortOptions || []).map(opt => {
-      const active = opt.key === sortKey;
-
-      return (
-        <TouchableOpacity
-          key={opt.key}
-          style={[styles.dropdownItem, active && styles.dropdownItemActive]}
-          activeOpacity={0.75}
-          onPress={() => pickSort(opt.key)}>
-          <AppText
-            style={[styles.dropdownItemText, fontStyles.dropdownItemText, active && styles.dropdownItemTextActive]}
-            numberOfLines={1}
-            ellipsizeMode="tail">
-            {opt.title}
-          </AppText>
-
-          {active ? (
-            <Image
-              style={{
-                tintColor: COLORS.iconPrimary,
-                width: getResponsiveIconSize(9),
-                height: getResponsiveIconSize(9),
-                resizeMode: 'contain',
-              }}
-                  source={require('assets/icons/check-gray.png')}
-            />
+          style={[
+            styles.dropdownWrap,
+            {top: dropdownTop, left: safeLeft, width: dropdownWidth},
+          ]}>
+          {/* Android 전용: faux shadow backplate */}
+          {Platform.OS === 'android' ? (
+            <View pointerEvents="none" style={styles.dropdownShadowPlate} />
           ) : null}
-        </TouchableOpacity>
-      );
-    })}
-  </View>
-</View>
 
+          <View style={styles.dropdown}>
+            {(sortOptions || []).map(opt => {
+              const active = opt.key === sortKey;
+
+              return (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[
+                    styles.dropdownItem,
+                    active && styles.dropdownItemActive,
+                  ]}
+                  activeOpacity={0.75}
+                  onPress={() => pickSort(opt.key)}>
+                  <AppText
+                    style={[
+                      styles.dropdownItemText,
+                      fontStyles.dropdownItemText,
+                      active && styles.dropdownItemTextActive,
+                    ]}
+                    numberOfLines={1}
+                    ellipsizeMode="tail">
+                    {opt.title}
+                  </AppText>
+
+                  {active ? (
+                    <Image
+                      style={{
+                        tintColor: COLORS.iconPrimary,
+                        width: getResponsiveIconSize(9),
+                        height: getResponsiveIconSize(9),
+                        resizeMode: 'contain',
+                      }}
+                      source={require('assets/icons/check-gray.png')}
+                    />
+                  ) : null}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
       </Modal>
     </>
   );
@@ -357,7 +366,7 @@ const styles = StyleSheet.create({
     paddingBottom: getResponsiveHeight(5),
   },
 
- /* Category = 트리거 느낌 */
+  /* Category = 트리거 느낌 */
   categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -398,7 +407,7 @@ const styles = StyleSheet.create({
     gap: getResponsiveWidth(10),
   },
 
- /* Filter pill = 가벼운 칩 */
+  /* Filter pill = 가벼운 칩 */
   pill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -439,7 +448,7 @@ const styles = StyleSheet.create({
     height: getResponsiveWidth(14),
   },
 
- /* Modal */
+  /* Modal */
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: 'transparent',
@@ -463,9 +472,9 @@ const styles = StyleSheet.create({
         shadowRadius: 10,
         shadowOffset: {width: 0, height: 6},
       },
- // android: {
- // elevation: 10,
- // },
+      // android: {
+      // elevation: 10,
+      // },
     }),
   },
 
@@ -494,19 +503,30 @@ const styles = StyleSheet.create({
   },
 
   dropdownShadowPlate: {
-  position: 'absolute',
-  top: getResponsiveHeight(2),              // 살짝 아래로 내려서 그림자 느낌
-  left: getResponsiveWidth(1),              // 살짝 옆으로
-  right: getResponsiveWidth(-1),            // 약간 더 크게(확장)
-  bottom: getResponsiveHeight(-2),          // 약간 더 크게(확장)
-  borderRadius: 14,
-  backgroundColor: COLORS.shadowBase,
-  opacity: 0.10,                            // 핵심: 너무 진하면 “검은 박스” 됨
-},
+    position: 'absolute',
+    top: getResponsiveHeight(2), // 살짝 아래로 내려서 그림자 느낌
+    left: getResponsiveWidth(1), // 살짝 옆으로
+    right: getResponsiveWidth(-1), // 약간 더 크게(확장)
+    bottom: getResponsiveHeight(-2), // 약간 더 크게(확장)
+    borderRadius: 14,
+    backgroundColor: COLORS.shadowBase,
+    opacity: 0.1, // 핵심: 너무 진하면 “검은 박스” 됨
+  },
 
   checkMark: {
     marginLeft: getResponsiveWidth(8),
     fontFamily: 'Pretendard-Bold',
     color: COLORS.textPrimary,
+  },
+  activeDotBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#F59E0B',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
   },
 });

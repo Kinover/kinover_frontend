@@ -1,8 +1,8 @@
 // src/features/post/screens/PostPage.jsx
 import React, {useEffect, useMemo, useRef, useCallback, useState} from 'react';
-import { View, TouchableOpacity, Image, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, TouchableOpacity, Image, StyleSheet, ScrollView, Pressable, Platform } from 'react-native';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
 
 import BottomSheet, {BottomSheetBackdrop} from '@gorhom/bottom-sheet';
@@ -28,6 +28,7 @@ import {
   getResponsiveIconSize,
   getResponsiveWidth,
 } from 'utils/responsive';
+import {getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
 
 // 분리 훅들
 import usePostHeaderOptions from '../hooks/usePostHeaderOptions';
@@ -153,6 +154,11 @@ export default function PostPage({route}) {
 
   const vm = usePostPageViewModel(safeMemory);
   useHideTabBar();
+
+  const insets = useSafeAreaInsets();
+  const descSheetBottomInset = Platform.OS === 'android'
+    ? Math.max(Number(insets?.bottom ?? 0), getAndroidNavBottomInsetEstimate(), getResponsiveHeight(48))
+    : 0;
 
   const toast = useCallback(
     msg => {
@@ -409,24 +415,6 @@ export default function PostPage({route}) {
         subText={confirmMessage}
       />
 
-      <PostOptionsMenu
-        ref={menuRef}
-        visible={menuVisible}
-        setVisible={setMenuVisible}
-        isChromeHidden={isChromeHidden}
-        disableMenu={disableMenu}
-        canSaveCurrent={canSaveCurrent}
-        canSaveAll={canSaveAll}
-        canDeleteCurrent={canDeleteCurrent}
-        currentLabel={currentLabel}
-        mediaCount={mediaCount}
-        onSaveCurrent={actionSaveCurrent}
-        onSaveAll={actionSaveAll}
-        onEditPost={actionEditPost}
-        onDeleteCurrentImage={openDeleteImageConfirm}
-        onDeletePost={openDeletePostConfirm}
-      />
-
       <View style={styles.carouselWrap}>
         <ImageCarousel
           localImages={vm.localImages}
@@ -455,6 +443,24 @@ export default function PostPage({route}) {
         )}
       </View>
 
+      <PostOptionsMenu
+        ref={menuRef}
+        visible={menuVisible}
+        setVisible={setMenuVisible}
+        isChromeHidden={isChromeHidden}
+        disableMenu={disableMenu}
+        canSaveCurrent={canSaveCurrent}
+        canSaveAll={canSaveAll}
+        canDeleteCurrent={canDeleteCurrent}
+        currentLabel={currentLabel}
+        mediaCount={mediaCount}
+        onSaveCurrent={actionSaveCurrent}
+        onSaveAll={actionSaveAll}
+        onEditPost={actionEditPost}
+        onDeleteCurrentImage={openDeleteImageConfirm}
+        onDeletePost={openDeletePostConfirm}
+      />
+
       {showDescSheet && (
         <BottomSheet
           ref={descSheetRef}
@@ -465,7 +471,8 @@ export default function PostPage({route}) {
           handleIndicatorStyle={styles.sheetHandleHidden}
           backgroundStyle={styles.sheetTransparentBg}
           onChange={onDescSheetChange}
-          backdropComponent={PostDescSheetBackdrop}>
+          backdropComponent={PostDescSheetBackdrop}
+          bottomInset={descSheetBottomInset}>
           <Pressable
             onPress={toggleDescByClick}
             hitSlop={DESC_PRESSABLE_HIT_SLOP}

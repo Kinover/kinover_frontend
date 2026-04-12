@@ -76,10 +76,7 @@ export function useAppleLogin() {
  // 3) 소켓은 가족 있을 때만
       const hasFamily = !!loginResult?.hasFamily;
       if (hasFamily && !socketUnsubRef.current) {
-        try {
-          socketUnsubRef.current = startChatSocket(dispatch, store.getState);
-        } catch (socketError) {
-        }
+          socketUnsubRef.current = startChatSocket(dispatch, store.getState);      
       }
 
  // 4) 마지막에 authChecked true

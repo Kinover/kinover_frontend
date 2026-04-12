@@ -18,7 +18,7 @@ const cleanUndefined = obj => {
 
 /**
  * PATCH /api/posts/{postId}
- * body: { authorId, content?, categoryId?, imageUrls?, postTypes? }
+ * body: { authorId, familyId?, content?, categoryId?, imageUrls?, postTypes? }
  */
 export async function updatePostApi(postId, payload) {
   if (!postId) throw new Error('postId is required');
@@ -29,6 +29,7 @@ export async function updatePostApi(postId, payload) {
 
   const raw = {
     authorId: payload.authorId,
+    familyId: payload.familyId,
     content: payload.content,
     categoryId: payload.categoryId,
     imageUrls: payload.imageUrls,

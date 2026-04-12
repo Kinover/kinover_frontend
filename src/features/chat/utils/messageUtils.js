@@ -18,6 +18,21 @@ const arrayEqualLoose = (a, b) => {
   return true;
 };
 
+const toMessageMs = v => {
+  const s = String(v ?? '').trim().replace(' ', 'T');
+  const t = new Date(s).getTime();
+  return Number.isFinite(t) ? t : 0;
+};
+
+const messageSortKey = m =>
+  String(m?.messageId ?? m?.clientMessageId ?? m?.createdAt ?? '');
+
+const compareMessagesDesc = (a, b) => {
+  const diff = toMessageMs(b?.createdAt) - toMessageMs(a?.createdAt);
+  if (diff !== 0) return diff;
+  return messageSortKey(b).localeCompare(messageSortKey(a));
+};
+
 /** optimistic 메시지(sending)와 서버 응답 메시지가 같은 것인지 휴리스틱 판별 */
 export const looksLikeSameMyMessage = (optimistic, incoming) => {
   if (!optimistic || !incoming) return false;
@@ -145,17 +160,20 @@ export const upsertMessageDraft = (draft, message) => {
     const idx = draft.findIndex(m => toStr(m?.clientMessageId) === clientId);
     if (idx !== -1) {
       draft[idx] = message;
+      draft.sort(compareMessagesDesc);
       return;
     }
     const optimisticKey = `client-${clientId}`;
     const idx2 = draft.findIndex(m => toStr(m?.messageId) === optimisticKey);
     if (idx2 !== -1) {
       draft[idx2] = message;
+      draft.sort(compareMessagesDesc);
       return;
     }
     const idx3 = draft.findIndex(m => toStr(m?.messageId) === clientId);
     if (idx3 !== -1) {
       draft[idx3] = message;
+      draft.sort(compareMessagesDesc);
       return;
     }
   }
@@ -165,6 +183,7 @@ export const upsertMessageDraft = (draft, message) => {
     const idx = draft.findIndex(m => toStr(m?.messageId) === msgId);
     if (idx !== -1) {
       draft[idx] = message;
+      draft.sort(compareMessagesDesc);
       return;
     }
   }
@@ -173,9 +192,11 @@ export const upsertMessageDraft = (draft, message) => {
   const optimisticIdx = draft.findIndex(m => looksLikeSameMyMessage(m, message));
   if (optimisticIdx !== -1) {
     draft[optimisticIdx] = message;
+    draft.sort(compareMessagesDesc);
     return;
   }
 
   // 새 메시지: 맨 앞에 추가 (메시지 배열은 DESC 정렬)
   draft.unshift(message);
+  draft.sort(compareMessagesDesc);
 };

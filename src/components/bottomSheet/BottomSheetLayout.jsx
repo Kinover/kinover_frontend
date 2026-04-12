@@ -43,10 +43,10 @@ export default function BottomSheetLayout({
   enableContentPanningGesture = false,
   animationConfigs = DEFAULT_ANIMATION_CONFIGS,
 
-  keyboardBehavior = Platform.OS === 'ios' ? 'interactive' : 'none',
+  keyboardBehavior = 'none',
   keyboardBlurBehavior = 'none',
   androidKeyboardInputMode =
-    Platform.OS === 'android' ? 'adjustResize' : 'adjustNothing',
+    Platform.OS === 'android' ? 'adjustNothing' : 'adjustNothing',
 
   enableKeyboardPolicy = true,
   keyboardOpenSnapIndex,
@@ -138,6 +138,9 @@ export default function BottomSheetLayout({
   const insets = useSafeAreaInsets();
   const WINDOW_H = Dimensions.get('window').height;
 
+ // 키보드 높이 추적 → bottomInset 동적 변경으로 시트 전체를 키보드 위로 올림
+  const [kbHeight, setKbHeight] = useState(0);
+
  // Android 시스템 네비게이션 바 높이 fallback (에뮬/실기기 모두 insets가 0이거나 작을 수 있음)
   const ANDROID_SYSTEM_NAV_FALLBACK = getResponsiveHeight(56);
   const IOS_HOME_INDICATOR_MIN = getResponsiveHeight(34);
@@ -169,9 +172,9 @@ export default function BottomSheetLayout({
       ? androidSafeBottom
       : Math.max(Number(insets.bottom || 0), IOS_HOME_INDICATOR_MIN);
 
- // 안드로이드는 modal bottomInset을 주면 시트가 위로 떠서 하단에 딤 빈띠가 생긴다.
- // 하단 보호는 content/footer 패딩에서 처리하고, modal 자체는 바닥에 붙인다.
-  const bottomInsetForModal = 0;
+ // keyboardBehavior='none'일 때 kbHeight를 bottomInset으로 사용해 시트 전체를 키보드 위로 올림.
+ // keyboardBehavior가 다른 값이면 gorhom 자체 처리에 맡김(bottomInset=0 유지).
+  const bottomInsetForModal = keyboardBehavior === 'none' ? kbHeight : 0;
 
   const ANDROID_FOOTER_BUFFER = getResponsiveHeight(16);
 
@@ -343,84 +346,41 @@ export default function BottomSheetLayout({
     };
   }, []);
 
- // 키보드 정책
+ // 키보드 정책: kbHeight 업데이트 + keyboardVisible 상태 관리
+ // bottomInset=kbHeight가 시트 위치를 처리하므로 snapToIndex 불필요.
   useEffect(() => {
-    if (!enableKeyboardPolicy) return;
+    // iOS는 WillShow/WillHide로 키보드 애니메이션과 시트 이동을 동기화
+    const showEvent =
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent =
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
-    const openIndex =
-      typeof keyboardOpenSnapIndex === 'number'
-        ? keyboardOpenSnapIndex
-        : Math.max((resolvedSnapPoints?.length || 1) - 1, 0);
-
-    const shouldSkip = () => {
-      if (isClosingRef.current) return true;
-      if (!isOpenRef.current) return true;
-      if (currentIndexRef.current === -1) return true;
-      return false;
-    };
-
-    const onShow = () => {
+    const onShow = e => {
       keyboardOpenRef.current = true;
-
- // 여기서 setState 즉시 호출 금지 → 인터랙션 끝난 뒤 반영
       scheduleKeyboardVisible(true);
-
       beforeKeyboardIndexRef.current = currentIndexRef.current;
 
-      if (shouldSkip()) return;
-
-      if (enableDynamicSizing) {
-        return;
-      }
-
-      if (Platform.OS === 'android') {
-        requestAnimationFrame(() => {
-          if (shouldSkip()) return;
-          safeSnapToIndex(openIndex);
-        });
-      }
+      if (!enableKeyboardPolicy) return;
+      const h = Number(e?.endCoordinates?.height ?? 0);
+      if (h > 0) setKbHeight(h);
     };
 
     const onHide = () => {
       keyboardOpenRef.current = false;
-
- // 여기서도 setState 즉시 호출 금지
       scheduleKeyboardVisible(false);
 
-      if (shouldSkip()) return;
-
-      if (enableDynamicSizing) {
-        return;
-      }
-
-      const restoreIndex =
-        beforeKeyboardIndexRef.current ?? keyboardCloseSnapIndex;
-
- // 리사이즈/상호작용 끝난 뒤에 복귀
-      InteractionManager.runAfterInteractions(() => {
-        requestAnimationFrame(() => {
-          if (shouldSkip()) return;
-          safeSnapToIndex(restoreIndex);
-        });
-      });
+      if (!enableKeyboardPolicy) return;
+      setKbHeight(0);
     };
 
-    const subShow = Keyboard.addListener('keyboardDidShow', onShow);
-    const subHide = Keyboard.addListener('keyboardDidHide', onHide);
+    const subShow = Keyboard.addListener(showEvent, onShow);
+    const subHide = Keyboard.addListener(hideEvent, onHide);
 
     return () => {
       subShow.remove();
       subHide.remove();
     };
-  }, [
-    enableKeyboardPolicy,
-    enableDynamicSizing,
-    keyboardOpenSnapIndex,
-    keyboardCloseSnapIndex,
-    resolvedSnapPoints,
-    safeSnapToIndex,
-    scheduleKeyboardVisible,
-  ]);
+  }, [enableKeyboardPolicy, scheduleKeyboardVisible]);
 
   const handleTouchInside = useCallback(() => {
     if (dismissKeyboardOnPress && keyboardOpenRef.current) {

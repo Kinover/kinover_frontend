@@ -2,7 +2,14 @@
 // src/features/chat/screens/KinoSelectScreen.jsx
 
 import React, {useEffect, useRef, useState, useCallback, useMemo} from 'react';
-import { View, TouchableOpacity, Image, StyleSheet, Animated, useWindowDimensions } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  Animated,
+  useWindowDimensions,
+} from 'react-native';
 import AppText from 'components/AppText';
 import Carousel from 'react-native-reanimated-carousel';
 import {useNavigation, useRoute} from '@react-navigation/native';
@@ -88,154 +95,152 @@ const SCREEN_BG = {
 
 export default function KinoSelectScreen() {
   const styles = useScaledStyleSheet(rf => ({
+    headerBadge: {
+      paddingHorizontal: getResponsiveWidth(12),
+      paddingVertical: getResponsiveHeight(5),
+      borderRadius: 999,
+      marginBottom: getResponsiveHeight(10),
+      backgroundColor: 'rgba(17,24,39,0.07)',
+      borderWidth: 1,
+      borderColor: 'rgba(17,24,39,0.08)',
+    },
+    headerBadgeText: {
+      fontSize: rf(10),
+      letterSpacing: 1,
+      color: '#374151',
+      fontFamily: 'Pretendard-SemiBold',
+    },
 
-  headerBadge: {
-    paddingHorizontal: getResponsiveWidth(12),
-    paddingVertical: getResponsiveHeight(5),
-    borderRadius: 999,
-    marginBottom: getResponsiveHeight(10),
-    backgroundColor: 'rgba(17,24,39,0.07)',
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.08)',
-  },
-  headerBadgeText: {
-    fontSize: rf(10),
-    letterSpacing: 1,
-    color: '#374151',
-    fontFamily: 'Pretendard-SemiBold',
-  },
+    textCard: {
+      width: '96%',
+      paddingVertical: getResponsiveHeight(18),
+      paddingHorizontal: getResponsiveWidth(20),
+      borderRadius: getResponsiveWidth(24),
 
-  textCard: {
-    width: '96%',
-    paddingVertical: getResponsiveHeight(18),
-    paddingHorizontal: getResponsiveWidth(20),
-    borderRadius: getResponsiveWidth(24),
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: '#E7E9EE',
 
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E7E9EE',
+      marginTop: getResponsiveHeight(6),
+      shadowOffset: {width: 0, height: 10},
+      shadowOpacity: 0.08,
+      shadowRadius: 14,
+      elevation: 2,
+      zIndex: 10,
+    },
+    bubbleWrap: {
+      width: '100%',
+      alignItems: 'center',
+      marginBottom: getResponsiveHeight(6),
+    },
+    textCardContent: {
+      minHeight: getResponsiveHeight(94),
+      justifyContent: 'center',
+    },
 
-    marginTop: getResponsiveHeight(6),
-    shadowOffset: {width: 0, height: 10},
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    elevation: 2,
-    zIndex: 10,
-  },
-  bubbleWrap: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: getResponsiveHeight(6),
-  },
-  textCardContent: {
-    minHeight: getResponsiveHeight(94),
-    justifyContent: 'center',
-  },
+    kinoGreeting: {
+      fontSize: rf(17),
+      fontFamily: 'Pretendard-SemiBold',
+      lineHeight: rf(23),
+      color: '#111827',
+    },
+    kinoText: {
+      fontSize: rf(14.5),
+      fontFamily: 'Pretendard-Regular',
+      lineHeight: rf(21),
+      color: '#1F2937',
+    },
+    paraGap: {
+      marginBottom: getResponsiveHeight(10),
+    },
+    kinoHighlight: {
+      fontFamily: 'Pretendard-Bold',
+    },
 
-  kinoGreeting: {
-    fontSize: rf(17),
-    fontFamily: 'Pretendard-SemiBold',
-    lineHeight: rf(23),
-    color: '#111827',
-  },
-  kinoText: {
-    fontSize: rf(14.5),
-    fontFamily: 'Pretendard-Regular',
-    lineHeight: rf(21),
-    color: '#1F2937',
-  },
-  paraGap: {
-    marginBottom: getResponsiveHeight(10),
-  },
-  kinoHighlight: {
-    fontFamily: 'Pretendard-Bold',
-  },
+    carouselArea: {
+      flex: 1,
+      alignSelf: 'center',
+      alignItems: 'center',
+      justifyContent: 'center',
+      position: 'relative',
+    },
 
-  carouselArea: {
-    flex: 1,
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-  },
+    carouselHolder: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 
-  carouselHolder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    characterCard: {
+      position: 'relative',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 
-  characterCard: {
-    position: 'relative',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+    character: {
+      width: getResponsiveWidth(125),
+      height: getResponsiveWidth(125),
+    },
 
-  character: {
-    width: getResponsiveWidth(145),
-    height: getResponsiveWidth(145),
-  },
+    arrowButton: {
+      position: 'absolute',
+      top: '50%',
+      marginTop: -getResponsiveWidth(23),
+      borderRadius: 999,
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 50,
+    },
+    arrowGlass: {
+      ...StyleSheet.absoluteFillObject,
+      borderRadius: 999,
+      backgroundColor: 'rgba(255,255,255,0.92)',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.95)',
+      shadowColor: '#E0D4C4',
+      shadowOffset: {width: 0, height: 4},
+      shadowOpacity: 0.2,
+      shadowRadius: 12,
+      elevation: 4,
+    },
+    arrowIcon: {
+      width: getResponsiveIconSize(18),
+      height: getResponsiveIconSize(18),
+      resizeMode: 'contain',
+      tintColor: BUTTON_STYLES().saveBg,
+    },
 
-  arrowButton: {
-    position: 'absolute',
-    top: '50%',
-    marginTop: -getResponsiveWidth(23),
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 50,
-  },
-  arrowGlass: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.95)',
-    shadowColor: '#E0D4C4',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  arrowIcon: {
-    width: getResponsiveIconSize(18),
-    height: getResponsiveIconSize(18),
-    resizeMode: 'contain',
-    tintColor: BUTTON_STYLES().saveBg,
-  },
-
-  kinoMetaWrap: {
-    marginTop: getResponsiveHeight(8),
-    alignItems: 'center',
-  },
-  kinoName: {
-    fontFamily: 'Pretendard-Bold',
-    fontSize: rf(18),
-    color: '#111827',
-  },
-  kinoTone: {
-    marginTop: getResponsiveHeight(4),
-    fontFamily: 'Pretendard-Regular',
-    fontSize: rf(12.5),
-    color: '#6B7280',
-  },
-  pagination: {
-    flexDirection: 'row',
-    gap: getResponsiveWidth(8),
-    marginTop: getResponsiveHeight(12),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dot: {
-    width: getResponsiveWidth(8),
-    height: getResponsiveWidth(8),
-    borderRadius: 99,
-    backgroundColor: 'rgba(107,114,128,0.28)',
-  },
-  dotActive: {
-    width: getResponsiveWidth(22),
-    backgroundColor: '#111827',
-  },
-
+    kinoMetaWrap: {
+      marginTop: getResponsiveHeight(0),
+      alignItems: 'center',
+    },
+    kinoName: {
+      fontFamily: 'Pretendard-Bold',
+      fontSize: rf(18),
+      color: '#111827',
+    },
+    kinoTone: {
+      marginTop: getResponsiveHeight(4),
+      fontFamily: 'Pretendard-Regular',
+      fontSize: rf(12.5),
+      color: '#6B7280',
+    },
+    pagination: {
+      flexDirection: 'row',
+      gap: getResponsiveWidth(8),
+      marginTop: getResponsiveHeight(12),
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dot: {
+      width: getResponsiveWidth(8),
+      height: getResponsiveWidth(8),
+      borderRadius: 99,
+      backgroundColor: 'rgba(107,114,128,0.28)',
+    },
+    dotActive: {
+      width: getResponsiveWidth(22),
+      backgroundColor: '#111827',
+    },
   }));
   const navigation = useNavigation();
   const route = useRoute();
@@ -319,11 +324,11 @@ export default function KinoSelectScreen() {
     return SCREEN_BG[currentKinoType] || SCREEN_BG.YELLOW_KINO;
   }, [currentKinoType]);
 
- /**
- * 줄바꿈 안정화 + 하이라이트(키노) 유지:
- * - "한 줄"만 받아서 하이라이트 처리
- * - 전체 텍스트는 split('\n') 후, 하나의 Text 컨테이너 안에서 렌더
- */
+  /**
+   * 줄바꿈 안정화 + 하이라이트(키노) 유지:
+   * - "한 줄"만 받아서 하이라이트 처리
+   * - 전체 텍스트는 split('\n') 후, 하나의 Text 컨테이너 안에서 렌더
+   */
   const renderHighlightedLine = useCallback(
     line => {
       if (!line) return null;
@@ -333,7 +338,11 @@ export default function KinoSelectScreen() {
         part === '키노' || part === '키노예요' || part === '키노입니다' ? (
           <AppText
             key={`h-${i}`}
-            style={[styles.kinoText, styles.kinoHighlight, {color: cardColors.highlight}]}>
+            style={[
+              styles.kinoText,
+              styles.kinoHighlight,
+              {color: cardColors.highlight},
+            ]}>
             {part}
           </AppText>
         ) : (
@@ -346,7 +355,7 @@ export default function KinoSelectScreen() {
     [cardColors.highlight, styles],
   );
 
- // 둥둥 모션(캐릭터)
+  // 둥둥 모션(캐릭터)
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
@@ -387,15 +396,7 @@ export default function KinoSelectScreen() {
       subtitle="원하는 대화 스타일의 키노를 골라보세요."
       backgroundColor={screenBg}
       actionLabel="선택 완료"
-      onActionPress={() => setConfirmVisible(true)}
-      headerExtra={
-        <View style={styles.headerBadge}>
-          <AppText style={styles.headerBadgeText}>
-            KINO PERSONA
-          </AppText>
-        </View>
-      }
-    >
+      onActionPress={() => setConfirmVisible(true)}>
       <View style={styles.bubbleWrap}>
         <View
           style={[
@@ -489,9 +490,7 @@ export default function KinoSelectScreen() {
           <AppText style={styles.kinoName}>
             {KINOS[currentIndex]?.title}
           </AppText>
-          <AppText style={styles.kinoTone}>
-            {KINOS[currentIndex]?.tone}
-          </AppText>
+          <AppText style={styles.kinoTone}>{KINOS[currentIndex]?.tone}</AppText>
         </View>
 
         <View style={styles.pagination}>
@@ -586,4 +585,3 @@ function FadingKinoText({index, descriptions, renderLine, styles}) {
     </Animated.View>
   );
 }
-

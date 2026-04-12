@@ -18,7 +18,9 @@ import notificationReducer from '../features/notification/store/notificationSlic
 import uiReducer from './uiSlice';
 import {baseApi} from '../services/baseApi';
 
-const rootReducer = combineReducers({
+export const RESET_ALL_STATE = 'RESET_ALL_STATE';
+
+const appReducer = combineReducers({
   ui: uiReducer,
 
   // RTK Query 캐시 (채팅 API)
@@ -38,6 +40,14 @@ const rootReducer = combineReducers({
   status: statusReducer,
   notification: notificationReducer,
 });
+
+// RESET_ALL_STATE 액션 수신 시 모든 슬라이스를 initialState로 되돌림
+const rootReducer = (state, action) => {
+  if (action.type === RESET_ALL_STATE) {
+    return appReducer(undefined, action);
+  }
+  return appReducer(state, action);
+};
 
 export default rootReducer;
 

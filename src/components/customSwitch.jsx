@@ -32,7 +32,7 @@ export default function CustomSwitch({isEnabled, toggleSwitch}) {
         onPress={handlePress}
         style={[
           styles.switchContainer,
-          {backgroundColor: isEnabled ? '#FFC84D' : '#ccc'},
+          {backgroundColor: isEnabled ? '#FFC84D' : '#E5E7EB'},
         ]}>
         <Animated.View
           style={[

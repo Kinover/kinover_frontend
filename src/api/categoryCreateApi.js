@@ -2,7 +2,6 @@ import { apiClient } from 'utils/apiClient';
 import {CATEGORIES} from 'config/apiEndpoints';
 
 export const createCategory = async title => {
-  try {
     const response = await apiClient.post(
       CATEGORIES.create,
       {title},
@@ -14,7 +13,5 @@ export const createCategory = async title => {
     );
 
     return response.data;
-  } catch (error) {
-    throw error;
-  }
+
 };

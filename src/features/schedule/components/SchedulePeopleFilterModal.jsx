@@ -1,17 +1,21 @@
-import React, {useEffect, useState, useCallback, useMemo} from 'react';
-import {
-  View,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet,
-  Dimensions,
-} from 'react-native';
+import React, {useEffect, useRef, useState, useCallback, useMemo} from 'react';
+import {View, TouchableOpacity, StyleSheet, Platform} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {BottomSheetScrollView} from '@gorhom/bottom-sheet';
 
 import AppText from 'components/AppText';
-import CustomModal from 'components/modal/CustomModal';
-import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
-import {COLORS} from 'styles/style';
+import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
+import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
+import BOTTOM_SHEET_TITLES, {
+  BOTTOM_SHEET_BUTTON_LABELS,
+} from 'constants/bottomSheetTitles';
+import {
+  getResponsiveHeight,
+  getResponsiveWidth,
+} from 'utils/responsive';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {hapticLight} from 'utils/haptic';
+import {getBottomSheetEditorBottomSafe} from 'components/bottomSheet/bottomSheetEditorSharedStyles';
 
 function uniqStrings(ids) {
   const seen = new Set();
@@ -25,6 +29,8 @@ function uniqStrings(ids) {
   return out;
 }
 
+const SNAP_POINTS = ['50%'];
+
 export default function SchedulePeopleFilterModal({
   visible,
   onClose,
@@ -33,6 +39,51 @@ export default function SchedulePeopleFilterModal({
   currentUserId,
   selectedUserIds = [],
 }) {
+  const styles = useScaledStyleSheet(rf => ({
+    scrollContent: {
+      paddingTop: getResponsiveHeight(14),
+      paddingBottom: getResponsiveHeight(16),
+    },
+    chipWrap: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      rowGap: getResponsiveHeight(10),
+      columnGap: getResponsiveWidth(8),
+    },
+    chip: {
+      paddingVertical: getResponsiveHeight(10),
+      paddingHorizontal: getResponsiveWidth(18),
+      borderRadius: 999,
+      backgroundColor: '#F3F4F6',
+    },
+    chipActive: {
+      backgroundColor: '#111827',
+    },
+    chipText: {
+      fontFamily: 'Pretendard-Medium',
+      fontSize: rf(13.5),
+      color: '#6B7280',
+    },
+    chipTextActive: {
+      fontFamily: 'Pretendard-SemiBold',
+      color: '#FFFFFF',
+    },
+    empty: {
+      textAlign: 'center',
+      fontFamily: 'Pretendard-Regular',
+      fontSize: rf(13),
+      color: '#9CA3AF',
+      paddingVertical: getResponsiveHeight(24),
+    },
+  }));
+
+  const modalRef = useRef(null);
+  const insets = useSafeAreaInsets();
+  const bottomSafe = useMemo(
+    () => getBottomSheetEditorBottomSafe(insets.bottom, getResponsiveHeight),
+    [insets.bottom],
+  );
+
   const [draft, setDraft] = useState([]);
 
   useEffect(() => {
@@ -40,6 +91,14 @@ export default function SchedulePeopleFilterModal({
       setDraft(uniqStrings(selectedUserIds));
     }
   }, [visible, selectedUserIds]);
+
+  useEffect(() => {
+    if (visible) {
+      setTimeout(() => modalRef.current?.present?.(), 0);
+    } else {
+      modalRef.current?.dismiss?.();
+    }
+  }, [visible]);
 
   const members = useMemo(() => {
     const rows = [];
@@ -55,11 +114,9 @@ export default function SchedulePeopleFilterModal({
   }, [familyUserList]);
 
   const toggleId = useCallback(id => {
-    const sid = String(id);
-    setDraft(prev => {
-      if (prev.includes(sid)) return prev.filter(x => x !== sid);
-      return [...prev, sid];
-    });
+    setDraft(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
+    );
   }, []);
 
   const handleApply = useCallback(() => {
@@ -68,208 +125,108 @@ export default function SchedulePeopleFilterModal({
     onClose?.();
   }, [draft, onApply, onClose]);
 
-  const handleClear = useCallback(() => {
-    hapticLight();
-    setDraft([]);
-  }, []);
-
-  const handleSelectOnlyMe = useCallback(() => {
-    if (currentUserId == null || String(currentUserId).trim() === '') return;
-    hapticLight();
-    setDraft([String(currentUserId)]);
-  }, [currentUserId]);
-
   const meId =
     currentUserId != null && String(currentUserId).trim() !== ''
       ? String(currentUserId)
       : null;
+
   const isAllView = draft.length === 0;
-  const isOnlyMe =
-    meId != null &&
-    draft.length === 1 &&
-    draft[0] === meId;
+  const isOnlyMe = meId != null && draft.length === 1 && draft[0] === meId;
+
+  // 전체 · 나만 + 개별 멤버를 하나의 칩 목록으로 통합
+  const chips = useMemo(() => {
+    const list = [
+      {type: 'preset', id: '__all__', label: '전체'},
+      ...(meId != null ? [{type: 'preset', id: '__me__', label: '나만'}] : []),
+      ...members.map(m => ({type: 'member', id: m.id, label: m.label})),
+    ];
+    return list;
+  }, [members, meId]);
+
+  const isChipActive = useCallback(
+    chip => {
+      if (chip.id === '__all__') return isAllView;
+      if (chip.id === '__me__') return isOnlyMe;
+      return draft.includes(chip.id);
+    },
+    [isAllView, isOnlyMe, draft],
+  );
+
+  const handleChipPress = useCallback(
+    chip => {
+      hapticLight();
+      if (chip.id === '__all__') {
+        setDraft([]);
+      } else if (chip.id === '__me__') {
+        if (meId) setDraft([meId]);
+      } else {
+        toggleId(chip.id);
+      }
+    },
+    [meId, toggleId],
+  );
 
   return (
-    <CustomModal
-      visible={visible}
-      onClose={onClose}
-      onConfirm={handleApply}
-      onRequestClose={onClose}
-      title="누구 일정을 볼까요?"
-      closeText="취소"
-      confirmText="적용"
-      closeOnBackdropPress
-      contentStyle={styles.content}
-      modalWrapperStyle={styles.modalWrapper}
-      modalBoxStyle={styles.modalBox}>
-      <View style={styles.quickRow}>
-        <TouchableOpacity
-          style={[styles.quickBtn, isAllView && styles.quickBtnActive]}
-          onPress={handleClear}
-          activeOpacity={0.88}>
-          <AppText
-            allowFontScaling={false}
-            style={[styles.quickBtnText, isAllView && styles.quickBtnTextActive]}>
-            전체 보기
-          </AppText>
-        </TouchableOpacity>
-        {meId != null && (
-          <TouchableOpacity
-            style={[styles.quickBtn, isOnlyMe && styles.quickBtnActive]}
-            onPress={handleSelectOnlyMe}
-            activeOpacity={0.88}>
-            <AppText
-              allowFontScaling={false}
-              style={[styles.quickBtnText, isOnlyMe && styles.quickBtnTextActive]}>
-              나만
-            </AppText>
-          </TouchableOpacity>
-        )}
-      </View>
+    <BottomSheetLayout
+      modalRef={modalRef}
+      snapPoints={SNAP_POINTS}
+      title={BOTTOM_SHEET_TITLES.SCHEDULE_PEOPLE_FILTER}
+      headerCentered
+      closeOnPressOutside
+      onDismiss={onClose}
+      containerStyle={{paddingHorizontal: getResponsiveWidth(20)}}
+      useInternalScroll={false}
+      enableContentPanningGesture={true}
+      disableContentBottomPadding>
 
-      <ScrollView
-        style={styles.list}
-        contentContainerStyle={styles.listContent}
+      <BottomSheetScrollView
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled">
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.scrollContent}>
+
         {members.length === 0 ? (
           <AppText allowFontScaling={false} style={styles.empty}>
             가족 목록을 불러오지 못했어요.
           </AppText>
         ) : (
-          members.map(m => {
-            const on = draft.includes(m.id);
-            return (
-              <TouchableOpacity
-                key={m.id}
-                activeOpacity={0.88}
-                style={[styles.row, on && styles.rowOn]}
-                onPress={() => {
-                  hapticLight();
-                  toggleId(m.id);
-                }}>
-                <View style={[styles.checkbox, on && styles.checkboxOn]}>
-                  {on ? (
-                    <AppText allowFontScaling={false} style={styles.checkMark}>
-                      ✓
-                    </AppText>
-                  ) : null}
-                </View>
-                <AppText
-                  allowFontScaling={false}
-                  style={[styles.rowLabel, on && styles.rowLabelOn]}
-                  numberOfLines={1}>
-                  {m.label}
-                </AppText>
-              </TouchableOpacity>
-            );
-          })
+          <View style={styles.chipWrap}>
+            {chips.map(chip => {
+              const active = isChipActive(chip);
+              return (
+                <TouchableOpacity
+                  key={chip.id}
+                  activeOpacity={0.75}
+                  onPress={() => handleChipPress(chip)}
+                  style={[styles.chip, active && styles.chipActive]}>
+                  <AppText
+                    allowFontScaling={false}
+                    style={[styles.chipText, active && styles.chipTextActive]}
+                    numberOfLines={1}>
+                    {chip.label}
+                  </AppText>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         )}
-      </ScrollView>
-    </CustomModal>
+      </BottomSheetScrollView>
+
+      <BottomSheetFooterButtons
+        bottomSafe={bottomSafe}
+        includeBottomSafePadding
+        onCancel={onClose}
+        onSave={handleApply}
+        cancelLabel={BOTTOM_SHEET_BUTTON_LABELS.CANCEL}
+        saveLabel={BOTTOM_SHEET_BUTTON_LABELS.APPLY}
+        showCancel
+        autoCloseOnSave={false}
+        buttonRowStyle={{marginTop: 0}}
+        style={[
+          Platform.OS === 'android' && {
+            paddingBottom: getResponsiveHeight(12),
+          },
+        ]}
+      />
+    </BottomSheetLayout>
   );
 }
-
-const SCREEN_W = Dimensions.get('window').width;
-
-const styles = StyleSheet.create({
-  modalWrapper: {
-    width: '100%',
-    maxWidth: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalBox: {
-    width: Math.min(getResponsiveWidth(332), SCREEN_W * 0.92),
-    maxWidth: '92%',
-    alignSelf: 'center',
-  },
-  content: {
-    paddingHorizontal: 0,
-    minHeight: getResponsiveHeight(120),
-    maxHeight: getResponsiveHeight(340),
-  },
-  quickRow: {
-    flexDirection: 'row',
-    gap: getResponsiveWidth(8),
-    marginBottom: getResponsiveHeight(10),
-  },
-  quickBtn: {
-    paddingVertical: getResponsiveHeight(8),
-    paddingHorizontal: getResponsiveWidth(12),
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    backgroundColor: COLORS.surfaceMuted,
-  },
-  quickBtnActive: {
-    borderColor: COLORS.brandPrimary,
-    backgroundColor: COLORS.brandPrimarySoft,
-  },
-  quickBtnText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: 12.5,
-    color: COLORS.textSecondary,
-  },
-  quickBtnTextActive: {
-    color: COLORS.textPrimary,
-  },
-  list: {
-    maxHeight: getResponsiveHeight(260),
-  },
-  listContent: {
-    gap: getResponsiveHeight(8),
-    paddingBottom: getResponsiveHeight(4),
-  },
-  empty: {
-    textAlign: 'center',
-    fontFamily: 'Pretendard-Regular',
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    paddingVertical: getResponsiveHeight(16),
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(10),
-    paddingVertical: getResponsiveHeight(11),
-    paddingHorizontal: getResponsiveWidth(12),
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(17, 24, 39, 0.08)',
-    backgroundColor: COLORS.surfacePrimary,
-  },
-  rowOn: {
-    borderColor: COLORS.brandPrimary,
-    backgroundColor: COLORS.brandPrimarySoft,
-  },
-  checkbox: {
-    width: getResponsiveWidth(22),
-    height: getResponsiveWidth(22),
-    borderRadius: 6,
-    borderWidth: 1.5,
-    borderColor: 'rgba(17, 24, 39, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.surfacePrimary,
-  },
-  checkboxOn: {
-    borderColor: COLORS.brandPrimaryStrong,
-    backgroundColor: COLORS.brandPrimarySoft,
-  },
-  checkMark: {
-    fontSize: 13,
-    color: COLORS.textPrimary,
-    fontFamily: 'Pretendard-Bold',
-    marginTop: -1,
-  },
-  rowLabel: {
-    flex: 1,
-    fontFamily: 'Pretendard-Medium',
-    fontSize: 14,
-    color: COLORS.textPrimary,
-  },
-  rowLabelOn: {
-    fontFamily: 'Pretendard-SemiBold',
-  },
-});

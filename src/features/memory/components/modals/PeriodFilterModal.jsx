@@ -2,22 +2,23 @@
 // src/screens/memory/components/PeriodFilterModal.js
 
 import React, {useEffect, useMemo, useState, useCallback, useRef} from 'react';
-import { View, TouchableOpacity, StyleSheet, Animated, Platform } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Animated,
+  Platform,
+} from 'react-native';
 
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
-import DateTimePicker, {
-  DateTimePickerAndroid,
-} from '@react-native-community/datetimepicker';
+import {DateTimePickerAndroid} from '@react-native-community/datetimepicker';
+import DatePicker from 'react-native-date-picker';
 
 import CustomModal from 'components/modal/CustomModal';
 import SlideSegment from 'components/SlideSegment';
 
-import {
-  getResponsiveFontSize,
-  getResponsiveHeight,
-  getResponsiveWidth,
-} from 'utils/responsive';
+import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
 import {BOTTOMSHEET_STYLE, COLORS} from 'styles/style';
 
 const MODES = [
@@ -41,171 +42,169 @@ const endOfMonth = (y, m) => new Date(y, m + 1, 0, 23, 59, 0);
 
 export default function PeriodFilterModal({visible, onClose, onApply}) {
   const styles = useScaledStyleSheet(rf => ({
+    container: {
+      width: '100%',
+      paddingTop: getResponsiveHeight(2),
+      marginBottom: getResponsiveHeight(7),
+      alignItems: 'center',
+    },
 
-  container: {
-    width: '100%',
-    paddingTop: getResponsiveHeight(2),
-    marginBottom: getResponsiveHeight(7),
-    alignItems: 'center',
-  },
+    card: {
+      width: '100%',
+      backgroundColor: '#FFFFFF',
+      borderRadius: getResponsiveWidth(14),
+      borderWidth: 1,
+      borderColor: '#F1F5F9',
+      paddingVertical: getResponsiveHeight(14),
+      paddingHorizontal: getResponsiveWidth(12),
+      alignItems: 'center',
+    },
 
-  card: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: getResponsiveWidth(14),
-    borderWidth: 1,
-    borderColor: '#F1F5F9',
-    paddingVertical: getResponsiveHeight(14),
-    paddingHorizontal: getResponsiveWidth(12),
-    alignItems: 'center',
-  },
+    monthPicker: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderRadius: getResponsiveWidth(12),
+      borderWidth: 1,
+      borderColor: 'rgba(0, 0, 0, 0.07)',
+      backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
+      paddingVertical: getResponsiveHeight(10),
+      paddingHorizontal: getResponsiveWidth(10),
+      width: '100%',
+    },
+    monthBtn: {
+      width: getResponsiveWidth(36),
+      height: getResponsiveWidth(36),
+      borderRadius: 999,
+      backgroundColor: '#fff',
+      borderWidth: 1,
+      borderColor: 'rgba(17, 24, 39, 0.06)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    monthBtnText: {
+      fontSize: rf(22),
+      color: 'black',
+      includeFontPadding: false,
+      textAlign: 'center',
+    },
+    monthCenter: {
+      alignItems: 'center',
+      gap: getResponsiveHeight(2),
+      flex: 1,
+    },
+    monthMain: {
+      fontSize: rf(15),
+      color: 'black',
+      fontFamily: 'Pretendard-SemiBold',
+      textAlign: 'center',
+    },
+    monthSub: {
+      fontSize: rf(11),
+      color: '#6B7280',
+      fontFamily: 'Pretendard-Regular',
+      textAlign: 'center',
+    },
 
-  monthPicker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderRadius: getResponsiveWidth(12),
-    borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.07)',
-    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
-    paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(10),
-    width: '100%',
-  },
-  monthBtn: {
-    width: getResponsiveWidth(36),
-    height: getResponsiveWidth(36),
-    borderRadius: 999,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: 'rgba(17, 24, 39, 0.06)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  monthBtnText: {
-    fontSize: rf(22),
-    color: 'black',
-    includeFontPadding: false,
-    textAlign: 'center',
-  },
-  monthCenter: {
-    alignItems: 'center',
-    gap: getResponsiveHeight(2),
-    flex: 1,
-  },
-  monthMain: {
-    fontSize: rf(15),
-    color: 'black',
-    fontFamily: 'Pretendard-SemiBold',
-    textAlign: 'center',
-  },
-  monthSub: {
-    fontSize: rf(11),
-    color: '#6B7280',
-    fontFamily: 'Pretendard-Regular',
-    textAlign: 'center',
-  },
+    dateRow: {
+      width: '100%',
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingVertical: getResponsiveHeight(12),
+      paddingHorizontal: getResponsiveWidth(12),
+      borderRadius: getResponsiveWidth(12),
+      borderWidth: 1,
+      borderColor: '#E5E7EB',
+      backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
+    },
+    dateRowActive: {
+      borderColor: COLORS.brandPrimary,
+      backgroundColor: '#fff',
+    },
+    dateLabel: {
+      fontSize: rf(12),
+      color: COLORS.textTertiary,
+      fontFamily: 'Pretendard-Medium',
+    },
+    dateValue: {
+      fontSize: rf(12.5),
+      color: 'black',
+      fontFamily: 'Pretendard-SemiBold',
+    },
 
-  dateRow: {
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: getResponsiveHeight(12),
-    paddingHorizontal: getResponsiveWidth(12),
-    borderRadius: getResponsiveWidth(12),
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
-  },
-  dateRowActive: {
-    borderColor: 'rgba(17,24,39,0.35)',
-    backgroundColor: '#fff',
-  },
-  dateLabel: {
-    fontSize: rf(12),
-    color: COLORS.textTertiary,
-    fontFamily: 'Pretendard-Medium',
-  },
-  dateValue: {
-    fontSize: rf(12.5),
-    color: 'black',
-    fontFamily: 'Pretendard-SemiBold',
-  },
+    subText: {
+      fontSize: rf(12),
+      color: COLORS.textSecondary,
+      fontFamily: 'Pretendard-Medium',
+      alignSelf: 'center',
+      paddingVertical: getResponsiveHeight(6),
+    },
 
-  subText: {
-    fontSize: rf(12),
-    color: COLORS.textSecondary,
-    fontFamily: 'Pretendard-Medium',
-    alignSelf: 'center',
-    paddingVertical: getResponsiveHeight(6),
-  },
+    hintText: {
+      marginTop: getResponsiveHeight(6),
+      fontSize: rf(11.5),
+      color: '#9CA3AF',
+      fontFamily: 'Pretendard-Medium',
+      textAlign: 'center',
+    },
 
-  hintText: {
-    marginTop: getResponsiveHeight(6),
-    fontSize: rf(11.5),
-    color: '#9CA3AF',
-    fontFamily: 'Pretendard-Medium',
-    textAlign: 'center',
-  },
+    segmentWrap: {
+      backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: 'rgba(15, 23, 42, 0.08)',
+      overflow: 'hidden',
+      marginBottom: getResponsiveHeight(15),
+    },
 
-  segmentWrap: {
-    backgroundColor: BOTTOMSHEET_STYLE().inactive.color,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(15, 23, 42, 0.08)',
-    overflow: 'hidden',
-    marginBottom: getResponsiveHeight(15),
-  },
-
- // -------------------------
- // iOS ActionSheet styles (overlayChildren)
- // -------------------------
-  sheetBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-  },
-  sheetBox: {
-    width: '100%',
-    backgroundColor: '#fff',
-    borderTopLeftRadius: getResponsiveWidth(18),
-    borderTopRightRadius: getResponsiveWidth(18),
-    overflow: 'hidden',
-    borderTopWidth: 1,
-    borderColor: 'rgba(0,0,0,0.06)',
-  },
-  sheetHeader: {
-    height: getResponsiveHeight(50),
-    paddingHorizontal: getResponsiveWidth(14),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0,0,0,0.06)',
-  },
-  sheetHeaderBtn: {
-    paddingVertical: getResponsiveHeight(8),
-    paddingHorizontal: getResponsiveWidth(8),
-    minWidth: getResponsiveWidth(56),
-  },
-  sheetHeaderText: {
-    fontSize: rf(13),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  sheetTitle: {
-    fontSize: rf(13),
-    fontFamily: 'Pretendard-SemiBold',
-    color: 'black',
-    textAlign: 'center',
-  },
-  sheetPickerArea: {
-    paddingVertical: getResponsiveHeight(6),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
+    // -------------------------
+    // iOS ActionSheet styles (overlayChildren)
+    // -------------------------
+    sheetBackdrop: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.35)',
+    },
+    sheetBox: {
+      width: '100%',
+      backgroundColor: '#fff',
+      borderTopLeftRadius: getResponsiveWidth(18),
+      borderTopRightRadius: getResponsiveWidth(18),
+      overflow: 'hidden',
+      borderTopWidth: 1,
+      borderColor: 'rgba(0,0,0,0.06)',
+    },
+    sheetHeader: {
+      height: getResponsiveHeight(50),
+      paddingHorizontal: getResponsiveWidth(14),
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      borderBottomWidth: 1,
+      borderBottomColor: 'rgba(0,0,0,0.06)',
+    },
+    sheetHeaderBtn: {
+      paddingVertical: getResponsiveHeight(8),
+      paddingHorizontal: getResponsiveWidth(8),
+      minWidth: getResponsiveWidth(56),
+    },
+    sheetHeaderText: {
+      fontSize: rf(13),
+      fontFamily: 'Pretendard-SemiBold',
+      color: '#6B7280',
+      textAlign: 'center',
+    },
+    sheetTitle: {
+      fontSize: rf(13),
+      fontFamily: 'Pretendard-SemiBold',
+      color: 'black',
+      textAlign: 'center',
+    },
+    sheetPickerArea: {
+      paddingVertical: getResponsiveHeight(6),
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
   }));
   const today = useMemo(() => new Date(), []);
   const [mode, setMode] = useState('ALL');
@@ -213,7 +212,7 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth()); // 0~11
 
- // 직접 기간: 시간 유지(09:00 / 18:00)
+  // 직접 기간: 시간 유지(09:00 / 18:00)
   const [customStart, setCustomStart] = useState(
     new Date(today.getFullYear(), today.getMonth(), today.getDate(), 9, 0, 0),
   );
@@ -224,17 +223,10 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
   const [target, setTarget] = useState('start'); // 'start' | 'end'
   const cardOpacity = useRef(new Animated.Value(1)).current;
 
- // -------------------------
- // iOS: overlayChildren로 띄우는 액션시트 피커 상태/애니메이션
- // -------------------------
-  const [iosPickerVisible, setIosPickerVisible] = useState(false);
+  // iOS: 기본 날짜 선택 모달 상태
+  const [iosDatePickerOpen, setIosDatePickerOpen] = useState(false);
   const [iosPickerWhich, setIosPickerWhich] = useState('start'); // 'start' | 'end'
   const [iosTempDate, setIosTempDate] = useState(today);
-
-  const SHEET_H = useMemo(() => getResponsiveHeight(330), []);
-
-  const sheetY = useRef(new Animated.Value(SHEET_H)).current;
-  const backdropOpacity = useRef(new Animated.Value(0)).current;
 
   const mergeDateKeepTime = useCallback((nextDateOnly, keepDateTime) => {
     return new Date(
@@ -247,76 +239,48 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
     );
   }, []);
 
-  const openIOSActionSheet = useCallback(
+  const openIOSDatePicker = useCallback(
     which => {
       const current = which === 'start' ? customStart : customEnd;
 
       setTarget(which);
       setIosPickerWhich(which);
       setIosTempDate(current);
-
-      setIosPickerVisible(true);
-
- // 시작 상태
-      sheetY.setValue(SHEET_H);
-      backdropOpacity.setValue(0);
-
-      requestAnimationFrame(() => {
-        Animated.parallel([
-          Animated.timing(backdropOpacity, {
-            toValue: 1,
-            duration: 180,
-            useNativeDriver: true,
-          }),
-          Animated.timing(sheetY, {
-            toValue: 0,
-            duration: 220,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      });
+      setIosDatePickerOpen(true);
 
       if (mode !== 'CUSTOM') setMode('CUSTOM');
     },
-    [customStart, customEnd, mode, sheetY, SHEET_H, backdropOpacity],
+    [customStart, customEnd, mode],
   );
 
-  const closeIOSActionSheet = useCallback(() => {
-    Animated.parallel([
-      Animated.timing(backdropOpacity, {
-        toValue: 0,
-        duration: 160,
-        useNativeDriver: true,
-      }),
-      Animated.timing(sheetY, {
-        toValue: SHEET_H,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setIosPickerVisible(false);
-    });
-  }, [SHEET_H, sheetY, backdropOpacity]);
+  const closeIOSDatePicker = useCallback(() => {
+    setIosDatePickerOpen(false);
+  }, []);
 
-  const confirmIOSActionSheet = useCallback(() => {
-    const picked = iosTempDate;
-    if (!picked) {
-      closeIOSActionSheet();
-      return;
-    }
+  const confirmIOSDatePicker = useCallback(
+    pickedFromModal => {
+      // 모달 onConfirm에서 setState 직후 호출하면 iosTempDate는 아직 이전 값이라
+      // 반드시 인자로 받은 날짜를 사용해야 함
+      const picked = pickedFromModal ?? iosTempDate;
+      if (!picked) {
+        closeIOSDatePicker();
+        return;
+      }
 
-    if (iosPickerWhich === 'start') {
-      setCustomStart(prev => mergeDateKeepTime(picked, prev));
-    } else {
-      setCustomEnd(prev => mergeDateKeepTime(picked, prev));
-    }
+      if (iosPickerWhich === 'start') {
+        setCustomStart(prev => mergeDateKeepTime(picked, prev));
+      } else {
+        setCustomEnd(prev => mergeDateKeepTime(picked, prev));
+      }
 
-    closeIOSActionSheet();
-  }, [iosTempDate, iosPickerWhich, closeIOSActionSheet, mergeDateKeepTime]);
+      closeIOSDatePicker();
+    },
+    [iosTempDate, iosPickerWhich, closeIOSDatePicker, mergeDateKeepTime],
+  );
 
- // -------------------------
- // range 계산
- // -------------------------
+  // -------------------------
+  // range 계산
+  // -------------------------
   const range = useMemo(() => {
     if (mode === 'ALL') return {startDate: '', endDate: ''};
 
@@ -326,7 +290,7 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
       return {startDate: formatYMD(s), endDate: formatYMD(e)};
     }
 
- // CUSTOM
+    // CUSTOM
     const s = customStart;
     const e = customEnd;
 
@@ -413,21 +377,19 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
 
     cardOpacity.setValue(1);
 
- // iOS sheet reset
-    setIosPickerVisible(false);
+    // iOS picker reset
+    setIosDatePickerOpen(false);
     setIosPickerWhich('start');
     setIosTempDate(today);
-    sheetY.setValue(SHEET_H);
-    backdropOpacity.setValue(0);
-  }, [visible, today, cardOpacity, sheetY, SHEET_H, backdropOpacity]);
+  }, [visible, today, cardOpacity]);
 
   const onConfirm = useCallback(() => {
     onApply?.(range);
   }, [onApply, range]);
 
- // -------------------------
- // Android: 다이얼로그 오픈
- // -------------------------
+  // -------------------------
+  // Android: 다이얼로그 오픈
+  // -------------------------
   const openAndroidDatePicker = useCallback(
     which => {
       const current = which === 'start' ? customStart : customEnd;
@@ -456,9 +418,7 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
   const renderAnimatedContent = () => {
     if (mode === 'ALL') {
       return (
-        <AppText style={styles.subText}>
-          전체 추억을 한 번에 보여줘요.
-        </AppText>
+        <AppText style={styles.subText}>전체 추억을 한 번에 보여줘요.</AppText>
       );
     }
 
@@ -479,9 +439,7 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
               style={styles.monthBtn}
               onPress={() => changeMonth(-1)}
               activeOpacity={0.85}>
-              <AppText style={styles.monthBtnText}>
-                ‹
-              </AppText>
+              <AppText style={styles.monthBtnText}>‹</AppText>
             </TouchableOpacity>
 
             <View style={styles.monthCenter}>
@@ -498,16 +456,14 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
               style={styles.monthBtn}
               onPress={() => changeMonth(1)}
               activeOpacity={0.85}>
-              <AppText style={styles.monthBtnText}>
-                ›
-              </AppText>
+              <AppText style={styles.monthBtnText}>›</AppText>
             </TouchableOpacity>
           </View>
         </View>
       );
     }
 
- // CUSTOM
+    // CUSTOM
     return (
       <View
         style={{
@@ -525,14 +481,10 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
           onPress={() => {
             setTarget('start');
             if (Platform.OS === 'android') openAndroidDatePicker('start');
-            if (Platform.OS === 'ios') openIOSActionSheet('start');
+            if (Platform.OS === 'ios') openIOSDatePicker('start');
           }}>
-          <AppText style={styles.dateLabel}>
-            시작
-          </AppText>
-          <AppText style={styles.dateValue}>
-            {formatYMD(customStart)}
-          </AppText>
+          <AppText style={styles.dateLabel}>시작</AppText>
+          <AppText style={styles.dateValue}>{formatYMD(customStart)}</AppText>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -541,114 +493,32 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
           onPress={() => {
             setTarget('end');
             if (Platform.OS === 'android') openAndroidDatePicker('end');
-            if (Platform.OS === 'ios') openIOSActionSheet('end');
+            if (Platform.OS === 'ios') openIOSDatePicker('end');
           }}>
-          <AppText style={styles.dateLabel}>
-            종료
-          </AppText>
-          <AppText style={styles.dateValue}>
-            {formatYMD(customEnd)}
-          </AppText>
+          <AppText style={styles.dateLabel}>종료</AppText>
+          <AppText style={styles.dateValue}>{formatYMD(customEnd)}</AppText>
         </TouchableOpacity>
 
-        {Platform.OS === 'android' && (
-          <AppText style={styles.hintText}>
-            시작/종료를 눌러 날짜를 선택해줘요.
-          </AppText>
-        )}
-        {Platform.OS === 'ios' && (
-          <AppText style={styles.hintText}>
-            시작/종료를 누르면 아래에서 날짜 선택 창이 올라와요.
-          </AppText>
-        )}
+      
       </View>
     );
   };
-
- // -------------------------
- // iOS ActionSheet UI (overlayChildren로 올릴 내용)
- // -------------------------
-  const iosOverlay = Platform.OS === 'ios' && iosPickerVisible && (
-    <View style={[StyleSheet.absoluteFill, {justifyContent: 'flex-end'}]}>
-      {/* 백드롭 */}
-      <Animated.View
-        style={[styles.sheetBackdrop, {opacity: backdropOpacity}]}>
-        <TouchableOpacity
-          activeOpacity={1}
-          style={StyleSheet.absoluteFill}
-          onPress={closeIOSActionSheet}
-        />
-      </Animated.View>
-
-      {/* 시트 */}
-      <Animated.View
-        style={[styles.sheetBox, {transform: [{translateY: sheetY}]}]}
-        pointerEvents="auto">
-        <View style={styles.sheetHeader}>
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={closeIOSActionSheet}
-            style={styles.sheetHeaderBtn}>
-            <AppText style={styles.sheetHeaderText}>
-              취소
-            </AppText>
-          </TouchableOpacity>
-
-          <AppText style={styles.sheetTitle}>
-            {iosPickerWhich === 'start' ? '시작 날짜' : '종료 날짜'}
-          </AppText>
-
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={confirmIOSActionSheet}
-            style={styles.sheetHeaderBtn}>
-            <AppText style={[styles.sheetHeaderText, {color: 'black'}]}>
-              확인
-            </AppText>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.sheetPickerArea}>
-          <DateTimePicker
-            value={iosTempDate}
-            mode="date"
-            display="spinner"
-            locale="ko-KR"
-            onChange={(event, selectedDate) => {
-              if (!selectedDate) return;
-              setIosTempDate(selectedDate);
-            }}
-            style={{
-              width: '100%',
-              height: getResponsiveHeight(220),
-              alignSelf: 'center',
-            }}
-          />
-        </View>
-
-        <View style={{height: getResponsiveHeight(14)}} />
-      </Animated.View>
-    </View>
-  );
 
   return (
     <CustomModal
       showCloseButton
       visible={visible}
       onClose={() => {
- // 시트가 떠있으면 먼저 닫고 모달 닫기
-        if (iosPickerVisible) closeIOSActionSheet();
+        setIosDatePickerOpen(false);
         onClose?.();
       }}
       onRequestClose={() => {
-        if (iosPickerVisible) closeIOSActionSheet();
+        setIosDatePickerOpen(false);
         onClose?.();
       }}
       onConfirm={onConfirm}
       title="기간 설정"
-      confirmText="적용"
-      closeText="취소"
-      overlayChildren={iosOverlay}>
+      confirmText="적용">
       <View style={styles.container}>
         <SlideSegment
           items={MODES}
@@ -668,7 +538,24 @@ export default function PeriodFilterModal({visible, onClose, onApply}) {
           </Animated.View>
         </View>
       </View>
+
+      {Platform.OS === 'ios' && (
+        <DatePicker
+          modal
+          open={iosDatePickerOpen}
+          date={iosTempDate}
+          mode="date"
+          locale="ko"
+          title={iosPickerWhich === 'start' ? '시작 날짜' : '종료 날짜'}
+          confirmText="확인"
+          cancelText="취소"
+          onConfirm={picked => {
+            setIosTempDate(picked);
+            confirmIOSDatePicker(picked);
+          }}
+          onCancel={closeIOSDatePicker}
+        />
+      )}
     </CustomModal>
   );
 }
-

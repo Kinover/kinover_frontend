@@ -31,7 +31,6 @@ import {
 } from 'utils/responsive';
 import {
   getCreateRoomBottomSheetSnapPoints,
-  getAndroidNavBottomInsetEstimate,
 } from 'utils/layoutMetrics';
 import {BOTTOMSHEET_STYLE} from 'styles/style';
 import {
@@ -39,6 +38,9 @@ import {
 } from 'components/bottomSheet/bottomSheetEditorSharedStyles';
 
 import ToastModal from 'components/modal/ToastModal';
+import BOTTOM_SHEET_TITLES, {
+  BOTTOM_SHEET_BUTTON_LABELS,
+} from 'constants/bottomSheetTitles';
 import {validateLength} from 'utils/validation';
 
 // 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
@@ -123,27 +125,6 @@ export default function CreateChatRoomBottomSheet({
       gap: getResponsiveWidth(10),
     },
 
-    selectedTagsRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      marginTop: getResponsiveHeight(10),
-      gap: getResponsiveWidth(6),
-    },
-    selectedTag: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingHorizontal: getResponsiveWidth(8),
-      paddingVertical: getResponsiveHeight(3),
-      borderRadius: 999,
-      backgroundColor: 'rgba(0,0,0,0.07)',
-    },
-    selectedTagText: {
-      fontSize: rf(11.5),
-      fontFamily: 'Pretendard-SemiBold',
-      color: '#0B1220',
-      letterSpacing: -0.15,
-    },
-
     chip: {
       height: getResponsiveHeight(32),
       paddingHorizontal: getResponsiveWidth(12),
@@ -213,10 +194,6 @@ export default function CreateChatRoomBottomSheet({
     () => Math.max(Number(insets.bottom || 0), getResponsiveHeight(24)),
     [insets.bottom],
   );
-  const androidFooterBottomPad = useMemo(() => {
-    if (Platform.OS !== 'android') return 0;
-    return Math.max(getAndroidNavBottomInsetEstimate(), getResponsiveHeight(8));
-  }, []);
 
   // roomName: ref로만 관리
   const roomNameRef = useRef(String(initialRoomName ?? ''));
@@ -231,6 +208,7 @@ export default function CreateChatRoomBottomSheet({
   const [toastMessage, setToastMessage] = useState('');
   const toastTimerRef = useRef(null);
 
+  const [footerHeight, setFooterHeight] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRoomNameFocused, setIsRoomNameFocused] = useState(false);
   const roomNameInputRef = useRef(null);
@@ -425,6 +403,22 @@ export default function CreateChatRoomBottomSheet({
     return `create-room-fixed-${String(fontMode ?? '')}`;
   }, [fontMode]);
 
+  /** iOS: 키보드에 맞춰 시트 전체 상승. Android: 기존 bottomInset 정책 유지. */
+  const sheetKeyboardProps = useMemo(() => {
+    if (Platform.OS === 'ios') {
+      return {
+        keyboardBehavior: 'interactive',
+        keyboardBlurBehavior: 'restore',
+        enableKeyboardPolicy: false,
+      };
+    }
+    return {
+      keyboardBehavior: 'none',
+      keyboardBlurBehavior: 'none',
+      enableKeyboardPolicy: true,
+    };
+  }, []);
+
   // 키보드 열려있을 때 상태 변경 지연
   const runAfterKeyboardHide = useCallback(fn => {
     if (keyboardOpenRef.current) {
@@ -612,17 +606,16 @@ export default function CreateChatRoomBottomSheet({
         snapPoints={resolvedSnapPoints}
         defaultSnapPoints={resolvedSnapPoints}
         sheetKey={sheetKey}
-        title="채팅방 생성"
+        title={BOTTOM_SHEET_TITLES.CHAT_ROOM_CREATE}
         headerCentered={true}
         useInternalScroll={false}
+        enableContentPanningGesture={true}
         disableContentBottomPadding={true}
         containerStyle={{paddingHorizontal: getResponsiveWidth(20)}}
-        keyboardBehavior={Platform.OS === 'ios' ? 'interactive' : 'none'}
-        keyboardBlurBehavior="restore"
-        androidKeyboardInputMode="adjustResize"
-        enableKeyboardPolicy={true}
+        androidKeyboardInputMode="adjustNothing"
         keyboardOpenSnapIndex={0}
         keyboardCloseSnapIndex={0}
+        {...sheetKeyboardProps}
         dismissKeyboardOnPress={true}
         onTouchInside={handleTouchInside}
         onDismiss={handleDismiss}>
@@ -686,33 +679,23 @@ export default function CreateChatRoomBottomSheet({
                 {memberChipData.map(renderMemberChip)}
               </ScrollView>
 
-              {selectedNames.length > 0 && (
-                <View style={styles.selectedTagsRow}>
-                  {selectedNames.map(name => (
-                    <View key={name} style={styles.selectedTag}>
-                      <AppText style={styles.selectedTagText}>{name}</AppText>
-                    </View>
-                  ))}
-                </View>
-              )}
             </View>
           </View>
         </BottomSheetScrollView>
         <BottomSheetFooterButtons
           bottomSafe={bottomSafe}
-          includeBottomSafePadding={Platform.OS !== 'android'}
+          includeBottomSafePadding={true}
           excludeSafeForMeasure={false}
-          onLayoutHeight={undefined}
-          style={[
-            styles.footerFlow,
-            Platform.OS === 'android' && {
-              paddingBottom: androidFooterBottomPad,
-            },
-          ]}
+          onLayoutHeight={setFooterHeight}
+          style={styles.footerFlow}
           onCancel={handleCancel}
           onSave={handleSave}
-          cancelLabel="취소"
-          saveLabel={isSubmitting ? '저장 중...' : '저장'}
+          cancelLabel={BOTTOM_SHEET_BUTTON_LABELS.CANCEL}
+          saveLabel={
+            isSubmitting
+              ? BOTTOM_SHEET_BUTTON_LABELS.SAVE_LOADING
+              : BOTTOM_SHEET_BUTTON_LABELS.SAVE
+          }
           showCancel={true}
           autoCloseOnSave={false}
           disabled={isSubmitting}

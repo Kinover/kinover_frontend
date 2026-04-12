@@ -2,7 +2,7 @@
 // src/features/schedule/components/Calendar.jsx (CalendarToggle)
 
 import React, {useRef, useMemo, useEffect, useCallback} from 'react';
-import { View, TouchableOpacity, Image, StyleSheet, PanResponder } from 'react-native';
+import {View, TouchableOpacity, Image, PanResponder} from 'react-native';
 
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -12,11 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import {
-  getResponsiveFontSize,
-  getResponsiveHeight,
-  getResponsiveWidth,
-} from 'utils/responsive';
+import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
 
 import {useCalendarLayout} from '../hooks/useCalendarLayout';
 import {useCalendarMode} from '../hooks/useCalendarMode';
@@ -35,7 +31,7 @@ import {
 } from '../constants/scheduleDropShadow';
 import {COLORS, DEFAULT_STYLE} from 'styles/style';
 
-import MiniCalendarPickerModal from './MiniCalendarPickerModal';
+import DatePicker from 'react-native-date-picker';
 
 const RADIUS = 14;
 
@@ -157,210 +153,208 @@ export default function CalendarToggle({
   peopleFilterLoading = false,
 }) {
   const styles = useScaledStyleSheet(rf => ({
+    container: {
+      paddingTop: getResponsiveHeight(8),
+      marginBottom: getResponsiveHeight(5),
+    },
+    shadowBox: {
+      ...getScheduleShadowBoxBaseStyle(),
+    },
+    calendarTouchWrap: {
+      width: '100%',
+      borderRadius: RADIUS,
+    },
+    cardInnerHeader: {
+      borderRadius: RADIUS,
+      overflow: 'hidden',
+      backgroundColor: '#FFFFFF',
+      paddingVertical: getResponsiveHeight(10),
+      paddingHorizontal: getResponsiveWidth(14),
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+    },
+    cardInnerCalendar: {
+      borderRadius: RADIUS,
+      overflow: 'hidden',
+      backgroundColor: '#FFFFFF',
+      paddingTop: getResponsiveHeight(8),
+      paddingBottom: getResponsiveHeight(10),
+      paddingHorizontal: getResponsiveWidth(10),
+      alignItems: 'center',
+    },
 
-  container: {
-    paddingTop: getResponsiveHeight(8),
-    marginBottom: getResponsiveHeight(5),
-  },
-  shadowBox: {
-    ...getScheduleShadowBoxBaseStyle(),
-  },
-  calendarTouchWrap: {
-    width: '100%',
-    borderRadius: RADIUS,
-  },
-  cardInnerHeader: {
-    borderRadius: RADIUS,
-    overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(14),
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  cardInnerCalendar: {
-    borderRadius: RADIUS,
-    overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
-    paddingTop: getResponsiveHeight(8),
-    paddingBottom: getResponsiveHeight(10),
-    paddingHorizontal: getResponsiveWidth(10),
-    alignItems: 'center',
-  },
+    headerLeft: {
+      flex: 1,
+      minWidth: 0,
+    },
+    /** 달력 아이콘 + 월/주 라벨 — `iconBtn`과 동일 토큰, 너비는 내용만큼만 (아이콘은 날짜 왼쪽 = LTR 관례) */
+    headerLeftDatePicker: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: getResponsiveWidth(8),
+      alignSelf: 'flex-start',
+      maxWidth: '100%',
+      backgroundColor: '#F3F4F6',
+      borderRadius: 10,
+      paddingHorizontal: getResponsiveWidth(10),
+      minHeight: getResponsiveWidth(32),
+    },
+    headerRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: getResponsiveWidth(10),
+    },
+    monthText: {
+      flexShrink: 1,
+      fontFamily: DEFAULT_STYLE().sectionTitle.fontFamily,
+      fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
+      color: COLORS.textPrimary,
+      letterSpacing: -0.2,
+    },
+    iconBtn: {
+      width: getResponsiveWidth(32),
+      height: getResponsiveWidth(32),
+      borderRadius: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: '#F3F4F6',
+      resizeMode: 'contain',
+    },
+    calendarIcon: {
+      width: getResponsiveWidth(18),
+      height: getResponsiveWidth(18),
+      resizeMode: 'contain',
+      tintColor: '#525252',
+    },
+    navButtons: {
+      flexDirection: 'row',
+      gap: getResponsiveWidth(6),
+      alignItems: 'center',
+    },
+    navIcon: {
+      width: getResponsiveWidth(15),
+      height: getResponsiveWidth(15),
+      resizeMode: 'contain',
+    },
+    peopleFilterBtn: {
+      position: 'relative',
+    },
+    peopleFilterIcon: {
+      width: getResponsiveWidth(18),
+      height: getResponsiveWidth(18),
+      resizeMode: 'contain',
+    },
+    peopleFilterBadge: {
+      position: 'absolute',
+      top: 2,
+      right: 2,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
+      backgroundColor: COLOR.ANNIV,
+      borderWidth: 1.5,
+      borderColor: '#FFFFFF',
+    },
+    /** 주/월 전환 — `iconBtn`과 동일 크기·배경·모서리 */
+    toggleTextInIcon: {
+      fontSize: rf(12.5),
+      fontFamily: 'Pretendard-SemiBold',
+      color: '#111827',
+    },
 
-  headerLeft: {
-    flex: 1,
-    minWidth: 0,
-  },
-  /** 달력 아이콘 + 월/주 라벨 — `iconBtn`과 동일 토큰, 너비는 내용만큼만 (아이콘은 날짜 왼쪽 = LTR 관례) */
-  headerLeftDatePicker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(8),
-    alignSelf: 'flex-start',
-    maxWidth: '100%',
-    backgroundColor: '#F3F4F6',
-    borderRadius: 10,
-    paddingHorizontal: getResponsiveWidth(10),
-    minHeight: getResponsiveWidth(32),
-  },
-  headerRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(10),
-  },
-  monthText: {
-    flexShrink: 1,
-    fontFamily: DEFAULT_STYLE().sectionTitle.fontFamily,
-    fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
-    color: COLORS.textPrimary,
-    letterSpacing: -0.2,
-  },
-  iconBtn: {
-    width: getResponsiveWidth(32),
-    height: getResponsiveWidth(32),
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#F3F4F6',
-    resizeMode: 'contain',
-  },
-  calendarIcon: {
-    width: getResponsiveWidth(18),
-    height: getResponsiveWidth(18),
-    resizeMode: 'contain',
-    tintColor: '#525252',
-  },
-  navButtons: {
-    flexDirection: 'row',
-    gap: getResponsiveWidth(6),
-    alignItems: 'center',
-  },
-  navIcon: {
-    width: getResponsiveWidth(15),
-    height: getResponsiveWidth(15),
-    resizeMode: 'contain',
-  },
-  peopleFilterBtn: {
-    position: 'relative',
-  },
-  peopleFilterIcon: {
-    width: getResponsiveWidth(18),
-    height: getResponsiveWidth(18),
-    resizeMode: 'contain',
-  },
-  peopleFilterBadge: {
-    position: 'absolute',
-    top: 2,
-    right: 2,
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: COLOR.ANNIV,
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-  },
-  /** 주/월 전환 — `iconBtn`과 동일 크기·배경·모서리 */
-  toggleTextInIcon: {
-    fontSize: rf(12.5),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#111827',
-  },
+    weekRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      paddingVertical: getResponsiveHeight(6),
+    },
+    weekCell: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dayText: {
+      fontFamily: 'Pretendard-SemiBold',
+      fontSize: rf(12.5),
+      color: '#6B7280',
+      textAlign: 'center',
+    },
+    sundayText: {
+      color: '#EF4444',
+    },
 
-  weekRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    paddingVertical: getResponsiveHeight(6),
-  },
-  weekCell: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dayText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: rf(12.5),
-    color: '#6B7280',
-    textAlign: 'center',
-  },
-  sundayText: {
-    color: '#EF4444',
-  },
+    divider: {
+      height: 1,
+      width: '100%',
+      backgroundColor: '#EEF2F7',
+      marginTop: getResponsiveHeight(6),
+      marginBottom: getResponsiveHeight(10),
+    },
 
-  divider: {
-    height: 1,
-    width: '100%',
-    backgroundColor: '#EEF2F7',
-    marginTop: getResponsiveHeight(6),
-    marginBottom: getResponsiveHeight(10),
-  },
+    dayCell: {
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    innerCircle: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: 'white',
+      backgroundColor: '#FFFFFF',
+    },
+    selectedBox: {
+      backgroundColor: COLOR.FOCUS_BG,
+      borderColor: COLOR.FOCUS_BORDER,
+      borderWidth: 1,
+    },
 
-  dayCell: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  innerCircle: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'white',
-    backgroundColor: '#FFFFFF',
-  },
-  selectedBox: {
-    backgroundColor: COLOR.FOCUS_BG,
-    borderColor: COLOR.FOCUS_BORDER,
-    borderWidth: 1,
-  },
+    dateGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+    },
+    weekGrid: {
+      flexDirection: 'row',
+    },
 
-  dateGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  weekGrid: {
-    flexDirection: 'row',
-  },
+    dateText: {
+      fontFamily: 'Pretendard-Medium',
+      fontSize: rf(13.5),
+      color: '#111827',
+    },
+    selectedText: {
+      fontFamily: 'Pretendard-SemiBold',
+      color: COLOR.FOCUS_TEXT,
+    },
+    holidayText: {
+      color: '#EF4444',
+      fontFamily: 'Pretendard-SemiBold',
+    },
 
-  dateText: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: rf(13.5),
-    color: '#111827',
-  },
-  selectedText: {
-    fontFamily: 'Pretendard-SemiBold',
-    color: COLOR.FOCUS_TEXT,
-  },
-  holidayText: {
-    color: '#EF4444',
-    fontFamily: 'Pretendard-SemiBold',
-  },
+    absoluteLayer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+    },
 
-  absoluteLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-  },
-
-  dotRow: {
-    position: 'absolute',
-    bottom: getResponsiveHeight(6),
-    flexDirection: 'row',
-    gap: getResponsiveWidth(3),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dotBase: {
-    width: getResponsiveWidth(4.5),
-    height: getResponsiveWidth(4.5),
-    borderRadius: 999,
-  },
-  dotAnniv: {
-    backgroundColor: COLOR.ANNIV,
-  },
-  dotFamily: {
-    backgroundColor: COLOR.FAMILY,
-  },
-
+    dotRow: {
+      position: 'absolute',
+      bottom: getResponsiveHeight(6),
+      flexDirection: 'row',
+      gap: getResponsiveWidth(3),
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    dotBase: {
+      width: getResponsiveWidth(4.5),
+      height: getResponsiveWidth(4.5),
+      borderRadius: 999,
+    },
+    dotAnniv: {
+      backgroundColor: COLOR.ANNIV,
+    },
+    dotFamily: {
+      backgroundColor: COLOR.FAMILY,
+    },
   }));
   const {OUTER_HPAD, GAP, cellSize, gridWidth, cardWidth} = useCalendarLayout();
 
@@ -392,7 +386,7 @@ export default function CalendarToggle({
   const weekDates = useWeekDates(selectedDate, getLocalDateKey);
   const {getCountColorStyle} = useScheduleCountStyle(cellSize);
 
- // showYMD가 source of truth
+  // showYMD가 source of truth
   const {showYMD, openYMD, closeYMD} = useYMDPicker();
 
   const birthdayMap = useMemo(() => {
@@ -407,9 +401,9 @@ export default function CalendarToggle({
     return day === 0 || !!holidayMap?.[key];
   };
 
- // =========================
- // 좌우 스와이프
- // =========================
+  // =========================
+  // 좌우 스와이프
+  // =========================
   const SWIPE_THRESHOLD = getResponsiveWidth(40);
   const SWIPE_VS_SCROLL_SLOP = 6;
 
@@ -430,7 +424,7 @@ export default function CalendarToggle({
   const panResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, g) => {
- // 모달이 열려있으면 뒤에서 스와이프 판정 금지
+        // 모달이 열려있으면 뒤에서 스와이프 판정 금지
         if (showYMD) return false;
 
         const absDx = Math.abs(g.dx);
@@ -449,9 +443,9 @@ export default function CalendarToggle({
     }),
   ).current;
 
- // =========================
- // 월<->주 애니메이션
- // =========================
+  // =========================
+  // 월<->주 애니메이션
+  // =========================
   const monthH = useSharedValue(0);
   const weekH = useSharedValue(0);
 
@@ -801,23 +795,21 @@ export default function CalendarToggle({
         </View>
       </DropShadow>
 
-      {/* 날짜 피커: visible은 showYMD가 단일 진실 */}
-      <MiniCalendarPickerModal
-        visible={showYMD}
-        onRequestClose={closeYMD}
-        onClose={closeYMD}
+      <DatePicker
+        modal
+        open={showYMD}
+        date={selectedDate instanceof Date && !isNaN(selectedDate) ? selectedDate : new Date()}
+        mode="date"
+        locale="ko"
+        title="날짜 선택"
+        confirmText="확인"
+        cancelText="취소"
         onConfirm={date => {
           setSelectedDate(date);
-          closeYMD(); // 닫기는 여기서만
+          closeYMD();
         }}
-        initialDate={selectedDate}
-        minYear={1950}
-        maxYear={computedMaxYear}
-        defaultYear={new Date().getFullYear()}
-        forceDefaultYear={false}
-        closeOnPressOutside={true}
+        onCancel={closeYMD}
       />
     </View>
   );
 }
-

@@ -104,6 +104,8 @@ export default function CommunicationStack() {
         options={({navigation}) => ({
           gestureEnabled: true,
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          headerTitle: '',
+          headerBackTitleVisible: false,
         })}
       />
 

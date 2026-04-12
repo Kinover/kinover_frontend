@@ -154,7 +154,6 @@ export default function AppAlertModal({
       buttonBottomStyle={styles.buttonRow}
       confirmTextStyle={styles.confirmText}
       closeTextStyle={styles.closeText}
-      useViewOverlayOnIOS
       footerOutside={
         secondaryText ? (
           <TouchableOpacity

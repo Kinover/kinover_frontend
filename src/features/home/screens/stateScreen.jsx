@@ -101,6 +101,14 @@ const EmotionItem = ({
   styles,
 }) => {
   const cardH = cardHeight ?? CARD_H_DEFAULT;
+  const emotionImageSize = Math.max(
+    getResponsiveWidth(42),
+    Math.min(itemWidth * 0.42, cardH * 0.5),
+  );
+  const emotionImageMarginBottom = Math.max(
+    getResponsiveHeight(6),
+    cardH * 0.07,
+  );
   const appear = useRef(new Animated.Value(0)).current;
   const press = useRef(new Animated.Value(0)).current;
   const select = useRef(new Animated.Value(isSelected ? 1 : 0)).current;
@@ -181,7 +189,11 @@ const EmotionItem = ({
             height={cardH}
             isSelected={isSelected}
             cardStyle={{borderRadius: RADIUS}}
-            imageStyle={styles.emotionImage}
+            imageStyle={{
+              width: emotionImageSize,
+              height: emotionImageSize,
+              marginBottom: emotionImageMarginBottom,
+            }}
             labelStyle={styles.emotionText}
             selectedLabelStyle={styles.emotionTextSelected}
           />
@@ -232,12 +244,6 @@ export default function StateScreen() {
     borderWidth: 1,
     opacity: 0,
     borderRadius: RADIUS,
-  },
-
-  emotionImage: {
-    width: getResponsiveWidth(60),
-    height: getResponsiveWidth(60),
-    marginBottom: getResponsiveHeight(8),
   },
 
   emotionText: {

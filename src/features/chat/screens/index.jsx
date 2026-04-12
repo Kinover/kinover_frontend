@@ -2,7 +2,17 @@
 // src/features/chat/screens/CommunicationScreen.jsx
 
 import React, {useCallback, useState, useRef, useMemo} from 'react';
-import { StyleSheet, View, TouchableOpacity, FlatList, RefreshControl, Image } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  TouchableOpacity,
+  FlatList,
+  RefreshControl,
+  Image,
+  Platform,
+} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+
 import AppText from 'components/AppText';
 import {useSelector} from 'react-redux';
 import {useFocusEffect} from '@react-navigation/native';
@@ -23,6 +33,7 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from 'utils/responsive';
+import {getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
 
 import ToastModal from 'components/modal/ToastModal';
 
@@ -39,89 +50,99 @@ const Text = AppText;
 
 export default function CommunicationScreen({navigation}) {
   const styles = useScaledStyleSheet(rf => ({
-
-  container: {
-    flex: 1,
-    backgroundColor: '#F9F9F9',
-  },
-  listWrap: { flex: 1 },
-  listContent: {
-    paddingTop: getResponsiveHeight(4),
-    paddingBottom: getResponsiveHeight(150),
-    gap: getResponsiveHeight(6),
-  },
-  noChatMessage: {
-    fontSize: EMPTY_STYLE().emptyFontSize,
-    fontFamily: EMPTY_STYLE().emptyFontFamily,
-    color: EMPTY_STYLE().emptyColor,
-    textAlign: 'center',
-    marginTop: getResponsiveHeight(80),
-    lineHeight: rf(20),
-    paddingHorizontal: getResponsiveWidth(10),
-  },
-  emptyWrapper: {
-    paddingTop: getResponsiveHeight(80),
-    alignItems: 'center',
-    paddingHorizontal: getResponsiveWidth(20),
-  },
-  emptyIcon: {
-    fontSize: getResponsiveFontSize(38),
-    marginBottom: getResponsiveHeight(8),
-  },
-  emptyText: {
-    fontSize: EMPTY_STYLE().emptyFontSize,
-    fontFamily: EMPTY_STYLE().emptyFontFamily,
-    color: EMPTY_STYLE().emptyColor,
-    textAlign: 'center',
-  },
-  emptySubText: {
-    marginTop: getResponsiveHeight(4),
-    fontSize: getResponsiveFontSize(11),
-    fontFamily: 'Pretendard-Regular',
-    color: EMPTY_STYLE().emptyColor,
-    textAlign: 'center',
-    lineHeight: getResponsiveHeight(18),
-  },
-  loaderWrapper: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fabContainer: {
-    position: 'absolute',
-    bottom: getResponsiveHeight(110),
-    right: getResponsiveWidth(13),
-    width: getResponsiveIconSize(65),
-    height: getResponsiveIconSize(65),
-  },
-  fabShadow: {
-    width: '100%',
-    height: '100%',
-  },
-  fabMeasure: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  fab: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: BACKGROUND_COLORS.primaryBg,
-    borderRadius: 999,
-    justifyContent: 'center',
-  },
-  fabIcon: {
-    alignSelf: 'center',
-    width: '45%',
-    height: '45%',
-    resizeMode: 'contain',
-  },
-  shadow: {
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 3},
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-  },
-
+    container: {
+      flex: 1,
+      backgroundColor: '#F9F9F9',
+    },
+    listWrap: {flex: 1},
+    listContent: {
+      paddingTop: getResponsiveHeight(4),
+      paddingBottom: getResponsiveHeight(150),
+      gap: getResponsiveHeight(6),
+    },
+    noChatMessage: {
+      fontSize: EMPTY_STYLE().emptyFontSize,
+      fontFamily: EMPTY_STYLE().emptyFontFamily,
+      color: EMPTY_STYLE().emptyColor,
+      textAlign: 'center',
+      marginTop: getResponsiveHeight(80),
+      lineHeight: rf(20),
+      paddingHorizontal: getResponsiveWidth(10),
+    },
+    emptyWrapper: {
+      paddingTop: getResponsiveHeight(80),
+      alignItems: 'center',
+      paddingHorizontal: getResponsiveWidth(20),
+    },
+    emptyIcon: {
+      fontSize: getResponsiveFontSize(38),
+      marginBottom: getResponsiveHeight(8),
+    },
+    emptyText: {
+      fontSize: EMPTY_STYLE().emptyFontSize,
+      fontFamily: EMPTY_STYLE().emptyFontFamily,
+      color: EMPTY_STYLE().emptyColor,
+      textAlign: 'center',
+    },
+    emptySubText: {
+      marginTop: getResponsiveHeight(4),
+      fontSize: EMPTY_STYLE().emptyFontSize,
+      fontFamily: EMPTY_STYLE().emptyFontFamily,
+      color: EMPTY_STYLE().emptyColor,
+      textAlign: 'center',
+      lineHeight: getResponsiveHeight(18),
+    },
+    loaderWrapper: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    fabContainer: {
+      position: 'absolute',
+      bottom: getResponsiveHeight(110),
+      right: getResponsiveWidth(13),
+      width: getResponsiveIconSize(65),
+      height: getResponsiveIconSize(65),
+    },
+    fabShadow: {
+      width: '100%',
+      height: '100%',
+    },
+    fabMeasure: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    fab: {
+      width: '100%',
+      height: '100%',
+      backgroundColor: BACKGROUND_COLORS.primaryBg,
+      borderRadius: 999,
+      justifyContent: 'center',
+    },
+    fabIcon: {
+      alignSelf: 'center',
+      width: '45%',
+      height: '45%',
+      resizeMode: 'contain',
+    },
+    shadow: {
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 3},
+      shadowOpacity: 0.08,
+      shadowRadius: 3,
+    },
   }));
+
+  const insets = useSafeAreaInsets();
+  const fabNavInset =
+    Platform.OS === 'android'
+      ? Math.max(
+          Number(insets?.bottom ?? 0),
+          getAndroidNavBottomInsetEstimate(),
+          getResponsiveHeight(48),
+        )
+      : 0;
+  const fabBottom = getResponsiveHeight(110) + fabNavInset;
+
   const modalRef = useRef(null);
 
   const user = useSelector(s => s.user || {});
@@ -130,10 +151,7 @@ export default function CommunicationScreen({navigation}) {
 
   const userId = user?.userId ?? user?.id ?? null;
   const familyId =
-    familyState?.familyId ??
-    user?.familyId ??
-    user?.family?.familyId ??
-    null;
+    familyState?.familyId ?? user?.familyId ?? user?.family?.familyId ?? null;
 
   // RTK Query: 채팅방 목록 (onQueryFulfilled에서 chatRoomSlice.setChatRoomList 동기화)
   const {isLoading, refetch} = useGetChatRoomsQuery(
@@ -149,12 +167,14 @@ export default function CommunicationScreen({navigation}) {
   // RTK Query: 채팅방 생성 mutation
   const [createChatRoom] = useCreateChatRoomMutation();
 
-  const {data: familyUserList = []} = useGetFamilyUsersQuery(familyId, {skip: !familyId});
+  const {data: familyUserList = []} = useGetFamilyUsersQuery(familyId, {
+    skip: !familyId,
+  });
 
   const [refreshing, setRefreshing] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
 
- /** =========================
+  /** =========================
  * 데이터 로딩
    ========================= */
   // 탭 포커스 시 refetch: autoLogin 완료 후 탭으로 돌아올 때 최신 목록 보장
@@ -166,7 +186,6 @@ export default function CommunicationScreen({navigation}) {
     }, [familyId, userId, refetch]),
   );
 
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
@@ -176,18 +195,14 @@ export default function CommunicationScreen({navigation}) {
     }
   }, [refetch]);
 
- /** =========================
+  /** =========================
  * 리스트 렌더
    ========================= */
   const renderItem = useCallback(
     ({item}) => {
       const isKino = !!item?.kino;
       const content = (
-        <ChatRoomItem
-          chatRoom={item}
-          userId={userId}
-          navigation={navigation}
-        />
+        <ChatRoomItem chatRoom={item} userId={userId} navigation={navigation} />
       );
       if (isKino) {
         return (
@@ -201,7 +216,7 @@ export default function CommunicationScreen({navigation}) {
     [navigation, userId],
   );
 
- /** =========================
+  /** =========================
  * 바텀시트용 멤버
    ========================= */
   const members = useMemo(() => {
@@ -232,9 +247,7 @@ export default function CommunicationScreen({navigation}) {
 
       const autoRoomName = selectedUserNames.join(', ');
       const finalRoomName =
-        roomName && roomName.trim().length > 0
-          ? roomName.trim()
-          : autoRoomName;
+        roomName && roomName.trim().length > 0 ? roomName.trim() : autoRoomName;
 
       // RTK Query mutation: 성공 시 invalidateTags(['ChatRoom']) → 자동 refetch
       await createChatRoom({
@@ -248,12 +261,15 @@ export default function CommunicationScreen({navigation}) {
     [createChatRoom, familyId, familyUserList],
   );
 
- /** =========================
+  /** =========================
  * 렌더
    ========================= */
- // iOS: 가이드 모달 닫은 뒤 터치 복구용
+  // iOS: 가이드 모달 닫은 뒤 터치 복구용
   const [contentKey, setContentKey] = useState(0);
-  const handleGuideAfterClose = useCallback(() => setContentKey(k => k + 1), []);
+  const handleGuideAfterClose = useCallback(
+    () => setContentKey(k => k + 1),
+    [],
+  );
 
   return (
     <View style={styles.container}>
@@ -271,39 +287,49 @@ export default function CommunicationScreen({navigation}) {
       />
 
       <View key={contentKey} style={styles.listWrap}>
-      {loading && chatRoomList.length === 0 ? (
-        <FlatList
-          data={Array.from({length: 6}, (_, i) => `skeleton-${i}`)}
-          keyExtractor={item => item}
-          renderItem={() => <SkeletonChatRoomItem />}
-          contentContainerStyle={styles.listContent}
-          scrollEnabled={false}
-        />
-      ) : (
-        <FlatList
-          data={chatRoomList}
-          renderItem={renderItem}
-          extraData={listRevision}
-          contentContainerStyle={styles.listContent}
-          initialNumToRender={10}
-          maxToRenderPerBatch={8}
-          windowSize={7}
-          removeClippedSubviews={true}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyWrapper}>
-              <AppText style={styles.emptyIcon}>💬</AppText>
-              <AppText style={styles.emptyText}>아직 채팅방이 없어요.</AppText>
-              <AppText style={styles.emptySubText}>
-                오른쪽 아래 버튼을 눌러{'\n'}가족과의 첫 대화를 시작해보세요.
-              </AppText>
-            </View>
-          }
-          keyExtractor={item => String(item?.chatRoomId)}
-        />
-      )}
+        {loading && chatRoomList.length === 0 ? (
+          <FlatList
+            data={Array.from({length: 6}, (_, i) => `skeleton-${i}`)}
+            keyExtractor={item => item}
+            renderItem={() => <SkeletonChatRoomItem />}
+            contentContainerStyle={styles.listContent}
+            scrollEnabled={false}
+          />
+        ) : (
+          <FlatList
+            data={chatRoomList}
+            renderItem={renderItem}
+            extraData={listRevision}
+            contentContainerStyle={styles.listContent}
+            initialNumToRender={10}
+            maxToRenderPerBatch={8}
+            windowSize={7}
+            removeClippedSubviews={true}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            ListEmptyComponent={
+              <View style={styles.emptyWrapper}>
+                 <Image
+          style={{
+            width: getResponsiveWidth(34),
+            height: getResponsiveWidth(34),
+            resizeMode: 'contain',
+            tintColor: EMPTY_STYLE().emptyColor,
+            marginBottom: getResponsiveHeight(10),
+          }}
+          source={require('../../../assets/icons/tabs/2/message.png')}></Image>
+                <AppText style={styles.emptyText}>
+                  아직 채팅방이 없어요.
+                </AppText>
+                <AppText style={styles.emptySubText}>
+                  가족과의 첫 대화를 시작해보세요.
+                </AppText>
+              </View>
+            }
+            keyExtractor={item => String(item?.chatRoomId)}
+          />
+        )}
       </View>
 
       <CreateChatRoomBottomSheet
@@ -324,8 +350,12 @@ export default function CommunicationScreen({navigation}) {
       />
 
       {/* FAB를 화면 하단 고정 + 가이드 측정 정확도를 위한 절대 위치 래퍼 */}
-      <View style={styles.fabContainer} pointerEvents="box-none">
-        <DropShadow style={[styles.shadow, styles.fabShadow]} pointerEvents="box-none">
+      <View
+        style={[styles.fabContainer, {bottom: fabBottom}]}
+        pointerEvents="box-none">
+        <DropShadow
+          style={[styles.shadow, styles.fabShadow]}
+          pointerEvents="box-none">
           <View
             ref={guideTargetRef}
             collapsable={false}
@@ -350,4 +380,3 @@ export default function CommunicationScreen({navigation}) {
     </View>
   );
 }
-

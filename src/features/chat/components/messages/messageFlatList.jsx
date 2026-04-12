@@ -51,6 +51,16 @@ export default function MessageFlatList({
     return Number.isNaN(t) ? 0 : t;
   };
 
+  const sortKey = useCallback(
+    m =>
+      String(
+        m?.messageId ??
+          m?.clientMessageId ??
+          `${m?.senderId ?? m?.userId ?? 'x'}_${m?.createdAt ?? ''}`,
+      ),
+    [],
+  );
+
   // 참가자/리드포인터를 미리 정규화해서 메시지 렌더 루프에서 반복 계산을 줄인다.
   const participantIds = useMemo(() => {
     const users = Array.isArray(mentionUsers) ? mentionUsers : [];
@@ -117,7 +127,11 @@ export default function MessageFlatList({
   );
 
   const finalMessages = useMemo(() => {
-    let result = [...(messageList ?? [])]; // ✅ DESC 유지
+    let result = [...(messageList ?? [])].sort((a, b) => {
+      const diff = toMsLocal(b?.createdAt) - toMsLocal(a?.createdAt);
+      if (diff !== 0) return diff;
+      return sortKey(b).localeCompare(sortKey(a));
+    });
 
     if (isKino && isInitialLoaded && showKinoTyping) {
       result = [kinoTypingMessage, ...result];
@@ -130,6 +144,7 @@ export default function MessageFlatList({
     showKinoTyping,
     isInitialLoaded,
     kinoTypingMessage,
+    sortKey,
   ]);
 
   const latestRealMessageId = useMemo(() => {

@@ -1,8 +1,7 @@
 // src/features/memory/components/ImageCarousel.jsx
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
-import { Dimensions, Platform, StyleSheet, View, Pressable } from 'react-native';
+import { Dimensions, Platform, StyleSheet, View, Pressable, FlatList } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import Carousel from 'react-native-reanimated-carousel';
 
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -84,7 +83,13 @@ export default function ImageCarousel({
   container: {flex: 1, backgroundColor: '#f9f9f9'},
   carouselWrap: {flex: 1},
 
-  fullItem: {flex: 1, backgroundColor: '#f9f9f9'},
+  fullItem: {
+    flex: 1,
+    width: SCREEN_WIDTH,
+    height: '100%',
+    backgroundColor: '#f9f9f9',
+    overflow: 'hidden',
+  },
   fullTouch: {flex: 1},
 
   fullMedia: {width: '100%', height: '100%'},
@@ -155,7 +160,7 @@ export default function ImageCarousel({
   },
 
   }));
-  const mainCarouselRef = useRef(null);
+  const listRef = useRef(null);
   const insets = useSafeAreaInsets();
  // 안드로이드에서 인디케이터가 헤더에 가리지 않도록: safe top + 네비 헤더 높이
   const indicatorTop =
@@ -176,7 +181,14 @@ export default function ImageCarousel({
     lastSyncedRef.current = idx;
 
     requestAnimationFrame(() => {
-      mainCarouselRef.current?.scrollTo?.({index: idx, animated: false});
+      try {
+        listRef.current?.scrollToOffset?.({
+          offset: SCREEN_WIDTH * idx,
+          animated: false,
+        });
+      } catch (e) {
+        null;
+      }
     });
   }, [currentIndex]);
 
@@ -259,6 +271,12 @@ export default function ImageCarousel({
     resetZoom();
   }, [currentIndex, resetZoom]);
 
+  useEffect(() => {
+    if (!isChromeHidden) {
+      resetZoom();
+    }
+  }, [isChromeHidden, resetZoom]);
+
   const animatedMediaStyle = useAnimatedStyle(() => {
     return {
       transform: [
@@ -272,17 +290,18 @@ export default function ImageCarousel({
  // pinch (줌)
   const pinchGesture = useMemo(() => {
     return Gesture.Pinch()
+      .onBegin(() => {
+        'worklet';
+        baseScale.value = scale.value;
+      })
       .onUpdate(e => {
         'worklet';
         const next = clamp(baseScale.value * e.scale, 1, 3);
         scale.value = next;
-
-        if (next > 1.01) runOnJS(setIsCarouselEnabled)(false);
-        else runOnJS(setIsCarouselEnabled)(true);
       })
       .onEnd(() => {
         'worklet';
-        if (scale.value < 1.05) {
+        if (scale.value <= 1.08) {
           scale.value = withTiming(1, {duration: 160});
           baseScale.value = 1;
 
@@ -305,25 +324,11 @@ export default function ImageCarousel({
 
     return Gesture.Pan()
       .minDistance(PAN_SLOP)
-      .onBegin(() => {
-        'worklet';
- // 줌이 아니면 pan이 스와이프를 먹지 않게 즉시 fail 처리
-        if (scale.value <= 1.01) {
- // 실패시키면 하위(캐러셀) 스크롤이 정상 동작
- // RNGH v2에서는 fail() 호출 가능
- // eslint-disable-next-line no-undef
- // (worklet context)
- // @ts-ignore
- // eslint-disable-next-line
-          Gesture.fail();
-        }
-      })
+      .maxPointers(1)
       .onUpdate(e => {
         'worklet';
-        if (scale.value <= 1.01) return;
-
-        const maxX = (SCREEN_WIDTH * (scale.value - 1)) / 2 + 40;
-        const maxY = (SCREEN_HEIGHT * (scale.value - 1)) / 2 + 40;
+        const maxX = (SCREEN_WIDTH * (scale.value - 1)) / 2;
+        const maxY = (SCREEN_HEIGHT * (scale.value - 1)) / 2;
 
         tx.value = clamp(lastTx.value + e.translationX, -maxX, maxX);
         ty.value = clamp(lastTy.value + e.translationY, -maxY, maxY);
@@ -351,6 +356,7 @@ export default function ImageCarousel({
       .onEnd((_e, success) => {
         'worklet';
         if (!success) return;
+        if (!isChromeHidden) return;
 
         if (scale.value <= 1.01) {
           scale.value = withTiming(2, {duration: 160});
@@ -370,16 +376,21 @@ export default function ImageCarousel({
       });
 
     return Gesture.Exclusive(doubleTap, singleTap);
-  }, [scale, baseScale, resetZoom, singleTapHandler]);
+  }, [scale, baseScale, resetZoom, singleTapHandler, isChromeHidden]);
 
   const composedGesture = useMemo(() => {
-    if (isCarouselEnabled) {
- // 평상시: tap만 (캐러셀 스와이프 방해 X)
+    if (!isChromeHidden) {
+ // 헤더/바텀시트가 보일 땐 탭으로 UI 토글만 허용
       return Gesture.Simultaneous(tapGesture);
+    }
+
+    if (isCarouselEnabled) {
+ // 평상시: pinch + tap (핀치 시작 허용, 단일 손가락 스와이프는 캐러셀이 처리)
+      return Gesture.Simultaneous(pinchGesture, tapGesture);
     }
  // 줌 상태: pinch + pan + tap
     return Gesture.Simultaneous(pinchGesture, panGesture, tapGesture);
-  }, [isCarouselEnabled, pinchGesture, panGesture, tapGesture]);
+  }, [isChromeHidden, isCarouselEnabled, pinchGesture, panGesture, tapGesture]);
 
  // ��엣지 스와이프” (첫 장에서 오른쪽으로 크게 드래그하면 뒤로가기)
   const edgeSwipeGesture = useMemo(() => {
@@ -515,21 +526,33 @@ export default function ImageCarousel({
       )}
 
       <View style={styles.carouselWrap}>
-        <Carousel
-          key={`main-full-${mediaList.length}`}
-          ref={mainCarouselRef}
-          width={SCREEN_WIDTH}
+        <FlatList
+          ref={listRef}
           data={mediaList}
-          defaultIndex={currentIndex}
-          onSnapToItem={idx => {
-            setCurrentIndex?.(idx);
+          horizontal
+          pagingEnabled={isCarouselEnabled}
+          scrollEnabled={isCarouselEnabled}
+          bounces={false}
+          showsHorizontalScrollIndicator={false}
+          keyExtractor={(item, idx) => `${item?.uri || 'media'}-${idx}`}
+          renderItem={renderMainItem}
+          extraData={currentIndex}
+          initialNumToRender={1}
+          windowSize={3}
+          maxToRenderPerBatch={2}
+          removeClippedSubviews={true}
+          getItemLayout={(_, idx) => ({
+            length: SCREEN_WIDTH,
+            offset: SCREEN_WIDTH * idx,
+            index: idx,
+          })}
+          onMomentumScrollEnd={e => {
+            const next = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+            if (next === currentIndex) return;
+            setCurrentIndex?.(next);
             setPlayingIndex(-1);
             resetZoom();
           }}
-          loop={false}
-          scrollAnimationDuration={320}
-          renderItem={renderMainItem}
-          enabled={isCarouselEnabled} // 줌 중이면 캐러셀 스와이프 막기
         />
 
         {/* 왼쪽 “엣지 스와이프” 투명 레이어 */}

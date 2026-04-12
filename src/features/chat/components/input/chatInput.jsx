@@ -33,6 +33,7 @@ import {
   getResponsiveIconSize,
   getResponsiveFontSize,
 } from 'utils/responsive';
+import {getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
 
 import {convertPhUriToFileUri} from 'utils/photoUriConverter';
 import {getSelectOrder, isSameAsset, toggleSelectImage} from '../../utils/selection';
@@ -44,6 +45,7 @@ import {addMessageAndUpdateRoom} from '../../utils/messageActions';
 import {hapticLight, hapticSelection, hapticError} from 'utils/haptic';
 import ChatMentionDropdown from './ChatMentionDropdown';
 import ChatMediaGallery from './ChatMediaGallery';
+import MediaModal from '../messages/mediaModal';
 import AppText from 'components/AppText';
 import {
   applyMention,
@@ -135,6 +137,7 @@ const ChatInput = forwardRef(function ChatInput(
 
   const [selectedImages, setSelectedImages] = useState([]);
   const [gridColumns, setGridColumns] = useState(BASE_NUM_COLUMNS);
+  const [previewModalIndex, setPreviewModalIndex] = useState(null);
 
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -344,11 +347,16 @@ const ChatInput = forwardRef(function ChatInput(
               marginBottom: PREVIEW_GAP,
             },
           ]}>
-          <Image
-            source={{uri: item.uri}}
-            style={styles.previewImage}
-            resizeMode="cover"
-          />
+          <TouchableOpacity
+            activeOpacity={0.85}
+            style={StyleSheet.absoluteFill}
+            onPress={() => setPreviewModalIndex(index)}>
+            <Image
+              source={{uri: item.uri}}
+              style={styles.previewImage}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
           {item.isVideo && (
             <View style={[styles.videoBadge, styles.previewVideoBadge]}>
               <AppText style={styles.videoBadgeText}>
@@ -776,11 +784,31 @@ const ChatInput = forwardRef(function ChatInput(
     );
   }, [insets.bottom, showGallery, previewGridHeight]);
 
-  // SafeArea 하단 inset만큼 항상 유지 (포커스 시에도 위치 고정)
+  // SafeArea 하단 inset 계산:
+  // - Android edge-to-edge + 3버튼 내비에서 insets.bottom이 0으로 들어오는 경우가 있어
+  //   추정치/최소 fallback으로 내비바 높이를 보정한다.
+  const androidNavBottomInset = useMemo(() => {
+    if (Platform.OS !== 'android') return 0;
+    const safeInset = Number(insets.bottom ?? 0);
+    const estimatedInset = Number(getAndroidNavBottomInsetEstimate() ?? 0);
+    if (safeInset > 0 || estimatedInset > 0) {
+      return Math.max(safeInset, estimatedInset);
+    }
+    return getResponsiveHeight(48);
+  }, [insets.bottom]);
+
+  // Android:
+  // - 키보드가 닫혀 있을 때는 nav bar inset/fallback 유지
+  // - 키보드가 열려 있을 때는 과한 하단 여백이 생기지 않게 최소 패딩만 유지
   const rootPaddingBottom = useMemo(() => {
-    if (Platform.OS === 'ios' && isKeyboardVisible) return 0;
-    return Math.max(insets.bottom, getResponsiveHeight(2));
-  }, [insets.bottom, isKeyboardVisible]);
+    if (Platform.OS === 'ios') {
+      return isKeyboardVisible ? 0 : Math.max(insets.bottom, getResponsiveHeight(2));
+    }
+    if (isKeyboardVisible) {
+      return 0;
+    }
+    return Math.max(androidNavBottomInset, getResponsiveHeight(2));
+  }, [isKeyboardVisible, insets.bottom, androidNavBottomInset]);
 
   return (
     <View style={[styles.root, {paddingBottom: rootPaddingBottom}]}>
@@ -951,6 +979,15 @@ const ChatInput = forwardRef(function ChatInput(
         visible={toastVisible}
         onClose={hideToast}
         message={toastMessage}
+      />
+      <MediaModal
+        visible={previewModalIndex !== null}
+        mediaItems={selectedImages.map(img => ({
+          kind: img.isVideo ? 'VIDEO' : 'IMAGE',
+          url: img.uri,
+        }))}
+        initialIndex={previewModalIndex ?? 0}
+        onClose={() => setPreviewModalIndex(null)}
       />
     </View>
   );

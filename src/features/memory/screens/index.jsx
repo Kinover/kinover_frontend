@@ -2,7 +2,8 @@
 // src/screens/memory/MemoryScreen.js
 
 import React, {useMemo, useState, useRef, useCallback, useEffect} from 'react';
-import {View, TouchableOpacity, Animated, Image} from 'react-native';
+import {View, TouchableOpacity, Animated, Image, Platform} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import MemoryFeed from './MemoryFeedScreen';
 import AnimatedAlbumTabSelector from '../components/filters/AlbumTabSelector';
@@ -15,6 +16,7 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from 'utils/responsive';
+import {getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
 
 import {useMemoryScreen} from '../hooks/useMemoryScreen';
 import {useTabBarVisibility} from 'app/navigation/animatedTabBar';
@@ -161,8 +163,12 @@ export default function MemoryScreen() {
  // =========================
  // FAB도 탭바랑 "동시에" 숨김/등장
  // =========================
+  const insets = useSafeAreaInsets();
+  const fabNavInset = Platform.OS === 'android'
+    ? Math.max(Number(insets?.bottom ?? 0), getAndroidNavBottomInsetEstimate(), getResponsiveHeight(48))
+    : 0;
   const FAB_RIGHT = getResponsiveWidth(13);
-  const FAB_BOTTOM = getResponsiveHeight(110);
+  const FAB_BOTTOM = getResponsiveHeight(110) + fabNavInset;
 
   const TABBAR_H = getResponsiveHeight(92);
   const FAB_HIDE_EXTRA = getResponsiveHeight(14);

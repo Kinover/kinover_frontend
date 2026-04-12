@@ -20,7 +20,7 @@ export const onLeaveChat = (dispatch, navigation, chatRoomId, showToast) => {
       if (showToast) {
         showToast('채팅방을 나갔습니다.');
       }
-      navigation.goBack();
+      navigation.navigate('소통');
     })
     .catch(err => {
       if (showToast) {

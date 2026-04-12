@@ -30,7 +30,26 @@ const appendDeduplicated = (currentCache, newItems) => {
   const onlyNew = (newItems ?? []).filter(
     m => m?.messageId != null && !existingIds.has(String(m.messageId)),
   );
-  return [...currentCache, ...onlyNew];
+  return sortMessagesDesc([...currentCache, ...onlyNew]);
+};
+
+const toMessageMs = v => {
+  const s = String(v ?? '').trim().replace(' ', 'T');
+  const t = new Date(s).getTime();
+  return Number.isFinite(t) ? t : 0;
+};
+
+const messageSortKey = m =>
+  String(m?.messageId ?? m?.clientMessageId ?? m?.createdAt ?? '');
+
+const sortMessagesDesc = list => {
+  const arr = Array.isArray(list) ? [...list] : [];
+  arr.sort((a, b) => {
+    const diff = toMessageMs(b?.createdAt) - toMessageMs(a?.createdAt);
+    if (diff !== 0) return diff;
+    return messageSortKey(b).localeCompare(messageSortKey(a));
+  });
+  return arr;
 };
 
 const getMessageArgRoomId = arg => {
@@ -131,7 +150,7 @@ export const chatApi = baseApi.injectEndpoints({
       serializeQueryArgs: ({queryArgs}) => getMessageArgRoomId(queryArgs),
       // 페이지네이션 결과 병합
       merge: (currentCache, newItems, {arg}) => {
-        const incoming = Array.isArray(newItems) ? newItems : [];
+        const incoming = sortMessagesDesc(newItems);
         if (!arg.before) {
           currentCache.splice(0, currentCache.length, ...incoming);
           return;

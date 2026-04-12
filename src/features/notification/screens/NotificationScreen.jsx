@@ -1,6 +1,6 @@
 // src/features/notification/screens/NotificationScreen.js
 import React, {useCallback, useEffect, useLayoutEffect, useMemo} from 'react';
-import {View, ScrollView, TouchableOpacity, Dimensions} from 'react-native';
+import {View, ScrollView, TouchableOpacity, Dimensions, Image} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -96,7 +96,10 @@ export default function NotificationScreen() {
     paddingVertical: getResponsiveHeight(60),
   },
   emptyIcon: {
-    fontSize: getResponsiveFontSize(38),
+    width: getResponsiveWidth(34),
+    height: getResponsiveWidth(34),
+    resizeMode: 'contain',
+    tintColor: EMPTY_STYLE().emptyColor,
     marginBottom: getResponsiveHeight(8),
   },
   empty: {
@@ -107,8 +110,8 @@ export default function NotificationScreen() {
   },
   emptySubText: {
     marginTop: getResponsiveHeight(4),
-    fontSize: getResponsiveFontSize(11),
-    fontFamily: 'Pretendard-Regular',
+    fontSize: EMPTY_STYLE().emptyFontSize,
+    fontFamily: EMPTY_STYLE().emptyFontFamily,
     color: EMPTY_STYLE().emptyColor,
     textAlign: 'center',
   },
@@ -298,7 +301,10 @@ export default function NotificationScreen() {
 
       {!hasNotifications && (
         <View style={[styles.emptyWrapper, {minHeight: Dimensions.get('window').height * 0.72}]}>
-          <AppText allowFontScaling={false} style={styles.emptyIcon}>🔔</AppText>
+          <Image
+            source={require('assets/icons/header/bell_black.png')}
+            style={styles.emptyIcon}
+          />
           <AppText allowFontScaling={false} style={styles.empty}>
             아직 새로운 소식이 없어요.
           </AppText>

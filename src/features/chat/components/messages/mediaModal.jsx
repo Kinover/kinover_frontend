@@ -17,7 +17,7 @@ import {
 } from 'utils/responsive';
 import ToastModal from 'components/modal/ToastModal';
 
-import {Gesture, GestureDetector} from 'react-native-gesture-handler';
+import {Gesture, GestureDetector, NativeViewGestureHandler} from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -50,7 +50,14 @@ const toNumberSafe = v => {
 const toCdnUrl = keyOrUrl => {
   if (!keyOrUrl) return null;
   const raw = String(keyOrUrl).split('?')[0];
-  if (raw.startsWith('http')) return raw;
+  if (
+    raw.startsWith('http') ||
+    raw.startsWith('file://') ||
+    raw.startsWith('ph://') ||
+    raw.startsWith('content://')
+  ) {
+    return String(keyOrUrl); // 쿼리스트링 포함 원본 그대로
+  }
   return `${CLOUDFRONT_DOMAIN.replace(/\/$/, '')}/${raw.replace(/^\/+/, '')}`;
 };
 
@@ -80,43 +87,78 @@ const saveUrlToGallery = async ({url, type, album = 'Kinover'}) => {
 
 /* ================= ZoomableImage ================= */
 
-function ZoomableImage({uri, isActive, styles}) {
+function ZoomableImage({uri, isActive, styles, onTogglePaging, flatListRef}) {
   const scale = useSharedValue(1);
+  const tx = useSharedValue(0);
+  const ty = useSharedValue(0);
   const lastScale = useSharedValue(1);
+  const lastTx = useSharedValue(0);
+  const lastTy = useSharedValue(0);
 
   const reset = useCallback(() => {
     scale.value = withTiming(1);
+    tx.value = withTiming(0);
+    ty.value = withTiming(0);
     lastScale.value = 1;
-  }, [scale, lastScale]);
+    lastTx.value = 0;
+    lastTy.value = 0;
+    onTogglePaging?.(true);
+  }, [scale, tx, ty, lastScale, lastTx, lastTy, onTogglePaging]);
 
   useEffect(() => {
     if (!isActive) reset();
   }, [isActive, reset]);
 
   const pinch = Gesture.Pinch()
+    .runOnJS(true)
     .onUpdate(e => {
-      scale.value = clamp(lastScale.value * e.scale, 1, 4);
+      const next = clamp(lastScale.value * e.scale, 1, 4);
+      scale.value = next;
+      if (next > 1.03) onTogglePaging?.(false);
     })
     .onEnd(() => {
       lastScale.value = scale.value;
       if (scale.value <= 1.01) runOnJS(reset)();
     });
 
+  const pan = Gesture.Pan()
+    .enabled(true)
+    .runOnJS(true)
+    .maxPointers(1)
+    .simultaneousWithExternalGesture(flatListRef)
+    .onUpdate(e => {
+      if (scale.value <= 1.01) return;
+      const limitX = (screenWidth * (scale.value - 1)) / 2;
+      const limitY = (screenHeight * (scale.value - 1)) / 2;
+      tx.value = clamp(lastTx.value + e.translationX, -limitX, limitX);
+      ty.value = clamp(lastTy.value + e.translationY, -limitY, limitY);
+    })
+    .onEnd(() => {
+      if (scale.value <= 1.01) {
+        runOnJS(reset)();
+        return;
+      }
+      lastTx.value = tx.value;
+      lastTy.value = ty.value;
+    });
+
   const doubleTap = Gesture.Tap()
     .numberOfTaps(2)
+    .runOnJS(true)
     .onEnd(() => {
       if (scale.value > 1.01) {
         runOnJS(reset)();
       } else {
         scale.value = withTiming(2);
         lastScale.value = 2;
+        onTogglePaging?.(false);
       }
     });
 
-  const composed = Gesture.Simultaneous(pinch, doubleTap);
+  const composed = Gesture.Simultaneous(pinch, pan, doubleTap);
 
   const style = useAnimatedStyle(() => ({
-    transform: [{scale: scale.value}],
+    transform: [{translateX: tx.value}, {translateY: ty.value}, {scale: scale.value}],
   }));
 
   return (
@@ -169,6 +211,7 @@ export default function MediaModal({
 
   const cancelRequestedRef = useRef(false);
   const listRef = useRef(null);
+  const nativeViewRef = useRef(null);
 
   const resolvedItems = useMemo(() => {
     if (Array.isArray(mediaItems) && mediaItems.length > 0) {
@@ -202,6 +245,8 @@ export default function MediaModal({
   }, [initialIndex, resolvedItems.length]);
 
   const [currentIndex, setCurrentIndex] = useState(safeInitialIndex);
+  const pagingEnabledRef = useRef(true);
+  const [pagingEnabled, setPagingEnabled] = useState(true);
 
   useEffect(() => {
     setCurrentIndex(() => {
@@ -234,6 +279,12 @@ export default function MediaModal({
 
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  const togglePaging = useCallback(enabled => {
+    if (pagingEnabledRef.current === enabled) return;
+    pagingEnabledRef.current = enabled;
+    setPagingEnabled(enabled);
+  }, []);
 
   const showToast = useCallback(msg => {
     setToastMessage(msg);
@@ -359,10 +410,12 @@ export default function MediaModal({
           uri={item.url}
           isActive={index === currentIndex}
           styles={styles}
+          onTogglePaging={togglePaging}
+          flatListRef={nativeViewRef}
         />
       );
     },
-    [currentIndex, styles],
+    [currentIndex, styles, togglePaging],
   );
 
   const singleLabel =
@@ -402,28 +455,31 @@ export default function MediaModal({
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        ref={listRef}
-        data={resolvedItems}
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        extraData={currentIndex}
-        keyExtractor={(v, i) => `${v.url}_${i}`}
-        getItemLayout={(_, i) => ({
-          length: screenWidth,
-          offset: screenWidth * i,
-          index: i,
-        })}
-        renderItem={renderItem}
-        onMomentumScrollEnd={e => {
-          const raw = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
-          const next = resolvedItems.length
-            ? clamp(raw, 0, resolvedItems.length - 1)
-            : 0;
-          setCurrentIndex(next);
-        }}
-      />
+      <NativeViewGestureHandler ref={nativeViewRef} disallowInterruption={false}>
+        <FlatList
+          ref={listRef}
+          data={resolvedItems}
+          horizontal
+          pagingEnabled={pagingEnabled}
+          scrollEnabled={pagingEnabled}
+          showsHorizontalScrollIndicator={false}
+          extraData={currentIndex}
+          keyExtractor={(v, i) => `${v.url}_${i}`}
+          getItemLayout={(_, i) => ({
+            length: screenWidth,
+            offset: screenWidth * i,
+            index: i,
+          })}
+          renderItem={renderItem}
+          onMomentumScrollEnd={e => {
+            const raw = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
+            const next = resolvedItems.length
+              ? clamp(raw, 0, resolvedItems.length - 1)
+              : 0;
+            setCurrentIndex(next);
+          }}
+        />
+      </NativeViewGestureHandler>
 
       <Animated.View
         pointerEvents={menuVisible ? 'auto' : 'none'}

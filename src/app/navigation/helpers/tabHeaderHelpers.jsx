@@ -422,9 +422,9 @@ export const RenderHeaderRightSetting = memo(function RenderHeaderRightSetting({
 });
 
 export const RenderHeaderRightChatSetting = memo(
-  function RenderHeaderRightChatSetting({setIsSettingsOpen}) {
+  function RenderHeaderRightChatSetting({onPress}) {
     return createIconButton(
-      () => setIsSettingsOpen(true),
+      () => onPress?.(),
       require('../../../assets/icons/List_black.png'),
       HEADER_STYLES().headerRightIconWidth,
       {marginRight: HEADER_STYLES().headerRightIconRightPadding},

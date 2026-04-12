@@ -11,6 +11,7 @@ import {
   RefreshControl,
   Dimensions,
   Animated,
+  Image,
 } from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
@@ -116,8 +117,8 @@ export default function MemoryFeed({
     },
     emptySubText: {
       marginTop: getResponsiveHeight(4),
-      fontSize: getResponsiveFontSize(11),
-      fontFamily: 'Pretendard-Regular',
+      fontSize: EMPTY_STYLE().emptyFontSize,
+      fontFamily: EMPTY_STYLE().emptyFontFamily,
       color: EMPTY_STYLE().emptyColor,
     },
 
@@ -142,7 +143,9 @@ export default function MemoryFeed({
   const memoryLoading = !!memoryState.loading;
   const fallbackMemoryList = memoryState.memoryList || [];
 
-  const fallbackCategoryList = useSelector(state => state.category?.categoryList || []);
+  const fallbackCategoryList = useSelector(
+    state => state.category?.categoryList || [],
+  );
 
   const selectedTab = useSelector(
     state => state.memory?.ui?.selectedTab ?? 'feed',
@@ -275,10 +278,8 @@ export default function MemoryFeed({
     return null;
   }, [selectedCategoryIds]);
 
-  const {
-    data: categoryQueryData,
-    refetch: refetchCategories,
-  } = useGetCategoriesQuery();
+  const {data: categoryQueryData, refetch: refetchCategories} =
+    useGetCategoriesQuery();
   const {
     data: postsQueryData,
     isFetching: isPostsFetching,
@@ -292,10 +293,7 @@ export default function MemoryFeed({
     : fallbackMemoryList;
 
   const doFetch = useCallback(async () => {
-    await Promise.allSettled([
-      refetchCategories(),
-      refetchPosts(),
-    ]);
+    await Promise.allSettled([refetchCategories(), refetchPosts()]);
   }, [refetchCategories, refetchPosts]);
 
   /* -------------------------
@@ -692,7 +690,15 @@ export default function MemoryFeed({
   const listEmptyComponent = useMemo(
     () => (
       <View style={styles.emptyWrapper}>
-        <AppText style={styles.emptyIcon}>📷</AppText>
+        <Image
+          style={{
+            width: getResponsiveWidth(34),
+            height: getResponsiveWidth(34),
+            resizeMode: 'contain',
+            tintColor: EMPTY_STYLE().emptyColor,
+            marginBottom: getResponsiveHeight(8),
+          }}
+          source={require('../../../assets/icons/tabs/4/camera.png')}></Image>
         <AppText style={styles.emptyText}>아직 게시글이 없어요.</AppText>
         <AppText style={styles.emptySubText}>
           소중한 순간을 기록해보세요.

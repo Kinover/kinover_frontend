@@ -1,250 +1,162 @@
 import React, {useMemo, useState, useEffect, useCallback} from 'react';
-import { View, StyleSheet, Platform, Pressable } from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import Clipboard from '@react-native-clipboard/clipboard';
+import {View, Platform, Pressable, TextInput} from 'react-native';
 import CustomModal from 'components/modal/CustomModal';
 import ScreenConfetti from './ScreenConfetti';
-import {hapticLight, hapticSuccess} from 'utils/haptic';
+import {hapticLight} from 'utils/haptic';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
-import {
-  getResponsiveWidth,
-  getResponsiveHeight,
-  getResponsiveFontSize,
-} from 'utils/responsive';
+import {getResponsiveWidth, getResponsiveHeight} from 'utils/responsive';
 
 export default function BirthdayModal({
   visible,
   onClose,
   namesText,
+  /** (editedMessage: string, chatRoomId: string) => void */
   onSendMessage,
   sendingMessage = false,
+  chatRoomItems = [],
+  selectedChatRoomId = null,
+  onSelectChatRoom,
+  chatRoomLoading = false,
 }) {
   const styles = useScaledStyleSheet(rf => ({
+    modalBox: {
+      width: getResponsiveWidth(326),
+      maxWidth: '90%',
+      alignSelf: 'center',
+      borderRadius: getResponsiveWidth(20),
+    },
+    contentArea: {
+      marginTop: getResponsiveHeight(4),
+    },
+    content: {
+      gap: getResponsiveHeight(16),
+    },
 
-  modalBox: {
-    width: getResponsiveWidth(326),
-    maxWidth: '90%',
-    alignSelf: 'center',
-    borderRadius: getResponsiveWidth(20),
-  },
+    /* ── 메시지 입력창 ─────────────────────── */
+    messageInput: {
+      borderWidth: 1,
+      borderColor: 'rgba(17,24,39,0.10)',
+      borderRadius: getResponsiveWidth(14),
+      paddingHorizontal: getResponsiveWidth(14),
+      paddingTop: getResponsiveHeight(12),
+      paddingBottom: getResponsiveHeight(12),
+      fontFamily: 'Pretendard-Regular',
+      fontSize: rf(13.5),
+      color: '#111827',
+      lineHeight: getResponsiveHeight(21),
+      minHeight: getResponsiveHeight(90),
+      textAlignVertical: 'top',
+      backgroundColor: '#FAFAFA',
+      ...(Platform.OS === 'ios'
+        ? {
+            shadowColor: '#000',
+            shadowOpacity: 0.04,
+            shadowRadius: 6,
+            shadowOffset: {width: 0, height: 2},
+          }
+        : {}),
+    },
+    messageInputFocused: {
+      borderColor: '#FFC84D',
+      backgroundColor: '#FFFFFF',
+    },
 
-  contentArea: {
-    marginTop: getResponsiveHeight(4),
-  },
-
-  content: {
-    gap: getResponsiveHeight(12),
-  },
-
-  heroCard: {
-    borderRadius: getResponsiveWidth(16),
-    paddingHorizontal: getResponsiveWidth(14),
-    paddingVertical: getResponsiveHeight(12),
-    borderWidth: 1,
-    borderColor: 'rgba(255,200,77,0.42)',
-  },
-
-  heroRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(8),
-    marginBottom: getResponsiveHeight(10),
-  },
-
-  heroEmoji: {
-    fontSize: rf(18),
-  },
-
-  heroTitle: {
-    fontFamily: 'SpaceMono-Regular',
-    fontSize: rf(14),
-    color: '#111827',
-    letterSpacing: 0.25,
-  },
-
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: getResponsiveWidth(8),
-  },
-
-  nameBadge: {
-    flex: 1,
-    borderRadius: 999,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.08)',
-    paddingHorizontal: getResponsiveWidth(11),
-    paddingVertical: getResponsiveHeight(7),
-  },
-
-  nameBadgeText: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: rf(12.5),
-    color: '#111827',
-  },
-
-  countBadge: {
-    borderRadius: 999,
-    backgroundColor: '#111827',
-    paddingHorizontal: getResponsiveWidth(10),
-    paddingVertical: getResponsiveHeight(6),
-    minWidth: getResponsiveWidth(52),
-    alignItems: 'center',
-  },
-
-  countBadgeText: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: rf(11.2),
-    color: '#FFFFFF',
-  },
-
-  noticeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(6),
-    paddingHorizontal: getResponsiveWidth(2),
-  },
-
-  noticeIcon: {
-    fontSize: rf(11.5),
-    color: '#D97706',
-  },
-
-  noticeText: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: rf(12.2),
-    color: '#4B5563',
-    lineHeight: getResponsiveHeight(17),
-  },
-
-  messageBox: {
-    borderRadius: getResponsiveWidth(14),
-    paddingVertical: getResponsiveHeight(13),
-    paddingHorizontal: getResponsiveWidth(13),
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.08)',
-    ...(Platform.OS === 'ios'
-      ? {
-          shadowColor: '#000',
-          shadowOpacity: 0.06,
-          shadowRadius: 8,
-          shadowOffset: {width: 0, height: 4},
-        }
-      : {
-          elevation: 0,
-        }),
-  },
-  messageBoxPressed: {
-    transform: [{scale: 0.99}],
-    opacity: 0.94,
-  },
-  messageBoxCopied: {
-    backgroundColor: '#FFF8E1',
-    borderColor: '#FFD36A',
-  },
-
-  messageHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: getResponsiveHeight(8),
-  },
-
-  messageLabel: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: rf(12),
-    color: '#111827',
-  },
-
-  messageTag: {
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,200,77,0.2)',
-    paddingHorizontal: getResponsiveWidth(8),
-    paddingVertical: getResponsiveHeight(4),
-  },
-  messageTagCopied: {
-    backgroundColor: '#FFB000',
-  },
-
-  messageTagText: {
-    fontFamily: 'Pretendard-Medium',
-    fontSize: rf(10.4),
-    color: '#92400E',
-  },
-  messageTagTextCopied: {
-    color: '#111827',
-  },
-
-  messageBody: {
-    fontFamily: 'Pretendard-Regular',
-    fontSize: rf(13.2),
-    color: '#111827',
-    lineHeight: getResponsiveHeight(20),
-  },
-
+    /* ── 채팅방 섹션 ───────────────────────── */
+    sectionLabel: {
+      fontFamily: 'Pretendard-SemiBold',
+      fontSize: rf(12.5),
+      color: '#374151',
+      marginBottom: getResponsiveHeight(9),
+    },
+    roomChipWrap: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: getResponsiveWidth(8),
+    },
+    roomChip: {
+      borderWidth: 1,
+      borderColor: 'rgba(17,24,39,0.12)',
+      borderRadius: 999,
+      paddingHorizontal: getResponsiveWidth(14),
+      paddingVertical: getResponsiveHeight(7),
+      backgroundColor: '#FFFFFF',
+    },
+    roomChipSelected: {
+      borderColor: '#FFC84D',
+      backgroundColor: '#FFF8E6',
+    },
+    roomChipText: {
+      fontFamily: 'Pretendard-Medium',
+      fontSize: rf(12.5),
+      color: '#4B5563',
+    },
+    roomChipTextSelected: {
+      fontFamily: 'Pretendard-SemiBold',
+      color: '#7A4E00',
+    },
+    hintText: {
+      fontFamily: 'Pretendard-Regular',
+      fontSize: rf(11.5),
+      color: '#9CA3AF',
+      marginTop: getResponsiveHeight(7),
+    },
+    emptyText: {
+      fontFamily: 'Pretendard-Regular',
+      fontSize: rf(13),
+      color: '#9CA3AF',
+      textAlign: 'center',
+      paddingVertical: getResponsiveHeight(8),
+    },
+    confirmDisabled: {
+      opacity: 0.38,
+    },
   }));
+
+  /* ── 이름 파싱 ──────────────────────────────── */
   const parsed = useMemo(() => {
     const raw = String(namesText || '').trim();
-
- // "OO, OO 외" / "OO님의 생일..." 등 들어와도 최대한 이름만 뽑기
     const cleaned = raw
       .replace(/님의\s*생일.*$/g, '')
       .replace(/\s*생일.*$/g, '')
       .trim();
-
     const hasEtc = raw.includes('외');
-
     const names = cleaned
       .split(',')
       .map(s => s.trim())
       .filter(Boolean);
-
     const first = names[0] || '가족';
     const second = names[1] || null;
-    const total = names.length;
-
     const heroNames = `${first}${second ? ` · ${second}` : ''}${
       hasEtc ? ' 외' : ''
     }`;
-
-    return {raw, heroNames, total};
+    return {heroNames};
   }, [namesText]);
 
- // subText는 "상황 설명"만 짧게
-  const subtitle =
-    parsed.raw && parsed.raw.length > 0
-      ? '오늘 일정에 생일이 있어요.'
-      : '오늘 일정에 생일이 등록되어 있어요.';
+  const defaultMessage = `${parsed.heroNames} 생일 축하해요! 🎉\n오늘 하루, 웃는 일이 더 많았으면 해요.\n늘 고맙고 소중해요.`;
 
- // 메시지는 1개만, 짧고 자연스럽게
-  const messageText = `${parsed.heroNames} 생일 축하해요! 🎉
-오늘 하루, 웃는 일이 더 많았으면 해요.
-늘 고맙고 소중해요.`;
-  const [copied, setCopied] = useState(false);
+  const [editedMessage, setEditedMessage] = useState(defaultMessage);
+  const [inputFocused, setInputFocused] = useState(false);
 
+  /* 모달 열릴 때마다 추천 문구로 초기화 */
   useEffect(() => {
-    if (!visible) setCopied(false);
+    if (visible) {
+      setEditedMessage(defaultMessage);
+      setInputFocused(false);
+    }
+    // defaultMessage는 namesText에 의존 → visible만 deps로 두면 충분
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
-  const handleCopyMessage = useCallback(() => {
-    hapticLight();
-    Clipboard.setString(messageText);
-    setCopied(true);
-    hapticSuccess();
-  }, [messageText]);
+  const canSend =
+    selectedChatRoomId != null &&
+    editedMessage.trim().length > 0 &&
+    !sendingMessage;
 
-  const handleConfirm = () => {
-    if (sendingMessage) return;
-    if (typeof onSendMessage === 'function') {
-      onSendMessage(messageText);
-      return;
-    }
-    onClose?.();
-  };
+  const handleConfirm = useCallback(() => {
+    if (!canSend) return;
+    onSendMessage?.(editedMessage.trim(), selectedChatRoomId);
+  }, [canSend, editedMessage, selectedChatRoomId, onSendMessage]);
 
   return (
     <CustomModal
@@ -252,63 +164,87 @@ export default function BirthdayModal({
       visible={visible}
       onClose={onClose}
       onConfirm={handleConfirm}
-      closeText="취소"
-      confirmText={sendingMessage ? '전송 중...' : '메시지 보내기'}
-      title={`${parsed.heroNames} 생일`}
-      subText={subtitle}
+      confirmText={sendingMessage ? '전송 중...' : '보내기'}
+      confirmButtonStyle={!canSend ? styles.confirmDisabled : null}
+      title={`${parsed.heroNames} 생일 🎂`}
+      subText="오늘 축하 메시지를 보내볼까요?"
       modalBoxStyle={styles.modalBox}
       contentStyle={styles.contentArea}
       overlayChildren={
         <ScreenConfetti visible={visible} originX={0.5} originY={0.52} />
       }>
       <View style={styles.content}>
-        <LinearGradient
-          colors={['#FFF8E8', '#FFFDF6']}
-          start={{x: 0, y: 0}}
-          end={{x: 1, y: 1}}
-          style={styles.heroCard}>
-          <View style={styles.heroRow}>
-            <AppText style={styles.heroEmoji}>🎂</AppText>
-            <AppText style={styles.heroTitle}>Happy Birthday</AppText>
-          </View>
+        {/* ── 편집 가능한 축하 메시지 ──────────── */}
+        <TextInput
+          allowFontScaling={false}
+          style={[
+            styles.messageInput,
+            inputFocused && styles.messageInputFocused,
+          ]}
+          value={editedMessage}
+          onChangeText={setEditedMessage}
+          multiline
+          editable={!sendingMessage}
+          placeholder="축하 메시지를 입력해주세요"
+          placeholderTextColor="#9CA3AF"
+          onFocus={() => setInputFocused(true)}
+          onBlur={() => setInputFocused(false)}
+          scrollEnabled={false}
+        />
 
-          <View style={styles.badgeRow}>
-            <View style={styles.nameBadge}>
-              <AppText style={styles.nameBadgeText}>{parsed.heroNames}</AppText>
-            </View>
-            <View style={styles.countBadge}>
-              <AppText style={styles.countBadgeText}>
-                {parsed.total > 0 ? `${parsed.total}명` : '오늘'}
-              </AppText>
-            </View>
-          </View>
-        </LinearGradient>
+        {/* ── 채팅방 선택 ───────────────────────── */}
+        <View>
+          <AppText allowFontScaling={false} style={styles.sectionLabel}>
+            보낼 채팅방
+          </AppText>
 
-        <View style={styles.noticeRow}>
-          <AppText style={styles.noticeIcon}>✦</AppText>
-          <AppText style={styles.noticeText}>짧게라도 한마디 전하면 더 좋아요.</AppText>
+          {chatRoomLoading && chatRoomItems.length === 0 ? (
+            <AppText allowFontScaling={false} style={styles.emptyText}>
+              채팅방 목록을 불러오는 중이에요...
+            </AppText>
+          ) : chatRoomItems.length === 0 ? (
+            <AppText allowFontScaling={false} style={styles.emptyText}>
+              보낼 수 있는 채팅방이 없어요.
+            </AppText>
+          ) : (
+            <View style={styles.roomChipWrap}>
+              {chatRoomItems.map(room => {
+                const selected = selectedChatRoomId === room.id;
+                return (
+                  <Pressable
+                    key={room.id}
+                    onPress={() => {
+                      hapticLight();
+                      onSelectChatRoom?.(room.id);
+                    }}
+                    disabled={sendingMessage}
+                    style={({pressed}) => [
+                      styles.roomChip,
+                      selected && styles.roomChipSelected,
+                      pressed && {opacity: 0.72},
+                    ]}>
+                    <AppText
+                      allowFontScaling={false}
+                      style={[
+                        styles.roomChipText,
+                        selected && styles.roomChipTextSelected,
+                      ]}
+                      numberOfLines={1}>
+                      {room.title}
+                    </AppText>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+
+          {!selectedChatRoomId && chatRoomItems.length > 0 && (
+            <AppText allowFontScaling={false} style={styles.hintText}>
+              채팅방을 선택하면 보내기 버튼이 활성화돼요.
+            </AppText>
+          )}
         </View>
-
-        <Pressable
-          onPress={handleCopyMessage}
-          hitSlop={8}
-          style={({pressed}) => [
-            styles.messageBox,
-            copied && styles.messageBoxCopied,
-            pressed && styles.messageBoxPressed,
-          ]}>
-          <View style={styles.messageHeader}>
-            <AppText style={styles.messageLabel}>추천 문구</AppText>
-            <View style={[styles.messageTag, copied && styles.messageTagCopied]}>
-              <AppText style={[styles.messageTagText, copied && styles.messageTagTextCopied]}>
-                {copied ? '복사됨' : '복사'}
-              </AppText>
-            </View>
-          </View>
-          <AppText style={styles.messageBody}>{messageText}</AppText>
-        </Pressable>
       </View>
     </CustomModal>
   );
 }
-

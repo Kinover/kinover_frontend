@@ -9,7 +9,7 @@ import {BottomSheetTextInput} from '@gorhom/bottom-sheet';
  * - 비활성: borderColor '#EEEEEE', backgroundColor '#F9F9F9'
  * - borderRadius는 style prop에서 유지
  *
- * @param {boolean} bottomSheet - @gorhom/bottom-sheet 내부에서 사용 시 true
+ * @param {boolean} bottomSheet - @gorhom/bottom-sheet 내부에서 사용 시 true (BottomSheetTextInput: 키보드/시트 동기화 필수)
  * @param {boolean} disableFocusStyle - true면 내부 포커스 테두리 비활성화
  * @param {boolean} disableBaseStyle - true면 기본 회색 외곽 비활성화
  */
@@ -54,6 +54,7 @@ const CustomInput = forwardRef(function CustomInput(
       style={[
         style,
         !disableBaseStyle && defaultStyle,
+        bottomSheet && bottomSheetInputStyle,
         !disableFocusStyle && focused && editable && focusedStyle,
         !editable && disabledStyle,
       ]}
@@ -73,6 +74,10 @@ const defaultStyle = {
 const focusedStyle = {
   borderWidth: 1,
   borderColor: '#FFC84D',
+};
+
+const bottomSheetInputStyle = {
+  backgroundColor: '#F5F5F5',
 };
 
 const disabledStyle = {

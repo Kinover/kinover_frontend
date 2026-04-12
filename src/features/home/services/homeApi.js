@@ -21,9 +21,9 @@ export const homeApi = baseApi.injectEndpoints({
       invalidatesTags: ['User', 'FamilyUser'],
     }),
     deleteUser: build.mutation({
-      query: userId => ({
-        url: `/user/delete/${userId}`,
-        method: 'POST',
+      query: () => ({
+        url: '/user/delete',
+        method: 'DELETE',
       }),
       invalidatesTags: ['User', 'Family', 'FamilyUser'],
     }),
@@ -96,6 +96,7 @@ export const {
   useModifyUserMutation,
   useDeleteUserMutation,
   useGetFamilyQuery,
+  useLazyGetFamilyQuery,
   useModifyFamilyMutation,
   useGetFamilyStatusQuery,
   useJoinFamilyMutation,

@@ -9,9 +9,11 @@ import {
   TouchableOpacity,
   RefreshControl,
   Image,
+  Platform,
 } from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
-import {useSelector} from 'react-redux';
+import {useSelector, useDispatch} from 'react-redux';
 
 import ScheduleEditorBottomSheetModal from '../components/ScheduleEditorBottomSheet';
 import CalendarToggle from '../components/Calendar';
@@ -23,6 +25,7 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from 'utils/responsive';
+import {getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
 
 import YellowSpinner from 'components/yellowSpinner';
 
@@ -116,6 +119,13 @@ export default function ScheduleScreen() {
   },
 
   }));
+
+  const insets = useSafeAreaInsets();
+  const fabNavInset = Platform.OS === 'android'
+    ? Math.max(Number(insets?.bottom ?? 0), getAndroidNavBottomInsetEstimate(), getResponsiveHeight(48))
+    : 0;
+  const fabBottom = getResponsiveHeight(110) + fabNavInset;
+
   const [addSchedule] = useAddScheduleMutation();
   const [updateSchedule] = useUpdateScheduleMutation();
   const [deleteSchedule] = useDeleteScheduleMutation();
@@ -430,6 +440,7 @@ export default function ScheduleScreen() {
     openSheet(null);
   }, [isLoading, openSheet, currentUserId, shouldBlockOpen]);
 
+
  // iOS: 가이드 모달 닫은 뒤 터치 복구용
   const [contentKey, setContentKey] = useState(0);
   const handleGuideAfterClose = useCallback(() => setContentKey(k => k + 1), []);
@@ -510,7 +521,7 @@ export default function ScheduleScreen() {
       />
 
       {/* FAB를 화면 하단 고정하려면, 레이아웃 기준을 줄 수 있는 절대 위치 래퍼 필요 */}
-      <View style={styles.fabContainer} pointerEvents="box-none">
+      <View style={[styles.fabContainer, {bottom: fabBottom}]} pointerEvents="box-none">
         <DropShadow
           pointerEvents="box-none"
           style={[styles.fabShadow, SCHEDULE_CARD_SHADOW]}>

@@ -7,7 +7,7 @@ import {HEADER_STYLES} from 'styles/style';
 
 export default function useHeaderSetting(
   navigation,
-  setIsSettingsOpen,
+  chatRoomId,
   title,
   isKino,
 ) {
@@ -25,9 +25,14 @@ export default function useHeaderSetting(
   }, [fontMode]); // fontMode 바뀌면 HEADER_STYLES() 재평가
 
   useLayoutEffect(() => {
+    const openChatSettings = () => {
+      if (!chatRoomId) return;
+      navigation.navigate('채팅설정화면', {chatRoomId, isKino});
+    };
+
     navigation.setOptions({
       headerRight: () => (
-        <RenderHeaderRightChatSetting setIsSettingsOpen={setIsSettingsOpen} />
+        <RenderHeaderRightChatSetting onPress={openChatSettings} />
       ),
       headerTitle: () => (
         <Text allowFontScaling={false} style={headerStyle} numberOfLines={1}>
@@ -35,5 +40,5 @@ export default function useHeaderSetting(
         </Text>
       ),
     });
-  }, [navigation, setIsSettingsOpen, title, isKino, headerStyle, fontMode]);
+  }, [navigation, chatRoomId, title, isKino, headerStyle, fontMode]);
 }

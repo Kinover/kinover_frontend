@@ -65,7 +65,45 @@ export const RESPONSIVE_MODE = {
   EXTRA_LARGE: 'EXTRA_LARGE',
 };
 
-let currentMode = RESPONSIVE_MODE.NORMAL;
+const resolveInitialResponsiveMode = () => {
+  try {
+    // redux-persist(MMKV)에 저장된 ui.fontMode를 앱 초기 로드 시점에 동기 복원
+    // static StyleSheet.create(getResponsiveFontSize(...))도 올바른 모드로 계산되게 한다.
+    const {MMKV} = require('react-native-mmkv');
+    const mmkv = new MMKV({id: 'kinover-redux-persist'});
+    const direct = mmkv.getString('ui:fontMode');
+    if (
+      direct === RESPONSIVE_MODE.NORMAL ||
+      direct === RESPONSIVE_MODE.LARGE ||
+      direct === RESPONSIVE_MODE.EXTRA_LARGE
+    ) {
+      return direct;
+    }
+    const raw =
+      mmkv.getString('persist:root') ??
+      mmkv.getString('root') ??
+      null;
+    if (!raw) return RESPONSIVE_MODE.NORMAL;
+
+    const persisted = JSON.parse(raw);
+    const uiRaw = persisted?.ui;
+    const ui = typeof uiRaw === 'string' ? JSON.parse(uiRaw) : uiRaw;
+    const savedMode = ui?.fontMode;
+
+    if (
+      savedMode === RESPONSIVE_MODE.NORMAL ||
+      savedMode === RESPONSIVE_MODE.LARGE ||
+      savedMode === RESPONSIVE_MODE.EXTRA_LARGE
+    ) {
+      return savedMode;
+    }
+  } catch {
+    // no-op: MMKV unavailable/test env/parse error → 기본값 사용
+  }
+  return RESPONSIVE_MODE.NORMAL;
+};
+
+let currentMode = resolveInitialResponsiveMode();
 
 export const setResponsiveMode = mode => {
  // 허용 값만 통과

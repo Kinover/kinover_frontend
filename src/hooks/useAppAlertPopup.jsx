@@ -1,5 +1,5 @@
 // src/hooks/useAppAlertPopup.js
-import {useCallback, useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import mmkvStorage from 'utils/mmkvStorage';
 
 const KEY_PREFIX = '@kinover/alert/dismissed/';
@@ -48,20 +48,36 @@ export default function useAppAlertPopup(event, {enabled = true} = {}) {
   const [visible, setVisible] = useState(false);
   const [ready, setReady] = useState(false);
 
-  const eventId = event?.id;
+  const eventId = event?.id ?? null;
+
+  // 세션 내 즉시 해제 여부를 추적 (useEffect 재실행 시에도 모달 재노출 방지)
+  const sessionDismissedRef = useRef(false);
+
+  // eventId가 바뀌면 세션 해제 초기화
+  const prevEventIdRef = useRef(null);
+  if (prevEventIdRef.current !== eventId) {
+    prevEventIdRef.current = eventId;
+    sessionDismissedRef.current = false;
+  }
 
   const storageKey = useMemo(() => {
     if (!eventId) return null;
     return `${KEY_PREFIX}${eventId}`;
   }, [eventId]);
 
+  // undefined → null 정규화로 불필요한 checkShouldShow 재생성 방지
+  const eventEnabled = event?.enabled ?? null;
+  const eventStartAt = event?.startAt ?? null;
+  const eventEndAt = event?.endAt ?? null;
+
   const checkShouldShow = useCallback(async () => {
     if (!enabled) return false;
     if (!eventId) return false;
-    if (event?.enabled === false) return false;
+    if (sessionDismissedRef.current) return false;
+    if (eventEnabled === false) return false;
 
  // 기간 제한
-    if (!isWithinWindow(event?.startAt, event?.endAt)) return false;
+    if (!isWithinWindow(eventStartAt, eventEndAt)) return false;
 
     try {
       const raw = await mmkvStorage.getItem(storageKey);
@@ -72,7 +88,7 @@ export default function useAppAlertPopup(event, {enabled = true} = {}) {
  // 읽기 실패면 보여주는 편이 낫다
       return true;
     }
-  }, [enabled, eventId, event?.enabled, event?.startAt, event?.endAt, storageKey]);
+  }, [enabled, eventId, eventEnabled, eventStartAt, eventEndAt, storageKey]);
 
   const open = useCallback(() => {
     setVisible(true);
@@ -93,12 +109,14 @@ export default function useAppAlertPopup(event, {enabled = true} = {}) {
   );
 
   const dismissToday = useCallback(async () => {
+    sessionDismissedRef.current = true;
     await saveValue(`until:${endOfTodayMs()}`);
     setVisible(false);
   }, [saveValue]);
 
   const dismissHours = useCallback(
     async hours => {
+      sessionDismissedRef.current = true;
       const h = Number(hours);
       const ms = Number.isFinite(h) ? h * 60 * 60 * 1000 : 0;
       await saveValue(`until:${nowMs() + ms}`);
@@ -108,6 +126,7 @@ export default function useAppAlertPopup(event, {enabled = true} = {}) {
   );
 
   const dismissNever = useCallback(async () => {
+    sessionDismissedRef.current = true;
     await saveValue('never');
     setVisible(false);
   }, [saveValue]);

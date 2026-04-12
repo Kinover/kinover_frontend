@@ -9,12 +9,14 @@ import {
 import CustomInput from 'components/CustomInput';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useRoute} from '@react-navigation/native';
+import {useSelector} from 'react-redux';
 
 import DatePicker from 'react-native-date-picker';
 
 import {useNavigateToWhere} from 'hooks/useNavigateToWhere';
 import BottomActionButton from 'components/BottomActionButton';
 import {updateUserProfile} from 'api/userProfileApi';
+import {getUserIdFromToken} from 'api/getUserIdFromToken';
 import {required, validateLength} from 'utils/validation';
 export default function UserSetupScreen() {
   const [name, setName] = useState('');
@@ -26,6 +28,7 @@ export default function UserSetupScreen() {
 
   const navigateToWhere = useNavigateToWhere();
   const route = useRoute();
+  const userIdFromStore = useSelector(state => state?.user?.userId ?? null);
 
   const {
     termsAgreed,
@@ -77,7 +80,15 @@ export default function UserSetupScreen() {
     setLoading(true);
 
     try {
+      const tokenUserId = await getUserIdFromToken();
+      const resolvedUserId =
+        userIdFromStore ??
+        route?.params?.userId ??
+        tokenUserId ??
+        null;
+
       const payload = {
+        ...(resolvedUserId != null ? {userId: resolvedUserId} : {}),
         name: nameTrimmed,
         birth: formatDate(birthDate), // YYYY-MM-DD
         termsAgreed,
@@ -106,7 +117,6 @@ export default function UserSetupScreen() {
   }, [
     termsAgreed,
     privacyAgreed,
-    isFormValid,
     name,
     birthDate,
     marketingAgreed,
@@ -115,6 +125,8 @@ export default function UserSetupScreen() {
     agreedAt,
     marketingAgreedAt,
     navigateToWhere,
+    userIdFromStore,
+    route?.params?.userId,
   ]);
 
  // 진입 자체를 막기

@@ -51,7 +51,8 @@ import updatePostApi from 'api/updatePostApi';
 import {useDispatch, useSelector} from 'react-redux';
 import formatDuration from 'utils/formatDuration';
 import {getVideoThumbnail} from 'utils/videoThumbnail';
-import {useGetPostByIdQuery, useCreateCategoryMutation, useDeletePostImageMutation} from '../services/memoryApi';
+import {memoryApi, useGetPostByIdQuery, useCreateCategoryMutation, useDeletePostImageMutation} from '../services/memoryApi';
+import {removeTemporaryCategoryById} from '../store/categorySlice';
 
 // MediaViewer 적용
 import MediaViewer from '../components/media/MediaViewer';
@@ -59,6 +60,19 @@ import MediaViewer from '../components/media/MediaViewer';
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
 const isHttpUrl = u => /^https?:\/\//i.test(String(u || ''));
+
+/** POST /categories 응답이 categoryId / id / snake_case 등으로 올 수 있음 */
+const pickCategoryIdFromCreateResponse = raw => {
+  if (raw == null) return null;
+  if (typeof raw === 'string' || typeof raw === 'number') return raw;
+  const inner = raw?.data != null && typeof raw.data === 'object' ? raw.data : raw;
+  return (
+    inner?.categoryId ??
+    inner?.id ??
+    inner?.category_id ??
+    null
+  );
+};
 
 const extractFileNameFromUrl = url => {
   try {
@@ -201,7 +215,13 @@ export default function CreatePostPage({navigation, route}) {
   const [deletePostImage] = useDeletePostImageMutation();
   const dispatch = useDispatch();
   const {userId} = useSelector(s => s.user);
-  const {familyId} = useSelector(s => s.family);
+  const familyId = useSelector(
+    s =>
+      s.family?.familyId ??
+      s.user?.familyId ??
+      s.user?.family?.familyId ??
+      null,
+  );
 
   useHideTabBar({stayHidden: true});
 
@@ -504,7 +524,9 @@ export default function CreatePostPage({navigation, route}) {
       if (selectedCategory.isTemporary) {
         try {
           const result = await createCategory({title: selectedCategory.title}).unwrap();
-          finalCategoryId = result?.categoryId ?? selectedCategory.categoryId;
+          const createdId = pickCategoryIdFromCreateResponse(result);
+          finalCategoryId = createdId ?? selectedCategory.categoryId;
+          dispatch(removeTemporaryCategoryById(selectedCategory.categoryId));
         } catch (e) {
           showToast('카테고리 생성에 실패했어요.');
           return;
@@ -609,6 +631,7 @@ export default function CreatePostPage({navigation, route}) {
       if (isEditMode) {
         const payload = {
           authorId,
+          familyId,
           content: text || '',
           categoryId: finalCategoryId,
           imageUrls,
@@ -632,6 +655,7 @@ export default function CreatePostPage({navigation, route}) {
       } else {
         const payload = {
           authorId,
+          familyId,
           content: text || '',
           categoryId: finalCategoryId,
           imageUrls,
@@ -644,7 +668,14 @@ export default function CreatePostPage({navigation, route}) {
           dispatch(memoryApi.util.invalidateTags(['Memory']));
         } catch (e) {
           logAxiosError('uploadPostApi', e);
-          showToast('업로드 요청 중 서버 오류가 발생했어요.');
+          const serverMsg =
+            e?.response?.data?.message ??
+            (typeof e?.response?.data === 'string' ? e.response.data : null);
+          showToast(
+            serverMsg
+              ? String(serverMsg)
+              : '업로드 요청 중 서버 오류가 발생했어요.',
+          );
           return;
         }
       }

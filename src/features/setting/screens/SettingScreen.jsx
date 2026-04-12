@@ -15,6 +15,7 @@ import {
 import {RenderHeaderBackButton} from 'app/navigation/helpers/tabHeaderHelpers';
 
 import RNRestart from 'react-native-restart';
+import * as Keychain from 'react-native-keychain';
 
 import LogoutModal from 'features/home/components/LogoutModal';
 import DeleteAccountModal from '../components/DeleteAccountModal';
@@ -40,6 +41,10 @@ import CustomSwitch from 'components/customSwitch';
 
 import {setFontMode, FONT_MODE, setBioLockEnabled} from 'store/uiSlice';
 import {persistor} from 'store';
+import mmkvStorage from 'utils/mmkvStorage';
+
+const FONT_MODE_STORAGE_KEY = 'ui:fontMode';
+const FONT_MODE_KEYCHAIN_SERVICE = 'kinover.ui.fontMode';
 
 export default function SettingScreen() {
   const navigation = useNavigation();
@@ -86,7 +91,14 @@ export default function SettingScreen() {
   const [bioLoading, setBioLoading] = useState(true);
 
   const fontMode = useReduxFontMode();
+  const [pendingFontMode, setPendingFontMode] = useState(
+    fontMode ?? FONT_MODE.NORMAL,
+  );
   const bioOn = useSelector(state => state.ui.bioLockEnabled);
+
+  useEffect(() => {
+    setPendingFontMode(fontMode ?? FONT_MODE.NORMAL);
+  }, [fontMode]);
 
   const styles = useScaledStyleSheet(rf => {
     const S = SETTING_STYLES();
@@ -162,7 +174,7 @@ export default function SettingScreen() {
       fontSegmentWrap: {
         flexDirection: 'row',
         borderRadius: getResponsiveWidth(999),
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#E5E7EB',
         padding: getResponsiveWidth(3),
       },
       fontSegmentBtn: {
@@ -190,9 +202,9 @@ export default function SettingScreen() {
 
   const fontModeOptions = useMemo(
     () => [
-      {mode: FONT_MODE.NORMAL, label: '보통'},
-      {mode: FONT_MODE.LARGE, label: '크게'},
-      {mode: FONT_MODE.EXTRA_LARGE, label: '매우 크게'},
+      {mode: FONT_MODE.NORMAL, label: 'S'},
+      {mode: FONT_MODE.LARGE, label: 'M'},
+      {mode: FONT_MODE.EXTRA_LARGE, label: 'L'},
     ],
     [],
   );
@@ -250,15 +262,29 @@ export default function SettingScreen() {
           : FONT_MODE.NORMAL;
 
       if (safe === fontMode) return;
-
+      setPendingFontMode(safe);
       Alert.alert(
         '적용을 위해 재시작',
         '글씨 크기 변경을 적용하려면 앱을 다시 시작할게요.',
         [
-          {text: '취소', style: 'cancel'},
+          {
+            text: '취소',
+            style: 'cancel',
+            onPress: () => setPendingFontMode(fontMode ?? FONT_MODE.NORMAL),
+          },
           {
             text: '재시작',
             onPress: async () => {
+              try {
+                await mmkvStorage.setItem(FONT_MODE_STORAGE_KEY, safe);
+                await Keychain.setInternetCredentials(
+                  FONT_MODE_KEYCHAIN_SERVICE,
+                  'fontMode',
+                  safe,
+                );
+              } catch (e) {
+                null;
+              }
               dispatch(setFontMode(safe));
               try {
                 await persistor.flush();
@@ -352,7 +378,7 @@ export default function SettingScreen() {
           <View style={styles.fontRowSliderWrap}>
             <View style={styles.fontSegmentWrap}>
               {fontModeOptions.map(option => {
-                const active = fontMode === option.mode;
+                const active = pendingFontMode === option.mode;
                 return (
                   <Pressable
                     key={option.mode}

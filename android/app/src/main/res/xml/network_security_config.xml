@@ -1,12 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-  <domain-config cleartextTrafficPermitted="true">
+  <!-- 프로덕션 도메인은 HTTPS/WSS만 허용 (cleartext 제거) -->
+  <domain-config cleartextTrafficPermitted="false">
     <domain includeSubdomains="true">kinover.shop</domain>
   </domain-config>
+  <!-- Metro bundler 개발용 — 릴리즈 빌드에서는 사용되지 않음 -->
   <domain-config cleartextTrafficPermitted="true">
     <domain includeSubdomains="true">10.0.2.2</domain>
   </domain-config>
   <domain-config cleartextTrafficPermitted="true">
     <domain includeSubdomains="true">43.200.47.242</domain>
+  </domain-config>
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="false">localhost</domain>
+  </domain-config>
+  <domain-config cleartextTrafficPermitted="true">
+    <domain includeSubdomains="false">127.0.0.1</domain>
   </domain-config>
 </network-security-config>

@@ -15,7 +15,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  runOnJS,
 } from 'react-native-reanimated';
 
 import {
@@ -52,21 +51,14 @@ function PostOptionsMenu(
   const anim = useSharedValue(0);
   const closingRef = useRef(false);
 
-  const finishClose = useCallback(() => {
-    setVisible?.(false);
-    closingRef.current = false;
-  }, [setVisible]);
-
   const close = useCallback(() => {
     if (!visible) return;
     if (closingRef.current) return;
 
     closingRef.current = true;
-
-    anim.value = withTiming(0, {duration: 120}, () => {
-      runOnJS(finishClose)();
-    });
-  }, [visible, anim, finishClose]);
+    // Android에서 reanimated close 콜백이 누락되면 dim 잔상이 남을 수 있어 즉시 닫는다.
+    setVisible?.(false);
+  }, [visible, setVisible]);
 
   const open = useCallback(() => {
     if (visible) return;
@@ -208,10 +200,9 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
-    paddingTop: 70 ,
+    paddingTop: 70,
     paddingRight: 14,
     zIndex: 9999,
-    elevation: 9999,
   },
   dim: {
     ...StyleSheet.absoluteFillObject,

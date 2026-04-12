@@ -20,23 +20,21 @@ import {
   Platform,
   TouchableOpacity,
   Keyboard,
-  Animated,
-  Dimensions,
   ScrollView,
+  Animated,
+  Modal,
 } from 'react-native';
+import DateTimePicker, {
+  DateTimePickerAndroid,
+} from '@react-native-community/datetimepicker';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {
-  getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import {
-  getKeyboardSafeGap,
-  getScheduleBottomSheetSnapPoints,
-} from 'utils/layoutMetrics';
-import {useReduxFontMode} from 'hooks/useReduxFontMode';
+import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 
 import {useScheduleBottomSheetModal} from '../hooks/useScheduleBottomSheetModal';
 import ToastModal from 'components/modal/ToastModal';
@@ -47,6 +45,10 @@ import CustomInput from 'components/CustomInput';
 import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
 import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
 import {
+  BOTTOM_SHEET_BUTTON_LABELS,
+  getScheduleEditorTitle,
+} from 'constants/bottomSheetTitles';
+import {
   BOTTOM_SHEET_EDITOR_COLORS as COLORS,
   BOTTOM_SHEET_EDITOR_FLOW as FLOW,
   getBottomSheetEditorBottomSafe,
@@ -55,9 +57,6 @@ import {
 } from 'components/bottomSheet/bottomSheetEditorSharedStyles';
 import {BOTTOMSHEET_STYLE} from 'styles/style';
 import {Easing} from 'react-native-reanimated';
-
-const {height: WINDOW_H} = Dimensions.get('window');
-const SAFE_GAP = getKeyboardSafeGap();
 
 const KIND = {
   INDIVIDUAL: 'individual',
@@ -120,6 +119,24 @@ const normalizeKind = raw => {
   return KIND.INDIVIDUAL;
 };
 
+/** YYYY-MM-DD 문자열 → Date 객체 */
+function parseDateString(raw) {
+  if (!raw) return new Date();
+  if (raw instanceof Date && !Number.isNaN(raw.getTime())) return raw;
+  const m = String(raw).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12, 0, 0);
+  return new Date();
+}
+
+/** Date 객체 → YYYY-MM-DD 문자열 */
+function toDateString(d) {
+  if (!d) return '';
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${dd}`;
+}
+
 /** 중앙 히어로용: `2026년 3월 22일` (요일 없음) */
 function formatScheduleDateShort(raw) {
   if (raw == null || raw === '') {
@@ -163,8 +180,14 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     },
     ref,
   ) => {
+    const styles = useScaledStyleSheet(makeStyles);
+
     const [localKind, setLocalKind] = useState(KIND.INDIVIDUAL);
     const [localSelectedUserIds, setLocalSelectedUserIds] = useState([]);
+
+    const [localDate, setLocalDate] = useState(null); // YYYY-MM-DD 문자열
+    const [iosPickerVisible, setIosPickerVisible] = useState(false);
+    const [iosTempDate, setIosTempDate] = useState(new Date());
 
     const [toastVisible, setToastVisible] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
@@ -175,16 +198,12 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 
     const closingRef = useRef(false);
 
-    const shiftAnim = useRef(new Animated.Value(0)).current;
-    const keyboardHeightRef = useRef(0);
     const inputRef = useRef(null);
     const blurTitleInput = useCallback(() => {
       inputRef.current?.blur?.();
       setIsTitleFocused(false);
     }, []);
 
-    const tapToResetRef = useRef(false);
-    const keyboardOpenRef = useRef(false);
     const titleFocusInteractionRef = useRef(false);
     const titleFocusInteractionTimerRef = useRef(null);
     const markTitleFocusInteraction = useCallback(() => {
@@ -288,15 +307,22 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       [editingKey],
     );
 
-    const fontMode = useReduxFontMode();
-    const sheetSnapPoints = useMemo(
-      () =>
-        getScheduleBottomSheetSnapPoints(
-          fontMode,
-          (familyUserList || []).length,
-        ),
-      [fontMode, familyUserList],
-    );
+    const sheetSnapPoints = useMemo(() => ['82%'], []);
+    /** iOS: 키보드에 맞춰 시트 전체 상승. Android: 기존 bottomInset 정책 유지. */
+    const sheetKeyboardProps = useMemo(() => {
+      if (Platform.OS === 'ios') {
+        return {
+          keyboardBehavior: 'interactive',
+          keyboardBlurBehavior: 'restore',
+          enableKeyboardPolicy: false,
+        };
+      }
+      return {
+        keyboardBehavior: 'none',
+        keyboardBlurBehavior: 'none',
+        enableKeyboardPolicy: true,
+      };
+    }, []);
 
     useEffect(() => {
       const es = editingScheduleRef.current;
@@ -381,7 +407,8 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       const es = editingScheduleRef.current;
 
       const familyId = es?.familyId ?? familyIdProp;
-      const date = es?.date ?? dateProp;
+      // localDate가 있으면 우선 사용 (사용자가 바텀시트에서 변경한 날짜)
+      const date = localDate ?? es?.date ?? dateProp;
 
       const scheduleId =
         es?.scheduleId ?? es?.id ?? es?.scheduleID ?? undefined;
@@ -394,11 +421,11 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         date,
         ...(memo != null ? {memo} : {}),
       };
-    }, [familyIdProp, dateProp, memoProp]);
+    }, [familyIdProp, dateProp, memoProp, localDate]);
 
     const dateLabelShort = useMemo(
-      () => formatScheduleDateShort(dateProp ?? editingSchedule?.date),
-      [dateProp, editingSchedule?.date],
+      () => formatScheduleDateShort(localDate ?? dateProp ?? editingSchedule?.date),
+      [localDate, dateProp, editingSchedule?.date],
     );
 
     const {modalRef, scheduleRef, inputKey, handleSave, handleDelete} =
@@ -427,6 +454,74 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       () => getBottomSheetEditorBottomSafe(insets.bottom, getResponsiveHeight),
       [insets.bottom],
     );
+    const SHEET_H = useMemo(() => getResponsiveHeight(330), []);
+    const sheetY = useRef(new Animated.Value(SHEET_H)).current;
+    const backdropOpacity = useRef(new Animated.Value(0)).current;
+
+    const openAndroidDatePicker = useCallback(() => {
+      const current = parseDateString(localDate ?? dateProp ?? editingSchedule?.date);
+      DateTimePickerAndroid.open({
+        value: current,
+        mode: 'date',
+        display: 'spinner',
+        onChange: (event, selectedDate) => {
+          if (event?.type === 'dismissed') return;
+          if (!selectedDate) return;
+          setLocalDate(toDateString(selectedDate));
+        },
+      });
+    }, [localDate, dateProp, editingSchedule?.date]);
+
+    const openIOSActionSheet = useCallback(() => {
+      const current = parseDateString(localDate ?? dateProp ?? editingSchedule?.date);
+      setIosTempDate(current);
+      setIosPickerVisible(true);
+      sheetY.setValue(SHEET_H);
+      backdropOpacity.setValue(0);
+      requestAnimationFrame(() => {
+        Animated.parallel([
+          Animated.timing(backdropOpacity, {
+            toValue: 1,
+            duration: 180,
+            useNativeDriver: true,
+          }),
+          Animated.timing(sheetY, {
+            toValue: 0,
+            duration: 220,
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
+    }, [
+      localDate,
+      dateProp,
+      editingSchedule?.date,
+      SHEET_H,
+      sheetY,
+      backdropOpacity,
+    ]);
+
+    const closeIOSActionSheet = useCallback(() => {
+      Animated.parallel([
+        Animated.timing(backdropOpacity, {
+          toValue: 0,
+          duration: 160,
+          useNativeDriver: true,
+        }),
+        Animated.timing(sheetY, {
+          toValue: SHEET_H,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setIosPickerVisible(false);
+      });
+    }, [SHEET_H, sheetY, backdropOpacity]);
+
+    const confirmIOSActionSheet = useCallback(() => {
+      setLocalDate(toDateString(iosTempDate));
+      closeIOSActionSheet();
+    }, [iosTempDate, closeIOSActionSheet]);
 
     const closeSheet = useCallback(() => {
       if (closingRef.current) return;
@@ -444,18 +539,9 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       closingRef.current = false;
       setIsTitleFocused(false);
 
-      tapToResetRef.current = false;
-      keyboardHeightRef.current = 0;
-      keyboardOpenRef.current = false;
-
       setDeleteModalVisible(false);
-
-      Animated.timing(shiftAnim, {
-        toValue: 0,
-        duration: 140,
-        useNativeDriver: true,
-      }).start();
-    }, [shiftAnim]);
+      setIosPickerVisible(false);
+    }, []);
 
     useImperativeHandle(ref, () => ({
       present: () => {
@@ -463,16 +549,12 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         closingRef.current = false;
         setIsTitleFocused(false);
 
-        tapToResetRef.current = false;
-        keyboardOpenRef.current = false;
-
         setDeleteModalVisible(false);
+        setIosPickerVisible(false);
 
-        Animated.timing(shiftAnim, {
-          toValue: 0,
-          duration: 120,
-          useNativeDriver: true,
-        }).start();
+        // 열릴 때마다 날짜 초기화 (편집 중인 일정 날짜 or 선택된 날짜)
+        const initDate = editingScheduleRef.current?.date ?? dateProp ?? null;
+        setLocalDate(initDate);
 
         modalRef.current?.present?.();
 
@@ -489,97 +571,14 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       dismiss: () => closeSheet(),
     }));
 
-    useEffect(() => {
-      const onShow = e => {
-        keyboardOpenRef.current = true;
-        keyboardHeightRef.current = e?.endCoordinates?.height || 0;
-      };
-
-      const onHide = () => {
-        keyboardOpenRef.current = false;
-        keyboardHeightRef.current = 0;
-
-        Animated.timing(shiftAnim, {
-          toValue: 0,
-          duration: 160,
-          useNativeDriver: true,
-        }).start(() => {
-          tapToResetRef.current = false;
-        });
-      };
-
-      const subShow = Keyboard.addListener(
-        Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-        onShow,
-      );
-      const subHide = Keyboard.addListener(
-        Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-        onHide,
-      );
-
-      return () => {
-        subShow.remove();
-        subHide.remove();
-      };
-    }, [shiftAnim]);
-
-    const ensureVisible = useCallback(
-      refNode => {
-        if (tapToResetRef.current) return;
-
-        const kbH = keyboardHeightRef.current || 0;
-        if (!kbH) return;
-
-        requestAnimationFrame(() => {
-          if (tapToResetRef.current) return;
-
-          const node = refNode?.current;
-          if (!node || typeof node.measureInWindow !== 'function') return;
-
-          node.measureInWindow((x, y, w, h) => {
-            if (tapToResetRef.current) return;
-
-            const inputBottomY = y + h;
-            const limitY = WINDOW_H - kbH - SAFE_GAP;
-
-            if (inputBottomY <= limitY) {
-              Animated.timing(shiftAnim, {
-                toValue: 0,
-                duration: 140,
-                useNativeDriver: true,
-              }).start();
-              return;
-            }
-
-            const diff = inputBottomY - limitY;
-
-            Animated.timing(shiftAnim, {
-              toValue: -diff,
-              duration: 180,
-              useNativeDriver: true,
-            }).start();
-          });
-        });
-      },
-      [shiftAnim],
-    );
 
     const handleTouchInsideResetOnly = useCallback(() => {
-      if (!keyboardOpenRef.current && !isTitleFocused) return;
+      if (!isTitleFocused) return;
       if (titleFocusInteractionRef.current) return;
       if (touchLockRef.current) return;
       lockTouchBriefly();
       blurTitleInput();
-      tapToResetRef.current = true;
-
-      Animated.timing(shiftAnim, {
-        toValue: 0,
-        duration: 150,
-        useNativeDriver: true,
-      }).start(() => {
-        tapToResetRef.current = false;
-      });
-    }, [shiftAnim, lockTouchBriefly, isTitleFocused, blurTitleInput]);
+    }, [lockTouchBriefly, isTitleFocused, blurTitleInput]);
 
     const toggleUser = userId => {
       if (isClosing) return;
@@ -698,8 +697,8 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         return {
           onCancel: handlePressDelete,
           onSave: handlePressSave,
-          cancelLabel: '삭제하기',
-          saveLabel: '저장하기',
+          cancelLabel: BOTTOM_SHEET_BUTTON_LABELS.DELETE,
+          saveLabel: BOTTOM_SHEET_BUTTON_LABELS.SAVE_ACTION,
           showCancel: true,
           autoCloseOnSave: false,
           saveButtonStyle: saveStyle,
@@ -708,7 +707,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       }
       return {
         onSave: handlePressSave,
-        saveLabel: '저장하기',
+        saveLabel: BOTTOM_SHEET_BUTTON_LABELS.SAVE_ACTION,
         showCancel: false,
         autoCloseOnSave: false,
         saveButtonStyle: saveStyle,
@@ -769,7 +768,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                 selected && styles.memberChipTextSelected,
               ]}
               numberOfLines={1}>
-              {item.name}
+              {selected ? `✓ ${item.name}` : item.name}
             </AppText>
           </TouchableOpacity>
         );
@@ -802,11 +801,11 @@ const ScheduleEditorBottomSheetModal = forwardRef(
           animationConfigs={sheetAnimationConfigs}
           containerStyle={{paddingHorizontal: getResponsiveWidth(20)}}
           useInternalScroll={false}
-          keyboardBehavior={Platform.OS === 'ios' ? 'interactive' : 'none'}
-          androidKeyboardInputMode="adjustResize"
-          enableKeyboardPolicy={true}
+          enableContentPanningGesture={true}
+          androidKeyboardInputMode="adjustNothing"
           keyboardOpenSnapIndex={0}
           keyboardCloseSnapIndex={0}
+          {...sheetKeyboardProps}
           dismissKeyboardOnPress={true}
           onTouchInside={handleTouchInsideResetOnly}
           onDismiss={handleSheetDismiss}
@@ -816,29 +815,47 @@ const ScheduleEditorBottomSheetModal = forwardRef(
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="always"
             contentContainerStyle={{paddingBottom: getResponsiveHeight(8)}}>
-            <Animated.View style={{transform: [{translateY: shiftAnim}]}}>
+            <View>
               <View style={styles.content}>
                 <View style={styles.heroCenter}>
                   <AppText allowFontScaling={false} style={styles.heroTitle}>
-                    {editingSchedule ? '일정 수정' : '일정 추가'}
+                    {getScheduleEditorTitle(!!editingSchedule)}
                   </AppText>
-                  {!!dateLabelShort && (
-                    <View style={styles.dateBadge}>
-                      <AppText
-                        allowFontScaling={false}
-                        style={styles.dateBadgeText}>
-                        {'📅 ' + dateLabelShort}
-                      </AppText>
-                    </View>
-                  )}
                 </View>
 
                 <View style={styles.formColumn}>
+                  {/* 날짜 */}
                   <View style={styles.fieldBlock}>
                     <AppText
                       allowFontScaling={false}
                       style={styles.sectionLabel}>
-                      일정 제목
+                      날짜
+                    </AppText>
+                    <TouchableOpacity
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        Keyboard.dismiss();
+                        if (Platform.OS === 'android') {
+                          openAndroidDatePicker();
+                        } else {
+                          openIOSActionSheet();
+                        }
+                      }}
+                      style={styles.dateFieldRow}>
+                      <AppText
+                        allowFontScaling={false}
+                        style={styles.dateFieldText}>
+                        {dateLabelShort || '날짜를 선택해주세요'}
+                      </AppText>
+                    </TouchableOpacity>
+                  </View>
+
+                  {/* 제목 */}
+                  <View style={styles.fieldBlock}>
+                    <AppText
+                      allowFontScaling={false}
+                      style={styles.sectionLabel}>
+                      제목
                     </AppText>
                     <View
                       style={[
@@ -860,8 +877,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                         onFocus={() => {
                           markTitleFocusInteraction();
                           setIsTitleFocused(true);
-                          tapToResetRef.current = false;
-                          ensureVisible(inputRef);
                         }}
                         onBlur={() => {
                           setIsTitleFocused(false);
@@ -941,7 +956,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                   ) : null}
                 </View>
               </View>
-            </Animated.View>
+            </View>
           </BottomSheetScrollView>
           <BottomSheetFooterButtons
             bottomSafe={bottomSafe}
@@ -977,6 +992,65 @@ const ScheduleEditorBottomSheetModal = forwardRef(
           onClose={hideToast}
           message={toastMessage}
         />
+        {Platform.OS === 'ios' && (
+          <Modal
+            visible={iosPickerVisible}
+            transparent
+            animationType="none"
+            statusBarTranslucent
+            onRequestClose={closeIOSActionSheet}>
+            <View style={[StyleSheet.absoluteFill, {justifyContent: 'flex-end'}]}>
+              <Animated.View
+                style={[styles.sheetBackdrop, {opacity: backdropOpacity}]}>
+                <TouchableOpacity
+                  activeOpacity={1}
+                  style={StyleSheet.absoluteFill}
+                  onPress={closeIOSActionSheet}
+                />
+              </Animated.View>
+
+              <Animated.View
+                style={[styles.sheetBox, {transform: [{translateY: sheetY}]}]}
+                pointerEvents="auto">
+                <View style={styles.sheetHeader}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={closeIOSActionSheet}
+                    style={styles.sheetHeaderBtn}>
+                    <AppText style={styles.sheetHeaderText}>취소</AppText>
+                  </TouchableOpacity>
+
+                  <AppText style={styles.sheetTitle}>날짜 선택</AppText>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={confirmIOSActionSheet}
+                    style={styles.sheetHeaderBtn}>
+                    <AppText style={[styles.sheetHeaderText, {color: 'black'}]}>
+                      확인
+                    </AppText>
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.sheetPickerArea}>
+                  <DateTimePicker
+                    value={iosTempDate}
+                    mode="date"
+                    display="spinner"
+                    locale="ko-KR"
+                    onChange={(event, selectedDate) => {
+                      if (!selectedDate) return;
+                      setIosTempDate(selectedDate);
+                    }}
+                    style={styles.sheetDatePicker}
+                  />
+                </View>
+
+                <View style={{height: getResponsiveHeight(14)}} />
+              </Animated.View>
+            </View>
+          </Modal>
+        )}
       </>
     );
   },
@@ -985,40 +1059,45 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 ScheduleEditorBottomSheetModal.displayName = 'ScheduleEditorBottomSheetModal';
 export default ScheduleEditorBottomSheetModal;
 
-const styles = StyleSheet.create({
+const makeStyles = rf =>
+  StyleSheet.create({
   ...getBottomSheetEditorSharedStyles(
-    getResponsiveFontSize,
+    rf,
     getResponsiveHeight,
     getResponsiveWidth,
   ),
 
-  /** 중앙 묶음: 제목 + 날짜 pill */
   heroCenter: {
     alignSelf: 'stretch',
     alignItems: 'center',
-    marginBottom: getResponsiveHeight(26),
+    marginBottom: getResponsiveHeight(18),
   },
   heroTitle: {
-    fontSize: getResponsiveFontSize(18),
+    fontSize: rf(18),
     fontFamily: 'Pretendard-SemiBold',
     color: COLORS.text,
     letterSpacing: -0.35,
     textAlign: 'center',
   },
 
-  dateBadge: {
-    marginTop: getResponsiveHeight(6),
-    paddingHorizontal: getResponsiveWidth(10),
-    paddingVertical: getResponsiveHeight(4),
-    borderRadius: 999,
-    backgroundColor: '#F2F2F7',
-    alignSelf: 'center',
+  dateFieldRow: {
+    alignSelf: 'stretch',
+    borderWidth: 1,
+    borderColor: '#DADADA',
+    borderRadius: getResponsiveWidth(12),
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: getResponsiveWidth(12),
+    paddingVertical: getResponsiveHeight(11),
+    marginTop: getResponsiveHeight(4),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
-  dateBadgeText: {
-    fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-Medium',
-    color: COLORS.sub,
-    letterSpacing: -0.15,
+  dateFieldText: {
+    fontSize: rf(15),
+    fontFamily: 'Pretendard-Regular',
+    color: COLORS.text,
+    letterSpacing: -0.18,
   },
 
   /** 좌측 정렬 폼 영역 */
@@ -1067,7 +1146,7 @@ const styles = StyleSheet.create({
     }),
   },
   segmentLabel: {
-    fontSize: getResponsiveFontSize(14),
+    fontSize: rf(14),
     fontFamily: 'Pretendard-SemiBold',
     color: 'rgba(60, 60, 67, 0.72)',
     letterSpacing: -0.25,
@@ -1082,7 +1161,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#DADADA',
     borderRadius: getResponsiveWidth(12),
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F5F5F5',
     paddingHorizontal: getResponsiveWidth(12),
     paddingVertical: getResponsiveHeight(5),
     marginTop: getResponsiveHeight(4),
@@ -1099,10 +1178,10 @@ const styles = StyleSheet.create({
     borderWidth: 0,
     backgroundColor: 'transparent',
     includeFontPadding: false,
-    fontSize: getResponsiveFontSize(15),
+    fontSize: rf(15),
     fontFamily: 'Pretendard-Regular',
     color: COLORS.text,
-    lineHeight: getResponsiveFontSize(20),
+    lineHeight: rf(20),
     letterSpacing: -0.18,
     textAlign: 'left',
     textAlignVertical: 'center',
@@ -1152,7 +1231,7 @@ const styles = StyleSheet.create({
   memberChipDisabled: {opacity: 0.45},
 
   memberChipText: {
-    fontSize: getResponsiveFontSize(12.5),
+    fontSize: rf(12.5),
     fontFamily: 'Pretendard-Medium',
     color: '#374151',
     letterSpacing: -0.15,
@@ -1161,4 +1240,55 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontFamily: 'Pretendard-SemiBold',
   },
-});
+
+  // iOS 날짜 액션시트 (기간설정 모달과 동일 톤)
+  sheetBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  sheetBox: {
+    width: '100%',
+    backgroundColor: '#fff',
+    borderTopLeftRadius: getResponsiveWidth(18),
+    borderTopRightRadius: getResponsiveWidth(18),
+    overflow: 'hidden',
+    borderTopWidth: 1,
+    borderColor: 'rgba(0,0,0,0.06)',
+  },
+  sheetHeader: {
+    height: getResponsiveHeight(50),
+    paddingHorizontal: getResponsiveWidth(14),
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+  },
+  sheetHeaderBtn: {
+    paddingVertical: getResponsiveHeight(8),
+    paddingHorizontal: getResponsiveWidth(8),
+    minWidth: getResponsiveWidth(56),
+  },
+  sheetHeaderText: {
+    fontSize: rf(13),
+    fontFamily: 'Pretendard-SemiBold',
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  sheetTitle: {
+    fontSize: rf(13),
+    fontFamily: 'Pretendard-SemiBold',
+    color: 'black',
+    textAlign: 'center',
+  },
+  sheetPickerArea: {
+    paddingVertical: getResponsiveHeight(6),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sheetDatePicker: {
+    width: '100%',
+    height: getResponsiveHeight(220),
+    alignSelf: 'center',
+  },
+  });

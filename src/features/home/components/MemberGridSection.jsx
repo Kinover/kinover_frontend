@@ -10,10 +10,17 @@ import React, {
 } from 'react';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
-import { View, TouchableOpacity, StyleSheet, useWindowDimensions, Image, ActivityIndicator, ScrollView } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  useWindowDimensions,
+  Image,
+  ActivityIndicator,
+  ScrollView,
+} from 'react-native';
 
 import {
-  getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveWidth,
@@ -508,192 +515,191 @@ export default function MemberGridSection({
   guideInviteRef,
 }) {
   const styles = useScaledStyleSheet(rf => ({
+    shadowWrap: {
+      position: 'relative',
+      alignItems: 'center',
+      alignSelf: 'center',
+    },
 
-  shadowWrap: {
-    position: 'relative',
-    alignItems: 'center',
-    alignSelf: 'center',
-  },
+    bodyContainer: {
+      width: '100%',
+      backgroundColor: '#FFFFFF',
+      borderRadius: getResponsiveIconSize(16),
+      paddingTop: getResponsiveHeight(22),
+    },
 
-  bodyContainer: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: getResponsiveIconSize(16),
-    paddingTop: getResponsiveHeight(22),
-  },
+    gridArea: {
+      position: 'relative',
+    },
 
-  gridArea: {
-    position: 'relative',
-  },
+    wrapRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'flex-start',
+      alignSelf: 'center',
+    },
 
-  wrapRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'flex-start',
-    alignSelf: 'center',
-  },
+    // 6명 초과 시 내부 스크롤 래퍼
+    innerScrollWrap: {
+      alignSelf: 'center',
+      width: '100%',
+    },
+    innerScrollContent: {
+      // ScrollView 안에서 wrapRow가 중앙에 오도록
+      paddingBottom: getResponsiveHeight(6),
+    },
 
- // 6명 초과 시 내부 스크롤 래퍼
-  innerScrollWrap: {
-    alignSelf: 'center',
-    width: '100%',
-  },
-  innerScrollContent: {
- // ScrollView 안에서 wrapRow가 중앙에 오도록
-    paddingBottom: getResponsiveHeight(6),
-  },
+    user: {
+      alignItems: 'center',
+      paddingVertical: getResponsiveHeight(6),
+      borderRadius: getResponsiveIconSize(18),
+    },
 
-  user: {
-    alignItems: 'center',
-    paddingVertical: getResponsiveHeight(6),
-    borderRadius: getResponsiveIconSize(18),
-  },
+    avatarShell: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: getResponsiveHeight(8),
+      position: 'relative',
+    },
 
-  avatarShell: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: getResponsiveHeight(8),
-    position: 'relative',
-  },
+    avatarRing: {
+      position: 'absolute',
+      borderWidth: 1,
+      borderColor: '#EEF2F7',
+    },
 
-  avatarRing: {
-    position: 'absolute',
-    borderWidth: 1,
-    borderColor: '#EEF2F7',
-  },
+    profileImage: {
+      borderRadius: 999,
+      zIndex: 1,
+      borderWidth: 0,
+    },
 
-  profileImage: {
-    borderRadius: 999,
-    zIndex: 1,
-    borderWidth: 0,
-  },
+    emotionPeekMask: {
+      position: 'absolute',
+      overflow: 'hidden',
+      zIndex: 2,
+      alignItems: 'center',
+      justifyContent: 'flex-end',
+    },
 
-  emotionPeekMask: {
-    position: 'absolute',
-    overflow: 'hidden',
-    zIndex: 2,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-  },
+    emotionImage: {
+      position: 'absolute',
+      resizeMode: 'contain',
+      bottom: 0,
+    },
 
-  emotionImage: {
-    position: 'absolute',
-    resizeMode: 'contain',
-    bottom: 0,
-  },
+    dotBase: {
+      position: 'absolute',
+      zIndex: 5,
+    },
+    dotBorder: {
+      position: 'absolute',
+      backgroundColor: '#FFFFFF',
+      zIndex: 4,
+    },
+    onlineDot: {
+      backgroundColor: '#22C55E',
+    },
+    offlineDot: {
+      backgroundColor: '#D1D5DB',
+    },
 
-  dotBase: {
-    position: 'absolute',
-    zIndex: 5,
-  },
-  dotBorder: {
-    position: 'absolute',
-    backgroundColor: '#FFFFFF',
-    zIndex: 4,
-  },
-  onlineDot: {
-    backgroundColor: '#22C55E',
-  },
-  offlineDot: {
-    backgroundColor: '#D1D5DB',
-  },
+    infoCol: {
+      width: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: getResponsiveHeight(5),
+    },
+    userName: {
+      fontSize: rf(14),
+      fontFamily: 'Pretendard-SemiBold',
+      color: '#111827',
+      letterSpacing: -0.2,
+    },
 
-  infoCol: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: getResponsiveHeight(5),
-  },
-  userName: {
-    fontSize: rf(14),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#111827',
-    letterSpacing: -0.2,
-  },
+    statusPill: {
+      paddingHorizontal: getResponsiveWidth(8),
+      paddingVertical: getResponsiveHeight(3),
+      borderRadius: 999,
+      borderWidth: 1,
+      maxWidth: '100%',
+    },
+    statusPillOnline: {
+      backgroundColor: 'rgba(34,197,94,0.08)',
+      borderColor: 'rgba(34,197,94,0.15)',
+    },
+    statusPillOffline: {
+      backgroundColor: '#F8FAFC',
+      borderColor: '#EEF2F7',
+    },
 
-  statusPill: {
-    paddingHorizontal: getResponsiveWidth(8),
-    paddingVertical: getResponsiveHeight(3),
-    borderRadius: 999,
-    borderWidth: 1,
-    maxWidth: '100%',
-  },
-  statusPillOnline: {
-    backgroundColor: 'rgba(34,197,94,0.08)',
-    borderColor: 'rgba(34,197,94,0.15)',
-  },
-  statusPillOffline: {
-    backgroundColor: '#F8FAFC',
-    borderColor: '#EEF2F7',
-  },
+    statusText: {
+      fontSize: rf(11),
+      fontFamily: 'Pretendard-Medium',
+    },
+    statusOnline: {color: '#16A34A'},
+    statusOffline: {color: '#6B7280'},
 
-  statusText: {
-    fontSize: rf(11),
-    fontFamily: 'Pretendard-Medium',
-  },
-  statusOnline: {color: '#16A34A'},
-  statusOffline: {color: '#6B7280'},
+    loadingOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(255,255,255,0.55)',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: getResponsiveIconSize(16),
+    },
+    loadingCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: getResponsiveWidth(8),
+      paddingHorizontal: getResponsiveWidth(12),
+      paddingVertical: getResponsiveHeight(8),
+      borderRadius: 999,
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: 'rgba(17,24,39,0.08)',
+    },
+    loadingText: {
+      fontSize: rf(12.5),
+      fontFamily: 'Pretendard-SemiBold',
+      color: '#111827',
+      letterSpacing: -0.1,
+    },
 
-  loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: getResponsiveIconSize(16),
-  },
-  loadingCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: getResponsiveWidth(8),
-    paddingHorizontal: getResponsiveWidth(12),
-    paddingVertical: getResponsiveHeight(8),
-    borderRadius: 999,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.08)',
-  },
-  loadingText: {
-    fontSize: rf(12.5),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#111827',
-    letterSpacing: -0.1,
-  },
+    emptyStateContainer: {
+      alignSelf: 'center',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: getResponsiveWidth(18),
+      paddingTop: getResponsiveHeight(140),
+      paddingBottom: getResponsiveHeight(140),
+    },
+    emptyDesc: {
+      fontSize: EMPTY_STYLE().emptyFontSize,
+      fontFamily: EMPTY_STYLE().emptyFontFamily,
+      color: EMPTY_STYLE().emptyColor,
+      textAlign: 'center',
+      lineHeight: rf(18),
+    },
 
-  emptyStateContainer: {
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: getResponsiveWidth(18),
-    paddingTop: getResponsiveHeight(140),
-    paddingBottom: getResponsiveHeight(140),
-  },
-  emptyDesc: {
-    fontSize: EMPTY_STYLE().emptyFontSize,
-    fontFamily: EMPTY_STYLE().emptyFontFamily,
-    color: EMPTY_STYLE().emptyColor,
-    textAlign: 'center',
-  },
+    footerFixed: {
+      position: 'absolute',
+    },
 
-  footerFixed: {
-    position: 'absolute',
-  },
+    addButton: {
+      width: '100%',
+      height: getResponsiveHeight(48),
+      borderRadius: getResponsiveIconSize(12),
+      backgroundColor: 'black',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
 
-  addButton: {
-    width: '100%',
-    height: getResponsiveHeight(48),
-    borderRadius: getResponsiveIconSize(12),
-    backgroundColor: 'black',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  addButtonText: {
-    fontSize: rf(13.5),
-    fontFamily: 'Pretendard-SemiBold',
-    color: '#FFFFFF',
-    letterSpacing: -0.2,
-  },
-
+    addButtonText: {
+      fontSize: rf(13.5),
+      fontFamily: 'Pretendard-SemiBold',
+      color: '#FFFFFF',
+      letterSpacing: -0.2,
+    },
   }));
   const {width: screenWidth, height: screenHeight} = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -717,7 +723,9 @@ export default function MemberGridSection({
 
   const [isRefreshingLocal, setIsRefreshingLocal] = useState(false);
   const isRefreshing =
-    typeof isRefreshingProp === 'boolean' ? isRefreshingProp : isRefreshingLocal;
+    typeof isRefreshingProp === 'boolean'
+      ? isRefreshingProp
+      : isRefreshingLocal;
 
   const handleRefresh = useCallback(async () => {
     if (!onRefreshPress) return;
@@ -737,7 +745,7 @@ export default function MemberGridSection({
     onAddPress?.();
   }, [onAddPress]);
 
- // 버튼 아래 여백 확보 (absolute 버튼)
+  // 버튼 아래 여백 확보 (absolute 버튼)
   const safeBottom = Math.max(insets.bottom, getResponsiveHeight(10));
   const footerPaddingBottom = safeBottom + getResponsiveHeight(8);
 
@@ -745,8 +753,9 @@ export default function MemberGridSection({
   const ADD_BUTTON_GAP = getResponsiveHeight(14);
   const bottomSpace = footerPaddingBottom + ADD_BUTTON_H + ADD_BUTTON_GAP;
 
- // 6명 초과” 기준으로 내부 스크롤 ON
-  const enableInnerScroll = !isEmptyState && members.length > INTERNAL_SCROLL_THRESHOLD;
+  // 6명 초과” 기준으로 내부 스크롤 ON
+  const enableInnerScroll =
+    !isEmptyState && members.length > INTERNAL_SCROLL_THRESHOLD;
 
   const gridMaxHRaw = screenHeight * 0.33; // 대충 카드 안에서 1/3 정도만 스크롤 영역
   const gridMaxH = clamp(
@@ -806,19 +815,30 @@ export default function MemberGridSection({
         <View style={styles.gridArea}>
           {isEmptyState ? (
             <View style={styles.emptyStateContainer}>
+              <Image
+                style={{
+                  width: getResponsiveWidth(34),
+                  height: getResponsiveWidth(34),
+                  resizeMode: 'contain',
+                  tintColor: EMPTY_STYLE().emptyColor,
+                  marginBottom: getResponsiveHeight(10),
+                }}
+                source={require('../../../assets/icons/tabs/1/family.png')}></Image>
               <AppText allowFontScaling={false} style={styles.emptyDesc}>
-                {'아직 가족 모임이 완성되지 않았어요.\n가족을 초대해서 모임을 완성해보세요!'}
+                {
+                  '아직 가족 모임이 완성되지 않았어요.\n가족을 초대해서 모임을 완성해보세요!'
+                }
               </AppText>
             </View>
           ) : enableInnerScroll ? (
- // 여기: 6명 초과면 “이 영역만” 스크롤
+            // 여기: 6명 초과면 “이 영역만” 스크롤
             <View style={[styles.innerScrollWrap, {maxHeight: gridMaxH}]}>
               <ScrollView
                 showsVerticalScrollIndicator={false}
                 nestedScrollEnabled
                 contentContainerStyle={styles.innerScrollContent}
                 scrollEventThrottle={16}
- // iOS에서 스크롤 위/아래 바운스 느낌(싫으면 false)
+                // iOS에서 스크롤 위/아래 바운스 느낌(싫으면 false)
                 bounces={true}>
                 {GridContent}
               </ScrollView>
@@ -864,4 +884,3 @@ export default function MemberGridSection({
     </DropShadow>
   );
 }
-

@@ -33,7 +33,6 @@ export default function useChatRoomTemplate({
 }) {
   const dispatch = useDispatch();
   const [markReadRest] = useMarkReadRestMutation();
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [inviteToastVisible, setInviteToastVisible] = useState(false);
   const [inviteToastMessage, setInviteToastMessage] = useState('');
 
@@ -80,7 +79,7 @@ export default function useChatRoomTemplate({
   const isMessageFetched = Array.isArray(messageList) && messageList.length >= 0;
 
   useHideTabBar();
-  useHeaderSetting(navigation, setIsSettingsOpen, title, isKino);
+  useHeaderSetting(navigation, chatRoomId, title, isKino);
 
   useEffect(() => {
     if (!inviteToastVisible) return;
@@ -90,7 +89,6 @@ export default function useChatRoomTemplate({
 
   const openAddMember = useCallback(() => {
     if (!chatRoomId) return;
-    setIsSettingsOpen(false);
     navigation.navigate('채팅방멤버추가화면', {
       chatRoomId,
       onInvited: ({count, message}) => {
@@ -177,8 +175,6 @@ export default function useChatRoomTemplate({
     chatRoomId,
     currentChatRoom,
     myUserId,
-    isSettingsOpen,
-    setIsSettingsOpen,
     messageList,
     isMessageFetched,
     roomUsers,

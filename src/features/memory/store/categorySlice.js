@@ -13,8 +13,19 @@ const categorySlice = createSlice({
     setTempCategoryList(state, action) {
       state.categoryList = action.payload;
     },
+    removeTemporaryCategoryById(state, action) {
+      const id = String(action.payload ?? '');
+      if (!id) return;
+      state.categoryList = state.categoryList.filter(
+        c => String(c.categoryId) !== id,
+      );
+    },
   },
 });
 
-export const {clearCategoryError, setTempCategoryList} = categorySlice.actions;
+export const {
+  clearCategoryError,
+  setTempCategoryList,
+  removeTemporaryCategoryById,
+} = categorySlice.actions;
 export default categorySlice.reducer;

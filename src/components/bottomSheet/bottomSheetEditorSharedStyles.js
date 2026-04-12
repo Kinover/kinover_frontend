@@ -85,7 +85,7 @@ export function getBottomSheetEditorSharedStyles(rf, rh, rw) {
       borderWidth: 1,
       borderColor: '#DADADA',
       borderRadius: rw(12),
-      backgroundColor: '#FFFFFF',
+      backgroundColor: '#F5F5F5',
       paddingHorizontal: rw(12),
       paddingVertical: rh(5),
       marginTop: rh(4),

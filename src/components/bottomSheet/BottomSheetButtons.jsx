@@ -7,6 +7,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
+import {BOTTOM_SHEET_BUTTON_LABELS} from 'constants/bottomSheetTitles';
 
 // 햅틱 유틸 (아까 만든/쓰는 파일)
 import {hapticLight, hapticSuccess, hapticError} from 'utils/haptic';
@@ -14,8 +15,8 @@ import {hapticLight, hapticSuccess, hapticError} from 'utils/haptic';
 export function BottomSheetButtons({
   onCancel,
   onSave,
-  cancelLabel = '되돌리기',
-  saveLabel = '저장하기',
+  cancelLabel = BOTTOM_SHEET_BUTTON_LABELS.CANCEL,
+  saveLabel = BOTTOM_SHEET_BUTTON_LABELS.SAVE_ACTION,
   showCancel = true,
   bottomSheetRef,
   autoCloseOnSave = true,
@@ -70,7 +71,9 @@ export function BottomSheetButtons({
             styles.button,
             styles.cancelButton,
             cancelButtonStyle,
-            cancelLabel === '삭제하기' && {borderColor: '#EF4444'},
+            cancelLabel === BOTTOM_SHEET_BUTTON_LABELS.DELETE && {
+              borderColor: '#EF4444',
+            },
           ]}
           onPress={handleCancelPress}
           disabled={saving}
@@ -80,7 +83,9 @@ export function BottomSheetButtons({
             style={[
               styles.buttonText,
               styles.cancelButtonText,
-              cancelLabel === '삭제하기' && {color: '#EF4444'}, // 추가
+              cancelLabel === BOTTOM_SHEET_BUTTON_LABELS.DELETE && {
+                color: '#EF4444',
+              }, // 추가
             ]}>
             {cancelLabel}
           </AppText>
@@ -98,7 +103,7 @@ export function BottomSheetButtons({
         disabled={saving || saveDisabled}
         activeOpacity={0.85}>
         <AppText allowFontScaling={false} style={styles.buttonText}>
-          {saving ? '저장 중...' : saveLabel}
+          {saving ? BOTTOM_SHEET_BUTTON_LABELS.SAVE_LOADING : saveLabel}
         </AppText>
       </TouchableOpacity>
     </View>

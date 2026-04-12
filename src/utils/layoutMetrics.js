@@ -33,11 +33,12 @@ export const getSheetSnapPointsByTier = ({
 };
 
 export const getUserBottomSheetSnapPoints = fontMode => {
+  const isAndroid = Platform.OS === 'android';
   const [first] = getSheetSnapPointsByTier({
     fontMode,
-    normal: ['62%', '88%'],
-    large: ['66%', '89%'],
-    xl: ['70%', '90%'],
+    normal: isAndroid ? ['75%', '88%'] : ['62%', '88%'],
+    large: isAndroid ? ['78%', '89%'] : ['66%', '89%'],
+    xl: isAndroid ? ['80%', '90%'] : ['70%', '90%'],
   });
   return [first];
 };
@@ -47,11 +48,12 @@ export const getCreateRoomBottomSheetSnapPoints = (fontMode, externalSnapPoints)
     return [externalSnapPoints[0]];
   }
 
+  const isAndroid = Platform.OS === 'android';
   const [first] = getSheetSnapPointsByTier({
     fontMode,
-    normal: ['56.5%', '92%'],
-    large: ['68%', '93%'],
-    xl: ['72%', '94%'],
+    normal: isAndroid ? ['70%', '92%'] : ['56.5%', '92%'],
+    large:  isAndroid ? ['76%', '93%'] : ['68%', '93%'],
+    xl:     isAndroid ? ['80%', '94%'] : ['72%', '94%'],
   });
   return [first];
 };
@@ -102,11 +104,16 @@ export function getAndroidBottomSheetFooterInsetPx(
   if (Platform.OS !== 'android') return 0;
   const raw = Number(rawBottomInset || 0);
   const fromScreen = getAndroidNavBottomInsetEstimate();
+
+  // Samsung 3버튼 내비 + edge-to-edge 환경에서 raw·fromScreen 모두 0이 될 수 있음.
+  // Android 내비게이션 바 표준 높이(48dp)를 최소 기준으로 보장한다.
+  const NAV_BAR_MIN_DP = getResponsiveHeight(48);
   const navFallback = getResponsiveHeight(56);
   const footerBuffer = getResponsiveHeight(24);
   const core = Math.max(
     raw,
     fromScreen,
+    NAV_BAR_MIN_DP,
     navFallback,
     Number(extraMinBottom || 0),
   );

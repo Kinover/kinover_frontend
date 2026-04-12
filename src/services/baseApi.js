@@ -14,7 +14,14 @@ import {apiClient} from 'utils/apiClient';
  *   - 401 → 자동 로그아웃
  *   - 공통 에러 Alert
  */
-const axiosBaseQuery = async ({url, method = 'GET', data, params, headers} = {}) => {
+
+const axiosBaseQuery = async ({
+  url,
+  method = 'GET',
+  data,
+  params,
+  headers,
+} = {}) => {
   try {
     const result = await apiClient({url, method, data, params, headers});
     return {data: result.data};
@@ -35,6 +42,8 @@ const axiosBaseQuery = async ({url, method = 'GET', data, params, headers} = {})
 export const baseApi = createApi({
   reducerPath: 'api',
   baseQuery: axiosBaseQuery,
+  // 🏷️ 자동 새로고침(캐시 무효화)을 위한 '꼬리표(Tags)'들의 전체 명단
+
   tagTypes: [
     'ChatRoom',
     'ChatRoomUsers',

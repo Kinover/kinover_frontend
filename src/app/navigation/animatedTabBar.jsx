@@ -8,8 +8,10 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import LinearGradient from 'react-native-linear-gradient';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import {hapticSelection, hapticLight} from 'utils/haptic';
+import {getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
 
 const TabBarVisibilityContext = createContext(null);
 
@@ -155,7 +157,16 @@ function AnimatedTabButton({
 export function AnimatedTabBar(props) {
   const {tabBarTranslateY} = useTabBarVisibility();
 
-  const H = 90;
+  // Samsung 3버튼 내비게이션 등 Android 기기에서 insets.bottom이 0으로 내려오는 경우 대비
+  // screen - window - statusBar 추정값과 비교해 더 큰 값을 사용
+  const insets = useSafeAreaInsets();
+  const rawInsetBottom = Number(insets?.bottom ?? 0);
+  const navInset =
+    Platform.OS === 'android'
+      ? Math.max(rawInsetBottom, getAndroidNavBottomInsetEstimate())
+      : 0;
+
+  const H = 90 + navInset;
 
   const activeTabName = props?.state?.routes?.[props.state.index]?.name;
   const activeTabState = props?.state?.routes?.[props.state.index]?.state;
@@ -199,7 +210,7 @@ export function AnimatedTabBar(props) {
         style={styles.gradient}
       />
 
-      <View style={styles.row}>
+      <View style={[styles.row, {paddingBottom: 15 + navInset}]}>
         {props.state.routes.map((route, index) => {
           const focused = props.state.index === index;
           const descriptor = props.descriptors?.[route.key];
@@ -244,7 +255,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingBottom: 15,
+    // paddingBottom은 navInset 포함해 인라인으로 동적 적용
   },
   item: {
     flex: 1,
