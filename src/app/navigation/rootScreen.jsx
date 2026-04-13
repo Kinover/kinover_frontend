@@ -1,5 +1,5 @@
 import React, {useEffect, useState, useRef, useReducer, useCallback} from 'react';
-import { ActivityIndicator, View, Image, StyleSheet } from 'react-native';
+import {View, StyleSheet} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
@@ -14,19 +14,20 @@ import {
 import {useAutoLogin} from 'features/auth/hooks/useAutoLogin';
 import {onAuthFlagsChanged} from 'utils/authFlagsEvent';
 import AppText from 'components/AppText';
+import YellowSpinner from 'components/yellowSpinner';
 import {setPhoneVerificationPending} from 'features/auth/store/loginSlice';
 
 function BootLoading({label = ''}) {
   return (
     <SafeAreaView style={styles.bootContainer}>
-      <Image
-        source={require('../../assets/images/kinover!!.png')}
-        style={styles.bootLogo}
-        resizeMode="contain"
-      />
-      <View style={{height: 14}} />
-      <ActivityIndicator />
-      <View style={{height: 8}} />
+      <View
+        style={styles.bootSpinnerWrap}
+        accessibilityRole="progressbar"
+        accessibilityLabel="불러오는 중"
+        accessibilityState={{busy: true}}>
+        <YellowSpinner />
+      </View>
+      <View style={{height: 10}} />
       {!!label && (
         <AppText allowFontScaling={false} style={styles.bootLabel}>
           {label}
@@ -258,9 +259,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFFFFF',
   },
-  bootLogo: {
-    width: 168,
-    height: 58,
+  bootSpinnerWrap: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   bootLabel: {
     color: '#666',

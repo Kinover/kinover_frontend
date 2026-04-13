@@ -2,6 +2,12 @@
 import {useState, useEffect, useCallback, useRef} from 'react';
 import mmkvStorage from 'utils/mmkvStorage';
 
+/**
+ * true: 가이드 모달을 띄우지 않음(코드·MMKV 트리거는 그대로 유지).
+ * 다시 켜려면 false로 바꾸면 됨.
+ */
+export const GUIDE_MODALS_DISABLED = true;
+
 // 가입/가족 참가/가족 생성 직후에만 올리는 전역 트리거
 export const KEY_GUIDE_ENTRY_TRIGGER = '@kinover/guide/entry_trigger_v1';
 
@@ -70,6 +76,9 @@ export default function useGuide(storageKey, enabled = false, options = {}) {
 
     (async () => {
       try {
+        if (GUIDE_MODALS_DISABLED) {
+          return;
+        }
         // 개발용 강제 노출
         if (forceVisible) {
           requestAnimationFrame(() => setVisible(true));

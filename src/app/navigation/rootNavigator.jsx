@@ -10,10 +10,7 @@ import {View} from 'react-native';
 import {createStackNavigator} from '@react-navigation/stack';
 
 import TabNavigator from './tabNavigator';
-import {
-  GuideOverlayProvider,
-  TabsWithOptionalGuideHost,
-} from 'contexts/GuideOverlayContext';
+import {TabsWithOptionalGuideHost} from 'contexts/GuideOverlayContext';
 import SettingScreen from 'features/setting/screens/SettingScreen';
 import NotificationSettingScreen from 'features/setting/screens/NotificationSettingScreen';
 import BlockedUsersScreen from 'features/setting/screens/BlockedUsersScreen';
@@ -25,17 +22,19 @@ import {getResponsiveHeight} from 'utils/responsive';
 
 const Stack = createStackNavigator();
 
-/** 가이드 없을 땐 탭만 렌더(자식 1개) → 탭바 히트 영역 꼬임 방지. 가이드 있을 때만 Host 추가 */
+/**
+ * 가이드 오버레이 Provider는 App.jsx 최상단(GuideOverlayRoot와 동일 컨텍스트)에만 둔다.
+ * 여기서 또 Provider로 감싸면 showGuide는 탭 안 컨텍스트만 갱신되고, 루트의 GuideOverlayRoot는
+ * 비어 있어 가이드 모달이 절대 안 뜬다.
+ */
 function TabsWithGuideOverlay(props) {
   return (
-    <GuideOverlayProvider>
-      <View style={{flex: 1}} pointerEvents="box-none">
-        <TabsWithOptionalGuideHost
-          TabNavigatorComponent={TabNavigator}
-          tabNavigatorProps={props}
-        />
-      </View>
-    </GuideOverlayProvider>
+    <View style={{flex: 1}} pointerEvents="box-none">
+      <TabsWithOptionalGuideHost
+        TabNavigatorComponent={TabNavigator}
+        tabNavigatorProps={props}
+      />
+    </View>
   );
 }
 
