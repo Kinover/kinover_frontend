@@ -1,22 +1,25 @@
 // src/hooks/useAppAlertPopup.js
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import mmkvStorage from 'utils/mmkvStorage';
 
 const KEY_PREFIX = '@kinover/alert/dismissed/';
 
 const nowMs = () => Date.now();
 
-const endOfTodayMs = () => {
+/** '오늘 하루 보지 않기' — 다음 날 0시(로컬)까지 숨김 */
+const startOfTomorrowMs = () => {
   const d = new Date();
-  d.setHours(23, 59, 59, 999);
+  d.setDate(d.getDate() + 1);
+  d.setHours(0, 0, 0, 0);
   return d.getTime();
 };
 
-const parseStored = v => {
+const parseStored = raw => {
+  const v = typeof raw === 'string' ? raw.trim() : '';
   if (!v) return null;
   if (v === 'never') return {mode: 'never'};
   if (v.startsWith('until:')) {
-    const ms = Number(v.replace('until:', ''));
+    const ms = Number(v.slice('until:'.length));
     if (!Number.isFinite(ms)) return null;
     return {mode: 'until', untilMs: ms};
   }
@@ -50,16 +53,6 @@ export default function useAppAlertPopup(event, {enabled = true} = {}) {
 
   const eventId = event?.id ?? null;
 
-  // 세션 내 즉시 해제 여부를 추적 (useEffect 재실행 시에도 모달 재노출 방지)
-  const sessionDismissedRef = useRef(false);
-
-  // eventId가 바뀌면 세션 해제 초기화
-  const prevEventIdRef = useRef(null);
-  if (prevEventIdRef.current !== eventId) {
-    prevEventIdRef.current = eventId;
-    sessionDismissedRef.current = false;
-  }
-
   const storageKey = useMemo(() => {
     if (!eventId) return null;
     return `${KEY_PREFIX}${eventId}`;
@@ -73,7 +66,6 @@ export default function useAppAlertPopup(event, {enabled = true} = {}) {
   const checkShouldShow = useCallback(async () => {
     if (!enabled) return false;
     if (!eventId) return false;
-    if (sessionDismissedRef.current) return false;
     if (eventEnabled === false) return false;
 
  // 기간 제한
@@ -82,6 +74,7 @@ export default function useAppAlertPopup(event, {enabled = true} = {}) {
     try {
       const raw = await mmkvStorage.getItem(storageKey);
       const stored = parseStored(raw);
+      // MMKV만 신뢰: 이벤트 id가 잠깐 null이 됐다가 돌아와도 "오늘 하루 보지 않기"가 유지됨
       if (isDismissed(stored)) return false;
       return true;
     } catch (e) {
@@ -109,14 +102,13 @@ export default function useAppAlertPopup(event, {enabled = true} = {}) {
   );
 
   const dismissToday = useCallback(async () => {
-    sessionDismissedRef.current = true;
-    await saveValue(`until:${endOfTodayMs()}`);
+    const until = startOfTomorrowMs();
+    await saveValue(`until:${until}`);
     setVisible(false);
   }, [saveValue]);
 
   const dismissHours = useCallback(
     async hours => {
-      sessionDismissedRef.current = true;
       const h = Number(hours);
       const ms = Number.isFinite(h) ? h * 60 * 60 * 1000 : 0;
       await saveValue(`until:${nowMs() + ms}`);
@@ -126,7 +118,6 @@ export default function useAppAlertPopup(event, {enabled = true} = {}) {
   );
 
   const dismissNever = useCallback(async () => {
-    sessionDismissedRef.current = true;
     await saveValue('never');
     setVisible(false);
   }, [saveValue]);

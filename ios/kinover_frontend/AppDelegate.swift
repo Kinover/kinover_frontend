@@ -22,7 +22,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
 
     // ✅ Kakao SDK init (권장)
     // Info.plist에 KAKAO_NATIVE_APP_KEY 같은 키로 넣어두고 읽는 방식 추천
-    if let kakaoAppKey = Bundle.main.object(forInfoDictionaryKey: "KAKAO_NATIVE_APP_KEY") as? String,
+    if let kakaoAppKey = Bundle.main.object(forInfoDictionaryKey: "KAKAO_APP_KEY") as? String,
        !kakaoAppKey.isEmpty {
       KakaoSDK.initSDK(appKey: kakaoAppKey)
     }
@@ -94,5 +94,27 @@ extension AppDelegate: RCTBridgeDelegate {
     #else
       return Bundle.main.url(forResource: "main", withExtension: "jsbundle")
     #endif
+  }
+}
+
+// MARK: - APNs → Firebase Auth 포워딩 (전화번호 인증용)
+extension AppDelegate {
+  func application(
+    _ application: UIApplication,
+    didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
+  ) {
+    Auth.auth().setAPNSToken(deviceToken, type: .unknown)
+  }
+
+  func application(
+    _ application: UIApplication,
+    didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+    fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void
+  ) {
+    if Auth.auth().canHandleNotification(userInfo) {
+      completionHandler(.noData)
+      return
+    }
+    completionHandler(.newData)
   }
 }

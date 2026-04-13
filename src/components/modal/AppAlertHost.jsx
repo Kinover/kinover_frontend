@@ -3,6 +3,8 @@ import React, {useCallback, useEffect} from 'react';
 import {Linking} from 'react-native';
 import AppAlertModal from './AppAlertModal';
 import useAppAlertPopup from 'hooks/useAppAlertPopup';
+import {EMOTION_PICK_APP_EVENT_ID} from 'config/appEvents';
+import {getResponsiveHeight} from 'utils/responsive';
 
 // 전역 네비
 import {safeNavigate} from 'app/navigation/navigationService';
@@ -34,6 +36,7 @@ export default function AppAlertHost({
 
   const image = e?.image || null;
   const imageUri = e?.imageUri || null;
+  const imageFlank = e?.imageFlank || null;
 
   const primaryText = e?.primary?.text || '보러가기';
   const secondaryText = e?.secondaryText || '오늘 하루 보지 않기';
@@ -76,6 +79,19 @@ export default function AppAlertHost({
  // visible 아닐 땐 아예 렌더링하지 않기(오버레이 잔상 방지)
   if (!popup.visible) return null;
 
+  const isEmotionPickModal = e?.id === EMOTION_PICK_APP_EVENT_ID;
+
+  const emotionImageWrapStyle = isEmotionPickModal
+    ? {
+        paddingTop: getResponsiveHeight(14),
+        paddingBottom: getResponsiveHeight(14),
+      }
+    : null;
+
+  const emotionImageExtraStyle = isEmotionPickModal
+    ? {marginVertical: 0}
+    : null;
+
   return (
     <AppAlertModal
       visible={true}
@@ -93,6 +109,12 @@ export default function AppAlertHost({
       onTertiary={onTertiary}
       onRequestClose={onRequestClose}
       autoDismissMs={null}
+      showCloseButton={!isEmotionPickModal}
+      closeOnBackdropPress
+      hardwareBackCloses={!isEmotionPickModal}
+      imageWrapStyle={emotionImageWrapStyle}
+      imageExtraStyle={emotionImageExtraStyle}
+      imageFlank={imageFlank}
     />
   );
 }

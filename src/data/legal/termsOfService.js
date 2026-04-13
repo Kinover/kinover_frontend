@@ -4,8 +4,8 @@ export const termsOfService = {
     key: 'terms',
     title: 'Kinover 서비스 이용약관',
     version: 'v1',
-    publishedAt: '2025-07-15',
-    effectiveAt: '2025-07-22',
+    publishedAt: '2026-04-14',
+    effectiveAt: '2026-04-21',
     content: `Kinover 서비스 이용약관
   제1조 (목적)
   본 약관은 Kinover(이하 “회사”)가 제공하는 모바일 애플리케이션 서비스(이하 “서비스”)의 이용에 관한 조건 및 절차, 이용자의 권리·의무 및 책임 사항 등 기본적인 사항을 규정함을 목적으로 합니다.
@@ -77,7 +77,7 @@ export const termsOfService = {
   회사는 중요한 사항을 앱 내 공지사항 또는 초기 화면을 통해 고지합니다.
   이용자는 서비스 내 문의 기능을 통해 언제든 의견을 제시하거나 문의할 수 있습니다.
   
-  공고일자: 2025년 7월 15일
+  공고일자: 2026년 4월 14일
   시행일자: 공지일로부터 7일 후
   `,
   };

@@ -1,5 +1,16 @@
 // src/config/appEvents.js
 
+import {
+  getResponsiveWidth,
+  getResponsiveHeight,
+} from 'utils/responsive';
+
+export const EMOTION_PICK_APP_EVENT_ID = 'emotion_pick_today_2026_01';
+
+const EMOTION_POPUP_ICON = 92;
+/** 가운데보다 작은 좌·우 감정 아이콘(디자인 상수) */
+const EMOTION_POPUP_FLANK_ICON = 60;
+
 export const APP_EVENTS = [
   {
     id: 'home_event_2026_01',
@@ -22,18 +33,24 @@ export const APP_EVENTS = [
   },
 
   {
-    id: 'emotion_pick_today_2026_01',
+    id: EMOTION_PICK_APP_EVENT_ID,
     enabled: true,
     priority: 120,
     title: '오늘의 감정, 공유해볼까요?',
     subTitle: '가족들과 오늘의 감정을 공유해보세요.',
     message: '',
 
- // 예시: 로컬 정적 이미지 (프로젝트 경로에 맞게 수정)
- // image: require('../assets/images/emotionPopup.png'),
- // 또는 원격이면:
- // imageUri: "https~..",
-    image: require('../assets/modal/emotion.png'),
+    image: {
+      source: require('../assets/icons/state_v2/excited.png'),
+      width: getResponsiveWidth(EMOTION_POPUP_ICON),
+      height: getResponsiveHeight(EMOTION_POPUP_ICON),
+      resizeMode: 'contain',
+    },
+    imageFlank: {
+      left: require('../assets/icons/state_v2/happy.png'),
+      right: require('../assets/icons/state_v2/depressed.png'),
+      iconSize: EMOTION_POPUP_FLANK_ICON,
+    },
 
     startAt: null,
     endAt: null,

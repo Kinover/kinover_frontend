@@ -1,6 +1,6 @@
 // src/hooks/useActiveAppEvent.js
 import {useMemo} from 'react';
-import { APP_EVENTS } from 'config/appEvents';
+import {APP_EVENTS, EMOTION_PICK_APP_EVENT_ID} from 'config/appEvents';
 
 const isWithinWindow = (startAt, endAt) => {
   const now = Date.now();
@@ -32,15 +32,11 @@ export default function useActiveAppEvent({
       .filter(e => isWithinWindow(e.startAt, e.endAt));
 
     if (hideEmotionPickWhenHasEmotion) {
-      candidates = candidates.filter(
-        e => e?.id !== 'emotion_pick_today_2026_01',
-      );
+      candidates = candidates.filter(e => e?.id !== EMOTION_PICK_APP_EVENT_ID);
     }
 
     if (hideEmotionPickOnFirstEntry) {
-      candidates = candidates.filter(
-        e => e?.id !== 'emotion_pick_today_2026_01',
-      );
+      candidates = candidates.filter(e => e?.id !== EMOTION_PICK_APP_EVENT_ID);
     }
 
     candidates.sort((a, b) => (b.priority || 0) - (a.priority || 0));

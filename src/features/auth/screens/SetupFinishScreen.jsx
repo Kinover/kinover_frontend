@@ -5,7 +5,6 @@ import {
   StyleSheet,
   Animated,
   Easing,
-  Platform,
   Image,
   Text,
 } from 'react-native';
@@ -59,8 +58,14 @@ const styles = StyleSheet.create({
   illustrationArea: {
     flex: 1.15,
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
     paddingBottom: getResponsiveHeight(22),
+  },
+  circleImageWrapper: {
+    width: getResponsiveWidth(260),
+    height: getResponsiveWidth(260),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   circleBg: {
     position: 'absolute',
@@ -69,15 +74,11 @@ const styles = StyleSheet.create({
     borderRadius: getResponsiveWidth(260) / 2,
     backgroundColor: '#FFF3DE',
     opacity: 0.9,
-    top:
-      Platform.OS === 'android'
-        ? getResponsiveHeight(150)
-        : getResponsiveHeight(140),
   },
   mainImage: {
-    width: '55%',
+    width: '78%',
+    height: '78%',
     resizeMode: 'contain',
-    top: getResponsiveHeight(80),
   },
   bottomArea: {
     flex: 0.85,
@@ -275,11 +276,13 @@ export default function SetupFinishScreen() {
             ],
           },
         ]}>
-        <View style={styles.circleBg} />
-        <Image
-          style={styles.mainImage}
-          source={require('@/assets/images/familySetup_kinoFamily.png')}
-        />
+        <View style={styles.circleImageWrapper}>
+          <View style={styles.circleBg} />
+          <Image
+            style={styles.mainImage}
+            source={require('@/assets/images/familySetup_kinoFamily.png')}
+          />
+        </View>
       </Animated.View>
 
       <Animated.View

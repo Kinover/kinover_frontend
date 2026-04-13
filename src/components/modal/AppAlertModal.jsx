@@ -38,6 +38,18 @@ export default function AppAlertModal({
   onRequestClose,
 
   autoDismissMs = null,
+  showCloseButton = true,
+  closeOnBackdropPress = true,
+  hardwareBackCloses = true,
+  /** 이미지 영역(View) 스타일 오버레이 */
+  imageWrapStyle = null,
+  /** Image에 합쳐지는 추가 스타일(예: marginVertical 리셋) */
+  imageExtraStyle = null,
+  /**
+   * 가운데 이미지 양옆 작은 이미지
+   * { left: require(...), right: require(...), iconSize: number }
+   */
+  imageFlank = null,
 }) {
   const styles = useScaledStyleSheet(rf => ({
 
@@ -60,6 +72,23 @@ export default function AppAlertModal({
  // 필요하면 둥글게
  // borderRadius: getResponsiveWidth(14),
     marginVertical: -getResponsiveHeight(13),
+  },
+
+  imageRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    width: '100%',
+  },
+
+  flankImage: {
+    marginVertical: 0,
+    opacity: 0.92,
+  },
+
+  centerImageInRow: {
+    marginVertical: 0,
+    marginHorizontal: getResponsiveWidth(10),
   },
 
   message: {
@@ -137,16 +166,26 @@ export default function AppAlertModal({
   const imageHeight =
     typeof image?.height === 'number' ? image.height : getResponsiveHeight(120);
 
+  const flankSizeRaw = Number(imageFlank?.iconSize);
+  const hasFlank =
+    !!imageFlank?.left &&
+    !!imageFlank?.right &&
+    Number.isFinite(flankSizeRaw) &&
+    flankSizeRaw > 0;
+  const flankW = hasFlank ? getResponsiveWidth(flankSizeRaw) : 0;
+  const flankH = hasFlank ? getResponsiveHeight(flankSizeRaw) : 0;
+
   return (
     <CustomModal
       visible={visible}
-      showCloseButton
+      showCloseButton={showCloseButton}
       onRequestClose={handleClose}
       onClose={handleClose}
       onConfirm={handlePrimary}
       closeText={undefined}
       confirmText={primaryText}
-      closeOnBackdropPress
+      closeOnBackdropPress={closeOnBackdropPress}
+      hardwareBackCloses={hardwareBackCloses}
       title={resolvedTitle}
       subText={resolvedSubTitle}
       modalBoxStyle={styles.modalBox}
@@ -174,12 +213,49 @@ export default function AppAlertModal({
       }>
       <View style={styles.body}>
         {!!resolvedImage && (
-          <View style={styles.imageWrap}>
-            <Image
-              source={resolvedImage}
-              resizeMode={imageResizeMode}
-              style={[styles.image, {width: imageWidth, height: imageHeight}]}
-            />
+          <View style={[styles.imageWrap, imageWrapStyle]}>
+            {hasFlank ? (
+              <View style={styles.imageRow}>
+                <Image
+                  source={imageFlank.left}
+                  resizeMode="contain"
+                  style={[
+                    styles.image,
+                    styles.flankImage,
+                    {width: flankW, height: flankH},
+                  ]}
+                />
+                <Image
+                  source={resolvedImage}
+                  resizeMode={imageResizeMode}
+                  style={[
+                    styles.image,
+                    styles.centerImageInRow,
+                    imageExtraStyle,
+                    {width: imageWidth, height: imageHeight},
+                  ]}
+                />
+                <Image
+                  source={imageFlank.right}
+                  resizeMode="contain"
+                  style={[
+                    styles.image,
+                    styles.flankImage,
+                    {width: flankW, height: flankH},
+                  ]}
+                />
+              </View>
+            ) : (
+              <Image
+                source={resolvedImage}
+                resizeMode={imageResizeMode}
+                style={[
+                  styles.image,
+                  imageExtraStyle,
+                  {width: imageWidth, height: imageHeight},
+                ]}
+              />
+            )}
           </View>
         )}
 

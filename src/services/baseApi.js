@@ -62,6 +62,7 @@ export const baseApi = createApi({
     'Comment',
     'Auth',
     'BlockedUsers',
+    'MarketingNotification',
   ],
   endpoints: () => ({}),
 });

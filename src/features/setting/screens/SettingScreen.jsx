@@ -405,6 +405,10 @@ export default function SettingScreen() {
 
       {/* 2) 알림 */}
       <View style={styles.section}>
+        <AppText allowFontScaling={false} style={styles.sectionTitle}>
+          알림
+        </AppText>
+
         <TouchableOpacity
           style={styles.row}
           onPress={() => navigation.navigate('알림설정화면')}
@@ -419,24 +423,9 @@ export default function SettingScreen() {
             accessibilityIgnoresInvertColors
           />
         </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.row}
-          onPress={() => navigation.navigate('차단계정화면')}
-          accessibilityLabel="신고 및 차단"
-          accessibilityRole="button">
-          <AppText allowFontScaling={false} style={styles.label}>
-            신고 및 차단
-          </AppText>
-          <Image
-            style={styles.arrow}
-            source={require('../../../assets/images/rightArrow-gray.png')}
-            accessibilityIgnoresInvertColors
-          />
-        </TouchableOpacity>
       </View>
 
-      {/* 3) 보안(생체인식) */}
+      {/* 3) 보안 */}
       <View style={styles.section}>
         <AppText allowFontScaling={false} style={styles.sectionTitle}>
           보안
@@ -467,6 +456,21 @@ export default function SettingScreen() {
             />
           </Pressable>
         </View>
+
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => navigation.navigate('차단계정화면')}
+          accessibilityLabel="신고 및 차단"
+          accessibilityRole="button">
+          <AppText allowFontScaling={false} style={styles.label}>
+            신고 및 차단
+          </AppText>
+          <Image
+            style={styles.arrow}
+            source={require('../../../assets/images/rightArrow-gray.png')}
+            accessibilityIgnoresInvertColors
+          />
+        </TouchableOpacity>
       </View>
 
       {/* 4) 고객지원 */}

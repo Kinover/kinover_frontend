@@ -14,6 +14,7 @@ import {
 } from './userSlice';
 import {updateFamilyUser} from './userFamilySlice';
 import {homeApi} from '../services/homeApi';
+import {setMarketingNotificationEnabled} from 'store/uiSlice';
 
 // ==================== Utils ====================
 
@@ -40,6 +41,28 @@ const extractErrorMessage = (error, defaultMsg) => {
 const getCurrentUserId = getState => {
   const stateUser = getState()?.user;
   return stateUser?.userId ?? stateUser?.user?.userId ?? null;
+};
+
+/**
+ * 서버 marketing_agreed와 Redux persist(ui.marketingNotificationEnabled) 동기화
+ * (GET /user/marketing-notification)
+ */
+export const syncMarketingNotificationFromServer = () => async dispatch => {
+  try {
+    const req = dispatch(
+      homeApi.endpoints.getMarketingNotification.initiate(undefined, {
+        forceRefetch: true,
+      }),
+    );
+    const res = await req.unwrap();
+    req.unsubscribe();
+    const enabled = res?.marketingNotificationEnabled;
+    if (typeof enabled === 'boolean') {
+      dispatch(setMarketingNotificationEnabled(enabled));
+    }
+  } catch {
+    // 게스트/네트워크 실패 시 로컬 값 유지
+  }
 };
 
 // ==================== Thunks ====================
@@ -69,6 +92,8 @@ export const fetchUserThunk = createAsyncThunk(
 
  // Redux store 업데이트
       dispatch(setUser(data));
+
+      dispatch(syncMarketingNotificationFromServer());
 
  // 호출부에서 사용할 수 있도록 DTO 반환
       return data;

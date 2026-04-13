@@ -37,6 +37,8 @@ export default function CustomModal({
 
   showCloseButton = true,
   closeOnBackdropPress = true,
+  /** false면 Android 하드웨어 뒤로가기로 닫히지 않음 */
+  hardwareBackCloses = true,
 
  /** 추가: 타이틀 아이콘 */
   titleImage,
@@ -195,6 +197,11 @@ export default function CustomModal({
     if (onRequestClose) return onRequestClose();
     return onClose?.();
   }, [onRequestClose, onClose]);
+
+  const handleHardwareBack = useCallback(() => {
+    if (!hardwareBackCloses) return;
+    requestClose();
+  }, [hardwareBackCloses, requestClose]);
 
   const handleBackdropPress = useCallback(() => {
     if (!closeOnBackdropPress) return;
@@ -426,7 +433,7 @@ export default function CustomModal({
       animationType="none"
       statusBarTranslucent
       presentationStyle="overFullScreen"
-      onRequestClose={requestClose}>
+      onRequestClose={handleHardwareBack}>
       {innerContent}
     </Modal>
   );

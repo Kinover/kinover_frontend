@@ -25,7 +25,8 @@ const getInitialFontMode = () => {
 
 const initialState = {
   fontMode: getInitialFontMode(),
-  bioLockEnabled: false, // 추가
+  bioLockEnabled: false,
+  marketingNotificationEnabled: true,
 };
 
 const uiSlice = createSlice({
@@ -48,13 +49,22 @@ const uiSlice = createSlice({
     setBioLockEnabled(state, action) {
       state.bioLockEnabled = !!action.payload;
     },
-    /** 로그아웃/회원탈퇴 시 글씨 크기·생체잠금 초기화 */
+    setMarketingNotificationEnabled(state, action) {
+      state.marketingNotificationEnabled = !!action.payload;
+    },
+    /** 로그아웃/회원탈퇴 시 글씨 크기·생체잠금·마케팅 알림 초기화 */
     resetUi(state) {
       state.fontMode = FONT_MODE.NORMAL;
       state.bioLockEnabled = false;
+      state.marketingNotificationEnabled = true;
     },
   },
 });
 
-export const {setFontMode, setBioLockEnabled, resetUi} = uiSlice.actions;
+export const {
+  setFontMode,
+  setBioLockEnabled,
+  setMarketingNotificationEnabled,
+  resetUi,
+} = uiSlice.actions;
 export default uiSlice.reducer;

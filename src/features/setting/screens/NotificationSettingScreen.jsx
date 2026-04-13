@@ -10,8 +10,13 @@ import {
 } from 'utils/responsive';
 import CustomSwitch from 'components/customSwitch';
 import useHideTabBar from 'hooks/useHideTabBar';
-import {useSelector} from 'react-redux';
+import {useSelector, useDispatch} from 'react-redux';
 import {RenderHeaderBackButton} from 'app/navigation/helpers/tabHeaderHelpers';
+import {setMarketingNotificationEnabled} from 'store/uiSlice';
+import {
+  useGetMarketingNotificationQuery,
+  useToggleMarketingNotificationMutation,
+} from 'features/home/services/homeApi';
 
 import {useToggleAllChatRoomNotificationMutation} from 'features/chat/services/chatApi';
 import {
@@ -55,8 +60,20 @@ export default function NotificationSettingScreen() {
     color: SETTING_STYLES().labelFontColor,
     fontFamily: SETTING_STYLES().labelFontFamily,
   },
+  marketingSubLabel: {
+    fontSize: 11,
+    color: '#9E9E9E',
+    fontFamily: SETTING_STYLES().labelFontFamily,
+    marginTop: getResponsiveHeight(2),
+    flexShrink: 1,
+    paddingRight: getResponsiveWidth(12),
+  },
+  labelWrap: {
+    flex: 1,
+  },
 
   }));
+  const dispatch = useDispatch();
   const navigation = useNavigation();
   const route = useRoute();
   const userId = useSelector(
@@ -65,6 +82,18 @@ export default function NotificationSettingScreen() {
   const [toggleAllChatRoomNotification] = useToggleAllChatRoomNotificationMutation();
   const [togglePostNotification] = useTogglePostNotificationMutation();
   const [toggleCommentNotification] = useToggleCommentNotificationMutation();
+
+  const marketingNotificationLocal = useSelector(
+    state => state.ui.marketingNotificationEnabled ?? true,
+  );
+  const {data: marketingData} = useGetMarketingNotificationQuery(undefined, {
+    skip: !userId,
+  });
+  const [toggleMarketingNotificationApi] = useToggleMarketingNotificationMutation();
+
+  // 서버 값 우선, 없으면 로컬 Redux fallback
+  const marketingNotificationEnabled =
+    marketingData?.marketingNotificationEnabled ?? marketingNotificationLocal;
 
   const [allNotification, setAllNotification] = useState(true);
   const [chatNotification, setChatNotification] = useState(true);
@@ -170,6 +199,28 @@ export default function NotificationSettingScreen() {
     }
   };
 
+  const handleToggleMarketingNotification = async () => {
+    if (!userId) return;
+    const newValue = !marketingNotificationEnabled;
+    dispatch(setMarketingNotificationEnabled(newValue));
+    try {
+      const patchRes = await toggleMarketingNotificationApi({
+        isOn: newValue,
+      }).unwrap();
+      const serverVal = patchRes?.marketingNotificationEnabled;
+      if (typeof serverVal === 'boolean') {
+        dispatch(setMarketingNotificationEnabled(serverVal));
+      }
+      setToastMessage(
+        newValue ? '마케팅 알림 수신에 동의했어요' : '마케팅 알림 수신을 거부했어요',
+      );
+    } catch {
+      dispatch(setMarketingNotificationEnabled(!newValue));
+      setToastMessage('설정 변경에 실패했어요. 다시 시도해 주세요.');
+    }
+    setToastVisible(true);
+  };
+
  // 하위 알림 상태 → 전체 알림 동기화
   useEffect(() => {
     if (chatNotification && postNotification && commentNotification) {
@@ -220,6 +271,23 @@ export default function NotificationSettingScreen() {
             <CustomSwitch
               isEnabled={commentNotification}
               toggleSwitch={handleToggleCommentNotification}
+            />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.row}>
+            <View style={styles.labelWrap}>
+              <AppText allowFontScaling={false} style={styles.label}>
+                마케팅 알림 수신 동의
+              </AppText>
+              <AppText allowFontScaling={false} style={styles.marketingSubLabel}>
+                이벤트, 프로모션 등 마케팅 정보를 푸시 알림으로 받아요
+              </AppText>
+            </View>
+            <CustomSwitch
+              isEnabled={marketingNotificationEnabled}
+              toggleSwitch={handleToggleMarketingNotification}
             />
           </View>
         </View>

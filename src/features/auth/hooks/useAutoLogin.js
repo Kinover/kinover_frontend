@@ -20,6 +20,7 @@ import {
   setPhoneVerificationPending,
 } from '../store/loginSlice';
 import {setUser} from 'features/home/store/userSlice';
+import {syncMarketingNotificationFromServer} from 'features/home/store/userThunk';
 import {setFamily} from 'features/home/store/familySlice';
 import {setFamilyUserList} from 'features/home/store/userFamilySlice';
 
@@ -124,6 +125,7 @@ export function useAutoLogin(shouldRun = true) {
         const raw = userResult?.data ?? userResult;
         if (raw && typeof raw === 'object') {
           dispatch(setUser(raw));
+          dispatch(syncMarketingNotificationFromServer());
         }
 
         if (raw && typeof raw === 'object' && raw.phoneVerified === false) {

@@ -88,6 +88,22 @@ export const homeApi = baseApi.injectEndpoints({
       }),
       providesTags: (result, error, familyId) => [{type: 'FamilyUser', id: String(familyId)}],
     }),
+    getMarketingNotification: build.query({
+      query: () => ({
+        url: '/user/marketing-notification',
+        method: 'GET',
+      }),
+      providesTags: ['MarketingNotification'],
+    }),
+    toggleMarketingNotification: build.mutation({
+      query: ({isOn}) => ({
+        url: '/user/marketing-notification',
+        method: 'PATCH',
+        data: {isOn},
+        headers: {'Content-Type': 'application/json'},
+      }),
+      invalidatesTags: ['MarketingNotification'],
+    }),
   }),
 });
 
@@ -103,4 +119,6 @@ export const {
   useCreateFamilyAndJoinMutation,
   useCreateFamilyMutation,
   useGetFamilyUsersQuery,
+  useGetMarketingNotificationQuery,
+  useToggleMarketingNotificationMutation,
 } = homeApi;
