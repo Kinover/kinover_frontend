@@ -394,6 +394,7 @@ export default function MemoryDetailBottomSheet({
   onChangeComment,
   onSubmitComment,
   onDeleteComment,
+  onRequestReportComment,
   snapPoints: snapPointsProp,
   backgroundColor = '#F9F9F9',
   familyUsers = [],
@@ -539,6 +540,17 @@ export default function MemoryDetailBottomSheet({
   deleteActionText: {
     color: '#FFF',
     fontFamily: 'Pretendard-SemiBold',
+  },
+  reportAction: {
+    flex: 1,
+    backgroundColor: '#EA580C',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  reportActionText: {
+    color: '#FFF',
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(13),
   },
 
   topFade: {
@@ -762,6 +774,33 @@ export default function MemoryDetailBottomSheet({
     [onDeleteComment, disabled],
   );
 
+  const renderReportRightActions = useCallback(
+    (comment, progress) => {
+      const translateX = progress.interpolate({
+        inputRange: [0, 1],
+        outputRange: [ACTION_W, 0],
+        extrapolate: 'clamp',
+      });
+
+      return (
+        <View style={styles.rightActionContainer}>
+          <Animated.View style={{flex: 1, transform: [{translateX}]}}>
+            <TouchableOpacity
+              style={styles.reportAction}
+              activeOpacity={0.85}
+              onPress={() => {
+                if (disabled) return;
+                onRequestReportComment?.(comment);
+              }}>
+              <AppText style={styles.reportActionText}>신고</AppText>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      );
+    },
+    [onRequestReportComment, disabled],
+  );
+
   const renderCommentItem = useCallback(
     ({item}) => {
       const mine = isMyComment(item);
@@ -802,7 +841,43 @@ export default function MemoryDetailBottomSheet({
         </View>
       );
 
-      if (!mine || disabled) return body;
+      if (!mine) {
+        if (!disabled && typeof onRequestReportComment === 'function') {
+          return (
+            <Swipeable
+              enabled={true}
+              overshootRight={false}
+              rightThreshold={ACTION_W / 2}
+              simultaneousHandlers={listRef}
+              onSwipeableOpenStartDrag={() => {
+                setOpenedSwipeCommentId(item?.commentId ?? null);
+              }}
+              onSwipeableCloseStartDrag={() => {
+                if (String(openedSwipeCommentId) === String(item?.commentId)) {
+                  setOpenedSwipeCommentId(null);
+                }
+              }}
+              onSwipeableWillOpen={() => {
+                setOpenedSwipeCommentId(item?.commentId ?? null);
+              }}
+              onSwipeableWillClose={() => {
+                if (
+                  String(openedSwipeCommentId) === String(item?.commentId)
+                ) {
+                  setOpenedSwipeCommentId(null);
+                }
+              }}
+              renderRightActions={progress =>
+                renderReportRightActions(item, progress)
+              }>
+              {body}
+            </Swipeable>
+          );
+        }
+        return body;
+      }
+
+      if (disabled) return body;
 
       return (
         <Swipeable
@@ -839,8 +914,10 @@ export default function MemoryDetailBottomSheet({
       familyUsers,
       isMyComment,
       renderRightActions,
+      renderReportRightActions,
       disabled,
       openedSwipeCommentId,
+      onRequestReportComment,
     ],
   );
 

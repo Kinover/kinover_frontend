@@ -318,13 +318,16 @@ export function reconnectIfNeeded() {
   openSocket();
 }
 
+/**
+ * @returns {boolean} false 는 payload 가 없을 때만. 전송 즉시·재연결 후 큐 전송 모두 true.
+ */
 export function sendChat(payload) {
   if (!payload) return false;
 
   if (!ws || ws.readyState !== WebSocket.OPEN) {
     enqueueOutgoing(payload);
     reconnectIfNeeded();
-    return false;
+    return true;
   }
 
   try {
@@ -333,7 +336,7 @@ export function sendChat(payload) {
   } catch (e) {
     enqueueOutgoing(payload);
     reconnectIfNeeded();
-    return false;
+    return true;
   }
 }
 

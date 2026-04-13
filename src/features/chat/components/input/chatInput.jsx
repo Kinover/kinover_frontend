@@ -24,7 +24,7 @@ import {
 
 import {launchImageLibrary} from 'react-native-image-picker';
 
-import {sendChat, isChatSocketOpen} from 'features/chat/hooks/ChatSocket';
+import {sendChat} from 'features/chat/hooks/ChatSocket';
 import {uploadChatMediaSnapshot} from '../../utils/chatMediaUploadUtils';
 
 import {
@@ -517,13 +517,6 @@ const ChatInput = forwardRef(function ChatInput(
 
     const roomId = chatRoom?.chatRoomId;
     if (!roomId) {
-      hapticError();
-      sendingLockRef.current = false;
-      return;
-    }
-
-    if (!isChatSocketOpen()) {
-      showToastFn('연결이 불안정해요. 다시 시도해주세요.');
       hapticError();
       sendingLockRef.current = false;
       return;

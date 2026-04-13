@@ -9,6 +9,7 @@ import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
 import ToastModal from 'components/modal/ToastModal';
 import {COLORS} from 'styles/style';
 import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
+import {commitTermsConsentAndAdvanceToProfile} from 'utils/storage';
 
 // 약관/개인정보 data import (경로는 프로젝트 alias에 맞춰져 있어야 함)
 // alias 없으면 상대경로로 바꿔줘: ../../../data/legal
@@ -47,6 +48,7 @@ export default function TermsAgreementScreen() {
   const [agreeMarketing, setAgreeMarketing] = useState(false);
 
   const bottomSheetRef = useRef(null);
+  const nextInFlightRef = useRef(false);
   const [detailType, setDetailType] = useState(null);
 
   // 가입 전 화면: 앱 글씨 크기 설정과 무관하게 시트 높이 고정
@@ -76,28 +78,40 @@ export default function TermsAgreementScreen() {
     else setAgreeAll(false);
   }, [agreeTerms, agreePrivacy, agreeMarketing]);
 
-  const handleNext = useCallback(() => {
+  const handleNext = useCallback(async () => {
     if (!isRequiredChecked) {
       setToastMessage('필수 약관에 모두 동의해 주세요.');
       setToastVisible(true);
       return;
     }
+    if (nextInFlightRef.current) return;
+    nextInFlightRef.current = true;
 
     const now = new Date().toISOString();
 
-    navigateToWhere({
-      root: 'Auth',
-      screen: '유저정보세팅화면',
-      params: {
-        termsAgreed: agreeTerms,
-        privacyAgreed: agreePrivacy,
-        marketingAgreed: agreeMarketing,
-        termsVersion: TERMS_VERSION,
-        privacyVersion: PRIVACY_VERSION,
-        agreedAt: now,
-        marketingAgreedAt: agreeMarketing ? now : null,
-      },
-    });
+    const termsParams = {
+      termsAgreed: agreeTerms,
+      privacyAgreed: agreePrivacy,
+      marketingAgreed: agreeMarketing,
+      termsVersion: TERMS_VERSION,
+      privacyVersion: PRIVACY_VERSION,
+      agreedAt: now,
+      marketingAgreedAt: agreeMarketing ? now : null,
+    };
+
+    try {
+      await commitTermsConsentAndAdvanceToProfile(termsParams);
+      navigateToWhere({
+        screen: '유저정보세팅화면',
+        params: termsParams,
+        replace: true,
+      });
+    } catch {
+      setToastMessage('진행 정보를 저장하지 못했어요. 다시 시도해 주세요.');
+      setToastVisible(true);
+    } finally {
+      nextInFlightRef.current = false;
+    }
   }, [
     isRequiredChecked,
     navigateToWhere,

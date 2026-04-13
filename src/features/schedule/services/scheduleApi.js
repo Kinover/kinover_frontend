@@ -41,13 +41,27 @@ export const scheduleApi = baseApi.injectEndpoints({
       invalidatesTags: ['Schedule', 'ScheduleCount'],
     }),
     getScheduleCountPerDay: build.query({
-      query: ({familyId, year, month}) => ({
-        url: SCHEDULES.countPerDay,
-        method: 'GET',
-        params: {familyId, year, month},
-      }),
+      query: ({familyId, year, month, viewerUserId}) => {
+        const params = {familyId, year, month};
+        const v = Number(viewerUserId);
+        if (Number.isFinite(v)) {
+          params.viewerUserId = v;
+        }
+        return {
+          url: SCHEDULES.countPerDay,
+          method: 'GET',
+          params,
+        };
+      },
       providesTags: (result, error, arg) => [
-        {type: 'ScheduleCount', id: `${arg?.familyId ?? 'NA'}_${arg?.year ?? 'NA'}_${arg?.month ?? 'NA'}`},
+        {
+          type: 'ScheduleCount',
+          id: `${arg?.familyId ?? 'NA'}_${arg?.year ?? 'NA'}_${arg?.month ?? 'NA'}_${
+            arg?.viewerUserId != null && Number.isFinite(Number(arg.viewerUserId))
+              ? Number(arg.viewerUserId)
+              : 'guest'
+          }`,
+        },
       ],
     }),
   }),

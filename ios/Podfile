@@ -1,3 +1,8 @@
+# React Native Firebase: Swift 기반 FirebaseAuth와 ObjC 타깃(RNFBApp 등) 연동 시
+# `FirebaseAuth/FirebaseAuth-Swift.h` not found 방지 — 정적 프레임워크로 맞춤
+# https://rnfirebase.io/#altering-cocoapods-to-use-frameworks
+$RNFirebaseAsStaticFramework = true
+
 platform :ios, '16.0'
 ENV['RCT_NEW_ARCH_ENABLED'] = '0'
 
@@ -9,6 +14,9 @@ require File.join(
 prepare_react_native_project!
 
 target 'kinover_frontend' do
+  # Firebase(Auth 등 Swift) + ObjC RNFB* 타깃: Swift 생성 헤더 노출에 필요
+  use_frameworks! :linkage => :static
+
   config = use_native_modules!
 
   use_react_native!(
@@ -19,10 +27,15 @@ target 'kinover_frontend' do
   )
 
   # ✅ RNFB 의존성 모듈러 헤더 강제 (유지)
-  pod 'GoogleUtilities',       :modular_headers => true
-  pod 'FirebaseCoreInternal',  :modular_headers => true
-  pod 'FirebaseCore',          :modular_headers => true
-  pod 'FirebaseInstallations', :modular_headers => true
+  pod 'GoogleUtilities',           :modular_headers => true
+  pod 'FirebaseCoreInternal',      :modular_headers => true
+  pod 'FirebaseCore',              :modular_headers => true
+  pod 'FirebaseInstallations',     :modular_headers => true
+  pod 'FirebaseAuth',              :modular_headers => true
+  pod 'FirebaseAuthInterop',       :modular_headers => true
+  pod 'FirebaseAppCheckInterop',   :modular_headers => true
+  pod 'FirebaseCoreExtension',     :modular_headers => true
+  pod 'RecaptchaInterop',          :modular_headers => true
 
   # 3rd party
   pod 'lottie-react-native', :path => '../node_modules/lottie-react-native'
@@ -40,6 +53,23 @@ target 'kinover_frontend' do
         c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         c.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
         c.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
+
+        # Yoga.podspec이 C++에 -Werror를 넣음 → Clang 17/Xcode 16+에서 새 경고 시 전체 iOS 빌드 실패.
+        # .o 미생성 → libtool yoga.LinkFileList 없음 같은 2차 에러로 이어짐.
+        if t.name == 'Yoga'
+          %w[OTHER_CFLAGS OTHER_CPLUSPLUSFLAGS].each do |key|
+            val = c.build_settings[key]
+            next if val.nil?
+            if val.is_a?(Array)
+              flat = val.flat_map { |x| x.to_s.split(/\s+/) }.reject(&:empty?)
+              flat.reject! { |f| f == '-Werror' || f.start_with?('-Werror=') }
+              c.build_settings[key] = flat
+            else
+              c.build_settings[key] =
+                val.to_s.gsub(/\s*-Werror(=[^\s]+)?\b/, ' ').squeeze(' ').strip
+            end
+          end
+        end
       end
     end
 

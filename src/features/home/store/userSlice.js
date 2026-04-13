@@ -24,6 +24,7 @@ export const initialUserState = {
   emotionUpdatedAt: null,
   trait: null,
   familyId: null,
+  phoneVerified: null,
 };
 
 // ==================== Slice ====================
@@ -62,6 +63,7 @@ const userSlice = createSlice({
         trait,
         emotionUpdatedAt,
         familyId,
+        phoneVerified,
       } = payload;
 
       state.userId = userId ?? state.userId;
@@ -77,6 +79,9 @@ const userSlice = createSlice({
       state.trait = trait ?? state.trait;
       state.emotionUpdatedAt = emotionUpdatedAt ?? state.emotionUpdatedAt;
       state.familyId = familyId ?? state.familyId;
+      if (typeof phoneVerified === 'boolean') {
+        state.phoneVerified = phoneVerified;
+      }
     },
 
     /**

@@ -2,15 +2,17 @@
 import {useState, useEffect, useCallback} from 'react';
 import {useGetScheduleCountPerDayQuery} from '../services/scheduleApi';
 
-export const useScheduleCounts = (familyId, year, month) => {
+export const useScheduleCounts = (familyId, year, month, viewerUserId) => {
   const [scheduleCountPerDay, setScheduleCountPerDay] = useState({});
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const v = Number(viewerUserId);
+  const viewerArg = Number.isFinite(v) ? v : undefined;
   const {
     data: countData,
     isLoading,
     refetch,
   } = useGetScheduleCountPerDayQuery(
-    {familyId, year, month},
+    {familyId, year, month, viewerUserId: viewerArg},
     {
       skip: !familyId,
     },

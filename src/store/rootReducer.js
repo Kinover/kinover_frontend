@@ -14,6 +14,7 @@ import commentReducer from '../features/memory/store/commentSlice';
 import categoryReducer from '../features/memory/store/categorySlice';
 import statusReducer from '../features/home/store/statusSlice';
 import notificationReducer from '../features/notification/store/notificationSlice';
+import blockedUsersReducer from '../features/moderation/store/blockedUsersSlice';
 
 import uiReducer from './uiSlice';
 import {baseApi} from '../services/baseApi';
@@ -39,6 +40,7 @@ const appReducer = combineReducers({
   category: categoryReducer,
   status: statusReducer,
   notification: notificationReducer,
+  blockedUsers: blockedUsersReducer,
 });
 
 // RESET_ALL_STATE 액션 수신 시 모든 슬라이스를 initialState로 되돌림

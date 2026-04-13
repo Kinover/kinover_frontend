@@ -13,6 +13,7 @@ import mmkvStorage from 'utils/mmkvStorage';
 
 import {stopChatSocket} from 'features/chat/hooks/ChatSocket';
 import {setAuthChecked} from '../store/loginSlice';
+import {setLocalBlockedUserIds} from 'features/moderation/utils/blockedUsersStorage';
 
 const nextTick = () => new Promise(resolve => setTimeout(resolve, 0));
 const FONT_MODE_STORAGE_KEY = 'ui:fontMode';
@@ -31,6 +32,7 @@ export const useLogout = () => {
 
     // 2) 로컬 로그인정보 삭제
     try { await deleteLoginInfo(); } catch { null; }
+    try { await setLocalBlockedUserIds([]); } catch { null; }
     try { await mmkvStorage.setItem(FONT_MODE_STORAGE_KEY, 'NORMAL'); } catch { null; }
     try { await Keychain.resetInternetCredentials(FONT_MODE_KEYCHAIN_SERVICE); } catch { null; }
 

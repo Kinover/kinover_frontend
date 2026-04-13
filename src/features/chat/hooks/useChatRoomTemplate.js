@@ -41,6 +41,12 @@ export default function useChatRoomTemplate({
   const myUserIdFromStore = useSelector(s => s?.user?.userId) ?? null;
   const myUserId = userId ?? myUserIdFromStore;
 
+  const blockedIds = useSelector(s => s.blockedUsers?.ids ?? []);
+  const blockedSet = useMemo(
+    () => new Set(blockedIds.map(Number).filter(Number.isFinite)),
+    [blockedIds],
+  );
+
   // ── RTK Query: 채팅방 유저 목록 ──────────────────────────────
   const {data: roomUsers = []} = useGetChatRoomUsersQuery(
     String(chatRoomId),
@@ -73,10 +79,31 @@ export default function useChatRoomTemplate({
     isAtBottomRef,
   } = useChatRoomScreen(chatRoom, myUserId, isKino);
 
+  const visibleMessageList = useMemo(() => {
+    if (!blockedSet.size) return messageList;
+    return (messageList || []).filter(m => {
+      const sid = m?.senderId ?? m?.userId ?? m?.authorId;
+      const n = Number(sid);
+      if (!Number.isFinite(n)) return true;
+      if (String(sid) === String(myUserId)) return true;
+      return !blockedSet.has(n);
+    });
+  }, [messageList, blockedSet, myUserId]);
+
+  const mentionUsersForInput = useMemo(() => {
+    if (!blockedSet.size) return roomUsers;
+    return (roomUsers || []).filter(u => {
+      const n = Number(u?.userId ?? u?.id);
+      if (!Number.isFinite(n)) return true;
+      return !blockedSet.has(n);
+    });
+  }, [roomUsers, blockedSet]);
+
   // ── STORE_MOCK: 메시지 목록 직접 inject (실서버 미사용 시) ──
   // getMessages RTK Query 캐시에 모의 데이터 주입이 필요하면 useChatRoomScreen 내부에서 처리
   // 여기서는 모의 여부를 isMessageFetched 판단에만 활용
-  const isMessageFetched = Array.isArray(messageList) && messageList.length >= 0;
+  const isMessageFetched =
+    Array.isArray(visibleMessageList) && visibleMessageList.length >= 0;
 
   useHideTabBar();
   useHeaderSetting(navigation, chatRoomId, title, isKino);
@@ -113,10 +140,12 @@ export default function useChatRoomTemplate({
 
   // ── 읽음 처리 ──────────────────────────────────────────────
   const latestCreatedAtLocal = useMemo(() => {
-    if (!Array.isArray(messageList) || messageList.length === 0) return null;
+    if (!Array.isArray(visibleMessageList) || visibleMessageList.length === 0) {
+      return null;
+    }
     let maxMs = null;
     let maxDate = null;
-    for (const m of messageList) {
+    for (const m of visibleMessageList) {
       const t = m?.createdAt;
       if (!t) continue;
       const d = new Date(t);
@@ -128,7 +157,7 @@ export default function useChatRoomTemplate({
       }
     }
     return maxDate ? toLocalDateTimeString(maxDate) : null;
-  }, [messageList]);
+  }, [visibleMessageList]);
 
   const lastSentReadAtRef = useRef(null);
   const sendReadIfNeeded = useCallback(() => {
@@ -151,13 +180,19 @@ export default function useChatRoomTemplate({
   useEffect(() => {
     if (!chatRoomId || !latestCreatedAtLocal) return;
     if (isAtBottomRef?.current) sendReadIfNeeded();
-  }, [chatRoomId, latestCreatedAtLocal, messageList?.length, isAtBottomRef, sendReadIfNeeded]);
+  }, [
+    chatRoomId,
+    latestCreatedAtLocal,
+    visibleMessageList?.length,
+    isAtBottomRef,
+    sendReadIfNeeded,
+  ]);
 
   // 새 메시지 도착 시 스크롤 bottom
   useEffect(() => {
-    const len = Array.isArray(messageList) ? messageList.length : 0;
+    const len = Array.isArray(visibleMessageList) ? visibleMessageList.length : 0;
     if (!isUserScrolling && len > 0) scrollToBottom();
-  }, [messageList, isUserScrolling, scrollToBottom]);
+  }, [visibleMessageList, isUserScrolling, scrollToBottom]);
 
   // STORE_MOCK: 모의 메시지 직접 주입 (useChatRoomScreen 스킵 우회)
   useEffect(() => {
@@ -175,9 +210,9 @@ export default function useChatRoomTemplate({
     chatRoomId,
     currentChatRoom,
     myUserId,
-    messageList,
+    messageList: visibleMessageList,
     isMessageFetched,
-    roomUsers,
+    roomUsers: mentionUsersForInput,
     readPointersMap,
     flatListRef,
     noMoreMessages,

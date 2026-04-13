@@ -5,19 +5,27 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Platform,
 } from 'react-native';
 import CustomInput from 'components/CustomInput';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useRoute} from '@react-navigation/native';
+import {useRoute, useNavigation} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
 
 import DatePicker from 'react-native-date-picker';
+import {DateTimePickerAndroid} from '@react-native-community/datetimepicker';
 
 import {useNavigateToWhere} from 'hooks/useNavigateToWhere';
 import BottomActionButton from 'components/BottomActionButton';
 import {updateUserProfile} from 'api/userProfileApi';
 import {getUserIdFromToken} from 'api/getUserIdFromToken';
 import {required, validateLength} from 'utils/validation';
+import {
+  advanceSignupAfterProfileSaved,
+  advanceSignupAfterProfileBeforePhone,
+  getPendingSignupTermsParams,
+} from 'utils/storage';
+
 export default function UserSetupScreen() {
   const [name, setName] = useState('');
   const [birthDate, setBirthDate] = useState(null); // Date | null
@@ -27,8 +35,37 @@ export default function UserSetupScreen() {
   const [loading, setLoading] = useState(false);
 
   const navigateToWhere = useNavigateToWhere();
+  const navigation = useNavigation();
   const route = useRoute();
+  const [termsHydrationDone, setTermsHydrationDone] = useState(() =>
+    !!(route.params?.termsAgreed && route.params?.privacyAgreed),
+  );
+  /** setParams 반영 전에 termsHydrationDone만 먼저 true가 되면 약관 Alert가 오탐한다 — MMKV pending을 여기서도 병합 */
+  const [storedTermsParams, setStoredTermsParams] = useState(null);
   const userIdFromStore = useSelector(state => state?.user?.userId ?? null);
+  const phoneVerified = useSelector(
+    state => state?.user?.phoneVerified === true,
+  );
+
+  const mergedTerms = useMemo(
+    () => ({
+      termsAgreed:
+        route.params?.termsAgreed ?? storedTermsParams?.termsAgreed,
+      privacyAgreed:
+        route.params?.privacyAgreed ?? storedTermsParams?.privacyAgreed,
+      marketingAgreed:
+        route.params?.marketingAgreed ?? storedTermsParams?.marketingAgreed,
+      termsVersion:
+        route.params?.termsVersion ?? storedTermsParams?.termsVersion,
+      privacyVersion:
+        route.params?.privacyVersion ?? storedTermsParams?.privacyVersion,
+      agreedAt: route.params?.agreedAt ?? storedTermsParams?.agreedAt,
+      marketingAgreedAt:
+        route.params?.marketingAgreedAt ??
+        storedTermsParams?.marketingAgreedAt,
+    }),
+    [route.params, storedTermsParams],
+  );
 
   const {
     termsAgreed,
@@ -38,7 +75,7 @@ export default function UserSetupScreen() {
     privacyVersion,
     agreedAt,
     marketingAgreedAt,
-  } = route.params || {};
+  } = mergedTerms;
 
  // 버튼 활성/비활성 조건
   const isFormValid = name.trim().length > 0 && !!birthDate;
@@ -46,8 +83,22 @@ export default function UserSetupScreen() {
 
   const openBirthPicker = useCallback(() => {
     setError('');
-    setIsBirthPickerOpen(true);
-  }, []);
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value: birthDate || new Date(2000, 0, 1),
+        mode: 'date',
+        display: 'spinner',
+        maximumDate: new Date(),
+        minimumDate: new Date(1900, 0, 1),
+        onChange: (event, selectedDate) => {
+          if (event?.type === 'dismissed' || !selectedDate) return;
+          setBirthDate(selectedDate);
+        },
+      });
+    } else {
+      setIsBirthPickerOpen(true);
+    }
+  }, [birthDate]);
 
   const birthText = useMemo(() => {
     return birthDate ? formatDate(birthDate) : '';
@@ -105,10 +156,20 @@ export default function UserSetupScreen() {
 
       await updateUserProfile(payload);
 
-      navigateToWhere({
-        root: 'Auth',
-        screen: '가족설정화면',
-      });
+      if (!phoneVerified) {
+        advanceSignupAfterProfileBeforePhone();
+        navigateToWhere({
+          screen: '전화번호인증화면',
+          params: {continueToFamilyAfterVerify: true},
+          replace: true,
+        });
+      } else {
+        advanceSignupAfterProfileSaved();
+        navigateToWhere({
+          screen: '가족설정화면',
+          replace: true,
+        });
+      }
     } catch (e) {
       setError('정보 저장 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.');
     } finally {
@@ -117,6 +178,7 @@ export default function UserSetupScreen() {
   }, [
     termsAgreed,
     privacyAgreed,
+    phoneVerified,
     name,
     birthDate,
     marketingAgreed,
@@ -129,8 +191,30 @@ export default function UserSetupScreen() {
     route?.params?.userId,
   ]);
 
- // 진입 자체를 막기
+  // 앱 재시작 후: MMKV에 저장된 약관 동의 파라미터를 route에 복구
   useEffect(() => {
+    if (termsHydrationDone) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const pending = await getPendingSignupTermsParams();
+        if (cancelled) return;
+        if (pending?.termsAgreed && pending?.privacyAgreed) {
+          setStoredTermsParams(pending);
+          navigation.setParams(pending);
+        }
+      } finally {
+        if (!cancelled) setTermsHydrationDone(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [navigation, termsHydrationDone]);
+
+ // 진입 자체를 막기 (복구 시도 이후)
+  useEffect(() => {
+    if (!termsHydrationDone) return;
     if (!termsAgreed || !privacyAgreed) {
       Alert.alert(
         '안내',
@@ -139,17 +223,14 @@ export default function UserSetupScreen() {
           {
             text: '확인',
             onPress: () => {
-              navigateToWhere({
-                root: 'Auth',
-                screen: '약관동의화면',
-              });
+              navigation.navigate('약관동의화면');
             },
           },
         ],
         {cancelable: false},
       );
     }
-  }, [termsAgreed, privacyAgreed, navigateToWhere]);
+  }, [termsHydrationDone, termsAgreed, privacyAgreed, navigation]);
 
  // DatePicker 범위
   const maxDate = new Date();
@@ -218,26 +299,28 @@ export default function UserSetupScreen() {
         disabled={isButtonDisabled}
       />
 
-      {/* DatePicker Modal */}
-      <DatePicker
-        modal
-        open={isBirthPickerOpen}
-        date={birthDate || new Date(2000, 0, 1)}
-        mode="date"
-        title="생년월일 선택"
-        confirmText="확인"
-        cancelText="취소"
-        maximumDate={maxDate}
-        minimumDate={minDate}
-        locale="ko"
-        onConfirm={date => {
-          setIsBirthPickerOpen(false);
-          setBirthDate(date);
-        }}
-        onCancel={() => {
-          setIsBirthPickerOpen(false);
-        }}
-      />
+      {/* DatePicker Modal — iOS only (Android는 DateTimePickerAndroid 사용) */}
+      {Platform.OS === 'ios' && (
+        <DatePicker
+          modal
+          open={isBirthPickerOpen}
+          date={birthDate || new Date(2000, 0, 1)}
+          mode="date"
+          title="생년월일 선택"
+          confirmText="확인"
+          cancelText="취소"
+          maximumDate={maxDate}
+          minimumDate={minDate}
+          locale="ko"
+          onConfirm={date => {
+            setIsBirthPickerOpen(false);
+            setBirthDate(date);
+          }}
+          onCancel={() => {
+            setIsBirthPickerOpen(false);
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }

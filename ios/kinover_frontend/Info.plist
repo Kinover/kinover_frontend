@@ -34,6 +34,22 @@
 				<string>kakao481db040d2e018832f0c8232a8fb7042</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.1038540937232-s8pcdqu2c6lf9lgh7rn13mn0oat7d8dq</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>app-1-1038540937232-ios-861b52dad8a98a16e75295</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
@@ -47,6 +63,8 @@
 		<string>kakaolink</string>
 		<string>kakaotalk</string>
 		<string>kakaoauth</string>
+		<string>googlechromes</string>
+		<string>googlechrome</string>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>

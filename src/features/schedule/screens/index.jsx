@@ -10,6 +10,7 @@ import {
   RefreshControl,
   Image,
   Platform,
+  Alert,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 
@@ -55,6 +56,12 @@ import {
   getStoreMockFamilyUserListForSchedule,
   getStoreMockUser,
 } from '../../home/utils/storeMockData';
+import ReportReasonSheet from 'features/moderation/components/ReportReasonSheet';
+import {useCreateReportMutation} from 'features/moderation/services/moderationApi';
+import {
+  buildCreateReportBody,
+  pickTargetUuid,
+} from 'features/moderation/utils/buildReportBody';
 
 const toId = v => {
   if (v == null) return null;
@@ -164,6 +171,45 @@ export default function ScheduleScreen() {
     ? getStoreMockUser()?.userId ?? reduxUserId
     : reduxUserId;
 
+  const viewerForScheduleCount = useMemo(() => {
+    const n = Number(currentUserId);
+    return Number.isFinite(n) ? n : undefined;
+  }, [currentUserId]);
+
+  const [reportScheduleVisible, setReportScheduleVisible] = useState(false);
+  const [reportScheduleCtx, setReportScheduleCtx] = useState(null);
+  const [createReport] = useCreateReportMutation();
+
+  const handleLongPressScheduleItem = useCallback(item => {
+    const uuid = pickTargetUuid(item, [
+      'scheduleUuid',
+      'uuid',
+      'scheduleId',
+    ]);
+    if (!uuid) return;
+    setReportScheduleCtx({targetType: 'SCHEDULE', targetUuid: uuid});
+    setReportScheduleVisible(true);
+  }, []);
+
+  const submitScheduleReport = useCallback(
+    async reasonCode => {
+      if (!reportScheduleCtx) return;
+      try {
+        const body = buildCreateReportBody(reportScheduleCtx, reasonCode);
+        await createReport(body).unwrap();
+        setReportScheduleVisible(false);
+        setReportScheduleCtx(null);
+        Alert.alert('', '신고가 접수되었어요.');
+      } catch {
+        Alert.alert(
+          '오류',
+          '신고 접수에 실패했어요. 잠시 후 다시 시도해 주세요.',
+        );
+      }
+    },
+    [reportScheduleCtx, createReport],
+  );
+
   const [calendarMode, setCalendarMode] = useState('month');
 
   const [selectedUserIds, setSelectedUserIds] = useState([]);
@@ -220,7 +266,7 @@ export default function ScheduleScreen() {
     refreshTrigger,
     setRefreshTrigger,
     bumpCount,
-  } = useScheduleCounts(familyId, year, month);
+  } = useScheduleCounts(familyId, year, month, viewerForScheduleCount);
 
   const {scheduleCountPerDay: scheduleCountPerDayForCalendar, loadingFiltered} =
     useScheduleCountsFilteredByUsers({
@@ -485,6 +531,7 @@ export default function ScheduleScreen() {
         <Schedule
           selectedDate={selectedDate}
           onOpenSheet={handleOpenSheet}
+          onLongPressScheduleItem={handleLongPressScheduleItem}
           refreshTrigger={refreshTrigger}
           birthdayNames={birthdayNamesForSelectedDate}
           familyId={familyId}
@@ -555,6 +602,17 @@ export default function ScheduleScreen() {
           <YellowSpinner />
         </View>
       )}
+
+      <ReportReasonSheet
+        visible={reportScheduleVisible}
+        onClose={() => {
+          setReportScheduleVisible(false);
+          setReportScheduleCtx(null);
+        }}
+        onSelectReason={code => {
+          submitScheduleReport(code);
+        }}
+      />
     </View>
   );
 }

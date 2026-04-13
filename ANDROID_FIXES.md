@@ -1,9 +1,4 @@
 # Android Platform Fix Log
-
-> 이 파일은 Android 3-button navigation / edge-to-edge 대응 수정 내역 요약입니다.
-> Claude가 다음 세션에서 맥락 없이도 이어서 작업할 수 있도록 압축 정리했습니다.
-> Last updated: 2026-04-11
-
 ---
 
 ## 핵심 원인 배경

@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useMemo, useState, useCallback} from 'react';
 import {View} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
@@ -7,8 +7,29 @@ import ChatRoomScreenTemplate from './chatRoomScreenTemplate';
 import {useLazyGetChatRoomQuery} from '../services/chatApi';
 import {selectChatRoomById} from '../store/chatRoomSelector';
 import YellowSpinner from 'components/yellowSpinner';
+import ToastModal from 'components/modal/ToastModal';
+import {blockedIdSetFromStateIds, shouldHideChatRoomForBlockedUsers} from 'features/moderation/utils/blockedUserFilter';
 
 const toId = v => (v == null ? null : String(v));
+
+function BlockedChatRoomGate({navigation}) {
+  const [visible, setVisible] = useState(true);
+  const handleClose = useCallback(() => {
+    setVisible(false);
+    navigation.goBack();
+  }, [navigation]);
+
+  return (
+    <View style={{flex: 1, backgroundColor: '#F9F9F9'}}>
+      <ToastModal
+        visible={visible}
+        message="차단한 유저와의 채팅방은 열 수 없어요."
+        onClose={handleClose}
+        duration={2200}
+      />
+    </View>
+  );
+}
 
 export default function FamilyChatRoom({route}) {
   const navigation = useNavigation();
@@ -24,6 +45,15 @@ export default function FamilyChatRoom({route}) {
  // title/userId fallback
   const userId = params.userId ?? null;
   const titleFromParams = params.title ?? null;
+
+  const myUserId = useSelector(s => s.user?.userId ?? s.user?.id);
+  const effectiveUserId = userId ?? myUserId;
+
+  const blockedIds = useSelector(s => s.blockedUsers?.ids ?? []);
+  const blockedSet = useMemo(
+    () => blockedIdSetFromStateIds(blockedIds),
+    [blockedIds],
+  );
 
  // store에서 chatRoomList 기반으로 단건 찾기
   const roomFromStore = useSelector(state => selectChatRoomById(state, chatRoomId));
@@ -65,6 +95,34 @@ export default function FamilyChatRoom({route}) {
     };
   }, [fetchChatRoom, chatRoomId, roomFromStore, localRoom]);
 
+  const roomForBlock = roomFromStore || localRoom;
+  const blockedNow = useMemo(() => {
+    if (
+      !roomForBlock ||
+      roomForBlock.kino ||
+      effectiveUserId == null ||
+      !blockedSet?.size
+    ) {
+      return false;
+    }
+    const ucs = roomForBlock.userChatRooms;
+    if (!Array.isArray(ucs) || ucs.length === 0) {
+      return false;
+    }
+    return shouldHideChatRoomForBlockedUsers(
+      roomForBlock,
+      effectiveUserId,
+      blockedSet,
+    );
+  }, [roomForBlock, effectiveUserId, blockedSet]);
+
+  const [blockedLatch, setBlockedLatch] = useState(false);
+  useLayoutEffect(() => {
+    if (blockedNow) {
+      setBlockedLatch(true);
+    }
+  }, [blockedNow]);
+
   if (!chatRoomId) {
     return (
       <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
@@ -73,6 +131,9 @@ export default function FamilyChatRoom({route}) {
     );
   }
 
+  if (blockedLatch) {
+    return <BlockedChatRoomGate navigation={navigation} />;
+  }
 
   return (
     <ChatRoomScreenTemplate

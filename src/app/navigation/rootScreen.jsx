@@ -1,19 +1,20 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useRef, useReducer, useCallback} from 'react';
 import { ActivityIndicator, View, Image, StyleSheet } from 'react-native';
-import {useSelector} from 'react-redux';
+import {useDispatch, useSelector} from 'react-redux';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import AuthNavigator from './authNavigator';
 import RootNavigator from './rootNavigator';
 import {
   setGuestMode,
-  getHasFamily,
-  getNeedsSignup,
   ensureStorageDefaultsOnce,
+  getAuthRoutingMmkvSnapshotSync,
+  SIGNUP_PROGRESS_STEP,
 } from 'utils/storage';
 import {useAutoLogin} from 'features/auth/hooks/useAutoLogin';
 import {onAuthFlagsChanged} from 'utils/authFlagsEvent';
 import AppText from 'components/AppText';
+import {setPhoneVerificationPending} from 'features/auth/store/loginSlice';
 
 function BootLoading({label = ''}) {
   return (
@@ -36,33 +37,30 @@ function BootLoading({label = ''}) {
 }
 
 export default function RootScreen() {
+  const dispatch = useDispatch();
   const rehydrated = useSelector(state => !!state?._persist?.rehydrated);
   const authChecked = useSelector(state => state.login?.authChecked);
   const isLogin = useSelector(state => state.login?.isLoggedIn);
   const loginLoading = useSelector(state => !!state.login?.loading);
   const user = useSelector(state => state.user);
+  /** 전화 인증 완료 직후 MMKV·emit 레이스로 플래그가 잠깐 살아도 전화 화면으로 되돌리지 않음 */
+  const serverPhoneVerifiedHint = user?.phoneVerified === true;
 
   const [bootDone, setBootDone] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
-  const [hasFamily, setHasFamily] = useState(null);
-  const [needsSignup, setNeedsSignup] = useState(false);
   const [_authTimeout, setAuthTimeout] = useState(false);
+  const phonePendingHydratedRef = useRef(false);
 
-  async function refreshAuthFlags() {
-    try {
-      const [hf, ns] = await Promise.all([getHasFamily(), getNeedsSignup()]);
-      setHasFamily(hf);
-      setNeedsSignup(!!ns);
-    } catch {
-      setHasFamily(null);
-      setNeedsSignup(false);
-    }
-  }
+  /** MMKV emit 시 라우트 재계산 (스냅샷은 렌더마다 동기 읽음) */
+  const [, bumpMmkvRoute] = useReducer(c => c + 1, 0);
+  const refreshAuthFlags = useCallback(() => {
+    bumpMmkvRoute();
+  }, []);
 
   useEffect(() => {
     const unsub = onAuthFlagsChanged(() => refreshAuthFlags());
     return unsub;
-  }, []);
+  }, [refreshAuthFlags]);
 
   useEffect(() => {
     if (!rehydrated) return;
@@ -78,7 +76,7 @@ export default function RootScreen() {
       if (!mounted) return;
       setIsGuest(false);
 
-      await refreshAuthFlags();
+      refreshAuthFlags();
 
       if (!mounted) return;
       setBootDone(true);
@@ -87,13 +85,13 @@ export default function RootScreen() {
     return () => {
       mounted = false;
     };
-  }, [rehydrated]);
+  }, [rehydrated, refreshAuthFlags]);
 
   useEffect(() => {
     if (!rehydrated) return;
     if (!authChecked) return;
     refreshAuthFlags();
-  }, [rehydrated, authChecked]);
+  }, [rehydrated, authChecked, refreshAuthFlags]);
 
   useEffect(() => {
     if (!rehydrated || !bootDone) return;
@@ -114,10 +112,46 @@ export default function RootScreen() {
 
   useAutoLogin(shouldRunAutoLogin);
 
+  useEffect(() => {
+    if (!isLogin) {
+      phonePendingHydratedRef.current = false;
+    }
+  }, [isLogin]);
+
+  // 로그인 슬라이스는 persist 안 함 → MMKV 기준으로 Redux 전화 대기만 1회 동기화(비동기 getItem 레이스 방지)
+  useEffect(() => {
+    if (!rehydrated || !bootDone || !authChecked || !isLogin) return;
+    if (phonePendingHydratedRef.current) return;
+    phonePendingHydratedRef.current = true;
+    const p = getAuthRoutingMmkvSnapshotSync().mmkvPhoneVerificationPending;
+    if (p) {
+      dispatch(setPhoneVerificationPending());
+    }
+  }, [rehydrated, bootDone, authChecked, isLogin, dispatch]);
+
+  const mmkvRoute = getAuthRoutingMmkvSnapshotSync();
+  const {
+    hasFamily: mmkvHasFamily,
+    needsSignup,
+    signupProgressStep,
+    mmkvPhoneVerificationPending,
+    signupAwaitingPhone,
+    signupRequiresPhone,
+    hasPendingSignupTerms,
+  } = mmkvRoute;
+
+  /** 전화 화면 분기는 MMKV만 신뢰(Redux는 레이스·하이드레이션에 오래 true로 남을 수 있음) */
+  const mmkvWantsPhoneScreenRaw =
+    mmkvPhoneVerificationPending ||
+    signupAwaitingPhone ||
+    signupRequiresPhone;
+  const mmkvWantsPhoneScreen =
+    mmkvWantsPhoneScreenRaw && !serverPhoneVerifiedHint;
+
   // 스토리지 값이 비어 있어도 fetchUser 결과로 hasFamily를 안전하게 추론
   const derivedFamilyId = user?.familyId ?? null;
-  const effectiveHasFamily = hasFamily != null
-    ? hasFamily
+  const effectiveHasFamily = mmkvHasFamily != null
+    ? mmkvHasFamily
     : authChecked && isLogin && user?.userId != null
     ? derivedFamilyId != null
     : null;
@@ -133,11 +167,53 @@ export default function RootScreen() {
     } else if (!isLogin) {
       target = {flow: 'AuthFlow', initialRouteName: '온보딩화면'};
     } else if (needsSignup) {
-      target = {flow: 'AuthFlow', initialRouteName: '약관동의화면'};
+      const p = signupProgressStep;
+      const pastPhoneInSignupFlow =
+        p === SIGNUP_PROGRESS_STEP.TERMS ||
+        p === SIGNUP_PROGRESS_STEP.PROFILE ||
+        p === SIGNUP_PROGRESS_STEP.FAMILY ||
+        p === SIGNUP_PROGRESS_STEP.FINISH;
+      const resumePhone =
+        !pastPhoneInSignupFlow &&
+        !serverPhoneVerifiedHint &&
+        (p === SIGNUP_PROGRESS_STEP.PHONE ||
+          ((p == null || String(p).trim() === '') &&
+            mmkvPhoneVerificationPending) ||
+          mmkvWantsPhoneScreenRaw);
+      if (resumePhone) {
+        target = {flow: 'AuthFlow', initialRouteName: '전화번호인증화면'};
+      } else if (p === SIGNUP_PROGRESS_STEP.PROFILE) {
+        target = {flow: 'AuthFlow', initialRouteName: '유저정보세팅화면'};
+      } else if (
+        p === SIGNUP_PROGRESS_STEP.FAMILY &&
+        !serverPhoneVerifiedHint &&
+        mmkvWantsPhoneScreenRaw
+      ) {
+        target = {flow: 'AuthFlow', initialRouteName: '전화번호인증화면'};
+      } else if (p === SIGNUP_PROGRESS_STEP.FAMILY) {
+        target = {flow: 'AuthFlow', initialRouteName: '가족설정화면'};
+      } else if (p === SIGNUP_PROGRESS_STEP.FINISH) {
+        target = {flow: 'AuthFlow', initialRouteName: '설정완료화면'};
+      } else if (
+        hasPendingSignupTerms &&
+        (p == null || String(p).trim() === '')
+      ) {
+        // 단계 키 없이 pending만 남은 복구(이전 크래시 등) — 프로필로 이어감
+        target = {flow: 'AuthFlow', initialRouteName: '유저정보세팅화면'};
+      } else {
+        // signupProgressStep === terms(전화 직후) 등: hasPending이 있어도 약관 UI를 거쳐야 함
+        target = {flow: 'AuthFlow', initialRouteName: '약관동의화면'};
+      }
+    } else if (mmkvWantsPhoneScreen) {
+      target = {flow: 'AuthFlow', initialRouteName: '전화번호인증화면'};
     } else if (effectiveHasFamily === true) {
       target = {flow: 'AppFlow', initialRouteName: 'Tabs'};
     } else if (effectiveHasFamily === false) {
-      target = {flow: 'AuthFlow', initialRouteName: '약관동의화면'};
+      if (hasPendingSignupTerms) {
+        target = {flow: 'AuthFlow', initialRouteName: '유저정보세팅화면'};
+      } else {
+        target = {flow: 'AuthFlow', initialRouteName: '약관동의화면'};
+      }
     } else {
       // hasFamily 미확정(null) 상태에서는 Tabs로 먼저 보내지 않고 로딩 유지
       target = null;
@@ -158,9 +234,11 @@ export default function RootScreen() {
   }
 
   if (target.flow === 'AuthFlow') {
+    // initialRouteName마다 key를 바꾸면 스택이 매번 초기화되어 replace·params가 날아가고
+    // 약관/프로필을 두 번 거치는 현상이 난다. 로그인·가입 필요 여부 단위로만 리마운트한다.
     return (
       <AuthNavigator
-        key={`AuthFlow:${target.initialRouteName}`}
+        key={`AuthFlow:${isLogin}-${needsSignup}`}
         initialRouteName={target.initialRouteName}
       />
     );

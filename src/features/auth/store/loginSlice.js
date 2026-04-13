@@ -10,6 +10,9 @@ const initialLoginState = {
 
  // "userinfo/familyId까지 확인 완료" 여부 (라우팅 확정 가능)
   authChecked: false,
+
+ // 전화번호 인증 대기 상태 — needed:true 이면 rootScreen이 인증 화면으로 라우팅
+  phoneVerificationPending: {needed: false},
 };
 
 const loginSlice = createSlice({
@@ -46,6 +49,16 @@ const loginSlice = createSlice({
  // resetAuthChecked(state) {
  // state.authChecked = false;
  // },
+
+ // 전화번호 인증 필요 상태로 전환
+    setPhoneVerificationPending(state) {
+      state.phoneVerificationPending = {needed: true};
+    },
+
+ // 전화번호 인증 완료 후 상태 초기화
+    clearPhoneVerificationPending(state) {
+      state.phoneVerificationPending = {needed: false};
+    },
   },
 });
 
@@ -55,6 +68,8 @@ export const {
   setLoginSuccess,
   setLogout,
   setAuthChecked,
+  setPhoneVerificationPending,
+  clearPhoneVerificationPending,
 } = loginSlice.actions;
 
 export default loginSlice.reducer;

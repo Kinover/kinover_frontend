@@ -48,11 +48,12 @@ src/
 │   │
 │   ├── auth/
 │   │   ├── screens/
-│   │   │   ├── OnboardingScreen.jsx     # 슬라이드 온보딩 + 로그인 진입
-│   │   │   ├── TermsAgreementScreen.jsx # 약관 동의
-│   │   │   ├── UserSetupScreen.jsx      # 이름/생일 입력
-│   │   │   ├── FamilySetupScreen.jsx    # 가족 생성 or 참여
-│   │   │   └── SetupFinishScreen.jsx    # 설정 완료
+│   │   │   ├── OnboardingScreen.jsx        # 슬라이드 온보딩 + 로그인 진입
+│   │   │   ├── PhoneVerificationScreen.jsx # 전화번호 인증 (Firebase SMS OTP 2단계)
+│   │   │   ├── TermsAgreementScreen.jsx    # 약관 동의
+│   │   │   ├── UserSetupScreen.jsx         # 이름/생일 입력
+│   │   │   ├── FamilySetupScreen.jsx       # 가족 생성 or 참여
+│   │   │   └── SetupFinishScreen.jsx       # 설정 완료
 │   │   ├── hooks/
 │   │   │   ├── useKakaoLogin.js         # 카카오 OAuth 로그인
 │   │   │   ├── useAppleLogin.js         # Apple 로그인
@@ -398,7 +399,7 @@ src/
 
 | API 파일 | 주요 엔드포인트 |
 |----------|----------------|
-| `auth/services/authApi.js` | 로그인, 토큰 갱신, 회원가입 |
+| `auth/services/authApi.js` | 로그인, 토큰 갱신, 회원가입, 전화번호 인증 (`verifyPhone`) |
 | `home/services/homeApi.js` | 사용자 정보, 가족 정보, 가족 멤버 목록 |
 | `chat/services/chatApi.js` | 채팅방 CRUD, 메시지 목록 |
 | `chat/services/chatReadApi.js` | 메시지 읽음 처리 |
@@ -425,6 +426,7 @@ RootNavigator (Stack)
 └── NotificationScreen (전역 화면)
 
 AuthNavigator (Stack)
-└── OnboardingScreen → TermsAgreementScreen → UserSetupScreen
-    → FamilySetupScreen → SetupFinishScreen
+└── OnboardingScreen → [phoneVerified=false 시] PhoneVerificationScreen
+                    → TermsAgreementScreen → UserSetupScreen
+                    → FamilySetupScreen → SetupFinishScreen
 ```

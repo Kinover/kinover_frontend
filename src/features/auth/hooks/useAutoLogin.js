@@ -2,11 +2,23 @@
 import {useEffect, useRef} from 'react';
 import {useDispatch, useSelector, useStore} from 'react-redux';
 
-import {getToken, deleteLoginInfo, setHasFamily} from 'utils/storage';
+import {
+  getToken,
+  deleteLoginInfo,
+  setHasFamily,
+  setStoredPhoneVerificationPending,
+  getAuthRoutingMmkvSnapshotSync,
+  SIGNUP_PROGRESS_STEP,
+} from 'utils/storage';
 import {baseApi} from 'services/baseApi';
 import {homeApi} from 'features/home/services/homeApi';
 import {startChatSocket, stopChatSocket} from 'features/chat/hooks/ChatSocket';
-import {setLoginSuccess, setLogout, setAuthChecked} from '../store/loginSlice';
+import {
+  setLoginSuccess,
+  setLogout,
+  setAuthChecked,
+  setPhoneVerificationPending,
+} from '../store/loginSlice';
 import {setUser} from 'features/home/store/userSlice';
 import {setFamily} from 'features/home/store/familySlice';
 import {setFamilyUserList} from 'features/home/store/userFamilySlice';
@@ -21,7 +33,12 @@ const withTimeout = (promise, ms = 6000) =>
 
 const isAuthFailure = error => {
   const status = Number(error?.status ?? error?.response?.status);
-  if (status === 401 || status === 403) return true;
+  if (status === 401) return true;
+  if (status === 403) {
+    const d = error?.data ?? error?.response?.data;
+    const c = d?.code;
+    return c === 'ACCOUNT_INVALIDATED' || c === 'ACCOUNT_BANNED';
+  }
 
   const raw =
     error?.data?.message ??
@@ -107,6 +124,24 @@ export function useAutoLogin(shouldRun = true) {
         const raw = userResult?.data ?? userResult;
         if (raw && typeof raw === 'object') {
           dispatch(setUser(raw));
+        }
+
+        if (raw && typeof raw === 'object' && raw.phoneVerified === false) {
+          const snap = getAuthRoutingMmkvSnapshotSync();
+          const step = snap.signupProgressStep;
+          const pastPhoneInSignupFlow =
+            step === SIGNUP_PROGRESS_STEP.TERMS ||
+            step === SIGNUP_PROGRESS_STEP.PROFILE ||
+            step === SIGNUP_PROGRESS_STEP.FAMILY ||
+            step === SIGNUP_PROGRESS_STEP.FINISH;
+          if (!pastPhoneInSignupFlow) {
+            try {
+              await setStoredPhoneVerificationPending(true);
+            } catch {
+              null;
+            }
+            dispatch(setPhoneVerificationPending());
+          }
         }
 
         // familyId 추출 보강 (DTO 구조 흔들려도 안전)

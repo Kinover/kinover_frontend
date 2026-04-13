@@ -4,6 +4,7 @@ import KakaoSDKAuth
 import KakaoSDKCommon
 import UserNotifications
 import FirebaseCore
+import FirebaseAuth
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
@@ -56,12 +57,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterD
     options: [UIApplication.OpenURLOptionsKey : Any] = [:]
   ) -> Bool {
 
-    // 1) Kakao 로그인 URL이면 Kakao가 처리
+    // 1) Firebase Auth(전화번호 reCAPTCHA 등) — 카카오 URL과 겹치지 않을 때 우선 처리
+    if Auth.auth().canHandle(url) {
+      return true
+    }
+
+    // 2) Kakao 로그인 URL
     if AuthApi.isKakaoTalkLoginUrl(url) {
       return AuthController.handleOpenUrl(url: url)
     }
 
-    // 2) 그 외는 React Native Linking으로 전달 (중요!)
+    // 3) 그 외는 React Native Linking으로 전달
     return RCTLinkingManager.application(app, open: url, options: options)
   }
 

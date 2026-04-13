@@ -1,6 +1,6 @@
 // src/features/post/screens/PostPage.jsx
 import React, {useEffect, useMemo, useRef, useCallback, useState} from 'react';
-import { View, TouchableOpacity, Image, StyleSheet, ScrollView, Pressable, Platform } from 'react-native';
+import { View, TouchableOpacity, Image, StyleSheet, ScrollView, Pressable, Platform, Alert } from 'react-native';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
@@ -36,6 +36,13 @@ import usePostMediaSaver from '../hooks/usePostMediaSaver';
 import usePostConfirmDelete from '../hooks/usePostConfirmDelete';
 import usePostDescSheet from '../hooks/usePostDescSheet';
 import usePostCommentSheet from '../hooks/usePostCommentSheet';
+import ReportReasonSheet from 'features/moderation/components/ReportReasonSheet';
+import {useCreateReportMutation} from 'features/moderation/services/moderationApi';
+import {
+  buildCreateReportBody,
+  pickTargetUuid,
+} from 'features/moderation/utils/buildReportBody';
+import {blockedIdSetFromStateIds} from 'features/moderation/utils/blockedUserFilter';
 
 // 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
@@ -121,6 +128,11 @@ export default function PostPage({route}) {
   }));
   const dispatch = useDispatch();
   const navigation = useNavigation();
+  const blockedIds = useSelector(s => s.blockedUsers?.ids ?? []);
+  const blockedSet = useMemo(
+    () => blockedIdSetFromStateIds(blockedIds),
+    [blockedIds],
+  );
 
   const descSheetRef = useRef(null);
   const commentSheetRef = useRef(null);
@@ -175,6 +187,83 @@ export default function PostPage({route}) {
   const [menuVisible, setMenuVisible] = useState(false);
   const menuRef = useRef(null);
   const closeMenu = useCallback(() => menuRef.current?.close?.(), []);
+
+  const [reportVisible, setReportVisible] = useState(false);
+  const [reportCtx, setReportCtx] = useState(null);
+  const [createReport] = useCreateReportMutation();
+
+  const postTargetUuid = useMemo(
+    () =>
+      pickTargetUuid(safeMemory, ['postUuid', 'uuid', 'postId']),
+    [safeMemory],
+  );
+
+  const isPostOwner = useMemo(() => {
+    const me = vm.user?.userId;
+    const author = safeMemory?.authorId ?? safeMemory?.userId;
+    if (me == null || author == null) return false;
+    return String(me) === String(author);
+  }, [vm.user?.userId, safeMemory?.authorId, safeMemory?.userId]);
+
+  const showReportPost = Boolean(postTargetUuid) && !isPostOwner;
+
+  const authorIdForBlock = useMemo(() => {
+    const raw = safeMemory?.authorId ?? safeMemory?.userId;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  }, [safeMemory?.authorId, safeMemory?.userId]);
+
+  const visibleCommentList = useMemo(() => {
+    if (!blockedSet.size) return vm.commentList;
+    return (vm.commentList || []).filter(c => {
+      const n = Number(c?.authorId ?? c?.userId);
+      if (!Number.isFinite(n)) return true;
+      return !blockedSet.has(n);
+    });
+  }, [vm.commentList, blockedSet]);
+
+  useEffect(() => {
+    if (authorIdForBlock == null) return;
+    if (blockedSet.has(authorIdForBlock)) {
+      navigation.goBack();
+    }
+  }, [authorIdForBlock, blockedSet, navigation]);
+
+  const submitReport = useCallback(
+    async reasonCode => {
+      if (!reportCtx) return;
+      try {
+        const body = buildCreateReportBody(reportCtx, reasonCode);
+        await createReport(body).unwrap();
+        setReportVisible(false);
+        setReportCtx(null);
+        toast('신고가 접수되었어요.');
+      } catch {
+        Alert.alert(
+          '오류',
+          '신고 접수에 실패했어요. 잠시 후 다시 시도해 주세요.',
+        );
+      }
+    },
+    [reportCtx, createReport, toast],
+  );
+
+  const openReportPost = useCallback(() => {
+    if (!postTargetUuid) return;
+    setReportCtx({targetType: 'POST', targetUuid: postTargetUuid});
+    setReportVisible(true);
+  }, [postTargetUuid]);
+
+  const openReportComment = useCallback(comment => {
+    const uuid = pickTargetUuid(comment, [
+      'commentUuid',
+      'uuid',
+      'commentId',
+    ]);
+    if (!uuid) return;
+    setReportCtx({targetType: 'COMMENT', targetUuid: uuid});
+    setReportVisible(true);
+  }, []);
 
  /** ---------------- headerCategoryTitle (훅 인자로 넣기 전에 먼저 계산!) ---------------- */
   const headerCategoryTitle = useMemo(() => {
@@ -457,6 +546,8 @@ export default function PostPage({route}) {
         onSaveCurrent={actionSaveCurrent}
         onSaveAll={actionSaveAll}
         onEditPost={actionEditPost}
+        showReportPost={showReportPost}
+        onReportPost={openReportPost}
         onDeleteCurrentImage={openDeleteImageConfirm}
         onDeletePost={openDeletePostConfirm}
       />
@@ -529,17 +620,27 @@ export default function PostPage({route}) {
       <MemoryDetailBottomSheet
         sheetRef={commentSheetRef}
         memory={safeMemory}
-        commentList={vm.commentList}
+        commentList={visibleCommentList}
         user={vm.user}
         familyUsers={vm.familyUsers}
         commentText={vm.commentText}
         onChangeComment={vm.setCommentText}
         onSubmitComment={vm.handleSendComment}
         onDeleteComment={openDeleteCommentConfirm}
+        onRequestReportComment={openReportComment}
         snapPoints={['68%']}
         myUserId={vm.user?.userId}
         onSheetChange={onCommentSheetChange}
         disabled={vm.isImageFullScreen || isChromeHidden}
+      />
+
+      <ReportReasonSheet
+        visible={reportVisible}
+        onClose={() => {
+          setReportVisible(false);
+          setReportCtx(null);
+        }}
+        onSelectReason={submitReport}
       />
 
       <ToastModal

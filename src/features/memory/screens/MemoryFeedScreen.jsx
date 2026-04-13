@@ -37,6 +37,7 @@ import {getVideoThumbnail} from 'utils/videoThumbnail';
 import {toCdnUrl} from 'utils/mediaUrl';
 
 import {setMemorySelectedTab} from '../store/memorySlice';
+import {isAuthorBlocked, blockedIdSetFromStateIds} from 'features/moderation/utils/blockedUserFilter';
 import PostFilterBar from '../components/filters/PostFilterBar';
 import MagazineBanner from '../components/sections/MagazineBanner';
 import MemoryFeedListItem from '../components/items/MemoryFeedListItem';
@@ -149,6 +150,11 @@ export default function MemoryFeed({
 
   const selectedTab = useSelector(
     state => state.memory?.ui?.selectedTab ?? 'feed',
+  );
+  const blockedIds = useSelector(state => state.blockedUsers?.ids ?? []);
+  const blockedSet = useMemo(
+    () => blockedIdSetFromStateIds(blockedIds),
+    [blockedIds],
   );
 
   /* -------------------------
@@ -384,8 +390,13 @@ export default function MemoryFeed({
       list = memoryList.filter(m => idSet.has(String(m.categoryId)));
     }
     list = filterPostsByDateRange(list, startDate, endDate);
+    if (blockedSet.size > 0) {
+      list = list.filter(
+        m => !isAuthorBlocked(blockedSet, m?.authorId ?? m?.userId),
+      );
+    }
     return list;
-  }, [memoryList, selectedCategoryIds, startDate, endDate]);
+  }, [memoryList, selectedCategoryIds, startDate, endDate, blockedSet]);
 
   const sortedMemoryList = useMemo(() => {
     const list = [...filteredMemoryList];

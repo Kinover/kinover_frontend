@@ -4,6 +4,7 @@ import {persistReducer, persistStore} from 'redux-persist';
 
 import rootReducer from './rootReducer';
 import {baseApi} from '../services/baseApi';
+import 'features/moderation/services/moderationApi';
 import mmkvStorage from 'utils/mmkvStorage';
 
 const persistConfig = {

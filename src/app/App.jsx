@@ -12,6 +12,7 @@ import {
   StatusBar,
   Dimensions,
   Pressable,
+  Alert,
 } from 'react-native';
 import {
   GestureHandlerRootView,
@@ -48,9 +49,16 @@ import {
 } from '../utils/biometrics';
 import AppText from 'components/AppText';
 import {useLogout} from 'features/auth/hooks/useLogout';
+import {subscribeAccountBanned} from 'utils/accountBannedEvent';
+import {subscribeSessionInvalidated} from 'utils/sessionInvalidatedEvent';
 import {setBioLockEnabled, setFontMode, FONT_MODE} from 'store/uiSlice';
 import useNetworkStatus, {registerReconnectCallback} from 'hooks/useNetworkStatus';
 import {reconnectIfNeeded} from 'features/chat/hooks/ChatSocket';
+import {
+  hydrateBlockedUsersFromStorage,
+  mergeServerBlockedUserIdsIntoCache,
+} from 'features/moderation/store/blockedUsersSlice';
+import {useLazyGetBlockedUsersQuery} from 'features/moderation/services/moderationApi';
 import {AppStateResourceBridge} from './AppStateResourceBridge';
 import {
   GuideOverlayProvider,
@@ -152,6 +160,49 @@ function ResponsiveModeBridge() {
 }
 
 // 생체인식 잠금 — 백그라운드 갔다 오면 다시 인증 요구
+function AccountBannedBridge() {
+  const logout = useLogout();
+
+  useEffect(() => {
+    return subscribeAccountBanned(async message => {
+      try {
+        await logout();
+      } catch {
+        null;
+      }
+      const text =
+        typeof message === 'string' && message.trim()
+          ? message.trim()
+          : '계정이 제재되어 이용할 수 없습니다.';
+      Alert.alert('이용 제한', text);
+    });
+  }, [logout]);
+
+  return null;
+}
+
+/** 409 중복 전화 / 403 ACCOUNT_INVALIDATED 등 — 로컬 세션 삭제 후 소셜 로그인(온보딩)으로 복귀 */
+function SessionInvalidatedBridge() {
+  const logout = useLogout();
+
+  useEffect(() => {
+    return subscribeSessionInvalidated(async payload => {
+      try {
+        await logout();
+      } catch {
+        null;
+      }
+      const text =
+        typeof payload?.message === 'string' && payload.message.trim()
+          ? payload.message.trim()
+          : '다시 로그인해 주세요.';
+      Alert.alert('안내', text, [{text: '확인'}]);
+    });
+  }, [logout]);
+
+  return null;
+}
+
 function AppLockGate({readyForAuth}) {
   const dispatch = useDispatch();
   const logout = useLogout();
@@ -303,6 +354,39 @@ function NetworkStatusBridge() {
   return null;
 }
 
+/** MMKV 차단 ID → Redux + 로그인 시 GET /blocks 로 서버와 병합 */
+function BlockedUsersReduxBridge() {
+  const dispatch = useDispatch();
+  const rehydrated = useSelector(state => !!state?._persist?.rehydrated);
+  const rawUserId = useSelector(state => state?.user?.userId ?? state?.user?.id);
+  const userKey =
+    rawUserId != null && String(rawUserId).trim() !== ''
+      ? String(rawUserId)
+      : '';
+
+  const [fetchBlockedUsers, fetchResult] = useLazyGetBlockedUsersQuery();
+
+  useEffect(() => {
+    if (!rehydrated) return;
+    dispatch(hydrateBlockedUsersFromStorage());
+  }, [rehydrated, userKey, dispatch]);
+
+  useEffect(() => {
+    if (!rehydrated || !userKey) return;
+    void fetchBlockedUsers(userKey);
+  }, [rehydrated, userKey, fetchBlockedUsers]);
+
+  const {data, isSuccess, fulfilledTimeStamp} = fetchResult;
+
+  useEffect(() => {
+    if (!userKey) return;
+    if (!isSuccess || data == null) return;
+    void dispatch(mergeServerBlockedUserIdsIntoCache(data));
+  }, [userKey, isSuccess, data, fulfilledTimeStamp, dispatch]);
+
+  return null;
+}
+
 // 개발용: rehydration 이후에 “저장소 + redux-persist”까지 싹 정리
 const DEV_FORCE_RESET_LOGIN_ONCE = false;
 
@@ -425,7 +509,10 @@ export default function App() {
               <DevForceResetLogin />
               <ResponsiveModeBridge />
               <NetworkStatusBridge />
+              <BlockedUsersReduxBridge />
               <AppStateResourceBridge />
+              <AccountBannedBridge />
+              <SessionInvalidatedBridge />
 
               <MenuProvider>
                 <NavigationContainer

@@ -15,6 +15,8 @@ import {
   AUTH_ERROR_COOLDOWN_MS,
 } from 'config/constants';
 import {showApiError} from 'features/chat/utils/apiErrorHandler';
+import {notifyAccountBanned} from 'utils/accountBannedEvent';
+import {notifySessionInvalidated} from 'utils/sessionInvalidatedEvent';
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -57,6 +59,29 @@ apiClient.interceptors.request.use(async config => {
 });
 
 let isHandlingAuthError = false;
+let isHandlingAccountBanned = false;
+let isHandlingSessionInvalidated = false;
+
+function sessionInvalidatedUserMessage(data) {
+  const m =
+    typeof data?.message === 'string' ? String(data.message).trim() : '';
+  if (m) return m;
+  const code = data?.code;
+  const provider = data?.provider;
+  if (code === 'DUPLICATE_PHONE_NUMBER') {
+    if (provider === 'KAKAO') {
+      return '이 번호는 이미 카카오 계정으로 가입되어 있어요. 카카오로 로그인해 주세요.';
+    }
+    if (provider === 'APPLE') {
+      return '이 번호는 이미 Apple 계정으로 가입되어 있어요. Apple로 로그인해 주세요.';
+    }
+    return '이미 등록된 전화번호예요. 해당 계정으로 로그인해 주세요.';
+  }
+  if (code === 'ACCOUNT_INVALIDATED') {
+    return '가입이 취소되었거나 다시 로그인해야 해요.';
+  }
+  return '다시 로그인해 주세요.';
+}
 
 apiClient.interceptors.response.use(
   res => res,
@@ -80,6 +105,43 @@ apiClient.interceptors.response.use(
       error?.config?.headers?.Authorization,
     );
 
+    const isAccountBanned = status === 403 && data?.code === 'ACCOUNT_BANNED';
+    if (isAccountBanned) {
+      if (!isHandlingAccountBanned) {
+        isHandlingAccountBanned = true;
+        const banMsg =
+          typeof data?.message === 'string' && data.message.trim()
+            ? data.message.trim()
+            : '';
+        notifyAccountBanned(banMsg);
+        setTimeout(() => {
+          isHandlingAccountBanned = false;
+        }, 2500);
+      }
+      return Promise.reject(error);
+    }
+
+    const isSessionInvalidatedResponse =
+      (status === 403 && data?.code === 'ACCOUNT_INVALIDATED') ||
+      (status === 409 && data?.code === 'DUPLICATE_PHONE_NUMBER');
+    if (isSessionInvalidatedResponse && !isHandlingSessionInvalidated) {
+      isHandlingSessionInvalidated = true;
+      try {
+        const message = sessionInvalidatedUserMessage(data);
+        await deleteLoginInfo();
+        notifySessionInvalidated({
+          message,
+          code: data?.code,
+          provider: data?.provider,
+        });
+      } finally {
+        setTimeout(() => {
+          isHandlingSessionInvalidated = false;
+        }, AUTH_ERROR_COOLDOWN_MS ?? 800);
+      }
+      return Promise.reject(error);
+    }
+
     if (status === 401 && !excluded && hadAuthToken) {
       const isExpired =
         msg.includes('TOKEN_EXPIRED') ||
@@ -101,7 +163,13 @@ apiClient.interceptors.response.use(
     }
 
  // 401(리다이렉트) 제외한 모든 API 에러에 대해 공통 알림 (401은 위에서 처리했으면 알림 생략)
-    if (!(status === 401 && !excluded)) {
+    const skipCommonAlertForHandledSession =
+      (status === 403 && data?.code === 'ACCOUNT_INVALIDATED') ||
+      (status === 409 && data?.code === 'DUPLICATE_PHONE_NUMBER');
+    if (
+      !(status === 401 && !excluded) &&
+      !skipCommonAlertForHandledSession
+    ) {
       showApiError(error);
     }
     return Promise.reject(error);

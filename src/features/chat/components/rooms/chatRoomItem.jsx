@@ -14,8 +14,15 @@ const KINO_AVATAR_SOURCE = require('assets/images/kino-yellow.png');
 import {useDispatch, useSelector} from 'react-redux';
 import {markRoomRead} from '../../store/chatRoomSlice';
 import {getChatRoomTitle} from '../../utils/chatRoomTitleHelper';
+import {shouldHideChatRoomForBlockedUsers} from 'features/moderation/utils/blockedUserFilter';
 
-function ChatRoomItem({chatRoom, userId, navigation}) {
+function ChatRoomItem({
+  chatRoom,
+  userId,
+  navigation,
+  blockedUserIdSet,
+  onBlockedChatNavigate,
+}) {
   const styles = useScaledStyleSheet(rf => ({
     pressable: {width: '100%'},
     container: {
@@ -126,6 +133,15 @@ function ChatRoomItem({chatRoom, userId, navigation}) {
     latestMessageContent || '지금 첫 메시지를 보내 대화를 시작해보세요!';
 
   const onPress = () => {
+    if (
+      !kino &&
+      userId != null &&
+      blockedUserIdSet?.size > 0 &&
+      shouldHideChatRoomForBlockedUsers(chatRoom, userId, blockedUserIdSet)
+    ) {
+      onBlockedChatNavigate?.();
+      return;
+    }
  // UX: 눌렀을 때 즉시 뱃지 0 (서버 read는 "채팅방 화면"에서 확실히 처리)
     dispatch(markRoomRead(chatRoomId));
 

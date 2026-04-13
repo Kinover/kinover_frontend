@@ -27,7 +27,23 @@ export const authApi = baseApi.injectEndpoints({
       }),
       invalidatesTags: ['Auth', 'User', 'Family', 'FamilyUser'],
     }),
+    verifyPhone: build.mutation({
+      query: ({idToken}) => ({
+        url: '/auth/phone/verify',
+        method: 'POST',
+        data: {idToken},
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      }),
+      invalidatesTags: ['User'],
+    }),
   }),
 });
 
-export const {useLoginKakaoMutation, useLoginAppleMutation} = authApi;
+export const {
+  useLoginKakaoMutation,
+  useLoginAppleMutation,
+  useVerifyPhoneMutation,
+} = authApi;

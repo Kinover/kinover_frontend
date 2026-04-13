@@ -30,11 +30,17 @@ export default function CreateChatRoom({navigation}) {
 
   const [createChatRoom] = useCreateChatRoomMutation();
 
-  const family = useSelector(state => state.family);
+  const familyId = useSelector(
+    s =>
+      s.family?.familyId ??
+      s.user?.familyId ??
+      s.user?.family?.familyId ??
+      null,
+  );
   const currentUserId = useSelector(state => state.user.userId);
   const {data: familyUserList = [], isFetching: loading} = useGetFamilyUsersQuery(
-    family.familyId,
-    {skip: !family.familyId},
+    familyId,
+    {skip: !familyId},
   );
 
   const [toastVisible, setToastVisible] = useState(false);
@@ -101,7 +107,7 @@ export default function CreateChatRoom({navigation}) {
       await createChatRoom({
         roomName: finalRoomName,
         userIds,
-        familyId: family.familyId,
+        familyId,
       }).unwrap();
 
  // 성공 토스트
@@ -117,7 +123,7 @@ export default function CreateChatRoom({navigation}) {
         );
       }, 1200);
     },
-    [family.familyId, familyUserList, navigation],
+    [familyId, familyUserList, navigation],
   );
 
   return (

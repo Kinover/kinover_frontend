@@ -204,7 +204,7 @@ function StackedAvatar({participants = [], size = AVATAR_SIZE, styles}) {
 /* =========================================================
  * 카드 컴포넌트: 눌렀을 때 살짝 작아지는 효과
  * ========================================================= */
-function ScheduleCard({children, onPress, styles}) {
+function ScheduleCard({children, onPress, onLongPress, styles}) {
   const scale = useRef(new Animated.Value(1)).current;
 
   /**
@@ -236,6 +236,8 @@ function ScheduleCard({children, onPress, styles}) {
       <Animated.View collapsable={false} style={{transform: [{scale}]}}>
         <TouchableOpacity
           onPress={onPress}
+          onLongPress={onLongPress}
+          delayLongPress={380}
           onPressIn={handlePressIn}
           onPressOut={handlePressOut}
           activeOpacity={1}
@@ -251,6 +253,7 @@ function ScheduleCard({children, onPress, styles}) {
 function Schedule({
   selectedDate,
   onOpenSheet,
+  onLongPressScheduleItem,
   refreshTrigger,
   birthdayNames = [],
   familyId: familyIdProp,
@@ -858,6 +861,11 @@ function Schedule({
                     ...item,
                     __forcedKind: preset.type,
                   })
+                }
+                onLongPress={
+                  typeof onLongPressScheduleItem === 'function'
+                    ? () => onLongPressScheduleItem(item)
+                    : undefined
                 }>
                 <View style={styles.cardHeaderRow}>
                   <View style={styles.cardLeft}>

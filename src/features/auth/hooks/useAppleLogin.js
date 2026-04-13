@@ -12,9 +12,10 @@ import {
   setLoginLoading,
   setAuthChecked,
   setLogout,
+  setPhoneVerificationPending,
 } from '../store/loginSlice';
 
-import {deleteLoginInfo} from 'utils/storage';
+import {deleteLoginInfo, setStoredPhoneVerificationPending} from 'utils/storage';
 
 export function useAppleLogin() {
   const dispatch = useDispatch();
@@ -73,10 +74,22 @@ export function useAppleLogin() {
           : await loginAction;
       loginConfirmed = true;
 
+      // 전화번호 미인증 — 인증 화면으로 분기 (MMKV 먼저: RootScreen 동기 읽기·리렌더 레이스 방지)
+      if (loginResult?.phoneVerified === false) {
+        try {
+          await setStoredPhoneVerificationPending(true);
+        } catch {
+          null;
+        }
+        dispatch(setPhoneVerificationPending());
+        dispatch(setAuthChecked(true));
+        return;
+      }
+
  // 3) 소켓은 가족 있을 때만
       const hasFamily = !!loginResult?.hasFamily;
       if (hasFamily && !socketUnsubRef.current) {
-          socketUnsubRef.current = startChatSocket(dispatch, store.getState);      
+          socketUnsubRef.current = startChatSocket(dispatch, store.getState);
       }
 
  // 4) 마지막에 authChecked true
@@ -91,6 +104,11 @@ export function useAppleLogin() {
         return;
       }
 
+      // 인터셉터에서 이미 Alert 처리됨 — 중복 소셜 프로바이더는 추가 Alert 없이 정리만
+      const isDuplicateProvider =
+        e?.response?.status === 409 &&
+        e?.response?.data?.code === 'DUPLICATE_SOCIAL_PROVIDER';
+
       try {
         await deleteLoginInfo();
       } catch {
@@ -104,10 +122,13 @@ export function useAppleLogin() {
       }
 
       dispatch(setLogout());
-      dispatch(setLoginError(e?.message ?? '애플 로그인 실패'));
+      if (isDuplicateProvider) {
+        dispatch(setLoginError(null));
+      } else {
+        dispatch(setLoginError(e?.message ?? '애플 로그인 실패'));
+        Alert.alert('애플 로그인 실패', e?.message ?? '애플 로그인 실패');
+      }
       dispatch(setAuthChecked(true));
-
-      Alert.alert('애플 로그인 실패', e?.message ?? '애플 로그인 실패');
     } finally {
       dispatch(setLoginLoading(false));
       inFlightRef.current = false;

@@ -5,12 +5,7 @@
 //   - sendMessageWsThunk → optimistic update도 updateQueryData 사용
 //   - 읽음 처리 thunks는 그대로 유지
 
-import {
-  sendChat,
-  sendRead,
-  isChatSocketOpen,
-  reconnectIfNeeded,
-} from '../hooks/ChatSocket';
+import {sendChat, sendRead, reconnectIfNeeded} from '../hooks/ChatSocket';
 
 import {applyMessagePreview, bumpListRevision, markRoomRead, applyReadPointer, setReadPointers} from './chatRoomSlice';
 import {chatApi} from '../services/chatApi';
@@ -159,13 +154,33 @@ export const sendMessageWsThunk = (messageBody, chatRoomId, userId) => {
  * WebSocket에서 새 메시지 수신 시 RTK Query 캐시에 inject
  */
 export const receiveMessageThunk = (incomingMessage, userId) => {
-  return async dispatch => {
+  return async (dispatch, getState) => {
     const chatRoomId =
       incomingMessage?.chatRoomId ??
       incomingMessage?.chatRoom?.chatRoomId ??
       incomingMessage?.roomId;
 
     if (chatRoomId == null) return;
+
+    const authorId =
+      incomingMessage?.authorId ??
+      incomingMessage?.userId ??
+      incomingMessage?.senderId ??
+      incomingMessage?.author?.id;
+
+    const blockedIds = getState?.()?.blockedUsers?.ids ?? [];
+    const blockedSet = new Set(
+      blockedIds.map(Number).filter(Number.isFinite),
+    );
+    const authorNum = Number(authorId);
+    if (
+      Number.isFinite(authorNum) &&
+      userId != null &&
+      String(authorId) !== String(userId) &&
+      blockedSet.has(authorNum)
+    ) {
+      return;
+    }
 
     const rid = String(chatRoomId);
 
@@ -178,11 +193,6 @@ export const receiveMessageThunk = (incomingMessage, userId) => {
 
     // 채팅방 목록 preview 갱신
     const previewPayload = normalizePreviewMessage(incomingMessage, null);
-    const authorId =
-      incomingMessage?.authorId ??
-      incomingMessage?.userId ??
-      incomingMessage?.senderId ??
-      incomingMessage?.author?.id;
     const isSelf = userId != null ? String(authorId) === String(userId) : false;
 
     dispatch(
@@ -261,9 +271,6 @@ export const markReadRestThunk = (chatRoomId, lastReadAt) => {
  */
 export const markReadWsThunk = (chatRoomId, lastReadAt) => {
   return async (dispatch, getState) => {
-    const ok = isChatSocketOpen();
-    if (!ok) return {ok: false};
-
     const sent = sendRead(chatRoomId, lastReadAt);
     if (!sent) return {ok: false};
 

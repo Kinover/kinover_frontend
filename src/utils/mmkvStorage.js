@@ -61,4 +61,18 @@ const storage = {
   },
 };
 
+/**
+ * 라우팅 등 동기 일관성이 필요할 때만 사용 (MMKV set 직후 리렌더 타이밍용)
+ */
+export function mmkvGetStringSync(key) {
+  if (mmkv) {
+    const v = mmkv.getString(key);
+    return v !== undefined && v !== null ? v : null;
+  }
+  const fromMemory = memoryFallback.get(key);
+  return fromMemory !== undefined && fromMemory !== null
+    ? String(fromMemory)
+    : null;
+}
+
 export default storage;

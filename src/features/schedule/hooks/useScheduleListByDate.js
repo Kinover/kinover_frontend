@@ -12,6 +12,11 @@ export const useScheduleListByDate = (
 ) => {
   const reduxFamilyId = useSelector(selectFamilyId);
   const familyId = familyIdOverride ?? reduxFamilyId;
+  const blockedIds = useSelector(s => s.blockedUsers?.ids ?? []);
+  const blockedSet = useMemo(
+    () => new Set(blockedIds.map(Number).filter(Number.isFinite)),
+    [blockedIds],
+  );
 
   const formatLocalYMD = d => {
     const y = d.getFullYear();
@@ -88,11 +93,18 @@ export const useScheduleListByDate = (
 
   const effectiveScheduleList = useMemo(() => {
     const base = normalizeScheduleListResponse(queriedScheduleListRaw);
- // 서버 데이터 있으면 서버 데이터 우선, 없으면 더미
- // return base.length > 0 ? base : dummyList;
-    return base;
-
-  }, [queriedScheduleListRaw, dummyList]);
+    if (!blockedSet.size) return base;
+    return base.filter(it => {
+      const uid = it?.userId;
+      const n = Number(uid);
+      if (Number.isFinite(n) && blockedSet.has(n)) return false;
+      const parts = it?.participantIds;
+      if (!Array.isArray(parts) || parts.length === 0) return true;
+      const nums = parts.map(Number).filter(Number.isFinite);
+      if (nums.length === 0) return true;
+      return !nums.every(id => blockedSet.has(id));
+    });
+  }, [queriedScheduleListRaw, blockedSet]);
 
  // ----------------------------
  // 타입 분류(백엔드 필드가 뭐든 최대한 흡수)

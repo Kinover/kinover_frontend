@@ -61,6 +61,7 @@ export const baseApi = createApi({
     'Category',
     'Comment',
     'Auth',
+    'BlockedUsers',
   ],
   endpoints: () => ({}),
 });

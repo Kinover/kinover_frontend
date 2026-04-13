@@ -16,6 +16,7 @@ import {
 } from 'contexts/GuideOverlayContext';
 import SettingScreen from 'features/setting/screens/SettingScreen';
 import NotificationSettingScreen from 'features/setting/screens/NotificationSettingScreen';
+import BlockedUsersScreen from 'features/setting/screens/BlockedUsersScreen';
 import NotificationScreen from 'features/notification/screens/NotificationScreen';
 import {RenderHeaderBackButton} from './helpers/tabHeaderHelpers';
 import {getResponsiveHeight} from 'utils/responsive';
@@ -89,6 +90,15 @@ export default function RootNavigator({initialRouteName = 'Tabs'}) {
         name="알림설정화면"
         component={NotificationSettingScreen}
         options={createHeaderOptions}
+      />
+
+      <Stack.Screen
+        name="차단계정화면"
+        component={BlockedUsersScreen}
+        options={({navigation, route}) => ({
+          ...createHeaderOptions(navigation, route),
+          headerTitle: '신고 및 차단',
+        })}
       />
 
       <Stack.Screen

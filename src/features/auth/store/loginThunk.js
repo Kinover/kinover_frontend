@@ -1,5 +1,5 @@
 // src/features/auth/store/loginThunk.js
-import {saveToken, setHasFamily, getGuestMode, setNeedsSignup} from 'utils/storage';
+import {saveToken, setHasFamily, getGuestMode, setNeedsSignup, getNeedsSignup} from 'utils/storage';
 import {setLoginLoading, setLoginError, setLoginSuccess} from './loginSlice';
 import {fetchUserThunk} from 'features/home/store/userThunk';
 import {authApi} from '../services/authApi';
@@ -114,6 +114,19 @@ export const loginThunk = kakaoAccessToken => {
       }
 
       await setNeedsSignup(false);
+
+      // 전화번호 미인증 상태 — finalizeHasFamilyAfterLogin을 건너뛰고 인증 화면으로 분기
+      if (response?.phoneVerified === false) {
+        await setHasFamily(false);
+        return {
+          ...response,
+          token,
+          hasFamily: false,
+          familyId: null,
+          phoneVerified: false,
+        };
+      }
+
       let familyId = null;
       let finalHasFamily = false;
       try {
@@ -198,6 +211,18 @@ export const appleLoginThunk = identityToken => {
 
       await setNeedsSignup(false);
 
+      // 전화번호 미인증 상태 — finalizeHasFamilyAfterLogin을 건너뛰고 인증 화면으로 분기
+      if (response?.phoneVerified === false) {
+        await setHasFamily(false);
+        return {
+          ...response,
+          token,
+          hasFamily: false,
+          familyId: null,
+          phoneVerified: false,
+        };
+      }
+
  // 3) userinfo로 hasFamily 확정(SSOT: familyId)
       let familyId = null;
       let finalHasFamily = false;
@@ -230,6 +255,31 @@ export const appleLoginThunk = identityToken => {
       throw error;
     } finally {
       dispatch(setLoginLoading(false));
+    }
+  };
+};
+
+/**
+ * 전화번호 인증 완료 후 hasFamily/needsSignup을 확정하는 thunk
+ * PhoneVerificationScreen에서 인증 성공 후 dispatch한다.
+ * setHasFamily() 호출 → emitAuthFlagsChanged() → rootScreen.refreshAuthFlags() 자동 트리거
+ */
+export const finalizeAfterPhoneVerificationThunk = () => {
+  return async (dispatch, getState) => {
+    try {
+      const needsSignup = await getNeedsSignup();
+      if (needsSignup) {
+        await setHasFamily(false);
+        try {
+          await dispatch(fetchUserThunk()).unwrap();
+        } catch {
+          // userinfo 실패 시에도 MMKV·updateUser로 라우팅은 유지
+        }
+        return;
+      }
+      await finalizeHasFamilyAfterLogin(dispatch, getState);
+    } catch {
+      // 라우팅 fallback이 처리함 — 여기서 throw하지 않음
     }
   };
 };

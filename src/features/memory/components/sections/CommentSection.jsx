@@ -25,6 +25,7 @@ export default function CommentSection({
   onSubmitComment,
   user,
   onDeleteComment,
+  onReportComment,
 }) {
   const styles = useScaledStyleSheet(rf => ({
 
@@ -139,6 +140,18 @@ export default function CommentSection({
     fontFamily: 'Pretendard-SemiBold',
     fontSize: rf(14),
   },
+  reportAction: {
+    width: '100%',
+    backgroundColor: '#EA580C',
+    justifyContent: 'center',
+    alignItems: 'center',
+    flex: 1,
+  },
+  reportActionText: {
+    color: '#FFF',
+    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(14),
+  },
   topFade: {
     position: 'absolute',
     top: 0,
@@ -231,6 +244,43 @@ export default function CommentSection({
     );
   };
 
+  const renderReportRightActions = (comment, progress) => {
+    const translateX = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [ACTION_W, 0],
+      extrapolate: 'clamp',
+    });
+    const opacity = progress.interpolate({
+      inputRange: [0, 0.3, 1],
+      outputRange: [0, 0.6, 1],
+      extrapolate: 'clamp',
+    });
+    const textScale = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.85, 1],
+      extrapolate: 'clamp',
+    });
+
+    return (
+      <View style={styles.rightActionContainer}>
+        <Animated.View style={{flex: 1, transform: [{translateX}], opacity}}>
+          <TouchableOpacity
+            style={[styles.reportAction, {flex: 1}]}
+            activeOpacity={0.8}
+            onPress={() => onReportComment?.(comment)}>
+            <AnimatedAppText
+              style={[
+                styles.reportActionText,
+                {transform: [{scale: textScale}]},
+              ]}>
+              신고
+            </AnimatedAppText>
+          </TouchableOpacity>
+        </Animated.View>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.commentContainer}>
       {isReady && (
@@ -263,15 +313,21 @@ export default function CommentSection({
                     (comment.authorId === user.userId ||
                       comment.userId === user.userId);
 
+                  const canReportOthers =
+                    !isMyComment &&
+                    typeof onReportComment === 'function';
+
                   return (
                     <Swipeable
                       key={comment.commentId}
                       renderRightActions={progress =>
                         isMyComment
                           ? renderRightActions(comment.commentId, progress)
+                          : canReportOthers
+                          ? renderReportRightActions(comment, progress)
                           : null
                       }
-                      enabled={!!isMyComment}
+                      enabled={!!isMyComment || canReportOthers}
                       overshootRight={false}
                       friction={2}
                       rightThreshold={ACTION_W / 2}>

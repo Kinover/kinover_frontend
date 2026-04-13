@@ -17,7 +17,13 @@ export default function usePostPageViewModel(memory) {
   const navigation = useNavigation();
 
   const user = useSelector(state => state.user);
-  const familyId = useSelector(state => state.family.familyId);
+  const familyId = useSelector(
+    state =>
+      state.family?.familyId ??
+      state.user?.familyId ??
+      state.user?.family?.familyId ??
+      null,
+  );
 
   const safePostId = memory?.postId ?? null;
 

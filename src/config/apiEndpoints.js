@@ -56,3 +56,10 @@ export const USER = {
   notificationsUnreadCount: '/user/notifications/unread-count',
   notificationsMarkRead: '/user/notifications/mark-read',
 };
+
+/** 신고·차단 (baseURL에 /api 포함 가정, 경로는 /reports 형태) */
+export const MODERATION = {
+  reports: '/reports',
+  blocks: '/blocks',
+  blockOne: blockedUserId => `/blocks/${encodeURIComponent(blockedUserId)}`,
+};

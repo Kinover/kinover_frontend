@@ -1,5 +1,5 @@
 // src/features/home/screens/HomeScreen.jsx
-import React, {useRef, useEffect, useState, useCallback} from 'react';
+import React, {useRef, useEffect, useState, useCallback, useMemo} from 'react';
 import {
   View,
   StyleSheet,
@@ -58,7 +58,7 @@ import {
   getStoreMockOnlineUserIds,
   getStoreMockLastActiveMap,
 } from '../utils/storeMockData';
-
+import {blockedIdSetFromStateIds} from 'features/moderation/utils/blockedUserFilter';
 const parseFamilyStatus = data => {
   if (!Array.isArray(data)) {
     return {onlineUserIds: [], lastActiveMap: {}};
@@ -125,6 +125,8 @@ export default function HomeScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [didInitialLoad, setDidInitialLoad] = useState(false);
   const [errorToastVisible, setErrorToastVisible] = useState(false);
+  const [blockedProfileToastVisible, setBlockedProfileToastVisible] =
+    useState(false);
 
  // AppAlert "실제 표시 여부"를 HomeScreen에서 추적
   const [isAppAlertVisible, setIsAppAlertVisible] = useState(false);
@@ -163,9 +165,17 @@ export default function HomeScreen() {
     };
   }, [familyId]);
 
-  const familyMembers = (familyUserList || []).filter(
-    m => m.userId !== user?.userId,
+  const blockedIds = useSelector(s => s.blockedUsers?.ids ?? []);
+  const blockedSet = useMemo(
+    () => blockedIdSetFromStateIds(blockedIds),
+    [blockedIds],
   );
+
+  const familyMembers = useMemo(() => {
+    return (familyUserList || [])
+      .filter(m => m.userId !== user?.userId)
+      .filter(m => !blockedSet.has(Number(m?.userId)));
+  }, [familyUserList, user?.userId, blockedSet]);
 
  // 앱스토어 캡처용 더미 (STORE_MOCK_ENABLED 시 표시용 데이터만 치환)
   const displayUser = STORE_MOCK_ENABLED ? getStoreMockUser() : user;
@@ -298,6 +308,11 @@ export default function HomeScreen() {
   }, [selectedUser]);
 
   const handleUserPress = member => {
+    const oid = Number(member?.userId);
+    if (Number.isFinite(oid) && blockedSet.has(oid)) {
+      setBlockedProfileToastVisible(true);
+      return;
+    }
     setSelectedUser(null);
     requestAnimationFrame(() => setSelectedUser(member));
   };
@@ -432,6 +447,12 @@ export default function HomeScreen() {
         message="데이터를 불러오지 못했어요. 잠시 후 다시 시도해주세요."
         onClose={() => setErrorToastVisible(false)}
         duration={3000}
+      />
+      <ToastModal
+        visible={blockedProfileToastVisible}
+        message="차단한 구성원의 프로필은 볼 수 없어요."
+        onClose={() => setBlockedProfileToastVisible(false)}
+        duration={2200}
       />
     </View>
   );

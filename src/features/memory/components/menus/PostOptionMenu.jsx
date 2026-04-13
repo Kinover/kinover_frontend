@@ -43,6 +43,8 @@ function PostOptionsMenu(
     onSaveCurrent,
     onSaveAll,
     onEditPost,
+    onReportPost,
+    showReportPost,
     onDeleteCurrentImage,
     onDeletePost,
   },
@@ -152,6 +154,23 @@ function PostOptionsMenu(
           <AppText style={styles.menuText}>
             게시글 수정
           </AppText>
+        </TouchableOpacity>
+
+        <View style={styles.menuDivider} />
+
+        <TouchableOpacity
+          onPress={() => {
+            close();
+            onReportPost?.();
+          }}
+          disabled={disableMenu || !showReportPost}
+          activeOpacity={0.85}
+          style={[
+            styles.menuItem,
+            (disableMenu || !showReportPost) && {opacity: 0.5},
+          ]}
+        >
+          <AppText style={styles.menuText}>신고</AppText>
         </TouchableOpacity>
 
         <View style={styles.menuDivider} />

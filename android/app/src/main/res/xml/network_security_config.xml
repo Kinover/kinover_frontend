@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-  <!-- 프로덕션 도메인은 HTTPS/WSS만 허용 (cleartext 제거) -->
-  <domain-config cleartextTrafficPermitted="false">
+  <!-- REST API는 HTTPS만 허용, WebSocket(ws://:9090)은 cleartext 필요 -->
+  <domain-config cleartextTrafficPermitted="true">
     <domain includeSubdomains="true">kinover.shop</domain>
   </domain-config>
   <!-- Metro bundler 개발용 — 릴리즈 빌드에서는 사용되지 않음 -->

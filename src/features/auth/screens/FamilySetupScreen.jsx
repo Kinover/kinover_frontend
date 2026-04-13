@@ -4,7 +4,7 @@ import React, {useState, useCallback} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity} from 'react-native';
 import CustomInput from 'components/CustomInput';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, StackActions} from '@react-navigation/native';
 import ToastModal from 'components/modal/ToastModal';
 import BottomActionButton from 'components/BottomActionButton';
 
@@ -19,6 +19,20 @@ import {
   required,
 } from 'utils/validation';
 import {COLORS} from 'styles/style';
+import {commitSignupProgressFinish} from 'utils/storage';
+
+function messageFromRtkError(err, fallback) {
+  const d = err?.data;
+  if (typeof d === 'object' && d != null && typeof d.message === 'string') {
+    const m = d.message.trim();
+    if (m) return m;
+  }
+  if (typeof d === 'string' && d.trim()) return d.trim();
+  if (typeof err?.message === 'string' && err.message.trim()) {
+    return err.message.trim();
+  }
+  return fallback;
+}
 
 export default function FamilySetupScreen() {
   const navigation = useNavigation();
@@ -32,15 +46,17 @@ export default function FamilySetupScreen() {
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [creating, setCreating] = useState(false);
+  const [joining, setJoining] = useState(false);
 
   const showToast = useCallback(msg => {
     setToastMessage(msg);
     setToastVisible(true);
   }, []);
 
-  const isJoinDisabled = !familyCode.trim();
+  const isJoinDisabled = !familyCode.trim() || joining;
 
   const handleSubmit = async () => {
+    if (joining) return;
     const trimmed = familyCode.trim();
 
     const requiredResult = required(trimmed, '가족 코드');
@@ -58,6 +74,7 @@ export default function FamilySetupScreen() {
     }
 
     setFieldError('');
+    setJoining(true);
 
     try {
       await triggerGetFamily(trimmed).unwrap();
@@ -65,15 +82,24 @@ export default function FamilySetupScreen() {
       // 2) 참여 (토큰 유저로 서버가 처리)
       await joinFamily(trimmed).unwrap();
 
-      navigation.navigate('설정완료화면', {familyId: trimmed});
+      // RootScreen이 emit으로 AuthNavigator를 갈아끼우기 전에 현재 스택에서 먼저 교체해야 함.
+      // (setSignupProgressStep을 먼저 호출하면 navigate가 언마운트된 네비에 걸려 이동이 무시됨)
+      navigation.dispatch(
+        StackActions.replace('설정완료화면', {familyId: trimmed}),
+      );
+      queueMicrotask(() => {
+        commitSignupProgressFinish();
+      });
     } catch (err) {
-      const msg =
-        err?.message ||
-        err?.response?.data?.message ||
-        '가족 참여 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.';
+      const msg = messageFromRtkError(
+        err,
+        '가족 참여 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.',
+      );
 
       setFieldError(msg);
       showToast(msg);
+    } finally {
+      setJoining(false);
     }
   };
 
@@ -92,12 +118,15 @@ export default function FamilySetupScreen() {
         return;
       }
 
-      navigation.navigate('설정완료화면', {familyId: id});
+      navigation.dispatch(StackActions.replace('설정완료화면', {familyId: id}));
+      queueMicrotask(() => {
+        commitSignupProgressFinish();
+      });
     } catch (err) {
-      const msg =
-        err?.message ||
-        err?.response?.data?.message ||
-        '가족을 만드는 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.';
+      const msg = messageFromRtkError(
+        err,
+        '가족을 만드는 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.',
+      );
 
       showToast(msg);
     } finally {

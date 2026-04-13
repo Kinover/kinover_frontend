@@ -20,7 +20,11 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 
-import {setHasFamily} from 'utils/storage';
+import {
+  setHasFamily,
+  clearSignupOnboardingAux,
+  setNeedsSignup,
+} from 'utils/storage';
 import {emitAuthFlagsChanged} from 'utils/authFlagsEvent';
 import {
   KEY_GUIDE_ENTRY_TRIGGER,
@@ -28,7 +32,13 @@ import {
   resetGuideShownKeys,
 } from 'hooks/useGuide';
 
-import {homeApi} from 'features/home/services/homeApi';
+import {fetchUserThunk} from 'features/home/store/userThunk';
+import {
+  fetchFamilyThunk,
+  fetchFamilyStatusThunk,
+} from 'features/home/store/familyThunk';
+import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
+import {baseApi} from 'services/baseApi';
 
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 
@@ -98,27 +108,54 @@ const styles = StyleSheet.create({
 export default function SetupFinishScreen() {
   const store = useStore();
 
-  const fetchUserOnce = useCallback(async () => {
-    const result = store.dispatch(
-      homeApi.endpoints.getUser.initiate(undefined, {forceRefetch: true}),
+  /** RTK getUser만 갱신하면 홈은 되지만, 일정/채팅/추억 등은 Redux user·family·userFamily를 쓰므로 스토어까지 동기화 */
+  const syncUserAndFamilyToStore = useCallback(async () => {
+    const userPayload = await withTimeout(
+      store.dispatch(fetchUserThunk()).unwrap(),
+      8000,
     );
-    await withTimeout(result.unwrap(), 8000);
+    const familyId =
+      userPayload?.familyId ?? userPayload?.family?.familyId ?? null;
+    if (!familyId) return;
+
+    const run = async thunkPromise =>
+      withTimeout(thunkPromise, 8000);
+
+    try {
+      await run(store.dispatch(fetchFamilyThunk(familyId)));
+    } catch {
+      null;
+    }
+    try {
+      await run(store.dispatch(fetchFamilyUserListThunk(familyId)));
+    } catch {
+      null;
+    }
+    try {
+      await run(store.dispatch(fetchFamilyStatusThunk(familyId)));
+    } catch {
+      null;
+    }
+
+    store.dispatch(baseApi.util.invalidateTags(['ChatRoom']));
   }, [store]);
 
   const handleButtonClick = useCallback(async () => {
     try {
+      await clearSignupOnboardingAux();
+      await setNeedsSignup(false);
+
       // 0) 첫 진입 플래그 먼저 설정 (홈 마운트 전에 있어야 감정 모달 안 뜨고 가이드만 뜸)
       await mmkvStorage.setItem(KEY_FIRST_ENTRY_AFTER_SETUP, '1');
 
       // 1) 가족 생성/참가 완료 상태 저장
       await setHasFamily(true);
 
-      // 2) 유저 정보 fetch (메인 진입 전에 최신값 확보)
-      // - 저장 반영 타이밍 때문에 “짧게 2번”이 가장 안전
+      // 2) 유저 + 가족 + 구성원 목록을 Redux에 반영 (탭 화면들이 slice 기준으로 familyId 조회)
       try {
-        await fetchUserOnce();
+        await syncUserAndFamilyToStore();
         await sleep(300);
-        await fetchUserOnce();
+        await syncUserAndFamilyToStore();
       } catch (e) {
         // fetch 실패해도 아래는 진행 (UX 끊기지 않게)
       }
@@ -131,7 +168,7 @@ export default function SetupFinishScreen() {
     } catch (e) {
       null;
     }
-  }, [fetchUserOnce]);
+  }, [syncUserAndFamilyToStore]);
 
   // 애니메이션 값들
   const illustrationScale = useRef(new Animated.Value(0.9)).current;

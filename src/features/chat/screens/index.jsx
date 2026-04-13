@@ -44,6 +44,7 @@ import DropShadow from 'react-native-drop-shadow';
 import CreateChatRoomBottomSheet from '../components/modals/CreateChatRoomBottomSheet';
 import ChatGuideModal from '../components/guides/ChatGuideModal';
 import {STORE_MOCK_ENABLED} from '../../home/utils/storeMockData';
+import {shouldHideChatRoomForBlockedUsers} from 'features/moderation/utils/blockedUserFilter';
 
 // 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
@@ -160,6 +161,19 @@ export default function CommunicationScreen({navigation}) {
   );
   // 실제 목록은 WS 핸들러가 slice에도 업데이트하므로 slice에서 읽음
   const {chatRoomList, listRevision} = useSelector(s => s.chatRoom);
+  const blockedIds = useSelector(s => s.blockedUsers?.ids ?? []);
+  const blockedSet = useMemo(
+    () => new Set(blockedIds.map(Number).filter(Number.isFinite)),
+    [blockedIds],
+  );
+
+  const visibleChatRooms = useMemo(
+    () =>
+      (chatRoomList || []).filter(
+        room => !shouldHideChatRoomForBlockedUsers(room, userId, blockedSet),
+      ),
+    [chatRoomList, userId, blockedSet],
+  );
   // familyId/userId 미확보 구간(autoLogin 진행 중)도 로딩으로 처리 → 빈 화면 대신 스켈레톤 표시
   // auth 확인이 끝난 뒤에는 식별자가 비어도 무한 스켈레톤에 머물지 않게 한다.
   const loading = isLoading || (!loginAuthChecked && (!familyId || !userId));
@@ -173,6 +187,7 @@ export default function CommunicationScreen({navigation}) {
 
   const [refreshing, setRefreshing] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
+  const [blockedChatToastVisible, setBlockedChatToastVisible] = useState(false);
 
   /** =========================
  * 데이터 로딩
@@ -202,7 +217,13 @@ export default function CommunicationScreen({navigation}) {
     ({item}) => {
       const isKino = !!item?.kino;
       const content = (
-        <ChatRoomItem chatRoom={item} userId={userId} navigation={navigation} />
+        <ChatRoomItem
+          chatRoom={item}
+          userId={userId}
+          navigation={navigation}
+          blockedUserIdSet={blockedSet}
+          onBlockedChatNavigate={() => setBlockedChatToastVisible(true)}
+        />
       );
       if (isKino) {
         return (
@@ -213,7 +234,7 @@ export default function CommunicationScreen({navigation}) {
       }
       return content;
     },
-    [navigation, userId],
+    [navigation, userId, blockedSet],
   );
 
   /** =========================
@@ -222,12 +243,13 @@ export default function CommunicationScreen({navigation}) {
   const members = useMemo(() => {
     return (familyUserList || [])
       .filter(u => u?.userId !== userId)
+      .filter(u => !blockedSet.has(Number(u?.userId)))
       .map(u => ({
         id: u.userId,
         name: u.name,
         disabled: false,
       }));
-  }, [familyUserList, userId]);
+  }, [familyUserList, userId, blockedSet]);
 
   const openCreateChatRoomSheet = useCallback(() => {
     hapticLight?.();
@@ -297,7 +319,7 @@ export default function CommunicationScreen({navigation}) {
           />
         ) : (
           <FlatList
-            data={chatRoomList}
+            data={visibleChatRooms}
             renderItem={renderItem}
             extraData={listRevision}
             contentContainerStyle={styles.listContent}
@@ -347,6 +369,12 @@ export default function CommunicationScreen({navigation}) {
         message="채팅방을 생성했어요"
         onClose={() => setToastVisible(false)}
         duration={1000}
+      />
+      <ToastModal
+        visible={blockedChatToastVisible}
+        message="차단한 유저와의 채팅방은 열 수 없어요."
+        onClose={() => setBlockedChatToastVisible(false)}
+        duration={2200}
       />
 
       {/* FAB를 화면 하단 고정 + 가이드 측정 정확도를 위한 절대 위치 래퍼 */}

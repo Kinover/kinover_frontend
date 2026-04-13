@@ -2,7 +2,8 @@
 // src/features/schedule/components/Calendar.jsx (CalendarToggle)
 
 import React, {useRef, useMemo, useEffect, useCallback} from 'react';
-import {View, TouchableOpacity, Image, PanResponder} from 'react-native';
+import {View, TouchableOpacity, Image, PanResponder, Platform} from 'react-native';
+import {DateTimePickerAndroid} from '@react-native-community/datetimepicker';
 
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -386,8 +387,28 @@ export default function CalendarToggle({
   const weekDates = useWeekDates(selectedDate, getLocalDateKey);
   const {getCountColorStyle} = useScheduleCountStyle(cellSize);
 
-  // showYMD가 source of truth
+  // showYMD가 source of truth (iOS only)
   const {showYMD, openYMD, closeYMD} = useYMDPicker();
+
+  const handleOpenYMD = useCallback(() => {
+    if (Platform.OS === 'android') {
+      const current =
+        selectedDate instanceof Date && !isNaN(selectedDate)
+          ? selectedDate
+          : new Date();
+      DateTimePickerAndroid.open({
+        value: current,
+        mode: 'date',
+        display: 'spinner',
+        onChange: (event, pickedDate) => {
+          if (event?.type === 'dismissed' || !pickedDate) return;
+          setSelectedDate(pickedDate);
+        },
+      });
+    } else {
+      openYMD();
+    }
+  }, [selectedDate, setSelectedDate, openYMD]);
 
   const birthdayMap = useMemo(() => {
     if (birthdayMapProp) return birthdayMapProp;
@@ -557,7 +578,7 @@ export default function CalendarToggle({
           <View style={styles.headerLeft}>
             <TouchableOpacity
               style={styles.headerLeftDatePicker}
-              onPress={openYMD}
+              onPress={handleOpenYMD}
               activeOpacity={0.72}
               hitSlop={{top: 4, bottom: 4, left: 2, right: 2}}>
               <Image
@@ -795,21 +816,23 @@ export default function CalendarToggle({
         </View>
       </DropShadow>
 
-      <DatePicker
-        modal
-        open={showYMD}
-        date={selectedDate instanceof Date && !isNaN(selectedDate) ? selectedDate : new Date()}
-        mode="date"
-        locale="ko"
-        title="날짜 선택"
-        confirmText="확인"
-        cancelText="취소"
-        onConfirm={date => {
-          setSelectedDate(date);
-          closeYMD();
-        }}
-        onCancel={closeYMD}
-      />
+      {Platform.OS === 'ios' && (
+        <DatePicker
+          modal
+          open={showYMD}
+          date={selectedDate instanceof Date && !isNaN(selectedDate) ? selectedDate : new Date()}
+          mode="date"
+          locale="ko"
+          title="날짜 선택"
+          confirmText="확인"
+          cancelText="취소"
+          onConfirm={date => {
+            setSelectedDate(date);
+            closeYMD();
+          }}
+          onCancel={closeYMD}
+        />
+      )}
     </View>
   );
 }

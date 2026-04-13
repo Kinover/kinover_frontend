@@ -43,7 +43,7 @@ export const API_BASE_URL = env('API_BASE_URL', 'https://kinover.shop/api');
 export const API_TIMEOUT_MS = 15000;
 
 // ==================== WebSocket (환경 변수 우선) ====================
-export const WS_CHAT_BASE_URL = env('WS_CHAT_BASE_URL', 'wss://kinover.shop:9090');
+export const WS_CHAT_BASE_URL = env('WS_CHAT_BASE_URL', 'ws://kinover.shop:9090');
 export const WS_CHAT_PATH = '/chat';
 /** 가족 온라인 상태 소켓 경로 (WS_CHAT_BASE_URL + WS_FAMILY_STATUS_PATH) */
 export const WS_FAMILY_STATUS_PATH = '/family-status';
@@ -76,4 +76,5 @@ export const UI_DEBOUNCE_SHORT_MS = 180;
 export const UI_DEBOUNCE_MED_MS = 280;
 
 // ==================== 문자열 (반복 사용) ====================
-export const AUTH_EXCLUDE_PREFIXES = ['/login', '/signup', '/auth', '/oauth'];
+/** Authorization 미주입: 공개 로그인 등. `/auth/phone/verify`는 JWT 필수이므로 `/auth` 전체는 제외하지 않음 */
+export const AUTH_EXCLUDE_PREFIXES = ['/login', '/signup', '/oauth'];
