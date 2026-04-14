@@ -41,11 +41,13 @@ fi
 cd ios
 pod install
 
-# Patch fmt header to disable consteval for Xcode 26+ (Clang 17) compatibility
-# fmt 11.x uses consteval which causes "not a constant expression" errors on Xcode 26
-FMT_CORE="$CI_PRIMARY_REPOSITORY_PATH/ios/Pods/fmt/include/fmt/core.h"
-if [ -f "$FMT_CORE" ] && ! grep -q "FMT_USE_CONSTEVAL 0" "$FMT_CORE"; then
-    printf '#undef FMT_USE_CONSTEVAL\n#define FMT_USE_CONSTEVAL 0\n' | cat - "$FMT_CORE" > /tmp/fmt_core_patched.h
-    mv /tmp/fmt_core_patched.h "$FMT_CORE"
-    echo "Patched fmt/core.h: disabled FMT_USE_CONSTEVAL for Xcode 26"
+# Patch fmt to disable consteval for Xcode 26+ (Clang 17) compatibility
+# fmt 11.x consteval causes "not a constant expression" errors — patch format-inl.h directly
+FMT_FORMAT_INL="$CI_PRIMARY_REPOSITORY_PATH/ios/Pods/fmt/include/fmt/format-inl.h"
+if [ -f "$FMT_FORMAT_INL" ] && ! grep -q "FMT_USE_CONSTEVAL 0" "$FMT_FORMAT_INL"; then
+    printf '#undef FMT_USE_CONSTEVAL\n#define FMT_USE_CONSTEVAL 0\n' | cat - "$FMT_FORMAT_INL" > /tmp/fmt_format_inl_patched.h
+    mv /tmp/fmt_format_inl_patched.h "$FMT_FORMAT_INL"
+    echo "Patched fmt/format-inl.h: disabled FMT_USE_CONSTEVAL for Xcode 26"
+else
+    echo "fmt patch: skipped (already patched or file not found at $FMT_FORMAT_INL)"
 fi
