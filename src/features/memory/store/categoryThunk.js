@@ -1,7 +1,10 @@
 // src/features/memory/store/categoryThunk.js
 import {createAsyncThunk} from '@reduxjs/toolkit';
 import {getGuestMode} from 'utils/storage'; // 추가
-import {STORE_MOCK_ENABLED} from '../../home/utils/storeMockData';
+import {
+  STORE_MOCK_ENABLED,
+  getStoreMockCategories,
+} from '../../home/utils/storeMockData';
 import {memoryApi} from '../services/memoryApi';
 
 // =======================
@@ -21,10 +24,7 @@ export const fetchCategoryThunk = createAsyncThunk(
 
  // 스토어 목업: 여행 카테고리 포함 (부산 광안리 포스트용)
       if (STORE_MOCK_ENABLED) {
-        return [
-          {categoryId: 'mock-cat-travel', title: '여행'},
-          {categoryId: 'mock-cat-daily', title: '일상'},
-        ];
+        return getStoreMockCategories();
       }
  // 게스트면 서버 호출 X, 더미 반환
       const isGuest = await getGuestMode();

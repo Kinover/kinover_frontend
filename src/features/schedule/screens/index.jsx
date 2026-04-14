@@ -53,6 +53,7 @@ import {BACKGROUND_COLORS, LAYOUT_STYLE} from 'styles/style';
 import ScheduleGuideModal from '../components/ScheduleGuideModal';
 import {
   STORE_MOCK_ENABLED,
+  STORE_MOCK_FAMILY_ID,
   getStoreMockFamilyUserListForSchedule,
   getStoreMockUser,
 } from '../../home/utils/storeMockData';
@@ -154,7 +155,7 @@ export default function ScheduleScreen() {
   const reduxFamilyUserList = useSelector(
     state => state.userFamily.familyUserList,
   );
-  const familyId = STORE_MOCK_ENABLED ? 'mock-family' : reduxFamilyId;
+  const familyId = STORE_MOCK_ENABLED ? STORE_MOCK_FAMILY_ID : reduxFamilyId;
   const {data: queriedFamilyUserList = []} = useGetFamilyUsersQuery(familyId, {
     skip: STORE_MOCK_ENABLED || !familyId,
     refetchOnMountOrArgChange: true,

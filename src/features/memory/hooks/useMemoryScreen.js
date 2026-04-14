@@ -3,6 +3,10 @@ import {useState, useRef, useMemo, useCallback} from 'react';
 import {useSelector} from 'react-redux';
 import {useNavigation} from '@react-navigation/native';
 import {useGetCategoriesQuery} from '../services/memoryApi';
+import {
+  STORE_MOCK_ENABLED,
+  getStoreMockCategories,
+} from '../../home/utils/storeMockData';
 
 // id 키 통일: id 우선, 없으면 categoryId 사용
 const getCatId = cat => {
@@ -15,10 +19,14 @@ export const useMemoryScreen = () => {
   const categorySheetRef = useRef(null);
 
   const fallbackCategoryList = useSelector(state => state.category?.categoryList || []);
-  const {data: categoryQueryData} = useGetCategoriesQuery();
-  const categoryList = Array.isArray(categoryQueryData)
-    ? categoryQueryData
-    : fallbackCategoryList;
+  const {data: categoryQueryData} = useGetCategoriesQuery(undefined, {
+    skip: STORE_MOCK_ENABLED,
+  });
+  const categoryList = STORE_MOCK_ENABLED
+    ? getStoreMockCategories()
+    : Array.isArray(categoryQueryData)
+      ? categoryQueryData
+      : fallbackCategoryList;
 
   const [selectedTab, setSelectedTab] = useState('feed');
   /** null = 전체(필터 없음), 배열 = 선택한 카테고리 id 목록(복수 가능) */

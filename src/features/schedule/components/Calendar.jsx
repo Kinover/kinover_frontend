@@ -45,6 +45,8 @@ const TYPE = {
 const COLOR = {
   ANNIV: '#F59E0B',
   FAMILY: '#3B82F6',
+  /** 키노 PINK 테마·kinoSelectScreen highlight와 동일 */
+  INDIVIDUAL: '#EC4899',
   FOCUS_BG: 'rgba(17, 24, 39, 0.096)',
   FOCUS_BORDER: '#111827',
   FOCUS_TEXT: '#111827',
@@ -356,6 +358,9 @@ export default function CalendarToggle({
     dotFamily: {
       backgroundColor: COLOR.FAMILY,
     },
+    dotIndividual: {
+      backgroundColor: COLOR.INDIVIDUAL,
+    },
   }));
   const {OUTER_HPAD, GAP, cellSize, gridWidth, cardWidth} = useCalendarLayout();
 
@@ -542,11 +547,14 @@ export default function CalendarToggle({
 
   const renderDots = counts => {
     const typeFamily = counts?.type === TYPE.FAMILY;
+    const typeIndividual = counts?.type === TYPE.INDIVIDUAL;
 
     const showAnnivDot = (counts.anniversary || 0) > 0;
     const showFamilyDot = (counts.family || 0) > 0 || typeFamily;
+    const showIndividualDot =
+      (counts.individual || 0) > 0 || typeIndividual;
 
-    if (!showAnnivDot && !showFamilyDot) return null;
+    if (!showAnnivDot && !showFamilyDot && !showIndividualDot) return null;
 
     return (
       <View style={styles.dotRow}>
@@ -555,6 +563,9 @@ export default function CalendarToggle({
         ) : null}
         {showFamilyDot ? (
           <View style={[styles.dotBase, styles.dotFamily]} />
+        ) : null}
+        {showIndividualDot ? (
+          <View style={[styles.dotBase, styles.dotIndividual]} />
         ) : null}
       </View>
     );

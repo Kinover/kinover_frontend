@@ -4,6 +4,10 @@ import {useSelector} from 'react-redux';
 import {useGetSchedulesQuery} from '../services/scheduleApi';
 import {normalizeScheduleListResponse} from '../utils/scheduleFilterHelpers';
 import {selectFamilyId} from 'store/selectors';
+import {
+  STORE_MOCK_ENABLED,
+  getStoreMockScheduleList,
+} from '../../home/utils/storeMockData';
 
 export const useScheduleListByDate = (
   selectedDate,
@@ -33,66 +37,21 @@ export const useScheduleListByDate = (
   const {data: queriedScheduleListRaw, refetch} = useGetSchedulesQuery(
     {familyId, date: selectedYMD},
     {
-      skip: !familyId || !selectedYMD,
+      skip: !familyId || !selectedYMD || STORE_MOCK_ENABLED,
     },
   );
 
   useEffect(() => {
+    if (STORE_MOCK_ENABLED) return;
     if (!familyId || !selectedYMD) return;
     if (refreshTrigger == null) return;
     refetch();
   }, [familyId, selectedYMD, refreshTrigger, refetch]);
 
- // ----------------------------
- // 더미 데이터 (UI 테스트용)
- // - scheduleList가 비어있을 때만 주입
- // - selectedYMD에 맞춰 날짜 일관성 유지
- // ----------------------------
-  const dummyList = useMemo(() => {
-    if (!selectedYMD) return [];
-
- // userId / userName / kind(type) 만 UI 확인에 충분
- // kind: 'personal' | 'shared' | 'anniversary'
-    return [
-      {
-        scheduleId: `dummy-${selectedYMD}-1`,
-        date: selectedYMD,
-        kind: 'anniversary',
-        title: '결혼기념일 💍',
-        userId: null,
-        userName: null,
-        isAnniversary: true,
-      },
-      {
-        scheduleId: `dummy-${selectedYMD}-2`,
-        date: selectedYMD,
-        kind: 'shared',
-        title: '가족 외식 약속 🍽️',
-        userId: null,
-        userName: '함께',
-        isShared: true,
-      },
-      {
-        scheduleId: `dummy-${selectedYMD}-3`,
-        date: selectedYMD,
-        kind: 'personal',
-        title: '병원 예약',
-        userId: '101',
-        userName: '지윤',
-      },
-      {
-        scheduleId: `dummy-${selectedYMD}-4`,
-        date: selectedYMD,
-        kind: 'personal',
-        title: 'PT 수업 🏋️‍♀️',
-        userId: '102',
-        userName: '아빠',
-      },
-    ];
-  }, [selectedYMD]);
-
   const effectiveScheduleList = useMemo(() => {
-    const base = normalizeScheduleListResponse(queriedScheduleListRaw);
+    const base = STORE_MOCK_ENABLED
+      ? getStoreMockScheduleList(selectedYMD)
+      : normalizeScheduleListResponse(queriedScheduleListRaw);
     if (!blockedSet.size) return base;
     return base.filter(it => {
       const uid = it?.userId;
@@ -104,7 +63,7 @@ export const useScheduleListByDate = (
       if (nums.length === 0) return true;
       return !nums.every(id => blockedSet.has(id));
     });
-  }, [queriedScheduleListRaw, blockedSet]);
+  }, [queriedScheduleListRaw, blockedSet, selectedYMD]);
 
  // ----------------------------
  // 타입 분류(백엔드 필드가 뭐든 최대한 흡수)
@@ -156,7 +115,7 @@ export const useScheduleListByDate = (
   }, [effectiveScheduleList]);
 
   return {
-    scheduleList: effectiveScheduleList, // 이제 화면은 이걸 쓰면 더미까지 포함됨
+    scheduleList: effectiveScheduleList,
     selectedYMD,
     ...grouped,
   };

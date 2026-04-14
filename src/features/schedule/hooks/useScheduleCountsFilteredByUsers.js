@@ -2,6 +2,10 @@ import {useEffect, useMemo, useState} from 'react';
 import appStore from 'store';
 import {scheduleApi} from '../services/scheduleApi';
 import {scheduleItemMatchesViewFilter} from '../utils/scheduleFilterHelpers';
+import {
+  STORE_MOCK_ENABLED,
+  getStoreMockScheduleList,
+} from '../../home/utils/storeMockData';
 
 const pad2 = n => String(n).padStart(2, '0');
 
@@ -52,6 +56,22 @@ export function useScheduleCountsFilteredByUsers({
     if (!familyId || !filterUserIds?.length) {
       setFilteredMap(null);
       setLoadingFiltered(false);
+      return;
+    }
+
+    if (STORE_MOCK_ENABLED) {
+      setLoadingFiltered(false);
+      const ymList = getYmdListForMonth(year, month);
+      const next = {};
+      ymList.forEach(ymd => {
+        const list = getStoreMockScheduleList(ymd);
+        const arr = Array.isArray(list) ? list : [];
+        const n = arr.filter(it =>
+          scheduleItemMatchesViewFilter(it, filterUserIds),
+        ).length;
+        if (n > 0) next[ymd] = n;
+      });
+      setFilteredMap(next);
       return;
     }
 

@@ -1,6 +1,10 @@
 // src/hooks/schedule/useScheduleCounts.js
 import {useState, useEffect, useCallback} from 'react';
 import {useGetScheduleCountPerDayQuery} from '../services/scheduleApi';
+import {
+  STORE_MOCK_ENABLED,
+  getStoreMockScheduleCountPerDay,
+} from '../../home/utils/storeMockData';
 
 export const useScheduleCounts = (familyId, year, month, viewerUserId) => {
   const [scheduleCountPerDay, setScheduleCountPerDay] = useState({});
@@ -9,14 +13,15 @@ export const useScheduleCounts = (familyId, year, month, viewerUserId) => {
   const viewerArg = Number.isFinite(v) ? v : undefined;
   const {
     data: countData,
-    isLoading,
+    isLoading: queryLoading,
     refetch,
   } = useGetScheduleCountPerDayQuery(
     {familyId, year, month, viewerUserId: viewerArg},
     {
-      skip: !familyId,
+      skip: !familyId || STORE_MOCK_ENABLED,
     },
   );
+  const isLoading = STORE_MOCK_ENABLED ? false : queryLoading;
 
   // 날짜별 일정 개수 즉시 반영용 (낙관적 업데이트)
   const bumpCount = useCallback((ymd, delta) => {
@@ -34,6 +39,7 @@ export const useScheduleCounts = (familyId, year, month, viewerUserId) => {
   }, []);
 
   useEffect(() => {
+    if (STORE_MOCK_ENABLED) return;
     const raw =
       countData?.countPerDay ??
       countData?.data?.countPerDay ??
@@ -52,6 +58,13 @@ export const useScheduleCounts = (familyId, year, month, viewerUserId) => {
   }, [countData]);
 
   useEffect(() => {
+    if (!STORE_MOCK_ENABLED) return;
+    if (!familyId) return;
+    setScheduleCountPerDay(getStoreMockScheduleCountPerDay(year, month));
+  }, [familyId, year, month]);
+
+  useEffect(() => {
+    if (STORE_MOCK_ENABLED) return;
     if (!familyId) return;
     if (refreshTrigger == null) return;
     refetch();

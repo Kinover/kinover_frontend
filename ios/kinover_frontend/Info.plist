@@ -94,8 +94,6 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>카메라를 사용하려면 접근 권한이 필요합니다.</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>사진을 저장하려면 접근 권한이 필요합니다.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

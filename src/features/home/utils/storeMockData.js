@@ -5,7 +5,11 @@
 
 import {Image} from 'react-native';
 
-export const STORE_MOCK_ENABLED = false;
+export const STORE_MOCK_ENABLED = true;
+
+/** 백엔드 `familyId`(UUID) 형식과 맞춤. 스토어 목업 시 일정 API는 호출하지 않음. */
+export const STORE_MOCK_FAMILY_ID =
+  'a1b2c3d4-e5f6-4789-a012-3456789abcde';
 
 // 1-엄마 2-아빠 3-둘째 4-첫째(나) 5-셋째
 const getAssetUri = module => Image.resolveAssetSource(module)?.uri ?? null;
@@ -36,7 +40,7 @@ export function getStoreMockUser() {
     emotionUpdatedAt: new Date(now - 30 * 60 * 1000).toISOString(),
     image: PROFILE_4,
     birth: null,
-    familyId: 'mock-family',
+    familyId: STORE_MOCK_FAMILY_ID,
   };
 }
 
@@ -108,7 +112,7 @@ const pad2 = n => String(n).padStart(2, '0');
 
 /** 날짜별 일정 더미: 가족(전체/일부) + 개별(1명/2명/3명) 다양하게 */
 export function getStoreMockScheduleList(dateYMD) {
-  const familyId = 'mock-family';
+  const familyId = STORE_MOCK_FAMILY_ID;
   const day = dateYMD ? parseInt(String(dateYMD).slice(-2), 10) : 0;
 
   const [mom, dad, first, second, third] = [
@@ -144,6 +148,19 @@ export function getStoreMockScheduleList(dateYMD) {
     __forcedKind: 'INDIVIDUAL',
   });
 
+  const anniv = (id, title, memo = '') => ({
+    scheduleId: id,
+    id,
+    familyId,
+    date: dateYMD,
+    title,
+    type: 'ANNIVERSARY',
+    participantIds: [],
+    memo,
+    __forcedKind: 'ANNIVERSARY',
+    isAnniversary: true,
+  });
+
   // 3일: 개별만 - 1명씩 + 2명 같이
   if (day === 3) {
     return [
@@ -154,7 +171,9 @@ export function getStoreMockScheduleList(dateYMD) {
   }
 
   // 7일: 가족 5명 전체
-  if (day === 7) return [fam(80001, '가족 외식', all)];
+  if (day === 7) {
+    return [fam(80001, '가족 외식', all)];
+  }
 
   // 10일: 개별만 - 1명, 1명, 2명, 3명
   if (day === 10) {
@@ -175,7 +194,7 @@ export function getStoreMockScheduleList(dateYMD) {
     ];
   }
 
-  // 15일: 가족(4명) + 개별 1명, 개별 2명
+  // 15일: 가족(4명) + 개별
   if (day === 15) {
     return [
       fam(80006, '가족 외식 (아빠 제외)', [mom, first, second, third]),
@@ -194,7 +213,7 @@ export function getStoreMockScheduleList(dateYMD) {
     ];
   }
 
-  // 24일: 가족 5명 + 가족 4명 (다른 일정)
+  // 24일: 가족 일정 2건
   if (day === 24) {
     return [
       fam(80011, '가족 영화 관람 🎬', all),
@@ -202,10 +221,15 @@ export function getStoreMockScheduleList(dateYMD) {
     ];
   }
 
-  // 26일: 엄마 생신 - 가족 전체
-  if (day === 26) return [fam(80013, '엄마 생신 기념 외식 🍽️', all, '엄마 생신 26일')];
+  // 26일: 4월 더미 중 유일한 기념일 + 가족 외식
+  if (day === 26) {
+    return [
+      anniv(80058, '엄마 생신 🎂', '26일'),
+      fam(80013, '생신 기념 가족 외식 🍽️', all, '엄마 생신'),
+    ];
+  }
 
-  // 28일: 가족 + 개별 1명, 2명, 3명
+  // 28일: 가족 + 개별
   if (day === 28) {
     return [
       fam(80001, '가족 외식', all),
@@ -224,24 +248,29 @@ export function getStoreMockScheduleCountPerDay(year, month) {
   const map = {};
   const m = pad2(month);
 
+  // [일, 가족 일정 수, 개인 일정 수, 기념일 수] — 4월은 26일에 기념일 1건만
   const dayCounts = [
-    [3, 0, 3],
-    [7, 1, 0],
-    [10, 0, 4],
-    [12, 0, 3],
-    [15, 1, 4],
-    [18, 0, 3],
-    [24, 2, 0],
-    [26, 1, 0],
-    [28, 1, 5],
+    [3, 0, 3, 0],
+    [7, 1, 0, 0],
+    [10, 0, 4, 0],
+    [12, 0, 3, 0],
+    [15, 1, 4, 0],
+    [18, 0, 3, 0],
+    [24, 2, 0, 0],
+    [26, 1, 0, 1],
+    [28, 1, 5, 0],
   ];
 
-  dayCounts.forEach(([day, family, individual]) => {
+  dayCounts.forEach(([day, family, individual, anniversary = 0]) => {
     const key = `${year}-${m}-${pad2(day)}`;
+    const f = family || 0;
+    const i = individual || 0;
+    const a = anniversary || 0;
     map[key] = {
-      total: family + individual,
-      family: family || 0,
-      individual: individual || 0,
+      total: f + i + a,
+      family: f,
+      individual: i,
+      anniversary: a,
     };
   });
 
@@ -309,6 +338,14 @@ export function getStoreMockKinoMessages(currentUserId) {
 }
 
 // ---------- 메모리(피드) 더미: 다섯 식구 부산 광안리 여행 ----------
+
+/** `getStoreMockMemoryList` 의 `categoryId` 와 맞춘 카테고리 목록 */
+export function getStoreMockCategories() {
+  return [
+    {categoryId: 'mock-cat-travel', title: '여행'},
+    {categoryId: 'mock-cat-daily', title: '일상'},
+  ];
+}
 
 /**
  * 메모리 피드 더미 (post1-1 부산 광안리, post3-1 엄마 생일 파티, graduate 막내 졸업)

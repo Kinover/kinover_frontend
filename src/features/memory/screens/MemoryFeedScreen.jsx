@@ -18,6 +18,11 @@ import {useDispatch, useSelector} from 'react-redux';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 
 import {useGetCategoriesQuery, useGetPostsQuery} from '../services/memoryApi';
+import {
+  STORE_MOCK_ENABLED,
+  getStoreMockMemoryList,
+  getStoreMockCategories,
+} from '../../home/utils/storeMockData';
 
 import {
   getResponsiveHeight,
@@ -285,18 +290,25 @@ export default function MemoryFeed({
   }, [selectedCategoryIds]);
 
   const {data: categoryQueryData, refetch: refetchCategories} =
-    useGetCategoriesQuery();
+    useGetCategoriesQuery(undefined, {skip: STORE_MOCK_ENABLED});
   const {
     data: postsQueryData,
     isFetching: isPostsFetching,
     refetch: refetchPosts,
-  } = useGetPostsQuery({categoryId: selectedCategoryId || undefined});
-  const categoryList = Array.isArray(categoryQueryData)
-    ? categoryQueryData
-    : fallbackCategoryList;
-  const memoryList = Array.isArray(postsQueryData)
-    ? postsQueryData
-    : fallbackMemoryList;
+  } = useGetPostsQuery(
+    {categoryId: selectedCategoryId || undefined},
+    {skip: STORE_MOCK_ENABLED},
+  );
+  const categoryList = STORE_MOCK_ENABLED
+    ? getStoreMockCategories()
+    : Array.isArray(categoryQueryData)
+      ? categoryQueryData
+      : fallbackCategoryList;
+  const memoryList = STORE_MOCK_ENABLED
+    ? getStoreMockMemoryList()
+    : Array.isArray(postsQueryData)
+      ? postsQueryData
+      : fallbackMemoryList;
 
   const doFetch = useCallback(async () => {
     await Promise.allSettled([refetchCategories(), refetchPosts()]);
