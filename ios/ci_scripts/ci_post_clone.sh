@@ -42,12 +42,13 @@ cd ios
 pod install
 
 # Patch fmt to disable consteval for Xcode 26+ (Clang 17) compatibility
-# fmt 11.x consteval causes "not a constant expression" errors — patch format-inl.h directly
-FMT_FORMAT_INL="$CI_PRIMARY_REPOSITORY_PATH/ios/Pods/fmt/include/fmt/format-inl.h"
-if [ -f "$FMT_FORMAT_INL" ] && ! grep -q "FMT_USE_CONSTEVAL 0" "$FMT_FORMAT_INL"; then
-    printf '#undef FMT_USE_CONSTEVAL\n#define FMT_USE_CONSTEVAL 0\n' | cat - "$FMT_FORMAT_INL" > /tmp/fmt_format_inl_patched.h
-    mv /tmp/fmt_format_inl_patched.h "$FMT_FORMAT_INL"
-    echo "Patched fmt/format-inl.h: disabled FMT_USE_CONSTEVAL for Xcode 26"
-else
-    echo "fmt patch: skipped (already patched or file not found at $FMT_FORMAT_INL)"
-fi
+# FMT_USE_CONSTEVAL is defined in base.h (fmt 11.x) or core.h (older fmt).
+# Prepending to format-inl.h doesn't work — base.h redefines it later.
+# Fix: sed-replace the definition at its source.
+FMT_INCLUDE="$CI_PRIMARY_REPOSITORY_PATH/ios/Pods/fmt/include/fmt"
+for FMT_HEADER in "$FMT_INCLUDE/base.h" "$FMT_INCLUDE/core.h"; do
+    if [ -f "$FMT_HEADER" ]; then
+        sed -i '' 's/define FMT_USE_CONSTEVAL 1/define FMT_USE_CONSTEVAL 0/g' "$FMT_HEADER"
+        echo "Patched $(basename $FMT_HEADER): FMT_USE_CONSTEVAL forced to 0"
+    fi
+done

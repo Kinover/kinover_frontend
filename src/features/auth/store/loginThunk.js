@@ -3,14 +3,30 @@ import {saveToken, setHasFamily, getGuestMode, setNeedsSignup, getNeedsSignup} f
 import {setLoginLoading, setLoginError, setLoginSuccess} from './loginSlice';
 import {fetchUserThunk} from 'features/home/store/userThunk';
 import {authApi} from '../services/authApi';
+import {resetFamilyState, setFamily} from 'features/home/store/familySlice';
+import {setFamilyUserList} from 'features/home/store/userFamilySlice';
+import {resetUser} from 'features/home/store/userSlice';
+import {homeApi} from 'features/home/services/homeApi';
+import {baseApi} from 'services/baseApi';
 
 // 게스트 토큰(로컬 전용)
 const GUEST_TOKEN = 'GUEST_TOKEN_LOCAL_ONLY';
 
 /**
+ * 다른 계정으로 로그인할 때 이전 세션의 가족/유저/RTK 캐시가 남지 않도록 초기화
+ * (userSlice·familySlice의 `??` 병합 + 미갱신 family slice로 인한 오가족 표시 방지)
+ */
+function clearSessionIdentity(dispatch) {
+  dispatch(resetFamilyState());
+  dispatch(setFamilyUserList([]));
+  dispatch(resetUser());
+  dispatch(baseApi.util.resetApiState());
+}
+
+/**
  * 공통: 로그인 후 userinfo를 가져와서 familyId 기준으로 hasFamily 확정
  * - SSOT: familyId
- * - store/home/user 또는 thunk 결과에서 familyId 추출
+ * - 수동 로그인 시에도 useAutoLogin처럼 getFamily / getFamilyUsers로 Redux 동기화
  */
 async function finalizeHasFamilyAfterLogin(dispatch, getState) {
   const r = dispatch(fetchUserThunk());
@@ -18,7 +34,7 @@ async function finalizeHasFamilyAfterLogin(dispatch, getState) {
     typeof r?.unwrap === 'function' ? await r.unwrap() : await r;
 
   const state = getState?.();
-  const userFromStore = state?.home?.user || state?.user || null;
+  const userFromStore = state?.user || state?.home?.user || null;
 
   const familyId =
     userResult?.familyId ??
@@ -29,8 +45,56 @@ async function finalizeHasFamilyAfterLogin(dispatch, getState) {
 
   const finalHasFamily = familyId != null;
 
- // setHasFamily 내부에서 emitAuthFlagsChanged()가 나가게 만들었으니, 여기서 emit은 제거 권장
   await setHasFamily(finalHasFamily);
+
+  if (finalHasFamily && familyId != null) {
+    try {
+      const freq = dispatch(
+        homeApi.endpoints.getFamily.initiate(familyId, {
+          forceRefetch: true,
+        }),
+      );
+      const familyRes = await freq.unwrap();
+      freq.unsubscribe();
+      const familyData = familyRes?.data ?? familyRes;
+      if (familyData && typeof familyData === 'object') {
+        dispatch(setFamily(familyData));
+      }
+
+      const uid =
+        userResult?.userId ??
+        userResult?.id ??
+        userFromStore?.userId ??
+        null;
+      if (uid != null) {
+        const fur = dispatch(
+          homeApi.endpoints.getFamilyUsers.initiate(familyId, {
+            forceRefetch: true,
+          }),
+        );
+        try {
+          const familyUsersRes = await fur.unwrap();
+          const users =
+            (Array.isArray(familyUsersRes) && familyUsersRes) ||
+            familyUsersRes?.data ||
+            familyUsersRes?.users ||
+            familyUsersRes?.data?.users ||
+            [];
+          if (Array.isArray(users)) {
+            dispatch(setFamilyUserList(users));
+          }
+        } finally {
+          fur.unsubscribe();
+        }
+      }
+    } catch {
+      dispatch(resetFamilyState());
+      dispatch(setFamilyUserList([]));
+    }
+  } else {
+    dispatch(resetFamilyState());
+    dispatch(setFamilyUserList([]));
+  }
 
   return {familyId, finalHasFamily};
 }
@@ -76,6 +140,7 @@ export const loginThunk = kakaoAccessToken => {
         await saveToken(GUEST_TOKEN);
 
         dispatch(setLoginSuccess());
+        clearSessionIdentity(dispatch);
         const {familyId, finalHasFamily} = await finalizeHasFamilyAfterLogin(
           dispatch,
           getState,
@@ -96,6 +161,7 @@ export const loginThunk = kakaoAccessToken => {
       if (!token) throw new Error('서버에서 토큰이 내려오지 않았어요(token 없음)');
 
       await saveToken(token);
+      clearSessionIdentity(dispatch);
       const needsSignup = inferNeedsSignup(response);
 
       dispatch(setLoginSuccess());
@@ -192,6 +258,7 @@ export const appleLoginThunk = identityToken => {
 
  // 1) 토큰 저장
       await saveToken(token);
+      clearSessionIdentity(dispatch);
 
  // 2) 토큰 인증 성공 처리
       dispatch(setLoginSuccess());
