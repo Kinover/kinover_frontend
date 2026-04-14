@@ -2,7 +2,11 @@
 
 set -e
 
-# Move to project root (one level up from ios/)
+# Install Homebrew dependencies
+brew install node
+brew install cocoapods
+
+# Move to project root
 cd "$CI_PRIMARY_REPOSITORY_PATH"
 
 # Install Node dependencies
