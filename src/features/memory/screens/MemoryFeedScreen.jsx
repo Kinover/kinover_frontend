@@ -14,6 +14,7 @@ import {
   Image,
 } from 'react-native';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 
@@ -139,8 +140,23 @@ export default function MemoryFeed({
       color: EMPTY_STYLE().emptyColor,
     },
   }));
+  const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
   const navigation = useNavigation();
+
+  /** 마지막 게시글 아래 여유 스크롤 (탭바·FAB·홈 인디케이터와 겹치지 않게) */
+  const listContentBottomPad = useMemo(
+    () =>
+      getResponsiveHeight(112) + Math.max(0, Number(insets?.bottom ?? 0)),
+    [insets?.bottom],
+  );
+
+  const feedListContentStyle = useMemo(
+    () => ({
+      paddingBottom: listContentBottomPad,
+    }),
+    [listContentBottomPad],
+  );
 
   /* -------------------------
    * Redux States
@@ -269,7 +285,8 @@ export default function MemoryFeed({
         const thumbUri = t?.uri || null;
 
         if (thumbUri) setVideoThumbMap(prev => ({...prev, [uri]: thumbUri}));
-      } catch (e) {
+      } catch {
+        null;
       } finally {
         thumbLoadingRef.current.delete(uri);
       }
@@ -764,7 +781,7 @@ export default function MemoryFeed({
             }}
             contentContainerStyle={{
               paddingTop: ITEM_MARGIN,
-              paddingBottom: getResponsiveHeight(24),
+              paddingBottom: listContentBottomPad,
             }}
             showsVerticalScrollIndicator={true}
           />
@@ -781,7 +798,7 @@ export default function MemoryFeed({
           showsVerticalScrollIndicator={true}
           contentContainerStyle={{
             paddingTop: ITEM_MARGIN,
-            paddingBottom: getResponsiveHeight(24),
+            paddingBottom: listContentBottomPad,
           }}
         />
       </View>
@@ -817,6 +834,7 @@ export default function MemoryFeed({
               paddingHorizontal: ITEM_MARGIN,
             }}
             ListEmptyComponent={listEmptyComponent}
+            contentContainerStyle={feedListContentStyle}
           />
         </GestureDetector>
       ) : (
@@ -838,6 +856,7 @@ export default function MemoryFeed({
             windowSize={7}
             removeClippedSubviews={true}
             ListEmptyComponent={listEmptyComponent}
+            contentContainerStyle={feedListContentStyle}
           />
         </GestureDetector>
       )}
