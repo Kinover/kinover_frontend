@@ -16,7 +16,8 @@ import {
   RenderHeaderHome,
 } from '../helpers/tabHeaderHelpers';
 
-import {getResponsiveHeight} from 'utils/responsive';
+import {getTabStackHeaderHeight} from 'utils/layoutMetrics';
+import {stackCardScreenOption} from '../navigationTheme';
 
 import {HEADER_STYLES} from 'styles/style';
 
@@ -30,8 +31,7 @@ export default function MemoryStack() {
     display: 'flex',
     shadowOpacity: 0,
     elevation: 0,
-    height:
-   getResponsiveHeight(107.5),
+    height: getTabStackHeaderHeight(),
   };
 
   return (
@@ -44,6 +44,7 @@ export default function MemoryStack() {
 
         headerStyle: defaultHeaderStyle,
         headerTitleAlign: 'left',
+        ...stackCardScreenOption,
  // headerTitle: '',
         headerRight: () => (
           <RenderHeaderHome navigation={navigation} currentScreen="추억" />

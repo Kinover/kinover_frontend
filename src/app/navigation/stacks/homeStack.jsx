@@ -8,7 +8,8 @@ import {
   RenderGoBackButton,
   RenderHeaderTitleLogo,
 } from '../helpers/tabHeaderHelpers';
-import {getResponsiveHeight} from 'utils/responsive';
+import {getTabStackHeaderHeight} from 'utils/layoutMetrics';
+import {stackCardScreenOption} from '../navigationTheme';
 import StateScreen from 'features/home/screens/stateScreen';
 
 import {notificationApi} from 'features/notification/services/notificationApi';
@@ -17,7 +18,7 @@ import {useIsFocused} from '@react-navigation/native';
 
 const Stack = createStackNavigator();
 
-const getHeaderHeight = () => getResponsiveHeight(107.5);
+const getHeaderHeight = () => getTabStackHeaderHeight();
 
 const defaultHeaderStyle = {
   height: getHeaderHeight(),
@@ -70,6 +71,7 @@ const HomeStack = ({route}) => {
         headerStyle: defaultHeaderStyle,
         headerTitleAlign: 'bottom',
         headerShown: true,
+        ...stackCardScreenOption,
         headerLeft: () => <RenderHeaderTitleLogo />,
  // headerLeft: null,
         headerTitle: '',

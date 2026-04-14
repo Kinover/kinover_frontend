@@ -104,6 +104,9 @@ export default function TabNavigator() {
           return {
             headerShown: false,
             keyboardHidesTabBar: true,
+            sceneStyle: {
+              backgroundColor: COLORS.surfacePrimary,
+            },
             tabBarStyle: {
               ...tabBarBaseStyle,
               backgroundColor: 'transparent',

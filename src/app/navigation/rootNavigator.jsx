@@ -16,7 +16,8 @@ import NotificationSettingScreen from 'features/setting/screens/NotificationSett
 import BlockedUsersScreen from 'features/setting/screens/BlockedUsersScreen';
 import NotificationScreen from 'features/notification/screens/NotificationScreen';
 import {RenderHeaderBackButton} from './helpers/tabHeaderHelpers';
-import {getResponsiveHeight} from 'utils/responsive';
+import {getTabStackHeaderHeight} from 'utils/layoutMetrics';
+import {stackCardScreenOption} from './navigationTheme';
 
 // ==================== Constants ====================
 
@@ -47,7 +48,7 @@ function TabsWithGuideOverlay(props) {
 const createHeaderOptions = (navigation, route) => ({
   headerShown: true,
   headerStyle: {
-    height: getResponsiveHeight(107.5),
+    height: getTabStackHeaderHeight(),
     shadowColor: 'transparent',
     elevation: 0,
     borderBottomWidth: 0,
@@ -74,6 +75,7 @@ export default function RootNavigator({initialRouteName = 'Tabs'}) {
         headerShown: false,
         // 설정/알림 갔다 와도 Tabs 언마운트 안 하게 → goBack() 시 탭 상태 유지
         detachInactiveScreens: false,
+        ...stackCardScreenOption,
       }}>
       {/* 메인 탭 네비게이터 + iOS 가이드 오버레이 호스트 */}
       <Stack.Screen name="Tabs" component={TabsWithGuideOverlay} />

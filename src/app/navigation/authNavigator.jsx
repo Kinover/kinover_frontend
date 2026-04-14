@@ -8,6 +8,8 @@
 import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 
+import {stackCardScreenOption} from './navigationTheme';
+
 import OnboardingScreen from 'features/onboarding/screens/OnboardingScreen';
 import FamilySetupScreen from 'features/auth/screens/FamilySetupScreen';
 import UserSetupScreen from 'features/auth/screens/UserSetupScreen';
@@ -31,7 +33,7 @@ export default function AuthNavigator({initialRouteName = '온보딩화면'}) {
   return (
     <AuthStack.Navigator
       initialRouteName={initialRouteName}
-      screenOptions={{headerShown: false}}>
+      screenOptions={{headerShown: false, ...stackCardScreenOption}}>
       <AuthStack.Screen name="온보딩화면" component={OnboardingScreen} />
       <AuthStack.Screen name="약관동의화면" component={TermsAgreementScreen} />
       <AuthStack.Screen name="유저정보세팅화면" component={UserSetupScreen} />

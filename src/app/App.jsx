@@ -18,6 +18,7 @@ import {
   GestureHandlerRootView,
 } from 'react-native-gesture-handler';
 import {NavigationContainer} from '@react-navigation/native';
+import {kinoverNavigationTheme} from './navigation/navigationTheme';
 import {Provider, useDispatch, useSelector} from 'react-redux';
 import {useReduxFontMode} from 'hooks/useReduxFontMode';
 import {MenuProvider} from 'react-native-popup-menu';
@@ -516,6 +517,7 @@ export default function App() {
 
               <MenuProvider>
                 <NavigationContainer
+                  theme={kinoverNavigationTheme}
                   ref={navigationRef}
                   onReady={() => {
                     flushPendingNavigation();

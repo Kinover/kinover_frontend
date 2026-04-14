@@ -2,7 +2,8 @@ import React from 'react';
 import {createStackNavigator} from '@react-navigation/stack';
 import ScheduleScreen from 'features/schedule/screens';
 import AppText from 'components/AppText';
-import {getResponsiveHeight} from 'utils/responsive';
+import {getTabStackHeaderHeight} from 'utils/layoutMetrics';
+import {stackCardScreenOption} from '../navigationTheme';
 import {
   RenderHeaderHome,
 } from '../helpers/tabHeaderHelpers';
@@ -21,10 +22,10 @@ export default function ScheduleStack() {
           borderBottomWidth: 0,
           shadowOpacity: 0,
           elevation: 0,
-          height:
-          getResponsiveHeight(107.5),
+          height: getTabStackHeaderHeight(),
         },
         headerTitleAlign: 'left',
+        ...stackCardScreenOption,
         headerLeft: () => null,
         headerTitle: () => (
           <AppText

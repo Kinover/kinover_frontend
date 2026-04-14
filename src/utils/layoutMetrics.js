@@ -79,6 +79,19 @@ export const getScheduleBottomSheetSnapPoints = (fontMode, memberCount = 0) => {
 
 export const getKeyboardSafeGap = () => getResponsiveHeight(12);
 
+/**
+ * 탭·루트 스택의 `headerStyle.height`.
+ * Android는 동일 Figma 스케일(107.5)이 네이티브 헤더 툴바만 유독 두껍게 보이는 경우가 많아
+ * 총 높이만 소폭 줄인다. iOS는 기존과 동일.
+ */
+export const getTabStackHeaderHeight = () => {
+  const base = getResponsiveHeight(107.5);
+  if (Platform.OS !== 'android') {
+    return base;
+  }
+  return getResponsiveHeight(70);
+};
+
 export const getAndroidNavBottomInsetEstimate = () => {
   if (Platform.OS !== 'android') return 0;
 

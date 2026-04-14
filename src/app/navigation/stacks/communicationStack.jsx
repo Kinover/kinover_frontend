@@ -3,7 +3,8 @@ import {createStackNavigator} from '@react-navigation/stack';
 import CommunicationScreen from 'features/chat/screens';
 import KinoChatRoom from 'features/chat/screens/kinoChatRoomScreen';
 import ChatSettings from 'features/chat/screens/chatSetting';
-import {getResponsiveHeight} from 'utils/responsive';
+import {getTabStackHeaderHeight} from 'utils/layoutMetrics';
+import {stackCardScreenOption} from '../navigationTheme';
 import AppText from 'components/AppText';
 import {
   RenderGoBackButton,
@@ -28,12 +29,12 @@ export default function CommunicationStack() {
           borderBottomWidth: 0,
           shadowOpacity: 0,
           elevation: 0,
-          height:
-          getResponsiveHeight(107.5),
+          height: getTabStackHeaderHeight(),
         },
         headerTitleAlign: 'center',
         headerShown: true,
         headerBackTitleVisible: false,
+        ...stackCardScreenOption,
       })}>
       <Stack.Screen
         name="소통"
