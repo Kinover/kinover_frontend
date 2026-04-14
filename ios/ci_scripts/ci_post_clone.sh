@@ -40,3 +40,12 @@ fi
 # Install CocoaPods dependencies
 cd ios
 pod install
+
+# Patch fmt header to disable consteval for Xcode 26+ (Clang 17) compatibility
+# fmt 11.x uses consteval which causes "not a constant expression" errors on Xcode 26
+FMT_CORE="$CI_PRIMARY_REPOSITORY_PATH/ios/Pods/fmt/include/fmt/core.h"
+if [ -f "$FMT_CORE" ] && ! grep -q "FMT_USE_CONSTEVAL 0" "$FMT_CORE"; then
+    printf '#undef FMT_USE_CONSTEVAL\n#define FMT_USE_CONSTEVAL 0\n' | cat - "$FMT_CORE" > /tmp/fmt_core_patched.h
+    mv /tmp/fmt_core_patched.h "$FMT_CORE"
+    echo "Patched fmt/core.h: disabled FMT_USE_CONSTEVAL for Xcode 26"
+fi
