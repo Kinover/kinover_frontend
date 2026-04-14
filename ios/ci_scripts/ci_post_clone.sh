@@ -22,6 +22,12 @@ cd "$CI_PRIMARY_REPOSITORY_PATH"
 # Install Node dependencies
 npm install
 
+# Write .xcode.env.local with the CI node binary path
+# (the local .xcode.env.local has a hardcoded nvm path that doesn't exist in Xcode Cloud)
+NODE_PATH=$(command -v node)
+printf 'export NODE_BINARY=%s\n' "$NODE_PATH" > "$CI_PRIMARY_REPOSITORY_PATH/ios/.xcode.env.local"
+echo "Set NODE_BINARY=$NODE_PATH in ios/.xcode.env.local"
+
 # Patch xcodeproj to support Xcode 26+ (object version 70)
 # xcodeproj 1.27.0 does not include a mapping for object version 70 (Xcode 26.x)
 XCODEPROJ_CONSTANTS=$(find /usr/local/Cellar/cocoapods -name "constants.rb" -path "*/xcodeproj*/lib/xcodeproj/constants.rb" 2>/dev/null | head -1)
