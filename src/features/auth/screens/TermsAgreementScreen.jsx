@@ -191,7 +191,7 @@ export default function TermsAgreementScreen() {
     <SafeAreaView style={styles.container}>
       <Text
         allowFontScaling={false}
-        style={styles.title}>{`킨오버 사용을 위해\n약관에 동의해 주세요`}</Text>
+        style={styles.title}>{`Kinover 사용을 위해\n약관에 동의해 주세요`}</Text>
       <Text allowFontScaling={false} style={styles.sub}>
         서비스 이용을 위해 필수 약관에 동의해 주세요.
       </Text>

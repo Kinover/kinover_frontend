@@ -423,11 +423,10 @@ console.log('keys:', Object.getOwnPropertyNames(e));
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <Text allowFontScaling={false} style={styles.title}>
-            전화번호 인증
+            {'본인 확인을 위해\n전화번호 인증이 필요해요.'}
           </Text>
           <Text allowFontScaling={false} style={styles.sub}>
-            본인 확인을 위해 전화번호 인증이 필요해요.{'\n'}
-            하이픈(-) 없이 숫자만 입력하면 돼요.
+            하이픈(-) 없이 숫자만 입력해 주세요.
           </Text>
 
           <View style={styles.field}>

@@ -58,8 +58,8 @@ const styles = StyleSheet.create({
   illustrationArea: {
     flex: 1.15,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: getResponsiveHeight(22),
+    justifyContent: 'flex-end',
+    paddingBottom:getResponsiveHeight(52),
   },
   circleImageWrapper: {
     width: getResponsiveWidth(260),

@@ -242,7 +242,7 @@ export default function UserSetupScreen() {
         {`가족 연결을 위해\n몇 가지 정보가 필요해요`}
       </Text>
       <Text allowFontScaling={false} style={styles.sub}>
-        Kinover에서 사용할 정보를 입력해주세요.
+        Kinover 서비스를 이용하기 위해 필수 정보를 입력해 주세요.
       </Text>
 
       <View style={styles.field}>
