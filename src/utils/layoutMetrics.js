@@ -86,10 +86,7 @@ export const getKeyboardSafeGap = () => getResponsiveHeight(12);
  */
 export const getTabStackHeaderHeight = () => {
   const base = getResponsiveHeight(107.5);
-  if (Platform.OS !== 'android') {
-    return base;
-  }
-  return getResponsiveHeight(70);
+ 
 };
 
 export const getAndroidNavBottomInsetEstimate = () => {
