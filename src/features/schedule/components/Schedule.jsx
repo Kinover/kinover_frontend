@@ -44,6 +44,10 @@ const COLOR = {
   GRAY_BG: 'rgba(17, 24, 39, 0.08)',
   GRAY_PILL: 'rgba(17, 24, 39, 0.05)',
   GRAY_TEXT: '#374151',
+
+  /** 개인 일정 뱃지 — 키노 PINK / Calendar 개인 점과 톤 맞춤 */
+  PINK_PILL: 'rgba(236, 72, 153, 0.14)',
+  PINK_TEXT: '#BE185D',
 };
 
 const TYPE = {
@@ -659,8 +663,8 @@ function Schedule({
       pillText: '개인',
       icon: '',
       iconBg: COLOR.GRAY_BG,
-      pillBg: COLOR.GRAY_PILL,
-      pillTextColor: COLOR.GRAY_TEXT,
+      pillBg: COLOR.PINK_PILL,
+      pillTextColor: COLOR.PINK_TEXT,
     };
   };
 

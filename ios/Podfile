@@ -54,6 +54,13 @@ target 'kinover_frontend' do
         c.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
         c.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
 
+        # fmt 11/12이 consteval을 사용 → Xcode 26(Clang 17+)에서 "not a constant expression" 빌드 실패.
+        # FMT_USE_CONSTEVAL=0 으로 consteval 비활성화하여 constexpr fallback 사용.
+        if %w[fmt RCT-Folly].include?(t.name)
+          c.build_settings['OTHER_CPLUSPLUSFLAGS'] =
+            '$(inherited) -DFMT_USE_CONSTEVAL=0'
+        end
+
         # Yoga.podspec이 C++에 -Werror를 넣음 → Clang 17/Xcode 16+에서 새 경고 시 전체 iOS 빌드 실패.
         # .o 미생성 → libtool yoga.LinkFileList 없음 같은 2차 에러로 이어짐.
         if t.name == 'Yoga'

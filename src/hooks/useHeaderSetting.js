@@ -1,5 +1,5 @@
 import React, {useLayoutEffect, useMemo} from 'react';
-import {Text} from 'react-native';
+import {Text, View} from 'react-native';
 
 import {RenderHeaderRightChatSetting} from '../app/navigation/helpers/tabHeaderHelpers';
 import {useReduxFontMode} from 'hooks/useReduxFontMode';
@@ -34,11 +34,24 @@ export default function useHeaderSetting(
       headerRight: () => (
         <RenderHeaderRightChatSetting onPress={openChatSettings} />
       ),
-      headerTitle: () => (
-        <Text allowFontScaling={false} style={headerStyle} numberOfLines={1}>
-          {!isKino ? title : '키노상담소'}
-        </Text>
-      ),
+      headerTitle: () =>
+        isKino ? (
+          <View style={{alignItems: 'center'}}>
+            <Text allowFontScaling={false} style={headerStyle} numberOfLines={1}>
+              키노상담소
+            </Text>
+            <Text
+              allowFontScaling={false}
+              numberOfLines={1}
+              style={{fontSize: 11, color: '#AAAAAA', marginTop: 1}}>
+              키노는 AI입니다. 답변이 부정확할 수 있어요.
+            </Text>
+          </View>
+        ) : (
+          <Text allowFontScaling={false} style={headerStyle} numberOfLines={1}>
+            {title}
+          </Text>
+        ),
     });
   }, [navigation, chatRoomId, title, isKino, headerStyle, fontMode]);
 }

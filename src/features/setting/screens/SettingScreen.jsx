@@ -46,6 +46,9 @@ import mmkvStorage from 'utils/mmkvStorage';
 const FONT_MODE_STORAGE_KEY = 'ui:fontMode';
 const FONT_MODE_KEYCHAIN_SERVICE = 'kinover.ui.fontMode';
 
+const INQUIRY_NOTION_URL =
+  'https://www.notion.so/Kinover-3429f61bad508089ba77d5c6b12012b5';
+
 export default function SettingScreen() {
   const navigation = useNavigation();
   const route = useRoute();
@@ -219,21 +222,6 @@ export default function SettingScreen() {
       await Linking.openURL(url);
     } catch (e) {
       Alert.alert('오류', '링크를 여는 중 문제가 발생했어요.');
-    }
-  }, []);
-
-  const openMail = useCallback(async () => {
-    const email = 'kinover.service@gmail.com';
-    const url = `mailto:${email}`;
-    try {
-      const ok = await Linking.canOpenURL(url);
-      if (!ok) {
-        Alert.alert('메일 앱 없음', '메일 앱을 열 수 없어요.');
-        return;
-      }
-      await Linking.openURL(url);
-    } catch (e) {
-      Alert.alert('오류', '메일 앱을 여는 중 문제가 발생했어요.');
     }
   }, []);
 
@@ -479,13 +467,20 @@ export default function SettingScreen() {
           고객지원
         </AppText>
 
-        <TouchableOpacity style={styles.row} onPress={openMail} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.row}
+          onPress={() => openLink(INQUIRY_NOTION_URL)}
+          activeOpacity={0.8}
+          accessibilityLabel="문의하기"
+          accessibilityRole="link">
           <AppText allowFontScaling={false} style={styles.label}>
             문의하기
           </AppText>
-          <AppText allowFontScaling={false} style={styles.value}>
-            kinover.service@gmail.com
-          </AppText>
+          <Image
+            style={styles.arrow}
+            source={require('../../../assets/images/rightArrow-gray.png')}
+            accessibilityIgnoresInvertColors
+          />
         </TouchableOpacity>
       </View>
 

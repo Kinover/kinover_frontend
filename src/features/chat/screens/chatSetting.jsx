@@ -6,13 +6,7 @@
 
 import React, {useEffect, useMemo, useState, useCallback} from 'react';
 
-import {
-  View,
-  StyleSheet,
-  Image,
-  ScrollView,
-  Pressable,
-} from 'react-native';
+import {View, StyleSheet, Image, ScrollView, Pressable} from 'react-native';
 import DropShadow from 'react-native-drop-shadow';
 
 import AppText from 'components/AppText';
@@ -78,7 +72,9 @@ export default function ChatSettings({route, navigation}) {
 
   const userId = useSelector(state => state.user.userId);
   const chatRoomList = useSelector(state => state.chatRoom.chatRoomList || []);
-  const currentRoom = chatRoomList.find(room => String(room.chatRoomId) === chatRoomId);
+  const currentRoom = chatRoomList.find(
+    room => String(room.chatRoomId) === chatRoomId,
+  );
   const currentRoomName = currentRoom?.roomName ?? '';
 
   // =========================================================
@@ -113,12 +109,7 @@ export default function ChatSettings({route, navigation}) {
       clearInvitedToastParams();
       // RTK Query: addUsersToChatRoom mutation이 ChatRoomUsers tag 무효화 → 자동 refetch
     }
-  }, [
-    route?.params,
-    chatRoomId,
-    dispatch,
-    clearInvitedToastParams,
-  ]);
+  }, [route?.params, chatRoomId, dispatch, clearInvitedToastParams]);
 
   // fetchChatRoomUsersThunk 제거: useGetChatRoomUsersQuery(chatRoomId)가 useChatRoomTemplate에서 자동 처리
 
@@ -137,14 +128,20 @@ export default function ChatSettings({route, navigation}) {
     const newIsOn = !isAlarmOn;
     setIsAlarmOn(newIsOn); // optimistic UI
     try {
-      await toggleChatRoomNotification({chatRoomId, userId, isOn: newIsOn}).unwrap();
+      await toggleChatRoomNotification({
+        chatRoomId,
+        userId,
+        isOn: newIsOn,
+      }).unwrap();
       // slice에 즉시 반영
       dispatch(setChatRoomNotificationState({chatRoomId, isOn: newIsOn}));
       setToastMessage(newIsOn ? '알림을 켰어요.' : '알림을 껐어요.');
       setToastVisible(true);
     } catch {
       setIsAlarmOn(!newIsOn); // rollback
-      setToastMessage('알림 설정을 바꾸지 못했어요.\n잠시 후 다시 시도해 주세요.');
+      setToastMessage(
+        '알림 설정을 바꾸지 못했어요.\n잠시 후 다시 시도해 주세요.',
+      );
       setToastVisible(true);
     }
   };
@@ -230,12 +227,12 @@ export default function ChatSettings({route, navigation}) {
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}>
-          {/* 알림 섹션 */}
-          <AppText allowFontScaling={false} style={styles.sectionLabel}>
-            알림
-          </AppText>
-          <DropShadow style={styles.cardShadow}>
-            <View style={styles.card}>
+        {/* 알림 섹션 */}
+        <AppText allowFontScaling={false} style={styles.sectionLabel}>
+          알림
+        </AppText>
+        <DropShadow style={styles.cardShadow}>
+          <View style={styles.card}>
             <Pressable
               onPress={handleToggleAlarm}
               android_ripple={{color: 'rgba(17,24,39,0.06)'}}
@@ -283,17 +280,17 @@ export default function ChatSettings({route, navigation}) {
                 toggleSwitch={handleToggleAlarm}
               />
             </Pressable>
-            </View>
-          </DropShadow>
+          </View>
+        </DropShadow>
 
-          {/* 채팅방 관리 섹션 */}
-          {!isKino && (
-            <>
-              <AppText allowFontScaling={false} style={styles.sectionLabel}>
-                채팅방 관리
-              </AppText>
-              <DropShadow style={styles.cardShadow}>
-                <View style={styles.card}>
+        {/* 채팅방 관리 섹션 */}
+        {!isKino && (
+          <>
+            <AppText allowFontScaling={false} style={styles.sectionLabel}>
+              채팅방 관리
+            </AppText>
+            <DropShadow style={styles.cardShadow}>
+              <View style={styles.card}>
                 {/* 채팅방명 변경 */}
                 <Pressable
                   onPress={() => setIsRenameModalVisible(true)}
@@ -403,19 +400,19 @@ export default function ChatSettings({route, navigation}) {
                     style={styles.chevronRight}
                   />
                 </Pressable>
-                </View>
-              </DropShadow>
-            </>
-          )}
+              </View>
+            </DropShadow>
+          </>
+        )}
 
-          {/* 키노 설정 섹션 */}
-          {isKino && (
-            <>
-              <AppText allowFontScaling={false} style={styles.sectionLabel}>
-                키노 설정
-              </AppText>
-              <DropShadow style={styles.cardShadow}>
-                <View style={styles.card}>
+        {/* 키노 설정 섹션 */}
+        {isKino && (
+          <>
+            <AppText allowFontScaling={false} style={styles.sectionLabel}>
+              키노 설정
+            </AppText>
+            <DropShadow style={styles.cardShadow}>
+              <View style={styles.card}>
                 <Pressable
                   onPress={() => setIsChangeKinoModalVisible(true)}
                   android_ripple={{color: 'rgba(17,24,39,0.06)'}}
@@ -446,15 +443,21 @@ export default function ChatSettings({route, navigation}) {
                     style={styles.chevronRight}
                   />
                 </Pressable>
-                </View>
-              </DropShadow>
-            </>
-          )}
+              </View>
+            </DropShadow>
+          </>
+        )}
 
-          {/* 채팅방 나가기 */}
-          {!isKino && (
-            <DropShadow style={styles.cardShadow}>
-              <View style={styles.card}>
+        {isKino ? (
+          <AppText allowFontScaling={false} style={styles.kinoAiDisclaimer}>
+            {`키노는 AI 상담사로 때때로 실수를 할 수 있어요.\n 중요한 결정은 꼭 가족과 함께 상의해 주세요!`}
+          </AppText>
+        ) : null}
+
+        {/* 채팅방 나가기 */}
+        {!isKino && (
+          <DropShadow style={styles.cardShadow}>
+            <View style={styles.card}>
               <Pressable
                 onPress={() => setIsLeaveModalVisible(true)}
                 android_ripple={{color: 'rgba(17,24,39,0.06)'}}
@@ -478,9 +481,9 @@ export default function ChatSettings({route, navigation}) {
                   style={[styles.chevronRight, {tintColor: '#EF4444'}]}
                 />
               </Pressable>
-              </View>
-            </DropShadow>
-          )}
+            </View>
+          </DropShadow>
+        )}
 
         <View style={styles.bottomPad} />
       </ScrollView>
@@ -600,6 +603,17 @@ const makeStyles = rf =>
     leaveText: {
       color: '#EF4444',
       flex: 1,
+    },
+
+    kinoAiDisclaimer: {
+      marginTop: getResponsiveHeight(12),
+      marginBottom: getResponsiveHeight(4),
+      paddingHorizontal: getResponsiveWidth(4),
+      fontSize: rf(12),
+      lineHeight: rf(15),
+      alignSelf: 'center',
+      fontFamily: 'Pretendard-Regular',
+      color: '#C4C4C8',
     },
 
     bottomPad: {
