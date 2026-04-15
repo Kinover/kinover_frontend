@@ -5,7 +5,7 @@
 //   - fetchReadPointersThunk   → useGetReadPointersQuery (onQueryFulfilled에서 slice 동기화)
 
 import {useState, useEffect, useMemo, useRef, useCallback} from 'react';
-import {useSelector, useDispatch} from 'react-redux';
+import {useSelector, useDispatch, useStore} from 'react-redux';
 
 import useChatRoomScreen from './useChatRoomScreen';
 import useHeaderSetting from 'hooks/useHeaderSetting';
@@ -14,7 +14,9 @@ import useHideTabBar from 'hooks/useHideTabBar';
 import {
   setActiveChatRoom,
   selectReadPointers,
+  markRoomRead,
 } from '../store/chatRoomSlice';
+import {syncAppBadge} from 'features/notification/utils/syncAppBadge';
 import {useGetChatRoomUsersQuery, useGetReadPointersQuery, useMarkReadRestMutation} from '../services/chatApi';
 
 import {
@@ -32,6 +34,7 @@ export default function useChatRoomTemplate({
   navigation,
 }) {
   const dispatch = useDispatch();
+  const store = useStore();
   const [markReadRest] = useMarkReadRestMutation();
   const [inviteToastVisible, setInviteToastVisible] = useState(false);
   const [inviteToastMessage, setInviteToastMessage] = useState('');
@@ -160,16 +163,30 @@ export default function useChatRoomTemplate({
   }, [visibleMessageList]);
 
   const lastSentReadAtRef = useRef(null);
-  const sendReadIfNeeded = useCallback(() => {
+  const sendReadIfNeeded = useCallback(async () => {
     if (!chatRoomId || !latestCreatedAtLocal || myUserId == null) return;
     if (lastSentReadAtRef.current === latestCreatedAtLocal) return;
+
+    // 낙관적 store 업데이트: unreadCount 즉시 0
+    dispatch(markRoomRead(chatRoomId));
+    try {
+      await markReadRest({
+        chatRoomId,
+        lastReadAt: latestCreatedAtLocal,
+        userId: myUserId,
+      }).unwrap();
+    } catch {
+      return;
+    }
     lastSentReadAtRef.current = latestCreatedAtLocal;
-    markReadRest({
-      chatRoomId,
-      lastReadAt: latestCreatedAtLocal,
-      userId: myUserId,
-    });
-  }, [chatRoomId, latestCreatedAtLocal, markReadRest, myUserId]);
+
+    // 서버에 읽음 반영 후에 badge-count를 불러야 숫자가 맞음 (이전에는 레이스로 배지가 안 내려감)
+    try {
+      await syncAppBadge({dispatch, getState: store.getState});
+    } catch {
+      null;
+    }
+  }, [chatRoomId, latestCreatedAtLocal, markReadRest, myUserId, dispatch, store]);
 
   useEffect(() => {
     if (!chatRoomId) return;

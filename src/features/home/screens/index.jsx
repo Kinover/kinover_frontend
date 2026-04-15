@@ -128,16 +128,20 @@ export default function HomeScreen() {
   const [blockedProfileToastVisible, setBlockedProfileToastVisible] =
     useState(false);
 
- // AppAlert "실제 표시 여부"를 HomeScreen에서 추적
-  const [isAppAlertVisible, setIsAppAlertVisible] = useState(false);
  // 회원가입/설정 완료 직후 첫 진입 시에는 이벤트·감정 모달 숨김 (null = 아직 미확인)
   const [skipAppAlertForFirstEntry, setSkipAppAlertForFirstEntry] = useState(null);
+  const [appAlertDismissRevision, setAppAlertDismissRevision] = useState(0);
+  const bumpAppAlertDismissRevision = useCallback(
+    () => setAppAlertDismissRevision(r => r + 1),
+    [],
+  );
 
   const hasValidEmotion = isEmotionValid(user?.emotion, user?.emotionUpdatedAt);
   const activeEvent = useActiveAppEvent({
     screen: 'home',
     hideEmotionPickWhenHasEmotion: hasValidEmotion,
     hideEmotionPickOnFirstEntry: skipAppAlertForFirstEntry !== false,
+    emotionDismissInvalidate: appAlertDismissRevision,
   });
 
  // 가이드 모달이 떠 있는 동안에는 이벤트 모달 숨김 (iOS: guideProps, Android: setAnyGuideVisible)
@@ -412,7 +416,7 @@ export default function HomeScreen() {
       <AppAlertHost
         enabled={true}
         event={activeEvent}
-        onVisibleChange={setIsAppAlertVisible}
+        onDismissPersist={bumpAppAlertDismissRevision}
       />
 
       <HomeGuideModal

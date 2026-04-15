@@ -33,7 +33,7 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import {getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
+import {getFabAndroidNavInsetExtra} from 'utils/layoutMetrics';
 
 import ToastModal from 'components/modal/ToastModal';
 
@@ -134,14 +134,7 @@ export default function CommunicationScreen({navigation}) {
   }));
 
   const insets = useSafeAreaInsets();
-  const fabNavInset =
-    Platform.OS === 'android'
-      ? Math.max(
-          Number(insets?.bottom ?? 0),
-          getAndroidNavBottomInsetEstimate(),
-          getResponsiveHeight(48),
-        )
-      : 0;
+  const fabNavInset = getFabAndroidNavInsetExtra(insets.bottom);
   const fabBottom = getResponsiveHeight(110) + fabNavInset;
 
   const modalRef = useRef(null);

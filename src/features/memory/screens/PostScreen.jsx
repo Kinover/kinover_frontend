@@ -144,12 +144,21 @@ export default function PostPage({route}) {
     postId ? state.memory?.postsById?.[String(postId)] : null,
   );
   const fallbackCategoryList = useSelector(state => state.category?.categoryList || []);
+  const {data: categoryQueryData = []} = useGetCategoriesQuery();
+  const [skipGetPostByIdAfterDelete, setSkipGetPostByIdAfterDelete] = useState(false);
+
+  const onDeletePostStart = useCallback(() => {
+    setSkipGetPostByIdAfterDelete(true);
+  }, []);
+  const onDeletePostError = useCallback(() => {
+    setSkipGetPostByIdAfterDelete(false);
+  }, []);
+
   const {data: postQueryData} = useGetPostByIdQuery(postId, {
-    skip: !postId,
+    skip: !postId || skipGetPostByIdAfterDelete,
     refetchOnMountOrArgChange: true,
     refetchOnFocus: true,
   });
-  const {data: categoryQueryData = []} = useGetCategoriesQuery();
   const postFromStore = postQueryData ?? fallbackPostFromStore;
   const categoryList = categoryQueryData?.length ? categoryQueryData : fallbackCategoryList;
 
@@ -164,13 +173,33 @@ export default function PostPage({route}) {
     [postFromStore, postId],
   );
 
-  const vm = usePostPageViewModel(safeMemory);
+  const vm = usePostPageViewModel(safeMemory, {
+    onDeletePostStart,
+    onDeletePostError,
+  });
   useHideTabBar();
 
   const insets = useSafeAreaInsets();
-  const descSheetBottomInset = Platform.OS === 'android'
-    ? Math.max(Number(insets?.bottom ?? 0), getAndroidNavBottomInsetEstimate(), getResponsiveHeight(48))
-    : 0;
+
+  /** Gorhom `bottomInset`: % 스냅 계산용. 과한 고정값은 시트·본문이 어긋나 잘림/흰 띠를 낼 수 있음 */
+  const descSheetBottomInset = useMemo(() => {
+    if (Platform.OS !== 'android') {
+      return 0;
+    }
+    const raw = Number(insets?.bottom ?? 0);
+    const est = getAndroidNavBottomInsetEstimate();
+    return Math.max(raw, est);
+  }, [insets.bottom]);
+
+  /** 설명 그라데이션 안 본문이 시스템 내비·제스처 바에 붙어 잘리지 않도록 */
+  const descSheetContentPaddingBottom = useMemo(() => {
+    const raw = Number(insets?.bottom ?? 0);
+    if (Platform.OS === 'android') {
+      const est = getAndroidNavBottomInsetEstimate();
+      return Math.max(raw, est, getResponsiveHeight(28));
+    }
+    return Math.max(raw, getResponsiveHeight(10));
+  }, [insets.bottom]);
 
   const toast = useCallback(
     msg => {
@@ -577,7 +606,10 @@ export default function PostPage({route}) {
                 'rgba(18,18,18,0.76)',
               ]}
               locations={[0, 0.3, 0.5, 0.7, 1]}
-              style={styles.descSheet}>
+              style={[
+                styles.descSheet,
+                {paddingBottom: descSheetContentPaddingBottom},
+              ]}>
               <View style={styles.descHeader}>
                 <Image
                   style={styles.avatar}

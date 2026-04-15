@@ -55,6 +55,8 @@ export const USER = {
   notificationsUnread: '/user/notifications/unread',
   notificationsUnreadCount: '/user/notifications/unread-count',
   notificationsMarkRead: '/user/notifications/mark-read',
+  /** 앱 아이콘 배지 = 종 unread + 채팅 unread (서버 단일 합산) */
+  badgeCount: '/user/badge-count',
 };
 
 /** 신고·차단 (baseURL에 /api 포함 가정, 경로는 /reports 형태) */

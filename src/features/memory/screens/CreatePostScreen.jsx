@@ -643,7 +643,7 @@ export default function CreatePostPage({navigation, route}) {
           // 수정 후 목록/상세 캐시를 즉시 무효화해 최신 본문/미디어를 반영한다.
           dispatch(
             memoryApi.util.invalidateTags([
-              'Memory',
+              {type: 'Memory', id: 'LIST'},
               {type: 'Memory', id: String(postId)},
             ]),
           );
@@ -665,7 +665,9 @@ export default function CreatePostPage({navigation, route}) {
         try {
           await uploadPostApi(payload);
           // 등록 후 메모리 목록 캐시를 무효화해 새 글이 즉시 반영되게 한다.
-          dispatch(memoryApi.util.invalidateTags(['Memory']));
+          dispatch(
+            memoryApi.util.invalidateTags([{type: 'Memory', id: 'LIST'}]),
+          );
         } catch (e) {
           logAxiosError('uploadPostApi', e);
           const serverMsg =

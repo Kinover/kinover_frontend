@@ -16,7 +16,7 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import {getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
+import {getFabAndroidNavInsetExtra} from 'utils/layoutMetrics';
 
 import {useMemoryScreen} from '../hooks/useMemoryScreen';
 import {useTabBarVisibility} from 'app/navigation/animatedTabBar';
@@ -164,9 +164,7 @@ export default function MemoryScreen() {
  // FAB도 탭바랑 "동시에" 숨김/등장
  // =========================
   const insets = useSafeAreaInsets();
-  const fabNavInset = Platform.OS === 'android'
-    ? Math.max(Number(insets?.bottom ?? 0), getAndroidNavBottomInsetEstimate(), getResponsiveHeight(48))
-    : 0;
+  const fabNavInset = getFabAndroidNavInsetExtra(insets.bottom);
   const FAB_RIGHT = getResponsiveWidth(13);
   const FAB_BOTTOM = getResponsiveHeight(110) + fabNavInset;
 

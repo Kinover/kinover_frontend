@@ -20,6 +20,8 @@ export default function AppAlertHost({
   event,
   enabled = true,
   onVisibleChange,
+  /** dismissToday / dismissNever 저장 직후 Home 등에서 activeEvent 재계산용 */
+  onDismissPersist,
 }) {
   const popup = useAppAlertPopup(event, {enabled});
   const e = popup.event;
@@ -63,15 +65,23 @@ export default function AppAlertHost({
 
   const onSecondary = useCallback(async () => {
     await popup.dismissToday();
-  }, [popup]);
+    onDismissPersist?.();
+  }, [popup, onDismissPersist]);
 
   const onTertiary = useCallback(async () => {
     await popup.dismissNever();
-  }, [popup]);
+    onDismissPersist?.();
+  }, [popup, onDismissPersist]);
 
+  /** 감정 유도: 백드롭/뒤로가기 = 「오늘 하루 보지 않기」와 동일 저장 (닫기만 하면 재노출됨) */
   const onRequestClose = useCallback(() => {
+    if (e?.id === EMOTION_PICK_APP_EVENT_ID) {
+      popup.dismissToday();
+      onDismissPersist?.();
+      return;
+    }
     popup.close();
-  }, [popup]);
+  }, [e?.id, popup, onDismissPersist]);
 
   if (!enabled) return null;
   if (!e) return null;
@@ -111,7 +121,7 @@ export default function AppAlertHost({
       autoDismissMs={null}
       showCloseButton={!isEmotionPickModal}
       closeOnBackdropPress
-      hardwareBackCloses={!isEmotionPickModal}
+      hardwareBackCloses
       imageWrapStyle={emotionImageWrapStyle}
       imageExtraStyle={emotionImageExtraStyle}
       imageFlank={imageFlank}

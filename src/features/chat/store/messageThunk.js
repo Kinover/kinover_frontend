@@ -10,6 +10,7 @@ import {sendChat, sendRead, reconnectIfNeeded} from '../hooks/ChatSocket';
 import {applyMessagePreview, bumpListRevision, markRoomRead, applyReadPointer, setReadPointers} from './chatRoomSlice';
 import {chatApi} from '../services/chatApi';
 import {upsertMessageDraft} from '../utils/messageUtils';
+import {scheduleDebouncedSyncAppBadge} from 'features/notification/utils/debouncedSyncAppBadge';
 
 /* =========================
  * Utils
@@ -204,6 +205,10 @@ export const receiveMessageThunk = (incomingMessage, userId) => {
     );
 
     dispatch(bumpListRevision());
+
+    if (!isSelf) {
+      scheduleDebouncedSyncAppBadge();
+    }
   };
 };
 

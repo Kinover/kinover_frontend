@@ -75,4 +75,13 @@ export function mmkvGetStringSync(key) {
     : null;
 }
 
+/** setItem과 동일한 저장소에 동기 기록 (dismiss 직후 읽기 일관성) */
+export function mmkvSetStringSync(key, value) {
+  if (mmkv) {
+    mmkv.set(key, String(value));
+  } else {
+    memoryFallback.set(key, String(value));
+  }
+}
+
 export default storage;

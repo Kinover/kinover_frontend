@@ -14,6 +14,7 @@ import {chatApi} from 'features/chat/services/chatApi';
 import {notificationApi} from '../services/notificationApi';
 
 import {applyAppBadgeCount} from 'utils/appBadge';
+import {syncAppBadge} from './syncAppBadge';
 
 import notifee, {AndroidStyle, EventType} from '@notifee/react-native';
 
@@ -188,6 +189,25 @@ function shouldBlockNotifeeOnThisPlatform(type) {
  */
 let lastBellSyncAt = 0;
 const BELL_SYNC_THROTTLE_MS = 5000;
+
+let lastAppBadgeSyncAt = 0;
+const APP_BADGE_SYNC_THROTTLE_MS = 4000;
+
+async function syncAppBadgeThrottled() {
+  try {
+    const now = Date.now();
+    if (now - lastAppBadgeSyncAt < APP_BADGE_SYNC_THROTTLE_MS) {
+      return;
+    }
+    lastAppBadgeSyncAt = now;
+    await syncAppBadge({
+      dispatch: appStore.dispatch,
+      getState: appStore.getState,
+    });
+  } catch {
+    null;
+  }
+}
 
 async function syncBellUnreadFromServer(force = false) {
   try {
@@ -526,6 +546,7 @@ export function handleNotificationListeners() {
     if (nextState === 'active') {
  // 과호출 방지(throttle)
       syncBellUnreadFromServer(false);
+      syncAppBadgeThrottled();
     }
   });
 

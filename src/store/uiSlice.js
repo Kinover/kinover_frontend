@@ -1,5 +1,7 @@
 // src/store/uiSlice.js
 import {createSlice} from '@reduxjs/toolkit';
+import {EMOTION_PICK_APP_EVENT_ID} from 'config/appEvents';
+import {readEmotionPickAlertDismissFromMmkv} from 'utils/appEventDismissStorage';
 
 export const FONT_MODE = {
   NORMAL: 'NORMAL',
@@ -27,6 +29,10 @@ const initialState = {
   fontMode: getInitialFontMode(),
   bioLockEnabled: false,
   marketingNotificationEnabled: true,
+  /** 감정 유도 AppAlert — persist(ui) + 앱 재실행 후에도 유지 */
+  emotionPickAlertDismiss: readEmotionPickAlertDismissFromMmkv(
+    EMOTION_PICK_APP_EVENT_ID,
+  ),
 };
 
 const uiSlice = createSlice({
@@ -52,11 +58,15 @@ const uiSlice = createSlice({
     setMarketingNotificationEnabled(state, action) {
       state.marketingNotificationEnabled = !!action.payload;
     },
+    setEmotionPickAlertDismiss(state, action) {
+      state.emotionPickAlertDismiss = action.payload;
+    },
     /** 로그아웃/회원탈퇴 시 글씨 크기·생체잠금·마케팅 알림 초기화 */
     resetUi(state) {
       state.fontMode = FONT_MODE.NORMAL;
       state.bioLockEnabled = false;
       state.marketingNotificationEnabled = true;
+      state.emotionPickAlertDismiss = null;
     },
   },
 });
@@ -65,6 +75,7 @@ export const {
   setFontMode,
   setBioLockEnabled,
   setMarketingNotificationEnabled,
+  setEmotionPickAlertDismiss,
   resetUi,
 } = uiSlice.actions;
 export default uiSlice.reducer;

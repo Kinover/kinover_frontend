@@ -176,14 +176,6 @@ export default function PhoneVerificationScreen() {
       startTimer();
     } catch (e) {
       const errCode = firebaseAuthErrorCode(e);
-      console.log('Firebase error full:', JSON.stringify(e));
-      console.log('error code:', e?.code);
-      console.log('error message:', e?.message);
-      console.log('nativeErrorMessage:', e?.nativeErrorMessage);
-      console.log('error userInfo:', e?.userInfo);
-console.log('error details:', e?.details);
-console.log('keys:', Object.getOwnPropertyNames(e));
-
 
       if (
         errCode === 'auth/too-many-requests' ||

@@ -10,6 +10,7 @@ import {baseApi} from 'services/baseApi';
 import {deleteFcmToken} from 'features/notification/utils/requestNotificationPermission';
 import {deleteLoginInfo} from 'utils/storage';
 import mmkvStorage from 'utils/mmkvStorage';
+import {clearEmotionPickAlertDismissMmkvForLogout} from 'utils/appEventDismissStorage';
 
 import {stopChatSocket} from 'features/chat/hooks/ChatSocket';
 import {setAuthChecked} from '../store/loginSlice';
@@ -39,6 +40,7 @@ export const useLogout = () => {
     // 3) persist 완전 초기화
     try { await persistor.purge(); } catch { null; }
     try { await persistor.flush(); } catch { null; }
+    try { await clearEmotionPickAlertDismissMmkvForLogout(); } catch { null; }
 
     // 4) 타이밍 안정화 후 상태 초기화
     await nextTick();

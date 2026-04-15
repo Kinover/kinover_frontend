@@ -10,6 +10,7 @@ import {baseApi} from 'services/baseApi';
 import {persistor} from 'store';
 import {resetGuideShownKeys} from 'hooks/useGuide';
 import mmkvStorage from 'utils/mmkvStorage';
+import {clearEmotionPickAlertDismissMmkvForLogout} from 'utils/appEventDismissStorage';
 import {stopChatSocket} from 'features/chat/hooks/ChatSocket';
 
 const FONT_MODE_STORAGE_KEY = 'ui:fontMode';
@@ -56,6 +57,7 @@ export function useDeleteUser(onSuccess) {
       // persist 완전 초기화
       try { await persistor.purge(); } catch { null; }
       try { await persistor.flush(); } catch { null; }
+      try { await clearEmotionPickAlertDismissMmkvForLogout(); } catch { null; }
 
       // 모든 슬라이스(family/schedule/memory/chatRoom 등) + RTK Query 캐시를 한 번에 초기화
       dispatch({type: RESET_ALL_STATE});

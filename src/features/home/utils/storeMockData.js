@@ -444,6 +444,7 @@ export function getStoreMockChatRoomList() {
       latestMessageTime: tKino,
       unreadCount: 0,
       kino: true,
+      kinoType: 'YELLOW_KINO',
       notificationOn: true,
       userChatRooms: [],
       memberImages: KINO_YELLOW ? [KINO_YELLOW] : [],
@@ -676,6 +677,16 @@ export function getStoreMockChatMessages(chatRoomId, currentUserId) {
         tDate(26, 18, 15),
       ),
     ];
+  }
+  if (rid === MOCK_ROOM_KINO) {
+    const raw = getStoreMockKinoMessages(me);
+    const self = getStoreMockUser();
+    return raw.map(m => ({
+      ...m,
+      senderName: String(m.senderId) === 'kino' ? '키노' : self?.name ?? '나',
+      senderImage:
+        String(m.senderId) === 'kino' ? KINO_YELLOW : self?.image ?? PROFILE_4,
+    }));
   }
   return [];
 }

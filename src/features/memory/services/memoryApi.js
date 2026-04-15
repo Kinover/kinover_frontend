@@ -10,7 +10,17 @@ export const memoryApi = baseApi.injectEndpoints({
         method: 'GET',
         params: categoryId ? {categoryId} : undefined,
       }),
-      providesTags: ['Memory'],
+      providesTags: result => {
+        const listTag = {type: 'Memory', id: 'LIST'};
+        if (!Array.isArray(result)) {
+          return [listTag];
+        }
+        const perPost = result
+          .map(p => p?.postId ?? p?.id)
+          .filter(id => id != null)
+          .map(id => ({type: 'Memory', id: String(id)}));
+        return [listTag, ...perPost];
+      },
     }),
     getPostById: build.query({
       query: postId => ({
@@ -26,7 +36,19 @@ export const memoryApi = baseApi.injectEndpoints({
         method: 'DELETE',
         headers: {'Content-Type': 'application/json'},
       }),
-      invalidatesTags: ['Memory', 'Comment'],
+      // 'Memory' 전체 무효화 시 삭제된 postId의 getPostById가 재요청되어 404 알림이 날 수 있음 → LIST만 + 댓글
+      invalidatesTags: (result, error, postId) => [
+        {type: 'Memory', id: 'LIST'},
+        {type: 'Comment', id: String(postId)},
+      ],
+      async onQueryStarted(postId, {dispatch, queryFulfilled}) {
+        try {
+          await queryFulfilled;
+          dispatch(memoryApi.util.removeQueryResult('getPostById', postId));
+        } catch {
+          // 삭제 실패 시 캐시 유지
+        }
+      },
     }),
     deletePostImage: build.mutation({
       query: ({postId, imageUrl}) => ({
@@ -35,7 +57,13 @@ export const memoryApi = baseApi.injectEndpoints({
         headers: {'Content-Type': 'application/json'},
         data: {imageUrl},
       }),
-      invalidatesTags: ['Memory'],
+      invalidatesTags: (result, error, arg) => {
+        const pid = arg?.postId;
+        return [
+          {type: 'Memory', id: 'LIST'},
+          ...(pid != null ? [{type: 'Memory', id: String(pid)}] : []),
+        ];
+      },
     }),
     togglePostNotification: build.mutation({
       query: ({userId, isOn}) => ({

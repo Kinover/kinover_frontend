@@ -34,7 +34,7 @@ export const APP_EVENTS = [
 
   {
     id: EMOTION_PICK_APP_EVENT_ID,
-    enabled: true,
+    enabled: false,
     priority: 120,
     title: '오늘의 감정, 공유해볼까요?',
     subTitle: '가족들과 오늘의 감정을 공유해보세요.',

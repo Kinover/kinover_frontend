@@ -335,7 +335,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "export NODE_BINARY=$(command -v node)\n../node_modules/react-native/scripts/react-native-xcode.sh\n";
+			shellScript = "if [ -f \"$SRCROOT/.xcode.env\" ]; then . \"$SRCROOT/.xcode.env\"; fi\nif [ -f \"$SRCROOT/.xcode.env.local\" ]; then . \"$SRCROOT/.xcode.env.local\"; fi\n../node_modules/react-native/scripts/react-native-xcode.sh\n";
 		};
 		01C690C446FAE5F6DA013A07 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;

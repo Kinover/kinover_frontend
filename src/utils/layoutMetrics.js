@@ -86,7 +86,11 @@ export const getKeyboardSafeGap = () => getResponsiveHeight(12);
  */
 export const getTabStackHeaderHeight = () => {
   const base = getResponsiveHeight(107.5);
- 
+  if (Platform.OS !== 'android') {
+    return base;
+  }
+  const reduced = Math.round(base * 0.88);
+  return Math.max(reduced, getResponsiveHeight(86));
 };
 
 export const getAndroidNavBottomInsetEstimate = () => {
@@ -98,6 +102,20 @@ export const getAndroidNavBottomInsetEstimate = () => {
 
   const rawDiff = screenH - windowH - statusH;
   return Math.max(0, Math.round(rawDiff));
+};
+
+/**
+ * 소통·일정·추억 탭 FAB `bottom`에 더할 Android 전용 오프셋.
+ * `getResponsiveHeight(48)` 등을 또 넣으면 탭바용 110과 겹쳐 FAB이 과하게 위로 올라간다.
+ *
+ * @param {number} safeAreaBottom `useSafeAreaInsets().bottom`
+ */
+export const getFabAndroidNavInsetExtra = (safeAreaBottom = 0) => {
+  if (Platform.OS !== 'android') {
+    return 0;
+  }
+  const raw = Number(safeAreaBottom ?? 0);
+  return Math.max(raw, getAndroidNavBottomInsetEstimate());
 };
 
 /**

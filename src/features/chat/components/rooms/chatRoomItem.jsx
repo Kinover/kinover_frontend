@@ -10,7 +10,7 @@ import {
 } from 'utils/responsive';
 import GroupAvatar from './groupAvatar';
 
-const KINO_AVATAR_SOURCE = require('assets/images/kino-yellow.png');
+const KINO_AVATAR_SOURCE = require('assets/images/kino-yellow1.png');
 import {useDispatch, useSelector} from 'react-redux';
 import {markRoomRead} from '../../store/chatRoomSlice';
 import {getChatRoomTitle} from '../../utils/chatRoomTitleHelper';

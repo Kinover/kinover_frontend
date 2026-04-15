@@ -25,6 +25,13 @@ export const notificationApi = baseApi.injectEndpoints({
       }),
       providesTags: ['Notification'],
     }),
+    getBadgeCount: build.query({
+      query: () => ({
+        url: USER.badgeCount,
+        method: 'GET',
+      }),
+      providesTags: ['Notification'],
+    }),
     markNotificationsRead: build.mutation({
       query: () => ({
         url: USER.notificationsMarkRead,
@@ -51,6 +58,7 @@ export const {
   useGetNotificationsQuery,
   useGetHasUnreadQuery,
   useGetUnreadCountQuery,
+  useGetBadgeCountQuery,
   useMarkNotificationsReadMutation,
   useRegisterFcmTokenMutation,
 } = notificationApi;

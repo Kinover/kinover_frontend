@@ -12,7 +12,8 @@ import {
 } from '../services/memoryApi';
 import {useGetFamilyUsersQuery} from 'features/home/services/homeApi';
 
-export default function usePostPageViewModel(memory) {
+export default function usePostPageViewModel(memory, options = {}) {
+  const {onDeletePostStart, onDeletePostError} = options;
   const dispatch = useDispatch();
   const navigation = useNavigation();
 
@@ -161,14 +162,17 @@ export default function usePostPageViewModel(memory) {
 
   const handleDeletePost = useCallback(async () => {
     if (!safePostId) return;
+    // 삭제 시작 전에 상위에서 getPostById skip → delete 후 재fetch/404 alert 방지
+    onDeletePostStart?.();
     try {
       await deletePost(safePostId).unwrap();
       navigation.goBack();
       setToastMessage('게시글이 삭제되었어요');
       setToastVisible(true);
     } catch (error) {
+      onDeletePostError?.();
     }
-  }, [deletePost, safePostId, navigation]);
+  }, [deletePost, safePostId, navigation, onDeletePostStart, onDeletePostError]);
 
   const handleDeleteImage = useCallback(async () => {
     if (!safePostId || localImages.length === 0) return;

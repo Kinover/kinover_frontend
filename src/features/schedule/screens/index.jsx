@@ -26,7 +26,7 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import {getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
+import {getFabAndroidNavInsetExtra} from 'utils/layoutMetrics';
 
 import YellowSpinner from 'components/yellowSpinner';
 
@@ -129,9 +129,7 @@ export default function ScheduleScreen() {
   }));
 
   const insets = useSafeAreaInsets();
-  const fabNavInset = Platform.OS === 'android'
-    ? Math.max(Number(insets?.bottom ?? 0), getAndroidNavBottomInsetEstimate(), getResponsiveHeight(48))
-    : 0;
+  const fabNavInset = getFabAndroidNavInsetExtra(insets.bottom);
   const fabBottom = getResponsiveHeight(110) + fabNavInset;
 
   const [addSchedule] = useAddScheduleMutation();

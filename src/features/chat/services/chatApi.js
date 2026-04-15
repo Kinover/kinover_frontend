@@ -12,6 +12,7 @@ import {setChatRoomList, setReadPointers} from '../store/chatRoomSlice';
 import {
   STORE_MOCK_ENABLED,
   getStoreMockChatRoomList,
+  getStoreMockChatMessages,
   getStoreMockChatRoomUsers,
   isStoreMockChatRoomId,
 } from '../../home/utils/storeMockData';
@@ -136,13 +137,27 @@ export const chatApi = baseApi.injectEndpoints({
      * - forceRefetch: before 파라미터가 달라지면 재요청
      */
     getMessages: build.query({
-      query: ({chatRoomId, before = null, limit = 20}) => ({
-        url: `/chatRoom/${chatRoomId}/messages/fetch`,
-        params: {
-          limit,
-          ...(before ? {before: String(before)} : {}),
-        },
-      }),
+      queryFn: async (arg, api, _extraOptions, baseQuery) => {
+        const {chatRoomId, before = null, limit = 20} = arg || {};
+        const rid = chatRoomId != null ? String(chatRoomId) : '';
+        if (STORE_MOCK_ENABLED && isStoreMockChatRoomId(rid)) {
+          const myId = api.getState()?.user?.userId ?? 'mock-first';
+          let all = getStoreMockChatMessages(rid, myId);
+          all = sortMessagesDesc(Array.isArray(all) ? [...all] : []);
+          if (before) {
+            const beforeMs = toMessageMs(before);
+            all = all.filter(m => toMessageMs(m?.createdAt) < beforeMs);
+          }
+          return {data: all.slice(0, limit)};
+        }
+        return baseQuery({
+          url: `/chatRoom/${chatRoomId}/messages/fetch`,
+          params: {
+            limit,
+            ...(before ? {before: String(before)} : {}),
+          },
+        });
+      },
       providesTags: (result, error, {chatRoomId}) => [
         {type: 'Messages', id: String(chatRoomId)},
       ],

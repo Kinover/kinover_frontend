@@ -62,6 +62,46 @@ let isHandlingAuthError = false;
 let isHandlingAccountBanned = false;
 let isHandlingSessionInvalidated = false;
 
+/**
+ * GET .../posts/:id/... 단건·댓글 등 "게시글 없음" 응답 시 공통 Alert 생략
+ * - baseURL이 /api 인 경우 pathname이 /api/posts/uuid 형태라 ^/posts/ 만 보면 매칭 실패함 → /posts/<id> 세그먼트 존재 여부로 판별
+ * - 서버가 404 대신 400 등 + message "게시물 없음" 인 경우도 동일하게 스팸 방지
+ */
+function shouldSkipCommonAlertForPostSubresource404(error) {
+  const method = String(error?.config?.method ?? 'get').toLowerCase();
+  if (method !== 'get') return false;
+
+  let path = String(error?.config?.url ?? '');
+  try {
+    if (path.includes('://')) {
+      path = new URL(path).pathname || '';
+    }
+  } catch {
+    // ignore
+  }
+  if (!path.startsWith('/')) {
+    path = `/${path}`;
+  }
+  // 목록 GET /posts , /api/posts (쿼리만) 은 제외 — /posts/<id> 가 있을 때만
+  if (!/\/posts\/[^/?]+/.test(path)) {
+    return false;
+  }
+
+  const status = error?.response?.status;
+  const data = error?.response?.data;
+  const msg = String(
+    data?.message ?? (typeof data === 'string' ? data : '') ?? '',
+  ).trim();
+
+  if (status === 404 || status === 410) {
+    return true;
+  }
+  if (msg.includes('게시물 없음') || msg.includes('게시글 없음')) {
+    return true;
+  }
+  return false;
+}
+
 function sessionInvalidatedUserMessage(data) {
   const m =
     typeof data?.message === 'string' ? String(data.message).trim() : '';
@@ -168,7 +208,8 @@ apiClient.interceptors.response.use(
       (status === 409 && data?.code === 'DUPLICATE_PHONE_NUMBER');
     if (
       !(status === 401 && !excluded) &&
-      !skipCommonAlertForHandledSession
+      !skipCommonAlertForHandledSession &&
+      !shouldSkipCommonAlertForPostSubresource404(error)
     ) {
       showApiError(error);
     }
