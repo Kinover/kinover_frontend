@@ -12,7 +12,15 @@ import React, {
 } from 'react';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
-import { View, TouchableOpacity,  Platform, Image, Dimensions, Pressable } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  Platform,
+  Image,
+  Dimensions,
+  Pressable,
+} from 'react-native';
+import FastImage from '@d11/react-native-fast-image';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {launchImageLibrary} from 'react-native-image-picker';
 import DraggableFlatList from 'react-native-draggable-flatlist';
@@ -38,6 +46,9 @@ import {useGetPostByIdQuery} from '../services/memoryApi';
 import {useSelector} from 'react-redux';
 
 import MediaViewer from '../components/media/MediaViewer';
+import {getVideoThumbnail} from 'utils/videoThumbnail';
+import formatDuration from 'utils/formatDuration';
+import {FONTS} from 'styles/typography';
 
 const MAX_SELECTION = 30;
 
@@ -103,6 +114,7 @@ export default function ImageSelectPage() {
   },
 
   tile: {
+    position: 'relative',
     width: ITEM_SIZE,
     height: ITEM_SIZE,
     borderRadius: TILE_R,
@@ -116,6 +128,9 @@ export default function ImageSelectPage() {
     transform: [{scale: 0.99}],
   },
   tileImage: {width: '100%', height: '100%'},
+  thumbFallback: {
+    backgroundColor: '#E5E7EB',
+  },
   placeholder: {width: ITEM_SIZE, height: ITEM_SIZE, opacity: 0},
 
   plusTile: {
@@ -145,20 +160,20 @@ export default function ImageSelectPage() {
   },
   plusIcon: {
     fontSize: rf(22),
-    fontFamily: 'Pretendard-Bold',
+    fontFamily: FONTS.BOLD,
     color: COLORS.text,
     lineHeight: rf(24),
   },
   plusSubText: {
     fontSize: rf(12.8),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     color: COLORS.text,
     letterSpacing: -0.1,
   },
   plusHint: {
     marginTop: getResponsiveHeight(-2),
     fontSize: rf(11),
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     color: COLORS.sub,
   },
 
@@ -190,7 +205,7 @@ export default function ImageSelectPage() {
   },
   orderChipText: {
     fontSize: rf(12),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     color: '#FFF',
     letterSpacing: -0.2,
     includeFontPadding: false,
@@ -213,7 +228,7 @@ export default function ImageSelectPage() {
   remoteTagText: {
     color: 'rgba(17,24,39,0.78)',
     fontSize: rf(10.5),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     letterSpacing: -0.2,
     includeFontPadding: false,
   },
@@ -233,7 +248,7 @@ export default function ImageSelectPage() {
   },
   videoPillText: {
     fontSize: rf(10.2),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     color: '#fff',
     letterSpacing: 0.4,
     includeFontPadding: false,
@@ -265,7 +280,7 @@ export default function ImageSelectPage() {
   removeBtnText: {
     color: '#fff',
     fontSize: rf(12.8),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     includeFontPadding: false,
     textAlignVertical: 'center',
     lineHeight: rf(13),
@@ -281,7 +296,7 @@ export default function ImageSelectPage() {
   },
   helperText: {
     fontSize: rf(12.5),
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     color: COLORS.sub,
   },
 
@@ -304,12 +319,53 @@ export default function ImageSelectPage() {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [removedUrls, setRemovedUrls] = useState([]);
   const [previewIndex, setPreviewIndex] = useState(null);
+  const [videoThumbMap, setVideoThumbMap] = useState({});
+  const thumbLoadingRef = useRef(new Set());
 
   const showToast = useCallback(msg => {
     setToastMessage(msg);
     setToastVisible(true);
   }, []);
   const hideToast = useCallback(() => setToastVisible(false), []);
+
+  const ensureVideoThumb = useCallback(
+    async item => {
+      try {
+        if (!item?.isVideo) return;
+        const uri = item?.uri;
+        if (!uri) return;
+        if (videoThumbMap[uri]) return;
+        if (thumbLoadingRef.current.has(uri)) return;
+        thumbLoadingRef.current.add(uri);
+        const t = await getVideoThumbnail(uri);
+        const thumbUri = t?.uri || null;
+        if (thumbUri) {
+          setVideoThumbMap(prev => ({...prev, [uri]: thumbUri}));
+        }
+      } catch {
+        // ignore
+      } finally {
+        const u = item?.uri;
+        if (u) thumbLoadingRef.current.delete(u);
+      }
+    },
+    [videoThumbMap],
+  );
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const list = Array.isArray(selectedFiles) ? selectedFiles : [];
+      for (const it of list) {
+        if (!alive) break;
+        if (!it?.isVideo) continue;
+        await ensureVideoThumb(it);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [selectedFiles, ensureVideoThumb]);
 
   useHideTabBar();
 
@@ -579,7 +635,8 @@ export default function ImageSelectPage() {
       }
 
       const order = getOrder(item);
-      const showRemote = isEditMode && item.isRemote;
+      const thumbUri =
+        item.isVideo && item.uri ? videoThumbMap[item.uri] : null;
 
       return (
         <Pressable
@@ -593,11 +650,27 @@ export default function ImageSelectPage() {
             styles.tile,
             (pressed || isActive) && styles.tileActive,
           ]}>
-          <Image
-            source={{uri: item.uri}}
-            style={styles.tileImage}
-            resizeMode="cover"
-          />
+          {item.isVideo ? (
+            thumbUri ? (
+              <FastImage
+                source={{
+                  uri: thumbUri,
+                  priority: FastImage.priority.normal,
+                  cache: FastImage.cacheControl.immutable,
+                }}
+                style={styles.tileImage}
+                resizeMode={FastImage.resizeMode.cover}
+              />
+            ) : (
+              <View style={[styles.tileImage, styles.thumbFallback]} />
+            )
+          ) : (
+            <Image
+              source={{uri: item.uri}}
+              style={styles.tileImage}
+              resizeMode="cover"
+            />
+          )}
 
           {/* 순서칩(예쁘게) */}
           <View style={styles.orderChip}>
@@ -610,7 +683,7 @@ export default function ImageSelectPage() {
           {item.isVideo ? (
             <View style={styles.videoPill}>
               <AppText style={styles.videoPillText}>
-                VIDEO
+                {item.duration > 0 ? formatDuration(item.duration) : 'VIDEO'}
               </AppText>
             </View>
           ) : null}
@@ -643,7 +716,7 @@ export default function ImageSelectPage() {
         </Pressable>
       );
     },
-    [getOrder, selectedFiles, isEditMode, openSystemAlbum],
+    [getOrder, selectedFiles, isEditMode, openSystemAlbum, videoThumbMap],
   );
 
   return (

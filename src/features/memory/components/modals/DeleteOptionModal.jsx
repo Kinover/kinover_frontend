@@ -7,6 +7,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
+import {FONTS} from 'styles/typography';
 
 export default function ImageDeleteModal({
   visible,
@@ -44,12 +45,12 @@ export default function ImageDeleteModal({
   },
   closeText: {
     fontSize: rf(14),
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     textAlign: 'center',
   },
   confirmText: {
     fontSize: rf(14),
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     textAlign: 'center',
     color: 'black',
   },

@@ -1,11 +1,11 @@
 const BOTTOM_SHEET_TITLES = Object.freeze({
-  USER_PROFILE_EDIT: '프로필을 편집해요',
-  CHAT_ROOM_CREATE: '채팅방을 생성해요',
+  USER_PROFILE_EDIT: '프로필 편집',
+  CHAT_ROOM_CREATE: '채팅방 만들기',
   CATEGORY_SELECT: '카테고리를 선택해요',
-  SCHEDULE_PEOPLE_FILTER: '누구 일정을 볼까요?',
+  SCHEDULE_PEOPLE_FILTER: '누구의 일정을 볼까요?',
   MEMORY_COMMENT: '댓글',
-  SCHEDULE_EDITOR_ADD: '일정을 추가해요',
-  SCHEDULE_EDITOR_EDIT: '일정을 수정해요',
+  SCHEDULE_EDITOR_ADD: '일정 추가',
+  SCHEDULE_EDITOR_EDIT: '일정 수정',
 });
 
 export const BOTTOM_SHEET_BUTTON_LABELS = Object.freeze({

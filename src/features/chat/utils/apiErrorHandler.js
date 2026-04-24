@@ -5,12 +5,19 @@ import {Alert} from 'react-native';
 
 export function getApiErrorMessage(error) {
   if (!error) return '';
-  const status = error?.response?.status;
+  const status = error?.response?.status ?? error?.status;
   // 5xx는 서버 내부 메시지(SQL 등)를 절대 노출하지 않음
   if (status >= 500) return '서버 오류가 발생했어요. 잠시 후 다시 시도해 주세요.';
-  const data = error?.response?.data;
+  const data = error?.response?.data ?? error?.data;
+  const codeRaw = data?.code;
+  const codeStr = codeRaw != null ? String(codeRaw) : '';
+  const isDuplicateSocial =
+    status === 409 &&
+    (codeRaw === 'DUPLICATE_SOCIAL_PROVIDER' ||
+      codeRaw === 'DuplicateSocialProviderException' ||
+      codeStr.includes('DuplicateSocialProvider'));
   // 중복 소셜 프로바이더 가입 시도
-  if (status === 409 && data?.code === 'DUPLICATE_SOCIAL_PROVIDER') {
+  if (isDuplicateSocial) {
     if (data?.provider === 'KAKAO') return '이미 카카오톡으로 가입된 계정이에요. 카카오톡으로 로그인해 주세요.';
     if (data?.provider === 'APPLE') return '이미 Apple로 가입된 계정이에요. Apple 로그인을 이용해 주세요.';
     return '이미 다른 방법으로 가입된 계정이에요.';

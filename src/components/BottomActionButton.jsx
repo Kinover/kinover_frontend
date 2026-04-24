@@ -1,16 +1,12 @@
 // src/components/BottomActionButton.jsx
 import React, {useMemo} from 'react';
-import {TouchableOpacity, View, StyleSheet, Platform, Text} from 'react-native';
+import {TouchableOpacity, View, StyleSheet, Platform} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {useReduxFontMode} from 'hooks/useReduxFontMode';
 import {BUTTON_STYLES} from 'styles/style';
 import {
   getResponsiveFontSize,
-  getResponsiveFontSizeIgnoreAppMode,
   getResponsiveHeight,
-  getResponsiveHeightIgnoreAppMode,
   getResponsiveIconSize,
-  getResponsiveIconSizeIgnoreAppMode,
 } from 'utils/responsive';
 import {hapticLight} from 'utils/haptic';
 import AppText from 'components/AppText';
@@ -32,23 +28,15 @@ export default function BottomActionButton({
   /** 미지정 시 테마 저장 버튼 색(BUTTON_STYLES().saveBg) */
   backgroundColor,
   labelColor = 'white',
+  buttonStyle,
+  labelStyle,
 }) {
-  const fontMode = useReduxFontMode();
-
   const styles = useMemo(() => {
-    const h = useAppFontScaling ? getResponsiveHeight : getResponsiveHeightIgnoreAppMode;
-    const icon = useAppFontScaling
-      ? getResponsiveIconSize
-      : getResponsiveIconSizeIgnoreAppMode;
-    const rf = useAppFontScaling
-      ? getResponsiveFontSize
-      : getResponsiveFontSizeIgnoreAppMode;
-
     return StyleSheet.create({
       buttonContainer: {
         width: '100%',
         alignSelf: 'center',
-        gap: h(10),
+        gap: getResponsiveHeight(10),
       },
 
       fixedContainer: {
@@ -61,31 +49,27 @@ export default function BottomActionButton({
 
       button: {
         backgroundColor: backgroundColor ?? BUTTON_STYLES().saveBg,
-        height: h(50),
+        height: getResponsiveHeight(50),
         width: '100%',
-        borderRadius: icon(14),
+        borderRadius: getResponsiveIconSize(14),
         justifyContent: 'center',
       },
       buttonDisabled: {
-        opacity: 0.5,
+        opacity: 0.7,
+        backgroundColor: '#D1D5DB',
       },
       buttonText: {
-        fontSize: rf(14),
-        lineHeight: h(30),
+        fontSize: getResponsiveFontSize(14),
+        lineHeight: getResponsiveHeight(30),
         textAlign: 'center',
         fontFamily: BUTTON_STYLES().fontFamily,
         color: labelColor,
       },
       buttonTextDisabled: {
-        color: 'rgba(255,255,255,0.9)',
+        color: '#374151',
       },
     });
-  }, [
-    useAppFontScaling,
-    backgroundColor,
-    labelColor,
-    ...(useAppFontScaling ? [fontMode] : []),
-  ]);
+  }, [backgroundColor, labelColor]);
 
   const insets = useSafeAreaInsets();
 
@@ -96,20 +80,12 @@ export default function BottomActionButton({
   };
 
   const bottomOffset = useMemo(() => {
-    const h = useAppFontScaling ? getResponsiveHeight : getResponsiveHeightIgnoreAppMode;
-    const base = Platform.OS === 'ios' ? h(40) : h(25);
-
+    const base = Platform.OS === 'ios' ? getResponsiveHeight(40) : getResponsiveHeight(25);
     if (Platform.OS === 'android') return base + insets.bottom;
     return base;
-  }, [
-    insets.bottom,
-    useAppFontScaling,
-    ...(useAppFontScaling ? [fontMode] : []),
-  ]);
+  }, [insets.bottom]);
 
   const isFixed = variant === 'fixed';
-
-  const LabelText = useAppFontScaling ? AppText : Text;
 
   return (
     <View
@@ -121,15 +97,22 @@ export default function BottomActionButton({
           : {paddingBottom: scrollInsetsBottom ? insets.bottom : 0},
       ]}>
       <TouchableOpacity
-        style={[styles.button, disabled && styles.buttonDisabled]}
+        accessible={true}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        accessibilityState={{disabled}}
+        style={[styles.button, buttonStyle, disabled && styles.buttonDisabled]}
         onPress={handlePress}
         activeOpacity={0.85}
         disabled={disabled}>
-        <LabelText
-          allowFontScaling={false}
-          style={[styles.buttonText, disabled && styles.buttonTextDisabled]}>
+        <AppText
+          style={[
+            styles.buttonText,
+            labelStyle,
+            disabled && styles.buttonTextDisabled,
+          ]}>
           {label}
-        </LabelText>
+        </AppText>
       </TouchableOpacity>
     </View>
   );

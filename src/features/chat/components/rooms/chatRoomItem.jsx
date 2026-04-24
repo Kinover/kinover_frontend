@@ -15,6 +15,7 @@ import {useDispatch, useSelector} from 'react-redux';
 import {markRoomRead} from '../../store/chatRoomSlice';
 import {getChatRoomTitle} from '../../utils/chatRoomTitleHelper';
 import {shouldHideChatRoomForBlockedUsers} from 'features/moderation/utils/blockedUserFilter';
+import {FONTS} from 'styles/typography';
 
 function ChatRoomItem({
   chatRoom,
@@ -61,30 +62,30 @@ function ChatRoomItem({
     aiBadgeText: {
       color: '#FFFFFF',
       fontSize: rf(11),
-      fontFamily: 'Pretendard-Bold',
+      fontFamily: FONTS.BOLD,
       includeFontPadding: false,
     },
     textArea: {flex: 1, gap: getResponsiveHeight(1)},
     name: {
-      fontFamily: 'Pretendard-Medium',
+      fontFamily: FONTS.MEDIUM,
       fontSize: rf(15),
       lineHeight: rf(16),
       color: '#101010',
     },
-    nameUnread: {fontFamily: 'Pretendard-SemiBold'},
+    nameUnread: {fontFamily: FONTS.SEMI_BOLD},
     description: {
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       fontSize: rf(12),
       color: '#5A5A5A',
     },
-    descriptionUnread: {fontFamily: 'Pretendard-Medium', color: '#2A2A2A'},
+    descriptionUnread: {fontFamily: FONTS.MEDIUM, color: '#2A2A2A'},
     metaCol: {
       height: '80%',
       alignItems: 'flex-end',
       justifyContent: 'flex-start',
     },
     time: {
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       fontSize: rf(11),
       color: '#8B8B8B',
     },
@@ -101,7 +102,7 @@ function ChatRoomItem({
     badgeText: {
       color: '#FFFFFF',
       fontSize: rf(11.5),
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
     },
   }));
 

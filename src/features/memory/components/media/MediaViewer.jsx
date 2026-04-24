@@ -19,6 +19,7 @@ import {
 
 import {Gesture, GestureDetector} from 'react-native-gesture-handler';
 import Animated, {useSharedValue, useAnimatedStyle, withTiming, runOnJS} from 'react-native-reanimated';
+import {FONTS} from 'styles/typography';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 const zoomStyles = StyleSheet.create({
@@ -277,7 +278,7 @@ export default function MediaViewer({
 
   circlePillText: {
     color: '#fff',
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(12.5),
     includeFontPadding: false,
   },
@@ -285,7 +286,7 @@ export default function MediaViewer({
   xText: {
     color: '#fff',
     fontSize: rf(16),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     includeFontPadding: false,
     textAlignVertical: 'center',
   },
@@ -302,12 +303,12 @@ export default function MediaViewer({
   headerIndex: {
     color: '#FFF',
     fontSize: rf(11),
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
   },
 
   headerIndexCurrent: {
     color: '#FFC84D',
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(13),
   },
 
@@ -366,14 +367,14 @@ export default function MediaViewer({
     color: '#fff',
     fontSize: 16,
     marginTop: 12,
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
   },
 
   progressSub: {
     color: 'rgba(255,255,255,0.8)',
     fontSize: 12,
     marginTop: 8,
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
   },
 
   }));

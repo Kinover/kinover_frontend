@@ -9,6 +9,7 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 import { COLORS } from 'styles/style';
+import {FONTS} from 'styles/typography';
 
 // 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
@@ -46,19 +47,19 @@ export default function ChatListGuideModal({
   },
   stepText: {
     fontSize: rf(11),
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     color: COLORS.textTertiary,
     marginBottom: getResponsiveHeight(4),
   },
   title: {
     fontSize: rf(17),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     color: '#111827',
     marginBottom: getResponsiveHeight(6),
   },
   description: {
     fontSize: rf(13),
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     color: '#4B5563',
     lineHeight: getResponsiveHeight(20),
     marginBottom: getResponsiveHeight(14),
@@ -70,7 +71,7 @@ export default function ChatListGuideModal({
   },
   skipText: {
     fontSize: rf(13),
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     color: COLORS.textTertiary,
   },
   nextButton: {
@@ -81,7 +82,7 @@ export default function ChatListGuideModal({
   },
   nextButtonText: {
     fontSize: rf(13.5),
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     color: '#111827',
   },
 

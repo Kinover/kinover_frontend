@@ -3,7 +3,7 @@ import {emitAuthFlagsChanged} from 'utils/authFlagsEvent';
 import mmkvStorage, {mmkvGetStringSync} from 'utils/mmkvStorage';
 
 const HAS_FAMILY_KEY = 'hasFamily';
-const GUEST_MODE_KEY = 'isGuestMode';
+const LEGACY_GUEST_MODE_KEY = 'isGuestMode';
 const NEEDS_SIGNUP_KEY = 'needsSignup';
 const ACCESS_TOKEN_KEY = '@kinover/auth/accessToken';
 const STORAGE_BOOTSTRAP_KEY = '@kinover/storage/bootstrap_v1';
@@ -15,6 +15,10 @@ const PHONE_VERIFICATION_PENDING_STORAGE_KEY = 'auth:phoneVerificationPending';
 const SIGNUP_AWAITING_PHONE_KEY = 'auth:signupAwaitingPhone';
 /** 가입 플로우에서 전화 인증을 반드시 거쳐야 함(전화 완료 전까지 약관/프로필로 우회 방지) */
 const SIGNUP_REQUIRES_PHONE_KEY = 'auth:signupRequiresPhone';
+/** 애플 로그인 직후: 전화 OTP 완료 시 약관/프로필 없이 가족 설정으로 보냄 */
+const PHONE_VERIFY_THEN_FAMILY_KEY = 'auth:phoneVerifyThenFamily';
+/** 소셜 가입(전화 먼저): 약관 후 유저정보(이름·생일) 화면 생략 */
+const SIGNUP_SKIP_PROFILE_AFTER_TERMS_KEY = 'auth:signupSkipProfileAfterTerms';
 
 export const SIGNUP_PROGRESS_STEP = {
   PHONE: 'phone',
@@ -26,19 +30,14 @@ export const SIGNUP_PROGRESS_STEP = {
 
 export const ensureStorageDefaultsOnce = async () => {
   try {
+    await mmkvStorage.removeItem(LEGACY_GUEST_MODE_KEY);
     const bootstrapped = await mmkvStorage.getItem(STORAGE_BOOTSTRAP_KEY);
     if (bootstrapped === '1') return;
 
-    const [needsSignup, guestMode] = await Promise.all([
-      mmkvStorage.getItem(NEEDS_SIGNUP_KEY),
-      mmkvStorage.getItem(GUEST_MODE_KEY),
-    ]);
+    const needsSignup = await mmkvStorage.getItem(NEEDS_SIGNUP_KEY);
 
     if (needsSignup == null) {
       await mmkvStorage.setItem(NEEDS_SIGNUP_KEY, JSON.stringify(false));
-    }
-    if (guestMode == null) {
-      await mmkvStorage.setItem(GUEST_MODE_KEY, JSON.stringify(false));
     }
 
     await mmkvStorage.setItem(STORAGE_BOOTSTRAP_KEY, '1');
@@ -145,6 +144,14 @@ export function getAuthRoutingMmkvSnapshotSync() {
     const signupRequiresPhone =
       requiresRaw === '1' || requiresRaw === 'true';
 
+    const phoneVerifyThenFamilyRaw = read(PHONE_VERIFY_THEN_FAMILY_KEY);
+    const phoneVerifyThenFamily =
+      phoneVerifyThenFamilyRaw === '1' || phoneVerifyThenFamilyRaw === 'true';
+
+    const skipProfileRaw = read(SIGNUP_SKIP_PROFILE_AFTER_TERMS_KEY);
+    const signupSkipProfileAfterTerms =
+      skipProfileRaw === '1' || skipProfileRaw === 'true';
+
     let hasPendingSignupTerms = false;
     const termsRaw = read(PENDING_SIGNUP_TERMS_JSON_KEY);
     if (termsRaw != null && termsRaw !== '') {
@@ -163,6 +170,8 @@ export function getAuthRoutingMmkvSnapshotSync() {
       mmkvPhoneVerificationPending,
       signupAwaitingPhone,
       signupRequiresPhone,
+      phoneVerifyThenFamily,
+      signupSkipProfileAfterTerms,
       hasPendingSignupTerms,
     };
   } catch {
@@ -173,8 +182,46 @@ export function getAuthRoutingMmkvSnapshotSync() {
       mmkvPhoneVerificationPending: false,
       signupAwaitingPhone: false,
       signupRequiresPhone: false,
+      phoneVerifyThenFamily: false,
+      signupSkipProfileAfterTerms: false,
       hasPendingSignupTerms: false,
     };
+  }
+}
+
+export function setSignupSkipProfileAfterTerms(value) {
+  try {
+    mmkvStorage.setItem(SIGNUP_SKIP_PROFILE_AFTER_TERMS_KEY, value ? '1' : '0');
+    emitAuthFlagsChanged();
+  } catch {
+    null;
+  }
+}
+
+export function clearSignupSkipProfileAfterTerms() {
+  try {
+    mmkvStorage.removeItem(SIGNUP_SKIP_PROFILE_AFTER_TERMS_KEY);
+    emitAuthFlagsChanged();
+  } catch {
+    null;
+  }
+}
+
+export function setPhoneVerifyThenFamily(value) {
+  try {
+    mmkvStorage.setItem(PHONE_VERIFY_THEN_FAMILY_KEY, value ? '1' : '0');
+    emitAuthFlagsChanged();
+  } catch {
+    null;
+  }
+}
+
+export function clearPhoneVerifyThenFamily() {
+  try {
+    mmkvStorage.removeItem(PHONE_VERIFY_THEN_FAMILY_KEY);
+    emitAuthFlagsChanged();
+  } catch {
+    null;
   }
 }
 
@@ -306,6 +353,53 @@ export const commitTermsConsentAndAdvanceToProfile = async termsParams => {
 };
 
 /**
+ * 약관 동의 저장 후 전화 인증 단계로 (회원가입: 약관 → 전화 → 가족)
+ */
+export const commitTermsConsentAndAdvanceToPhone = async termsParams => {
+  if (termsParams == null || typeof termsParams !== 'object') {
+    throw new Error('약관 동의 정보가 없어요.');
+  }
+  try {
+    await mmkvStorage.setItem(
+      PENDING_SIGNUP_TERMS_JSON_KEY,
+      JSON.stringify(termsParams),
+    );
+    await mmkvStorage.setItem(
+      SIGNUP_PROGRESS_STEP_KEY,
+      String(SIGNUP_PROGRESS_STEP.PHONE),
+    );
+    await mmkvStorage.setItem(PHONE_VERIFICATION_PENDING_STORAGE_KEY, '1');
+    await mmkvStorage.setItem(SIGNUP_AWAITING_PHONE_KEY, '1');
+    await mmkvStorage.setItem(SIGNUP_REQUIRES_PHONE_KEY, '1');
+    emitAuthFlagsChanged();
+  } catch {
+    throw new Error('진행 정보를 저장하지 못했어요.');
+  }
+};
+
+/**
+ * 약관만 저장하고 유저정보(이름·생일) 단계 없이 곧바로 가족 단계로 (전화 인증이 이미 끝난 경우)
+ */
+export const commitTermsConsentAndSkipProfileToFamily = async termsParams => {
+  if (termsParams == null || typeof termsParams !== 'object') {
+    throw new Error('약관 동의 정보가 없어요.');
+  }
+  try {
+    await mmkvStorage.setItem(
+      PENDING_SIGNUP_TERMS_JSON_KEY,
+      JSON.stringify(termsParams),
+    );
+    await mmkvStorage.setItem(
+      SIGNUP_PROGRESS_STEP_KEY,
+      String(SIGNUP_PROGRESS_STEP.FAMILY),
+    );
+    emitAuthFlagsChanged();
+  } catch {
+    throw new Error('진행 정보를 저장하지 못했어요.');
+  }
+};
+
+/**
  * 유저정보 저장 완료 후: pending 약관 JSON 제거 + 단계 FAMILY 한 번에 반영(emit 1회).
  */
 export const advanceSignupAfterProfileSaved = () => {
@@ -379,6 +473,8 @@ export const clearSignupOnboardingAux = async () => {
       PHONE_VERIFICATION_PENDING_STORAGE_KEY,
       SIGNUP_AWAITING_PHONE_KEY,
       SIGNUP_REQUIRES_PHONE_KEY,
+      PHONE_VERIFY_THEN_FAMILY_KEY,
+      SIGNUP_SKIP_PROFILE_AFTER_TERMS_KEY,
     ]);
   } catch {
     null;
@@ -484,57 +580,10 @@ export const deleteLoginInfo = async () => {
     await mmkvStorage.removeItem(ACCESS_TOKEN_KEY);
     await mmkvStorage.removeItem(HAS_FAMILY_KEY);
     await mmkvStorage.removeItem(NEEDS_SIGNUP_KEY);
+    await mmkvStorage.removeItem(LEGACY_GUEST_MODE_KEY);
     await clearSignupOnboardingAux();
     emitAuthFlagsChanged();
   } catch (error) {
     null;
-  }
-};
-
-// Guest Mode는 그대로 두되, enableGuestMode()가 deleteLoginInfo()를 호출하니 emit은 자동으로 됨
-export const setGuestMode = async isGuestMode => {
-  try {
-    await mmkvStorage.setItem(GUEST_MODE_KEY, JSON.stringify(!!isGuestMode));
-  } catch (error) {
-    null;
-  }
-};
-
-export const getGuestMode = async () => {
-  try {
-    const value = await mmkvStorage.getItem(GUEST_MODE_KEY);
-    return value != null ? JSON.parse(value) : false;
-  } catch (error) {
-    return false;
-  }
-};
-
-export const enableGuestMode = async () => {
-  try {
-    await deleteLoginInfo();
-    await mmkvStorage.setItem(GUEST_MODE_KEY, JSON.stringify(true));
-  } catch (error) {    null;
-  }
-};
-
-export const disableGuestMode = async () => {
-  try {
-    await mmkvStorage.setItem(GUEST_MODE_KEY, JSON.stringify(false));
-  } catch (error) {
-    null;
-  }
-};
-
-export const toggleGuestMode = async () => {
-  try {
-    const cur = await getGuestMode();
-    const next = !cur;
-
-    if (next) await enableGuestMode();
-    else await disableGuestMode();
-
-    return next;
-  } catch (error) {
-    return false;
   }
 };

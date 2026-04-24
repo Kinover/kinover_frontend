@@ -22,6 +22,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
+import {FONTS} from 'styles/typography';
 
 // 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
@@ -42,6 +43,7 @@ function PostOptionsMenu(
 
     onSaveCurrent,
     onSaveAll,
+    showEditPost,
     onEditPost,
     onReportPost,
     showReportPost,
@@ -140,21 +142,22 @@ function PostOptionsMenu(
           </AppText>
         </TouchableOpacity>
 
-        <View style={styles.menuDivider} />
-
-        <TouchableOpacity
-          onPress={() => {
-            close();
-            onEditPost?.();
-          }}
-          disabled={disableMenu}
-          activeOpacity={0.85}
-          style={[styles.menuItem, disableMenu && {opacity: 0.5}]}
-        >
-          <AppText style={styles.menuText}>
-            게시글 수정
-          </AppText>
-        </TouchableOpacity>
+        {showEditPost ? (
+          <>
+            <View style={styles.menuDivider} />
+            <TouchableOpacity
+              onPress={() => {
+                close();
+                onEditPost?.();
+              }}
+              disabled={disableMenu}
+              activeOpacity={0.85}
+              style={[styles.menuItem, disableMenu && {opacity: 0.5}]}
+            >
+              <AppText style={styles.menuText}>게시글 수정</AppText>
+            </TouchableOpacity>
+          </>
+        ) : null}
 
         <View style={styles.menuDivider} />
 
@@ -173,40 +176,42 @@ function PostOptionsMenu(
           <AppText style={styles.menuText}>신고</AppText>
         </TouchableOpacity>
 
-        <View style={styles.menuDivider} />
+        {showEditPost ? (
+          <>
+            <View style={styles.menuDivider} />
+            <TouchableOpacity
+              onPress={() => {
+                close();
+                onDeleteCurrentImage?.();
+              }}
+              disabled={disableMenu || !canDeleteCurrent}
+              activeOpacity={0.85}
+              style={[
+                styles.menuItem,
+                (disableMenu || !canDeleteCurrent) && {opacity: 0.5},
+              ]}
+            >
+              <AppText style={[styles.menuText, {color: '#FF5A5F'}]}>
+                현재 미디어 삭제
+              </AppText>
+            </TouchableOpacity>
 
-        <TouchableOpacity
-          onPress={() => {
-            close();
-            onDeleteCurrentImage?.();
-          }}
-          disabled={disableMenu || !canDeleteCurrent}
-          activeOpacity={0.85}
-          style={[
-            styles.menuItem,
-            (disableMenu || !canDeleteCurrent) && {opacity: 0.5},
-          ]}
-        >
-          <AppText style={[styles.menuText, {color: '#FF5A5F'}]}>
-            현재 미디어 삭제
-          </AppText>
-        </TouchableOpacity>
-
-        <View style={styles.menuDivider} />
-
-        <TouchableOpacity
-          onPress={() => {
-            close();
-            onDeletePost?.();
-          }}
-          disabled={disableMenu}
-          activeOpacity={0.85}
-          style={[styles.menuItem, disableMenu && {opacity: 0.5}]}
-        >
-          <AppText style={[styles.menuText, {color: '#FF5A5F'}]}>
-            게시글 삭제
-          </AppText>
-        </TouchableOpacity>
+            <View style={styles.menuDivider} />
+            <TouchableOpacity
+              onPress={() => {
+                close();
+                onDeletePost?.();
+              }}
+              disabled={disableMenu}
+              activeOpacity={0.85}
+              style={[styles.menuItem, disableMenu && {opacity: 0.5}]}
+            >
+              <AppText style={[styles.menuText, {color: '#FF5A5F'}]}>
+                게시글 삭제
+              </AppText>
+            </TouchableOpacity>
+          </>
+        ) : null}
       </Animated.View>
     </View>
   );
@@ -247,7 +252,7 @@ const styles = StyleSheet.create({
   },
   menuText: {
     color: '#fff',
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: getResponsiveFontSize(13),
   },
   menuDivider: {

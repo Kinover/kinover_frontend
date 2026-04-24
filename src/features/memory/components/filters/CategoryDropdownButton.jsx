@@ -6,6 +6,7 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 import {HEADER_STYLES} from 'styles/style';
+import {FONTS} from 'styles/typography';
 
 // 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
@@ -24,7 +25,7 @@ export default function CategoryDropdownButton({selectedTitle, onPress}) {
     marginLeft: getResponsiveWidth(21),
   },
   text: {
-    fontFamily: 'Pretendard-Bold',
+    fontFamily: FONTS.BOLD,
     fontSize: HEADER_STYLES().mainTitleFontSize,
     // color: '#4D4D4D',
     color: 'black',

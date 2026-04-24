@@ -8,10 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import {useSelector} from 'react-redux';
-import {useReduxFontMode} from 'hooks/useReduxFontMode';
 import {SafeAreaView} from 'react-native-safe-area-context';
-
-import {FONT_MODE} from 'store/uiSlice';
 
 import FamilyCodeModal from '../components/FamilyCodeModal';
 import UserBottomSheetModal from '../components/UserBottomSheet';
@@ -90,8 +87,6 @@ export default function HomeScreen() {
     refetch: refetchUser,
   } = useGetUserQuery(undefined, {skip: STORE_MOCK_ENABLED});
   const user = userData ?? fallbackUser;
-
-  const fontMode = useReduxFontMode();
 
   const familyId = user?.familyId || user?.family?.familyId || null;
   const {
@@ -193,12 +188,7 @@ export default function HomeScreen() {
     ? getStoreMockLastActiveMap()
     : lastActiveMap;
 
-  const scrollPaddingBottom =
-    fontMode === FONT_MODE.EXTRA_LARGE
-      ? getResponsiveHeight(130)
-      : fontMode === FONT_MODE.LARGE
-      ? getResponsiveHeight(110)
-      : getResponsiveHeight(100);
+  const scrollPaddingBottom = getResponsiveHeight(100);
 
  // iOS: 가이드 모달 닫은 뒤 터치 복구용 — early return 앞에 두어 훅 개수 고정
   const [contentKey, setContentKey] = useState(0);
@@ -311,14 +301,50 @@ export default function HomeScreen() {
     });
   }, [selectedUser]);
 
+  const mergeMemberForBottomSheet = useCallback(
+    member => {
+      if (!member) {
+        return null;
+      }
+      const id = member.userId ?? member.id;
+      const idStr = id != null ? String(id) : null;
+      const fromList = idStr
+        ? (familyUserList || []).find(
+            m => String(m?.userId ?? m?.id) === idStr,
+          )
+        : null;
+      const isSelf =
+        user?.userId != null &&
+        idStr != null &&
+        String(user.userId) === idStr;
+      const fromMe = isSelf ? user : null;
+
+      return {
+        ...member,
+        name:
+          member.name ??
+          member.nickname ??
+          fromList?.name ??
+          fromList?.nickname ??
+          fromMe?.name ??
+          '',
+        trait: member.trait ?? fromList?.trait ?? fromMe?.trait,
+        image: member.image ?? fromList?.image ?? fromMe?.image,
+        birth: member.birth ?? fromList?.birth ?? fromMe?.birth ?? null,
+      };
+    },
+    [familyUserList, user],
+  );
+
   const handleUserPress = member => {
     const oid = Number(member?.userId);
     if (Number.isFinite(oid) && blockedSet.has(oid)) {
       setBlockedProfileToastVisible(true);
       return;
     }
+    const merged = mergeMemberForBottomSheet(member);
     setSelectedUser(null);
-    requestAnimationFrame(() => setSelectedUser(member));
+    requestAnimationFrame(() => setSelectedUser(merged));
   };
 
   const clearSelectedUser = useCallback(() => {
@@ -329,7 +355,7 @@ export default function HomeScreen() {
     userSheetRef.current?.dismiss?.();
   }, []);
 
-  const handleSave = async (name, trait, imageUrl) => {
+  const handleSave = async (name, trait, imageUrl, birth) => {
     if (!selectedUser) return;
     if (STORE_MOCK_ENABLED) {
       dismissUserSheet();
@@ -344,6 +370,11 @@ export default function HomeScreen() {
 
     const trimmedImage = (imageUrl || '').trim();
     if (trimmedImage) payload.image = trimmedImage;
+
+    const birthTrim = typeof birth === 'string' ? birth.trim() : '';
+    if (birthTrim) {
+      payload.birth = birthTrim;
+    }
 
     await modifyUser(payload).unwrap();
 

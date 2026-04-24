@@ -36,9 +36,10 @@ export const getUserBottomSheetSnapPoints = fontMode => {
   const isAndroid = Platform.OS === 'android';
   const [first] = getSheetSnapPointsByTier({
     fontMode,
-    normal: isAndroid ? ['75%', '88%'] : ['62%', '88%'],
-    large: isAndroid ? ['78%', '89%'] : ['66%', '89%'],
-    xl: isAndroid ? ['80%', '90%'] : ['70%', '90%'],
+    // 프로필 편집: 생년월일 안내 문구 등으로 세로 여유 필요
+    normal: isAndroid ? ['90%', '94%'] : ['82%', '94%'],
+    large: isAndroid ? ['92%', '95%'] : ['85%', '95%'],
+    xl: isAndroid ? ['94%', '96%'] : ['88%', '96%'],
   });
   return [first];
 };
@@ -51,9 +52,9 @@ export const getCreateRoomBottomSheetSnapPoints = (fontMode, externalSnapPoints)
   const isAndroid = Platform.OS === 'android';
   const [first] = getSheetSnapPointsByTier({
     fontMode,
-    normal: isAndroid ? ['70%', '92%'] : ['56.5%', '92%'],
-    large:  isAndroid ? ['76%', '93%'] : ['68%', '93%'],
-    xl:     isAndroid ? ['80%', '94%'] : ['72%', '94%'],
+    normal: isAndroid ? ['70%', '92%'] : ['49%', '92%'],
+    large:  isAndroid ? ['76%', '93%'] : ['58%', '93%'],
+    xl:     isAndroid ? ['80%', '94%'] : ['62%', '94%'],
   });
   return [first];
 };
@@ -89,8 +90,7 @@ export const getTabStackHeaderHeight = () => {
   if (Platform.OS !== 'android') {
     return base;
   }
-  const reduced = Math.round(base * 0.88);
-  return Math.max(reduced, getResponsiveHeight(86));
+  return getResponsiveHeight(76);
 };
 
 export const getAndroidNavBottomInsetEstimate = () => {

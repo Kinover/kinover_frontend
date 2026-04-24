@@ -12,6 +12,7 @@ import {
   getResponsiveFontSize,
 } from 'utils/responsive';
 import GuideOverlay from './GuideOverlay';
+import {FONTS} from 'styles/typography';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 const MAIN_YELLOW = '#FFC84D';
@@ -165,20 +166,20 @@ export default function GuideModalCarousel(props) {
   },
   calloutTitle: {
     fontSize: rf(17),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     color: '#111827',
     marginBottom: getResponsiveHeight(6),
     textAlign: 'center',
   },
   calloutDesc: {
     fontSize: rf(14),
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     color: '#111827',
     lineHeight: getResponsiveHeight(22),
     textAlign: 'center',
   },
   calloutDescBold: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
   },
   bottomBar: {
     flexDirection: 'row',
@@ -207,13 +208,13 @@ export default function GuideModalCarousel(props) {
   },
   skipText: {
     fontSize: rf(14),
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     color: 'rgba(255,255,255,0.95)',
     lineHeight: getResponsiveHeight(20),
   },
   stepIndicator: {
     fontSize: rf(14),
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     color: 'rgba(255,255,255,0.85)',
   },
   nextButton: {
@@ -238,7 +239,7 @@ export default function GuideModalCarousel(props) {
   },
   nextButtonText: {
     fontSize: rf(14),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     color: '#111827',
   },
 

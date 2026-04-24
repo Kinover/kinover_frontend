@@ -22,6 +22,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import {FONTS} from 'styles/typography';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -115,11 +116,11 @@ export default function ImageCarousel({
   headerIndex: {
     color: '#FFF',
     fontSize: rf(11),
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
   },
   headerIndexCurrent: {
     color: '#FFC84D',
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(13),
   },
 

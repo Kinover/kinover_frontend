@@ -17,6 +17,7 @@ import {
   getResponsiveIconSize,
 } from 'utils/responsive';
 import {COLORS} from 'styles/style';
+import {FONTS} from 'styles/typography';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const COLUMNS = 3;
@@ -55,12 +56,12 @@ export default function ChatRoomMediaScreen({route}) {
     },
     tabText: {
       fontSize: rf(13),
-      fontFamily: 'Pretendard-Medium',
+      fontFamily: FONTS.MEDIUM,
       color: '#9CA3AF',
     },
     tabTextActive: {
       color: '#FFFFFF',
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
     },
 
     centerBox: {
@@ -69,9 +70,16 @@ export default function ChatRoomMediaScreen({route}) {
       justifyContent: 'center',
       rowGap: getResponsiveHeight(8),
     },
+    emptyIcon: {
+      width: getResponsiveWidth(34),
+      height: getResponsiveWidth(34),
+      resizeMode: 'contain',
+      tintColor: '#9CA3AF',
+      marginBottom: getResponsiveHeight(8),
+    },
     helperText: {
       fontSize: rf(13),
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       color: '#9CA3AF',
     },
 
@@ -86,7 +94,7 @@ export default function ChatRoomMediaScreen({route}) {
     mediaPlaceholderText: {
       fontSize: rf(11),
       color: '#9CA3AF',
-      fontFamily: 'Pretendard-Medium',
+      fontFamily: FONTS.MEDIUM,
     },
 
     videoBadge: {
@@ -101,7 +109,7 @@ export default function ChatRoomMediaScreen({route}) {
     videoBadgeText: {
       fontSize: rf(10),
       color: '#FFFFFF',
-      fontFamily: 'Pretendard-Medium',
+      fontFamily: FONTS.MEDIUM,
     },
   }));
 
@@ -245,8 +253,12 @@ export default function ChatRoomMediaScreen({route}) {
         </View>
       ) : items.length === 0 ? (
         <View style={styles.centerBox}>
+          <Image
+            source={require('../../../assets/icons/tabs/4/camera.png')}
+            style={styles.emptyIcon}
+          />
           <AppText allowFontScaling={false} style={styles.helperText}>
-            아직 모아볼 미디어가 없어요
+            아직 모아볼 사진이 없어요
           </AppText>
         </View>
       ) : (

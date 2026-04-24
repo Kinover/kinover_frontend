@@ -17,3 +17,5 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
 
 rootProject.name = "kinover_frontend"
 include(":app")
+
+includeBuild("../node_modules/@react-native/gradle-plugin")

@@ -6,7 +6,6 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import AuthNavigator from './authNavigator';
 import RootNavigator from './rootNavigator';
 import {
-  setGuestMode,
   ensureStorageDefaultsOnce,
   getAuthRoutingMmkvSnapshotSync,
   SIGNUP_PROGRESS_STEP,
@@ -48,7 +47,6 @@ export default function RootScreen() {
   const serverPhoneVerifiedHint = user?.phoneVerified === true;
 
   const [bootDone, setBootDone] = useState(false);
-  const [isGuest, setIsGuest] = useState(false);
   const [_authTimeout, setAuthTimeout] = useState(false);
   const phonePendingHydratedRef = useRef(false);
 
@@ -71,11 +69,9 @@ export default function RootScreen() {
     (async () => {
       try {
         await ensureStorageDefaultsOnce();
-        await setGuestMode(false);
       } catch {null}
 
       if (!mounted) return;
-      setIsGuest(false);
 
       refreshAuthFlags();
 
@@ -109,7 +105,7 @@ export default function RootScreen() {
   }, [rehydrated, bootDone, authChecked]);
 
   const shouldRunAutoLogin =
-    rehydrated && bootDone && !isGuest && !authChecked && !loginLoading;
+    rehydrated && bootDone && !authChecked && !loginLoading;
 
   useAutoLogin(shouldRunAutoLogin);
 
@@ -160,9 +156,7 @@ export default function RootScreen() {
   // 어디로 갈지 결정
   let target = null;
   if (rehydrated && bootDone) {
-    if (isGuest) {
-      target = {flow: 'AppFlow', initialRouteName: 'Tabs'};
-    } else if (!authChecked) {
+    if (!authChecked) {
       // 자동로그인 진행 중에는 timeout으로 온보딩으로 강제 이동하지 않음
       target = null;
     } else if (!isLogin) {
@@ -184,7 +178,8 @@ export default function RootScreen() {
       if (resumePhone) {
         target = {flow: 'AuthFlow', initialRouteName: '전화번호인증화면'};
       } else if (p === SIGNUP_PROGRESS_STEP.PROFILE) {
-        target = {flow: 'AuthFlow', initialRouteName: '유저정보세팅화면'};
+        // 구버전 MMKV(profile 단계) 복구: 유저정보세팅 화면은 가입 플로우에서 제거됨 → 약관
+        target = {flow: 'AuthFlow', initialRouteName: '약관동의화면'};
       } else if (
         p === SIGNUP_PROGRESS_STEP.FAMILY &&
         !serverPhoneVerifiedHint &&
@@ -199,10 +194,9 @@ export default function RootScreen() {
         hasPendingSignupTerms &&
         (p == null || String(p).trim() === '')
       ) {
-        // 단계 키 없이 pending만 남은 복구(이전 크래시 등) — 프로필로 이어감
-        target = {flow: 'AuthFlow', initialRouteName: '유저정보세팅화면'};
+        target = {flow: 'AuthFlow', initialRouteName: '약관동의화면'};
       } else {
-        // signupProgressStep === terms(전화 직후) 등: hasPending이 있어도 약관 UI를 거쳐야 함
+        // signupProgressStep === terms: 약관 단계
         target = {flow: 'AuthFlow', initialRouteName: '약관동의화면'};
       }
     } else if (mmkvWantsPhoneScreen) {
@@ -210,11 +204,7 @@ export default function RootScreen() {
     } else if (effectiveHasFamily === true) {
       target = {flow: 'AppFlow', initialRouteName: 'Tabs'};
     } else if (effectiveHasFamily === false) {
-      if (hasPendingSignupTerms) {
-        target = {flow: 'AuthFlow', initialRouteName: '유저정보세팅화면'};
-      } else {
-        target = {flow: 'AuthFlow', initialRouteName: '약관동의화면'};
-      }
+      target = {flow: 'AuthFlow', initialRouteName: '약관동의화면'};
     } else {
       // hasFamily 미확정(null) 상태에서는 Tabs로 먼저 보내지 않고 로딩 유지
       target = null;

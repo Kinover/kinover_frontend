@@ -13,6 +13,7 @@ import ReceiveChat from './receiveChat';
 import SendChat from './sendChat';
 import ReceiveKinoChat from './receiveKinoChat';
 import SendKinoChat from './sendKinoChat';
+import {FONTS} from 'styles/typography';
 
 const getSenderId = message => {
   if (!message) return null;
@@ -154,7 +155,7 @@ function ChatMessageItem({
     dateSeparatorText: {
       textAlign: 'center',
       textAlignVertical: 'center',
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
       fontSize: rf(11.5),
       color: 'white',
       lineHeight: rf(16),

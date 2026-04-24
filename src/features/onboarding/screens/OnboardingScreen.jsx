@@ -34,6 +34,7 @@ import {useAppleLogin} from 'features/auth/hooks/useAppleLogin';
 
 import {AppleButton} from '@invertase/react-native-apple-authentication';
 import OnboardingHeroMotion from '../components/OnboardingHeroMotion';
+import {FONTS} from 'styles/typography';
 
 const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
 
@@ -158,7 +159,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   skipText: {
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: getResponsiveFontSizeIgnoreAppMode(13),
     color: '#9CA3AF',
   },
@@ -176,11 +177,11 @@ const styles = StyleSheet.create({
   },
 
   lineText: {
-    fontFamily: 'Pretendard-Bold',
+    fontFamily: FONTS.BOLD,
     color: '#333',
     letterSpacing: -0.2,
   },
-  highlight: {color: '#FF8D29', fontFamily: 'Pretendard-Bold'},
+  highlight: {color: '#FF8D29', fontFamily: FONTS.BOLD},
 
   indicatorContainer: {
     flexDirection: 'row',
@@ -217,7 +218,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   nextText: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: getResponsiveFontSizeIgnoreAppMode(14.5),
     color: '#FFFFFF',
     letterSpacing: -0.2,
@@ -240,7 +241,7 @@ const styles = StyleSheet.create({
   helper: {
     marginTop: getResponsiveHeight(10),
     textAlign: 'center',
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     fontSize: getResponsiveFontSizeIgnoreAppMode(12),
     color: '#9CA3AF',
   },

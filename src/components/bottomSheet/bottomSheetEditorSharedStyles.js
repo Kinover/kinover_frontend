@@ -4,15 +4,16 @@
  */
 import {Platform, StyleSheet} from 'react-native';
 import {BOTTOMSHEET_STYLE} from 'styles/style';
+import {FONTS} from 'styles/typography';
 
 export const BOTTOM_SHEET_EDITOR_FLOW = 18;
 
 export const BOTTOM_SHEET_EDITOR_COLORS = {
   bg: '#FFFFFF',
   text: '#0B1220',
-  /** 메인 CTA·칩 선택 등 — BottomSheetButtons와 동일한 검정 톤 */
-  navy: '#000000',
-  primary: '#000000',
+  /** 메인 CTA·칩 선택 등 — 브랜드 노랑 톤 */
+  navy: '#FFC84D',
+  primary: '#FFC84D',
   sub: '#566073',
   muted: '#98A2B3',
   caption: '#8E8E93',
@@ -22,8 +23,8 @@ export const BOTTOM_SHEET_EDITOR_COLORS = {
   brand: '#FFC84D',
   brandDeep: '#FFB020',
   danger: '#EF4444',
-  pill: '#000000',
-  pillText: '#FFFFFF',
+  pill: '#FFC84D',
+  pillText: '#111827',
 };
 
 export function getBottomSheetEditorBottomSafe(insetsBottom, getResponsiveHeight) {
@@ -38,9 +39,9 @@ export function getBottomSheetEditorBottomSafe(insetsBottom, getResponsiveHeight
 export function getBottomSheetPrimarySaveButtonStyle(rh, ri) {
   return {
     backgroundColor: BOTTOM_SHEET_EDITOR_COLORS.primary,
-    minHeight: rh(46),
+    minHeight: rh(52),
     borderRadius: ri(14),
-    paddingVertical: rh(14),
+    paddingVertical: rh(16),
   };
 }
 
@@ -83,11 +84,11 @@ export function getBottomSheetEditorSharedStyles(rf, rh, rw) {
     singleLineUnderlineWrap: {
       alignSelf: 'stretch',
       borderWidth: 1,
-      borderColor: '#DADADA',
+      borderColor: '#F5F5F5',
       borderRadius: rw(12),
       backgroundColor: '#F5F5F5',
-      paddingHorizontal: rw(12),
-      paddingVertical: rh(5),
+      paddingHorizontal: rw(13),
+      paddingVertical: rh(6),
       marginTop: rh(4),
     },
     singleLineUnderlineWrapFocused: {
@@ -99,8 +100,8 @@ export function getBottomSheetEditorSharedStyles(rf, rh, rw) {
       alignSelf: 'stretch',
       backgroundColor: 'rgba(120, 120, 128, 0.08)',
       borderRadius: 10,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: 'rgba(60, 60, 67, 0.12)',
+      borderWidth: 1,
+      borderColor: 'rgba(120, 120, 128, 0.08)',
       paddingHorizontal: rw(12),
       paddingTop: rh(6),
       paddingBottom: rh(6),
@@ -117,7 +118,7 @@ export function getBottomSheetEditorSharedStyles(rf, rh, rw) {
       backgroundColor: 'transparent',
       includeFontPadding: false,
       fontSize: rf(15),
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       color: C.text,
       lineHeight: rf(22),
       letterSpacing: -0.18,
@@ -135,7 +136,7 @@ export function getBottomSheetEditorSharedStyles(rf, rh, rw) {
       backgroundColor: 'transparent',
       includeFontPadding: false,
       fontSize: rf(15),
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       color: C.text,
       lineHeight: rf(20),
       letterSpacing: -0.18,
@@ -152,7 +153,7 @@ export function getBottomSheetEditorSharedStyles(rf, rh, rw) {
       backgroundColor: 'transparent',
       includeFontPadding: false,
       fontSize: rf(14),
-      fontFamily: 'Pretendard-Medium',
+      fontFamily: FONTS.MEDIUM,
       color: C.text,
       lineHeight: rf(20),
       letterSpacing: -0.18,

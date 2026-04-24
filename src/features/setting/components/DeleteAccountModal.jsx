@@ -13,6 +13,7 @@ import CustomModal from 'components/modal/CustomModal';
 import ToastModal from 'components/modal/ToastModal';
 
 import {useDeleteUser} from 'features/auth/hooks/useDeleteUser';
+import {FONTS} from 'styles/typography';
 
 const REQUIRED_TEXT = '탈퇴합니다';
 
@@ -33,7 +34,7 @@ export default function DeleteAccountModal({visible, onClose}) {
     borderColor: '#E5E7EB',
   },
   cancelText: {
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: rf(14),
     color: '#111827',
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
@@ -49,7 +50,7 @@ export default function DeleteAccountModal({visible, onClose}) {
     opacity: 0.55,
   },
   dangerText: {
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: rf(14),
     color: '#FFFFFF',
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
@@ -67,21 +68,21 @@ export default function DeleteAccountModal({visible, onClose}) {
     marginBottom: getResponsiveHeight(14),
   },
   requiredTextLabel: {
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: rf(12),
     color: '#6B7280',
     marginBottom: getResponsiveHeight(6),
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
   requiredText: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(16),
     color: '#111827',
     letterSpacing: 0.3,
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
   inputLabel: {
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: rf(13),
     color: '#374151',
     marginBottom: getResponsiveHeight(6),
@@ -97,7 +98,7 @@ export default function DeleteAccountModal({visible, onClose}) {
         : getResponsiveHeight(14),
     paddingHorizontal: getResponsiveWidth(14),
     fontSize: rf(16),
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     color: '#111827',
     backgroundColor: '#FFFFFF',
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
@@ -111,7 +112,7 @@ export default function DeleteAccountModal({visible, onClose}) {
     backgroundColor: '#F0FDF4',
   },
   helperText: {
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     fontSize: rf(12),
     color: '#DC2626',
     marginTop: getResponsiveHeight(6),

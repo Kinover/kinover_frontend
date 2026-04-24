@@ -1,6 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, View, StyleSheet, Platform } from 'react-native';
-import {BUTTON_STYLES} from 'styles/style';
+import {BUTTON_STYLES, COLORS} from 'styles/style';
 import AppText from 'components/AppText';
 import {
   getResponsiveFontSize,
@@ -11,6 +11,7 @@ import {BOTTOM_SHEET_BUTTON_LABELS} from 'constants/bottomSheetTitles';
 
 // 햅틱 유틸 (아까 만든/쓰는 파일)
 import {hapticLight, hapticSuccess, hapticError} from 'utils/haptic';
+import {FONTS} from 'styles/typography';
 
 export function BottomSheetButtons({
   onCancel,
@@ -22,6 +23,7 @@ export function BottomSheetButtons({
   autoCloseOnSave = true,
   saveButtonStyle,
   cancelButtonStyle,
+  cancelTextStyle,
   buttonRowStyle,
   saveDisabled = false,
 }) {
@@ -83,6 +85,7 @@ export function BottomSheetButtons({
             style={[
               styles.buttonText,
               styles.cancelButtonText,
+              cancelTextStyle,
               cancelLabel === BOTTOM_SHEET_BUTTON_LABELS.DELETE && {
                 color: '#EF4444',
               }, // 추가
@@ -121,13 +124,13 @@ const styles = StyleSheet.create({
   },
   sheetTitle: {
     fontSize: getResponsiveFontSize(16.5),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     color: '#111827',
   },
   sheetSubtitle: {
     marginTop: getResponsiveHeight(4),
     fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     color: '#6B7280',
   },
   profileTouchArea: {
@@ -182,7 +185,7 @@ const styles = StyleSheet.create({
   profileEditText: {
     marginTop: getResponsiveHeight(6),
     fontSize: getResponsiveFontSize(12.5),
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     color: '#4B5563',
   },
   fieldBlock: {
@@ -190,7 +193,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: getResponsiveFontSize(12.5),
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     color: '#4B5563',
     marginBottom: getResponsiveHeight(4),
   },
@@ -204,7 +207,7 @@ const styles = StyleSheet.create({
         : getResponsiveHeight(9),
     fontSize: getResponsiveFontSize(14),
     includeFontPadding: false,
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
@@ -220,9 +223,11 @@ const styles = StyleSheet.create({
   },
   button: {
     flex: 1,
-    paddingVertical: getResponsiveHeight(14),
+    minHeight: getResponsiveHeight(52),
+    paddingVertical: getResponsiveHeight(16),
     borderRadius: BUTTON_STYLES().border_radius,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   cancelButton: {
     backgroundColor: BUTTON_STYLES().cancelBg,
@@ -230,13 +235,13 @@ const styles = StyleSheet.create({
     borderColor: '#E5E7EB',
   },
   saveButton: {
-    backgroundColor: BUTTON_STYLES().saveBg,
+    backgroundColor: COLORS.brandPrimary,
   },
   buttonText: {
     textAlign: 'center',
     fontFamily: BUTTON_STYLES().fontFamily,
-    fontSize: BUTTON_STYLES().fontSize,
-    color: '#FFFFFF',
+    fontSize: getResponsiveFontSize(15.5),
+    color: '#111827',
   },
   cancelButtonText: {
     color: '#4B5563',

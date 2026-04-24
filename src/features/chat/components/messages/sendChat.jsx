@@ -35,6 +35,7 @@ import {getVideoThumbnail} from 'utils/videoThumbnail';
 import {toCdnUrl} from 'utils/mediaUrl';
 
 import MentionText from 'components/mention/MentionText';
+import {FONTS} from 'styles/typography';
 
 export default function SendChat({
   chatTime,
@@ -68,7 +69,7 @@ export default function SendChat({
     unreadCountText: {
       fontSize: rf(11),
       color: '#FFC84D',
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
       ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
     },
 
@@ -95,7 +96,7 @@ export default function SendChat({
     },
     mentionText: {
       color: '#FFC84D',
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
     },
 
     sendTime: {
@@ -132,7 +133,7 @@ export default function SendChat({
     moreOverlayText: {
       color: '#fff',
       fontSize: rf(16),
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
     },
 
     loadingOverlay: {
@@ -144,12 +145,12 @@ export default function SendChat({
     loadingText: {
       marginTop: 6,
       color: '#fff',
-      fontFamily: 'Pretendard-Medium',
+      fontFamily: FONTS.MEDIUM,
       fontSize: rf(12),
     },
     failText: {
       color: '#fff',
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
       fontSize: rf(13),
     },
 

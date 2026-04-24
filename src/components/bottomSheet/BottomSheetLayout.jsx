@@ -29,6 +29,7 @@ import {
 import {getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
 
 import {BOTTOMSHEET_STYLE, COLORS} from 'styles/style';
+import {FONTS} from 'styles/typography';
 
 export default function BottomSheetLayout({
   modalRef,
@@ -101,7 +102,7 @@ export default function BottomSheetLayout({
     alignItems: 'center',
   },
   title: {
-    fontFamily: BOTTOMSHEET_STYLE()?.title?.fontFamily || 'Pretendard-SemiBold',
+    fontFamily: BOTTOMSHEET_STYLE()?.title?.fontFamily || FONTS.SEMI_BOLD,
     fontSize: BOTTOMSHEET_STYLE()?.title?.fontSize || rf(16),
     color: BOTTOMSHEET_STYLE()?.title?.color || '#111827',
     letterSpacing: -0.2,
@@ -113,7 +114,7 @@ export default function BottomSheetLayout({
   subtitle: {
     marginTop: getResponsiveHeight(3),
     fontFamily:
-      BOTTOMSHEET_STYLE()?.subtitle?.fontFamily || 'Pretendard-Medium',
+      BOTTOMSHEET_STYLE()?.subtitle?.fontFamily || FONTS.MEDIUM,
     fontSize:
       BOTTOMSHEET_STYLE()?.subtitle?.fontSize || rf(12.5),
     color: BOTTOMSHEET_STYLE()?.subtitle?.color || '#6B7280',

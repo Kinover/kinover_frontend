@@ -13,6 +13,7 @@ import {
 
 import {useYMDPickerState} from '../hooks/useYMDPickerState';
 import {BACKGROUND_COLORS, BUTTON_STYLES, COLORS} from 'styles/style';
+import {FONTS} from 'styles/typography';
 
 export default function YMDPickerModal({
   visible,
@@ -49,7 +50,7 @@ export default function YMDPickerModal({
   },
 
   title: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize:
       Platform.OS === 'android'
         ? rf(16.5)
@@ -72,7 +73,7 @@ export default function YMDPickerModal({
   },
 
   colLabel: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(12.5),
     color: '#6B7280',
     marginBottom: getResponsiveHeight(6),
@@ -90,7 +91,7 @@ export default function YMDPickerModal({
   },
 
   pickerInput: {
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: rf(14),
     color: '#111827',
     paddingVertical: getResponsiveHeight(10),
@@ -98,7 +99,7 @@ export default function YMDPickerModal({
   },
 
   pickerPlaceholder: {
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: rf(14),
     color: COLORS.textTertiary,
   },
@@ -131,20 +132,20 @@ export default function YMDPickerModal({
   },
 
   confirm: {
-    backgroundColor: BUTTON_STYLES().saveBg,
-    borderColor: BUTTON_STYLES().saveBg,
+    backgroundColor: COLORS.brandPrimary,
+    borderColor: COLORS.brandPrimary,
   },
 
   cancelText: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: BUTTON_STYLES().fontSize,
     color: '#6B7280',
   },
 
   confirmText: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: BUTTON_STYLES().fontSize,
-    color: '#FFFFFF',
+    color: '#111827',
   },
 
   }));

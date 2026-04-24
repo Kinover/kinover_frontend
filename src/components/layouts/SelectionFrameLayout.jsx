@@ -10,6 +10,7 @@ import {
   getResponsiveFontSize,
 } from 'utils/responsive';
 import BottomActionButton from 'components/BottomActionButton';
+import {FONTS} from 'styles/typography';
 
 const ANDROID_NAV_BAR_FALLBACK = 48;
 
@@ -23,6 +24,8 @@ export default function SelectionFrameLayout({
   /** BottomActionButton 배경·글자색 (미지정 시 앱 기본 저장 버튼 스타일) */
   actionButtonBackgroundColor,
   actionButtonLabelColor,
+  actionButtonStyle,
+  actionButtonLabelStyle,
   children,
   contentStyle,
   /**
@@ -52,14 +55,14 @@ export default function SelectionFrameLayout({
   },
   title: {
     fontSize: rf(20),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     color: '#000',
     textAlign: 'center',
     marginBottom: getResponsiveHeight(6),
   },
   subtitle: {
     fontSize: rf(13),
-    fontFamily: 'Pretendard-Light',
+    fontFamily: FONTS.LIGHT,
     color: '#6B7280',
     textAlign: 'center',
   },
@@ -134,6 +137,8 @@ export default function SelectionFrameLayout({
           onPress={onActionPress}
           backgroundColor={actionButtonBackgroundColor}
           labelColor={actionButtonLabelColor}
+          buttonStyle={actionButtonStyle}
+          labelStyle={actionButtonLabelStyle}
         />
       </View>
     </View>

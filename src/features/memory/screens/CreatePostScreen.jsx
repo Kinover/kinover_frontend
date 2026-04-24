@@ -26,6 +26,7 @@ import {
   Pressable,
   Dimensions,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   BackHandler,
 } from 'react-native';
@@ -53,9 +54,9 @@ import formatDuration from 'utils/formatDuration';
 import {getVideoThumbnail} from 'utils/videoThumbnail';
 import {memoryApi, useGetPostByIdQuery, useCreateCategoryMutation, useDeletePostImageMutation} from '../services/memoryApi';
 import {removeTemporaryCategoryById} from '../store/categorySlice';
-
 // MediaViewer 적용
 import MediaViewer from '../components/media/MediaViewer';
+import {FONTS} from 'styles/typography';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -109,6 +110,8 @@ export default function CreatePostPage({navigation, route}) {
     flex: 1,
     backgroundColor: '#fff',
     padding: SIDE_PADDING,
+    borderTopWidth: 1,
+    borderColor: '#E5E5E5',
   },
 
   headerText: {
@@ -179,7 +182,7 @@ export default function CreatePostPage({navigation, route}) {
   videoBadgeText: {
     color: '#fff',
     fontSize: rf(11),
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
   },
 
   moreOverlay: {
@@ -191,15 +194,26 @@ export default function CreatePostPage({navigation, route}) {
   moreOverlayText: {
     color: '#fff',
     fontSize: rf(18),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
   },
 
-  input: {
-    height: getResponsiveHeight(200),
+  inputWrap: {
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 12,
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: '#F5F5F5',
+  },
+  inputFocused: {
+    borderColor: '#FFC84D',
+    borderWidth: 1.5,
+  },
+  input: {
+    height: getResponsiveHeight(200),
+    padding: 0,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
   },
 
   loadingOverlay: {
@@ -258,6 +272,14 @@ export default function CreatePostPage({navigation, route}) {
  /** state */
   const [text, setText] = useState(initialContent || '');
   const [isUploading, setIsUploading] = useState(false);
+  const [isContentFocused, setIsContentFocused] = useState(false);
+
+  useEffect(() => {
+    const sub = Keyboard.addListener('keyboardDidHide', () => {
+      setIsContentFocused(false);
+    });
+    return () => sub.remove();
+  }, []);
 
   const [selectedImages, setSelectedImages] = useState(initImages ?? []);
   const selectedCategory = routeSelectedCategory;
@@ -322,6 +344,8 @@ export default function CreatePostPage({navigation, route}) {
   const [successModalVisible, setSuccessModalVisible] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+
+  const canSubmit = useMemo(() => String(text ?? '').trim().length > 0, [text]);
 
   const showToast = useCallback(msg => {
     setToastMessage(msg);
@@ -500,6 +524,7 @@ export default function CreatePostPage({navigation, route}) {
 
   const handleUpload = useCallback(async () => {
     if (isUploading) return;
+    if (!canSubmit) return;
 
     const authorId = userId;
 
@@ -691,6 +716,7 @@ export default function CreatePostPage({navigation, route}) {
     }
   }, [
     isUploading,
+    canSubmit,
     selectedCategory,
     selectedImages,
     text,
@@ -741,8 +767,11 @@ export default function CreatePostPage({navigation, route}) {
       headerRight: () => (
         <TouchableOpacity
           onPress={handleUpload}
-          disabled={isUploading}
-          style={[styles.headerRightBtn, isUploading && {opacity: 0.4}]}
+          disabled={isUploading || !canSubmit}
+          style={[
+            styles.headerRightBtn,
+            (isUploading || !canSubmit) && {opacity: 0.35},
+          ]}
           activeOpacity={0.85}>
           <Image
             source={require('../../../assets/icons/check.png')}
@@ -757,7 +786,7 @@ export default function CreatePostPage({navigation, route}) {
  // ADD: iOS 스와이프 뒤로(gesture)도 차단
       gestureEnabled: false,
     });
-  }, [navigation, handleUpload, isUploading, isEditMode]);
+  }, [navigation, handleUpload, isUploading, isEditMode, canSubmit]);
 
  /* =========================
  * UI
@@ -838,18 +867,25 @@ export default function CreatePostPage({navigation, route}) {
           </View>
         )}
 
-        <CustomInput
-          textAlignVertical="top"
-          style={styles.input}
-          multiline
-          value={text}
-          onChangeText={v => {
-            didInitTextRef.current = true;
-            setText(v);
-          }}
-          placeholder="글로 남긴 추억은 더 생생해요"
-          placeholderTextColor="#999"
-        />
+        <View style={[styles.inputWrap, isContentFocused && styles.inputFocused]}>
+          <CustomInput
+            disableBaseStyle={true}
+            disableFocusStyle={true}
+            textAlignVertical="top"
+            style={styles.input}
+            multiline
+            value={text}
+            onChangeText={v => {
+              didInitTextRef.current = true;
+              setText(v);
+            }}
+            onFocus={() => setIsContentFocused(true)}
+            onBlur={() => setIsContentFocused(false)}
+            onEndEditing={() => setIsContentFocused(false)}
+            placeholder="글로 남긴 추억은 더 생생해요"
+            placeholderTextColor="#999"
+          />
+        </View>
 
         <MediaViewer
           visible={viewerIndex !== null}

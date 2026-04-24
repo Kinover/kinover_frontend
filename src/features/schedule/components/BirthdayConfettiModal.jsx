@@ -6,6 +6,7 @@ import {hapticLight} from 'utils/haptic';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {getResponsiveWidth, getResponsiveHeight} from 'utils/responsive';
+import {FONTS} from 'styles/typography';
 
 export default function BirthdayModal({
   visible,
@@ -25,9 +26,48 @@ export default function BirthdayModal({
       maxWidth: '90%',
       alignSelf: 'center',
       borderRadius: getResponsiveWidth(20),
+      overflow: 'hidden',
     },
     contentArea: {
-      marginTop: getResponsiveHeight(4),
+      marginTop: 0,
+    },
+    header: {
+      marginHorizontal: -getResponsiveWidth(19),
+      marginTop: -getResponsiveHeight(19),
+      paddingTop: getResponsiveHeight(18),
+      paddingBottom: getResponsiveHeight(14),
+      paddingHorizontal: getResponsiveWidth(18),
+      backgroundColor: '#FFC84D',
+      borderBottomWidth: 1,
+      borderBottomColor: 'rgba(17,24,39,0.08)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    headerIconBubble: {
+      width: getResponsiveWidth(34),
+      height: getResponsiveWidth(34),
+      borderRadius: 999,
+      backgroundColor: '#FFF8E6',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginBottom: getResponsiveHeight(7),
+    },
+    headerIcon: {
+      fontSize: rf(19),
+    },
+    headerTitle: {
+      fontFamily: FONTS.SEMI_BOLD,
+      fontSize: rf(17),
+      color: '#6B3E00',
+      textAlign: 'center',
+      paddingHorizontal: getResponsiveWidth(38),
+    },
+    headerSubText: {
+      marginTop: getResponsiveHeight(6),
+      fontFamily: FONTS.MEDIUM,
+      fontSize: rf(12.5),
+      color: '#7A4E00',
+      textAlign: 'center',
     },
     content: {
       gap: getResponsiveHeight(16),
@@ -41,7 +81,7 @@ export default function BirthdayModal({
       paddingHorizontal: getResponsiveWidth(14),
       paddingTop: getResponsiveHeight(12),
       paddingBottom: getResponsiveHeight(12),
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       fontSize: rf(13.5),
       color: '#111827',
       lineHeight: getResponsiveHeight(21),
@@ -61,10 +101,17 @@ export default function BirthdayModal({
       borderColor: '#FFC84D',
       backgroundColor: '#FFFFFF',
     },
+    messageHelperText: {
+      marginTop: -getResponsiveHeight(2),
+      marginBottom: getResponsiveHeight(2),
+      fontFamily: FONTS.REGULAR,
+      fontSize: rf(11.5),
+      color: '#7A7A7A',
+    },
 
     /* ── 채팅방 섹션 ───────────────────────── */
     sectionLabel: {
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
       fontSize: rf(12.5),
       color: '#374151',
       marginBottom: getResponsiveHeight(9),
@@ -87,22 +134,22 @@ export default function BirthdayModal({
       backgroundColor: '#FFF8E6',
     },
     roomChipText: {
-      fontFamily: 'Pretendard-Medium',
+      fontFamily: FONTS.MEDIUM,
       fontSize: rf(12.5),
       color: '#4B5563',
     },
     roomChipTextSelected: {
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
       color: '#7A4E00',
     },
     hintText: {
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       fontSize: rf(11.5),
       color: '#9CA3AF',
       marginTop: getResponsiveHeight(7),
     },
     emptyText: {
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       fontSize: rf(13),
       color: '#9CA3AF',
       textAlign: 'center',
@@ -160,21 +207,38 @@ export default function BirthdayModal({
 
   return (
     <CustomModal
-      showCloseButton
+      showCloseButton={false}
       visible={visible}
       onClose={onClose}
       onConfirm={handleConfirm}
       confirmText={sendingMessage ? '전송 중...' : '보내기'}
       confirmButtonStyle={!canSend ? styles.confirmDisabled : null}
-      title={`${parsed.heroNames} 생일 🎂`}
-      subText="오늘 축하 메시지를 보내볼까요?"
+      title={null}
+      subText={null}
       modalBoxStyle={styles.modalBox}
       contentStyle={styles.contentArea}
       overlayChildren={
         <ScreenConfetti visible={visible} originX={0.5} originY={0.52} />
       }>
       <View style={styles.content}>
+        <View style={styles.header}>
+          <View style={styles.headerIconBubble}>
+            <AppText allowFontScaling={false} style={styles.headerIcon}>
+              🎂
+            </AppText>
+          </View>
+          <AppText allowFontScaling={false} style={styles.headerTitle}>
+            {`${parsed.heroNames} 생일`}
+          </AppText>
+          <AppText allowFontScaling={false} style={styles.headerSubText}>
+            오늘 축하 메시지를 보내볼까요?
+          </AppText>
+        </View>
+
         {/* ── 편집 가능한 축하 메시지 ──────────── */}
+        <AppText allowFontScaling={false} style={styles.messageHelperText}>
+          문구를 눌러 원하는 내용으로 자유롭게 수정할 수 있어요.
+        </AppText>
         <TextInput
           allowFontScaling={false}
           style={[

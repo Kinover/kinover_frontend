@@ -8,6 +8,7 @@ import {
   Alert,
   Platform,
 } from 'react-native';
+import DropShadow from 'react-native-drop-shadow';
 import {useDispatch, useSelector} from 'react-redux';
 
 import AppText from 'components/AppText';
@@ -15,7 +16,6 @@ import {getResponsiveWidth, getResponsiveHeight} from 'utils/responsive';
 
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 
-import {useCalendarLayout} from '../hooks/useCalendarLayout';
 import {useScheduleListByDate} from '../hooks/useScheduleListByDate';
 import {useFormattedScheduleDate} from '../hooks/useFormattedScheduleDate';
 import {scheduleItemMatchesViewFilter} from '../utils/scheduleFilterHelpers';
@@ -23,14 +23,14 @@ import {
   SCHEDULE_CARD_SHADOW,
   getScheduleShadowBoxBaseStyle,
 } from '../constants/scheduleDropShadow';
-import {COLORS, DEFAULT_STYLE, EMPTY_STYLE} from 'styles/style';
+import {COLORS, EMPTY_STYLE} from 'styles/style';
 
 import FastImage from '@d11/react-native-fast-image';
-import DropShadow from 'react-native-drop-shadow';
 import BirthdayConfettiModal from './BirthdayConfettiModal';
 import {useGetChatRoomsQuery} from 'features/chat/services/chatApi';
 import {sendMessageWsThunk} from 'features/chat/store/messageThunk';
 import {toCdnUrl} from 'utils/mediaUrl';
+import {FONTS} from 'styles/typography';
 
 const COLOR = {
   BLUE_BG: 'rgba(59, 130, 246, 0.14)',
@@ -58,8 +58,6 @@ const TYPE = {
 
 const AVATAR_SIZE = getResponsiveWidth(32);
 const AVATAR_OVERLAP = getResponsiveWidth(-10);
-/** Calendar.jsx `RADIUS` / 일정 카드와 동일 — 달력 블록과 시각적으로 한 세트 */
-const SCHEDULE_SURFACE_RADIUS = 14;
 
 /** 가족 멤버 객체에서 프로필 URL 추출 후 CloudFront 등 절대 URL로 통일 (키만 오는 경우 Android FastImage 로드 실패 방지) */
 function resolveMemberProfileUri(user) {
@@ -77,20 +75,11 @@ function resolveMemberProfileUri(user) {
   return toCdnUrl(s);
 }
 
-/**
- * react-native-drop-shadow는 iOS·Android 모두 자식을 비트맵으로 그려서,
- * FastImage(원격 프로필)가 로드되기 전 스냅샷이 고정되면 회색만 보일 수 있음.
- * → 일정 카드는 DropShadow 대신 View + iOS는 shadow*, Android는 elevation.
- */
 function ScheduleCardShadow({styles, children}) {
   return (
-    <View
-      style={[
-        styles.cardDropShadow,
-        Platform.OS === 'android' && styles.cardDropShadowAndroid,
-      ]}>
+    <DropShadow style={styles.cardDropShadow}>
       {children}
-    </View>
+    </DropShadow>
   );
 }
 
@@ -295,21 +284,15 @@ function Schedule({
     paddingBottom: getResponsiveHeight(8),
   },
   dateSectionYmd: {
-    fontSize: rf(13),
-    fontFamily: 'Pretendard-SemiBold',
+    fontSize: rf(14),
+    fontFamily: FONTS.SEMI_BOLD,
     color: COLORS.textSecondary,
     letterSpacing: -0.1,
     lineHeight: rf(18),
   },
-  dateSectionSep: {
-    fontSize: rf(12),
-    fontFamily: 'Pretendard-Regular',
-    color: COLORS.textTertiary,
-    lineHeight: rf(18),
-  },
   dateSectionDow: {
-    fontSize: rf(13),
-    fontFamily: 'Pretendard-Regular',
+    fontSize: rf(14),
+    fontFamily: FONTS.MEDIUM,
     color: COLORS.textTertiary,
     letterSpacing: -0.1,
     lineHeight: rf(18),
@@ -329,10 +312,6 @@ function Schedule({
     width: '100%',
     ...SCHEDULE_CARD_SHADOW,
   },
-  /** Android: DropShadow 미사용 시 네이티브 elevation (비트맵 레스터화 없음) */
-  cardDropShadowAndroid: {
-    elevation: 4,
-  },
   /**
    * 왼쪽 띠는 borderLeft 대신 별도 View — Android에서 DropShadow 비트맵과 겹칠 때 회색으로 깨지는 현상 방지
    */
@@ -343,8 +322,6 @@ function Schedule({
     borderRadius: 14,
     backgroundColor: '#FFFFFF',
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(17, 24, 39, 0.06)',
   },
   cardAccentStrip: {
     width: getResponsiveWidth(3.5),
@@ -395,7 +372,7 @@ function Schedule({
     justifyContent: 'center',
   },
   stackedAvatarInitial: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     color: COLOR.GRAY_TEXT,
   },
   stackedAvatarPlus: {
@@ -404,7 +381,7 @@ function Schedule({
     justifyContent: 'center',
   },
   stackedAvatarPlusText: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     color: COLOR.GRAY_TEXT,
   },
   iconCircle: {
@@ -417,7 +394,7 @@ function Schedule({
   iconText: {
     fontSize: rf(16),
     lineHeight: rf(25),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     color: '#111827',
   },
   texts: {
@@ -427,13 +404,13 @@ function Schedule({
     minWidth: 0,
   },
   subtitle: {
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: rf(12.5),
     lineHeight: rf(16),
     color: '#6B7280',
   },
   title: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(15),
     color: '#111827',
     lineHeight: rf(20),
@@ -447,7 +424,7 @@ function Schedule({
     flexShrink: 0,
   },
   pillText: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(10.5),
     color: '#111827',
     letterSpacing: 0.4,
@@ -474,7 +451,6 @@ function Schedule({
 
   }));
 
-  const {cardWidth} = useCalendarLayout();
   const dispatch = useDispatch();
   const fallbackFamilyId = useSelector(
     state => state?.family?.familyId ?? state?.user?.familyId ?? null,
@@ -778,14 +754,9 @@ function Schedule({
             {dateYmd}
           </AppText>
           {!!dateDow && (
-            <>
-              <AppText allowFontScaling={false} style={styles.dateSectionSep}>
-                ·
-              </AppText>
-              <AppText allowFontScaling={false} style={styles.dateSectionDow}>
-                {dateDow}요일
-              </AppText>
-            </>
+            <AppText allowFontScaling={false} style={styles.dateSectionDow}>
+              {dateDow}요일
+            </AppText>
           )}
         </View>
       )}

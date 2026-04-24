@@ -43,6 +43,7 @@ import {
   pickTargetUuid,
 } from 'features/moderation/utils/buildReportBody';
 import {blockedIdSetFromStateIds} from 'features/moderation/utils/blockedUserFilter';
+import {FONTS} from 'styles/typography';
 
 // 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
@@ -107,7 +108,7 @@ export default function PostPage({route}) {
     marginLeft: getResponsiveWidth(8),
     color: 'white',
     fontSize: rf(15),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
   },
   commentBtn: {
     width: getResponsiveIconSize(22),
@@ -122,7 +123,7 @@ export default function PostPage({route}) {
     color: 'rgba(255,255,255,0.92)',
     fontSize: rf(14),
     lineHeight: getResponsiveHeight(22),
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
   },
 
   }));
@@ -574,6 +575,7 @@ export default function PostPage({route}) {
         mediaCount={mediaCount}
         onSaveCurrent={actionSaveCurrent}
         onSaveAll={actionSaveAll}
+        showEditPost={isPostOwner}
         onEditPost={actionEditPost}
         showReportPost={showReportPost}
         onReportPost={openReportPost}

@@ -27,6 +27,7 @@ import {
   useMarkNotificationsReadMutation,
 } from '../services/notificationApi';
 import {syncAppBadge} from '../utils/syncAppBadge';
+import {FONTS} from 'styles/typography';
 
 export default function NotificationScreen() {
   const styles = useScaledStyleSheet(rf => ({
@@ -37,7 +38,7 @@ export default function NotificationScreen() {
     marginBottom: getResponsiveHeight(4),
     fontSize: rf(12),
     color: '#8D8D8D',
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal + 5,
   },
   error: {
@@ -69,25 +70,25 @@ export default function NotificationScreen() {
   },
   typeBadgeText: {
     fontSize: rf(11),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontWeight: '700',
   },
   when: {
     marginLeft: 'auto',
     fontSize: rf(10),
     color: '#9A9A9A',
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
   },
   summary: {
     fontSize: rf(12.5),
     color: '#1A1A1A',
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
   },
   content: {
     marginTop: getResponsiveHeight(2),
     fontSize: rf(12),
     color: '#444',
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     lineHeight: getResponsiveHeight(18),
   },
   emptyWrapper: {

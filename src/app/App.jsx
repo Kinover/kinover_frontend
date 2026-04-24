@@ -20,7 +20,6 @@ import {
 import {NavigationContainer} from '@react-navigation/native';
 import {kinoverNavigationTheme} from './navigation/navigationTheme';
 import {Provider, useDispatch, useSelector} from 'react-redux';
-import {useReduxFontMode} from 'hooks/useReduxFontMode';
 import {MenuProvider} from 'react-native-popup-menu';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {BottomSheetModalProvider} from '@gorhom/bottom-sheet';
@@ -31,7 +30,6 @@ import * as Keychain from 'react-native-keychain';
 
 import {
   deleteLoginInfo,
-  disableGuestMode,
   setNeedsSignup,
   setHasFamily,
 } from 'utils/storage';
@@ -43,7 +41,6 @@ import {
   navigationRef,
   flushPendingNavigation,
 } from './navigation/navigationService';
-import {setResponsiveMode} from 'utils/responsive';
 import {
   checkAndAuthBiometricAppLock,
   getBiometricAvailability,
@@ -52,7 +49,6 @@ import AppText from 'components/AppText';
 import {useLogout} from 'features/auth/hooks/useLogout';
 import {subscribeAccountBanned} from 'utils/accountBannedEvent';
 import {subscribeSessionInvalidated} from 'utils/sessionInvalidatedEvent';
-import {setBioLockEnabled, setFontMode, FONT_MODE} from 'store/uiSlice';
 import useNetworkStatus, {registerReconnectCallback} from 'hooks/useNetworkStatus';
 import {reconnectIfNeeded} from 'features/chat/hooks/ChatSocket';
 import {
@@ -65,11 +61,11 @@ import {
   GuideOverlayProvider,
   GuideOverlayRoot,
 } from '../contexts/GuideOverlayContext';
+import {FONTS} from 'styles/typography';
 
 const SPLASH_KEY = 'SPLASH_SHOWN_V1';
 const SPLASH_KEYCHAIN_SERVICE = 'kinover.splash.once';
-const FONT_MODE_STORAGE_KEY = 'ui:fontMode';
-const FONT_MODE_KEYCHAIN_SERVICE = 'kinover.ui.fontMode';
+const ENABLE_APP_LOCK = false;
 
 function KinoverSplashView({loop = false, onAnimationFinish}) {
   return (
@@ -106,58 +102,6 @@ function SplashFirstRun({onFinish}) {
   }, [finish]);
 
   return <KinoverSplashView loop={false} onAnimationFinish={finish} />;
-}
-
-function ResponsiveModeBridge() {
-  const dispatch = useDispatch();
-  const fontMode = useReduxFontMode();
-
-  useEffect(() => {
-    (async () => {
-      try {
-        let raw = await mmkvStorage.getItem(FONT_MODE_STORAGE_KEY);
-        if (
-          raw !== FONT_MODE.NORMAL &&
-          raw !== FONT_MODE.LARGE &&
-          raw !== FONT_MODE.EXTRA_LARGE
-        ) {
-          try {
-            const creds = await Keychain.getInternetCredentials(
-              FONT_MODE_KEYCHAIN_SERVICE,
-            );
-            raw = creds?.password ?? raw;
-          } catch {
-            null;
-          }
-        }
-        const saved =
-          raw === FONT_MODE.EXTRA_LARGE
-            ? FONT_MODE.EXTRA_LARGE
-            : raw === FONT_MODE.LARGE
-            ? FONT_MODE.LARGE
-            : raw === FONT_MODE.NORMAL
-            ? FONT_MODE.NORMAL
-            : null;
-        if (saved && saved !== fontMode) {
-          dispatch(setFontMode(saved));
-          return;
-        }
-        // 저장 키가 비어 있거나 손상되었으면 현재 Redux 값을 기준으로 복구
-        if (!saved && fontMode != null) {
-          await mmkvStorage.setItem(FONT_MODE_STORAGE_KEY, fontMode);
-        }
-      } catch {
-        null;
-      }
-    })();
-  }, [dispatch, fontMode]);
-
-  // useEffect가 아니라 렌더와 동기화: 같은 프레임에서 getResponsiveFontSize가 Redux와 일치
-  if (fontMode != null) {
-    setResponsiveMode(fontMode);
-  }
-
-  return null;
 }
 
 // 생체인식 잠금 — 백그라운드 갔다 오면 다시 인증 요구
@@ -205,8 +149,8 @@ function SessionInvalidatedBridge() {
 }
 
 function AppLockGate({readyForAuth}) {
-  const dispatch = useDispatch();
-  const logout = useLogout();
+  if (!ENABLE_APP_LOCK) return null;
+
   const bioOn = useSelector(state => !!state.ui?.bioLockEnabled);
   const rehydrated = useSelector(state => !!state?._persist?.rehydrated);
 
@@ -215,17 +159,19 @@ function AppLockGate({readyForAuth}) {
 
   const authInFlightRef = useRef(false);
   const lastAppStateRef = useRef(AppState.currentState);
-  const authedThisSessionRef = useRef(false);
   const prevBioOnRef = useRef(false);
+  const authSatisfiedRef = useRef(false);
+  const startupAuthTriedRef = useRef(false);
 
-  async function runAuth() {
+  async function runAuth({force = false} = {}) {
     if (!bioOn) {
+      authSatisfiedRef.current = false;
       setLocked(false);
       return;
     }
 
     if (!rehydrated || !readyForAuth) return;
-    if (authedThisSessionRef.current) {
+    if (authSatisfiedRef.current && !force) {
       setLocked(false);
       return;
     }
@@ -238,9 +184,9 @@ function AppLockGate({readyForAuth}) {
 
       const avail = await getBiometricAvailability();
       if (!avail?.available) {
-        dispatch(setBioLockEnabled(false));
-        setLocked(false);
-        authedThisSessionRef.current = true;
+        // 일시적인 센서 조회 실패에서 앱잠금 설정이 풀리지 않도록 유지
+        setLocked(true);
+        authSatisfiedRef.current = false;
         return;
       }
 
@@ -248,22 +194,19 @@ function AppLockGate({readyForAuth}) {
 
       if (res?.success) {
         setLocked(false);
-        authedThisSessionRef.current = true;
+        authSatisfiedRef.current = true;
       } else if (res?.reason === 'NOT_AVAILABLE') {
-        dispatch(setBioLockEnabled(false));
-        setLocked(false);
-        authedThisSessionRef.current = true;
+        // 생체 모듈 상태가 불안정한 경우에도 잠금을 자동 해제하지 않는다.
+        setLocked(true);
+        authSatisfiedRef.current = false;
       } else if (res?.requireLogout) {
-        try {
-          await logout();
-        } catch (e) {
-          null;
-        }
-        setLocked(false);
-        authedThisSessionRef.current = false;
+        // 인증 실패/취소 시 자동 로그아웃하지 않고 잠금 상태를 유지한다.
+        // 사용자가 오버레이를 탭해 생체인증을 다시 시도할 수 있게 한다.
+        setLocked(true);
+        authSatisfiedRef.current = false;
       } else {
         setLocked(true);
-        authedThisSessionRef.current = false;
+        authSatisfiedRef.current = false;
       }
     } finally {
       setAuthing(false);
@@ -281,18 +224,28 @@ function AppLockGate({readyForAuth}) {
 
     if (!bioOn) {
       if (turnedOff) {
-        authedThisSessionRef.current = false;
+        authSatisfiedRef.current = false;
+        startupAuthTriedRef.current = false;
       }
+      setLocked(false);
+      return;
+    }
+
+    if (!startupAuthTriedRef.current) {
+      startupAuthTriedRef.current = true;
+      authSatisfiedRef.current = false;
+      setLocked(true);
+      runAuth({force: true});
       return;
     }
 
     if (turnedOn) {
-      authedThisSessionRef.current = false;
-      runAuth();
+      authSatisfiedRef.current = false;
+      startupAuthTriedRef.current = true;
+      runAuth({force: true});
       return;
     }
 
-    if (authedThisSessionRef.current) return;
     runAuth();
   }, [bioOn, rehydrated, readyForAuth]);
 
@@ -303,17 +256,16 @@ function AppLockGate({readyForAuth}) {
 
       if (
         prev === 'active' &&
-        (nextState === 'background' || nextState === 'inactive')
+        nextState === 'background'
       ) {
-        authedThisSessionRef.current = false;
+        authSatisfiedRef.current = false;
+        startupAuthTriedRef.current = true;
         return;
       }
 
-      if (
-        (prev === 'background' || prev === 'inactive') &&
-        nextState === 'active'
-      ) {
-        runAuth();
+      if (prev === 'background' && nextState === 'active') {
+        if (authInFlightRef.current) return;
+        runAuth({force: true});
       }
     });
 
@@ -411,8 +363,7 @@ function DevForceResetLogin() {
  // 1) Keychain/MMKV login 관련 제거
         await deleteLoginInfo();
 
- // 2) guest/signup 플래그 정리
-        await disableGuestMode();
+ // 2) signup 플래그 정리
         await setNeedsSignup(false);
         await setHasFamily(null);
 
@@ -508,7 +459,6 @@ export default function App() {
           <Provider store={store}>
             <PersistGate loading={null} persistor={persistor}>
               <DevForceResetLogin />
-              <ResponsiveModeBridge />
               <NetworkStatusBridge />
               <BlockedUsersReduxBridge />
               <AppStateResourceBridge />
@@ -616,6 +566,6 @@ const styles = StyleSheet.create({
   lockRetryText: {
     fontSize: 14,
     color: '#6B7280',
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
   },
 });

@@ -51,6 +51,7 @@ import {
   useGetFamilyUsersQuery,
 } from 'features/home/services/homeApi';
 import {promptBlockFamilyUser} from 'features/moderation/utils/promptBlockFamilyUser';
+import {FONTS} from 'styles/typography';
 
 function memberLabel(m) {
   const raw = (m?.name ?? m?.nickname ?? '').trim();
@@ -185,18 +186,18 @@ export default function BlockedUsersScreen() {
         marginTop: getResponsiveHeight(16),
         marginBottom: getResponsiveHeight(8),
         paddingHorizontal: getResponsiveWidth(20),
-        fontFamily: 'Pretendard-Medium',
+        fontFamily: FONTS.MEDIUM,
       },
       hint: {
         textAlign: 'center',
         fontSize: S.labelFontSize ?? rf(14),
-        fontFamily: S.labelFontFamily ?? 'Pretendard-Regular',
+        fontFamily: S.labelFontFamily ?? FONTS.REGULAR,
         color: '#6B7280',
         lineHeight: rf(20),
       },
       inlineHint: {
         fontSize: rf(13),
-        fontFamily: 'Pretendard-Regular',
+        fontFamily: FONTS.REGULAR,
         color: '#6B7280',
         lineHeight: rf(19),
         paddingHorizontal: getResponsiveWidth(20),
@@ -218,19 +219,19 @@ export default function BlockedUsersScreen() {
       },
       nameText: {
         fontSize: rf(15),
-        fontFamily: 'Pretendard-Medium',
+        fontFamily: FONTS.MEDIUM,
         color: '#111827',
       },
       blockedRowLabel: {
         flex: 1,
         fontSize: rf(15),
-        fontFamily: 'Pretendard-Medium',
+        fontFamily: FONTS.MEDIUM,
         color: '#111827',
         paddingRight: getResponsiveWidth(12),
       },
       subId: {
         fontSize: rf(12),
-        fontFamily: 'Pretendard-Regular',
+        fontFamily: FONTS.REGULAR,
         color: '#9CA3AF',
         marginTop: 2,
       },
@@ -242,7 +243,7 @@ export default function BlockedUsersScreen() {
       },
       blockBtnLabel: {
         fontSize: rf(13),
-        fontFamily: 'Pretendard-SemiBold',
+        fontFamily: FONTS.SEMI_BOLD,
         color: '#B91C1C',
       },
       blockedPill: {
@@ -251,7 +252,7 @@ export default function BlockedUsersScreen() {
       },
       blockedPillText: {
         fontSize: rf(13),
-        fontFamily: 'Pretendard-Medium',
+        fontFamily: FONTS.MEDIUM,
         color: '#9CA3AF',
       },
       unblockBtn: {
@@ -262,7 +263,7 @@ export default function BlockedUsersScreen() {
       },
       unblockLabel: {
         fontSize: rf(13),
-        fontFamily: 'Pretendard-SemiBold',
+        fontFamily: FONTS.SEMI_BOLD,
         color: '#374151',
       },
       rowActions: {
@@ -281,7 +282,7 @@ export default function BlockedUsersScreen() {
       },
       reportBtnLabel: {
         fontSize: rf(13),
-        fontFamily: 'Pretendard-SemiBold',
+        fontFamily: FONTS.SEMI_BOLD,
         color: '#374151',
       },
     };

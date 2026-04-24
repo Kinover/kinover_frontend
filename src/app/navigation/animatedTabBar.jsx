@@ -132,6 +132,10 @@ function AnimatedTabButton({
   return (
     <TouchableOpacity
       key={route.key}
+      accessible={true}
+      accessibilityRole="tab"
+      accessibilityLabel={route.name}
+      accessibilityState={{selected: focused}}
       onPressIn={onPressIn}
       onPressOut={onPressOut}
       onPress={onPress}

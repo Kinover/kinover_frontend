@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   Keyboard,
   InteractionManager,
-  ScrollView,
 } from 'react-native';
 import AppText from 'components/AppText';
 
@@ -38,13 +37,31 @@ import {
 } from 'components/bottomSheet/bottomSheetEditorSharedStyles';
 
 import ToastModal from 'components/modal/ToastModal';
-import BOTTOM_SHEET_TITLES, {
-  BOTTOM_SHEET_BUTTON_LABELS,
-} from 'constants/bottomSheetTitles';
+import BOTTOM_SHEET_TITLES from 'constants/bottomSheetTitles';
 import {validateLength} from 'utils/validation';
+import {FONTS} from 'styles/typography';
 
 // 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
+
+function RequiredFieldLabel({label, style, requiredMarkStyle}) {
+  return (
+    <AppText
+      allowFontScaling={false}
+      style={style}
+      accessibilityRole="text"
+      accessibilityLabel={`${label} 필수`}>
+      {label}{' '}
+      <AppText
+        allowFontScaling={false}
+        style={requiredMarkStyle}
+        accessibilityElementsHidden
+        importantForAccessibility="no">
+        *
+      </AppText>
+    </AppText>
+  );
+}
 
 export default function CreateChatRoomBottomSheet({
   modalRef,
@@ -74,6 +91,10 @@ export default function CreateChatRoomBottomSheet({
       marginBottom: BOTTOMSHEET_STYLE().sectionLabel.marginBottom,
       marginTop: BOTTOMSHEET_STYLE().sectionLabel.marginTop,
     },
+    requiredMark: {
+      color: '#EF4444',
+      fontFamily: FONTS.SEMI_BOLD,
+    },
 
     sectionRow: {
       flexDirection: 'row',
@@ -83,7 +104,7 @@ export default function CreateChatRoomBottomSheet({
 
     countText: {
       fontSize: rf(12),
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
       color: '#566073',
     },
 
@@ -101,46 +122,36 @@ export default function CreateChatRoomBottomSheet({
       borderWidth: 0,
       backgroundColor: 'transparent',
       includeFontPadding: false,
-      fontSize: rf(15),
-      fontFamily: 'Pretendard-Regular',
+      fontSize: rf(16),
+      fontFamily: FONTS.REGULAR,
       color: '#0B1220',
-      lineHeight: rf(20),
+      lineHeight: rf(21),
       letterSpacing: -0.18,
       textAlign: 'left',
       textAlignVertical: 'center',
     },
 
-    chipScroll: {
-      alignSelf: 'stretch',
-      maxHeight: getResponsiveHeight(40),
-      marginTop: getResponsiveHeight(6),
-    },
-
-    chipScrollContent: {
+    chipWrap: {
       flexDirection: 'row',
+      flexWrap: 'wrap',
       alignItems: 'center',
-      paddingVertical: getResponsiveHeight(4),
-      paddingRight: getResponsiveWidth(8),
-      paddingLeft: 0,
-      gap: getResponsiveWidth(10),
+      marginTop: 0,
+      rowGap: getResponsiveHeight(10),
+      columnGap: getResponsiveWidth(8),
     },
 
     chip: {
-      height: getResponsiveHeight(32),
-      paddingHorizontal: getResponsiveWidth(12),
-      borderRadius: 8,
-      borderWidth: StyleSheet.hairlineWidth,
-      borderColor: 'rgba(0, 0, 0, 0.07)',
-      backgroundColor: '#F9FAFB',
+      paddingVertical: getResponsiveHeight(10),
+      paddingHorizontal: getResponsiveWidth(18),
+      borderRadius: 999,
+      backgroundColor: '#F3F4F6',
       alignItems: 'center',
       justifyContent: 'center',
       flexShrink: 0,
-      maxWidth: getResponsiveWidth(160),
     },
 
     chipSelected: {
-      backgroundColor: '#000000',
-      borderColor: '#000000',
+      backgroundColor: '#FFC84D',
     },
 
     chipDisabled: {
@@ -148,15 +159,15 @@ export default function CreateChatRoomBottomSheet({
     },
 
     chipText: {
-      fontSize: rf(12.5),
-      fontFamily: 'Pretendard-Medium',
-      color: '#374151',
+      fontSize: rf(13.5),
+      fontFamily: FONTS.MEDIUM,
+      color: '#6B7280',
       letterSpacing: -0.15,
     },
 
     chipTextSelected: {
-      color: '#FFFFFF',
-      fontFamily: 'Pretendard-SemiBold',
+      color: '#111827',
+      fontFamily: FONTS.SEMI_BOLD,
     },
 
     chipTextDisabled: {
@@ -177,14 +188,14 @@ export default function CreateChatRoomBottomSheet({
     },
     tipText: {
       fontSize: rf(11.5),
-      fontFamily: 'Pretendard-Medium',
+      fontFamily: FONTS.MEDIUM,
       color: '#566073',
     },
 
     footerFlow: {
       alignSelf: 'stretch',
       width: '100%',
-      paddingTop: getResponsiveHeight(20),
+      paddingTop: getResponsiveHeight(10),
       paddingBottom: getResponsiveHeight(2),
     },
   }));
@@ -403,7 +414,7 @@ export default function CreateChatRoomBottomSheet({
     return `create-room-fixed-${String(fontMode ?? '')}`;
   }, [fontMode]);
 
-  /** iOS: 키보드에 맞춰 시트 전체 상승. Android: 기존 bottomInset 정책 유지. */
+  /** iOS: 하단 버튼 고정을 위해 시트 전체 상승 비활성화. Android: 기존 bottomInset 정책 유지. */
   const sheetKeyboardProps = useMemo(() => {
     if (Platform.OS === 'ios') {
       return {
@@ -548,9 +559,10 @@ export default function CreateChatRoomBottomSheet({
       return (
         <TouchableOpacity
           key={`${item.type}-${String(item.id)}`}
-          activeOpacity={0.85}
+          activeOpacity={0.75}
           onPress={onPress}
           disabled={item.disabled || isSubmitting}
+          hitSlop={{top: 4, bottom: 4, left: 2, right: 2}}
           style={[
             styles.chip,
             selected && styles.chipSelected,
@@ -563,7 +575,7 @@ export default function CreateChatRoomBottomSheet({
               item.disabled && styles.chipTextDisabled,
             ]}
             numberOfLines={1}>
-            {selected ? `✓ ${item.name}` : item.name}
+            {item.name}
           </AppText>
         </TouchableOpacity>
       );
@@ -665,19 +677,16 @@ export default function CreateChatRoomBottomSheet({
 
             <View style={{marginTop: getResponsiveHeight(18)}}>
               <View style={styles.sectionRow}>
-                <AppText style={styles.label}>구성원</AppText>
+                <RequiredFieldLabel
+                  label="구성원"
+                  style={styles.label}
+                  requiredMarkStyle={styles.requiredMark}
+                />
               </View>
 
-              <ScrollView
-                horizontal
-                nestedScrollEnabled
-                keyboardShouldPersistTaps="handled"
-                showsHorizontalScrollIndicator={false}
-                bounces={false}
-                contentContainerStyle={styles.chipScrollContent}
-                style={styles.chipScroll}>
+              <View style={styles.chipWrap}>
                 {memberChipData.map(renderMemberChip)}
-              </ScrollView>
+              </View>
 
             </View>
           </View>
@@ -690,13 +699,8 @@ export default function CreateChatRoomBottomSheet({
           style={styles.footerFlow}
           onCancel={handleCancel}
           onSave={handleSave}
-          cancelLabel={BOTTOM_SHEET_BUTTON_LABELS.CANCEL}
-          saveLabel={
-            isSubmitting
-              ? BOTTOM_SHEET_BUTTON_LABELS.SAVE_LOADING
-              : BOTTOM_SHEET_BUTTON_LABELS.SAVE
-          }
-          showCancel={true}
+          saveLabel={isSubmitting ? '만드는 중...' : '만들기'}
+          showCancel={false}
           autoCloseOnSave={false}
           disabled={isSubmitting}
           saveDisabled={!canSave}

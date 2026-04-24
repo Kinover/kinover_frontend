@@ -7,6 +7,7 @@ import {
   getResponsiveFontSize,
   getResponsiveWidth,
 } from 'utils/responsive';
+import {FONTS} from 'styles/typography';
 
 export default function LeaveChatRoomModal({visible, onClose, onConfirm}) {
   const styles = useScaledStyleSheet(rf => ({
@@ -18,13 +19,13 @@ export default function LeaveChatRoomModal({visible, onClose, onConfirm}) {
         ? rf(20)
         : rf(22),
     textAlign: 'center',
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontWeight: Platform.OS === 'ios' ? undefined : '700',
     marginBottom: getResponsiveHeight(10),
     marginTop: getResponsiveHeight(15),
   },
   modalText: {
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     fontSize: rf(14),
   },
   modalButtonRow: {

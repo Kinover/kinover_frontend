@@ -61,7 +61,7 @@ export const syncMarketingNotificationFromServer = () => async dispatch => {
       dispatch(setMarketingNotificationEnabled(enabled));
     }
   } catch {
-    // 게스트/네트워크 실패 시 로컬 값 유지
+    // 네트워크 실패 시 로컬 값 유지
   }
 };
 

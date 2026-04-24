@@ -38,6 +38,7 @@ import {
 } from 'features/home/store/familyThunk';
 import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
 import {baseApi} from 'services/baseApi';
+import {FONTS} from 'styles/typography';
 
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: getResponsiveFontSizeIgnoreAppMode(24),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     color: '#161823',
     textAlign: 'center',
     lineHeight: getResponsiveHeight(30),
@@ -99,7 +100,7 @@ const styles = StyleSheet.create({
   },
   headerSubTitle: {
     fontSize: getResponsiveFontSizeIgnoreAppMode(13.5),
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     color: '#6B7280',
     textAlign: 'center',
     lineHeight: getResponsiveHeight(20),

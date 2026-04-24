@@ -24,6 +24,8 @@ import {
   SIGNUP_PROGRESS_STEP,
   getPendingSignupTermsParams,
   getNeedsSignup,
+  getAuthRoutingMmkvSnapshotSync,
+  clearPhoneVerifyThenFamily,
 } from 'utils/storage';
 import {clearPhoneVerificationPending} from '../store/loginSlice';
 import {finalizeAfterPhoneVerificationThunk} from '../store/loginThunk';
@@ -32,6 +34,13 @@ import {useVerifyPhoneMutation} from '../services/authApi';
 // ==================== Constants ====================
 
 const OTP_TIMER_SECONDS = 180;
+
+const TEST_PHONE_NUMBERS = ['01011112222', '01012345678'];
+const TEST_OTP_CODE = '123456';
+
+function isTestPhone(digits) {
+  return TEST_PHONE_NUMBERS.includes(digits);
+}
 
 // ==================== Helpers ====================
 
@@ -167,6 +176,17 @@ export default function PhoneVerificationScreen() {
     }
     setError('');
     setLoading(true);
+
+    // 테스트 번호: Firebase SMS 스킵, OTP 자동입력
+    if (isTestPhone(digits)) {
+      setConfirmationResult(null);
+      setOtpCode(TEST_OTP_CODE);
+      setStep('otp');
+      startTimer();
+      setLoading(false);
+      return;
+    }
+
     try {
       const e164 = toE164Korea(phoneNumber);
       const result = await auth().signInWithPhoneNumber(e164);
@@ -203,64 +223,77 @@ export default function PhoneVerificationScreen() {
     setError('');
     setLoading(true);
     try {
-      // 1) Firebase OTP 확인 → idToken 획득
-      const result = await confirmationResult.confirm(otpCode);
-      const idToken = await result.user.getIdToken();
+      const digits = phoneNumber.replace(/\D/g, '');
+      const testMode = isTestPhone(digits) && otpCode === TEST_OTP_CODE;
+
+      let verifyPayload;
+      if (testMode) {
+        // 테스트 번호: Firebase 스킵, 백엔드에 testPhone 플래그 전송
+        verifyPayload = {testPhone: digits, testCode: TEST_OTP_CODE};
+      } else {
+        // 1) Firebase OTP 확인 → idToken 획득
+        const result = await confirmationResult.confirm(otpCode);
+        const idToken = await result.user.getIdToken();
+        verifyPayload = {idToken};
+      }
 
       const serverJwt = await getToken();
       if (!serverJwt || !String(serverJwt).trim()) {
         throw new Error('로그인이 만료됐어요. 다시 로그인한 뒤 전화 인증을 진행해 주세요.');
       }
 
-      await verifyPhoneApi({idToken}).unwrap();
+      await verifyPhoneApi(verifyPayload).unwrap();
 
       dispatch(updateUser({phoneVerified: true}));
 
-      if (route.params?.continueToFamilyAfterVerify) {
+      const {phoneVerifyThenFamily} = getAuthRoutingMmkvSnapshotSync();
+      if (route.params?.continueToFamilyAfterVerify || phoneVerifyThenFamily) {
         completePhoneVerification(SIGNUP_PROGRESS_STEP.FAMILY);
         dispatch(clearPhoneVerificationPending());
         navigation.dispatch(StackActions.replace('가족설정화면'));
         Promise.resolve().then(() => {
           emitAuthFlagsChanged();
         });
+        clearPhoneVerifyThenFamily();
         await dispatch(finalizeAfterPhoneVerificationThunk());
         return;
       }
 
-      // 다음 단계 결정: termsPayload 확인 → goesToProfile / signupPending 분류
+      // 다음 단계: 약관→전화 플로우는 보통 route.params 없이 오므로 MMKV pending을 항상 조회
       let termsPayload = route.params?.termsPayload;
-      let signupPending = false;
       if (!termsPayload?.termsAgreed || !termsPayload?.privacyAgreed) {
-        const needsSignup = await getNeedsSignup();
-        signupPending = !!needsSignup;
-        if (needsSignup) {
-          termsPayload = await getPendingSignupTermsParams();
+        const fromMmkv = await getPendingSignupTermsParams();
+        if (fromMmkv?.termsAgreed && fromMmkv?.privacyAgreed) {
+          termsPayload = fromMmkv;
         }
       }
+      const snap = getAuthRoutingMmkvSnapshotSync();
+      const needsSignup = await getNeedsSignup();
       const goesToProfile = !!(
         termsPayload?.termsAgreed && termsPayload?.privacyAgreed
       );
+      const signupPending = !!needsSignup;
+      const inTermsThenPhoneFlow =
+        snap.signupProgressStep === SIGNUP_PROGRESS_STEP.PHONE ||
+        snap.hasPendingSignupTerms;
 
+      const shouldGoToFamilySetup =
+        goesToProfile || signupPending || inTermsThenPhoneFlow;
+
+      // 약관 동의 후 전화 인증 완료 → 가족 설정 (회원가입: 약관 → 전화 → 가족 → 홈)
       // MMKV를 Redux보다 먼저 정리해야 함. clearPhoneVerificationPending만 먼저 dispatch하면
       // RootScreen이 그 사이에 리렌더될 때 동기 MMKV 읽기는 아직 전화 대기(true)라
       // 전화번호 화면으로 다시 고정되는 레이스가 난다. (이전엔 React state 캐시 이슈로 순서를 바꿔 썼음)
-      if (goesToProfile) {
-        completePhoneVerification(SIGNUP_PROGRESS_STEP.PROFILE);
-      } else if (signupPending) {
-        completePhoneVerification(SIGNUP_PROGRESS_STEP.TERMS);
+      if (shouldGoToFamilySetup) {
+        completePhoneVerification(SIGNUP_PROGRESS_STEP.FAMILY);
       } else {
         completePhoneVerification(null);
       }
 
       dispatch(clearPhoneVerificationPending());
 
-      // RootScreen emit으로 AuthNavigator가 리마운트되기 전에 현재 스택에서 먼저 교체
-      if (goesToProfile) {
-        navigation.dispatch(
-          StackActions.replace('유저정보세팅화면', termsPayload),
-        );
-      } else if (signupPending) {
-        navigation.dispatch(StackActions.replace('약관동의화면'));
+      if (shouldGoToFamilySetup) {
+        navigation.dispatch(StackActions.replace('가족설정화면'));
       }
 
       Promise.resolve().then(() => {
@@ -476,7 +509,7 @@ export default function PhoneVerificationScreen() {
 
 // ==================== Styles ====================
 
-// 유저정보세팅화면(UserSetupScreen)과 동일한 타이포·여백·입력 필드 스타일
+// 가입 전 화면 공통 입력 필드 스타일
 const styles = StyleSheet.create({
   container: {
     flex: 1,

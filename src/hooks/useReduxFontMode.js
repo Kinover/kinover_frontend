@@ -1,16 +1,4 @@
-import {useContext, useSyncExternalStore} from 'react';
-import {ReactReduxContext} from 'react-redux';
-
-/**
- * Redux `ui.fontMode`를 구독합니다. `<Provider>` 밖에서는 `useSelector` 대신
- * `useSyncExternalStore`로 스토어가 없을 때 크래시를 피합니다.
- */
+/** 앱 내 글씨 크기 조절 기능 제거 — 항상 undefined 반환 (기존 호환성 유지용) */
 export function useReduxFontMode() {
-  const {store} = useContext(ReactReduxContext) || {};
-
-  return useSyncExternalStore(
-    store != null ? cb => store.subscribe(cb) : () => () => {},
-    () => (store != null ? store.getState()?.ui?.fontMode : undefined),
-    () => undefined,
-  );
+  return undefined;
 }

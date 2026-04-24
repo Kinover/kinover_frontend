@@ -3,13 +3,24 @@
 import React, {useState, useEffect, useRef, useMemo, useCallback} from 'react';
 import {View, StyleSheet, TouchableOpacity, ScrollView, Text} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {useSelector, useDispatch} from 'react-redux';
 import BottomActionButton from 'components/BottomActionButton';
 import {useNavigateToWhere} from 'hooks/useNavigateToWhere';
 import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
 import ToastModal from 'components/modal/ToastModal';
 import {COLORS} from 'styles/style';
 import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
-import {commitTermsConsentAndAdvanceToProfile} from 'utils/storage';
+import {
+  commitTermsConsentAndAdvanceToPhone,
+  commitTermsConsentAndSkipProfileToFamily,
+  advanceSignupAfterProfileSaved,
+  clearSignupSkipProfileAfterTerms,
+} from 'utils/storage';
+import {setPhoneVerificationPending} from 'features/auth/store/loginSlice';
+import {updateUserProfile} from 'api/userProfileApi';
+import {syncMarketingNotificationFromServer} from 'features/home/store/userThunk';
+import {getUserIdFromToken} from 'api/getUserIdFromToken';
+import {formatDate} from 'features/auth/utils/formatSignupDate';
 
 // 약관/개인정보 data import (경로는 프로젝트 alias에 맞춰져 있어야 함)
 // alias 없으면 상대경로로 바꿔줘: ../../../data/legal
@@ -40,7 +51,10 @@ const PRIVACY_VERSION =
   privacyPolicy?.publishedAt || privacyPolicy?.version || 'v1';
 
 export default function TermsAgreementScreen() {
+  const dispatch = useDispatch();
   const navigateToWhere = useNavigateToWhere();
+  const user = useSelector(s => s?.user ?? {});
+  const phoneVerified = user?.phoneVerified === true;
 
   const [agreeAll, setAgreeAll] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
@@ -100,12 +114,59 @@ export default function TermsAgreementScreen() {
     };
 
     try {
-      await commitTermsConsentAndAdvanceToProfile(termsParams);
-      navigateToWhere({
-        screen: '유저정보세팅화면',
-        params: termsParams,
-        replace: true,
-      });
+      // 카카오 가입(needsSignup) 직후에는 fetchUser 전이라 Redux에 userId가 없을 수 있음 → JWT에서 보조
+      const resolvedUserId =
+        user?.userId ??
+        user?.id ??
+        (await getUserIdFromToken());
+      if (resolvedUserId == null || String(resolvedUserId).trim() === '') {
+        setToastMessage(
+          '로그인 정보를 확인하지 못했어요. 잠시 후 다시 시도하거나 다시 로그인해 주세요.',
+        );
+        setToastVisible(true);
+        return;
+      }
+
+      const agreedAtDate = new Date(termsParams.agreedAt || now);
+      const payload = {
+        userId: resolvedUserId,
+        name: String(user.name || '').trim() || ' ',
+        termsAgreed: termsParams.termsAgreed,
+        privacyAgreed: termsParams.privacyAgreed,
+        marketingAgreed: termsParams.marketingAgreed,
+        termsVersion: termsParams.termsVersion,
+        privacyVersion: termsParams.privacyVersion,
+        agreedAt: formatDate(agreedAtDate),
+        marketingAgreedAt: termsParams.marketingAgreed
+          ? formatDate(new Date(termsParams.marketingAgreedAt || now))
+          : null,
+      };
+      if (user.birth) {
+        payload.birth = user.birth;
+      }
+
+      // 회원가입 순서: 약관 → (전화 미완 시) 전화 인증 → 가족 → 홈
+      if (phoneVerified) {
+        await commitTermsConsentAndSkipProfileToFamily(termsParams);
+        await updateUserProfile(payload);
+        dispatch(syncMarketingNotificationFromServer());
+        advanceSignupAfterProfileSaved();
+        clearSignupSkipProfileAfterTerms();
+        navigateToWhere({
+          screen: '가족설정화면',
+          replace: true,
+        });
+      } else {
+        await commitTermsConsentAndAdvanceToPhone(termsParams);
+        await updateUserProfile(payload);
+        dispatch(syncMarketingNotificationFromServer());
+        dispatch(setPhoneVerificationPending());
+        clearSignupSkipProfileAfterTerms();
+        navigateToWhere({
+          screen: '전화번호인증화면',
+          replace: true,
+        });
+      }
     } catch {
       setToastMessage('진행 정보를 저장하지 못했어요. 다시 시도해 주세요.');
       setToastVisible(true);
@@ -118,6 +179,11 @@ export default function TermsAgreementScreen() {
     agreeTerms,
     agreePrivacy,
     agreeMarketing,
+    user.userId,
+    user.name,
+    user.birth,
+    phoneVerified,
+    dispatch,
   ]);
 
   const renderCheckBox = checked => (

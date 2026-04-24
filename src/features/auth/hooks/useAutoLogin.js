@@ -12,13 +12,18 @@ import {
 } from 'utils/storage';
 import {baseApi} from 'services/baseApi';
 import {homeApi} from 'features/home/services/homeApi';
-import {startChatSocket, stopChatSocket} from 'features/chat/hooks/ChatSocket';
+import {
+  ensureChatSocketIfSignedIn,
+  stopChatSocket,
+} from 'features/chat/hooks/ChatSocket';
 import {
   setLoginSuccess,
   setLogout,
   setAuthChecked,
   setPhoneVerificationPending,
 } from '../store/loginSlice';
+
+const LEGACY_LOCAL_ONLY_ACCESS_TOKEN = 'GUEST_TOKEN_LOCAL_ONLY';
 import {setUser} from 'features/home/store/userSlice';
 import {syncMarketingNotificationFromServer} from 'features/home/store/userThunk';
 import {setFamily} from 'features/home/store/familySlice';
@@ -65,9 +70,15 @@ export function useAutoLogin(shouldRun = true) {
   const rehydrated = useSelector(state => !!state?._persist?.rehydrated);
   const authChecked = useSelector(state => state.login?.authChecked);
   const loginLoading = useSelector(state => !!state.login?.loading);
+  const isLoggedIn = useSelector(state => !!state?.login?.isLoggedIn);
 
   const runningRef = useRef(false);
   const socketUnsubRef = useRef(null);
+
+  useEffect(() => {
+    if (!shouldRun || !rehydrated || !authChecked || !isLoggedIn) return;
+    ensureChatSocketIfSignedIn(dispatch, store.getState);
+  }, [shouldRun, rehydrated, authChecked, isLoggedIn, dispatch, store]);
 
   useEffect(() => {
     if (!shouldRun) return;
@@ -88,6 +99,14 @@ export function useAutoLogin(shouldRun = true) {
         const token = await withTimeout(getToken(), 6000);
 
         if (cancelled) return;
+
+        const tokenStr = token != null ? String(token).trim() : '';
+        if (tokenStr === LEGACY_LOCAL_ONLY_ACCESS_TOKEN) {
+          await deleteLoginInfo();
+          stopChatSocket();
+          dispatch(setLogout());
+          return;
+        }
 
         if (!token) {
           if (isManualLoginCompleted()) return;
@@ -194,7 +213,13 @@ export function useAutoLogin(shouldRun = true) {
         if (cancelled) return;
 
         if (!socketUnsubRef.current) {
-          socketUnsubRef.current = startChatSocket(dispatch, store.getState);
+          const unsub = await ensureChatSocketIfSignedIn(
+            dispatch,
+            store.getState,
+          );
+          if (typeof unsub === 'function') {
+            socketUnsubRef.current = unsub;
+          }
         }
       } catch (err) {
         if (isManualLoginCompleted()) return;

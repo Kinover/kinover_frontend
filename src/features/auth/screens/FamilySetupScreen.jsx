@@ -14,10 +14,7 @@ import {
   useCreateFamilyAndJoinMutation,
 } from 'features/home/services/homeApi';
 
-import {
-  validateLength,
-  required,
-} from 'utils/validation';
+import {validateLength, required} from 'utils/validation';
 import {COLORS} from 'styles/style';
 import {commitSignupProgressFinish} from 'utils/storage';
 
@@ -103,14 +100,15 @@ export default function FamilySetupScreen() {
     }
   };
 
- // 새 가족 생성 + 자동 참여 (한 방)
+  // 새 가족 생성 + 자동 참여 (한 방)
   const handleCreateFamily = async () => {
     if (creating) return;
     setCreating(true);
 
     try {
       const result = await createFamilyAndJoin().unwrap();
-      const id = result?.familyId ?? (typeof result === 'string' ? result : null);
+      const id =
+        result?.familyId ?? (typeof result === 'string' ? result : null);
 
       if (!id) {
         const msg = '가족 생성에 실패했어요. 잠시 후 다시 시도해 주세요.';
@@ -145,9 +143,6 @@ export default function FamilySetupScreen() {
       <View style={styles.field}>
         <Text allowFontScaling={false} style={styles.label}>
           가족 코드{' '}
-          <Text allowFontScaling={false} style={styles.star}>
- *
-          </Text>
         </Text>
         <CustomInput
           allowFontScaling={false}

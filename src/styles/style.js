@@ -6,6 +6,8 @@ import {
   getResponsiveIconSize,
   getResponsiveWidth,
 } from 'utils/responsive';
+import {getBottomSheetTypography} from 'styles/bottomSheetTypography';
+import {FONTS} from 'styles/typography';
 
 export const COLORS = {
   brandPrimary: '#FFC84D',
@@ -44,20 +46,20 @@ export const getButtonStyles = () => ({
   saveBg: COLORS.textPrimary,
   cancelBg: COLORS.surfacePrimary,
   fontSize: getResponsiveFontSize(14),
-  fontFamily: 'Pretendard-Medium',
+  fontFamily: FONTS.MEDIUM,
   border_radius: getResponsiveIconSize(14),
 });
 
 export const getHeaderStyles = () => ({
   mainTitleFontSize: getResponsiveFontSize(23),
   mainTitleFontColor: COLORS.textPrimary,
-  mainTitleFontFamily: 'Pretendard-SemiBold',
+  mainTitleFontFamily: FONTS.SEMI_BOLD,
   mainTitleFontWeight: Platform.OS === 'android' ? '700' : undefined,
   mainTitleLineHeight: getResponsiveFontSize(27),
 
   defaultTitleFontSize: getResponsiveFontSize(20),
   defaultTitleFontColor: COLORS.textDefault,
-  defaultTitleFontFamily: 'Pretendard-Medium',
+  defaultTitleFontFamily: FONTS.MEDIUM,
 
   headerLeftIconWidth:
     Platform.OS === 'ios'
@@ -83,17 +85,17 @@ export const getHeaderStyles = () => ({
 export const getSettingStyles = () => ({
   titleFontSize: getResponsiveFontSize(21),
   titleFontColor: COLORS.textPrimary,
-  titleFontFamily: 'Pretendard-Bold',
+  titleFontFamily: FONTS.BOLD,
   titleFontWeight: '700',
 
   labelFontSize: getResponsiveFontSize(16),
   labelFontColor: COLORS.textDefault,
-  labelFontFamily: 'Pretendard-Medium',
+  labelFontFamily: FONTS.MEDIUM,
 });
 
 export const getChatRoomStyle = () => ({
   messageFontFamily:
-    Platform.OS === 'android' ? 'Pretendard-Regular' : 'Pretendard-Light',
+    Platform.OS === 'android' ? FONTS.REGULAR : FONTS.LIGHT,
   messageFontSize: getResponsiveFontSize(13.5),
   messageTimeFontSize: getResponsiveFontSize(10.5),
   KinoMessageFontSize: getResponsiveFontSize(13.5),
@@ -101,29 +103,12 @@ export const getChatRoomStyle = () => ({
 
 export const getEmptyStyle = () => ({
   emptyFontSize: getResponsiveFontSize(12),
-  emptyFontFamily: 'Pretendard-Regular',
+  emptyFontFamily: FONTS.REGULAR,
   emptyColor: COLORS.textTertiary,
 });
 
 export const getBottomSheetStyle = () => ({
-  title: {
-    fontSize: getResponsiveFontSize(18),
-    fontFamily: 'Pretendard-SemiBold',
-    color: COLORS.textPrimary,
-  },
-  subtitle: {
-    marginTop: getResponsiveHeight(4),
-    fontSize: getResponsiveFontSize(13),
-    fontFamily: 'Pretendard-Regular',
-    color: COLORS.textSecondary,
-  },
-  sectionLabel: {
-    fontSize: getResponsiveFontSize(14),
-    fontFamily: 'Pretendard-SemiBold',
-    color: COLORS.textSecondary,
-    marginBottom: getResponsiveHeight(6),
-    marginTop: getResponsiveHeight(10),
-  },
+  ...getBottomSheetTypography(),
   inactive: {
     // color: ' #F6F7FB',
     color: COLORS.surfaceDisabled,
@@ -133,14 +118,14 @@ export const getBottomSheetStyle = () => ({
 export const getDefaultStyle = () => ({
   sectionTitle: {
     fontSize: getResponsiveFontSize(18),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     color: COLORS.textPrimary,
     letterSpacing: -0.2,
   },
   sectionSubtitle: {
     marginTop: getResponsiveHeight(3),
     fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     color: COLORS.textSecondary,
   },
 });

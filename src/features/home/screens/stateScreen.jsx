@@ -15,12 +15,15 @@ import {useNavigation} from '@react-navigation/native';
 
 import {
   getResponsiveHeight,
+  getResponsiveFontSize,
+  getResponsiveIconSize,
   getResponsiveWidth,
 } from 'utils/responsive';
 import useHideTabBar from 'hooks/useHideTabBar';
 import {useModifyUserMutation} from '../services/homeApi';
 import CharacterSelectionCard from 'components/cards/CharacterSelectionCard';
 import SelectionFrameLayout from 'components/layouts/SelectionFrameLayout';
+import {FONTS} from 'styles/typography';
 
 const EMOTIONS = [
   {
@@ -102,7 +105,7 @@ const EmotionItem = ({
 }) => {
   const cardH = cardHeight ?? CARD_H_DEFAULT;
   const emotionImageSize = Math.max(
-    getResponsiveWidth(42),
+    getResponsiveWidth(48),
     Math.min(itemWidth * 0.42, cardH * 0.5),
   );
   const emotionImageMarginBottom = Math.max(
@@ -172,6 +175,11 @@ const EmotionItem = ({
 
   return (
     <TouchableWithoutFeedback
+      accessible={true}
+      accessibilityRole="radio"
+      accessibilityLabel={item.label}
+      accessibilityState={{selected: isSelected}}
+      accessibilityHint={isSelected ? '선택됨' : '선택하려면 두 번 탭'}
       onPress={() => onPress(item.id)}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}>
@@ -248,12 +256,12 @@ export default function StateScreen() {
 
   emotionText: {
     fontSize: rf(13.5),
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     color: '#333',
   },
 
   emotionTextSelected: {
-    fontFamily: 'Pretendard-Bold',
+    fontFamily: FONTS.BOLD,
     color: '#000',
   },
 
@@ -313,7 +321,15 @@ export default function StateScreen() {
       subtitle="선택한 감정은 24시간 동안 유지돼요."
       backgroundColor="#F9F9F9"
       actionLabel="선택 완료"
-      actionButtonBackgroundColor="#000000"
+      actionButtonBackgroundColor="#FFC84D"
+      actionButtonLabelColor="#111827"
+      actionButtonStyle={{
+        height: getResponsiveHeight(52),
+        borderRadius: getResponsiveIconSize(14),
+      }}
+      actionButtonLabelStyle={{
+        fontSize: getResponsiveFontSize(15.5),
+      }}
       onActionPress={handleConfirm}
       balanceVerticalSpacing
     >

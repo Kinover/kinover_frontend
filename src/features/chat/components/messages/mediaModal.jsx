@@ -25,8 +25,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 
-import {useReduxFontMode} from 'hooks/useReduxFontMode';
-import {FONT_MODE} from 'store/uiSlice';
+import {FONTS} from 'styles/typography';
 
 const {width: screenWidth, height: screenHeight} = Dimensions.get('window');
 
@@ -191,19 +190,10 @@ export default function MediaModal({
   initialIndex = 0,
   onClose,
 }) {
-  const fontMode = useReduxFontMode();
-
- // multiplier
-  const fontMul = useMemo(() => {
-    if (fontMode === FONT_MODE.EXTRA_LARGE) return 1.22;
-    if (fontMode === FONT_MODE.LARGE) return 1.12;
-    return 1.0;
-  }, [fontMode]);
-
  // 폰트 사이즈 함수
   const rf = useCallback(
-    n => Math.round(getResponsiveFontSize(n) * fontMul),
-    [fontMul],
+    n => Math.round(getResponsiveFontSize(n)),
+    [],
   );
 
  // styles 재생성
@@ -588,7 +578,7 @@ const makeStyles = rf =>
       textAlign: 'center',
       textAlignVertical: 'center',
       lineHeight: rf(17),
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
       includeFontPadding: false,
     },
 
@@ -611,7 +601,7 @@ const makeStyles = rf =>
     indexText: {
       color: '#fff',
       fontSize: rf(13),
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
       includeFontPadding: false,
     },
 
@@ -669,7 +659,7 @@ const makeStyles = rf =>
 
     menuText: {
       color: '#fff',
-      fontFamily: 'Pretendard-Medium',
+      fontFamily: FONTS.MEDIUM,
       fontSize: rf(13),
     },
 
@@ -698,13 +688,13 @@ const makeStyles = rf =>
       color: '#fff',
       fontSize: rf(16),
       marginTop: 12,
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
     },
 
     progressSub: {
       color: 'rgba(255,255,255,0.8)',
       fontSize: rf(12),
       marginTop: 8,
-      fontFamily: 'Pretendard-Medium',
+      fontFamily: FONTS.MEDIUM,
     },
   });

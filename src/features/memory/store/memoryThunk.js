@@ -1,5 +1,3 @@
-// src/screens/memory/store/memoryThunk.js
-import {apiClient} from 'utils/apiClient';
 import {
   setMemoryList,
   setMemoryLoading,
@@ -8,67 +6,7 @@ import {
 } from './memorySlice';
 import {memoryApi} from '../services/memoryApi';
 
-import {getGuestMode} from 'utils/storage'; // 추가
 import {STORE_MOCK_ENABLED, getStoreMockMemoryList} from '../../home/utils/storeMockData';
-
-// =======================
-// Guest Dummy
-// =======================
-const makeGuestPosts = () => {
- // 네 UI가 어떤 필드(postId/content/images/categoryTitle/createdAt 등)를 쓰는지 몰라서
- // "최소한의 흔한 필드"로 구성했어.
- // 만약 UI에서 다른 키를 강하게 쓰면(예: images[].imageUrl 필수) 그 키만 맞춰주면 돼.
-  const now = new Date().toISOString();
-
-  return [
-    {
-      postId: 'GUEST_POST_1',
-      content: '게스트 모드예요! 서버 없이 UI만 둘러볼 수 있어요 🙂',
-      createdAt: now,
-      categoryId: 'GUEST_CAT_1',
-      categoryTitle: '일상',
-      images: [
-        {
-          imageUrl: 'https://via.placeholder.com/800x600.png?text=Kinover+Guest+1',
-        },
-      ],
-      authorName: '게스트',
-      commentCount: 0,
-    },
-    {
-      postId: 'GUEST_POST_2',
-      content: '이건 더미 게시글이에요. 나중에 로그인하면 진짜 데이터가 보여요!',
-      createdAt: now,
-      categoryId: 'GUEST_CAT_2',
-      categoryTitle: '기념일',
-      images: [],
-      authorName: '게스트',
-      commentCount: 2,
-    },
-    {
-      postId: 'GUEST_POST_3',
-      content: 'UI 작업할 때 게스트 모드가 있으면 너무 편하쥬 ✨',
-      createdAt: now,
-      categoryId: 'GUEST_CAT_3',
-      categoryTitle: '기록',
-      images: [
-        {
-          imageUrl: 'https://via.placeholder.com/800x600.png?text=Kinover+Guest+2',
-        },
-      ],
-      authorName: '게스트',
-      commentCount: 1,
-    },
-  ];
-};
-
-const filterGuestPostsByCategoryId = (posts, categoryId) => {
- // 네 로직이 UUID만 categoryId로 인정하니까
- // 게스트 모드에서는 그냥 "문자열 카테고리"도 필터되게 따로 처리해주는 게 좋아.
-  if (!categoryId) return posts;
-
-  return posts.filter(p => String(p.categoryId) === String(categoryId));
-};
 
 /**
  * 게시글 목록 조회
@@ -83,7 +21,6 @@ export const fetchMemoryThunk = categoryId => {
     dispatch(setMemoryError(null));
 
     try {
- // 스토어 목업이면 더미(부산 광안리 여행) 세팅
       if (STORE_MOCK_ENABLED) {
         const mockList = getStoreMockMemoryList();
         const filtered =
@@ -94,32 +31,11 @@ export const fetchMemoryThunk = categoryId => {
         dispatch(setMemoryLoading(false));
         return filtered;
       }
- // 게스트면 서버 호출 X, 더미 list 세팅
-      const isGuest = await getGuestMode();
-      if (isGuest) {
-        const dummyAll = makeGuestPosts();
-        const dummy = filterGuestPostsByCategoryId(dummyAll, categoryId);
-        dispatch(setMemoryList(dummy));
-          categoryId,
-          count: dummy.length,
-        });
-        return dummy;
-      }
 
       const params = {};
-
- // categoryId는 "진짜 UUID"일 때만 붙이기
       if (isUuid(categoryId)) {
         params.categoryId = categoryId;
-      } else {
-        if (categoryId != null) {
-        }
       }
-
-        baseURL: apiClient?.defaults?.baseURL,
-        path: '/posts',
-        params: Object.keys(params).length ? params : undefined,
-      });
 
       const req = dispatch(
         memoryApi.endpoints.getPosts.initiate(
@@ -129,18 +45,11 @@ export const fetchMemoryThunk = categoryId => {
       );
       const data = await req.unwrap();
       req.unsubscribe();
-      if (!Array.isArray(data)) {
-      }
 
-      dispatch(setMemoryList(Array.isArray(data) ? data : []));
-      return Array.isArray(data) ? data : [];
+      const list = Array.isArray(data) ? data : [];
+      dispatch(setMemoryList(list));
+      return list;
     } catch (error) {
-        baseURL: apiClient?.defaults?.baseURL,
-        status: error?.response?.status,
-        data: error?.response?.data,
-        message: error?.message,
-      });
-
       const msg =
         error?.response?.data?.message ||
         error?.response?.data ||
@@ -155,30 +64,16 @@ export const fetchMemoryThunk = categoryId => {
   };
 };
 
-// 게시글 삭제
 export const deletePostThunk = (postId, categoryId) => {
-  return async (dispatch, getState) => {
+  return async dispatch => {
     dispatch(setMemoryLoading(true));
     dispatch(setMemoryError(null));
 
     try {
- // 게스트면 서버 호출 X, 로컬 리스트에서만 제거
-      const isGuest = await getGuestMode();
-      if (isGuest) {
-        const list = getState()?.memory?.memoryList || [];
-        const next = Array.isArray(list)
-          ? list.filter(p => String(p?.postId) !== String(postId))
-          : [];
-        dispatch(setMemoryList(next));
-        return true;
-      }
-
       const req = dispatch(memoryApi.endpoints.deletePost.initiate(postId));
       await req.unwrap();
       req.unsubscribe();
 
-
- // 삭제 후 목록 갱신
       await dispatch(fetchMemoryThunk(categoryId));
 
       return true;
@@ -197,34 +92,17 @@ export const deletePostThunk = (postId, categoryId) => {
   };
 };
 
-// 게시글 이미지 삭제
 export const deletePostImageThunk = (
   postId,
   imageUrlToDelete,
   categoryId,
   options = {refresh: true},
 ) => {
-  return async (dispatch, getState) => {
+  return async dispatch => {
     dispatch(setMemoryLoading(true));
     dispatch(setMemoryError(null));
 
     try {
- // 게스트면 서버 호출 X, 로컬에서 이미지 제거만
-      const isGuest = await getGuestMode();
-      if (isGuest) {
-        const list = getState()?.memory?.memoryList || [];
-        const next = Array.isArray(list)
-          ? list.map(p => {
-              if (String(p?.postId) !== String(postId)) return p;
-              const imgs = Array.isArray(p?.images) ? p.images : [];
-              const newImgs = imgs.filter(img => img?.imageUrl !== imageUrlToDelete);
-              return {...p, images: newImgs};
-            })
-          : [];
-        dispatch(setMemoryList(next));
-        return {ok: true, guest: true};
-      }
-
       const req = dispatch(
         memoryApi.endpoints.deletePostImage.initiate({
           postId,
@@ -233,7 +111,6 @@ export const deletePostImageThunk = (
       );
       const data = await req.unwrap();
       req.unsubscribe();
-
 
       if (options?.refresh) {
         await dispatch(fetchMemoryThunk(categoryId));
@@ -255,18 +132,10 @@ export const deletePostImageThunk = (
   };
 };
 
-// 게시글 알림 ON/OFF
 export const togglePostNotificationThunk = ({userId, isOn}) => {
   return async dispatch => {
     dispatch(setMemoryError(null));
     try {
- // 게스트면 서버 호출 X
-      const isGuest = await getGuestMode();
-      if (isGuest) {
-        return true;
-      }
-
-
       const req = dispatch(
         memoryApi.endpoints.togglePostNotification.initiate({userId, isOn}),
       );
@@ -287,32 +156,12 @@ export const togglePostNotificationThunk = ({userId, isOn}) => {
   };
 };
 
-// 특정 게시글 조회 (단건)
 export const fetchPostByIdThunk = postId => {
   return async (dispatch, getState) => {
     dispatch(setMemoryLoading(true));
     dispatch(setMemoryError(null));
 
     try {
- // 게스트면 서버 호출 X
-      const isGuest = await getGuestMode();
-      if (isGuest) {
- // 스토어에 있으면 그거 반환, 없으면 더미에서 찾아서 setPostDetail
-        const {postsById, memoryList} = getState().memory || {};
-        const existingPost = postsById?.[String(postId)];
-        if (existingPost) return existingPost;
-
-        const list = Array.isArray(memoryList) ? memoryList : [];
-        const found = list.find(p => String(p?.postId) === String(postId));
-
-        const dummyAll = makeGuestPosts();
-        const dummyFound =
-          found || dummyAll.find(p => String(p?.postId) === String(postId)) || dummyAll[0];
-
-        dispatch(setPostDetail(dummyFound));
-        return dummyFound;
-      }
-
       const {postsById} = getState().memory || {};
       const existingPost = postsById?.[String(postId)];
       if (existingPost) {
@@ -342,7 +191,6 @@ export const fetchPostByIdThunk = postId => {
   };
 };
 
-// 스토어에서 postId로 게시글 가져오기 (동기 selector성 thunk)
 export const getPostFromStoreById = postId => {
   return (dispatch, getState) => {
     const state = getState();

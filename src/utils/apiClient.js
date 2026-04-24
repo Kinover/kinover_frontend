@@ -6,7 +6,7 @@
 //
 // reject 시 config 객체를 넘기지 말 것(config.headers에 토큰 포함될 수 있음).
 import axios from 'axios';
-import {getToken, deleteLoginInfo, getGuestMode} from './storage';
+import {getToken, deleteLoginInfo} from './storage';
 import {safeReset} from 'app/navigation/navigationService';
 import {
   API_BASE_URL,
@@ -31,15 +31,6 @@ const isAuthExcluded = (url = '') => {
 };
 
 apiClient.interceptors.request.use(async config => {
-  const isGuest = await getGuestMode();
-  if (isGuest) {
-    return Promise.reject({
-      isGuestBlocked: true,
-      message: 'GUEST_MODE_BLOCKED',
- // config 제외: headers에 Authorization 등 민감 정보가 들어갈 수 있음
-    });
-  }
-
  // 로그인/회원가입 계열은 Authorization 주입하지 않음
   if (!isAuthExcluded(config?.url)) {
     const token = await getToken();
@@ -126,8 +117,6 @@ function sessionInvalidatedUserMessage(data) {
 apiClient.interceptors.response.use(
   res => res,
   async error => {
-    if (error?.isGuestBlocked) return Promise.reject(error);
-
     const status = error?.response?.status;
     const data = error?.response?.data;
     const msg = String(

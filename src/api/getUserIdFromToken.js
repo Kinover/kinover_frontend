@@ -7,5 +7,12 @@ export const getUserIdFromToken = async () => {
   if (!token) return null;
 
   const decoded = jwtDecode(token);
-  return decoded.userId || decoded.sub || decoded.id; // 어떤 키로 들어가는지 로그로 확인
+  return (
+    decoded.userId ??
+    decoded.user_id ??
+    decoded.sub ??
+    decoded.id ??
+    decoded.uid ??
+    null
+  );
 };

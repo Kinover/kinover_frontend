@@ -1,6 +1,3 @@
-# React Native Firebase: Swift 기반 FirebaseAuth와 ObjC 타깃(RNFBApp 등) 연동 시
-# `FirebaseAuth/FirebaseAuth-Swift.h` not found 방지 — 정적 프레임워크로 맞춤
-# https://rnfirebase.io/#altering-cocoapods-to-use-frameworks
 $RNFirebaseAsStaticFramework = true
 
 platform :ios, '16.0'
@@ -14,7 +11,6 @@ require File.join(
 prepare_react_native_project!
 
 target 'kinover_frontend' do
-  # Firebase(Auth 등 Swift) + ObjC RNFB* 타깃: Swift 생성 헤더 노출에 필요
   use_frameworks! :linkage => :static
 
   config = use_native_modules!
@@ -26,7 +22,6 @@ target 'kinover_frontend' do
     :hermes_enabled => true
   )
 
-  # ✅ RNFB 의존성 모듈러 헤더 강제 (유지)
   pod 'GoogleUtilities',           :modular_headers => true
   pod 'FirebaseCoreInternal',      :modular_headers => true
   pod 'FirebaseCore',              :modular_headers => true
@@ -37,9 +32,27 @@ target 'kinover_frontend' do
   pod 'FirebaseCoreExtension',     :modular_headers => true
   pod 'RecaptchaInterop',          :modular_headers => true
 
-  # 3rd party
   pod 'lottie-react-native', :path => '../node_modules/lottie-react-native'
   pod 'kakao-login',         :path => '../node_modules/@react-native-seoul/kakao-login'
+
+  pre_install do |installer|
+    # ✅ fmt 헤더 파일 직접 패치 — FMT_USE_CONSTEVAL 강제 0으로 덮어씀
+    fmt_dir = File.join(installer.sandbox.root, 'fmt', 'include', 'fmt')
+    if Dir.exist?(fmt_dir)
+      Dir.glob("#{fmt_dir}/*.h").each do |header|
+        content = File.read(header)
+        modified = content
+          .gsub(/(#\s*define\s+FMT_USE_CONSTEVAL\s+)1/, '\10')
+          .gsub(/(#elif\s+FMT_USE_CONSTEVAL)/, '// patched \1')
+        if modified != content
+          File.write(header, modified)
+          puts "[Podfile] Patched fmt header: #{File.basename(header)}"
+        end
+      end
+    else
+      puts "[Podfile] fmt include dir not found — skipping patch"
+    end
+  end
 
   post_install do |installer|
     react_native_post_install(
@@ -53,16 +66,26 @@ target 'kinover_frontend' do
         c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         c.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
         c.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
+        c.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
 
-        # fmt 11/12이 consteval을 사용 → Xcode 26(Clang 17+)에서 "not a constant expression" 빌드 실패.
-        # FMT_USE_CONSTEVAL=0 을 모든 pod에 전역 적용 (타겟명 무관하게 안전하게 처리).
+        # ✅ fmt 타깃만 핀포인트로 잡아서 FMT_USE_CONSTEVAL=0 강제 적용
+        if t.name == 'fmt'
+          defs = c.build_settings['GCC_PREPROCESSOR_DEFINITIONS']
+          defs = defs.is_a?(Array) ? defs : (defs.to_s.empty? ? ['$(inherited)'] : [defs.to_s])
+          unless defs.any? { |d| d.to_s.include?('FMT_USE_CONSTEVAL') }
+            defs << 'FMT_USE_CONSTEVAL=0'
+          end
+          c.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = defs
+          c.build_settings['OTHER_CPLUSPLUSFLAGS'] = '$(inherited) -DFMT_USE_CONSTEVAL=0'
+        end
+
+        # ✅ 전체 타깃에도 이중 방어
         existing_flags = c.build_settings['OTHER_CPLUSPLUSFLAGS'].to_s
         unless existing_flags.include?('FMT_USE_CONSTEVAL')
           c.build_settings['OTHER_CPLUSPLUSFLAGS'] = '$(inherited) -DFMT_USE_CONSTEVAL=0'
         end
 
-        # Yoga.podspec이 C++에 -Werror를 넣음 → Clang 17/Xcode 16+에서 새 경고 시 전체 iOS 빌드 실패.
-        # .o 미생성 → libtool yoga.LinkFileList 없음 같은 2차 에러로 이어짐.
+        # ✅ Yoga -Werror 제거
         if t.name == 'Yoga'
           %w[OTHER_CFLAGS OTHER_CPLUSPLUSFLAGS].each do |key|
             val = c.build_settings[key]
@@ -85,18 +108,14 @@ target 'kinover_frontend' do
       "../node_modules/react-native/ReactCommon/yoga/yoga/module.modulemap",
       __dir__
     )
-
     if File.exist?(rn_yoga_modulemap)
       begin
         File.delete(rn_yoga_modulemap)
         puts "[Podfile] Deleted RN Yoga modulemap: #{rn_yoga_modulemap}"
       rescue => e
         File.open(rn_yoga_modulemap, "w") { |f| f.write("") }
-        puts "[Podfile] Emptied RN Yoga modulemap instead: #{rn_yoga_modulemap}"
-        puts "[Podfile] Delete error: #{e}"
+        puts "[Podfile] Emptied RN Yoga modulemap: #{e}"
       end
-    else
-      puts "[Podfile] RN Yoga modulemap not found: #{rn_yoga_modulemap}"
     end
   end
 end

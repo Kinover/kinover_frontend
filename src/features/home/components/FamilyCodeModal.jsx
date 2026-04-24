@@ -14,6 +14,7 @@ import {BUTTON_STYLES, COLORS} from 'styles/style';
 
 // HAPTIC (경로는 네 프로젝트에 맞게 유지/조정)
 import {hapticLight, hapticSuccess} from 'utils/haptic';
+import {FONTS} from 'styles/typography';
 
 export default function FamilyCodeModal({visible, onClose, familyCode}) {
   const styles = useScaledStyleSheet(rf => ({
@@ -54,7 +55,7 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
   },
 
   codeLabel: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(10.5),
     color: COLORS.textTertiary,
     letterSpacing: 1.4,
@@ -62,7 +63,7 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
   },
 
   codeText: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(15),
     color: '#111827',
     letterSpacing: 1.2,
@@ -77,7 +78,7 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
     paddingVertical: getResponsiveHeight(8),
     paddingHorizontal: getResponsiveWidth(12),
     borderRadius: 999,
-    backgroundColor: BUTTON_STYLES().saveBg,
+    backgroundColor: COLORS.brandPrimary,
   },
 
   copyBtnCopied: {
@@ -95,9 +96,9 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
   },
 
   copyText: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(12),
-    color: '#FFFFFF',
+    color: '#111827',
   },
 
   copyTextCopied: {

@@ -1,9 +1,18 @@
 // src/components/CustomModal.jsx
 import React, {useMemo, useEffect, useState, useCallback, useRef} from 'react';
-import { View, Modal, TouchableOpacity, StyleSheet, Platform, Image, Animated, Easing, Dimensions, Pressable } from 'react-native';
-import DropShadow from 'react-native-drop-shadow';
-import {FONT_MODE} from 'store/uiSlice';
-import {useReduxFontMode} from 'hooks/useReduxFontMode';
+import {
+  View,
+  Modal,
+  TouchableOpacity,
+  StyleSheet,
+  Platform,
+  Image,
+  Animated,
+  Easing,
+  Dimensions,
+  Pressable,
+  KeyboardAvoidingView,
+} from 'react-native';
 
 import AppText from 'components/AppText';
 import {
@@ -13,6 +22,7 @@ import {
   getResponsiveIconSize,
 } from 'utils/responsive';
 import {hapticLight, hapticMedium} from 'utils/haptic';
+import {FONTS} from 'styles/typography';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -73,15 +83,7 @@ export default function CustomModal({
  /** true면 Modal 대신 View 오버레이 사용 (iOS/Android 닫은 뒤 탭 터치 막힘 방지) */
   useViewOverlayOnIOS = false,
 }) {
-  const fontMode = useReduxFontMode();
-
-  const fontScale = useMemo(() => {
-    if (fontMode === FONT_MODE.EXTRA_LARGE) return 1.12;
-    if (fontMode === FONT_MODE.LARGE) return 1.06;
-    return 1;
-  }, [fontMode]);
-
-  const styles = useMemo(() => makeStyles(fontScale), [fontScale]);
+  const styles = useMemo(() => makeStyles(1), []);
 
  // Animated.Value는 "한 번만" 만들기 (불필요한 new 방지)
   const animRef = useRef(null);
@@ -103,7 +105,9 @@ export default function CustomModal({
       ) {
         runningAnimRef.current.stop();
       }
-    } catch {}
+    } catch (e) {
+      // no-op
+    }
     runningAnimRef.current = null;
   }, []);
 
@@ -165,7 +169,6 @@ export default function CustomModal({
       cancelled = true;
       stopRunningAnim();
     };
- // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, stopRunningAnim]); // mounted를 deps에 넣지 않음
 
   const overlayStyle = useMemo(() => ({opacity: anim}), [anim]);
@@ -258,8 +261,81 @@ export default function CustomModal({
       <Animated.View
         style={[modalStyle, styles.modalOuter, modalWrapperStyle]}
         pointerEvents="box-none">
-        {useShadow ? (
-          <DropShadow style={styles.shadow}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={getResponsiveHeight(18)}
+          style={styles.keyboardAvoidWrap}>
+          {useShadow ? (
+            <View style={styles.shadow}>
+              <View style={[styles.modalBox, modalBoxStyle]} pointerEvents="auto">
+                {showCloseButton && (
+                  <TouchableOpacity
+                    onPress={requestClose}
+                    style={styles.closeIconBtn}
+                    hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+                    activeOpacity={0.85}>
+                    <Image
+                      source={require('@/assets/modal/closeX.png')}
+                      style={styles.closeIcon}
+                      resizeMode="contain"
+                    />
+                  </TouchableOpacity>
+                )}
+
+                {!!titleImage && (
+                  <Image
+                    source={titleImage}
+                    style={[styles.titleImage, titleImageStyle]}
+                    resizeMode="contain"
+                  />
+                )}
+
+                {!!title && (
+                  <AppText style={styles.title} allowFontScaling={false}>
+                    {title}
+                  </AppText>
+                )}
+
+                {renderSubText('title')}
+
+                {!!children && (
+                  <View style={[styles.content, contentStyle]} pointerEvents="auto">
+                    {children}
+                  </View>
+                )}
+
+                {renderSubText('content')}
+
+                <View style={[styles.buttonRow, buttonBottomStyle]}>
+                  {!!closeText && (
+                    <TouchableOpacity
+                      onPress={handleLeftPress}
+                      style={[styles.leftBtn, closeButtonStyle]}
+                      activeOpacity={0.9}>
+                      <AppText
+                        style={[styles.leftText, closeTextStyle]}
+                        allowFontScaling={false}>
+                        {closeText}
+                      </AppText>
+                    </TouchableOpacity>
+                  )}
+
+                  {!!onConfirm && (
+                    <TouchableOpacity
+                      onPress={handleRightPress}
+                      style={[styles.rightBtn, confirmButtonStyle]}
+                      activeOpacity={0.9}>
+                      <AppText
+                        style={[styles.rightText, confirmTextStyle]}
+                        allowFontScaling={false}>
+                        {confirmText}
+                      </AppText>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </View>
+          ) : (
             <View style={[styles.modalBox, modalBoxStyle]} pointerEvents="auto">
               {showCloseButton && (
                 <TouchableOpacity
@@ -327,76 +403,8 @@ export default function CustomModal({
                 )}
               </View>
             </View>
-          </DropShadow>
-        ) : (
-          <View style={[styles.modalBox, modalBoxStyle]} pointerEvents="auto">
-            {showCloseButton && (
-              <TouchableOpacity
-                onPress={requestClose}
-                style={styles.closeIconBtn}
-                hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
-                activeOpacity={0.85}>
-                <Image
-                  source={require('@/assets/modal/closeX.png')}
-                  style={styles.closeIcon}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-            )}
-
-            {!!titleImage && (
-              <Image
-                source={titleImage}
-                style={[styles.titleImage, titleImageStyle]}
-                resizeMode="contain"
-              />
-            )}
-
-            {!!title && (
-              <AppText style={styles.title} allowFontScaling={false}>
-                {title}
-              </AppText>
-            )}
-
-            {renderSubText('title')}
-
-            {!!children && (
-              <View style={[styles.content, contentStyle]} pointerEvents="auto">
-                {children}
-              </View>
-            )}
-
-            {renderSubText('content')}
-
-            <View style={[styles.buttonRow, buttonBottomStyle]}>
-              {!!closeText && (
-                <TouchableOpacity
-                  onPress={handleLeftPress}
-                  style={[styles.leftBtn, closeButtonStyle]}
-                  activeOpacity={0.9}>
-                  <AppText
-                    style={[styles.leftText, closeTextStyle]}
-                    allowFontScaling={false}>
-                    {closeText}
-                  </AppText>
-                </TouchableOpacity>
-              )}
-
-              {!!onConfirm && (
-                <TouchableOpacity
-                  onPress={handleRightPress}
-                  style={[styles.rightBtn, confirmButtonStyle]}
-                  activeOpacity={0.9}>
-                  <AppText
-                    style={[styles.rightText, confirmTextStyle]}
-                    allowFontScaling={false}>
-                    {confirmText}
-                  </AppText>
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-        )}
+          )}
+        </KeyboardAvoidingView>
 
         {!!footerOutside && (
           <View style={styles.footerOutsideWrap} pointerEvents="box-none">
@@ -440,7 +448,7 @@ export default function CustomModal({
 }
 
 function makeStyles(fontScale) {
-  const width = Math.min(350, SCREEN_WIDTH - 56);
+  const width = Math.min(350, SCREEN_WIDTH - 76);
   const dimColor = 'rgba(0,0,0,0.56)';
 
   return StyleSheet.create({
@@ -454,6 +462,10 @@ function makeStyles(fontScale) {
       width: '100%',
       alignItems: 'center',
     },
+    keyboardAvoidWrap: {
+      width: '100%',
+      alignItems: 'center',
+    },
     footerOutsideWrap: {
       marginTop: getResponsiveHeight(10),
       alignItems: 'center',
@@ -464,10 +476,8 @@ function makeStyles(fontScale) {
       backgroundColor: dimColor,
     },
     shadow: {
-      shadowColor: '#000',
-      shadowOpacity: 0.18,
-      shadowRadius: 20,
-      shadowOffset: {width: 0, height: 10},
+      shadowOpacity: 0,
+      elevation: 0,
     },
     modalBox: {
       width,
@@ -508,7 +518,7 @@ function makeStyles(fontScale) {
       textAlign: 'center',
       fontSize: getResponsiveFontSize(18) * fontScale,
       lineHeight: getResponsiveFontSize(24) * fontScale,
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
       color: '#111827',
       marginTop: getResponsiveHeight(15),
       marginBottom: getResponsiveHeight(10),
@@ -518,7 +528,7 @@ function makeStyles(fontScale) {
       textAlign: 'center',
       fontSize: getResponsiveFontSize(13.5) * fontScale,
       lineHeight: getResponsiveFontSize(20) * fontScale,
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       color: '#6B7280',
       marginBottom: getResponsiveHeight(12),
       paddingHorizontal: getResponsiveWidth(6),
@@ -547,22 +557,22 @@ function makeStyles(fontScale) {
       flex: 1,
       height: getResponsiveHeight(46),
       borderRadius: getResponsiveWidth(12),
-      backgroundColor: 'black',
+      backgroundColor: '#FFC84D',
       borderWidth: 1,
-      borderColor: 'black',
+      borderColor: '#FFC84D',
       alignItems: 'center',
       justifyContent: 'center',
     },
     leftText: {
-      fontFamily: 'Pretendard-Medium',
+      fontFamily: FONTS.MEDIUM,
       fontSize: getResponsiveFontSize(14) * fontScale,
       color: '#111827',
       ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
     },
     rightText: {
-      fontFamily: 'Pretendard-Medium',
+      fontFamily: FONTS.MEDIUM,
       fontSize: getResponsiveFontSize(14) * fontScale,
-      color: '#FFFFFF',
+      color: '#111827',
       ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
     },
   });

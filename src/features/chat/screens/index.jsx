@@ -12,6 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import DropShadow from 'react-native-drop-shadow';
 
 import AppText from 'components/AppText';
 import {useSelector} from 'react-redux';
@@ -39,7 +40,6 @@ import ToastModal from 'components/modal/ToastModal';
 
 import {BACKGROUND_COLORS, EMPTY_STYLE} from 'styles/style';
 import {hapticLight} from 'utils/haptic';
-import DropShadow from 'react-native-drop-shadow';
 
 import CreateChatRoomBottomSheet from '../components/modals/CreateChatRoomBottomSheet';
 import ChatGuideModal from '../components/guides/ChatGuideModal';
@@ -109,6 +109,13 @@ export default function CommunicationScreen({navigation}) {
       width: '100%',
       height: '100%',
     },
+    fabDropShadow: {
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 2},
+      shadowOpacity: 0.16,
+      shadowRadius: 3,
+      elevation: 5,
+    },
     fabMeasure: {
       ...StyleSheet.absoluteFillObject,
     },
@@ -124,12 +131,6 @@ export default function CommunicationScreen({navigation}) {
       width: '45%',
       height: '45%',
       resizeMode: 'contain',
-    },
-    shadow: {
-      shadowColor: '#000',
-      shadowOffset: {width: 0, height: 3},
-      shadowOpacity: 0.08,
-      shadowRadius: 3,
     },
   }));
 
@@ -374,9 +375,8 @@ export default function CommunicationScreen({navigation}) {
       <View
         style={[styles.fabContainer, {bottom: fabBottom}]}
         pointerEvents="box-none">
-        <DropShadow
-          style={[styles.shadow, styles.fabShadow]}
-          pointerEvents="box-none">
+        <DropShadow style={styles.fabDropShadow} pointerEvents="box-none">
+          <View style={styles.fabShadow} pointerEvents="box-none">
           <View
             ref={guideTargetRef}
             collapsable={false}
@@ -396,6 +396,7 @@ export default function CommunicationScreen({navigation}) {
               accessibilityIgnoresInvertColors
             />
           </TouchableOpacity>
+          </View>
         </DropShadow>
       </View>
     </View>

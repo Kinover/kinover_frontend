@@ -34,6 +34,7 @@ import {useKeyboardHandler} from 'react-native-keyboard-controller';
 import {runOnJS} from 'react-native-reanimated';
 import {COLORS, EMPTY_STYLE} from 'styles/style';
 import BOTTOM_SHEET_TITLES from 'constants/bottomSheetTitles';
+import {FONTS} from 'styles/typography';
 const ACTION_W = getResponsiveWidth(70);
 const INPUT_H = getResponsiveHeight(46);
 const INPUT_SIDE_PAD = getResponsiveWidth(16);
@@ -428,14 +429,14 @@ export default function MemoryDetailBottomSheet({
     minHeight: getResponsiveHeight(24),
   },
   commentSheetTitle: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(18.5),
     color: '#111827',
     textAlign: 'center',
   },
   commentCountText: {
     marginLeft: getResponsiveWidth(6),
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     fontSize: rf(12.5),
     color: '#9CA3AF',
   },
@@ -480,7 +481,7 @@ export default function MemoryDetailBottomSheet({
     justifyContent: 'space-between',
   },
   commentWriter: {
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: rf(13),
     color: '#000',
   },
@@ -490,7 +491,7 @@ export default function MemoryDetailBottomSheet({
   },
   commentContent: {
     marginTop: getResponsiveHeight(4),
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     fontSize: rf(12),
     lineHeight: rf(15),
     color: '#000',
@@ -500,7 +501,7 @@ export default function MemoryDetailBottomSheet({
   },
   mentionText: {
     color: '#111827',
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     backgroundColor: 'rgba(255,200,77,0.22)',
     paddingHorizontal: getResponsiveWidth(6),
     paddingVertical: getResponsiveHeight(2),
@@ -539,7 +540,7 @@ export default function MemoryDetailBottomSheet({
   },
   deleteActionText: {
     color: '#FFF',
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
   },
   reportAction: {
     flex: 1,
@@ -549,7 +550,7 @@ export default function MemoryDetailBottomSheet({
   },
   reportActionText: {
     color: '#FFF',
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(13),
   },
 
@@ -593,7 +594,7 @@ export default function MemoryDetailBottomSheet({
   commentInput: {
     flex: 1,
     fontSize: rf(14),
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     lineHeight: getResponsiveHeight(17),
     color: '#000',
     paddingVertical: 0,
@@ -650,12 +651,12 @@ export default function MemoryDetailBottomSheet({
     flex: 1,
     minWidth: 0,
     color: COLORS.textPrimary,
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: rf(13.5),
   },
   mentionHint: {
     color: '#6B7280',
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: rf(12),
   },
 

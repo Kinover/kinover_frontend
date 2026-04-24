@@ -1,4 +1,8 @@
 import {baseApi} from 'services/baseApi';
+import {
+  normalizeUserinfoResponse,
+  normalizeFamilyUsersResponse,
+} from '../utils/normalizeUserProfileResponse';
 
 export const homeApi = baseApi.injectEndpoints({
   overrideExisting: false,
@@ -9,6 +13,7 @@ export const homeApi = baseApi.injectEndpoints({
         method: 'GET',
         headers: {'Content-Type': 'application/json'},
       }),
+      transformResponse: response => normalizeUserinfoResponse(response),
       providesTags: ['User'],
     }),
     modifyUser: build.mutation({
@@ -18,6 +23,7 @@ export const homeApi = baseApi.injectEndpoints({
         data: body,
         headers: {'Content-Type': 'application/json'},
       }),
+      transformResponse: response => normalizeUserinfoResponse(response),
       invalidatesTags: ['User', 'FamilyUser'],
     }),
     deleteUser: build.mutation({
@@ -86,6 +92,7 @@ export const homeApi = baseApi.injectEndpoints({
         data: {},
         headers: {'Content-Type': 'application/json'},
       }),
+      transformResponse: response => normalizeFamilyUsersResponse(response),
       providesTags: (result, error, familyId) => [{type: 'FamilyUser', id: String(familyId)}],
     }),
     getMarketingNotification: build.query({

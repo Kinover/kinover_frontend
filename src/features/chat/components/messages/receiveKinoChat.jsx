@@ -21,6 +21,7 @@ import {getSpacingStyle} from '../../utils/getSpacingStyle';
 import {CHATROOM_STYLE} from 'styles/style';
 import AppText from 'components/AppText';
 import KinoBubble from '../bubbles/KinoBubble';
+import {FONTS} from 'styles/typography';
 
 // 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
@@ -45,7 +46,7 @@ export default function ReceiveKinoChat({
     alignItems: 'flex-start',
   },
   userName: {
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: CHATROOM_STYLE().messageFontSize,
     color: '#444',
     marginBottom: getResponsiveHeight(7),

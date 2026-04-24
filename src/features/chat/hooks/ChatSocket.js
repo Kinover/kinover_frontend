@@ -13,6 +13,9 @@ import {
 import {receiveMessageThunk} from '../store/messageThunk';
 import {applyReadPointer} from '../store/chatRoomSlice';
 
+/** 예전 게스트 모드에서 저장됐을 수 있는 로컬 전용 마커 — WS 미연결 */
+const LEGACY_LOCAL_ONLY_TOKEN = 'GUEST_TOKEN_LOCAL_ONLY';
+
 let ws = null;
 let reconnectTimer = null;
 let reconnectAttempt = 0;
@@ -157,6 +160,8 @@ async function openSocket() {
 
   const tokenRaw = await getToken();
   if (!tokenRaw) return;
+  const trimmed = String(tokenRaw).trim();
+  if (trimmed === LEGACY_LOCAL_ONLY_TOKEN) return;
 
   const token = encodeURIComponent(tokenRaw);
 
@@ -268,6 +273,25 @@ export function resumeFromBackground() {
   clearReconnectTimer();
   reconnectAttempt = 0;
   openSocket();
+}
+
+/**
+ * 로그인 세션이 있을 때 채팅 WS 기동을 보장합니다.
+ * needsSignup / 전화 미인증 등으로 소셜 로그인 훅이 조기 return 하면 useAutoLogin이
+ * `authChecked` 때문에 스킵되어 소켓이 안 열리는 구멍을 메웁니다.
+ */
+export async function ensureChatSocketIfSignedIn(dispatch, getState) {
+  try {
+    if (typeof dispatch !== 'function' || typeof getState !== 'function') {
+      return undefined;
+    }
+    const token = await getToken();
+    const t = token != null ? String(token).trim() : '';
+    if (!t || t === LEGACY_LOCAL_ONLY_TOKEN) return undefined;
+    return startChatSocket(dispatch, getState);
+  } catch {
+    return undefined;
+  }
 }
 
 /**

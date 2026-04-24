@@ -1,5 +1,5 @@
 // src/features/auth/store/loginThunk.js
-import {saveToken, setHasFamily, getGuestMode, setNeedsSignup, getNeedsSignup} from 'utils/storage';
+import {saveToken, setHasFamily, setNeedsSignup, getNeedsSignup} from 'utils/storage';
 import {setLoginLoading, setLoginError, setLoginSuccess} from './loginSlice';
 import {fetchUserThunk} from 'features/home/store/userThunk';
 import {authApi} from '../services/authApi';
@@ -8,9 +8,6 @@ import {setFamilyUserList} from 'features/home/store/userFamilySlice';
 import {resetUser} from 'features/home/store/userSlice';
 import {homeApi} from 'features/home/services/homeApi';
 import {baseApi} from 'services/baseApi';
-
-// 게스트 토큰(로컬 전용)
-const GUEST_TOKEN = 'GUEST_TOKEN_LOCAL_ONLY';
 
 /**
  * 다른 계정으로 로그인할 때 이전 세션의 가족/유저/RTK 캐시가 남지 않도록 초기화
@@ -135,20 +132,6 @@ export const loginThunk = kakaoAccessToken => {
     dispatch(setLoginError(null));
 
     try {
-      const isGuest = await getGuestMode?.();
-      if (isGuest) {
-        await saveToken(GUEST_TOKEN);
-
-        dispatch(setLoginSuccess());
-        clearSessionIdentity(dispatch);
-        const {familyId, finalHasFamily} = await finalizeHasFamilyAfterLogin(
-          dispatch,
-          getState,
-        );
-
-        return {token: GUEST_TOKEN, hasFamily: finalHasFamily, familyId, guest: true};
-      }
-
       const requestBody =
         typeof kakaoAccessToken === 'string'
           ? {accessToken: kakaoAccessToken}
@@ -230,27 +213,31 @@ export const loginThunk = kakaoAccessToken => {
 
 /**
  * 애플 로그인 thunk
- * @param {string} identityToken - Apple에서 받은 identityToken
+ * @param {string|object} applePayload - identityToken 문자열 또는 POST /login/apple 바디 객체
+ * @param {string} applePayload.identityToken - 필수
+ * @param {string} [applePayload.email] - 최초 로그인 시에만
+ * @param {string} [applePayload.familyName]
+ * @param {string} [applePayload.givenName]
+ * @param {string} [applePayload.birth] - YYYY-MM-DD
  */
-export const appleLoginThunk = identityToken => {
+export const appleLoginThunk = applePayload => {
   return async (dispatch, getState) => {
     dispatch(setLoginLoading(true));
     dispatch(setLoginError(null));
 
     try {
- // 0) 게스트 모드면 애플 로그인도 스킵 (정책상 막는 게 맞음)
-      const isGuest = await getGuestMode?.();
-      if (isGuest) {
-        throw new Error('게스트 모드에서는 애플 로그인을 사용할 수 없어요.');
-      }
-
+      const payload =
+        typeof applePayload === 'string'
+          ? {identityToken: applePayload}
+          : applePayload ?? {};
+      const identityToken = payload?.identityToken;
       if (!identityToken) {
         throw new Error('identityToken이 없습니다.');
       }
 
 
  // baseURL이 https://kinover.shop/api 라면 여기서는 '/login/apple'가 맞음
-      const req = dispatch(authApi.endpoints.loginApple.initiate({identityToken}));
+      const req = dispatch(authApi.endpoints.loginApple.initiate(payload));
       const response = await req.unwrap();
 
       const token = response?.token ?? null;

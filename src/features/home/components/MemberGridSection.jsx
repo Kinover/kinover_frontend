@@ -19,6 +19,7 @@ import {
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
+import DropShadow from 'react-native-drop-shadow';
 
 import {
   getResponsiveHeight,
@@ -28,8 +29,7 @@ import {
 import {STORE_MOCK_ENABLED} from '../utils/storeMockData';
 import {formatRelativeKorean} from '../utils/dateUtils';
 import {getEmotionImage, getEmotionColor} from '../utils/emotionUtils';
-import {EMPTY_STYLE, LAYOUT_STYLE} from 'styles/style';
-import DropShadow from 'react-native-drop-shadow';
+import {COLORS, EMPTY_STYLE, LAYOUT_STYLE} from 'styles/style';
 
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {hapticLight} from 'utils/haptic';
@@ -44,6 +44,7 @@ import Animated, {
   cancelAnimation,
   Easing,
 } from 'react-native-reanimated';
+import {FONTS} from 'styles/typography';
 
 const AVATAR = getResponsiveIconSize(60);
 
@@ -114,6 +115,11 @@ const MemberGridItem = memo(function MemberGridItem({
   const profileSource = safeMember.image
     ? {uri: safeMember.image}
     : require('../../../assets/images/kino-blue.png');
+
+  const rawMemberName = String(
+    safeMember.name ?? safeMember.nickname ?? '',
+  ).trim();
+  const memberNameLabel = rawMemberName || '미설정';
 
   const emotionColor = finalEmotion ? getEmotionColor(finalEmotion) : null;
 
@@ -476,9 +482,12 @@ const MemberGridItem = memo(function MemberGridItem({
       <View style={styles.infoCol}>
         <AppText
           allowFontScaling={false}
-          style={styles.userName}
+          style={[
+            styles.userName,
+            !rawMemberName ? styles.userNamePlaceholder : null,
+          ]}
           numberOfLines={1}>
-          {safeMember.name ?? ''}
+          {memberNameLabel}
         </AppText>
 
         {!!statusText && (
@@ -519,6 +528,14 @@ export default function MemberGridSection({
       position: 'relative',
       alignItems: 'center',
       alignSelf: 'center',
+    },
+    dropShadow: {
+      width: '100%',
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 1},
+      shadowOpacity: 0.12,
+      shadowRadius: 2,
+      elevation: 3,
     },
 
     bodyContainer: {
@@ -612,9 +629,12 @@ export default function MemberGridSection({
     },
     userName: {
       fontSize: rf(14),
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
       color: '#111827',
       letterSpacing: -0.2,
+    },
+    userNamePlaceholder: {
+      color: '#9CA3AF',
     },
 
     statusPill: {
@@ -635,7 +655,7 @@ export default function MemberGridSection({
 
     statusText: {
       fontSize: rf(11),
-      fontFamily: 'Pretendard-Medium',
+      fontFamily: FONTS.MEDIUM,
     },
     statusOnline: {color: '#16A34A'},
     statusOffline: {color: '#6B7280'},
@@ -660,7 +680,7 @@ export default function MemberGridSection({
     },
     loadingText: {
       fontSize: rf(12.5),
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
       color: '#111827',
       letterSpacing: -0.1,
     },
@@ -689,15 +709,15 @@ export default function MemberGridSection({
       width: '100%',
       height: getResponsiveHeight(48),
       borderRadius: getResponsiveIconSize(12),
-      backgroundColor: 'black',
+      backgroundColor: '#FFC84D',
       alignItems: 'center',
       justifyContent: 'center',
     },
 
     addButtonText: {
       fontSize: rf(13.5),
-      fontFamily: 'Pretendard-SemiBold',
-      color: '#FFFFFF',
+      fontFamily: FONTS.SEMI_BOLD,
+      color: '#111827',
       letterSpacing: -0.2,
     },
   }));
@@ -791,24 +811,18 @@ export default function MemberGridSection({
   );
 
   return (
-    <DropShadow
-      style={[
-        styles.shadowWrap,
-        {
-          width: containerWidth,
-          shadowColor: '#000',
-          shadowOffset: {width: 0, height: 3},
-          shadowOpacity: 0.08,
-          shadowRadius: 3,
-        },
-      ]}>
+    <View style={[styles.shadowWrap, {width: containerWidth}]}>
+      <DropShadow style={styles.dropShadow}>
       <View
         style={[
           styles.bodyContainer,
           {
             width: '100%',
             paddingHorizontal: paddingH,
-            minHeight: screenHeight - getResponsiveHeight(490),
+            // 구성원 없음: 넓은 빈 영역 유지 / 있으면 행 수에 맞게 높이 축소
+            ...(isEmptyState
+              ? {minHeight: screenHeight - getResponsiveHeight(490)}
+              : {}),
             paddingBottom: bottomSpace,
           },
         ]}>
@@ -881,6 +895,7 @@ export default function MemberGridSection({
           </TouchableOpacity>
         </View>
       </View>
-    </DropShadow>
+      </DropShadow>
+    </View>
   );
 }

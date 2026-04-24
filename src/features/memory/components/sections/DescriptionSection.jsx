@@ -8,6 +8,7 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
+import {FONTS} from 'styles/typography';
 
 export default function DescriptionSection({memory, onContentLayout}) {
   const styles = useScaledStyleSheet(rf => ({
@@ -50,7 +51,7 @@ export default function DescriptionSection({memory, onContentLayout}) {
       Platform.OS === 'ios'
         ? rf(18) // 🔽 21 → 18
         : rf(16), // 🔽 18 → 16
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     textAlignVertical: 'center',
     lineHeight:
       Platform.OS === 'ios' ? getResponsiveHeight(26) : getResponsiveHeight(22),
@@ -58,7 +59,7 @@ export default function DescriptionSection({memory, onContentLayout}) {
 
   content: {
     color: 'black',
-    fontFamily: 'Pretendard-Light',
+    fontFamily: FONTS.LIGHT,
     fontSize:
       Platform.OS === 'ios'
         ? rf(15) // 🔽 17 → 15

@@ -13,6 +13,7 @@ import ReceiveChat from './messages/receiveChat';
 import SendChat from './messages/sendChat';
 import ReceiveKinoChat from './messages/receiveKinoChat';
 import SendKinoChat from './messages/sendKinoChat';
+import {FONTS} from 'styles/typography';
 
 const getSenderId = message => {
   if (!message) return null;
@@ -242,7 +243,7 @@ const styles = StyleSheet.create({
   dateSeparatorText: {
     textAlign: 'center',
     textAlignVertical: 'center',
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: getResponsiveFontSize(11.5),
     color: 'white',
     lineHeight: getResponsiveHeight(16),

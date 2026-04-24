@@ -11,6 +11,7 @@ import {
 import {required, validateLength} from 'utils/validation';
 
 import AppText from 'components/AppText';
+import {FONTS} from 'styles/typography';
 
 // 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
@@ -29,13 +30,13 @@ export default function RenameChatRoomModal({
 
   textInput: {
     borderWidth: 1,
-    borderColor: '#DADADA',
+    borderColor: '#F5F5F5',
     borderRadius: getResponsiveWidth(12),
     paddingVertical: getResponsiveHeight(12),
     paddingHorizontal: getResponsiveWidth(12),
     fontSize: rf(15),
     backgroundColor: '#F5F5F5',
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     marginTop: getResponsiveHeight(4),
     marginBottom: getResponsiveHeight(10),
   },
@@ -50,7 +51,7 @@ export default function RenameChatRoomModal({
     marginTop: getResponsiveHeight(8),
     fontSize: rf(12),
     color: '#9B9B9B',
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     lineHeight: getResponsiveHeight(16),
   },
 

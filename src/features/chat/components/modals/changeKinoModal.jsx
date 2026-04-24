@@ -6,6 +6,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
+import {FONTS} from 'styles/typography';
 
 export default function ChangeKinoModal({visible, onClose, onConfirm}) {
   const styles = useScaledStyleSheet(rf => ({
@@ -17,12 +18,12 @@ export default function ChangeKinoModal({visible, onClose, onConfirm}) {
         ? rf(20)
         : rf(22),
     textAlign: 'center',
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
   },
   modalSubText: {
     textAlign: 'center',
     color: '#6E6E6E',
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     fontSize:
       Platform.OS === 'android'
         ? rf(15)
@@ -37,7 +38,7 @@ export default function ChangeKinoModal({visible, onClose, onConfirm}) {
   },
   confirmButton: {
     flex: 1,
-    backgroundColor: 'black',
+    backgroundColor: '#FFC84D',
     paddingVertical: getResponsiveHeight(12.5),
     borderRadius: getResponsiveWidth(10),
   },

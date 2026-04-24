@@ -14,9 +14,6 @@ import {
 } from 'app/navigation/navigationService';
 import {RenderHeaderBackButton} from 'app/navigation/helpers/tabHeaderHelpers';
 
-import RNRestart from 'react-native-restart';
-import * as Keychain from 'react-native-keychain';
-
 import LogoutModal from 'features/home/components/LogoutModal';
 import DeleteAccountModal from '../components/DeleteAccountModal';
 
@@ -29,8 +26,7 @@ import {
 import {useLogout} from 'features/auth/hooks/useLogout';
 import useHideTabBar from 'hooks/useHideTabBar';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
-import {useReduxFontMode} from 'hooks/useReduxFontMode';
-import {SETTING_STYLES} from 'styles/style';
+import {SETTING_STYLES, getHeaderStyles} from 'styles/style';
 
 import {
   checkAndAuthBiometric,
@@ -39,15 +35,14 @@ import {
 
 import CustomSwitch from 'components/customSwitch';
 
-import {setFontMode, FONT_MODE, setBioLockEnabled} from 'store/uiSlice';
+import {setBioLockEnabled, BIO_LOCK_STORAGE_KEY} from 'store/uiSlice';
 import {persistor} from 'store';
 import mmkvStorage from 'utils/mmkvStorage';
-
-const FONT_MODE_STORAGE_KEY = 'ui:fontMode';
-const FONT_MODE_KEYCHAIN_SERVICE = 'kinover.ui.fontMode';
+import {FONTS} from 'styles/typography';
 
 const INQUIRY_NOTION_URL =
   'https://www.notion.so/Kinover-3429f61bad508089ba77d5c6b12012b5';
+const SHOW_APP_LOCK_OPTION = false;
 
 export default function SettingScreen() {
   const navigation = useNavigation();
@@ -68,7 +63,19 @@ export default function SettingScreen() {
 
   // 뒤로가기: pop 사용 → 슬라이드 애니메이션 (detachInactiveScreens: false라 탭 유지)
   useLayoutEffect(() => {
+    const H = getHeaderStyles();
     navigation.setOptions({
+      headerTitle: () => (
+        <AppText
+          allowFontScaling={false}
+          style={{
+            fontSize: H.defaultTitleFontSize,
+            color: H.defaultTitleFontColor,
+            fontFamily: H.defaultTitleFontFamily,
+          }}>
+          설정
+        </AppText>
+      ),
       headerLeft: () => (
         <RenderHeaderBackButton
           navigation={navigation}
@@ -93,15 +100,7 @@ export default function SettingScreen() {
   const [bioType, setBioType] = useState(null);
   const [bioLoading, setBioLoading] = useState(true);
 
-  const fontMode = useReduxFontMode();
-  const [pendingFontMode, setPendingFontMode] = useState(
-    fontMode ?? FONT_MODE.NORMAL,
-  );
   const bioOn = useSelector(state => state.ui.bioLockEnabled);
-
-  useEffect(() => {
-    setPendingFontMode(fontMode ?? FONT_MODE.NORMAL);
-  }, [fontMode]);
 
   const styles = useScaledStyleSheet(rf => {
     const S = SETTING_STYLES();
@@ -126,13 +125,13 @@ export default function SettingScreen() {
         color: '#888',
         marginTop: 0,
         marginBottom: getResponsiveHeight(8),
-        fontFamily: 'Pretendard-Medium',
+        fontFamily: FONTS.MEDIUM,
       },
       hint: {
         marginTop: getResponsiveHeight(3),
         fontSize: rf(11.5),
         color: '#A0A0A0',
-        fontFamily: 'Pretendard-Regular',
+        fontFamily: FONTS.REGULAR,
       },
       row: {
         flexDirection: 'row',
@@ -153,7 +152,7 @@ export default function SettingScreen() {
       value: {
         fontSize: rf(13),
         color: '#555',
-        fontFamily: 'Pretendard-Regular',
+        fontFamily: FONTS.REGULAR,
       },
       arrow: {
         width: getResponsiveIconSize(11),
@@ -166,51 +165,8 @@ export default function SettingScreen() {
         paddingTop: getResponsiveHeight(10),
         paddingBottom: getResponsiveHeight(8),
       },
-      fontSliderWrap: {
-        paddingTop: getResponsiveHeight(4),
-        paddingBottom: getResponsiveHeight(8),
-      },
-      fontRowSliderWrap: {
-        width: getResponsiveWidth(220),
-        alignItems: 'flex-end',
-      },
-      fontSegmentWrap: {
-        flexDirection: 'row',
-        borderRadius: getResponsiveWidth(999),
-        backgroundColor: '#E5E7EB',
-        padding: getResponsiveWidth(3),
-      },
-      fontSegmentBtn: {
-        minWidth: getResponsiveWidth(56),
-        paddingVertical: getResponsiveHeight(6),
-        paddingHorizontal: getResponsiveWidth(8),
-        borderRadius: getResponsiveWidth(999),
-        alignItems: 'center',
-        justifyContent: 'center',
-      },
-      fontSegmentBtnActive: {
-        backgroundColor: '#FFFFFF',
-      },
-      fontSegmentText: {
-        fontSize: rf(10.5),
-        color: '#7B808A',
-        fontFamily: 'Pretendard-Medium',
-      },
-      fontSegmentTextActive: {
-        color: '#111827',
-        fontFamily: 'Pretendard-SemiBold',
-      },
     };
   });
-
-  const fontModeOptions = useMemo(
-    () => [
-      {mode: FONT_MODE.NORMAL, label: 'S'},
-      {mode: FONT_MODE.LARGE, label: 'M'},
-      {mode: FONT_MODE.EXTRA_LARGE, label: 'L'},
-    ],
-    [],
-  );
 
   const openLink = useCallback(async url => {
     try {
@@ -240,55 +196,6 @@ export default function SettingScreen() {
     loadBiometricSetting();
   }, [loadBiometricSetting]);
 
-  const applyFontMode = useCallback(
-    nextMode => {
-      const safe =
-        nextMode === FONT_MODE.EXTRA_LARGE
-          ? FONT_MODE.EXTRA_LARGE
-          : nextMode === FONT_MODE.LARGE
-          ? FONT_MODE.LARGE
-          : FONT_MODE.NORMAL;
-
-      if (safe === fontMode) return;
-      setPendingFontMode(safe);
-      Alert.alert(
-        '적용을 위해 재시작',
-        '글씨 크기 변경을 적용하려면 앱을 다시 시작할게요.',
-        [
-          {
-            text: '취소',
-            style: 'cancel',
-            onPress: () => setPendingFontMode(fontMode ?? FONT_MODE.NORMAL),
-          },
-          {
-            text: '재시작',
-            onPress: async () => {
-              try {
-                await mmkvStorage.setItem(FONT_MODE_STORAGE_KEY, safe);
-                await Keychain.setInternetCredentials(
-                  FONT_MODE_KEYCHAIN_SERVICE,
-                  'fontMode',
-                  safe,
-                );
-              } catch (e) {
-                null;
-              }
-              dispatch(setFontMode(safe));
-              try {
-                await persistor.flush();
-              } catch (e) {
-                null;
-              }
-              RNRestart.Restart();
-            },
-          },
-        ],
-        {cancelable: true},
-      );
-    },
-    [dispatch, fontMode],
-  );
-
   const onToggleBiometric = useCallback(
     async next => {
       if (bioLoading) return;
@@ -296,6 +203,7 @@ export default function SettingScreen() {
       // OFF는 즉시 반영
       if (!next) {
         dispatch(setBioLockEnabled(false));
+        try { await mmkvStorage.setItem(BIO_LOCK_STORAGE_KEY, 'false'); } catch { null; }
         try {
           await persistor.flush();
         } catch (e) {
@@ -318,6 +226,7 @@ export default function SettingScreen() {
       }
 
       dispatch(setBioLockEnabled(true));
+      try { await mmkvStorage.setItem(BIO_LOCK_STORAGE_KEY, 'true'); } catch { null; }
       try {
         await persistor.flush();
       } catch (e) {
@@ -347,51 +256,7 @@ export default function SettingScreen() {
       style={styles.scroll}
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={true}>
-      <AppText allowFontScaling={false} style={styles.header}>
-        설정
-      </AppText>
-
-      {/* 1) 화면(글씨 크기) */}
-      <View style={styles.section}>
-        <AppText allowFontScaling={false} style={styles.sectionTitle}>
-          화면
-        </AppText>
-
-        <View style={styles.row}>
-          <View style={{flex: 1}}>
-            <AppText allowFontScaling={false} style={styles.label}>
-              글씨 크기
-            </AppText>
-          </View>
-          <View style={styles.fontRowSliderWrap}>
-            <View style={styles.fontSegmentWrap}>
-              {fontModeOptions.map(option => {
-                const active = pendingFontMode === option.mode;
-                return (
-                  <Pressable
-                    key={option.mode}
-                    onPress={() => applyFontMode(option.mode)}
-                    style={[
-                      styles.fontSegmentBtn,
-                      active && styles.fontSegmentBtnActive,
-                    ]}>
-                    <AppText
-                      allowFontScaling={false}
-                      style={[
-                        styles.fontSegmentText,
-                        active && styles.fontSegmentTextActive,
-                      ]}>
-                      {option.label}
-                    </AppText>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {/* 2) 알림 */}
+      {/* 1) 알림 */}
       <View style={styles.section}>
         <AppText allowFontScaling={false} style={styles.sectionTitle}>
           알림
@@ -419,31 +284,33 @@ export default function SettingScreen() {
           보안
         </AppText>
 
-        <View style={styles.row}>
-          <View style={styles.rowTextWrap}>
-            <AppText allowFontScaling={false} style={styles.label}>
-              {bioLabel}
-            </AppText>
-            {!bioSupported && !bioLoading ? (
-              <AppText allowFontScaling={false} style={styles.hint}>
-                이 기기에서는 사용할 수 없어요
+        {SHOW_APP_LOCK_OPTION ? (
+          <View style={styles.row}>
+            <View style={styles.rowTextWrap}>
+              <AppText allowFontScaling={false} style={styles.label}>
+                {bioLabel}
               </AppText>
-            ) : null}
-          </View>
+              {!bioSupported && !bioLoading ? (
+                <AppText allowFontScaling={false} style={styles.hint}>
+                  이 기기에서는 사용할 수 없어요
+                </AppText>
+              ) : null}
+            </View>
 
-          <Pressable
-            onPress={handlePressCustomSwitch}
-            disabled={bioLoading}
-            style={{opacity: bioLoading ? 0.5 : 1}}
-            accessibilityLabel={bioOn ? '생체인식 잠금 사용 중' : '생체인식 잠금 끔'}
-            accessibilityRole="switch"
-            accessibilityState={{checked: !!bioOn}}>
-            <CustomSwitch
-              isEnabled={!!bioOn}
-              toggleSwitch={handlePressCustomSwitch}
-            />
-          </Pressable>
-        </View>
+            <Pressable
+              onPress={handlePressCustomSwitch}
+              disabled={bioLoading}
+              style={{opacity: bioLoading ? 0.5 : 1}}
+              accessibilityLabel={bioOn ? '생체인식 잠금 사용 중' : '생체인식 잠금 끔'}
+              accessibilityRole="switch"
+              accessibilityState={{checked: !!bioOn}}>
+              <CustomSwitch
+                isEnabled={!!bioOn}
+                toggleSwitch={handlePressCustomSwitch}
+              />
+            </Pressable>
+          </View>
+        ) : null}
 
         <TouchableOpacity
           style={styles.row}

@@ -71,35 +71,18 @@
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
-		<true/>
+		<false/>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
-		<key>NSExceptionDomains</key>
-		<dict>
-			<key>43.200.47.242</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-			</dict>
-			<key>kinover.shop</key>
-			<dict>
-				<key>NSExceptionAllowsInsecureHTTPLoads</key>
-				<true/>
-				<key>NSIncludesSubdomains</key>
-				<true/>
-			</dict>
-		</dict>
 	</dict>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSCameraUsageDescription</key>
-	<string>카메라를 사용하려면 접근 권한이 필요합니다.</string>
-	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>사진을 저장하려면 접근 권한이 필요합니다.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>사진을 선택하기 위해 접근 권한이 필요합니다.</string>
+    <string>Kinover에서 프로필 사진 및 게시물 촬영을 위해 카메라에 접근합니다.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Kinover에서 편집한 사진을 사진 라이브러리에 저장하기 위해 접근합니다.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Kinover에 게시물 사진을 업로드하기 위해 사진 라이브러리에 접근합니다.</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Pretendard-Bold.ttf</string>

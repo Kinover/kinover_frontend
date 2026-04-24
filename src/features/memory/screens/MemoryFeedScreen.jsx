@@ -37,7 +37,7 @@ import SkeletonMemoryItem from '../components/skeletons/SkeletonMemoryItem';
 import {filterPostsByDateRange} from '../utils/postDateFilter';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
-import {BACKGROUND_COLORS, EMPTY_STYLE, LAYOUT_STYLE} from 'styles/style';
+import {EMPTY_STYLE, LAYOUT_STYLE} from 'styles/style';
 
 import {getVideoThumbnail} from 'utils/videoThumbnail';
 import {toCdnUrl} from 'utils/mediaUrl';
@@ -48,6 +48,8 @@ import PostFilterBar from '../components/filters/PostFilterBar';
 import MagazineBanner from '../components/sections/MagazineBanner';
 import MemoryFeedListItem from '../components/items/MemoryFeedListItem';
 import AlbumMediaTile from '../components/items/AlbumMediaTile';
+import PeriodFilterModal from '../components/modals/PeriodFilterModal';
+import {FONTS} from 'styles/typography';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -56,7 +58,7 @@ const {width: SCREEN_WIDTH} = Dimensions.get('window');
  * ========================= */
 const ITEM_MARGIN = getResponsiveWidth(2);
 
-const BG = BACKGROUND_COLORS.secondaryBg;
+const BG = '#FFFFFF';
 
 /* =========================
  * Android Layout Animation
@@ -104,7 +106,7 @@ export default function MemoryFeed({
   endDate,
   onScroll,
   onPressCategoryFilter,
-  onPressPeriodFilter,
+  onApplyFilter,
   filterBarRef,
   firstPostRef,
 }) {
@@ -136,7 +138,7 @@ export default function MemoryFeed({
     },
     gestureHintText: {
       fontSize: getResponsiveFontSize(11),
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       color: EMPTY_STYLE().emptyColor,
     },
   }));
@@ -187,7 +189,8 @@ export default function MemoryFeed({
   const thumbLoadingRef = useRef(new Set());
 
   const [refreshing, setRefreshing] = useState(false);
-  const [sortKey, setSortKey] = useState('latest');
+  const [sortKey, setSortKey] = useState(null);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
 
   const listRef = useRef(null);
 
@@ -430,11 +433,13 @@ export default function MemoryFeed({
   const sortedMemoryList = useMemo(() => {
     const list = [...filteredMemoryList];
 
-    list.sort((a, b) => {
-      const at = new Date(a?.createdAt).getTime();
-      const bt = new Date(b?.createdAt).getTime();
-      return sortKey === 'latest' ? bt - at : at - bt;
-    });
+    if (sortKey === 'latest' || sortKey === 'oldest') {
+      list.sort((a, b) => {
+        const at = new Date(a?.createdAt).getTime();
+        const bt = new Date(b?.createdAt).getTime();
+        return sortKey === 'latest' ? bt - at : at - bt;
+      });
+    }
 
     return list;
   }, [filteredMemoryList, sortKey]);
@@ -450,11 +455,14 @@ export default function MemoryFeed({
   }, [sortedMemoryList, getMediaStats]);
 
   const allMedia = useMemo(() => {
-    const postsSorted = [...filteredMemoryList].sort((a, b) => {
-      const at = new Date(a?.createdAt).getTime();
-      const bt = new Date(b?.createdAt).getTime();
-      return sortKey === 'latest' ? bt - at : at - bt;
-    });
+    const postsSorted = [...filteredMemoryList];
+    if (sortKey === 'latest' || sortKey === 'oldest') {
+      postsSorted.sort((a, b) => {
+        const at = new Date(a?.createdAt).getTime();
+        const bt = new Date(b?.createdAt).getTime();
+        return sortKey === 'latest' ? bt - at : at - bt;
+      });
+    }
 
     return postsSorted.flatMap(memory => {
       const urls = memory?.imageUrls || [];
@@ -680,7 +688,9 @@ export default function MemoryFeed({
   );
 
   const headerCategoryTitle =
-    selectedCategoryTitle === '전체' ? '전체' : selectedCategoryTitle || '전체';
+    selectedCategoryTitle === '전체'
+      ? '카테고리'
+      : selectedCategoryTitle || '카테고리';
 
   const headerPeriodLabel =
     startDate && endDate
@@ -702,9 +712,8 @@ export default function MemoryFeed({
           categoryOpen={isCategoryOpen}
           onPressCategory={onPressCategoryFilter}
           periodLabel={headerPeriodLabel}
-          onPressDateFilter={onPressPeriodFilter}
-          sortKey={sortKey}
-          onChangeSort={setSortKey}
+          onPressFilterSettings={() => setFilterModalVisible(true)}
+          sortActive={sortKey === 'latest' || sortKey === 'oldest'}
         />
         {isAllPhotos && (
           <View style={styles.gestureHintRow}>
@@ -720,11 +729,20 @@ export default function MemoryFeed({
       isCategoryOpen,
       onPressCategoryFilter,
       headerPeriodLabel,
-      onPressPeriodFilter,
       sortKey,
       isAllPhotos,
       styles,
+      setFilterModalVisible,
     ],
+  );
+
+  const handleApplyFilterModal = useCallback(
+    ({startDate: s, endDate: e, sortKey: nextSort}) => {
+      onApplyFilter?.({startDate: s, endDate: e});
+      setSortKey(nextSort ?? null);
+      setFilterModalVisible(false);
+    },
+    [onApplyFilter],
   );
 
   const listEmptyComponent = useMemo(
@@ -860,6 +878,15 @@ export default function MemoryFeed({
           />
         </GestureDetector>
       )}
+
+      <PeriodFilterModal
+        visible={filterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+        onApply={handleApplyFilterModal}
+        initialStartDate={startDate}
+        initialEndDate={endDate}
+        initialSortKey={sortKey}
+      />
     </View>
   );
 }

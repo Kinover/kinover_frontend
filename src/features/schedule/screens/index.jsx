@@ -13,6 +13,7 @@ import {
   Alert,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import DropShadow from 'react-native-drop-shadow';
 
 import {useSelector, useDispatch} from 'react-redux';
 
@@ -46,8 +47,6 @@ import {
 import {useGetFamilyUsersQuery} from '../../home/services/homeApi';
 
 import {hapticLight} from 'utils/haptic';
-import DropShadow from 'react-native-drop-shadow';
-import {SCHEDULE_CARD_SHADOW} from '../constants/scheduleDropShadow';
 import {BACKGROUND_COLORS, LAYOUT_STYLE} from 'styles/style';
 
 import ScheduleGuideModal from '../components/ScheduleGuideModal';
@@ -102,6 +101,13 @@ export default function ScheduleScreen() {
   fabShadow: {
     width: '100%',
     height: '100%',
+  },
+  fabDropShadow: {
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.16,
+    shadowRadius: 3,
+    elevation: 5,
   },
   fabMeasure: {
     ...StyleSheet.absoluteFillObject,
@@ -568,9 +574,8 @@ export default function ScheduleScreen() {
 
       {/* FAB를 화면 하단 고정하려면, 레이아웃 기준을 줄 수 있는 절대 위치 래퍼 필요 */}
       <View style={[styles.fabContainer, {bottom: fabBottom}]} pointerEvents="box-none">
-        <DropShadow
-          pointerEvents="box-none"
-          style={[styles.fabShadow, SCHEDULE_CARD_SHADOW]}>
+        <DropShadow pointerEvents="box-none" style={styles.fabDropShadow}>
+          <View pointerEvents="box-none" style={styles.fabShadow}>
           {/* 가이드 측정용: 버튼과 동일 위치/크기 (터치 통과) */}
           <View
             ref={guideFabRef}
@@ -593,6 +598,7 @@ export default function ScheduleScreen() {
               tintColor={'white'}
             />
           </TouchableOpacity>
+          </View>
         </DropShadow>
       </View>
 

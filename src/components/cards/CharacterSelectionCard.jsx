@@ -8,6 +8,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
+import {FONTS} from 'styles/typography';
 
 export default function CharacterSelectionCard({
   imageSource,
@@ -53,11 +54,11 @@ export default function CharacterSelectionCard({
   },
   label: {
     fontSize: rf(13.5),
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     color: '#333',
   },
   labelSelected: {
-    fontFamily: 'Pretendard-Bold',
+    fontFamily: FONTS.BOLD,
     color: '#000',
   },
 

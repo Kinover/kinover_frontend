@@ -8,8 +8,8 @@ import {StackActions, useNavigation} from '@react-navigation/native';
  * - 존재하지 않으면 현재 네비게이터에서 안전하게 navigate/replace로 fallback
  *
  * 사용 예:
- * navigateToWhere({ root: 'Auth', screen: '유저정보세팅화면', params })
- * navigateToWhere({ screen: '유저정보세팅화면', params, replace: true }) // 현재 스택에서만 이동
+ * navigateToWhere({ root: 'Auth', screen: '가족설정화면', params })
+ * navigateToWhere({ screen: '약관동의화면', params, replace: true }) // 현재 스택에서만 이동
  */
 export function useNavigateToWhere() {
   const navigation = useNavigation();

@@ -17,6 +17,7 @@ import {
   REPORT_REASON_CODES,
   REPORT_REASON_LABELS,
 } from '../constants/reportReasons';
+import {FONTS} from 'styles/typography';
 
 export default function ReportReasonSheet({
   visible,
@@ -78,7 +79,7 @@ const styles = StyleSheet.create({
     maxHeight: '72%',
   },
   title: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: getResponsiveFontSize(16),
     color: '#111827',
     paddingHorizontal: getResponsiveWidth(18),
@@ -91,7 +92,7 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(17,24,39,0.08)',
   },
   rowLabel: {
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: getResponsiveFontSize(15),
     color: '#1F2937',
   },
@@ -101,7 +102,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelText: {
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: getResponsiveFontSize(14),
     color: '#6B7280',
   },

@@ -2,13 +2,13 @@ import React, {useEffect, useRef, useState, useCallback, useMemo} from 'react';
 import {View, TouchableOpacity, StyleSheet, Platform} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {BottomSheetScrollView} from '@gorhom/bottom-sheet';
+import {useReduxFontMode} from 'hooks/useReduxFontMode';
+import {getSheetSnapPointsByTier} from 'utils/layoutMetrics';
 
 import AppText from 'components/AppText';
 import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
 import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
-import BOTTOM_SHEET_TITLES, {
-  BOTTOM_SHEET_BUTTON_LABELS,
-} from 'constants/bottomSheetTitles';
+import BOTTOM_SHEET_TITLES from 'constants/bottomSheetTitles';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -16,6 +16,7 @@ import {
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {hapticLight} from 'utils/haptic';
 import {getBottomSheetEditorBottomSafe} from 'components/bottomSheet/bottomSheetEditorSharedStyles';
+import {FONTS} from 'styles/typography';
 
 function uniqStrings(ids) {
   const seen = new Set();
@@ -29,8 +30,6 @@ function uniqStrings(ids) {
   return out;
 }
 
-const SNAP_POINTS = ['50%'];
-
 export default function SchedulePeopleFilterModal({
   visible,
   onClose,
@@ -41,7 +40,7 @@ export default function SchedulePeopleFilterModal({
 }) {
   const styles = useScaledStyleSheet(rf => ({
     scrollContent: {
-      paddingTop: getResponsiveHeight(14),
+      paddingTop: getResponsiveHeight(22),
       paddingBottom: getResponsiveHeight(16),
     },
     chipWrap: {
@@ -57,20 +56,20 @@ export default function SchedulePeopleFilterModal({
       backgroundColor: '#F3F4F6',
     },
     chipActive: {
-      backgroundColor: '#111827',
+      backgroundColor: '#FFC84D',
     },
     chipText: {
-      fontFamily: 'Pretendard-Medium',
+      fontFamily: FONTS.MEDIUM,
       fontSize: rf(13.5),
       color: '#6B7280',
     },
     chipTextActive: {
-      fontFamily: 'Pretendard-SemiBold',
-      color: '#FFFFFF',
+      fontFamily: FONTS.SEMI_BOLD,
+      color: '#111827',
     },
     empty: {
       textAlign: 'center',
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       fontSize: rf(13),
       color: '#9CA3AF',
       paddingVertical: getResponsiveHeight(24),
@@ -78,6 +77,7 @@ export default function SchedulePeopleFilterModal({
   }));
 
   const modalRef = useRef(null);
+  const fontMode = useReduxFontMode();
   const insets = useSafeAreaInsets();
   const bottomSafe = useMemo(
     () => getBottomSheetEditorBottomSafe(insets.bottom, getResponsiveHeight),
@@ -142,6 +142,33 @@ export default function SchedulePeopleFilterModal({
     ];
     return list;
   }, [members, meId]);
+  const chipCount = chips.length;
+  const isLargeList = chipCount >= 13;
+  const resolvedSnapPoints = useMemo(() => {
+    const base =
+      isLargeList
+        ? ['58%', '92%']
+        : chipCount <= 4
+        ? ['30%', '92%']
+        : chipCount <= 8
+        ? ['40%', '92%']
+        : ['48%', '92%'];
+    const [first] = getSheetSnapPointsByTier({
+      fontMode,
+      normal: [base[0], '92%'],
+      large: [`${Number.parseFloat(base[0]) + 8}%`, '93%'],
+      xl: [`${Number.parseFloat(base[0]) + 14}%`, '94%'],
+    });
+    return [first];
+  }, [chipCount, isLargeList, fontMode]);
+
+  const scrollAreaStyle = useMemo(
+    () =>
+      isLargeList
+        ? {maxHeight: getResponsiveHeight(320)}
+        : {maxHeight: undefined},
+    [isLargeList],
+  );
 
   const isChipActive = useCallback(
     chip => {
@@ -169,7 +196,7 @@ export default function SchedulePeopleFilterModal({
   return (
     <BottomSheetLayout
       modalRef={modalRef}
-      snapPoints={SNAP_POINTS}
+      snapPoints={resolvedSnapPoints}
       title={BOTTOM_SHEET_TITLES.SCHEDULE_PEOPLE_FILTER}
       headerCentered
       closeOnPressOutside
@@ -180,6 +207,7 @@ export default function SchedulePeopleFilterModal({
       disableContentBottomPadding>
 
       <BottomSheetScrollView
+        style={scrollAreaStyle}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.scrollContent}>
@@ -216,9 +244,8 @@ export default function SchedulePeopleFilterModal({
         includeBottomSafePadding
         onCancel={onClose}
         onSave={handleApply}
-        cancelLabel={BOTTOM_SHEET_BUTTON_LABELS.CANCEL}
-        saveLabel={BOTTOM_SHEET_BUTTON_LABELS.APPLY}
-        showCancel
+        saveLabel="선택하기"
+        showCancel={false}
         autoCloseOnSave={false}
         buttonRowStyle={{marginTop: 0}}
         style={[

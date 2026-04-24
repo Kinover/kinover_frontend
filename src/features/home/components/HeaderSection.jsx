@@ -1,6 +1,13 @@
 // src/features/home/components/HeaderSection.jsx
 import React, {useMemo, useEffect, useRef, useCallback} from 'react';
-import { View, TouchableOpacity, StyleSheet, Image, useWindowDimensions } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  useWindowDimensions,
+} from 'react-native';
+import DropShadow from 'react-native-drop-shadow';
 
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -10,7 +17,6 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 
-import DropShadow from 'react-native-drop-shadow';
 import {hapticLight} from 'utils/haptic';
 import {safeNavigate} from 'app/navigation/navigationService';
 import {getEmotionImage, getEmotionColor} from '../utils/emotionUtils';
@@ -26,13 +32,14 @@ import Animated, {
   cancelAnimation,
   Easing,
 } from 'react-native-reanimated';
+import {FONTS} from 'styles/typography';
 
 const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
 const AVATAR = getResponsiveIconSize(92);
-const CARD_RADIUS = getResponsiveIconSize(16);
+const _CARD_RADIUS = getResponsiveIconSize(16);
 
 // ===== base sizes =====
 const BASE_DISPLAY = AVATAR * 1.3;
@@ -50,122 +57,123 @@ const AREA_MAX = getResponsiveIconSize(160);
 const OVERLAP_MIN = -getResponsiveIconSize(86);
 const OVERLAP_MAX = -getResponsiveIconSize(56);
 
-export default function HeaderSection({user, onUserPress, onInvitePress, guideRefs}) {
-  const styles = useScaledStyleSheet(rf => ({
+export default function HeaderSection({
+  user,
+  onUserPress,
+  onInvitePress: _onInvitePress,
+  guideRefs,
+}) {
+  const styles = useScaledStyleSheet(_rf => ({
+    smileIcon: {
+      width: '68%',
+      height: '68%',
+      resizeMode: 'contain',
+    },
 
-  smileIcon: {
-    width: '58%',
-    height: '58%',
-    resizeMode: 'contain',
-  },
+    inviteIcon: {
+      width: '62%',
+      height: '62%',
+      resizeMode: 'contain',
+      tintColor: '#6B7280', // MemberGridSection 톤 참고
+    },
 
-  inviteIcon: {
-    width: '62%',
-    height: '62%',
-    resizeMode: 'contain',
-    tintColor: '#6B7280', // MemberGridSection 톤 참고
-  },
+    smileBtn: {
+      width: getResponsiveIconSize(38),
+      height: getResponsiveIconSize(38),
+      borderRadius: getResponsiveIconSize(19),
+      backgroundColor: '#F3F4F6',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: '#ECEFF3',
+      position: 'absolute',
+      right: getResponsiveWidth(8),
+      bottom: getResponsiveHeight(8),
+      zIndex: 6,
+    },
 
- // 두 버튼 묶어서 우상단 정렬
-  topRightButtons: {
-    position: 'absolute',
-    right: getResponsiveWidth(14),
-    top: getResponsiveWidth(14),
-    flexDirection: 'row',
-    alignItems: 'center',
-    columnGap: getResponsiveWidth(8),
-  },
+    // 초대 버튼은 같은 톤으로(살짝만 키워도 됨)
+    inviteBtn: {
+      width: getResponsiveIconSize(30),
+      height: getResponsiveIconSize(30),
+      borderRadius: getResponsiveIconSize(10),
+      backgroundColor: '#F3F4F6',
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: '#ECEFF3',
+    },
 
-  smileBtn: {
-    width: getResponsiveIconSize(30),
-    height: getResponsiveIconSize(30),
-    borderRadius: getResponsiveIconSize(10),
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#ECEFF3',
-  },
+    headerContainer: {
+      position: 'relative',
+      alignItems: 'center',
+      alignSelf: 'center',
+      marginTop: getResponsiveHeight(34),
+      marginBottom: getResponsiveHeight(16),
+    },
+    avatarArea: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 3,
+    },
+    avatarRing: {
+      backgroundColor: '#FFFFFF',
+      overflow: 'hidden',
+    },
+    avatarPress: {
+      overflow: 'hidden',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    shadowBox: {
+      width: '100%',
+      borderRadius: getResponsiveIconSize(16),
+      backgroundColor: 'transparent',
+      shadowColor: '#000',
+      shadowOffset: {width: 0, height: 1},
+      shadowOpacity: 0.12,
+      shadowRadius: 2,
+      elevation: 3,
+    },
+    headerCard: {
+      width: '100%',
+      alignItems: 'center',
+      paddingTop: getResponsiveHeight(66),
+      paddingBottom: getResponsiveHeight(22),
+      paddingHorizontal: getResponsiveWidth(8),
+      backgroundColor: '#FFFFFF',
+      borderRadius: getResponsiveIconSize(16),
+    },
 
- // 초대 버튼은 같은 톤으로(살짝만 키워도 됨)
-  inviteBtn: {
-    width: getResponsiveIconSize(30),
-    height: getResponsiveIconSize(30),
-    borderRadius: getResponsiveIconSize(10),
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#ECEFF3',
-  },
-
-  headerContainer: {
-    position: 'relative',
-    alignItems: 'center',
-    alignSelf: 'center',
-    marginTop: getResponsiveHeight(34),
-    marginBottom: getResponsiveHeight(16),
-  },
-  avatarArea: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 3,
-  },
-  avatarRing: {
-    backgroundColor: '#FFFFFF',
-    overflow: 'hidden',
-  },
-  avatarPress: {
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  shadowBox: {
-    width: '100%',
-    borderRadius: getResponsiveIconSize(16),
-    backgroundColor: 'transparent',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 3},
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-  },
-  headerCard: {
-    width: '100%',
-    alignItems: 'center',
-    paddingTop: getResponsiveHeight(66),
-    paddingBottom: getResponsiveHeight(22),
-    paddingHorizontal: getResponsiveWidth(8),
-    backgroundColor: '#FFFFFF',
-    borderRadius: getResponsiveIconSize(16),
-  },
-
-  userNameHeader: {
-    fontFamily: 'Pretendard-SemiBold',
-    fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
-    color: COLORS.textPrimary,
-    letterSpacing: -0.2,
-    marginBottom: 3,
-  },
-  trait: {
-    fontFamily: DEFAULT_STYLE().sectionSubtitle.fontFamily,
-    fontSize: getResponsiveHeight(13),
-    marginTop: getResponsiveHeight(4),
-    color: DEFAULT_STYLE().sectionSubtitle.color,
-    textAlign: 'center',
-    lineHeight: DEFAULT_STYLE().sectionSubtitle.fontSize + 1,
-  },
-
+    userNameHeader: {
+      fontFamily: FONTS.SEMI_BOLD,
+      fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
+      color: COLORS.textPrimary,
+      letterSpacing: -0.2,
+      marginBottom: 3,
+    },
+    userNamePlaceholder: {
+      color: DEFAULT_STYLE().sectionSubtitle.color,
+    },
+    trait: {
+      fontFamily: DEFAULT_STYLE().sectionSubtitle.fontFamily,
+      fontSize: getResponsiveHeight(13),
+      marginTop: getResponsiveHeight(4),
+      color: DEFAULT_STYLE().sectionSubtitle.color,
+      textAlign: 'center',
+      lineHeight: DEFAULT_STYLE().sectionSubtitle.fontSize + 1,
+    },
   }));
   const {width: screenWidth} = useWindowDimensions();
 
   const containerWidth =
     screenWidth - LAYOUT_STYLE().screenPaddingHorizontal * 2;
 
- /**
- * =========================
- * Emotion
- * =========================
- */
+  /**
+   * =========================
+   * Emotion
+   * =========================
+   */
   const emotionKey = useMemo(() => {
     if (!user?.emotion) return null;
     return String(user.emotion).toUpperCase();
@@ -192,14 +200,23 @@ export default function HeaderSection({user, onUserPress, onInvitePress, guideRe
     const s = String(img);
     const isFullUri =
       s.startsWith('https') || s.startsWith('http') || s.startsWith('file');
-    return { uri: isFullUri ? img : CLOUD_FRONT + img };
+    return {uri: isFullUri ? img : CLOUD_FRONT + img};
   }, [user?.image]);
 
- /**
- * =========================
- * Sizes (clamped)
- * =========================
- */
+  const headerDisplayName = useMemo(() => {
+    const n = user?.name;
+    const nick = user?.nickname;
+    const fromName = typeof n === 'string' ? n.trim() : '';
+    if (fromName) return fromName;
+    const fromNick = typeof nick === 'string' ? nick.trim() : '';
+    return fromNick;
+  }, [user?.name, user?.nickname]);
+
+  /**
+   * =========================
+   * Sizes (clamped)
+   * =========================
+   */
   const ringSize = clamp(BASE_RING, RING_MIN, RING_MAX);
   const areaSize = clamp(BASE_AREA, AREA_MIN, AREA_MAX);
   const overlap = clamp(BASE_OVERLAP, OVERLAP_MIN, OVERLAP_MAX);
@@ -208,11 +225,11 @@ export default function HeaderSection({user, onUserPress, onInvitePress, guideRe
   const profileSize = Math.round(ringSize * PROFILE_SCALE);
   const profileRadius = profileSize / 2;
 
- /**
- * =========================================================
- * Emotion Peek (튀어나오는 연출)
- * =========================================================
- */
+  /**
+   * =========================================================
+   * Emotion Peek (튀어나오는 연출)
+   * =========================================================
+   */
   const popY = useSharedValue(0); // 0~1
   const tilt = useSharedValue(0);
   const pivotX = useSharedValue(0);
@@ -240,11 +257,11 @@ export default function HeaderSection({user, onUserPress, onInvitePress, guideRe
     };
   }, [HIDDEN_Y, RISE_Y, pivotShift, tiltDeg]);
 
- /**
- * =========================================================
- * Press feedback
- * =========================================================
- */
+  /**
+   * =========================================================
+   * Press feedback
+   * =========================================================
+   */
   const pressScale = useSharedValue(1);
   const ringPulse = useSharedValue(0);
   const glow = useSharedValue(0);
@@ -264,11 +281,11 @@ export default function HeaderSection({user, onUserPress, onInvitePress, guideRe
 
   const longPressedRef = useRef(false);
 
- /**
- * =========================================================
- * Random peek loop (only when emotion exists)
- * =========================================================
- */
+  /**
+   * =========================================================
+   * Random peek loop (only when emotion exists)
+   * =========================================================
+   */
   useEffect(() => {
     if (!hasEmotion) return;
 
@@ -343,11 +360,11 @@ export default function HeaderSection({user, onUserPress, onInvitePress, guideRe
     };
   }, [hasEmotion, popY, tilt, pivotX, peekScale]);
 
- /**
- * =========================================================
- * Tap peek once (프로필 탭 시 살짝 장난만)
- * =========================================================
- */
+  /**
+   * =========================================================
+   * Tap peek once (프로필 탭 시 살짝 장난만)
+   * =========================================================
+   */
   const tapTimerRef = useRef(null);
 
   const clearTapTimer = useCallback(() => {
@@ -402,11 +419,11 @@ export default function HeaderSection({user, onUserPress, onInvitePress, guideRe
     }, 520);
   }, [hasEmotion, clearTapTimer, popY, tilt, pivotX, peekScale]);
 
- /**
- * =========================================================
- * Navigation
- * =========================================================
- */
+  /**
+   * =========================================================
+   * Navigation
+   * =========================================================
+   */
   const goEmotionSetting = useCallback(() => {
     hapticLight();
     // HomeStack의 감정상태화면은 탭·루트 아래에 중첩됨. 직접 navigate('감정상태화면')은
@@ -417,21 +434,21 @@ export default function HeaderSection({user, onUserPress, onInvitePress, guideRe
     });
   }, []);
 
- /**
- * =========================================================
- * BottomSheet open (프로필 탭)
- * =========================================================
- */
+  /**
+   * =========================================================
+   * BottomSheet open (프로필 탭)
+   * =========================================================
+   */
   const openUserBottomSheet = useCallback(() => {
     hapticLight();
     onUserPress?.(user);
   }, [onUserPress, user]);
 
- /**
- * =========================================================
- * Press Handlers
- * =========================================================
- */
+  /**
+   * =========================================================
+   * Press Handlers
+   * =========================================================
+   */
   const handleAvatarPressIn = useCallback(() => {
     if (longPressedRef.current) return;
 
@@ -602,40 +619,39 @@ export default function HeaderSection({user, onUserPress, onInvitePress, guideRe
             </View>
           </Animated.View>
         </Animated.View>
+
+        <TouchableOpacity
+          ref={guideRefs?.my_mood}
+          onPress={goEmotionSetting}
+          hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+          activeOpacity={0.85}
+          style={styles.smileBtn}>
+          <Image
+            source={require('../../../assets/icons/tabs/1/smiley.png')}
+            style={styles.smileIcon}
+          />
+        </TouchableOpacity>
       </TouchableOpacity>
 
       <DropShadow style={styles.shadowBox}>
         <View style={styles.headerCard}>
-          {/* 우측 상단: 버튼 2개 (초대코드 + 감정) */}
-          <View style={styles.topRightButtons}>
-       
-
-            {/* 감정 설정 버튼 (기존) */}
-            <TouchableOpacity
-              ref={guideRefs?.my_mood}
-              onPress={goEmotionSetting}
-              hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
-              activeOpacity={0.85}
-              style={styles.smileBtn}>
-              <Image
-                source={require('../../../assets/icons/tabs/1/smile_gray.png')}
-                style={styles.smileIcon}
-              />
-            </TouchableOpacity>
-          </View>
-
           <AppText
             allowFontScaling={false}
-            style={styles.userNameHeader}
+            style={[
+              styles.userNameHeader,
+              !headerDisplayName ? styles.userNamePlaceholder : null,
+            ]}
             numberOfLines={1}>
-            {user?.name || '이름'}
+            {headerDisplayName || '이름을 정해 주세요'}
           </AppText>
-          <AppText allowFontScaling={false} style={styles.trait} numberOfLines={2}>
-            {user?.trait || '이 사람을 한마디로 표현한다면?'}
+          <AppText
+            allowFontScaling={false}
+            style={styles.trait}
+            numberOfLines={2}>
+            {user?.trait || '우리 가족만 아는 나의 포인트는?'}
           </AppText>
         </View>
       </DropShadow>
     </View>
   );
 }
-

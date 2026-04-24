@@ -10,6 +10,7 @@ import {
   getResponsiveWidth,
   getResponsiveFontSizeIgnoreAppMode,
 } from 'utils/responsive';
+import {FONTS} from 'styles/typography';
 
 const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
 
@@ -394,14 +395,14 @@ const s = StyleSheet.create({
     resizeMode: 'contain',
   },
   weekText: {
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: getResponsiveFontSizeIgnoreAppMode(9.5),
     color: '#333',
     textAlign: 'center',
   },
   grid: {flexDirection: 'row', flexWrap: 'wrap'},
   dayText: {
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: getResponsiveFontSizeIgnoreAppMode(9.5),
     color: '#111',
     textAlign: 'center',
@@ -415,7 +416,7 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   dotText: {
-    fontFamily: 'Pretendard-Bold',
+    fontFamily: FONTS.BOLD,
     fontSize: getResponsiveFontSizeIgnoreAppMode(9),
     color: '#111',
   },

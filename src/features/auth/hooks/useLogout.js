@@ -19,6 +19,7 @@ import {setLocalBlockedUserIds} from 'features/moderation/utils/blockedUsersStor
 const nextTick = () => new Promise(resolve => setTimeout(resolve, 0));
 const FONT_MODE_STORAGE_KEY = 'ui:fontMode';
 const FONT_MODE_KEYCHAIN_SERVICE = 'kinover.ui.fontMode';
+const BIO_LOCK_STORAGE_KEY = 'ui:bioLockEnabled';
 
 export const useLogout = () => {
   const dispatch = useDispatch();
@@ -35,6 +36,7 @@ export const useLogout = () => {
     try { await deleteLoginInfo(); } catch { null; }
     try { await setLocalBlockedUserIds([]); } catch { null; }
     try { await mmkvStorage.setItem(FONT_MODE_STORAGE_KEY, 'NORMAL'); } catch { null; }
+    try { await mmkvStorage.setItem(BIO_LOCK_STORAGE_KEY, 'false'); } catch { null; }
     try { await Keychain.resetInternetCredentials(FONT_MODE_KEYCHAIN_SERVICE); } catch { null; }
 
     // 3) persist 완전 초기화

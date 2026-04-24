@@ -6,20 +6,13 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import DropShadow from 'react-native-drop-shadow';
 
 const AVATAR_RADIUS = getResponsiveWidth(8);
 const CARD_RADIUS = getResponsiveIconSize(10);
 
 export default function SkeletonMemoryItem() {
   return (
-    <DropShadow
-      style={{
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 3},
-        shadowOpacity: 0.08,
-        shadowRadius: 3,
-      }}>
+    <View>
       <View style={styles.card}>
         {/* 날짜 + 뱃지 영역 */}
         {/* <View style={styles.topRow}>
@@ -39,7 +32,7 @@ export default function SkeletonMemoryItem() {
         {/* 내용 두 줄 */}
         <View style={styles.text1} />
       </View>
-    </DropShadow>
+    </View>
   );
 }
 

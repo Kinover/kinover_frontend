@@ -1,5 +1,5 @@
 import React, {memo, useMemo} from 'react';
-import { View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import {View, TouchableOpacity, StyleSheet, Animated} from 'react-native';
 import FastImage from '@d11/react-native-fast-image';
 import DropShadow from 'react-native-drop-shadow';
 
@@ -11,6 +11,7 @@ import {
 } from 'utils/responsive';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {COLORS} from 'styles/style';
+import {FONTS} from 'styles/typography';
 
 const FASTIMAGE_DEFAULTS = {
   priority: FastImage.priority.normal,
@@ -84,9 +85,9 @@ const MemoryFeedListItem = memo(function MemoryFeedListItem({
 }) {
   // fontMode가 바뀔 때 재계산 — StyleSheet.create()는 최초 1회 고정이라 사용 불가
   const fontStyles = useScaledStyleSheet(rf => ({
-    dateText:        {fontSize: rf(15), lineHeight: rf(18)},
+    dateText: {fontSize: rf(15), lineHeight: rf(18)},
     metaCompactText: {fontSize: rf(13), lineHeight: rf(15)},
-    contentText:     {fontSize: rf(14), lineHeight: rf(19)},
+    contentText: {fontSize: rf(14), lineHeight: rf(19)},
   }));
 
   const mediaSource = useMemo(() => {
@@ -100,58 +101,65 @@ const MemoryFeedListItem = memo(function MemoryFeedListItem({
   }, [firstUri, firstIsVideo, firstThumbUri]);
 
   const CardInner = (
-    <DropShadow style={styles.cardShadowWrap}>
-      <View
-        ref={index === 0 ? firstPostRef : undefined}
-        collapsable={index === 0 ? false : undefined}
-        style={styles.cardOuter}>
-        <TouchableOpacity
-          activeOpacity={1}
-          onPressIn={() => onPressInCard(scaleKey)}
-          onPressOut={() => onPressOutCard(scaleKey)}
-          onPress={() => onPressPost(postId)}
-          style={styles.cardPress}>
-          <View style={styles.cardHeader}>
-            <AppText style={[styles.dateText, fontStyles.dateText]}>{dateLabel}</AppText>
-            <AppText style={[styles.metaCompactText, fontStyles.metaCompactText]}>{mediaLabel}</AppText>
-          </View>
-
-          <View style={styles.mediaWrap}>
-            {mediaSource ? (
-              <FastImage
-                fallback={true}
-                style={styles.mediaImg}
-                source={mediaSource}
-                resizeMode={FastImage.resizeMode.cover}
-              />
-            ) : (
-              <View style={styles.mediaPlaceholder} />
-            )}
-
-            {firstIsVideo && (
-              <View pointerEvents="none" style={styles.playCenter}>
-                <View style={styles.playCircle}>
-                  <View style={styles.playTriangle} />
-                </View>
-              </View>
-            )}
-
-            <Chip text={categoryLabel} />
-          </View>
-
-          <View style={styles.contentArea}>
-            {bodyText ? (
-              <AppText
-                style={[styles.contentText, fontStyles.contentText]}
-                numberOfLines={3}
-                ellipsizeMode="tail">
-                {bodyText}
+    <View style={styles.cardShadowWrap}>
+      <DropShadow style={styles.cardDropShadow}>
+        <View
+          ref={index === 0 ? firstPostRef : undefined}
+          collapsable={index === 0 ? false : undefined}
+          style={styles.cardOuter}>
+          <TouchableOpacity
+            activeOpacity={1}
+            onPressIn={() => onPressInCard(scaleKey)}
+            onPressOut={() => onPressOutCard(scaleKey)}
+            onPress={() => onPressPost(postId)}
+            style={styles.cardPress}>
+            <View style={styles.cardHeader}>
+              <AppText style={[styles.dateText, fontStyles.dateText]}>
+                {dateLabel}
               </AppText>
-            ) : null}
-          </View>
-        </TouchableOpacity>
-      </View>
-    </DropShadow>
+              <AppText
+                style={[styles.metaCompactText, fontStyles.metaCompactText]}>
+                {mediaLabel}
+              </AppText>
+            </View>
+
+            <View style={styles.mediaWrap}>
+              {mediaSource ? (
+                <FastImage
+                  fallback={true}
+                  style={styles.mediaImg}
+                  source={mediaSource}
+                  resizeMode={FastImage.resizeMode.cover}
+                />
+              ) : (
+                <View style={styles.mediaPlaceholder} />
+              )}
+
+              {firstIsVideo && (
+                <View pointerEvents="none" style={styles.playCenter}>
+                  <View style={styles.playCircle}>
+                    <View style={styles.playTriangle} />
+                  </View>
+                </View>
+              )}
+
+              <Chip text={categoryLabel} />
+            </View>
+
+            <View style={styles.contentArea}>
+              {bodyText ? (
+                <AppText
+                  style={[styles.contentText, fontStyles.contentText]}
+                  numberOfLines={3}
+                  ellipsizeMode="tail">
+                  {bodyText}
+                </AppText>
+              ) : null}
+            </View>
+          </TouchableOpacity>
+        </View>
+      </DropShadow>
+    </View>
   );
 
   if (refreshing || !scale) return CardInner;
@@ -162,22 +170,22 @@ const MemoryFeedListItem = memo(function MemoryFeedListItem({
 });
 
 const styles = StyleSheet.create({
-  cardShadowWrap: {
+  cardShadowWrap: {},
+  cardDropShadow: {
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 3},
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.12,
+    shadowRadius: 2,
+    elevation: 3,
   },
   cardOuter: {
-    backgroundColor: COLORS.surfaceSecondary,
+    backgroundColor: '#FFFFFF',
     borderRadius: getResponsiveIconSize(12),
     overflow: 'visible',
     marginBottom: getResponsiveHeight(18),
     marginHorizontal: '3%',
     paddingHorizontal: getResponsiveWidth(22),
     paddingVertical: getResponsiveHeight(27),
-    borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
   },
   cardPress: {width: '100%'},
   cardHeader: {
@@ -188,14 +196,14 @@ const styles = StyleSheet.create({
   },
   metaCompactText: {
     // fontSize/lineHeight → fontStyles.metaCompactText (useScaledStyleSheet)
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     textAlignVertical: 'bottom',
     color: COLORS.textDefault,
     marginLeft: getResponsiveWidth(8),
   },
   dateText: {
     // fontSize/lineHeight → fontStyles.dateText (useScaledStyleSheet)
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     textAlignVertical: 'bottom',
     color: COLORS.textPrimary,
     letterSpacing: 0.2,
@@ -267,7 +275,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     // fontSize → AppText size={10.8} prop
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     letterSpacing: 0.1,
     flexShrink: 1,
   },
@@ -277,7 +285,7 @@ const styles = StyleSheet.create({
   },
   contentText: {
     // fontSize/lineHeight → fontStyles.contentText (useScaledStyleSheet)
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     color: COLORS.textPrimary,
     letterSpacing: 0.1,
   },

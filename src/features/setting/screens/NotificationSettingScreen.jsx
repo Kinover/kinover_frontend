@@ -26,7 +26,7 @@ import {
 
 // 토스트 모달 import
 import ToastModal from 'components/modal/ToastModal';
-import {SETTING_STYLES} from 'styles/style';
+import {SETTING_STYLES, getHeaderStyles} from 'styles/style';
 
 export default function NotificationSettingScreen() {
   const styles = useScaledStyleSheet(() => ({
@@ -108,7 +108,19 @@ export default function NotificationSettingScreen() {
 
  // 알림설정화면 뒤로가기 → 한 단계 pop (설정화면으로, 슬라이드 애니메이션)
   useLayoutEffect(() => {
+    const H = getHeaderStyles();
     navigation.setOptions({
+      headerTitle: () => (
+        <AppText
+          allowFontScaling={false}
+          style={{
+            fontSize: H.defaultTitleFontSize,
+            color: H.defaultTitleFontColor,
+            fontFamily: H.defaultTitleFontFamily,
+          }}>
+          알림 설정
+        </AppText>
+      ),
       headerLeft: () => (
         <RenderHeaderBackButton
           navigation={navigation}
@@ -233,8 +245,6 @@ export default function NotificationSettingScreen() {
   return (
     <>
       <ScrollView style={styles.container}>
-        <AppText allowFontScaling={false} style={styles.header}>알림</AppText>
-
         <View style={styles.section}>
           <View style={styles.row}>
             <AppText allowFontScaling={false} style={styles.label}>전체 알림</AppText>

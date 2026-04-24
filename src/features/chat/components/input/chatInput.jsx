@@ -55,6 +55,7 @@ import {
 import {
   getExtFromUri,
 } from '../../utils/chatInputUtils';
+import {FONTS} from 'styles/typography';
 
 const COLORS = {
   bg: '#F6F7FB',
@@ -1062,7 +1063,7 @@ const styles = StyleSheet.create({
   previewRemoveText: {
     color: '#fff',
     fontSize: getResponsiveFontSize(16),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     lineHeight: getResponsiveFontSize(18),
     marginTop: -getResponsiveHeight(1),
     includeFontPadding: false,
@@ -1092,7 +1093,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     height: '100%',
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     fontSize: getResponsiveIconSize(15),
     paddingHorizontal: getResponsiveWidth(4),
     textAlignVertical: 'center',
@@ -1162,7 +1163,7 @@ const styles = StyleSheet.create({
   sendBadgeText: {
     color: '#fff',
     fontSize: getResponsiveIconSize(11.5),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     includeFontPadding: false,
   },
 
@@ -1209,7 +1210,7 @@ const styles = StyleSheet.create({
   },
   orderBadgeText: {
     fontSize: getResponsiveFontSize(12),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     color: '#FFF',
     letterSpacing: -0.2,
     includeFontPadding: false,
@@ -1229,7 +1230,7 @@ const styles = StyleSheet.create({
   videoBadgeText: {
     color: '#fff',
     fontSize: getResponsiveIconSize(11.5),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     includeFontPadding: false,
   },
 });

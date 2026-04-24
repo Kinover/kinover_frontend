@@ -43,7 +43,19 @@ export const API_BASE_URL = env('API_BASE_URL', 'https://kinover.shop/api');
 export const API_TIMEOUT_MS = 15000;
 
 // ==================== WebSocket (환경 변수 우선) ====================
-export const WS_CHAT_BASE_URL = env('WS_CHAT_BASE_URL', 'ws://kinover.shop:9090');
+/** Nginx 등에서 443으로 TLS 종료 시 포트 생략(기본 wss = 443) */
+const WS_CHAT_BASE_DEFAULT = 'wss://kinover.shop';
+
+/** 레거시 `.env`의 `ws://`를 `wss://`로 통일 (TLS) */
+function asWssChatBaseUrl(raw) {
+  const s = String(raw ?? '').trim();
+  if (!s) return WS_CHAT_BASE_DEFAULT;
+  return s.replace(/^ws:\/\//i, 'wss://');
+}
+
+export const WS_CHAT_BASE_URL = asWssChatBaseUrl(
+  env('WS_CHAT_BASE_URL', WS_CHAT_BASE_DEFAULT),
+);
 export const WS_CHAT_PATH = '/chat';
 /** 가족 온라인 상태 소켓 경로 (WS_CHAT_BASE_URL + WS_FAMILY_STATUS_PATH) */
 export const WS_FAMILY_STATUS_PATH = '/family-status';

@@ -20,6 +20,7 @@ import {useGetCategoriesQuery, useGetPostByIdQuery} from '../services/memoryApi'
 import {setTempCategoryList} from '../store/categorySlice';
 
 import CheckBadge from 'components/CheckBadge';
+import {FONTS} from 'styles/typography';
 
 export default function CategorySelectPage({route}) {
   const styles = useScaledStyleSheet(rf => ({
@@ -27,7 +28,7 @@ export default function CategorySelectPage({route}) {
   container: {
     flex: 1,
     backgroundColor: 'white',
-    borderTopWidth: 2,
+    borderTopWidth: 1,
     borderColor: '#E5E5E5',
   },
 
@@ -59,7 +60,7 @@ export default function CategorySelectPage({route}) {
   },
   itemText: {
     fontSize: rf(14.5),
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     color: 'black',
     textAlignVertical: 'center',
   },
@@ -87,7 +88,7 @@ export default function CategorySelectPage({route}) {
   addText: {
     color: '#F8B500',
     fontSize: rf(14.5),
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
   },
 
   modalContent: {
@@ -99,7 +100,7 @@ export default function CategorySelectPage({route}) {
       Platform.OS === 'android'
         ? rf(17)
         : rf(18),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     textAlign: 'center',
     marginBottom: getResponsiveHeight(12),
     marginTop: getResponsiveHeight(12),
@@ -112,21 +113,29 @@ export default function CategorySelectPage({route}) {
     paddingVertical:
       Platform.OS === 'ios' ? getResponsiveHeight(10) : getResponsiveHeight(4),
   },
-  input: {
+  inputWrap: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: getResponsiveWidth(10),
+    backgroundColor: '#F5F5F5',
+    marginTop: getResponsiveHeight(8),
+    marginBottom: getResponsiveHeight(8),
+    paddingHorizontal: getResponsiveWidth(12),
+  },
+  inputWrapFocused: {
+    borderColor: '#FFC84D',
+  },
+  input: {
     paddingVertical:
       Platform.OS === 'android'
         ? getResponsiveHeight(10)
         : getResponsiveHeight(12),
-    paddingHorizontal: getResponsiveWidth(12),
+    paddingHorizontal: 0,
     fontSize: rf(16),
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     color: '#111827',
-    backgroundColor: '#FFFFFF',
-    marginTop: getResponsiveHeight(8),
-    marginBottom: getResponsiveHeight(8),
+    backgroundColor: 'transparent',
+    borderWidth: 0,
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
 
@@ -180,6 +189,7 @@ export default function CategorySelectPage({route}) {
 
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [newCategory, setNewCategory] = useState('');
+  const [isCategoryInputFocused, setIsCategoryInputFocused] = useState(false);
 
  /** -----------------------
  * 기본 선택 세팅
@@ -356,17 +366,29 @@ export default function CategorySelectPage({route}) {
         visible={addModalVisible}
         onClose={() => {
           setNewCategory('');
+          setIsCategoryInputFocused(false);
           setAddModalVisible(false);
         }}
         onConfirm={handleAddCategory}
+        confirmDisabled={newCategory.trim().length === 0}
         content={
-          <CustomInput
-            placeholder="예: 2026 가족 여행"
-            placeholderTextColor={EMPTY_STYLE().emptyColor}
-            style={styles.input}
-            value={newCategory}
-            onChangeText={setNewCategory}
-          />
+          <View
+            style={[
+              styles.inputWrap,
+              isCategoryInputFocused && styles.inputWrapFocused,
+            ]}>
+            <CustomInput
+              disableBaseStyle={true}
+              disableFocusStyle={true}
+              placeholder="예: 2026 가족 여행"
+              placeholderTextColor={EMPTY_STYLE().emptyColor}
+              style={styles.input}
+              value={newCategory}
+              onChangeText={setNewCategory}
+              onFocus={() => setIsCategoryInputFocused(true)}
+              onBlur={() => setIsCategoryInputFocused(false)}
+            />
+          </View>
         }
       />
     </SafeAreaView>

@@ -16,6 +16,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
+import {FONTS} from 'styles/typography';
 
 export default function ChatMentionDropdown({
   mentionCandidates,
@@ -59,12 +60,12 @@ export default function ChatMentionDropdown({
     flex: 1,
     minWidth: 0,
     color: '#111827',
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(13.5),
   },
   mentionHint: {
     color: '#6B7280',
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: rf(12),
   },
 

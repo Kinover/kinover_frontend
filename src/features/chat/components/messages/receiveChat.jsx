@@ -33,6 +33,7 @@ import {getVideoThumbnail} from 'utils/videoThumbnail';
 import {toCdnUrl} from 'utils/mediaUrl';
 import MentionText from 'components/mention/MentionText';
 import AppText from 'components/AppText';
+import {FONTS} from 'styles/typography';
 
 // 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
@@ -68,7 +69,7 @@ export default function ReceiveChat({
     textContainer: {flex: 1, flexDirection: 'column'},
 
     userName: {
-      fontFamily: 'Pretendard-Medium',
+      fontFamily: FONTS.MEDIUM,
       fontSize: CHATROOM_STYLE().messageFontSize,
       color: '#444',
       marginBottom: getResponsiveHeight(7),
@@ -102,7 +103,7 @@ export default function ReceiveChat({
 
     mentionText: {
       color: '#FFC84D',
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
     },
 
     metaLine: {
@@ -114,7 +115,7 @@ export default function ReceiveChat({
     unreadCountText: {
       fontSize: rf(11),
       color: '#FFC84D',
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
       ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
     },
 
@@ -151,7 +152,7 @@ export default function ReceiveChat({
     moreOverlayText: {
       color: '#fff',
       fontSize: rf(16),
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
     },
 
     playOverlay: {

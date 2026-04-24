@@ -17,22 +17,43 @@ const persistConfig = {
   stateReconciler: autoMergeLevel2,
   version: 1,
   migrate: async state => {
+    let result = state;
+
+    // bioLockEnabled: MMKV 직접 키(ui:bioLockEnabled)를 redux-persist 복원값보다 우선 적용.
+    // redux-persist flush 타이밍 문제로 저장이 누락돼도 직접 키는 항상 정확하게 기록됨.
     try {
-      if (state?.ui && state.ui.emotionPickAlertDismiss == null) {
-        const fromMmkv = readEmotionPickAlertDismissFromMmkv(
-          EMOTION_PICK_APP_EVENT_ID,
-        );
-        if (fromMmkv) {
-          return {
-            ...state,
-            ui: {...state.ui, emotionPickAlertDismiss: fromMmkv},
+      if (result?.ui) {
+        const {MMKV} = require('react-native-mmkv');
+        const mmkv = new MMKV({id: 'kinover-redux-persist'});
+        const val = mmkv.getString('ui:bioLockEnabled');
+        if (val !== undefined && val !== null) {
+          result = {
+            ...result,
+            ui: {...result.ui, bioLockEnabled: val === 'true'},
           };
         }
       }
     } catch {
       null;
     }
-    return state;
+
+    try {
+      if (result?.ui && result.ui.emotionPickAlertDismiss == null) {
+        const fromMmkv = readEmotionPickAlertDismissFromMmkv(
+          EMOTION_PICK_APP_EVENT_ID,
+        );
+        if (fromMmkv) {
+          return {
+            ...result,
+            ui: {...result.ui, emotionPickAlertDismiss: fromMmkv},
+          };
+        }
+      }
+    } catch {
+      null;
+    }
+
+    return result;
   },
   whitelist: ['ui'], // persist할 slice만 명시 (auth/실시간 데이터는 제외 후 서버에서 강제 새로고침)
  // rehydrate 직후: useAutoLogin에서 토큰 유효 시 fetchUser → fetchFamily → fetchChatRoomList 등으로 서버 강제 새로고침

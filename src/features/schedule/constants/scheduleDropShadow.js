@@ -8,17 +8,10 @@ import {getResponsiveHeight} from 'utils/responsive';
  */
 export const SCHEDULE_CARD_SHADOW = {
   shadowColor: '#000',
-  ...(Platform.OS === 'android'
-    ? {
-        shadowOffset: {width: 0, height: 2},
-        shadowOpacity: 0.09,
-        shadowRadius: 4,
-      }
-    : {
-        shadowOffset: {width: 0, height: 3},
-        shadowOpacity: 0.08,
-        shadowRadius: 3,
-      }),
+  shadowOffset: {width: 0, height: 1},
+  shadowOpacity: 0.12,
+  shadowRadius: 2,
+  ...(Platform.OS === 'android' ? {elevation: 3} : {elevation: 0}),
 };
 
 /** Calendar.jsx `styles.shadowBox`와 동일 베이스 */

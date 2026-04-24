@@ -11,6 +11,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
+import {FONTS} from 'styles/typography';
 
 /**
  * SlideSegment (재사용 슬라이드 탭)
@@ -76,11 +77,11 @@ export default function SlideSegment({
   tabText: {
     fontSize: rf(13),
     color: '#6B7280',
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
   },
   tabTextActive: {
     color: '#FFFFFF',
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
   },
 
   }));

@@ -13,7 +13,6 @@ import {
   ActivityIndicator,
   Image,
 } from 'react-native';
-import DropShadow from 'react-native-drop-shadow';
 import {useSelector} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
 import AppText from 'components/AppText';
@@ -31,6 +30,7 @@ import {
   getResponsiveFontSize,
 } from 'utils/responsive';
 import {HEADER_STYLES, COLORS} from 'styles/style';
+import {FONTS} from 'styles/typography';
 
 export default function AddChatMemberScreen({navigation, route}) {
   const styles = useScaledStyleSheet(rf => ({
@@ -52,7 +52,7 @@ export default function AddChatMemberScreen({navigation, route}) {
     },
     sectionLabel: {
       fontSize: rf(12),
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       color: '#9CA3AF',
       marginBottom: getResponsiveHeight(6),
       marginLeft: getResponsiveWidth(4),
@@ -62,11 +62,8 @@ export default function AddChatMemberScreen({navigation, route}) {
     cardShadow: {
       marginHorizontal: getResponsiveWidth(16),
       marginBottom: getResponsiveHeight(8),
-      shadowColor: '#000',
-      shadowOffset: {width: 0, height: 1},
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 1,
+      shadowOpacity: 0,
+      elevation: 0,
     },
     card: {
       backgroundColor: '#FFFFFF',
@@ -101,7 +98,7 @@ export default function AddChatMemberScreen({navigation, route}) {
     },
     userName: {
       fontSize: rf(15),
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       color: '#222',
     },
     selectIcon: {
@@ -111,7 +108,7 @@ export default function AddChatMemberScreen({navigation, route}) {
     },
     emptyText: {
       fontSize: rf(13),
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       color: '#9CA3AF',
       textAlign: 'center',
       paddingVertical: getResponsiveHeight(20),
@@ -200,7 +197,7 @@ export default function AddChatMemberScreen({navigation, route}) {
         <AppText style={styles.sectionLabel}>
           현재 멤버 {roomUsers.length > 0 ? `${roomUsers.length}명` : ''}
         </AppText>
-        <DropShadow style={styles.cardShadow}>
+        <View style={styles.cardShadow}>
           <View style={styles.card}>
             {roomUsers.length === 0 ? (
               <AppText style={styles.emptyText}>멤버 정보를 불러오지 못했어요.</AppText>
@@ -225,13 +222,13 @@ export default function AddChatMemberScreen({navigation, route}) {
               ))
             )}
           </View>
-        </DropShadow>
+        </View>
 
         {/* 초대하기 섹션 */}
         {selectableUsers.length > 0 && (
           <>
             <AppText style={styles.sectionLabel}>초대하기</AppText>
-            <DropShadow style={styles.cardShadow}>
+            <View style={styles.cardShadow}>
             <View style={styles.card}>
               {selectableUsers.map((user, index) => {
                 const isSelected = selected.includes(user.userId);
@@ -259,14 +256,11 @@ export default function AddChatMemberScreen({navigation, route}) {
                         style={styles.selectIcon}
                       />
                     </TouchableOpacity>
-                    {index < selectableUsers.length - 1 && (
-                      <View style={styles.divider} />
-                    )}
                   </View>
                 );
               })}
             </View>
-            </DropShadow>
+            </View>
           </>
         )}
 

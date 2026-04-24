@@ -15,6 +15,7 @@ import {Swipeable} from 'react-native-gesture-handler';
 import FastImage from '@d11/react-native-fast-image';
 import LinearGradient from 'react-native-linear-gradient';
 import {EMPTY_STYLE} from 'styles/style';
+import {FONTS} from 'styles/typography';
 
 const ACTION_W = getResponsiveWidth(70);
 
@@ -63,7 +64,7 @@ export default function CommentSection({
     marginRight: getResponsiveWidth(10),
   },
   commentWriter: {
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     fontSize: rf(14),
     color: '#000',
     marginBottom: getResponsiveHeight(2),
@@ -72,7 +73,7 @@ export default function CommentSection({
   commentContent: {
     flexShrink: 1,
     flexWrap: 'wrap',
-    fontFamily: 'Pretendard-Light',
+    fontFamily: FONTS.LIGHT,
     fontSize: rf(13),
     color: '#000',
     lineHeight: 20,
@@ -99,7 +100,7 @@ export default function CommentSection({
   commentInput: {
     flex: 1,
     fontSize: rf(14),
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     paddingVertical: getResponsiveHeight(8),
   },
   commentSendBt: {
@@ -137,7 +138,7 @@ export default function CommentSection({
   },
   deleteActionText: {
     color: '#FFF',
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(14),
   },
   reportAction: {
@@ -149,7 +150,7 @@ export default function CommentSection({
   },
   reportActionText: {
     color: '#FFF',
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(14),
   },
   topFade: {

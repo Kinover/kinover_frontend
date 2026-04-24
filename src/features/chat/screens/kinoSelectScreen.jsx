@@ -28,6 +28,7 @@ import {
 } from 'utils/responsive';
 import {BUTTON_STYLES} from 'styles/style';
 import SelectionFrameLayout from 'components/layouts/SelectionFrameLayout';
+import {FONTS} from 'styles/typography';
 
 const KINO_TYPE_TO_PERSONALITY = {
   YELLOW_KINO: 'SUNNY',
@@ -108,7 +109,7 @@ export default function KinoSelectScreen() {
       fontSize: rf(10),
       letterSpacing: 1,
       color: '#374151',
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
     },
 
     textCard: {
@@ -140,13 +141,13 @@ export default function KinoSelectScreen() {
 
     kinoGreeting: {
       fontSize: rf(17),
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
       lineHeight: rf(23),
       color: '#111827',
     },
     kinoText: {
       fontSize: rf(14.5),
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       lineHeight: rf(21),
       color: '#1F2937',
     },
@@ -154,7 +155,7 @@ export default function KinoSelectScreen() {
       marginBottom: getResponsiveHeight(10),
     },
     kinoHighlight: {
-      fontFamily: 'Pretendard-Bold',
+      fontFamily: FONTS.BOLD,
     },
 
     carouselArea: {
@@ -214,13 +215,13 @@ export default function KinoSelectScreen() {
       alignItems: 'center',
     },
     kinoName: {
-      fontFamily: 'Pretendard-Bold',
+      fontFamily: FONTS.BOLD,
       fontSize: rf(18),
       color: '#111827',
     },
     kinoTone: {
       marginTop: getResponsiveHeight(4),
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       fontSize: rf(12.5),
       color: '#6B7280',
     },

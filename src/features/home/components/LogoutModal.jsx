@@ -7,6 +7,7 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 import CustomModal from 'components/modal/CustomModal';
+import {FONTS} from 'styles/typography';
 export default function LogoutModal({ visible, onClose, onConfirm }) {
   const styles = useScaledStyleSheet(rf => ({
 
@@ -14,13 +15,13 @@ export default function LogoutModal({ visible, onClose, onConfirm }) {
     color:'black',
     fontSize: Platform.OS === 'android' ? rf(20) : rf(22),
     textAlign: 'center',
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     marginBottom: getResponsiveHeight(6),
     marginTop: getResponsiveHeight(15),
     lineHeight: getResponsiveHeight(24),
   },
   modalText: {
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     fontSize: rf(14),
   },
   modalButtonRow: {

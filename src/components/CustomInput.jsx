@@ -51,6 +51,10 @@ const CustomInput = forwardRef(function CustomInput(
   return (
     <InputComponent
       ref={ref}
+      accessible={true}
+      accessibilityRole="text"
+      accessibilityLabel={props.accessibilityLabel ?? props.placeholder}
+      accessibilityState={{disabled: !editable}}
       style={[
         style,
         !disableBaseStyle && defaultStyle,
@@ -68,11 +72,11 @@ const CustomInput = forwardRef(function CustomInput(
 
 const defaultStyle = {
   borderWidth: 1,
-  borderColor: '#DADADA',
+  borderColor: '#D1D5DB',
 };
 
 const focusedStyle = {
-  borderWidth: 1,
+  borderWidth: 2,
   borderColor: '#FFC84D',
 };
 

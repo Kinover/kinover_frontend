@@ -23,6 +23,7 @@ import {
   getResponsiveIconSize,
 } from 'utils/responsive';
 import {CalloutBubble} from './GuideModal';
+import {FONTS} from 'styles/typography';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 // Android: 탭 바·소프트키까지 덮이도록 전체 화면 높이 사용
@@ -109,13 +110,13 @@ export default function GuideOverlay({
   },
   skipText: {
     fontSize: rf(14),
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     color: 'rgba(255,255,255,0.95)',
     lineHeight: getResponsiveHeight(20),
   },
   stepIndicator: {
     fontSize: rf(14),
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     color: 'rgba(255,255,255,0.85)',
   },
   nextButton: {
@@ -129,7 +130,7 @@ export default function GuideOverlay({
   },
   nextButtonText: {
     fontSize: rf(14),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     color: '#111827',
   },
 

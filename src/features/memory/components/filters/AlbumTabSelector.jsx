@@ -10,6 +10,7 @@ import {
 } from 'utils/responsive';
 import {DEFAULT_STYLE, LAYOUT_STYLE} from 'styles/style';
 import AppText from 'components/AppText';
+import {FONTS} from 'styles/typography';
 
 // 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
@@ -56,7 +57,7 @@ export default function AnimatedAlbumTabSelector({selected, onSelect}) {
   },
   selectedText: {
     color: '#111827',
-    fontFamily: 'Pretendard-Bold',
+    fontFamily: FONTS.BOLD,
   },
 
   underline: {

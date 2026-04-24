@@ -1,10 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-  <!-- REST API는 HTTPS만 허용, WebSocket(ws://:9090)은 cleartext 필요 -->
-  <domain-config cleartextTrafficPermitted="true">
-    <domain includeSubdomains="true">kinover.shop</domain>
-  </domain-config>
-  <!-- Metro bundler 개발용 — 릴리즈 빌드에서는 사용되지 않음 -->
+  <!-- 프로덕션 API/WS는 HTTPS·WSS — kinover.shop 평문 예외 없음 -->
+  <!-- Metro / 로컬 개발용 -->
   <domain-config cleartextTrafficPermitted="true">
     <domain includeSubdomains="true">10.0.2.2</domain>
   </domain-config>

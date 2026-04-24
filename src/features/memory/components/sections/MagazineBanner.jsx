@@ -14,6 +14,7 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 import {BACKGROUND_COLORS} from 'styles/style';
+import {FONTS} from 'styles/typography';
 
 // 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
@@ -204,7 +205,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   title: {
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
     fontSize: getResponsiveFontSize(13),
     paddingTop: getResponsiveHeight(5),
     fontWeight: '800',
@@ -212,7 +213,7 @@ const styles = StyleSheet.create({
     lineHeight: getResponsiveFontSize(13),
   },
   subtitle: {
-    fontFamily: 'Pretendard-Light',
+    fontFamily: FONTS.LIGHT,
     marginTop: getResponsiveHeight(4),
     fontSize: getResponsiveFontSize(10),
  // color: 'gray',

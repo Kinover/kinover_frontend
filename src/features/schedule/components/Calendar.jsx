@@ -2,7 +2,14 @@
 // src/features/schedule/components/Calendar.jsx (CalendarToggle)
 
 import React, {useRef, useMemo, useEffect, useCallback} from 'react';
-import {View, TouchableOpacity, Image, PanResponder, Platform} from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  Image,
+  PanResponder,
+  Platform,
+} from 'react-native';
+import DropShadow from 'react-native-drop-shadow';
 import {DateTimePickerAndroid} from '@react-native-community/datetimepicker';
 
 import AppText from 'components/AppText';
@@ -13,7 +20,11 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
-import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
+import {
+  getResponsiveFontSize,
+  getResponsiveHeight,
+  getResponsiveWidth,
+} from 'utils/responsive';
 
 import {useCalendarLayout} from '../hooks/useCalendarLayout';
 import {useCalendarMode} from '../hooks/useCalendarMode';
@@ -23,9 +34,6 @@ import {useWeekDates} from '../hooks/useWeekDates';
 import {useScheduleCountStyle} from '../hooks/useScheduleCountStyle';
 import {useYMDPicker} from '../hooks/useYMDPicker';
 
-import DropShadow from 'react-native-drop-shadow';
-import FastImage from '@d11/react-native-fast-image';
-
 import {
   SCHEDULE_CARD_SHADOW,
   getScheduleShadowBoxBaseStyle,
@@ -33,6 +41,7 @@ import {
 import {COLORS, DEFAULT_STYLE} from 'styles/style';
 
 import DatePicker from 'react-native-date-picker';
+import {FONTS} from 'styles/typography';
 
 const RADIUS = 14;
 
@@ -162,25 +171,25 @@ export default function CalendarToggle({
     },
     shadowBox: {
       ...getScheduleShadowBoxBaseStyle(),
+      ...SCHEDULE_CARD_SHADOW,
     },
-    calendarTouchWrap: {
-      width: '100%',
-      borderRadius: RADIUS,
-    },
-    cardInnerHeader: {
+    cardInner: {
       borderRadius: RADIUS,
       overflow: 'hidden',
       backgroundColor: '#FFFFFF',
-      paddingVertical: getResponsiveHeight(10),
+    },
+    calendarTouchWrap: {
+      width: '100%',
+    },
+    cardInnerHeader: {
+      paddingTop: getResponsiveHeight(12),
+      paddingBottom: getResponsiveHeight(8),
       paddingHorizontal: getResponsiveWidth(14),
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
     },
     cardInnerCalendar: {
-      borderRadius: RADIUS,
-      overflow: 'hidden',
-      backgroundColor: '#FFFFFF',
       paddingTop: getResponsiveHeight(8),
       paddingBottom: getResponsiveHeight(10),
       paddingHorizontal: getResponsiveWidth(10),
@@ -198,7 +207,6 @@ export default function CalendarToggle({
       gap: getResponsiveWidth(8),
       alignSelf: 'flex-start',
       maxWidth: '100%',
-      backgroundColor: '#F3F4F6',
       borderRadius: 10,
       paddingHorizontal: getResponsiveWidth(10),
       minHeight: getResponsiveWidth(32),
@@ -211,13 +219,14 @@ export default function CalendarToggle({
     monthText: {
       flexShrink: 1,
       fontFamily: DEFAULT_STYLE().sectionTitle.fontFamily,
-      fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
+      // fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
+      fontSize: getResponsiveFontSize(19),
       color: COLORS.textPrimary,
       letterSpacing: -0.2,
     },
     iconBtn: {
-      width: getResponsiveWidth(32),
-      height: getResponsiveWidth(32),
+      width: getResponsiveWidth(30),
+      height: getResponsiveWidth(30),
       borderRadius: 10,
       justifyContent: 'center',
       alignItems: 'center',
@@ -228,7 +237,7 @@ export default function CalendarToggle({
       width: getResponsiveWidth(18),
       height: getResponsiveWidth(18),
       resizeMode: 'contain',
-      tintColor: '#525252',
+      tintColor: 'black',
     },
     navButtons: {
       flexDirection: 'row',
@@ -262,7 +271,7 @@ export default function CalendarToggle({
     /** 주/월 전환 — `iconBtn`과 동일 크기·배경·모서리 */
     toggleTextInIcon: {
       fontSize: rf(12.5),
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
       color: '#111827',
     },
 
@@ -271,26 +280,25 @@ export default function CalendarToggle({
       justifyContent: 'center',
       paddingVertical: getResponsiveHeight(6),
     },
+    divider: {
+      height: 1,
+      width: '100%',
+      backgroundColor: '#EEF2F7',
+      marginTop: getResponsiveHeight(4),
+      marginBottom: getResponsiveHeight(8),
+    },
     weekCell: {
       alignItems: 'center',
       justifyContent: 'center',
     },
     dayText: {
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
       fontSize: rf(12.5),
       color: '#6B7280',
       textAlign: 'center',
     },
     sundayText: {
       color: '#EF4444',
-    },
-
-    divider: {
-      height: 1,
-      width: '100%',
-      backgroundColor: '#EEF2F7',
-      marginTop: getResponsiveHeight(6),
-      marginBottom: getResponsiveHeight(10),
     },
 
     dayCell: {
@@ -319,17 +327,17 @@ export default function CalendarToggle({
     },
 
     dateText: {
-      fontFamily: 'Pretendard-Medium',
+      fontFamily: FONTS.MEDIUM,
       fontSize: rf(13.5),
       color: '#111827',
     },
     selectedText: {
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
       color: COLOR.FOCUS_TEXT,
     },
     holidayText: {
       color: '#EF4444',
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
     },
 
     absoluteLayer: {
@@ -341,7 +349,7 @@ export default function CalendarToggle({
 
     dotRow: {
       position: 'absolute',
-      bottom: getResponsiveHeight(6),
+      bottom: getResponsiveHeight(5),
       flexDirection: 'row',
       gap: getResponsiveWidth(3),
       alignItems: 'center',
@@ -551,8 +559,7 @@ export default function CalendarToggle({
 
     const showAnnivDot = (counts.anniversary || 0) > 0;
     const showFamilyDot = (counts.family || 0) > 0 || typeFamily;
-    const showIndividualDot =
-      (counts.individual || 0) > 0 || typeIndividual;
+    const showIndividualDot = (counts.individual || 0) > 0 || typeIndividual;
 
     if (!showAnnivDot && !showFamilyDot && !showIndividualDot) return null;
 
@@ -571,258 +578,259 @@ export default function CalendarToggle({
     );
   };
 
-  /** 일정은 미래 날짜도 필요 — 피커 상한만 둠 (하한 1950과 대칭) */
-  const computedMaxYear = useMemo(() => 2100, []);
-
   return (
     <View style={[styles.container, {paddingHorizontal: OUTER_HPAD}]}>
-      {/* Header */}
+      {/* Header + Calendar (single merged card) */}
       <DropShadow
         style={[
           styles.shadowBox,
           {
             width: cardWidth,
-            ...SCHEDULE_CARD_SHADOW,
           },
         ]}>
-        <View style={styles.cardInnerHeader}>
-          <View style={styles.headerLeft}>
-            <TouchableOpacity
-              style={styles.headerLeftDatePicker}
-              onPress={handleOpenYMD}
-              activeOpacity={0.72}
-              hitSlop={{top: 4, bottom: 4, left: 2, right: 2}}>
-              <Image
-                style={styles.calendarIcon}
-                source={require('../../../assets/icons/calendar.png')}
-              />
-              <AppText
-                allowFontScaling={false}
-                style={styles.monthText}
-                numberOfLines={1}>
-                {headerLabel}
-              </AppText>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.headerRight}>
-            {typeof onPressPeopleFilter === 'function' ? (
+        <View style={styles.cardInner}>
+          <View style={styles.cardInnerHeader}>
+            <View style={styles.headerLeft}>
               <TouchableOpacity
-                style={[
-                  styles.iconBtn,
-                  styles.peopleFilterBtn,
-                  peopleFilterLoading ? {opacity: 0.55} : null,
-                ]}
-                onPress={onPressPeopleFilter}
-                hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
-                <Image
-                  source={require('../../../assets/icons/tabs/2/user.png')}
-                  style={styles.peopleFilterIcon}
-                />
-                {peopleFilterActive ? (
-                  <View style={styles.peopleFilterBadge} />
-                ) : null}
-              </TouchableOpacity>
-            ) : null}
-
-            <View style={styles.navButtons}>
-              <TouchableOpacity
-                style={styles.iconBtn}
-                onPress={() =>
-                  mode === 'month' ? changeMonth(-1) : changeWeek(-1)
-                }
-                hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
-                <Image
-                  source={require('../../../assets/icons/leftArrow_gray_bold.png')}
-                  style={styles.navIcon}
-                  resizeMode="contain"
-                />
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.iconBtn}
-                onPress={() =>
-                  mode === 'month' ? changeMonth(1) : changeWeek(1)
-                }
-                hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
-                <Image
-                  source={require('../../../assets/icons/rightArrow_gray_bold.png')}
-                  style={styles.navIcon}
-                  resizeMode="contain"
-                />
+                style={styles.headerLeftDatePicker}
+                onPress={handleOpenYMD}
+                activeOpacity={0.72}
+                hitSlop={{top: 4, bottom: 4, left: 2, right: 2}}>
+                {/* <Image
+                  style={styles.calendarIcon}
+                  source={require('../../../assets/icons/calendar.png')}
+                /> */}
+                <AppText
+                  allowFontScaling={false}
+                  style={styles.monthText}
+                  numberOfLines={1}>
+                  {headerLabel}
+                </AppText>
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-              style={styles.iconBtn}
-              onPress={toggleMode}
-              hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
-              <AppText allowFontScaling={false} style={styles.toggleTextInIcon}>
-                {mode === 'month' ? '주' : '월'}
-              </AppText>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </DropShadow>
-
-      {/* Calendar */}
-      <DropShadow
-        style={[
-          styles.shadowBox,
-          {
-            width: cardWidth,
-            ...SCHEDULE_CARD_SHADOW,
-          },
-        ]}>
-        {/* 모달 열리면 panHandlers 자체를 안 붙임 (더 안전) */}
-        <View
-          {...(!showYMD ? panResponder.panHandlers : {})}
-          style={styles.calendarTouchWrap}>
-          <View style={styles.cardInnerCalendar}>
-            <View style={[styles.weekRow, {width: gridWidth}]}>
-              {['일', '월', '화', '수', '목', '금', '토'].map(dow => {
-                const isRestDow = dow === '일';
-                return (
-                  <View key={dow} style={[styles.weekCell, {width: cellSize}]}>
-                    <AppText
-                      allowFontScaling={false}
-                      style={[styles.dayText, isRestDow && styles.sundayText]}>
-                      {dow}
-                    </AppText>
-                  </View>
-                );
-              })}
-            </View>
-
-            <View style={styles.divider} />
-
-            <Animated.View style={[{width: gridWidth}, gridClipStyle]}>
-              {/* Month */}
-              <Animated.View
-                style={monthLayerStyle}
-                pointerEvents={mode === 'month' ? 'auto' : 'none'}>
-                <View
-                  collapsable={false}
-                  onLayout={onMonthLayout}
+            <View style={styles.headerRight}>
+              {typeof onPressPeopleFilter === 'function' ? (
+                <TouchableOpacity
                   style={[
-                    styles.dateGrid,
-                    {width: gridWidth, columnGap: GAP, rowGap: GAP},
-                  ]}>
-                  {monthDates.map((item, idx) => {
-                    const birthNames = birthdayMap?.[item.key];
-                    const hasBirthday = !!birthNames?.length;
+                    styles.iconBtn,
+                    styles.peopleFilterBtn,
+                    peopleFilterLoading ? {opacity: 0.55} : null,
+                  ]}
+                  onPress={onPressPeopleFilter}
+                  hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
+                  <Image
+                    source={require('../../../assets/icons/tabs/2/user.png')}
+                    style={styles.peopleFilterIcon}
+                  />
+                  {peopleFilterActive ? (
+                    <View style={styles.peopleFilterBadge} />
+                  ) : null}
+                </TouchableOpacity>
+              ) : null}
 
-                    const baseCounts = normalizeCount(
-                      scheduleCountPerDay[item.key],
-                    );
-                    const counts = mergeBirthdayIntoCounts(
-                      baseCounts,
-                      hasBirthday,
-                    );
+              <View style={styles.navButtons}>
+                <TouchableOpacity
+                  style={styles.iconBtn}
+                  onPress={() =>
+                    mode === 'month' ? changeMonth(-1) : changeWeek(-1)
+                  }
+                  hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
+                  <Image
+                    source={require('../../../assets/icons/leftArrow_gray_bold.png')}
+                    style={styles.navIcon}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
 
-                    const total = counts.total;
-                    const CIRCLE_SIZE = cellSize * 0.78;
-                    const holiday = isHoliday(item.date);
+                <TouchableOpacity
+                  style={styles.iconBtn}
+                  onPress={() =>
+                    mode === 'month' ? changeMonth(1) : changeWeek(1)
+                  }
+                  hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}>
+                  <Image
+                    source={require('../../../assets/icons/rightArrow_gray_bold.png')}
+                    style={styles.navIcon}
+                    resizeMode="contain"
+                  />
+                </TouchableOpacity>
+              </View>
 
-                    return (
-                      <TouchableOpacity
-                        key={idx}
+              <TouchableOpacity
+                style={styles.iconBtn}
+                onPress={toggleMode}
+                hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
+                <AppText
+                  allowFontScaling={false}
+                  style={styles.toggleTextInIcon}>
+                  {mode === 'month' ? '주' : '월'}
+                </AppText>
+              </TouchableOpacity>
+            </View>
+          </View>
+          {/* 모달 열리면 panHandlers 자체를 안 붙임 (더 안전) */}
+          <View style={styles.divider} />
+
+          <View
+            {...(!showYMD ? panResponder.panHandlers : {})}
+            style={styles.calendarTouchWrap}>
+            <View style={styles.cardInnerCalendar}>
+              <View style={[styles.weekRow, {width: gridWidth}]}>
+                {['일', '월', '화', '수', '목', '금', '토'].map(dow => {
+                  const isRestDow = dow === '일';
+                  return (
+                    <View
+                      key={dow}
+                      style={[styles.weekCell, {width: cellSize}]}>
+                      <AppText
+                        allowFontScaling={false}
                         style={[
-                          styles.dayCell,
-                          {width: cellSize, height: cellSize},
-                        ]}
-                        onPress={() => setSelectedDate(item.date)}
-                        hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
-                        <View
+                          styles.dayText,
+                          isRestDow && styles.sundayText,
+                        ]}>
+                        {dow}
+                      </AppText>
+                    </View>
+                  );
+                })}
+              </View>
+
+              <Animated.View style={[{width: gridWidth}, gridClipStyle]}>
+                {/* Month */}
+                <Animated.View
+                  style={monthLayerStyle}
+                  pointerEvents={mode === 'month' ? 'auto' : 'none'}>
+                  <View
+                    collapsable={false}
+                    onLayout={onMonthLayout}
+                    style={[
+                      styles.dateGrid,
+                      {width: gridWidth, columnGap: GAP, rowGap: GAP},
+                    ]}>
+                    {monthDates.map((item, idx) => {
+                      const birthNames = birthdayMap?.[item.key];
+                      const hasBirthday = !!birthNames?.length;
+
+                      const baseCounts = normalizeCount(
+                        scheduleCountPerDay[item.key],
+                      );
+                      const counts = mergeBirthdayIntoCounts(
+                        baseCounts,
+                        hasBirthday,
+                      );
+
+                      const total = counts.total;
+                      const CIRCLE_SIZE = cellSize * 0.78;
+                      const holiday = isHoliday(item.date);
+
+                      return (
+                        <TouchableOpacity
+                          key={idx}
                           style={[
-                            styles.innerCircle,
-                            {
-                              width: CIRCLE_SIZE,
-                              height: CIRCLE_SIZE,
-                              borderRadius: CIRCLE_SIZE / 2,
-                            },
-                            !item.isSelected && getCountColorStyle(total),
-                            item.isSelected && styles.selectedBox,
-                            !item.isCurrentMonth && {opacity: 0.35},
-                          ]}>
-                          <AppText
-                            allowFontScaling={false}
+                            styles.dayCell,
+                            {width: cellSize, height: cellSize},
+                          ]}
+                          onPress={() => setSelectedDate(item.date)}
+                          hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
+                          <View
                             style={[
-                              styles.dateText,
-                              item.isSelected && styles.selectedText,
-                              !item.isSelected && holiday && styles.holidayText,
+                              styles.innerCircle,
+                              {
+                                width: CIRCLE_SIZE,
+                                height: CIRCLE_SIZE,
+                                borderRadius: CIRCLE_SIZE / 2,
+                              },
+                              !item.isSelected && getCountColorStyle(total),
+                              item.isSelected && styles.selectedBox,
+                              !item.isCurrentMonth && {opacity: 0.35},
                             ]}>
-                            {item.date.getDate()}
-                          </AppText>
-                          {renderDots(counts)}
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              </Animated.View>
+                            <AppText
+                              allowFontScaling={false}
+                              style={[
+                                styles.dateText,
+                                item.isSelected && styles.selectedText,
+                                !item.isSelected &&
+                                  holiday &&
+                                  styles.holidayText,
+                              ]}>
+                              {item.date.getDate()}
+                            </AppText>
+                            {renderDots(counts)}
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </Animated.View>
 
-              {/* Week */}
-              <Animated.View
-                style={[styles.absoluteLayer, weekLayerStyle]}
-                pointerEvents={mode === 'week' ? 'auto' : 'none'}>
-                <View
-                  collapsable={false}
-                  onLayout={onWeekLayout}
-                  style={[styles.weekGrid, {width: gridWidth, columnGap: GAP}]}>
-                  {weekDates.map((item, idx) => {
-                    const birthNames = birthdayMap?.[item.key];
-                    const hasBirthday = !!birthNames?.length;
+                {/* Week */}
+                <Animated.View
+                  style={[styles.absoluteLayer, weekLayerStyle]}
+                  pointerEvents={mode === 'week' ? 'auto' : 'none'}>
+                  <View
+                    collapsable={false}
+                    onLayout={onWeekLayout}
+                    style={[
+                      styles.weekGrid,
+                      {width: gridWidth, columnGap: GAP},
+                    ]}>
+                    {weekDates.map((item, idx) => {
+                      const birthNames = birthdayMap?.[item.key];
+                      const hasBirthday = !!birthNames?.length;
 
-                    const baseCounts = normalizeCount(
-                      scheduleCountPerDay[item.key],
-                    );
-                    const counts = mergeBirthdayIntoCounts(
-                      baseCounts,
-                      hasBirthday,
-                    );
+                      const baseCounts = normalizeCount(
+                        scheduleCountPerDay[item.key],
+                      );
+                      const counts = mergeBirthdayIntoCounts(
+                        baseCounts,
+                        hasBirthday,
+                      );
 
-                    const total = counts.total;
-                    const CIRCLE_SIZE = cellSize * 0.78;
-                    const holiday = isHoliday(item.date);
+                      const total = counts.total;
+                      const CIRCLE_SIZE = cellSize * 0.78;
+                      const holiday = isHoliday(item.date);
 
-                    return (
-                      <TouchableOpacity
-                        key={idx}
-                        style={[
-                          styles.dayCell,
-                          {width: cellSize, height: cellSize},
-                        ]}
-                        onPress={() => setSelectedDate(item.date)}
-                        hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
-                        <View
+                      return (
+                        <TouchableOpacity
+                          key={idx}
                           style={[
-                            styles.innerCircle,
-                            {
-                              width: CIRCLE_SIZE,
-                              height: CIRCLE_SIZE,
-                              borderRadius: CIRCLE_SIZE / 2,
-                            },
-                            !item.isSelected && getCountColorStyle(total),
-                            item.isSelected && styles.selectedBox,
-                          ]}>
-                          <AppText
-                            allowFontScaling={false}
+                            styles.dayCell,
+                            {width: cellSize, height: cellSize},
+                          ]}
+                          onPress={() => setSelectedDate(item.date)}
+                          hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
+                          <View
                             style={[
-                              styles.dateText,
-                              item.isSelected && styles.selectedText,
-                              !item.isSelected && holiday && styles.holidayText,
+                              styles.innerCircle,
+                              {
+                                width: CIRCLE_SIZE,
+                                height: CIRCLE_SIZE,
+                                borderRadius: CIRCLE_SIZE / 2,
+                              },
+                              !item.isSelected && getCountColorStyle(total),
+                              item.isSelected && styles.selectedBox,
                             ]}>
-                            {item.date.getDate()}
-                          </AppText>
-                          {renderDots(counts)}
-                        </View>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
+                            <AppText
+                              allowFontScaling={false}
+                              style={[
+                                styles.dateText,
+                                item.isSelected && styles.selectedText,
+                                !item.isSelected &&
+                                  holiday &&
+                                  styles.holidayText,
+                              ]}>
+                              {item.date.getDate()}
+                            </AppText>
+                            {renderDots(counts)}
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                </Animated.View>
               </Animated.View>
-            </Animated.View>
+            </View>
           </View>
         </View>
       </DropShadow>
@@ -831,7 +839,11 @@ export default function CalendarToggle({
         <DatePicker
           modal
           open={showYMD}
-          date={selectedDate instanceof Date && !isNaN(selectedDate) ? selectedDate : new Date()}
+          date={
+            selectedDate instanceof Date && !isNaN(selectedDate)
+              ? selectedDate
+              : new Date()
+          }
           mode="date"
           locale="ko"
           title="날짜 선택"

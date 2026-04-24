@@ -26,6 +26,7 @@ import {
   resetToTabScreen,
   getLastFromTabForGlobalScreen,
 } from '../navigationService';
+import {FONTS} from 'styles/typography';
 
 function useTabHeaderBadgeStyles() {
   return useScaledStyleSheet(rf => ({
@@ -60,7 +61,7 @@ function useTabHeaderBadgeStyles() {
       color: '#FFFFFF',
       fontSize: rf(10),
       lineHeight: Math.round(rf(10) + 2),
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
       includeFontPadding: false,
       textAlignVertical: 'center',
     },
@@ -219,7 +220,7 @@ export const renderTabBarLabel = (label, focused) => {
         fontSize,
         lineHeight,
         marginTop: getResponsiveHeight(3),
-        fontFamily: 'Pretendard-Medium',
+        fontFamily: FONTS.MEDIUM,
         includeFontPadding: false,
         textAlignVertical: 'center',
       }}>
@@ -572,7 +573,7 @@ export const RenderHeaderLogo = memo(function RenderHeaderLogo({
           includeFontPadding: false,
           textAlignVertical: 'center',
           fontSize: titleFontSize,
-          fontFamily: 'Pretendard-SemiBold',
+          fontFamily: FONTS.SEMI_BOLD,
           color: currentScreen === '홈' ? '#FFFFFF' : '#111827',
         }}>
         Kinover

@@ -7,12 +7,10 @@
 import React, {useEffect, useMemo, useState, useCallback} from 'react';
 
 import {View, StyleSheet, Image, ScrollView, Pressable} from 'react-native';
-import DropShadow from 'react-native-drop-shadow';
 
 import AppText from 'components/AppText';
 
 import {useSelector, useDispatch} from 'react-redux';
-import {useReduxFontMode} from 'hooks/useReduxFontMode';
 
 // chatRoomThunk 교체: RTK Query mutations 사용
 import {
@@ -40,8 +38,8 @@ import {
 
 import ToastModal from 'components/modal/ToastModal';
 import {COLORS} from 'styles/style';
-import {FONT_MODE} from 'store/uiSlice';
 import {onLeaveChat} from '../hooks/onLeaveChat';
+import {FONTS} from 'styles/typography';
 
 export default function ChatSettings({route, navigation}) {
   const dispatch = useDispatch();
@@ -53,12 +51,11 @@ export default function ChatSettings({route, navigation}) {
   const [renameChatRoomForMe] = useRenameChatRoomForMeMutation();
   const [toggleChatRoomNotification] = useToggleChatRoomNotificationMutation();
 
-  const fontMode = useReduxFontMode();
-  const hideSubtitle = fontMode === FONT_MODE.EXTRA_LARGE;
+  const hideSubtitle = false;
 
   const styles = useMemo(
     () => makeStyles(n => getResponsiveFontSize(n)),
-    [fontMode],
+    [],
   );
 
   const [isChangeKinoModalVisible, setIsChangeKinoModalVisible] =
@@ -231,7 +228,7 @@ export default function ChatSettings({route, navigation}) {
         <AppText allowFontScaling={false} style={styles.sectionLabel}>
           알림
         </AppText>
-        <DropShadow style={styles.cardShadow}>
+        <View style={styles.cardShadow}>
           <View style={styles.card}>
             <Pressable
               onPress={handleToggleAlarm}
@@ -251,6 +248,7 @@ export default function ChatSettings({route, navigation}) {
                       width: getResponsiveIconSize(20),
                       height: getResponsiveIconSize(20),
                       resizeMode: 'contain',
+                      tintColor: '#111827',
                     }}
                   />
                 ) : (
@@ -260,7 +258,7 @@ export default function ChatSettings({route, navigation}) {
                       width: getResponsiveIconSize(20),
                       height: getResponsiveIconSize(20),
                       resizeMode: 'contain',
-                      tintColor: COLORS.brandPrimary,
+                      tintColor: '#111827',
                     }}
                   />
                 )}
@@ -281,7 +279,7 @@ export default function ChatSettings({route, navigation}) {
               />
             </Pressable>
           </View>
-        </DropShadow>
+        </View>
 
         {/* 채팅방 관리 섹션 */}
         {!isKino && (
@@ -289,7 +287,7 @@ export default function ChatSettings({route, navigation}) {
             <AppText allowFontScaling={false} style={styles.sectionLabel}>
               채팅방 관리
             </AppText>
-            <DropShadow style={styles.cardShadow}>
+            <View style={styles.cardShadow}>
               <View style={styles.card}>
                 {/* 채팅방명 변경 */}
                 <Pressable
@@ -306,7 +304,7 @@ export default function ChatSettings({route, navigation}) {
                         width: getResponsiveIconSize(21),
                         height: getResponsiveIconSize(21),
                         resizeMode: 'contain',
-                        tintColor: COLORS.brandPrimary,
+                        tintColor: '#111827',
                       }}
                     />
                   </View>
@@ -345,7 +343,7 @@ export default function ChatSettings({route, navigation}) {
                         width: getResponsiveIconSize(21),
                         height: getResponsiveIconSize(21),
                         resizeMode: 'contain',
-                        tintColor: COLORS.brandPrimary,
+                        tintColor: '#111827',
                       }}
                     />
                   </View>
@@ -401,7 +399,7 @@ export default function ChatSettings({route, navigation}) {
                   />
                 </Pressable>
               </View>
-            </DropShadow>
+            </View>
           </>
         )}
 
@@ -411,7 +409,7 @@ export default function ChatSettings({route, navigation}) {
             <AppText allowFontScaling={false} style={styles.sectionLabel}>
               키노 설정
             </AppText>
-            <DropShadow style={styles.cardShadow}>
+            <View style={styles.cardShadow}>
               <View style={styles.card}>
                 <Pressable
                   onPress={() => setIsChangeKinoModalVisible(true)}
@@ -444,7 +442,7 @@ export default function ChatSettings({route, navigation}) {
                   />
                 </Pressable>
               </View>
-            </DropShadow>
+            </View>
           </>
         )}
 
@@ -456,7 +454,7 @@ export default function ChatSettings({route, navigation}) {
 
         {/* 채팅방 나가기 */}
         {!isKino && (
-          <DropShadow style={styles.cardShadow}>
+          <View style={styles.cardShadow}>
             <View style={styles.card}>
               <Pressable
                 onPress={() => setIsLeaveModalVisible(true)}
@@ -478,11 +476,11 @@ export default function ChatSettings({route, navigation}) {
                 </AppText>
                 <Image
                   source={require('assets/images/rightArrow-gray.png')}
-                  style={[styles.chevronRight, {tintColor: '#EF4444'}]}
+                  style={styles.chevronRight}
                 />
               </Pressable>
             </View>
-          </DropShadow>
+          </View>
         )}
 
         <View style={styles.bottomPad} />
@@ -505,7 +503,7 @@ const makeStyles = rf =>
 
     sectionLabel: {
       fontSize: rf(12),
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       color: '#9CA3AF',
       marginBottom: getResponsiveHeight(8),
       marginLeft: getResponsiveWidth(4),
@@ -520,11 +518,8 @@ const makeStyles = rf =>
 
     cardShadow: {
       marginBottom: getResponsiveHeight(8),
-      shadowColor: '#000',
-      shadowOffset: {width: 0, height: 1},
-      shadowOpacity: 0.05,
-      shadowRadius: 4,
-      elevation: 1,
+      shadowOpacity: 0,
+      elevation: 0,
     },
 
     cardRow: {
@@ -567,13 +562,13 @@ const makeStyles = rf =>
       width: getResponsiveIconSize(22),
       height: getResponsiveIconSize(22),
       resizeMode: 'contain',
-      tintColor: '#FFC84D',
+      tintColor: '#111827',
     },
     iconImgYellowExit: {
       width: getResponsiveIconSize(19.5),
       height: getResponsiveIconSize(19.5),
       resizeMode: 'contain',
-      tintColor: '#FFC84D',
+      tintColor: '#111827',
     },
 
     rowTextBox: {
@@ -582,14 +577,14 @@ const makeStyles = rf =>
 
     rowTitle: {
       fontSize: rf(14),
-      fontFamily: 'Pretendard-SemiBold',
+      fontFamily: FONTS.SEMI_BOLD,
       color: COLORS.textPrimary,
     },
 
     rowSubtitle: {
       marginTop: getResponsiveHeight(2),
       fontSize: rf(11.5),
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       color: '#9CA3AF',
     },
 
@@ -597,7 +592,7 @@ const makeStyles = rf =>
       width: getResponsiveIconSize(16),
       height: getResponsiveIconSize(16),
       resizeMode: 'contain',
-      tintColor: '#D1D5DB',
+      tintColor: '#111827',
     },
 
     leaveText: {
@@ -612,7 +607,7 @@ const makeStyles = rf =>
       fontSize: rf(12),
       lineHeight: rf(15),
       alignSelf: 'center',
-      fontFamily: 'Pretendard-Regular',
+      fontFamily: FONTS.REGULAR,
       color: '#C4C4C8',
     },
 

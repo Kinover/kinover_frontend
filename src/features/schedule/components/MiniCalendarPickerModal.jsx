@@ -10,10 +10,9 @@ import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
 
-import {FONT_MODE} from 'store/uiSlice';
-import {useReduxFontMode} from 'hooks/useReduxFontMode';
 
 import CustomModal from 'components/modal/CustomModal';
+import {FONTS} from 'styles/typography';
 
 const pad2 = n => String(n).padStart(2, '0');
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
@@ -70,7 +69,7 @@ export default function MiniCalendarPickerModal({
   modalSelectedDateText: {
     fontSize: rf(16.5),
     lineHeight: rf(24),
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     color: '#111827',
     marginBottom: getResponsiveHeight(14),
     paddingHorizontal: getResponsiveWidth(8),
@@ -97,7 +96,7 @@ export default function MiniCalendarPickerModal({
     justifyContent: 'center',
   },
   androidPickText: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(13),
     color: 'black',
     textAlign: 'center',
@@ -108,20 +107,20 @@ export default function MiniCalendarPickerModal({
     paddingVertical: getResponsiveHeight(10),
     paddingHorizontal: getResponsiveHeight(14),
     borderRadius: 999,
-    backgroundColor: 'black',
+    backgroundColor: '#FFC84D',
     alignItems: 'center',
     justifyContent: 'center',
   },
   resetText: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(12),
-    color: '#fff',
+    color: '#111827',
     textAlign: 'center',
   },
 
   rangeHint: {
     marginTop: getResponsiveHeight(12),
-    fontFamily: 'Pretendard-Medium',
+    fontFamily: FONTS.MEDIUM,
     fontSize: rf(11.5),
     color: '#9CA3AF',
     textAlign: 'center',
@@ -138,15 +137,14 @@ export default function MiniCalendarPickerModal({
     justifyContent: 'center',
   },
   resetTextIOS: {
-    fontFamily: 'Pretendard-SemiBold',
+    fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(12),
     color: 'black',
     textAlign: 'center',
   },
 
   }));
-  const fontMode = useReduxFontMode();
-  const isLargeFont = fontMode === FONT_MODE.LARGE;
+  const isLargeFont = false;
 
   const baseDate = useMemo(() => {
     const safeDefaultYear = clamp(defaultYear, minYear, maxYear);

@@ -19,6 +19,7 @@ import {
   useGetCategoriesQuery,
 } from '../services/memoryApi';
 import {EMPTY_STYLE} from 'styles/style';
+import {FONTS} from 'styles/typography';
 
 function CategoryHeaderTitle() {
   return (
@@ -62,7 +63,7 @@ export default function CategoryPage() {
   },
   itemText: {
     fontSize: rf(15),
-    fontFamily: 'Pretendard-Regular',
+    fontFamily: FONTS.REGULAR,
   },
   separator: {
     height: 1,
@@ -87,6 +88,7 @@ export default function CategoryPage() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [addModalVisible, setAddModalVisible] = useState(false);
   const [newCategory, setNewCategory] = useState('');
+  const [isCategoryInputFocused, setIsCategoryInputFocused] = useState(false);
 
   const fullCategoryList = useMemo(() => {
     const 전체 = {categoryId: 'all', title: '전체'};
@@ -164,15 +166,17 @@ export default function CategoryPage() {
         visible={addModalVisible}
         onClose={() => {
           setNewCategory('');
+          setIsCategoryInputFocused(false);
           setAddModalVisible(false);
         }}
         onConfirm={handleAddCategory}
+        confirmDisabled={newCategory.trim().length === 0}
         content={
           <View>
             <AppText
               style={{
                 fontSize: getResponsiveFontSize(18),
-                fontFamily: 'Pretendard-SemiBold',
+                fontFamily: FONTS.SEMI_BOLD,
                 textAlign: 'center',
                 marginVertical: getResponsiveHeight(15),
               }}>
@@ -181,19 +185,27 @@ export default function CategoryPage() {
             <View
               style={{
                 borderWidth: 1,
-                borderColor: '#ddd',
-                borderRadius: 8,
-                padding: 10,
+                borderColor: isCategoryInputFocused ? '#FFC84D' : '#E5E7EB',
+                borderRadius: 10,
+                backgroundColor: '#F5F5F5',
+                paddingHorizontal: 12,
+                paddingVertical: 2,
               }}>
               <CustomInput
+                disableBaseStyle={true}
+                disableFocusStyle={true}
                 placeholder="예: 2025 가족 여행"
                 placeholderTextColor={EMPTY_STYLE().emptyColor}
                 style={{
-                  fontFamily: 'Pretendard-Regular',
+                  fontFamily: FONTS.REGULAR,
                   fontSize: getResponsiveFontSize(14),
+                  borderWidth: 0,
+                  backgroundColor: 'transparent',
                 }}
                 value={newCategory}
                 onChangeText={setNewCategory}
+                onFocus={() => setIsCategoryInputFocused(true)}
+                onBlur={() => setIsCategoryInputFocused(false)}
               />
             </View>
           </View>

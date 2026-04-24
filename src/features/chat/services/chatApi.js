@@ -84,7 +84,6 @@ export const chatApi = baseApi.injectEndpoints({
           );
           return {data: res.data ?? []};
         } catch (err) {
-          if (err?.isGuestBlocked) return {data: []};
           return {
             error: {status: err?.response?.status, data: err?.message},
           };
@@ -118,7 +117,6 @@ export const chatApi = baseApi.injectEndpoints({
           const res = await apiClient.post(CHAT_ROOM.usersGet(rid), {});
           return {data: res.data ?? []};
         } catch (err) {
-          if (err?.isGuestBlocked) return {data: []};
           return {error: {status: err?.response?.status, data: err?.message}};
         }
       },
@@ -297,7 +295,6 @@ export const chatApi = baseApi.injectEndpoints({
           );
           return {data: res.data};
         } catch (err) {
-          if (err?.isGuestBlocked) return {data: null};
           return {error: {status: err?.response?.status, data: err?.message}};
         }
       },
@@ -374,7 +371,6 @@ export const chatApi = baseApi.injectEndpoints({
           );
           return {data: res.data};
         } catch (err) {
-          if (err?.isGuestBlocked) return {data: null};
           return {error: {status: err?.response?.status, data: err?.message}};
         }
       },
