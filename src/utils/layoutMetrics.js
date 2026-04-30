@@ -36,10 +36,10 @@ export const getUserBottomSheetSnapPoints = fontMode => {
   const isAndroid = Platform.OS === 'android';
   const [first] = getSheetSnapPointsByTier({
     fontMode,
-    // 프로필 편집: 생년월일 안내 문구 등으로 세로 여유 필요
-    normal: isAndroid ? ['90%', '94%'] : ['82%', '94%'],
-    large: isAndroid ? ['92%', '95%'] : ['85%', '95%'],
-    xl: isAndroid ? ['94%', '96%'] : ['88%', '96%'],
+    // 프로필 편집 — 시트가 화면을 덜 덮도록 스냅을 이전보다 약간 낮게
+    normal: isAndroid ? ['84%', '94%'] : ['76%', '94%'],
+    large: isAndroid ? ['86%', '95%'] : ['79%', '95%'],
+    xl: isAndroid ? ['88%', '96%'] : ['82%', '96%'],
   });
   return [first];
 };
@@ -91,6 +91,22 @@ export const getTabStackHeaderHeight = () => {
     return base;
   }
   return getResponsiveHeight(76);
+};
+
+/**
+ * 메인 하단 탭바(AnimatedTabBar) 세로 점유 높이와 동일.
+ * 탭바 터치를 남기고 오버레이 하단을 비울 때 사용.
+ *
+ * @param {{bottom?: number}} [insets] useSafeAreaInsets()
+ * @returns {number}
+ */
+export const getMainTabBarHeightPx = (insets = {}) => {
+  const rawInsetBottom = Number(insets?.bottom ?? 0);
+  const navInset =
+    Platform.OS === 'android'
+      ? Math.max(rawInsetBottom, getAndroidNavBottomInsetEstimate())
+      : 0;
+  return 90 + navInset;
 };
 
 export const getAndroidNavBottomInsetEstimate = () => {

@@ -6,6 +6,7 @@ import {
   clearPhoneVerifyThenFamily,
   clearSignupSkipProfileAfterTerms,
   SIGNUP_PROGRESS_STEP,
+  getAuthRoutingMmkvSnapshotSync,
 } from 'utils/storage';
 import {emitAuthFlagsChanged} from 'utils/authFlagsEvent';
 import {setPhoneVerificationPending} from '../store/loginSlice';
@@ -41,7 +42,14 @@ export async function applySignupRoutingAfterSocialLogin(loginResult, dispatch) 
   }
 
   clearPhoneVerifyThenFamily();
-  await setNeedsSignup(true);
-  completePhoneVerification(SIGNUP_PROGRESS_STEP.TERMS);
-  emitAuthFlagsChanged();
+
+  // 이 기기에서 가입을 완료(signupProgressStep === 'finish')한 적이 없으면
+  // 탈퇴 후 재가입 등 서버가 needsSignup:false를 잘못 내려줄 때도 약관부터 다시 진행.
+  // 가입을 완료한 기존 유저(finish 기록 있음)는 AppFlow/Tabs로 정상 진입.
+  const snap = getAuthRoutingMmkvSnapshotSync();
+  if (snap.signupProgressStep !== SIGNUP_PROGRESS_STEP.FINISH) {
+    await setNeedsSignup(true);
+    completePhoneVerification(SIGNUP_PROGRESS_STEP.TERMS);
+    emitAuthFlagsChanged();
+  }
 }

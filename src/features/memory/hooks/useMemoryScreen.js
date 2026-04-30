@@ -18,9 +18,21 @@ export const useMemoryScreen = () => {
   const navigation = useNavigation();
   const categorySheetRef = useRef(null);
 
+  const familyId = useSelector(
+    s =>
+      s.family?.familyId ??
+      s.user?.familyId ??
+      s.user?.family?.familyId ??
+      null,
+  );
+  const hasMemoryFamily =
+    familyId != null && String(familyId).trim() !== '';
+  const skipCategories =
+    STORE_MOCK_ENABLED || !hasMemoryFamily;
+
   const fallbackCategoryList = useSelector(state => state.category?.categoryList || []);
   const {data: categoryQueryData} = useGetCategoriesQuery(undefined, {
-    skip: STORE_MOCK_ENABLED,
+    skip: skipCategories,
   });
   const categoryList = STORE_MOCK_ENABLED
     ? getStoreMockCategories()

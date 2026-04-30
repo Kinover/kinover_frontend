@@ -758,15 +758,24 @@ const ScheduleEditorBottomSheetModal = forwardRef(
         };
       }
       return {
+        onCancel: closeSheet,
         onSave: handlePressSave,
+        cancelLabel: BOTTOM_SHEET_BUTTON_LABELS.CANCEL,
         saveLabel: BOTTOM_SHEET_BUTTON_LABELS.SAVE_ACTION,
-        showCancel: false,
+        showCancel: true,
         saveDisabled: !canSave || isClosing,
         autoCloseOnSave: false,
         saveButtonStyle: saveStyle,
         buttonRowStyle: {marginTop: 0},
       };
-    }, [editingSchedule, handlePressSave, handlePressDelete, canSave, isClosing]);
+    }, [
+      editingSchedule,
+      handlePressSave,
+      handlePressDelete,
+      canSave,
+      isClosing,
+      closeSheet,
+    ]);
 
     const memberChipData = useMemo(() => {
       const normalized = (familyUserList || [])
@@ -852,6 +861,9 @@ const ScheduleEditorBottomSheetModal = forwardRef(
           modalRef={modalRef}
           snapPoints={sheetSnapPoints}
           sheetKey={sheetKey}
+          title={getScheduleEditorTitle(!!editingSchedule)}
+          headerCentered={true}
+          onHeaderClosePress={closeSheet}
           animationConfigs={sheetAnimationConfigs}
           containerStyle={{paddingHorizontal: getResponsiveWidth(20)}}
           useInternalScroll={false}
@@ -871,12 +883,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
             contentContainerStyle={{paddingBottom: getResponsiveHeight(8)}}>
             <View>
               <View style={styles.content}>
-                <View style={styles.heroCenter}>
-                  <AppText allowFontScaling={false} style={styles.heroTitle}>
-                    {getScheduleEditorTitle(!!editingSchedule)}
-                  </AppText>
-                </View>
-
                 <View style={styles.formColumn}>
                   {/* 날짜 */}
                   <View style={styles.fieldBlock}>
@@ -1117,19 +1123,6 @@ const makeStyles = rf =>
     getResponsiveHeight,
     getResponsiveWidth,
   ),
-
-  heroCenter: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    marginBottom: getResponsiveHeight(18),
-  },
-  heroTitle: {
-    fontSize: BOTTOMSHEET_STYLE().title.fontSize,
-    fontFamily: FONTS.SEMI_BOLD,
-    color: COLORS.text,
-    letterSpacing: -0.35,
-    textAlign: 'center',
-  },
 
   dateFieldRow: {
     alignSelf: 'stretch',

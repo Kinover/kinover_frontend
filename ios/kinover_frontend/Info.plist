@@ -2,12 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>KAKAO_APP_KEY</key>
-	<string>481db040d2e018832f0c8232a8fb7042</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
-	<key>NSFaceIDUsageDescription</key>
-	<string>앱 보안을 위해 Face ID를 사용합니다.</string>
 	<key>CFBundleDisplayName</key>
 	<string>Kinover</string>
 	<key>CFBundleExecutable</key>
@@ -50,6 +46,14 @@
 				<string>app-1-1038540937232-ios-861b52dad8a98a16e75295</string>
 			</array>
 		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>kinover</string>
+			</array>
+		</dict>
 	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
@@ -57,6 +61,10 @@
 	<true/>
 	<key>FirebaseMessagingAutoInitEnabled</key>
 	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>KAKAO_APP_KEY</key>
+	<string>481db040d2e018832f0c8232a8fb7042</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>kakaokompassauth</string>
@@ -75,14 +83,14 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
 	<key>NSCameraUsageDescription</key>
-    <string>Kinover에서 프로필 사진 및 게시물 촬영을 위해 카메라에 접근합니다.</string>
-    <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>Kinover에서 편집한 사진을 사진 라이브러리에 저장하기 위해 접근합니다.</string>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>Kinover에 게시물 사진을 업로드하기 위해 사진 라이브러리에 접근합니다.</string>
+	<string>Kinover에서 프로필 사진 및 게시물 촬영을 위해 카메라에 접근합니다.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>앱 보안을 위해 Face ID를 사용합니다.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Kinover에서 편집한 사진을 사진 라이브러리에 저장하기 위해 접근합니다.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Kinover에 게시물 사진을 업로드하기 위해 사진 라이브러리에 접근합니다.</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Pretendard-Bold.ttf</string>

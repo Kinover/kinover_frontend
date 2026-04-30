@@ -455,46 +455,46 @@ export default function App() {
 
       <SafeAreaProvider>
         <KeyboardProvider navigationBarTranslucent={Platform.OS === 'android'}>
-        <BottomSheetModalProvider>
           <Provider store={store}>
             <PersistGate loading={null} persistor={persistor}>
-              <DevForceResetLogin />
-              <NetworkStatusBridge />
-              <BlockedUsersReduxBridge />
-              <AppStateResourceBridge />
-              <AccountBannedBridge />
-              <SessionInvalidatedBridge />
+              <BottomSheetModalProvider>
+                <DevForceResetLogin />
+                <NetworkStatusBridge />
+                <BlockedUsersReduxBridge />
+                <AppStateResourceBridge />
+                <AccountBannedBridge />
+                <SessionInvalidatedBridge />
 
-              <MenuProvider>
-                <NavigationContainer
-                  theme={kinoverNavigationTheme}
-                  ref={navigationRef}
-                  onReady={() => {
-                    flushPendingNavigation();
-                  }}>
-                  {!splashHydrated ? (
-                    <View style={styles.splashGatePlaceholder} />
-                  ) : showSplash && !splashDone ? (
-                    <SplashFirstRun onFinish={onSplashFinish} />
-                  ) : (
-                    <GuideOverlayProvider>
-                      <View style={styles.guideRootWrap}>
-                        <View style={styles.mainContent}>
-                          <RootScreen />
+                <MenuProvider>
+                  <NavigationContainer
+                    theme={kinoverNavigationTheme}
+                    ref={navigationRef}
+                    onReady={() => {
+                      flushPendingNavigation();
+                    }}>
+                    {!splashHydrated ? (
+                      <View style={styles.splashGatePlaceholder} />
+                    ) : showSplash && !splashDone ? (
+                      <SplashFirstRun onFinish={onSplashFinish} />
+                    ) : (
+                      <GuideOverlayProvider>
+                        <View style={styles.guideRootWrap}>
+                          <View style={styles.mainContent}>
+                            <RootScreen />
+                          </View>
+                          <View style={styles.guideOverlayWrap} pointerEvents="box-none">
+                            <GuideOverlayRoot />
+                          </View>
+                          <AppLockGate readyForAuth={readyForAuth} />
                         </View>
-                        <View style={styles.guideOverlayWrap} pointerEvents="box-none">
-                          <GuideOverlayRoot />
-                        </View>
-                        <AppLockGate readyForAuth={readyForAuth} />
-                      </View>
-                    </GuideOverlayProvider>
-                  )}
+                      </GuideOverlayProvider>
+                    )}
 
-                </NavigationContainer>
-              </MenuProvider>
+                  </NavigationContainer>
+                </MenuProvider>
+              </BottomSheetModalProvider>
             </PersistGate>
           </Provider>
-        </BottomSheetModalProvider>
         </KeyboardProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

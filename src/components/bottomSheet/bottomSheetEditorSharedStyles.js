@@ -143,7 +143,7 @@ export function getBottomSheetEditorSharedStyles(rf, rh, rw) {
       textAlignVertical: 'center',
     },
 
-    /** 프로필 한 줄 소개 (2줄 고정 + 내부 스크롤) */
+    /** 프로필 한 줄 소개 (2줄 고정 + 내부 스크롤) — UserBottomSheet에서 생년월일과 맞춤 오버라이드 가능 */
     profileTraitInput: {
       height: rf(20) * 2 + rh(8),
       paddingHorizontal: 0,

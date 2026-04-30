@@ -45,8 +45,6 @@ import CreateChatRoomBottomSheet from '../components/modals/CreateChatRoomBottom
 import ChatGuideModal from '../components/guides/ChatGuideModal';
 import {STORE_MOCK_ENABLED} from '../../home/utils/storeMockData';
 import {shouldHideChatRoomForBlockedUsers} from 'features/moderation/utils/blockedUserFilter';
-
-// 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
 
 export default function CommunicationScreen({navigation}) {

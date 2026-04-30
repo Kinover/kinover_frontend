@@ -40,6 +40,9 @@ export default function MeasuredBottomSheetLayout({
   disableContentBottomPadding,
   useTouchOverlay,
   defaultSnapPoints,
+  headerCentered,
+  showHeaderCloseButton,
+  onHeaderClosePress,
 }) {
   const {
     snapPoints,
@@ -93,6 +96,9 @@ export default function MeasuredBottomSheetLayout({
       dismissKeyboardOnPress={dismissKeyboardOnPress}
       disableContentBottomPadding={disableContentBottomPadding}
       useTouchOverlay={useTouchOverlay}
+      headerCentered={headerCentered}
+      showHeaderCloseButton={showHeaderCloseButton}
+      onHeaderClosePress={onHeaderClosePress}
       onDismiss={handleDismiss}
  // header 실측은 여기서 자동 연결
       onHeaderLayout={measureHandlers.onHeaderLayout}>

@@ -2,13 +2,12 @@ import React, {useEffect, useRef, useState, useCallback, useMemo} from 'react';
 import {View, TouchableOpacity, StyleSheet, Platform} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {BottomSheetScrollView} from '@gorhom/bottom-sheet';
-import {useReduxFontMode} from 'hooks/useReduxFontMode';
-import {getSheetSnapPointsByTier} from 'utils/layoutMetrics';
-
 import AppText from 'components/AppText';
 import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
 import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
-import BOTTOM_SHEET_TITLES from 'constants/bottomSheetTitles';
+import BOTTOM_SHEET_TITLES, {
+  BOTTOM_SHEET_BUTTON_LABELS,
+} from 'constants/bottomSheetTitles';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -40,8 +39,8 @@ export default function SchedulePeopleFilterModal({
 }) {
   const styles = useScaledStyleSheet(rf => ({
     scrollContent: {
-      paddingTop: getResponsiveHeight(22),
-      paddingBottom: getResponsiveHeight(16),
+      paddingTop: getResponsiveHeight(12),
+      paddingBottom: getResponsiveHeight(12),
     },
     chipWrap: {
       flexDirection: 'row',
@@ -77,7 +76,6 @@ export default function SchedulePeopleFilterModal({
   }));
 
   const modalRef = useRef(null);
-  const fontMode = useReduxFontMode();
   const insets = useSafeAreaInsets();
   const bottomSafe = useMemo(
     () => getBottomSheetEditorBottomSafe(insets.bottom, getResponsiveHeight),
@@ -144,29 +142,30 @@ export default function SchedulePeopleFilterModal({
   }, [members, meId]);
   const chipCount = chips.length;
   const isLargeList = chipCount >= 13;
+
   const resolvedSnapPoints = useMemo(() => {
-    const base =
-      isLargeList
-        ? ['58%', '92%']
-        : chipCount <= 4
-        ? ['30%', '92%']
-        : chipCount <= 8
-        ? ['40%', '92%']
-        : ['48%', '92%'];
-    const [first] = getSheetSnapPointsByTier({
-      fontMode,
-      normal: [base[0], '92%'],
-      large: [`${Number.parseFloat(base[0]) + 8}%`, '93%'],
-      xl: [`${Number.parseFloat(base[0]) + 14}%`, '94%'],
-    });
-    return [first];
-  }, [chipCount, isLargeList, fontMode]);
+    if (isLargeList) return ['62%'];
+    if (chipCount <= 4) return ['32%'];
+    if (chipCount <= 8) return ['40%'];
+    return ['48%'];
+  }, [chipCount, isLargeList]);
+
+  const peopleKey = useCallback(arr => {
+    const u = uniqStrings(arr || []);
+    if (u.length === 0) return '__ALL__';
+    return u.sort().join('\u0001');
+  }, []);
+
+  const hasPeopleFilterChange = useMemo(
+    () => peopleKey(draft) !== peopleKey(selectedUserIds),
+    [draft, peopleKey, selectedUserIds],
+  );
 
   const scrollAreaStyle = useMemo(
     () =>
       isLargeList
-        ? {maxHeight: getResponsiveHeight(320)}
-        : {maxHeight: undefined},
+        ? {maxHeight: getResponsiveHeight(320), alignSelf: 'stretch'}
+        : {maxHeight: undefined, flexGrow: 0, alignSelf: 'stretch'},
     [isLargeList],
   );
 
@@ -210,7 +209,10 @@ export default function SchedulePeopleFilterModal({
         style={scrollAreaStyle}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.scrollContent}>
+        contentContainerStyle={[
+          styles.scrollContent,
+          !isLargeList ? {flexGrow: 0} : null,
+        ]}>
 
         {members.length === 0 ? (
           <AppText allowFontScaling={false} style={styles.empty}>
@@ -244,8 +246,10 @@ export default function SchedulePeopleFilterModal({
         includeBottomSafePadding
         onCancel={onClose}
         onSave={handleApply}
+        cancelLabel={BOTTOM_SHEET_BUTTON_LABELS.CANCEL}
         saveLabel="선택하기"
-        showCancel={false}
+        showCancel
+        saveDisabled={!hasPeopleFilterChange}
         autoCloseOnSave={false}
         buttonRowStyle={{marginTop: 0}}
         style={[

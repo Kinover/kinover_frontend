@@ -1,4 +1,4 @@
-// 백그라운드 갔다 온 뒤에만 새로고침 (첫 진입은 오토로그인에서 이미 함)
+// 백그라운드 갔다 온 뒤에만 새로고침 (첫 콜드 스타트 active는 오토로그인·쿼리 초기 로딩에 맡김)
 import {useEffect, useRef} from 'react';
 import {useDispatch, useSelector} from 'react-redux';
 import {useAppStateBackground} from 'hooks/useAppStateBackground';
@@ -13,15 +13,15 @@ export function AppStateResourceBridge() {
   const userId = useSelector(s => s.user?.userId);
   const familyId = useSelector(s => s.family?.familyId ?? s.user?.familyId ?? s.user?.family?.familyId);
   const isLogin = useSelector(s => !!s.login?.isLoggedIn);
-  const beenBackgroundRef = useRef(false);
+  const sessionLeftForegroundRef = useRef(false);
   const pauseTimerRef = useRef(null);
   const PAUSE_GRACE_MS = 700;
 
   useAppStateBackground({
     onBackground: () => {
+      sessionLeftForegroundRef.current = true;
       if (pauseTimerRef.current) clearTimeout(pauseTimerRef.current);
       pauseTimerRef.current = setTimeout(() => {
-        beenBackgroundRef.current = true;
         pauseForBackground();
         pauseTimerRef.current = null;
       }, PAUSE_GRACE_MS);
@@ -33,19 +33,34 @@ export function AppStateResourceBridge() {
       }
       resumeFromBackground();
 
-      if (!beenBackgroundRef.current) return;
+      if (!sessionLeftForegroundRef.current) return;
 
       if (!isLogin || !userId) return;
 
-      dispatch(fetchUserThunk())
+      dispatch(fetchUserThunk());
 
-      if (familyId) {
-        dispatch(fetchFamilyThunk(familyId))
-        dispatch(fetchFamilyUserListThunk(familyId))
-        dispatch(fetchFamilyStatusThunk(familyId))
-        // RTK Query: ChatRoom 태그 무효화 → 활성 getChatRooms 쿼리 자동 refetch
-        dispatch(baseApi.util.invalidateTags(['ChatRoom']));
+      const fid =
+        typeof familyId === 'string' || typeof familyId === 'number'
+          ? String(familyId).trim()
+          : '';
+      const hasFamilyId = fid.length > 0;
+
+      if (hasFamilyId) {
+        dispatch(fetchFamilyThunk(familyId));
+        dispatch(fetchFamilyUserListThunk(familyId));
+        dispatch(fetchFamilyStatusThunk(familyId));
       }
+
+      dispatch(
+        baseApi.util.invalidateTags([
+          'ChatRoom',
+          'Schedule',
+          'ScheduleCount',
+          'Memory',
+          'Category',
+          'Notification',
+        ]),
+      );
     },
   });
 

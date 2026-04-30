@@ -9,7 +9,7 @@ import DropShadow from 'react-native-drop-shadow';
 import MemoryFeed from './MemoryFeedScreen';
 import AnimatedAlbumTabSelector from '../components/filters/AlbumTabSelector';
 import CategoryBottomSheetModal from '../components/bottomSheets/CategoryBottomSheet';
-import PeriodFilterModal from '../components/modals/PeriodFilterModal';
+import PeriodFilterModal from '../components/bottomSheets/PeriodFilterBottomSheet';
 
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
@@ -100,7 +100,13 @@ export default function MemoryScreen() {
   const [isCategorySheetOpen, setIsCategorySheetOpen] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const familyId = useSelector(state => state.family?.familyId);
+  const familyId = useSelector(
+    state =>
+      state.family?.familyId ??
+      state.user?.familyId ??
+      state.user?.family?.familyId ??
+      null,
+  );
   const isLoading = useSelector(state => state.memory?.isLoading); // 너 프로젝트에 맞게
 
   const {tabBarTranslateY} = useTabBarVisibility();

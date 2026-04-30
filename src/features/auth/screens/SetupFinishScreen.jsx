@@ -10,9 +10,11 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import mmkvStorage from 'utils/mmkvStorage';
-import {useStore} from 'react-redux';
+import {useStore, useDispatch} from 'react-redux';
+import {useNavigation, useRoute} from '@react-navigation/native';
 
 import BottomActionButton from 'components/BottomActionButton';
+import {clearPhoneVerificationPending, setSkipFamilyMainEntry} from 'features/auth/store/loginSlice';
 import {
   getResponsiveFontSizeIgnoreAppMode,
   getResponsiveHeight,
@@ -23,6 +25,8 @@ import {
   setHasFamily,
   clearSignupOnboardingAux,
   setNeedsSignup,
+  skipFamilySetupAndComplete,
+  getAuthRoutingMmkvSnapshotSync,
 } from 'utils/storage';
 import {emitAuthFlagsChanged} from 'utils/authFlagsEvent';
 import {
@@ -39,6 +43,7 @@ import {
 import {fetchFamilyUserListThunk} from 'features/home/store/familyUserThunk';
 import {baseApi} from 'services/baseApi';
 import {FONTS} from 'styles/typography';
+import {resetToMainAppFlow} from 'app/navigation/navigationService';
 
 const sleep = ms => new Promise(res => setTimeout(res, ms));
 
@@ -109,6 +114,14 @@ const styles = StyleSheet.create({
 
 export default function SetupFinishScreen() {
   const store = useStore();
+  const dispatch = useDispatch();
+  const navigation = useNavigation();
+  const route = useRoute();
+  const fromAppFlow = route.params?.fromAppFlow === true;
+  const routeSkippedFamily = route.params?.skippedFamilySetup === true;
+  const mmkvSkipPending =
+    getAuthRoutingMmkvSnapshotSync().familySkipPendingFinish === true;
+  const skippedFamilySetup = routeSkippedFamily || mmkvSkipPending;
 
   /** RTK getUser만 갱신하면 홈은 되지만, 일정/채팅/추억 등은 Redux user·family·userFamily를 쓰므로 스토어까지 동기화 */
   const syncUserAndFamilyToStore = useCallback(async () => {
@@ -144,33 +157,71 @@ export default function SetupFinishScreen() {
 
   const handleButtonClick = useCallback(async () => {
     try {
+      if (skippedFamilySetup) {
+        // 라우팅·MMKV를 네트워크보다 먼저 (fetch 대기로 홈 전환이 막히지 않게)
+        skipFamilySetupAndComplete();
+        dispatch(setSkipFamilyMainEntry(true));
+        dispatch(clearPhoneVerificationPending());
+        emitAuthFlagsChanged();
+        if (fromAppFlow) {
+          navigation.navigate('Tabs');
+        } else {
+          resetToMainAppFlow('홈');
+        }
+        void (async () => {
+          try {
+            await mmkvStorage.setItem(KEY_FIRST_ENTRY_AFTER_SETUP, '1');
+            try {
+              await store.dispatch(fetchUserThunk()).unwrap();
+            } catch {
+              null;
+            }
+            await resetGuideShownKeys();
+            await mmkvStorage.setItem(KEY_GUIDE_ENTRY_TRIGGER, '1');
+          } catch {
+            null;
+          }
+        })();
+        return;
+      }
+
       await clearSignupOnboardingAux();
       await setNeedsSignup(false);
 
-      // 0) 첫 진입 플래그 먼저 설정 (홈 마운트 전에 있어야 감정 모달 안 뜨고 가이드만 뜸)
       await mmkvStorage.setItem(KEY_FIRST_ENTRY_AFTER_SETUP, '1');
-
-      // 1) 가족 생성/참가 완료 상태 저장
       await setHasFamily(true);
-
-      // 2) 유저 + 가족 + 구성원 목록을 Redux에 반영 (탭 화면들이 slice 기준으로 familyId 조회)
-      try {
-        await syncUserAndFamilyToStore();
-        await sleep(300);
-        await syncUserAndFamilyToStore();
-      } catch (e) {
-        // fetch 실패해도 아래는 진행 (UX 끊기지 않게)
-      }
 
       await resetGuideShownKeys();
       await mmkvStorage.setItem(KEY_GUIDE_ENTRY_TRIGGER, '1');
 
-      // 4) 메인 진입 트리거
       emitAuthFlagsChanged({hasFamily: true});
+
+      if (fromAppFlow) {
+        navigation.navigate('Tabs');
+      } else {
+        resetToMainAppFlow('홈');
+      }
+
+      void (async () => {
+        try {
+          await syncUserAndFamilyToStore();
+          await sleep(300);
+          await syncUserAndFamilyToStore();
+        } catch (e) {
+          null;
+        }
+      })();
     } catch (e) {
       null;
     }
-  }, [syncUserAndFamilyToStore]);
+  }, [
+    syncUserAndFamilyToStore,
+    fromAppFlow,
+    navigation,
+    skippedFamilySetup,
+    store,
+    dispatch,
+  ]);
 
   // 애니메이션 값들
   const illustrationScale = useRef(new Animated.Value(0.9)).current;
@@ -296,11 +347,14 @@ export default function SetupFinishScreen() {
         ]}>
         <View style={styles.textBlock}>
           <Text allowFontScaling={false} style={styles.headerTitle}>
-            가족 모임 준비 완료!
+            {skippedFamilySetup
+              ? '이제 가족과 연결해 볼까요?'
+              : '가족 모임 준비 완료!'}
           </Text>
           <Text allowFontScaling={false} style={styles.headerSubTitle}>
-            이제 키노와 함께 가족의 하루를 나누고{'\n'}
-            소중한 순간들을 편하게 기록해 보세요.
+            {skippedFamilySetup
+              ? '가족 코드는 홈에서 입력하면 돼요.\n시작하기를 누르면 홈으로 들어가요.'
+              : `이제 키노와 함께 가족의 하루를 나누고${'\n'}소중한 순간들을 편하게 기록해 보세요.`}
           </Text>
         </View>
       </Animated.View>

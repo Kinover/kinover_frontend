@@ -64,3 +64,10 @@ npm start
 # 앱 실행
 npm run ios
 # npm run android
+```
+
+<br/>
+
+## 문서
+
+- [내 프로젝트 기반 CS 지식 100가지](docs/내_프로젝트_기반_CS_지식_100가지.md)

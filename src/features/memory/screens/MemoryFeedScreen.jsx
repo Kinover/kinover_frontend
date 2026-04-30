@@ -48,7 +48,7 @@ import PostFilterBar from '../components/filters/PostFilterBar';
 import MagazineBanner from '../components/sections/MagazineBanner';
 import MemoryFeedListItem from '../components/items/MemoryFeedListItem';
 import AlbumMediaTile from '../components/items/AlbumMediaTile';
-import PeriodFilterModal from '../components/modals/PeriodFilterModal';
+import PeriodFilterModal from '../components/bottomSheets/PeriodFilterBottomSheet';
 import {FONTS} from 'styles/typography';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
@@ -170,6 +170,18 @@ export default function MemoryFeed({
   const fallbackCategoryList = useSelector(
     state => state.category?.categoryList || [],
   );
+
+  const familyId = useSelector(
+    s =>
+      s.family?.familyId ??
+      s.user?.familyId ??
+      s.user?.family?.familyId ??
+      null,
+  );
+  const hasMemoryFamily =
+    familyId != null && String(familyId).trim() !== '';
+  const skipMemoryQueries =
+    STORE_MOCK_ENABLED || !hasMemoryFamily;
 
   const selectedTab = useSelector(
     state => state.memory?.ui?.selectedTab ?? 'feed',
@@ -310,14 +322,14 @@ export default function MemoryFeed({
   }, [selectedCategoryIds]);
 
   const {data: categoryQueryData, refetch: refetchCategories} =
-    useGetCategoriesQuery(undefined, {skip: STORE_MOCK_ENABLED});
+    useGetCategoriesQuery(undefined, {skip: skipMemoryQueries});
   const {
     data: postsQueryData,
     isFetching: isPostsFetching,
     refetch: refetchPosts,
   } = useGetPostsQuery(
     {categoryId: selectedCategoryId || undefined},
-    {skip: STORE_MOCK_ENABLED},
+    {skip: skipMemoryQueries},
   );
   const categoryList = STORE_MOCK_ENABLED
     ? getStoreMockCategories()
@@ -331,8 +343,9 @@ export default function MemoryFeed({
       : fallbackMemoryList;
 
   const doFetch = useCallback(async () => {
+    if (skipMemoryQueries) return;
     await Promise.allSettled([refetchCategories(), refetchPosts()]);
-  }, [refetchCategories, refetchPosts]);
+  }, [refetchCategories, refetchPosts, skipMemoryQueries]);
 
   /* -------------------------
    * Effects
@@ -697,6 +710,9 @@ export default function MemoryFeed({
       ? `${startDate.replace(/-/g, '.')} ~ ${endDate.replace(/-/g, '.')}`
       : null;
 
+  /** 게시글이 하나도 없을 때는 카테고리·정렬 필터 UI를 노출하지 않음 */
+  const hasAnyPostsInFeed = Array.isArray(memoryList) && memoryList.length > 0;
+
   const listHeader = useMemo(
     () => (
       <View
@@ -706,15 +722,17 @@ export default function MemoryFeed({
           paddingBottom: getResponsiveHeight(8),
         }}>
         <MagazineBanner />
-        <PostFilterBar
-          ref={filterBarRef}
-          categoryTitle={headerCategoryTitle}
-          categoryOpen={isCategoryOpen}
-          onPressCategory={onPressCategoryFilter}
-          periodLabel={headerPeriodLabel}
-          onPressFilterSettings={() => setFilterModalVisible(true)}
-          sortActive={sortKey === 'latest' || sortKey === 'oldest'}
-        />
+        {hasAnyPostsInFeed ? (
+          <PostFilterBar
+            ref={filterBarRef}
+            categoryTitle={headerCategoryTitle}
+            categoryOpen={isCategoryOpen}
+            onPressCategory={onPressCategoryFilter}
+            periodLabel={headerPeriodLabel}
+            onPressFilterSettings={() => setFilterModalVisible(true)}
+            sortActive={sortKey === 'latest' || sortKey === 'oldest'}
+          />
+        ) : null}
         {isAllPhotos && (
           <View style={styles.gestureHintRow}>
             <AppText style={styles.gestureHintText}>
@@ -725,6 +743,7 @@ export default function MemoryFeed({
       </View>
     ),
     [
+      hasAnyPostsInFeed,
       headerCategoryTitle,
       isCategoryOpen,
       onPressCategoryFilter,

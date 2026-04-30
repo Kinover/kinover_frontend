@@ -26,7 +26,7 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import {BUTTON_STYLES} from 'styles/style';
+import {BUTTON_STYLES, COLORS} from 'styles/style';
 import SelectionFrameLayout from 'components/layouts/SelectionFrameLayout';
 import {FONTS} from 'styles/typography';
 
@@ -397,6 +397,8 @@ export default function KinoSelectScreen() {
       subtitle="원하는 대화 스타일의 키노를 골라보세요."
       backgroundColor={screenBg}
       actionLabel="선택 완료"
+      actionButtonBackgroundColor={COLORS.brandPrimary}
+      actionButtonLabelColor={COLORS.textPrimary}
       onActionPress={() => setConfirmVisible(true)}>
       <View style={styles.bubbleWrap}>
         <View

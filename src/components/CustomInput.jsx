@@ -1,6 +1,7 @@
 import React, {useState, forwardRef, useEffect} from 'react';
 import {TextInput, Keyboard, Platform} from 'react-native';
 import {BottomSheetTextInput} from '@gorhom/bottom-sheet';
+import {COLORS} from 'styles/style';
 
 /**
  * 공통 입력 컴포넌트.
@@ -72,12 +73,12 @@ const CustomInput = forwardRef(function CustomInput(
 
 const defaultStyle = {
   borderWidth: 1,
-  borderColor: '#D1D5DB',
+  borderColor: COLORS.disabled,
 };
 
 const focusedStyle = {
   borderWidth: 2,
-  borderColor: '#FFC84D',
+  borderColor: COLORS.brandPrimary,
 };
 
 const bottomSheetInputStyle = {

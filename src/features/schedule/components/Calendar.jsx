@@ -1,13 +1,14 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/features/schedule/components/Calendar.jsx (CalendarToggle)
 
-import React, {useRef, useMemo, useEffect, useCallback} from 'react';
+import React, {useRef, useMemo, useEffect, useCallback, useState} from 'react';
 import {
   View,
   TouchableOpacity,
   Image,
   PanResponder,
   Platform,
+  Animated as RNAnimated,
 } from 'react-native';
 import DropShadow from 'react-native-drop-shadow';
 import {DateTimePickerAndroid} from '@react-native-community/datetimepicker';
@@ -204,12 +205,14 @@ export default function CalendarToggle({
     headerLeftDatePicker: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: getResponsiveWidth(8),
+      gap: getResponsiveWidth(6),
       alignSelf: 'flex-start',
       maxWidth: '100%',
       borderRadius: 10,
       paddingHorizontal: getResponsiveWidth(10),
+      paddingVertical: getResponsiveHeight(5),
       minHeight: getResponsiveWidth(32),
+      backgroundColor: '#F3F4F6',
     },
     headerRight: {
       flexDirection: 'row',
@@ -223,6 +226,12 @@ export default function CalendarToggle({
       fontSize: getResponsiveFontSize(19),
       color: COLORS.textPrimary,
       letterSpacing: -0.2,
+    },
+    /** PostFilterBar 카테고리와 동일 — 아래쪽 화살표 에셋 */
+    monthDropdownArrow: {
+      width: getResponsiveWidth(14),
+      height: getResponsiveWidth(14),
+      resizeMode: 'contain',
     },
     iconBtn: {
       width: getResponsiveWidth(30),
@@ -268,9 +277,42 @@ export default function CalendarToggle({
       borderWidth: 1.5,
       borderColor: '#FFFFFF',
     },
-    /** 주/월 전환 — `iconBtn`과 동일 크기·배경·모서리 */
-    toggleTextInIcon: {
-      fontSize: rf(12.5),
+    /** 월 ↔ 주 — 현재 선택이 배경으로 보이도록 세그먼트 */
+    modeToggleTrack: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#E5E7EB',
+      borderRadius: 10,
+      padding: 2,
+    },
+    modeSeg: {
+      paddingHorizontal: getResponsiveWidth(9),
+      paddingVertical: getResponsiveHeight(5),
+      borderRadius: 8,
+      minWidth: getResponsiveWidth(34),
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    modeSegActive: {
+      backgroundColor: '#FFFFFF',
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: {width: 0, height: 1},
+          shadowOpacity: 0.06,
+          shadowRadius: 2,
+        },
+        android: {
+          elevation: 1,
+        },
+      }),
+    },
+    modeSegText: {
+      fontSize: rf(12),
+      fontFamily: FONTS.MEDIUM,
+      color: '#6B7280',
+    },
+    modeSegTextActive: {
       fontFamily: FONTS.SEMI_BOLD,
       color: '#111827',
     },
@@ -400,11 +442,36 @@ export default function CalendarToggle({
   const weekDates = useWeekDates(selectedDate, getLocalDateKey);
   const {getCountColorStyle} = useScheduleCountStyle(cellSize);
 
-  // showYMD가 source of truth (iOS only)
+  // showYMD가 source of truth (iOS 모달). Android 스피너는 피커 종료까지 별 표시.
   const {showYMD, openYMD, closeYMD} = useYMDPicker();
+
+  const [androidYmdOpen, setAndroidYmdOpen] = useState(false);
+
+  /** PostFilterBar categoryCaret과 동일 — 열림 180° 회전 */
+  const monthArrowProgress = useRef(new RNAnimated.Value(0)).current;
+  const monthArrowRotate = useMemo(
+    () =>
+      monthArrowProgress.interpolate({
+        inputRange: [0, 1],
+        outputRange: ['0deg', '180deg'],
+      }),
+    [monthArrowProgress],
+  );
+
+  const ymdDropdownOpen =
+    Platform.OS === 'ios' ? showYMD : androidYmdOpen;
+
+  useEffect(() => {
+    RNAnimated.timing(monthArrowProgress, {
+      toValue: ymdDropdownOpen ? 1 : 0,
+      duration: 160,
+      useNativeDriver: true,
+    }).start();
+  }, [ymdDropdownOpen, monthArrowProgress]);
 
   const handleOpenYMD = useCallback(() => {
     if (Platform.OS === 'android') {
+      setAndroidYmdOpen(true);
       const current =
         selectedDate instanceof Date && !isNaN(selectedDate)
           ? selectedDate
@@ -414,7 +481,15 @@ export default function CalendarToggle({
         mode: 'date',
         display: 'spinner',
         onChange: (event, pickedDate) => {
-          if (event?.type === 'dismissed' || !pickedDate) return;
+          if (
+            event?.type === 'dismissed' ||
+            event?.type === 'neutralButtonPressed'
+          ) {
+            setAndroidYmdOpen(false);
+            return;
+          }
+          if (!pickedDate) return;
+          setAndroidYmdOpen(false);
           setSelectedDate(pickedDate);
         },
       });
@@ -422,6 +497,14 @@ export default function CalendarToggle({
       openYMD();
     }
   }, [selectedDate, setSelectedDate, openYMD]);
+
+  const goMonthView = useCallback(() => {
+    if (mode === 'week') toggleMode();
+  }, [mode, toggleMode]);
+
+  const goWeekView = useCallback(() => {
+    if (mode === 'month') toggleMode();
+  }, [mode, toggleMode]);
 
   const birthdayMap = useMemo(() => {
     if (birthdayMapProp) return birthdayMapProp;
@@ -592,20 +675,31 @@ export default function CalendarToggle({
           <View style={styles.cardInnerHeader}>
             <View style={styles.headerLeft}>
               <TouchableOpacity
+                accessibilityRole="button"
+                accessibilityLabel={`${headerLabel}`}
+                accessibilityHint="탭하면 날짜를 선택할 수 있어요."
                 style={styles.headerLeftDatePicker}
                 onPress={handleOpenYMD}
                 activeOpacity={0.72}
                 hitSlop={{top: 4, bottom: 4, left: 2, right: 2}}>
-                {/* <Image
-                  style={styles.calendarIcon}
-                  source={require('../../../assets/icons/calendar.png')}
-                /> */}
                 <AppText
                   allowFontScaling={false}
                   style={styles.monthText}
                   numberOfLines={1}>
                   {headerLabel}
                 </AppText>
+                <RNAnimated.Image
+                  source={require('assets/icons/down-arrow.png')}
+                  style={[
+                    styles.monthDropdownArrow,
+                    {
+                      tintColor: '#6B7280',
+                      transform: [{rotate: monthArrowRotate}],
+                    },
+                  ]}
+                  accessibilityElementsHidden
+                  importantForAccessibility="no"
+                />
               </TouchableOpacity>
             </View>
 
@@ -657,16 +751,46 @@ export default function CalendarToggle({
                 </TouchableOpacity>
               </View>
 
-              <TouchableOpacity
-                style={styles.iconBtn}
-                onPress={toggleMode}
-                hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}>
-                <AppText
-                  allowFontScaling={false}
-                  style={styles.toggleTextInIcon}>
-                  {mode === 'month' ? '주' : '월'}
-                </AppText>
-              </TouchableOpacity>
+              <View
+                style={styles.modeToggleTrack}
+                accessibilityRole="tablist">
+                <TouchableOpacity
+                  accessibilityRole="tab"
+                  accessibilityState={{selected: mode === 'month'}}
+                  accessibilityLabel="월 보기"
+                  accessibilityHint="한 달 단위로 달력을 봅니다"
+                  onPress={goMonthView}
+                  activeOpacity={0.85}
+                  style={[styles.modeSeg, mode === 'month' && styles.modeSegActive]}
+                  hitSlop={{top: 4, bottom: 4, left: 2, right: 2}}>
+                  <AppText
+                    allowFontScaling={false}
+                    style={[
+                      styles.modeSegText,
+                      mode === 'month' && styles.modeSegTextActive,
+                    ]}>
+                    월
+                  </AppText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  accessibilityRole="tab"
+                  accessibilityState={{selected: mode === 'week'}}
+                  accessibilityLabel="주 보기"
+                  accessibilityHint="한 주 단위로 달력을 봅니다"
+                  onPress={goWeekView}
+                  activeOpacity={0.85}
+                  style={[styles.modeSeg, mode === 'week' && styles.modeSegActive]}
+                  hitSlop={{top: 4, bottom: 4, left: 2, right: 2}}>
+                  <AppText
+                    allowFontScaling={false}
+                    style={[
+                      styles.modeSegText,
+                      mode === 'week' && styles.modeSegTextActive,
+                    ]}>
+                    주
+                  </AppText>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
           {/* 모달 열리면 panHandlers 자체를 안 붙임 (더 안전) */}

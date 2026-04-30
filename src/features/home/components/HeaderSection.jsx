@@ -19,7 +19,12 @@ import {
 
 import {hapticLight} from 'utils/haptic';
 import {safeNavigate} from 'app/navigation/navigationService';
-import {getEmotionImage, getEmotionColor} from '../utils/emotionUtils';
+import {
+  getEmotionImage,
+  getEmotionPickerImage,
+  getEmotionColor,
+  getEmotionLabel,
+} from '../utils/emotionUtils';
 import {COLORS, DEFAULT_STYLE, LAYOUT_STYLE} from 'styles/style';
 
 import Animated, {
@@ -69,6 +74,12 @@ export default function HeaderSection({
       height: '68%',
       resizeMode: 'contain',
     },
+    moodBadgePlusIcon: {
+      width: '42%',
+      height: '42%',
+      resizeMode: 'contain',
+      tintColor: '#9CA3AF',
+    },
 
     inviteIcon: {
       width: '62%',
@@ -77,19 +88,24 @@ export default function HeaderSection({
       tintColor: '#6B7280', // MemberGridSection 톤 참고
     },
 
+    smileFab: {
+      position: 'absolute',
+      right: getResponsiveWidth(4),
+      bottom: getResponsiveHeight(8),
+      zIndex: 6,
+    },
     smileBtn: {
       width: getResponsiveIconSize(38),
       height: getResponsiveIconSize(38),
       borderRadius: getResponsiveIconSize(19),
-      backgroundColor: '#F3F4F6',
+      backgroundColor: '#FFFFFF',
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
-      borderColor: '#ECEFF3',
-      position: 'absolute',
-      right: getResponsiveWidth(8),
-      bottom: getResponsiveHeight(8),
-      zIndex: 6,
+      borderColor: '#E5E7EB',
+    },
+    smileBtnUnset: {
+      backgroundColor: '#FAFAFA',
     },
 
     // 초대 버튼은 같은 톤으로(살짝만 키워도 됨)
@@ -102,6 +118,42 @@ export default function HeaderSection({
       justifyContent: 'center',
       borderWidth: 1,
       borderColor: '#ECEFF3',
+    },
+
+    bubbleBox: {
+      backgroundColor: '#FFFFFF',
+      borderRadius: 10,
+      paddingHorizontal: getResponsiveWidth(10),
+      paddingVertical: getResponsiveHeight(5),
+      shadowColor: '#000',
+      shadowOpacity: 0.12,
+      shadowRadius: 6,
+      shadowOffset: {width: 0, height: 2},
+      elevation: 5,
+      overflow: 'visible',
+    },
+    bubbleText: {
+      fontSize: getResponsiveHeight(13),
+      fontFamily: FONTS.MEDIUM,
+      color: '#1F2937',
+      letterSpacing: -0.1,
+    },
+    bubbleTailWrapper: {
+      position: 'absolute',
+      bottom: -7,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+    },
+    bubbleTail: {
+      width: 0,
+      height: 0,
+      borderLeftWidth: 5,
+      borderRightWidth: 5,
+      borderTopWidth: 7,
+      borderLeftColor: 'transparent',
+      borderRightColor: 'transparent',
+      borderTopColor: '#FFFFFF',
     },
 
     headerContainer: {
@@ -183,7 +235,15 @@ export default function HeaderSection({
     return emotionKey ? getEmotionImage(emotionKey) : null;
   }, [emotionKey]);
 
-  const hasEmotion = !!emotionImage;
+  const emotionLabel = useMemo(() => {
+    return emotionKey ? getEmotionLabel(emotionKey) : null;
+  }, [emotionKey]);
+
+  const moodBadgeSource = useMemo(() => {
+    return emotionKey ? getEmotionPickerImage(emotionKey) : null;
+  }, [emotionKey]);
+
+  const hasEmotion = !!emotionKey;
 
   const emotionColor = useMemo(() => {
     return emotionKey ? getEmotionColor(emotionKey) : null;
@@ -234,6 +294,14 @@ export default function HeaderSection({
   const tilt = useSharedValue(0);
   const pivotX = useSharedValue(0);
   const peekScale = useSharedValue(1);
+
+  const bubbleOpacity = useSharedValue(0);
+  const bubbleTranslateY = useSharedValue(6);
+
+  const bubbleAnimStyle = useAnimatedStyle(() => ({
+    opacity: bubbleOpacity.value,
+    transform: [{translateY: bubbleTranslateY.value}],
+  }), [bubbleOpacity, bubbleTranslateY]);
 
   const HIDDEN_Y = profileSize * 1.3;
   const RISE_Y = profileSize * 1.05;
@@ -366,6 +434,7 @@ export default function HeaderSection({
    * =========================================================
    */
   const tapTimerRef = useRef(null);
+  const dismissTimerRef = useRef(null);
 
   const clearTapTimer = useCallback(() => {
     if (tapTimerRef.current) {
@@ -374,9 +443,24 @@ export default function HeaderSection({
     }
   }, []);
 
+  const clearDismissTimer = useCallback(() => {
+    if (dismissTimerRef.current) {
+      clearTimeout(dismissTimerRef.current);
+      dismissTimerRef.current = null;
+    }
+  }, []);
+
+  const hideBubble = useCallback(() => {
+    bubbleOpacity.value = withTiming(0, {duration: 160});
+    bubbleTranslateY.value = withTiming(6, {duration: 160});
+  }, [bubbleOpacity, bubbleTranslateY]);
+
   useEffect(() => {
-    return () => clearTapTimer();
-  }, [clearTapTimer]);
+    return () => {
+      clearTapTimer();
+      clearDismissTimer();
+    };
+  }, [clearTapTimer, clearDismissTimer]);
 
   const runTapTiltPeekOnce = useCallback(() => {
     if (!hasEmotion) return;
@@ -489,7 +573,17 @@ export default function HeaderSection({
     );
 
     runTapTiltPeekOnce();
-  }, [runTapTiltPeekOnce, pressScale]);
+
+    if (emotionLabel) {
+      clearDismissTimer();
+      bubbleOpacity.value = withTiming(1, {duration: 180});
+      bubbleTranslateY.value = withTiming(0, {duration: 180, easing: Easing.out(Easing.cubic)});
+      dismissTimerRef.current = setTimeout(() => {
+        hideBubble();
+        dismissTimerRef.current = null;
+      }, 1800);
+    }
+  }, [runTapTiltPeekOnce, pressScale, emotionLabel, clearDismissTimer, hideBubble, bubbleOpacity, bubbleTranslateY]);
 
   const handleAvatarLongPress = useCallback(() => {
     longPressedRef.current = true;
@@ -501,8 +595,11 @@ export default function HeaderSection({
       easing: Easing.out(Easing.cubic),
     });
 
+    clearDismissTimer();
+    hideBubble();
+
     openUserBottomSheet();
-  }, [pressScale, openUserBottomSheet]);
+  }, [pressScale, clearDismissTimer, hideBubble, openUserBottomSheet]);
 
   const handleAvatarPressOut = useCallback(() => {
     longPressedRef.current = false;
@@ -623,14 +720,55 @@ export default function HeaderSection({
         <TouchableOpacity
           ref={guideRefs?.my_mood}
           onPress={goEmotionSetting}
-          hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+          hitSlop={{top: 12, bottom: 12, left: 12, right: 12}}
           activeOpacity={0.85}
-          style={styles.smileBtn}>
-          <Image
-            source={require('../../../assets/icons/tabs/1/smiley.png')}
-            style={styles.smileIcon}
-          />
+          accessibilityRole="button"
+          accessibilityLabel={hasEmotion ? '오늘 기분' : '기분 선택'}
+          accessibilityHint={
+            hasEmotion
+              ? '탭하면 오늘의 기분을 바꿀 수 있어요'
+              : '탭하면 오늘의 기분을 선택할 수 있어요'
+          }
+          style={[
+            styles.smileFab,
+            styles.smileBtn,
+            !hasEmotion && styles.smileBtnUnset,
+          ]}>
+          {hasEmotion && moodBadgeSource ? (
+            <Image source={moodBadgeSource} style={styles.smileIcon} />
+          ) : (
+            <Image
+              source={require('../../../assets/icons/tabs/1/plus-sign.png')}
+              style={styles.moodBadgePlusIcon}
+              accessibilityIgnoresInvertColors={true}
+            />
+          )}
         </TouchableOpacity>
+
+        {!!emotionLabel && (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              bubbleAnimStyle,
+              {
+                position: 'absolute',
+                top: -40,
+                left: 0,
+                right: 0,
+                alignItems: 'center',
+                zIndex: 20,
+              },
+            ]}>
+            <View style={styles.bubbleBox}>
+              <AppText allowFontScaling={false} style={styles.bubbleText}>
+                {emotionLabel}
+              </AppText>
+              <View style={styles.bubbleTailWrapper}>
+                <View style={styles.bubbleTail} />
+              </View>
+            </View>
+          </Animated.View>
+        )}
       </TouchableOpacity>
 
       <DropShadow style={styles.shadowBox}>

@@ -12,9 +12,6 @@ import React, {
 import {View, StyleSheet, Platform, TouchableOpacity} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {BottomSheetScrollView} from '@gorhom/bottom-sheet';
-import {useReduxFontMode} from 'hooks/useReduxFontMode';
-import {getSheetSnapPointsByTier} from 'utils/layoutMetrics';
-
 import {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -24,7 +21,9 @@ import {getBottomSheetEditorBottomSafe} from 'components/bottomSheet/bottomSheet
 
 import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
 import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
-import BOTTOM_SHEET_TITLES from 'constants/bottomSheetTitles';
+import BOTTOM_SHEET_TITLES, {
+  BOTTOM_SHEET_BUTTON_LABELS,
+} from 'constants/bottomSheetTitles';
 import {hapticSuccess, hapticLight} from 'utils/haptic';
 import {FONTS} from 'styles/typography';
 
@@ -40,6 +39,13 @@ const normalizeIds = ids => {
   return ids.map(String);
 };
 
+/** 동일 선택인지 (정규화 후 비교) */
+const selectionKey = ids => {
+  const n = normalizeIds(ids);
+  if (n == null) return '__ALL__';
+  return [...n].sort().join('\u0001');
+};
+
 const CategoryBottomSheetModal = forwardRef(
   (
     {
@@ -53,8 +59,8 @@ const CategoryBottomSheetModal = forwardRef(
   ) => {
     const styles = useScaledStyleSheet(rf => ({
       scrollContent: {
-        paddingTop: getResponsiveHeight(18),
-        paddingBottom: getResponsiveHeight(16),
+        paddingTop: getResponsiveHeight(12),
+        paddingBottom: getResponsiveHeight(12),
       },
       chipWrap: {
         flexDirection: 'row',
@@ -83,7 +89,6 @@ const CategoryBottomSheetModal = forwardRef(
     }));
 
     const modalRef = useRef(null);
-    const fontMode = useReduxFontMode();
     const insets = useSafeAreaInsets();
     const isClosingRef = useRef(false);
 
@@ -102,29 +107,28 @@ const CategoryBottomSheetModal = forwardRef(
     );
     const categoryCount = data.length;
     const isLargeList = categoryCount >= 13;
+
+    /**
+     * getSheetSnapPointsByTier는 첫 스냅을 최소 45%로 올려버려( clamp ) 칩만 있을 때 시트가 과하게 큼.
+     * 칩 개수에 맞춰 직접 지정.
+     */
     const resolvedSnapPoints = useMemo(() => {
-      const base =
-        isLargeList
-          ? ['58%', '92%']
-          : categoryCount <= 4
-          ? ['30%', '92%']
-          : categoryCount <= 8
-          ? ['40%', '92%']
-          : ['48%', '92%'];
-      const [first] = getSheetSnapPointsByTier({
-        fontMode,
-        normal: [base[0], '92%'],
-        large: [`${Number.parseFloat(base[0]) + 8}%`, '93%'],
-        xl: [`${Number.parseFloat(base[0]) + 14}%`, '94%'],
-      });
-      return [first];
-    }, [categoryCount, isLargeList, fontMode]);
+      if (isLargeList) return ['62%'];
+      if (categoryCount <= 4) return ['32%'];
+      if (categoryCount <= 8) return ['40%'];
+      return ['48%'];
+    }, [categoryCount, isLargeList]);
+
+    const hasSelectionChange = useMemo(
+      () => selectionKey(tempIds) !== selectionKey(selectedCategoryIds),
+      [tempIds, selectedCategoryIds],
+    );
 
     const scrollAreaStyle = useMemo(
       () =>
         isLargeList
-          ? {maxHeight: getResponsiveHeight(320)}
-          : {maxHeight: undefined},
+          ? {maxHeight: getResponsiveHeight(320), alignSelf: 'stretch'}
+          : {maxHeight: undefined, flexGrow: 0, alignSelf: 'stretch'},
       [isLargeList],
     );
 
@@ -206,7 +210,10 @@ const CategoryBottomSheetModal = forwardRef(
           style={scrollAreaStyle}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={styles.scrollContent}>
+          contentContainerStyle={[
+            styles.scrollContent,
+            !isLargeList ? {flexGrow: 0} : null,
+          ]}>
           <View
             ref={guideListRef}
             collapsable={false}
@@ -252,8 +259,10 @@ const CategoryBottomSheetModal = forwardRef(
           includeBottomSafePadding
           onCancel={closeSheet}
           onSave={handleApply}
+          cancelLabel={BOTTOM_SHEET_BUTTON_LABELS.CANCEL}
           saveLabel="선택하기"
-          showCancel={false}
+          showCancel
+          saveDisabled={!hasSelectionChange}
           autoCloseOnSave={false}
           buttonRowStyle={{marginTop: 0}}
           style={[

@@ -1,6 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/features/schedule/screens/ScheduleScreen.jsx
-import React, {useMemo, useState, useCallback, useRef} from 'react';
+import React, {useMemo, useState, useCallback, useRef, useEffect} from 'react';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   StyleSheet,
@@ -9,13 +9,12 @@ import {
   TouchableOpacity,
   RefreshControl,
   Image,
-  Platform,
   Alert,
 } from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import DropShadow from 'react-native-drop-shadow';
 
-import {useSelector, useDispatch} from 'react-redux';
+import {useSelector} from 'react-redux';
 
 import ScheduleEditorBottomSheetModal from '../components/ScheduleEditorBottomSheet';
 import CalendarToggle from '../components/Calendar';
@@ -29,7 +28,7 @@ import {
 } from 'utils/responsive';
 import {getFabAndroidNavInsetExtra} from 'utils/layoutMetrics';
 
-import YellowSpinner from 'components/yellowSpinner';
+import ScheduleScreenSkeleton from '../components/ScheduleScreenSkeleton';
 
 import {useScheduleDate} from '../hooks/useScheduleDate';
 import {useScheduleCounts} from '../hooks/useScheduleCounts';
@@ -43,6 +42,7 @@ import {
   useAddScheduleMutation,
   useDeleteScheduleMutation,
   useUpdateScheduleMutation,
+  useGetSchedulesQuery,
 } from '../services/scheduleApi';
 import {useGetFamilyUsersQuery} from '../../home/services/homeApi';
 
@@ -127,9 +127,9 @@ export default function ScheduleScreen() {
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(249,249,249,0.6)',
+    justifyContent: 'flex-start',
+    alignItems: 'stretch',
+    backgroundColor: 'rgba(249,249,249,0.92)',
   },
 
   }));
@@ -268,6 +268,7 @@ export default function ScheduleScreen() {
   const {
     scheduleCountPerDay: baseScheduleCountPerDay,
     isLoading,
+    isFetching: isScheduleCountFetching,
     refreshTrigger,
     setRefreshTrigger,
     bumpCount,
@@ -283,21 +284,68 @@ export default function ScheduleScreen() {
       refreshTrigger,
     });
 
+  const {isFetching: isScheduleListFetching} = useGetSchedulesQuery(
+    {familyId, date: formattedDate},
+    {
+      skip: STORE_MOCK_ENABLED || !familyId || !formattedDate,
+    },
+  );
+
  /** =========================
  * Pull to Refresh
    ========================= */
   const [refreshing, setRefreshing] = useState(false);
+  const refreshLockRef = useRef(false);
+  const countFetchingRef = useRef(isScheduleCountFetching);
+  const listFetchingRef = useRef(isScheduleListFetching);
+  const filterLoadingRef = useRef(loadingFiltered);
 
-  const handleRefresh = useCallback(() => {
+  useEffect(() => {
+    countFetchingRef.current = isScheduleCountFetching;
+  }, [isScheduleCountFetching]);
+  useEffect(() => {
+    listFetchingRef.current = isScheduleListFetching;
+  }, [isScheduleListFetching]);
+  useEffect(() => {
+    filterLoadingRef.current = loadingFiltered;
+  }, [loadingFiltered]);
+
+  const handleRefresh = useCallback(async () => {
     if (isLoading) return;
-
+    if (refreshLockRef.current) return;
+    refreshLockRef.current = true;
     setRefreshing(true);
-    setRefreshTrigger(Date.now());
 
-    setTimeout(() => {
+    const isBusy = () => {
+      if (STORE_MOCK_ENABLED) return false;
+      const listActive = !!familyId && !!formattedDate;
+      return (
+        countFetchingRef.current ||
+        filterLoadingRef.current ||
+        (listActive && listFetchingRef.current)
+      );
+    };
+
+    try {
+      setRefreshTrigger(t => t + 1);
+      await new Promise(r =>
+        requestAnimationFrame(() => requestAnimationFrame(r)),
+      );
+
+      for (let i = 0; i < 24; i += 1) {
+        if (isBusy()) break;
+        await new Promise(res => setTimeout(res, 16));
+      }
+
+      const spinDeadline = Date.now() + 60_000;
+      while (isBusy() && Date.now() < spinDeadline) {
+        await new Promise(res => setTimeout(res, 40));
+      }
+    } finally {
       setRefreshing(false);
-    }, 500);
-  }, [isLoading, setRefreshTrigger]);
+      refreshLockRef.current = false;
+    }
+  }, [isLoading, setRefreshTrigger, familyId, formattedDate]);
 
  /** =========================
  * 바텀시트 / 편집 상태
@@ -604,7 +652,7 @@ export default function ScheduleScreen() {
 
       {isLoading && (
         <View style={styles.loadingOverlay} pointerEvents="auto">
-          <YellowSpinner />
+          <ScheduleScreenSkeleton />
         </View>
       )}
 

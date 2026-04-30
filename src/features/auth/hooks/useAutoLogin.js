@@ -25,7 +25,10 @@ import {
 
 const LEGACY_LOCAL_ONLY_ACCESS_TOKEN = 'GUEST_TOKEN_LOCAL_ONLY';
 import {setUser} from 'features/home/store/userSlice';
-import {syncMarketingNotificationFromServer} from 'features/home/store/userThunk';
+import {
+  fetchUserThunk,
+  syncMarketingNotificationFromServer,
+} from 'features/home/store/userThunk';
 import {setFamily} from 'features/home/store/familySlice';
 import {setFamilyUserList} from 'features/home/store/userFamilySlice';
 
@@ -36,6 +39,8 @@ const withTimeout = (promise, ms = 6000) =>
       setTimeout(() => reject(new Error(`timeout ${ms}ms`)), ms),
     ),
   ]);
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 const isAuthFailure = error => {
   const status = Number(error?.status ?? error?.response?.status);
@@ -133,9 +138,24 @@ export function useAutoLogin(shouldRun = true) {
             return;
           }
 
-          // 네트워크/서버 일시 오류에서는 토큰을 지우지 않고 세션 유지
+          // 네트워크/서버 일시 오류: 토큰 유지 + 유저 슬라이스 복구까지 재시도 (실패 시 라우팅이 null에 고정되는 것 방지)
           dispatch(setLoginSuccess());
-          return;
+          for (let attempt = 0; attempt < 3; attempt += 1) {
+            if (cancelled) return;
+            try {
+              await sleep(attempt === 0 ? 0 : 400 * attempt);
+              userResult = await withTimeout(
+                dispatch(fetchUserThunk()).unwrap(),
+                10000,
+              );
+              break;
+            } catch {
+              userResult = null;
+            }
+          }
+          if (!userResult || typeof userResult !== 'object') {
+            return;
+          }
         }
 
         if (cancelled) return;

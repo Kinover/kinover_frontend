@@ -16,7 +16,7 @@ import {
 } from 'utils/responsive';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 
-import {BUTTON_STYLES, HEADER_STYLES, LAYOUT_STYLE} from 'styles/style';
+import {BUTTON_STYLES, COLORS, HEADER_STYLES, LAYOUT_STYLE} from 'styles/style';
 import {hapticLight} from 'utils/haptic';
 import {StackActions} from '@react-navigation/native';
 import {
@@ -216,7 +216,7 @@ export const renderTabBarLabel = (label, focused) => {
       allowFontScaling={false}
       numberOfLines={1}
       style={{
-        color: focused ? BUTTON_STYLES().saveBg : 'gray',
+        color: focused ? COLORS.textPrimary : 'gray',
         fontSize,
         lineHeight,
         marginTop: getResponsiveHeight(3),

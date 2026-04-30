@@ -32,6 +32,10 @@ export const COLORS = {
   borderStrong: '#111827',
 
   shadowBase: '#000000',
+
+  textStrong: '#111827',
+  error: '#DC2626',
+  disabled: '#D1D5DB',
 };
 
 export const getBackgroundColors = () => ({
@@ -43,7 +47,7 @@ export const getBackgroundColors = () => ({
 });
 
 export const getButtonStyles = () => ({
-  saveBg: COLORS.textPrimary,
+  saveBg: COLORS.brandPrimary,
   cancelBg: COLORS.surfacePrimary,
   fontSize: getResponsiveFontSize(14),
   fontFamily: FONTS.MEDIUM,

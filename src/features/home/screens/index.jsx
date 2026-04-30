@@ -28,7 +28,11 @@ import {BACKGROUND_COLORS} from 'styles/style';
 
 import HeaderSection from '../components/HeaderSection';
 import MemberGridSection from '../components/MemberGridSection';
-import YellowSpinner from 'components/yellowSpinner';
+import {
+  HomeFamilyInviteJoinModal,
+  HomeFamilyCreateModal,
+} from '../components/HomeNoFamilyModals';
+import HomeScreenSkeleton from '../components/HomeScreenSkeleton';
 import ToastModal from 'components/modal/ToastModal';
 
 import {
@@ -108,7 +112,6 @@ export default function HomeScreen() {
   const {
     data: familyStatusData = [],
     isLoading: isFamilyStatusLoading,
-    isError: isFamilyStatusError,
     refetch: refetchFamilyStatus,
   } = useGetFamilyStatusQuery(familyId, {
     skip: STORE_MOCK_ENABLED || !familyId,
@@ -121,6 +124,10 @@ export default function HomeScreen() {
   const [didInitialLoad, setDidInitialLoad] = useState(false);
   const [errorToastVisible, setErrorToastVisible] = useState(false);
   const [blockedProfileToastVisible, setBlockedProfileToastVisible] =
+    useState(false);
+  const [homeInviteJoinModalVisible, setHomeInviteJoinModalVisible] =
+    useState(false);
+  const [homeCreateFamilyModalVisible, setHomeCreateFamilyModalVisible] =
     useState(false);
 
  // 회원가입/설정 완료 직후 첫 진입 시에는 이벤트·감정 모달 숨김 (null = 아직 미확인)
@@ -140,7 +147,7 @@ export default function HomeScreen() {
   });
 
  // 가이드 모달이 떠 있는 동안에는 이벤트 모달 숨김 (iOS: guideProps, Android: setAnyGuideVisible)
-  const {isGuideVisible} = useGuideOverlay() || {};
+  useGuideOverlay();
 
  // 첫 진입 여부 확인 후 skip 플래그 설정 & 스토리지 키 삭제 (확인 전에는 미노출)
   useEffect(() => {
@@ -190,6 +197,9 @@ export default function HomeScreen() {
 
   const scrollPaddingBottom = getResponsiveHeight(100);
 
+  // 가족 여부로 빈 상태 판단 (가족 생성 직후 멤버가 본인뿐일 때도 정상 처리)
+  const isMemberGridEmpty = !familyId;
+
  // iOS: 가이드 모달 닫은 뒤 터치 복구용 — early return 앞에 두어 훅 개수 고정
   const [contentKey, setContentKey] = useState(0);
   const handleGuideAfterClose = useCallback(() => setContentKey(k => k + 1), []);
@@ -197,6 +207,14 @@ export default function HomeScreen() {
   const openInviteCodeModal = useCallback(() => {
     setIsVisible(true);
   }, []);
+
+  const handleMemberAddPress = useCallback(() => {
+    if (!familyId) {
+      setHomeInviteJoinModalVisible(true);
+    } else {
+      openInviteCodeModal();
+    }
+  }, [familyId, openInviteCodeModal]);
 
   const closeInviteCodeModal = useCallback(() => {
     setIsVisible(false);
@@ -233,6 +251,13 @@ export default function HomeScreen() {
  * - 화면은 먼저 보여주고(체감속도 개선),
  * - 데이터는 백그라운드에서 병렬 갱신
  */
+  const hasCoreHomeData = useMemo(() => {
+    const hasUser = !!user?.userId;
+    if (!hasUser) return false;
+    if (!familyId) return true;
+    return !!familyData || (Array.isArray(familyUserList) && familyUserList.length > 0);
+  }, [user?.userId, familyId, familyData, familyUserList]);
+
   useEffect(() => {
     let mounted = true;
 
@@ -245,10 +270,12 @@ export default function HomeScreen() {
 
       if (mounted) setDidInitialLoad(true);
 
-      if (
-        mounted &&
-        (isUserError || isFamilyError || isFamilyUsersError || isFamilyStatusError)
-      ) {
+      /**
+       * 접속상태(familyStatus)는 비핵심 데이터라 일시 실패가 잦다.
+       * 핵심(user/family/familyUsers)까지 실패했고, 화면에 쓸 캐시 데이터도 없을 때만 토스트 노출.
+       */
+      const hasCriticalError = isUserError || isFamilyError || isFamilyUsersError;
+      if (mounted && hasCriticalError && !hasCoreHomeData) {
         setErrorToastVisible(true);
       }
     })();
@@ -262,7 +289,7 @@ export default function HomeScreen() {
     isUserError,
     isFamilyError,
     isFamilyUsersError,
-    isFamilyStatusError,
+    hasCoreHomeData,
   ]);
 
   const doRefreshMembers = useCallback(async () => {
@@ -275,7 +302,10 @@ export default function HomeScreen() {
         refetchFamilyUsers(),
         refetchFamilyStatus(),
       ]);
-      const allFailed = results.every(r => r.status === 'rejected');
+      const allFailed = results.every(r => {
+        if (r.status === 'rejected') return true;
+        return !!r.value?.error;
+      });
       if (allFailed) setErrorToastVisible(true);
     } catch (e) {
       setErrorToastVisible(true);
@@ -396,7 +426,7 @@ export default function HomeScreen() {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <YellowSpinner />
+        <HomeScreenSkeleton />
       </SafeAreaView>
     );
   }
@@ -422,6 +452,7 @@ export default function HomeScreen() {
           contentContainerStyle={[
             styles.scrollContent,
             {paddingBottom: scrollPaddingBottom},
+            styles.scrollContentFill,
           ]}>
           <HeaderSection
             user={displayUser}
@@ -435,10 +466,13 @@ export default function HomeScreen() {
 
           <MemberGridSection
             members={displayFamilyMembers}
+            hasFamily={!!familyId}
             onlineUserIds={displayOnlineUserIds}
             lastActiveMap={displayLastActiveMap}
             onUserPress={handleUserPress}
-            onAddPress={openInviteCodeModal}
+            onAddPress={handleMemberAddPress}
+            onEmptyJoinByCodePress={() => setHomeInviteJoinModalVisible(true)}
+            onEmptyCreateFamilyPress={() => setHomeCreateFamilyModalVisible(true)}
             guideInviteRef={guideInviteRef}
           />
         </ScrollView>
@@ -467,6 +501,15 @@ export default function HomeScreen() {
         visible={isVisible}
         onClose={closeInviteCodeModal}
         familyCode={familyId}
+      />
+
+      <HomeFamilyInviteJoinModal
+        visible={homeInviteJoinModalVisible}
+        onClose={() => setHomeInviteJoinModalVisible(false)}
+      />
+      <HomeFamilyCreateModal
+        visible={homeCreateFamilyModalVisible}
+        onClose={() => setHomeCreateFamilyModalVisible(false)}
       />
 
       <UserBottomSheetModal
@@ -507,6 +550,10 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? '22%' : '13%',
     alignItems: 'center',
   },
+  /** 구성원 0명: 탭바 위까지 스크롤 영역을 채워 흰 카드가 늘어나도록 */
+  scrollContentFill: {
+    flexGrow: 1,
+  },
   backgroundCurve: {
     position: 'absolute',
     bottom: '-28%',
@@ -521,7 +568,5 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
     backgroundColor: BACKGROUND_COLORS.primaryBg,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
 });

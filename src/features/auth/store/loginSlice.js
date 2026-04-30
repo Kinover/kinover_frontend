@@ -11,8 +11,11 @@ const initialLoginState = {
  // "userinfo/familyId까지 확인 완료" 여부 (라우팅 확정 가능)
   authChecked: false,
 
- // 전화번호 인증 대기 상태 — needed:true 이면 rootScreen이 인증 화면으로 라우팅
+  // 전화번호 인증 대기 상태 — needed:true 이면 rootScreen이 인증 화면으로 라우팅
   phoneVerificationPending: {needed: false},
+
+  /** 가족 설정 스킵 후「시작하기」탭: MMKV emit만으로 루트가 안 바뀌는 기기 대비, 동일 세션 라우팅 보강 (persist 안 함) */
+  skipFamilyMainEntry: false,
 };
 
 const loginSlice = createSlice({
@@ -39,6 +42,7 @@ const loginSlice = createSlice({
       state.isLoggedIn = false;
       state.authChecked = false;
       state.error = null;
+      state.skipFamilyMainEntry = false;
     },
 
  // userinfo까지 확인 완료되면 true
@@ -59,6 +63,10 @@ const loginSlice = createSlice({
     clearPhoneVerificationPending(state) {
       state.phoneVerificationPending = {needed: false};
     },
+
+    setSkipFamilyMainEntry(state, action) {
+      state.skipFamilyMainEntry = !!action.payload;
+    },
   },
 });
 
@@ -70,6 +78,7 @@ export const {
   setAuthChecked,
   setPhoneVerificationPending,
   clearPhoneVerificationPending,
+  setSkipFamilyMainEntry,
 } = loginSlice.actions;
 
 export default loginSlice.reducer;

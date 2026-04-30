@@ -8,7 +8,17 @@ const DEFAULT_ANIMATION_CONFIGS = {
   duration: 180,
   easing: Easing.out(Easing.cubic),
 };
-import { View, StyleSheet, Animated, Platform, Dimensions, Keyboard, TouchableWithoutFeedback, InteractionManager } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  Animated,
+  Platform,
+  Dimensions,
+  Keyboard,
+  TouchableWithoutFeedback,
+  TouchableOpacity,
+  InteractionManager,
+} from 'react-native';
 
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -25,11 +35,14 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
   getResponsiveFontSize,
+  getResponsiveIconSize,
 } from 'utils/responsive';
 import {getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
 
-import {BOTTOMSHEET_STYLE, COLORS} from 'styles/style';
+import {BOTTOMSHEET_STYLE} from 'styles/style';
 import {FONTS} from 'styles/typography';
+import {BOTTOM_SHEET_BUTTON_LABELS} from 'constants/bottomSheetTitles';
+import SheetHeaderCloseIcon from 'components/bottomSheet/SheetHeaderCloseIcon';
 
 export default function BottomSheetLayout({
   modalRef,
@@ -61,6 +74,10 @@ export default function BottomSheetLayout({
 
   headerCentered = false,
   headerAccessory,
+
+  /** 헤더 우측 × — 기본 onPress: 키보드 내리고 modalRef.dismiss */
+  showHeaderCloseButton = true,
+  onHeaderClosePress,
 
   children,
 
@@ -100,6 +117,33 @@ export default function BottomSheetLayout({
   },
   headerCentered: {
     alignItems: 'center',
+  },
+  headerTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    width: '100%',
+  },
+  headerBalanceSlot: {
+    width: getResponsiveWidth(30),
+  },
+  titleInRow: {
+    flex: 1,
+    minWidth: 0,
+  },
+  headerClosePill: {
+    width: getResponsiveWidth(30),
+    height: getResponsiveWidth(30),
+    borderRadius: getResponsiveWidth(15),
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: getResponsiveHeight(-4),
+  },
+  headerOnlyCloseRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    width: '100%',
+    marginBottom: getResponsiveHeight(2),
   },
   title: {
     fontFamily: BOTTOMSHEET_STYLE()?.title?.fontFamily || FONTS.SEMI_BOLD,
@@ -300,6 +344,21 @@ export default function BottomSheetLayout({
     }, 380);
   }, [onDismiss]);
 
+  const handleHeaderClose = useCallback(() => {
+    try {
+      Keyboard.dismiss();
+    } catch {
+      null;
+    }
+    if (typeof onHeaderClosePress === 'function') {
+      onHeaderClosePress();
+      return;
+    }
+    modalRef?.current?.dismiss?.();
+  }, [modalRef, onHeaderClosePress]);
+
+  const headerCloseIconSize = getResponsiveIconSize(16);
+
   const renderBackdrop = useCallback(
     props => (
       <BottomSheetBackdrop
@@ -440,6 +499,19 @@ export default function BottomSheetLayout({
     [enableDynamicSizing, contentBottomPad, contentStyle, styles.scrollContent],
   );
 
+  /**
+   * Android: 커스텀 탭바(animatedTabBar.jsx)가 zIndex/elevation 9999라서
+   * 기본 gorhom 모달 컨테이너보다 위에 그려져 시트가 가려질 수 있음.
+   * 가이드 오버레이(99998)보다는 낮게 유지.
+   */
+  const modalContainerStackingStyle = useMemo(
+    () =>
+      Platform.OS === 'android'
+        ? {zIndex: 10000, elevation: 10000}
+        : undefined,
+    [],
+  );
+
   const nonScrollContentStyle = useMemo(
     () => [
       animatedContentStyle,
@@ -479,7 +551,8 @@ export default function BottomSheetLayout({
       onDismiss={handleDismiss}
       onChange={onChangeIndex}
       enablePanDownToClose={true}
-      bottomInset={bottomInsetForModal}>
+      bottomInset={bottomInsetForModal}
+      containerStyle={modalContainerStackingStyle}>
       <BottomSheetView style={containerBoxStyle}>
         {(title || subtitle || headerAccessory) && (
           <View
@@ -492,15 +565,52 @@ export default function BottomSheetLayout({
               const h = e?.nativeEvent?.layout?.height ?? 0;
               onHeaderLayout?.(h);
             }}>
-            {!!title && (
-              <AppText
-                allowFontScaling={false}
-                style={[
-                  styles.title,
-                  headerCentered && styles.titleCentered,
-                ]}>
-                {title}
-              </AppText>
+            {!!title &&
+              (showHeaderCloseButton ? (
+                <View style={styles.headerTitleRow}>
+                  {headerCentered && <View style={styles.headerBalanceSlot} />}
+                  <AppText
+                    allowFontScaling={false}
+                    numberOfLines={2}
+                    style={[
+                      styles.title,
+                      styles.titleInRow,
+                      headerCentered && styles.titleCentered,
+                    ]}>
+                    {title}
+                  </AppText>
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    accessibilityLabel={BOTTOM_SHEET_BUTTON_LABELS.CLOSE_SHEET}
+                    hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+                    activeOpacity={0.75}
+                    style={styles.headerClosePill}
+                    onPress={handleHeaderClose}>
+                    <SheetHeaderCloseIcon size={headerCloseIconSize} />
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <AppText
+                  allowFontScaling={false}
+                  style={[
+                    styles.title,
+                    headerCentered && styles.titleCentered,
+                  ]}>
+                  {title}
+                </AppText>
+              ))}
+            {!title && showHeaderCloseButton && (
+              <View style={styles.headerOnlyCloseRow}>
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  accessibilityLabel={BOTTOM_SHEET_BUTTON_LABELS.CLOSE_SHEET}
+                  hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+                  activeOpacity={0.75}
+                  style={styles.headerClosePill}
+                  onPress={handleHeaderClose}>
+                  <SheetHeaderCloseIcon size={headerCloseIconSize} />
+                </TouchableOpacity>
+              </View>
             )}
             {headerAccessory}
             {!!subtitle && (

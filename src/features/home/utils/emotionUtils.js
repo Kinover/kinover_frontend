@@ -33,15 +33,7 @@ const EMOTION_TYPES = {
 
 // ==================== Public API ====================
 
-/**
- * 감정에 해당하는 이미지 리소스 반환
- * @param {string} emotion - 감정 타입 (대문자)
- * @returns {number} require()로 로드된 이미지 리소스
- * 
- * @example
- * const image = getEmotionImage('HAPPY');
- * <Image source={image} />
- */
+/** 프로필/그리드 오버레이용 `state4` (감정 선택 카드 `state_v2`와 별도) */
 export function getEmotionImage(emotion) {
   switch (emotion) {
     case EMOTION_TYPES.ANNOYED:
@@ -61,7 +53,51 @@ export function getEmotionImage(emotion) {
     case EMOTION_TYPES.EXCITED:
       return require('../../../assets/state4/4.png');
     default:
-      return require('../../../assets/state4/6.png'); // 기본값: SORRY
+      return require('../../../assets/state4/6.png');
+  }
+}
+
+/** 감정 선택 화면과 동일 이미지 (`state_v2`) — 홈 기분 뱃지 등 */
+export function getEmotionPickerImage(emotion) {
+  switch (emotion) {
+    case EMOTION_TYPES.ANNOYED:
+      return require('../../../assets/icons/state_v2/annoyed.png');
+    case EMOTION_TYPES.WORRIED:
+      return require('../../../assets/icons/state_v2/anxious.png');
+    case EMOTION_TYPES.DEPRESSED:
+      return require('../../../assets/icons/state_v2/depressed.png');
+    case EMOTION_TYPES.SORRY:
+      return require('../../../assets/icons/state_v2/sorry.png');
+    case EMOTION_TYPES.TIRED:
+      return require('../../../assets/icons/state_v2/exhausted.png');
+    case EMOTION_TYPES.NEUTRAL:
+      return require('../../../assets/icons/state_v2/neutral.png');
+    case EMOTION_TYPES.HAPPY:
+      return require('../../../assets/icons/state_v2/happy.png');
+    case EMOTION_TYPES.EXCITED:
+      return require('../../../assets/icons/state_v2/excited.png');
+    default:
+      return require('../../../assets/icons/state_v2/neutral.png');
+  }
+}
+
+/**
+ * 감정에 해당하는 한국어 텍스트 반환 — 말풍선 등에 사용
+ * @param {string|null} emotion
+ * @returns {string|null}
+ */
+export function getEmotionLabel(emotion) {
+  if (!emotion) return null;
+  switch (String(emotion).toUpperCase()) {
+    case 'ANNOYED':   return '짜증나요 😤';
+    case 'WORRIED':   return '걱정돼요 😟';
+    case 'DEPRESSED': return '우울해요 😔';
+    case 'SORRY':     return '미안해요 🥺';
+    case 'TIRED':     return '힘들어요 😴';
+    case 'NEUTRAL':   return '평범해요 😐';
+    case 'HAPPY':     return '행복해요 😊';
+    case 'EXCITED':   return '신나요 🎉';
+    default:          return null;
   }
 }
 

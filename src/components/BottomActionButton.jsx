@@ -2,7 +2,7 @@
 import React, {useMemo} from 'react';
 import {TouchableOpacity, View, StyleSheet, Platform} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {BUTTON_STYLES} from 'styles/style';
+import {BUTTON_STYLES, COLORS} from 'styles/style';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -27,7 +27,7 @@ export default function BottomActionButton({
   scrollInsetsBottom = true,
   /** 미지정 시 테마 저장 버튼 색(BUTTON_STYLES().saveBg) */
   backgroundColor,
-  labelColor = 'white',
+  labelColor = COLORS.textPrimary,
   buttonStyle,
   labelStyle,
 }) {
@@ -56,7 +56,7 @@ export default function BottomActionButton({
       },
       buttonDisabled: {
         opacity: 0.7,
-        backgroundColor: '#D1D5DB',
+        backgroundColor: COLORS.disabled,
       },
       buttonText: {
         fontSize: getResponsiveFontSize(14),

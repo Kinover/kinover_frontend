@@ -216,15 +216,16 @@ export default function PhoneVerificationScreen() {
       setError('인증번호 6자리를 입력해 주세요.');
       return;
     }
-    if (!confirmationResult) {
-      setError('인증 세션이 만료됐어요. 인증번호를 다시 받아주세요.');
-      return;
-    }
     setError('');
     setLoading(true);
     try {
       const digits = phoneNumber.replace(/\D/g, '');
       const testMode = isTestPhone(digits) && otpCode === TEST_OTP_CODE;
+
+      if (!testMode && !confirmationResult) {
+        setError('인증 세션이 만료됐어요. 인증번호를 다시 받아주세요.');
+        return;
+      }
 
       let verifyPayload;
       if (testMode) {

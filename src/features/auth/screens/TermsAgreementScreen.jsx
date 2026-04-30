@@ -9,7 +9,11 @@ import {useNavigateToWhere} from 'hooks/useNavigateToWhere';
 import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
 import ToastModal from 'components/modal/ToastModal';
 import {COLORS} from 'styles/style';
-import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
+import {
+  getResponsiveHeight,
+  getResponsiveWidth,
+  getResponsiveIconSize,
+} from 'utils/responsive';
 import {
   commitTermsConsentAndAdvanceToPhone,
   commitTermsConsentAndSkipProfileToFamily,
@@ -26,6 +30,8 @@ import {formatDate} from 'features/auth/utils/formatSignupDate';
 // alias 없으면 상대경로로 바꿔줘: ../../../data/legal
 import {privacyPolicy} from 'data/legal/privacyPolicy';
 import {termsOfService} from 'data/legal/termsOfService';
+import {BOTTOM_SHEET_BUTTON_LABELS} from 'constants/bottomSheetTitles';
+import SheetHeaderCloseIcon from 'components/bottomSheet/SheetHeaderCloseIcon';
 /**
  * 마케팅 동의는 별도 문구로 유지 (필요하면 data로 빼도 됨)
  */
@@ -222,6 +228,10 @@ export default function TermsAgreementScreen() {
     [],
   );
 
+  const dismissTermsDetailSheet = useCallback(() => {
+    bottomSheetRef.current?.dismiss?.();
+  }, []);
+
   const renderDetailContent = useCallback(() => {
     if (!detailType) return null;
 
@@ -229,9 +239,24 @@ export default function TermsAgreementScreen() {
 
     return (
       <>
-        <Text allowFontScaling={false} style={styles.sheetTitle}>
-          {title}
-        </Text>
+        <View style={styles.sheetHeaderRow}>
+          <View style={styles.sheetHeaderSide} />
+          <Text
+            allowFontScaling={false}
+            style={styles.sheetTitle}
+            numberOfLines={2}>
+            {title}
+          </Text>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={BOTTOM_SHEET_BUTTON_LABELS.CLOSE_SHEET}
+            hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+            activeOpacity={0.75}
+            onPress={dismissTermsDetailSheet}
+            style={styles.sheetHeaderClose}>
+            <SheetHeaderCloseIcon size={getResponsiveIconSize(16)} />
+          </TouchableOpacity>
+        </View>
         <ScrollView style={styles.sheetScroll}>
           <Text allowFontScaling={false} style={styles.sheetBody}>
             {body}
@@ -239,7 +264,7 @@ export default function TermsAgreementScreen() {
         </ScrollView>
       </>
     );
-  }, [detailType, DETAIL_MAP]);
+  }, [detailType, DETAIL_MAP, dismissTermsDetailSheet]);
 
   const renderBackdrop = useCallback(
     props => (
@@ -453,11 +478,30 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 24,
   },
+  sheetHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  sheetHeaderSide: {
+    width: 30,
+  },
   sheetTitle: {
+    flex: 1,
     fontSize: 18,
     fontWeight: '700',
     color: 'black',
-    marginBottom: 8,
+    textAlign: 'center',
+    paddingHorizontal: 4,
+  },
+  sheetHeaderClose: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: getResponsiveHeight(-4),
   },
   sheetScroll: {marginTop: 4},
   sheetBody: {fontSize: 13, lineHeight: 18, color: '#111827'},

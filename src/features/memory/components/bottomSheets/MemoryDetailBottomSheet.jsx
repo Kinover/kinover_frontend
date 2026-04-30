@@ -315,7 +315,7 @@ function CommentFooter({
               placeholder={
                 disabled
                   ? '지금은 댓글을 작성할 수 없어요'
-                  : '댓글을 달아보세요 ( @가족이름 멘션 가능 )'
+                  : '댓글을 달아보세요'
               }
               placeholderTextColor="#999"
               value={draftText}
@@ -342,7 +342,7 @@ function CommentFooter({
               placeholder={
                 disabled
                   ? '지금은 댓글을 작성할 수 없어요'
-                  : '댓글을 달아보세요 ( @가족이름 멘션 가능 )'
+                  : '댓글을 달아보세요'
               }
               placeholderTextColor="#999"
               value={draftText}

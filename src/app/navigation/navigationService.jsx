@@ -24,6 +24,11 @@ let lastFromTabForGlobalScreen = null;
 /** 탭 라우트 이름 목록 */
 export const TAB_ROUTES = ['홈', '소통', '일정', '추억'];
 
+/** RootScreen 최상위: 메인 앱(RootNavigator — Tabs 등) */
+export const ROOT_MAIN_APP_SCREEN = 'MainApp';
+/** RootScreen 최상위: 인증(AuthNavigator) */
+export const ROOT_AUTH_FLOW_SCREEN = 'AuthFlow';
+
 /**
  * RESET state 정규화: 루트 스택에 'Root' 화면이 없으므로 'Root' → 'Tabs'로 치환
  * @param {Object} state - reset payload
@@ -52,6 +57,28 @@ export function isNavigationReady() {
   return !!navigationRef?.isReady?.();
 }
 
+function getTopRootRouteName() {
+  try {
+    const root = navigationRef?.getRootState?.();
+    const idx = root?.index ?? 0;
+    return root?.routes?.[idx]?.name ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function dispatchRootNavigate(name, params) {
+  const safeParams = params ?? {};
+  if (getTopRootRouteName() === ROOT_MAIN_APP_SCREEN) {
+    navigationRef.navigate(ROOT_MAIN_APP_SCREEN, {
+      screen: name,
+      params: safeParams,
+    });
+    return;
+  }
+  navigationRef.navigate(name, safeParams);
+}
+
 /**
  * 안전한 네비게이션 실행
  * 네비게이션이 준비되지 않았으면 큐에 저장합니다.
@@ -66,7 +93,7 @@ export function safeNavigate(name, params) {
     if (safeParams.fromTab) lastFromTabForGlobalScreen = safeParams.fromTab;
   }
   if (isNavigationReady()) {
-    navigationRef.navigate(name, safeParams);
+    dispatchRootNavigate(name, safeParams);
     return true;
   }
   pendingActions.push({type: 'NAVIGATE', name, params: safeParams});
@@ -108,8 +135,18 @@ export function getCurrentTabFromRootState() {
   try {
     const state =
       navigationRef?.getRootState?.() ?? navigationRef?.getState?.();
-    if (!state?.routes?.length) return null;
-    const tabsRoute = state.routes.find(r => r?.name === 'Tabs');
+
+    const findTabs = nav => {
+      if (!nav?.routes?.length) return null;
+      for (const r of nav.routes) {
+        if (r?.name === 'Tabs') return r;
+        const inner = r?.state ? findTabs(r.state) : null;
+        if (inner) return inner;
+      }
+      return null;
+    };
+
+    const tabsRoute = findTabs(state);
     if (!tabsRoute?.state?.routes?.length) return null;
     const idx = tabsRoute.state.index ?? 0;
     const tabName = tabsRoute.state.routes[idx]?.name;
@@ -136,7 +173,7 @@ export function flushPendingNavigation() {
         if ((a.name === '설정화면' || a.name === '알림화면') && a.params?.fromTab) {
           lastFromTabForGlobalScreen = a.params.fromTab;
         }
-        navigationRef.navigate(a.name, a.params);
+        dispatchRootNavigate(a.name, a.params);
       } else if (a.type === 'RESET') {
         navigationRef.dispatch(CommonActions.reset(normalizeResetState(a.state)));
       }
@@ -169,10 +206,31 @@ export function getResetToTabState(tabName) {
 }
 
 /**
- * 특정 탭 화면으로 리셋 — 루트를 [Tabs] 한 장으로 바꾸고, Tabs 내부 state.index로 해당 탭 지정
+ * 컨테이너 기준: MainApp(RootNavigator)만 두고 Tabs까지 초기 탭 지정
+ * @param {string} [tabName='홈']
+ */
+export function getResetToMainAppFlowState(tabName = '홈') {
+  return {
+    index: 0,
+    routes: [
+      {
+        name: ROOT_MAIN_APP_SCREEN,
+        state: getResetToTabState(tabName),
+      },
+    ],
+  };
+}
+
+/** 가족 설정 스킵·완료 후 메인 탭으로 강제 전환 (AuthFlow/MainApp 이중 루트용) */
+export function resetToMainAppFlow(tabName = '홈') {
+  return safeReset(getResetToMainAppFlowState(tabName));
+}
+
+/**
+ * 특정 탭 화면으로 리셋 — 루트를 [MainApp → Tabs] 한 장으로 바꾸고, Tabs 내부 state.index로 해당 탭 지정
  */
 export function resetToTabScreen(tabName) {
-  return safeReset(getResetToTabState(tabName));
+  return safeReset(getResetToMainAppFlowState(tabName));
 }
 
 /**
@@ -183,8 +241,7 @@ export function goBackToTab(tabName) {
   if (!isNavigationReady()) return false;
   const name = TAB_ROUTES.includes(tabName) ? tabName : '홈';
   try {
-    // 루트에서 navigate('Tabs', { screen }) → 설정/알림 pop + 해당 탭으로 전환
-    navigationRef.navigate('Tabs', {screen: name});
+    dispatchRootNavigate('Tabs', {screen: name});
     return true;
   } catch {
     return resetToTabScreen(name);
@@ -206,32 +263,40 @@ export function resetToTabNestedScreen(tabName, stackRouteName, params) {
   const tabIndex = TAB_ROUTES.indexOf(tabName);
   const safeIndex = tabIndex >= 0 ? tabIndex : 0;
 
-  // RootNavigator 구조: 최상위 스택에 Tabs가 있음 (Root 화면 없음)
+  // RootNavigator 구조: MainApp 아래 최상위 스택에 Tabs
   return safeReset({
     index: 0,
     routes: [
       {
-        name: 'Tabs',
+        name: ROOT_MAIN_APP_SCREEN,
         state: {
-          index: safeIndex,
-          routes: TAB_ROUTES.map(name => {
-            if (name !== tabName) {
-              return {name};
-            }
-
-            return {
-              name,
+          index: 0,
+          routes: [
+            {
+              name: 'Tabs',
               state: {
-                index: 0,
-                routes: [
-                  {
-                    name: stackRouteName,
-                    params,
-                  },
-                ],
+                index: safeIndex,
+                routes: TAB_ROUTES.map(routeName => {
+                  if (routeName !== tabName) {
+                    return {name: routeName};
+                  }
+
+                  return {
+                    name: routeName,
+                    state: {
+                      index: 0,
+                      routes: [
+                        {
+                          name: stackRouteName,
+                          params,
+                        },
+                      ],
+                    },
+                  };
+                }),
               },
-            };
-          }),
+            },
+          ],
         },
       },
     ],

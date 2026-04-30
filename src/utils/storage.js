@@ -1,6 +1,6 @@
 import * as Keychain from 'react-native-keychain';
 import {emitAuthFlagsChanged} from 'utils/authFlagsEvent';
-import mmkvStorage, {mmkvGetStringSync} from 'utils/mmkvStorage';
+import mmkvStorage, {mmkvGetStringSync, mmkvSetStringSync} from 'utils/mmkvStorage';
 
 const HAS_FAMILY_KEY = 'hasFamily';
 const LEGACY_GUEST_MODE_KEY = 'isGuestMode';
@@ -19,6 +19,12 @@ const SIGNUP_REQUIRES_PHONE_KEY = 'auth:signupRequiresPhone';
 const PHONE_VERIFY_THEN_FAMILY_KEY = 'auth:phoneVerifyThenFamily';
 /** 소셜 가입(전화 먼저): 약관 후 유저정보(이름·생일) 화면 생략 */
 const SIGNUP_SKIP_PROFILE_AFTER_TERMS_KEY = 'auth:signupSkipProfileAfterTerms';
+/** 딥링크로 전달받은 가족 초대 코드 (가족설정화면에서 읽고 즉시 삭제) */
+const PENDING_INVITE_CODE_KEY = 'invite:pendingCode';
+/** 가족 설정 화면을 건너뛰고 앱에 진입했음 (가족 없이 탭 진입 허용) */
+const FAMILY_SETUP_SKIPPED_KEY = 'auth:familySetupSkipped';
+/** 나중에 하기로 설정완료 화면에 온 상태(시작하기 전). 라우트 params 유실 시에도 스킵 완료 분기 유지 */
+const FAMILY_SKIP_PENDING_FINISH_KEY = 'auth:familySkipPendingFinish';
 
 export const SIGNUP_PROGRESS_STEP = {
   PHONE: 'phone',
@@ -163,6 +169,13 @@ export function getAuthRoutingMmkvSnapshotSync() {
       }
     }
 
+    const skippedRaw = read(FAMILY_SETUP_SKIPPED_KEY);
+    const familySetupSkipped = skippedRaw === '1' || skippedRaw === 'true';
+
+    const skipPendingRaw = read(FAMILY_SKIP_PENDING_FINISH_KEY);
+    const familySkipPendingFinish =
+      skipPendingRaw === '1' || skipPendingRaw === 'true';
+
     return {
       hasFamily,
       needsSignup,
@@ -173,6 +186,8 @@ export function getAuthRoutingMmkvSnapshotSync() {
       phoneVerifyThenFamily,
       signupSkipProfileAfterTerms,
       hasPendingSignupTerms,
+      familySetupSkipped,
+      familySkipPendingFinish,
     };
   } catch {
     return {
@@ -185,7 +200,27 @@ export function getAuthRoutingMmkvSnapshotSync() {
       phoneVerifyThenFamily: false,
       signupSkipProfileAfterTerms: false,
       hasPendingSignupTerms: false,
+      familySetupSkipped: false,
+      familySkipPendingFinish: false,
     };
+  }
+}
+
+/** 가족 설정「나중에」→ 설정완료 화면 직전에 동기 기록 (AuthNavigator 리마운트 시 params 없어도 스킵 UI·시작하기 분기 유지) */
+export function markFamilySkipFinishScreenPendingSync() {
+  try {
+    mmkvSetStringSync(FAMILY_SKIP_PENDING_FINISH_KEY, '1');
+  } catch {
+    null;
+  }
+}
+
+/** 가족 코드 참여/생성으로 설정완료로 온 경우 스킵 대기 플래그 제거 */
+export function clearFamilySkipFinishScreenPendingSync() {
+  try {
+    mmkvStorage.removeItem(FAMILY_SKIP_PENDING_FINISH_KEY);
+  } catch {
+    null;
   }
 }
 
@@ -475,6 +510,7 @@ export const clearSignupOnboardingAux = async () => {
       SIGNUP_REQUIRES_PHONE_KEY,
       PHONE_VERIFY_THEN_FAMILY_KEY,
       SIGNUP_SKIP_PROFILE_AFTER_TERMS_KEY,
+      FAMILY_SKIP_PENDING_FINISH_KEY,
     ]);
   } catch {
     null;
@@ -533,10 +569,37 @@ export const saveToken = async token => {
 export const setHasFamily = async hasFamily => {
   try {
     await mmkvStorage.setItem(HAS_FAMILY_KEY, JSON.stringify(hasFamily));
+    if (hasFamily) {
+      mmkvStorage.removeItem(FAMILY_SETUP_SKIPPED_KEY);
+    }
     emitAuthFlagsChanged();
   } catch (error) {
     null;
   }
+};
+
+export const setFamilySetupSkipped = () => {
+  try {
+    mmkvStorage.setItem(FAMILY_SETUP_SKIPPED_KEY, '1');
+  } catch {}
+  emitAuthFlagsChanged();
+};
+
+/** 가족 설정 스킵: needsSignup 끔 + skipped 표시 + 가입 보조 플래그 동기 제거 후 emit */
+export const skipFamilySetupAndComplete = () => {
+  try {
+    mmkvSetStringSync(NEEDS_SIGNUP_KEY, JSON.stringify(false));
+    mmkvSetStringSync(FAMILY_SETUP_SKIPPED_KEY, '1');
+    mmkvStorage.removeItem(FAMILY_SKIP_PENDING_FINISH_KEY);
+    mmkvStorage.removeItem(SIGNUP_PROGRESS_STEP_KEY);
+    mmkvStorage.removeItem(PHONE_VERIFICATION_PENDING_STORAGE_KEY);
+    mmkvStorage.removeItem(SIGNUP_AWAITING_PHONE_KEY);
+    mmkvStorage.removeItem(SIGNUP_REQUIRES_PHONE_KEY);
+    mmkvStorage.removeItem(PHONE_VERIFY_THEN_FAMILY_KEY);
+    mmkvStorage.removeItem(SIGNUP_SKIP_PROFILE_AFTER_TERMS_KEY);
+    mmkvStorage.removeItem(PENDING_SIGNUP_TERMS_JSON_KEY);
+  } catch {}
+  emitAuthFlagsChanged();
 };
 
 export const getHasFamily = async () => {
@@ -574,6 +637,26 @@ export const getToken = async () => {
   }
 };
 
+export function setPendingInviteCode(code) {
+  try {
+    mmkvStorage.setItem(PENDING_INVITE_CODE_KEY, code);
+  } catch {}
+}
+
+export function getPendingInviteCodeSync() {
+  try {
+    return mmkvGetStringSync(PENDING_INVITE_CODE_KEY) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export function clearPendingInviteCode() {
+  try {
+    mmkvStorage.removeItem(PENDING_INVITE_CODE_KEY);
+  } catch {}
+}
+
 export const deleteLoginInfo = async () => {
   try {
     await Keychain.resetGenericPassword();
@@ -581,6 +664,8 @@ export const deleteLoginInfo = async () => {
     await mmkvStorage.removeItem(HAS_FAMILY_KEY);
     await mmkvStorage.removeItem(NEEDS_SIGNUP_KEY);
     await mmkvStorage.removeItem(LEGACY_GUEST_MODE_KEY);
+    mmkvStorage.removeItem(FAMILY_SETUP_SKIPPED_KEY);
+    mmkvStorage.removeItem(FAMILY_SKIP_PENDING_FINISH_KEY);
     await clearSignupOnboardingAux();
     emitAuthFlagsChanged();
   } catch (error) {

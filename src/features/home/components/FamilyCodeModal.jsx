@@ -1,18 +1,14 @@
 import React, {useState, useCallback, useEffect} from 'react';
-import { StyleSheet, View, Pressable } from 'react-native';
+import { View, Pressable } from 'react-native';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveHeight,
-  getResponsiveFontSize,
   getResponsiveWidth,
-  getResponsiveIconSize,
 } from 'utils/responsive';
 import CustomModal from 'components/modal/CustomModal';
 import Clipboard from '@react-native-clipboard/clipboard';
-import {BUTTON_STYLES, COLORS} from 'styles/style';
-
-// HAPTIC (경로는 네 프로젝트에 맞게 유지/조정)
+import {COLORS} from 'styles/style';
 import {hapticLight, hapticSuccess} from 'utils/haptic';
 import {FONTS} from 'styles/typography';
 
@@ -29,7 +25,7 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: COLORS.surfaceSecondary,
     borderRadius: getResponsiveWidth(14),
     paddingVertical: getResponsiveHeight(14),
     paddingHorizontal: getResponsiveWidth(14),
@@ -65,7 +61,7 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
   codeText: {
     fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(15),
-    color: '#111827',
+    color: COLORS.textStrong,
     letterSpacing: 1.2,
   },
 
@@ -85,30 +81,14 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
     backgroundColor: '#FFB000',
   },
 
-  copyIcon: {
-    width: getResponsiveIconSize(16),
-    height: getResponsiveIconSize(16),
-    tintColor: '#FFFFFF',
-  },
-
-  copyIconCopied: {
-    tintColor: '#111827',
-  },
-
   copyText: {
     fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(12),
-    color: '#111827',
+    color: COLORS.textStrong,
   },
 
   copyTextCopied: {
-    color: '#111827',
-  },
-
-  modalButtonRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
- // marginTop: getResponsiveHeight(10),
+    color: COLORS.textStrong,
   },
 
   }));
@@ -116,14 +96,9 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
 
   const handleCopy = useCallback(() => {
     if (!familyCode) return;
-
- // 누르는 순간 가볍게
     hapticLight();
-
     Clipboard.setString(familyCode);
     setCopied(true);
-
- // 복사 성공 느낌
     hapticSuccess();
   }, [familyCode]);
 

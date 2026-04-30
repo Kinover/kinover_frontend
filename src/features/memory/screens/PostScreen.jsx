@@ -100,14 +100,14 @@ export default function PostPage({route}) {
   },
   descHeaderSpacer: {flex: 1},
   avatar: {
-    width: getResponsiveWidth(28),
-    height: getResponsiveWidth(28),
-    borderRadius: getResponsiveWidth(14),
+    width: getResponsiveWidth(34),
+    height: getResponsiveWidth(34),
+    borderRadius: getResponsiveWidth(17),
   },
   author: {
-    marginLeft: getResponsiveWidth(8),
+    marginLeft: getResponsiveWidth(10),
     color: 'white',
-    fontSize: rf(15),
+    fontSize: rf(17),
     fontFamily: FONTS.SEMI_BOLD,
   },
   commentBtn: {

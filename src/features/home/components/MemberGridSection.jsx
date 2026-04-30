@@ -3,7 +3,6 @@
 import React, {
   useMemo,
   useCallback,
-  useState,
   memo,
   useEffect,
   useRef,
@@ -28,7 +27,7 @@ import {
 } from 'utils/responsive';
 import {STORE_MOCK_ENABLED} from '../utils/storeMockData';
 import {formatRelativeKorean} from '../utils/dateUtils';
-import {getEmotionImage, getEmotionColor} from '../utils/emotionUtils';
+import {getEmotionImage, getEmotionColor, getEmotionLabel} from '../utils/emotionUtils';
 import {COLORS, EMPTY_STYLE, LAYOUT_STYLE} from 'styles/style';
 
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -59,7 +58,7 @@ const PROFILE_MAX = getResponsiveIconSize(70);
 const DOT_MIN = 8;
 const DOT_MAX = 14;
 
-// 6명 초과면 “그리드 영역만” 내부 스크롤
+// 6명 초과면 "그리드 영역만" 내부 스크롤
 const INTERNAL_SCROLL_THRESHOLD = 6;
 
 const MemberGridItem = memo(function MemberGridItem({
@@ -89,6 +88,7 @@ const MemberGridItem = memo(function MemberGridItem({
 
   const emotionImage = finalEmotion ? getEmotionImage(finalEmotion) : null;
   const hasEmotion = !!emotionImage;
+  const emotionLabel = finalEmotion ? getEmotionLabel(finalEmotion) : null;
   const forceMomEmotionPeek =
     STORE_MOCK_ENABLED && memberId === 'mock-mom' && hasEmotion;
 
@@ -159,8 +159,17 @@ const MemberGridItem = memo(function MemberGridItem({
     };
   }, [peekDistance, tiltDeg, pivotShift, popY, pivotX, tilt, scale]);
 
+  const bubbleOpacity = useSharedValue(0);
+  const bubbleTranslateY = useSharedValue(6);
+
+  const bubbleAnimStyle = useAnimatedStyle(() => ({
+    opacity: bubbleOpacity.value,
+    transform: [{translateY: bubbleTranslateY.value}],
+  }), [bubbleOpacity, bubbleTranslateY]);
+
   const longPressedRef = useRef(false);
   const tapPeekTimerRef = useRef(null);
+  const dismissTimerRef = useRef(null);
 
   const clearTapPeekTimer = useCallback(() => {
     if (tapPeekTimerRef.current) {
@@ -169,9 +178,24 @@ const MemberGridItem = memo(function MemberGridItem({
     }
   }, []);
 
+  const clearDismissTimer = useCallback(() => {
+    if (dismissTimerRef.current) {
+      clearTimeout(dismissTimerRef.current);
+      dismissTimerRef.current = null;
+    }
+  }, []);
+
+  const hideBubble = useCallback(() => {
+    bubbleOpacity.value = withTiming(0, {duration: 160});
+    bubbleTranslateY.value = withTiming(6, {duration: 160});
+  }, [bubbleOpacity, bubbleTranslateY]);
+
   useEffect(() => {
-    return () => clearTapPeekTimer();
-  }, [clearTapPeekTimer]);
+    return () => {
+      clearTapPeekTimer();
+      clearDismissTimer();
+    };
+  }, [clearTapPeekTimer, clearDismissTimer]);
 
   const resetAnim = useCallback(() => {
     cancelAnimation(popY);
@@ -240,6 +264,8 @@ const MemberGridItem = memo(function MemberGridItem({
   const handlePress = useCallback(() => {
     if (longPressedRef.current) return;
 
+    hapticLight();
+
     cancelAnimation(pressScale);
     pressScale.value = withSequence(
       withTiming(1.1, {duration: 90, easing: Easing.out(Easing.cubic)}),
@@ -247,7 +273,17 @@ const MemberGridItem = memo(function MemberGridItem({
     );
 
     runTiltPeekOnce();
-  }, [runTiltPeekOnce, pressScale]);
+
+    if (emotionLabel) {
+      clearDismissTimer();
+      bubbleOpacity.value = withTiming(1, {duration: 180});
+      bubbleTranslateY.value = withTiming(0, {duration: 180, easing: Easing.out(Easing.cubic)});
+      dismissTimerRef.current = setTimeout(() => {
+        hideBubble();
+        dismissTimerRef.current = null;
+      }, 1800);
+    }
+  }, [runTiltPeekOnce, pressScale, emotionLabel, clearDismissTimer, hideBubble, bubbleOpacity, bubbleTranslateY]);
 
   const handleLongPress = useCallback(() => {
     if (isRefreshing) return;
@@ -262,6 +298,8 @@ const MemberGridItem = memo(function MemberGridItem({
     });
 
     clearTapPeekTimer();
+    clearDismissTimer();
+    hideBubble();
     resetAnim();
 
     onUserPress?.(safeMember);
@@ -270,6 +308,8 @@ const MemberGridItem = memo(function MemberGridItem({
     onUserPress,
     safeMember,
     clearTapPeekTimer,
+    clearDismissTimer,
+    hideBubble,
     resetAnim,
     pressScale,
   ]);
@@ -452,6 +492,31 @@ const MemberGridItem = memo(function MemberGridItem({
           </View>
         )}
 
+        {!!emotionLabel && (
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              bubbleAnimStyle,
+              {
+                position: 'absolute',
+                bottom: shellSize + 6,
+                left: -36,
+                right: -36,
+                alignItems: 'center',
+                zIndex: 20,
+              },
+            ]}>
+            <View style={styles.bubbleBox}>
+              <AppText allowFontScaling={false} style={styles.bubbleText}>
+                {emotionLabel}
+              </AppText>
+              <View style={styles.bubbleTailWrapper}>
+                <View style={styles.bubbleTail} />
+              </View>
+            </View>
+          </Animated.View>
+        )}
+
         <View
           style={[
             styles.dotBorder,
@@ -514,9 +579,13 @@ const MemberGridItem = memo(function MemberGridItem({
 
 export default function MemberGridSection({
   members = [],
+  hasFamily,
   onUserPress,
   onAddPress,
-  onRefreshPress,
+  /** 빈 그리드: 「초대코드로 참여」 — 없으면 onAddPress */
+  onEmptyJoinByCodePress,
+  /** 빈 그리드: 「새 모임 만들기」 — 없으면 onAddPress */
+  onEmptyCreateFamilyPress,
   onlineUserIds = [],
   lastActiveMap = {},
   chunkSize = 3,
@@ -529,6 +598,10 @@ export default function MemberGridSection({
       alignItems: 'center',
       alignSelf: 'center',
     },
+    /** 홈 스크롤 flexGrow + 빈 그리드: 카드가 남은 높이 채움 */
+    shadowWrapFill: {
+      flex: 1,
+    },
     dropShadow: {
       width: '100%',
       shadowColor: '#000',
@@ -537,6 +610,9 @@ export default function MemberGridSection({
       shadowRadius: 2,
       elevation: 3,
     },
+    dropShadowFill: {
+      flex: 1,
+    },
 
     bodyContainer: {
       width: '100%',
@@ -544,9 +620,17 @@ export default function MemberGridSection({
       borderRadius: getResponsiveIconSize(16),
       paddingTop: getResponsiveHeight(22),
     },
+    bodyContainerFill: {
+      flex: 1,
+    },
 
     gridArea: {
       position: 'relative',
+    },
+    gridAreaFill: {
+      flex: 1,
+      justifyContent: 'center',
+      minHeight: 0,
     },
 
     wrapRow: {
@@ -577,6 +661,7 @@ export default function MemberGridSection({
       justifyContent: 'center',
       marginBottom: getResponsiveHeight(8),
       position: 'relative',
+      overflow: 'visible',
     },
 
     avatarRing: {
@@ -660,6 +745,42 @@ export default function MemberGridSection({
     statusOnline: {color: '#16A34A'},
     statusOffline: {color: '#6B7280'},
 
+    bubbleBox: {
+      backgroundColor: '#FFFFFF',
+      borderRadius: 10,
+      paddingHorizontal: getResponsiveWidth(10),
+      paddingVertical: getResponsiveHeight(5),
+      shadowColor: '#000',
+      shadowOpacity: 0.12,
+      shadowRadius: 6,
+      shadowOffset: {width: 0, height: 2},
+      elevation: 5,
+      overflow: 'visible',
+    },
+    bubbleText: {
+      fontSize: rf(11.5),
+      fontFamily: FONTS.MEDIUM,
+      color: '#1F2937',
+      letterSpacing: -0.1,
+    },
+    bubbleTailWrapper: {
+      position: 'absolute',
+      bottom: -7,
+      left: 0,
+      right: 0,
+      alignItems: 'center',
+    },
+    bubbleTail: {
+      width: 0,
+      height: 0,
+      borderLeftWidth: 5,
+      borderRightWidth: 5,
+      borderTopWidth: 7,
+      borderLeftColor: 'transparent',
+      borderRightColor: 'transparent',
+      borderTopColor: '#FFFFFF',
+    },
+
     loadingOverlay: {
       ...StyleSheet.absoluteFillObject,
       backgroundColor: 'rgba(255,255,255,0.55)',
@@ -685,13 +806,61 @@ export default function MemberGridSection({
       letterSpacing: -0.1,
     },
 
-    emptyStateContainer: {
+    emptyStateOuter: {
+      width: '100%',
+      alignItems: 'center',
+      paddingVertical: getResponsiveHeight(8),
+      paddingHorizontal: getResponsiveWidth(4),
+    },
+    emptyStateGroup: {
+      width: '100%',
+      alignItems: 'center',
+      paddingHorizontal: getResponsiveWidth(16),
+      maxWidth: '100%',
+    },
+    emptyCtaStack: {
       alignSelf: 'center',
+      width: '58%',
+      maxWidth: getResponsiveWidth(188),
+      marginTop: getResponsiveHeight(18),
+      gap: getResponsiveHeight(10),
+    },
+    /** 빈 상태 전용 — 풀폭 고정 높이 CTA가 아닌 유도 버튼 */
+    emptyStateCta: {
+      alignSelf: 'stretch',
+      width: '100%',
+      paddingVertical: getResponsiveHeight(10),
+      paddingHorizontal: getResponsiveWidth(16),
+      minHeight: getResponsiveHeight(40),
+      borderRadius: getResponsiveIconSize(12),
+      backgroundColor: '#FFC84D',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: getResponsiveWidth(18),
-      paddingTop: getResponsiveHeight(140),
-      paddingBottom: getResponsiveHeight(140),
+    },
+    emptyStateCtaOutline: {
+      alignSelf: 'stretch',
+      width: '100%',
+      paddingVertical: getResponsiveHeight(10),
+      paddingHorizontal: getResponsiveWidth(16),
+      minHeight: getResponsiveHeight(40),
+      borderRadius: getResponsiveIconSize(12),
+      backgroundColor: COLORS.surfacePrimary,
+      borderWidth: 1,
+      borderColor: COLORS.borderSubtle,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    emptyStateCtaText: {
+      fontSize: rf(13),
+      fontFamily: FONTS.SEMI_BOLD,
+      color: '#111827',
+      letterSpacing: -0.18,
+    },
+    emptyStateCtaTextOutline: {
+      fontSize: rf(13),
+      fontFamily: FONTS.SEMI_BOLD,
+      color: COLORS.textStrong,
+      letterSpacing: -0.18,
     },
     emptyDesc: {
       fontSize: EMPTY_STYLE().emptyFontSize,
@@ -706,8 +875,9 @@ export default function MemberGridSection({
     },
 
     addButton: {
-      width: '100%',
-      height: getResponsiveHeight(48),
+      alignSelf: 'center',
+      paddingHorizontal: getResponsiveWidth(32),
+      height: getResponsiveHeight(46),
       borderRadius: getResponsiveIconSize(12),
       backgroundColor: '#FFC84D',
       alignItems: 'center',
@@ -735,47 +905,50 @@ export default function MemberGridSection({
   const innerContentWidth = screenWidth - marginH * 2 - paddingH * 2;
   const itemWidth = (innerContentWidth - gapX * (chunkSize - 1)) / chunkSize;
 
-  const isEmptyState = !members || members.length === 0;
+  // hasFamily가 전달된 경우: 가족 존재 여부로 빈 상태 판단 (혼자만 있을 때도 정상 표시)
+  const isEmptyState = hasFamily != null ? !hasFamily : (!members || members.length === 0);
+  // 가족은 있지만 아직 나 혼자인 상태 (멤버 필터 후 0명)
+  const hasFamilyNoMembers = !isEmptyState && (!members || members.length === 0);
 
   const onlineSet = useMemo(() => {
     return new Set((onlineUserIds || []).map(v => String(v)));
   }, [onlineUserIds]);
 
-  const [isRefreshingLocal, setIsRefreshingLocal] = useState(false);
   const isRefreshing =
     typeof isRefreshingProp === 'boolean'
       ? isRefreshingProp
-      : isRefreshingLocal;
-
-  const handleRefresh = useCallback(async () => {
-    if (!onRefreshPress) return;
-    if (isRefreshing) return;
-
-    try {
-      setIsRefreshingLocal(true);
-      hapticLight();
-      await onRefreshPress?.();
-    } finally {
-      setIsRefreshingLocal(false);
-    }
-  }, [onRefreshPress, isRefreshing]);
+      : false;
 
   const handleAddPress = useCallback(() => {
     hapticLight();
     onAddPress?.();
   }, [onAddPress]);
 
+  const handleEmptyJoinByCode = useCallback(() => {
+    hapticLight();
+    (onEmptyJoinByCodePress ?? onAddPress)?.();
+  }, [onEmptyJoinByCodePress, onAddPress]);
+
+  const handleEmptyCreateFamily = useCallback(() => {
+    hapticLight();
+    (onEmptyCreateFamilyPress ?? onAddPress)?.();
+  }, [onEmptyCreateFamilyPress, onAddPress]);
+
   // 버튼 아래 여백 확보 (absolute 버튼)
   const safeBottom = Math.max(insets.bottom, getResponsiveHeight(10));
   const footerPaddingBottom = safeBottom + getResponsiveHeight(8);
 
-  const ADD_BUTTON_H = getResponsiveHeight(48);
+  const ADD_BUTTON_H = getResponsiveHeight(40);
   const ADD_BUTTON_GAP = getResponsiveHeight(14);
-  const bottomSpace = footerPaddingBottom + ADD_BUTTON_H + ADD_BUTTON_GAP;
+  const bottomSpaceNonEmpty =
+    footerPaddingBottom + ADD_BUTTON_H + ADD_BUTTON_GAP;
+  const bottomSpace = isEmptyState || hasFamilyNoMembers
+    ? getResponsiveHeight(22)
+    : bottomSpaceNonEmpty;
 
-  // 6명 초과” 기준으로 내부 스크롤 ON
+  // 6명 초과" 기준으로 내부 스크롤 ON
   const enableInnerScroll =
-    !isEmptyState && members.length > INTERNAL_SCROLL_THRESHOLD;
+    !isEmptyState && !hasFamilyNoMembers && members.length > INTERNAL_SCROLL_THRESHOLD;
 
   const gridMaxHRaw = screenHeight * 0.33; // 대충 카드 안에서 1/3 정도만 스크롤 영역
   const gridMaxH = clamp(
@@ -811,41 +984,107 @@ export default function MemberGridSection({
   );
 
   return (
-    <View style={[styles.shadowWrap, {width: containerWidth}]}>
-      <DropShadow style={styles.dropShadow}>
+    <View
+      style={[
+        styles.shadowWrap,
+        styles.shadowWrapFill,
+        {width: containerWidth},
+      ]}>
+      <DropShadow
+        style={[styles.dropShadow, styles.dropShadowFill]}>
       <View
         style={[
           styles.bodyContainer,
+          styles.bodyContainerFill,
           {
             width: '100%',
             paddingHorizontal: paddingH,
-            // 구성원 없음: 넓은 빈 영역 유지 / 있으면 행 수에 맞게 높이 축소
-            ...(isEmptyState
-              ? {minHeight: screenHeight - getResponsiveHeight(490)}
-              : {}),
             paddingBottom: bottomSpace,
           },
         ]}>
-        <View style={styles.gridArea}>
+        <View style={[styles.gridArea, styles.gridAreaFill]}>
           {isEmptyState ? (
-            <View style={styles.emptyStateContainer}>
-              <Image
-                style={{
-                  width: getResponsiveWidth(34),
-                  height: getResponsiveWidth(34),
-                  resizeMode: 'contain',
-                  tintColor: EMPTY_STYLE().emptyColor,
-                  marginBottom: getResponsiveHeight(10),
-                }}
-                source={require('../../../assets/icons/tabs/1/family.png')}></Image>
-              <AppText allowFontScaling={false} style={styles.emptyDesc}>
-                {
-                  '아직 가족 모임이 완성되지 않았어요.\n가족을 초대해서 모임을 완성해보세요!'
-                }
-              </AppText>
+            <View style={styles.emptyStateOuter}>
+              <View style={styles.emptyStateGroup}>
+                <Image
+                  style={{
+                    width: getResponsiveWidth(34),
+                    height: getResponsiveWidth(34),
+                    resizeMode: 'contain',
+                    tintColor: EMPTY_STYLE().emptyColor,
+                    marginBottom: getResponsiveHeight(10),
+                  }}
+                  source={require('../../../assets/icons/tabs/1/family.png')}
+                />
+                <AppText allowFontScaling={false} style={styles.emptyDesc}>
+                  {
+                    '아직 가족 모임이 완성되지 않았어요.\n초대 코드로 참여하거나 새 모임을 만들어 보세요!'
+                  }
+                </AppText>
+                <View style={styles.emptyCtaStack}>
+                  <TouchableOpacity
+                    ref={guideInviteRef}
+                    activeOpacity={0.88}
+                    onPress={handleEmptyJoinByCode}
+                    disabled={isRefreshing}
+                    style={[
+                      styles.emptyStateCta,
+                      isRefreshing && {opacity: 0.5},
+                    ]}>
+                    <AppText
+                      allowFontScaling={false}
+                      style={styles.emptyStateCtaText}>
+                      초대코드로 참여
+                    </AppText>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    activeOpacity={0.88}
+                    onPress={handleEmptyCreateFamily}
+                    disabled={isRefreshing}
+                    style={[
+                      styles.emptyStateCtaOutline,
+                      isRefreshing && {opacity: 0.5},
+                    ]}>
+                    <AppText
+                      allowFontScaling={false}
+                      style={styles.emptyStateCtaTextOutline}>
+                      새 모임 만들기
+                    </AppText>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          ) : hasFamilyNoMembers ? (
+            // 가족 생성 후 나 혼자인 상태: 아이콘 + 안내 텍스트 + 초대 버튼 인라인
+            <View style={styles.emptyStateOuter}>
+              <View style={styles.emptyStateGroup}>
+                <Image
+                  style={{
+                    width: getResponsiveWidth(34),
+                    height: getResponsiveWidth(34),
+                    resizeMode: 'contain',
+                    tintColor: EMPTY_STYLE().emptyColor,
+                    marginBottom: getResponsiveHeight(10),
+                  }}
+                  source={require('../../../assets/icons/tabs/1/family.png')}
+                />
+                <AppText allowFontScaling={false} style={styles.emptyDesc}>
+                  {'아직 가족 모임이 완성되지 않았어요.\n가족을 초대해서 모임을 완성해보세요!'}
+                </AppText>
+                <TouchableOpacity
+                  ref={guideInviteRef}
+                  activeOpacity={0.9}
+                  onPress={handleAddPress}
+                  disabled={isRefreshing}
+                  style={[styles.addButton, {marginTop: getResponsiveHeight(16)}, isRefreshing && {opacity: 0.5}]}>
+                  <AppText allowFontScaling={false} style={styles.addButtonText}>
+                    가족 초대하기
+                  </AppText>
+                </TouchableOpacity>
+              </View>
             </View>
           ) : enableInnerScroll ? (
-            // 여기: 6명 초과면 “이 영역만” 스크롤
+            // 여기: 6명 초과면 "이 영역만" 스크롤
             <View style={[styles.innerScrollWrap, {maxHeight: gridMaxH}]}>
               <ScrollView
                 showsVerticalScrollIndicator={false}
@@ -873,27 +1112,28 @@ export default function MemberGridSection({
           )}
         </View>
 
-        {/* 하단 버튼: 카드 바닥 고정 */}
-        <View
-          style={[
-            styles.footerFixed,
-            {
-              left: paddingH * 2,
-              right: paddingH * 2,
-              bottom: paddingH * 2,
-            },
-          ]}>
-          <TouchableOpacity
-            ref={guideInviteRef}
-            activeOpacity={0.9}
-            onPress={handleAddPress}
-            disabled={isRefreshing}
-            style={[styles.addButton, isRefreshing && {opacity: 0.5}]}>
-            <AppText allowFontScaling={false} style={styles.addButtonText}>
-              가족 추가하기
-            </AppText>
-          </TouchableOpacity>
-        </View>
+        {!isEmptyState && !hasFamilyNoMembers && (
+          <View
+            style={[
+              styles.footerFixed,
+              {
+                left: paddingH * 2,
+                right: paddingH * 2,
+                bottom: paddingH * 2,
+              },
+            ]}>
+            <TouchableOpacity
+              ref={guideInviteRef}
+              activeOpacity={0.9}
+              onPress={handleAddPress}
+              disabled={isRefreshing}
+              style={[styles.addButton, {alignSelf: 'stretch', paddingHorizontal: 0}, isRefreshing && {opacity: 0.5}]}>
+              <AppText allowFontScaling={false} style={styles.addButtonText}>
+                가족 초대하기
+              </AppText>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
       </DropShadow>
     </View>

@@ -149,7 +149,16 @@ function UserBottomSheetModalBase(
         fontSize: getResponsiveFontSize(16),
         lineHeight: getResponsiveFontSize(21),
       },
-      inputTrait: shared.profileTraitInput,
+      /** 생년월일 행(`birthPickText`)과 동일 크기·패밀리(REGULAR 16) — 멀티라인용 lineHeight·높이만 별도 */
+      inputTrait: {
+        ...shared.profileTraitInput,
+        fontSize: getResponsiveFontSize(16),
+        lineHeight: getResponsiveFontSize(22),
+        fontFamily: FONTS.REGULAR,
+        color: '#111827',
+        letterSpacing: -0.2,
+        height: getResponsiveFontSize(22) * 2 + getResponsiveHeight(8),
+      },
       profileTouchArea: {
         alignSelf: 'center',
         alignItems: 'center',
@@ -221,11 +230,53 @@ function UserBottomSheetModalBase(
       birthPickPlaceholder: {
         color: BOTTOM_SHEET_EDITOR_COLORS.muted,
       },
-      birthHint: {
-        marginTop: getResponsiveHeight(6),
+      /** 라벨·ⓘ 한 묶음(세로 가운데 정렬) + 말풍선을 형제로 두어 입력칸과 겹침 최소화 */
+      birthLabelRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        flexWrap: 'wrap',
+      },
+      birthTitleWithIcon: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexShrink: 0,
+      },
+      birthInfoIconTouchable: {
+        marginLeft: getResponsiveWidth(5),
+        paddingHorizontal: getResponsiveWidth(2),
+        paddingVertical: getResponsiveHeight(2),
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      birthInfoIconText: {
+        fontSize: getResponsiveFontSize(12.5),
+        fontFamily: FONTS.MEDIUM,
+        color: BOTTOM_SHEET_EDITOR_COLORS.muted,
+        lineHeight: getResponsiveFontSize(16),
+      },
+      birthTooltipBubble: {
+        flex: 1,
+        minWidth: 0,
+        marginLeft: getResponsiveWidth(6),
+        paddingHorizontal: getResponsiveWidth(10),
+        paddingVertical: getResponsiveHeight(8),
+        borderRadius: getResponsiveWidth(10),
+        backgroundColor: '#FFFFFF',
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: '#E5E7EB',
+        ...(Platform.OS === 'ios'
+          ? {
+              shadowColor: '#000',
+              shadowOffset: {width: 0, height: 1},
+              shadowOpacity: 0.08,
+              shadowRadius: 3,
+            }
+          : {elevation: 2}),
+      },
+      birthTooltipText: {
         fontSize: getResponsiveFontSize(11.5),
         fontFamily: FONTS.REGULAR,
-        color: BOTTOM_SHEET_EDITOR_COLORS.caption,
+        color: '#4B5563',
         letterSpacing: -0.15,
         lineHeight: getResponsiveHeight(17),
       },
@@ -274,17 +325,21 @@ function UserBottomSheetModalBase(
   const TRAIT_MAX = 50;
   const [birthDate, setBirthDate] = useState(null);
   const [isBirthPickerOpen, setIsBirthPickerOpen] = useState(false);
+  const [birthTooltipVisible, setBirthTooltipVisible] = useState(false);
 
   const initialDataRef = useRef({name: '', trait: '', image: '', birth: ''});
   const modalRef = useRef(null);
 
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
-  const [footerHeight, setFooterHeight] = useState(0);
+  const [_footerHeight, setFooterHeight] = useState(0);
   const [isClosing, setIsClosing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isNameFocused, setIsNameFocused] = useState(false);
   const [isTraitFocused, setIsTraitFocused] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [traitDraft, setTraitDraft] = useState('');
+  const [imageDraft, setImageDraft] = useState('');
 
   const nameInputRef = useRef(null);
   const traitInputRef = useRef(null);
@@ -293,6 +348,43 @@ function UserBottomSheetModalBase(
     () => (birthDate ? formatDateYmd(birthDate) : ''),
     [birthDate],
   );
+  const hasChanges = useMemo(() => {
+    const {
+      name: initialName,
+      trait: initialTrait,
+      image: initialImage,
+      birth: initialBirth,
+    } = initialDataRef.current;
+
+    const trimmedName = String(nameDraft ?? '').trim();
+    const finalName =
+      trimmedName.length > 0 ? trimmedName : String(initialName ?? '');
+
+    const trimmedTrait = String(traitDraft ?? '').trim();
+    const finalTrait =
+      trimmedTrait.length > 0 ? trimmedTrait : String(initialTrait ?? '');
+
+    const rawImage =
+      (String(imageDraft ?? '').trim().length > 0
+        ? String(imageDraft ?? '')
+        : String(initialImage ?? '')) || '';
+    const finalImage = normalizeImageForSave(rawImage);
+    const initialImageNormalized = normalizeImageForSave(
+      String(initialImage ?? ''),
+    );
+
+    const finalBirth = birthDate
+      ? formatDateYmd(birthDate)
+      : String(initialBirth ?? '').trim();
+    const initialBirthNormalized = String(initialBirth ?? '').trim();
+
+    return (
+      finalName !== String(initialName ?? '') ||
+      finalTrait !== String(initialTrait ?? '') ||
+      finalImage !== initialImageNormalized ||
+      finalBirth !== initialBirthNormalized
+    );
+  }, [nameDraft, traitDraft, imageDraft, birthDate]);
 
   const blurAllInputs = useCallback(() => {
     try {
@@ -383,6 +475,7 @@ function UserBottomSheetModalBase(
       setIsNameFocused(false);
       setIsTraitFocused(false);
       setIsBirthPickerOpen(false);
+      setBirthTooltipVisible(false);
       hideToast();
 
       modalRef.current?.present?.();
@@ -406,6 +499,9 @@ function UserBottomSheetModalBase(
     traitRef.current = t;
     imageUrlRef.current = img;
     setBirthDate(parseBirthYmdToLocalDate(b) || null);
+    setNameDraft(n);
+    setTraitDraft(t);
+    setImageDraft(img);
 
     const preview =
       img && img.length > 0
@@ -420,8 +516,8 @@ function UserBottomSheetModalBase(
     setTraitLength(t.length);
     setIsNameFocused(false);
     setIsTraitFocused(false);
+    setBirthTooltipVisible(false);
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedUser]);
 
   /**
@@ -448,6 +544,7 @@ function UserBottomSheetModalBase(
   const openBirthPicker = useCallback(() => {
     if (isSaving) return;
     hideToast();
+    setBirthTooltipVisible(false);
     if (Platform.OS === 'android') {
       DateTimePickerAndroid.open({
         value: birthDate || new Date(2000, 0, 1),
@@ -475,6 +572,7 @@ function UserBottomSheetModalBase(
 
     if (fileUri.startsWith('http')) {
       imageUrlRef.current = fileUri;
+      setImageDraft(fileUri);
       setPreviewImage(fileUri);
       return;
     }
@@ -499,6 +597,7 @@ function UserBottomSheetModalBase(
       await uploadFileToS3(presignedUrl, fileUri, fileName);
 
       imageUrlRef.current = fileName;
+      setImageDraft(fileName);
       setPreviewImage(`${CLOUD_FRONT}${fileName}`);
     } catch (err) {
       setPreviewImage(prevPreview);
@@ -583,6 +682,9 @@ function UserBottomSheetModalBase(
     traitRef.current = trait;
     imageUrlRef.current = image;
     setBirthDate(parseBirthYmdToLocalDate(birth) || null);
+    setNameDraft(name);
+    setTraitDraft(trait);
+    setImageDraft(image);
 
     const preview =
       image && image.length > 0
@@ -594,8 +696,10 @@ function UserBottomSheetModalBase(
     setPreviewImage(preview);
     setNameKey(k => k + 1);
     setTraitKey(k => k + 1);
+    setTraitLength(String(trait ?? '').length);
 
     hideToast();
+    setBirthTooltipVisible(false);
 
     // snap/keyboard 건드리지 말기
     onCancel?.();
@@ -605,8 +709,8 @@ function UserBottomSheetModalBase(
     () => ({
       onCancel: handleCancel,
       onSave: handleSave,
-      showCancel: false,
-      cancelLabel: BOTTOM_SHEET_BUTTON_LABELS.CANCEL_CHANGES,
+      showCancel: true,
+      cancelLabel: BOTTOM_SHEET_BUTTON_LABELS.CANCEL,
       saveLabel: isSaving
         ? BOTTOM_SHEET_BUTTON_LABELS.SAVE_LOADING
         : BOTTOM_SHEET_BUTTON_LABELS.APPLY_ACTION,
@@ -616,8 +720,9 @@ function UserBottomSheetModalBase(
         getResponsiveIconSize,
       ),
       buttonRowStyle: {marginTop: 0},
+      saveDisabled: !hasChanges,
     }),
-    [handleCancel, handleSave, isSaving],
+    [handleCancel, handleSave, isSaving, hasChanges],
   );
 
   const handleDismiss = useCallback(() => {
@@ -704,6 +809,7 @@ function UserBottomSheetModalBase(
                     defaultValue={nameRef.current}
                     onChangeText={text => {
                       nameRef.current = text;
+                      setNameDraft(text);
                     }}
                     placeholder="가족들이 부르는 이름을 적어주세요."
                     placeholderTextColor={BOTTOM_SHEET_EDITOR_COLORS.muted}
@@ -722,9 +828,43 @@ function UserBottomSheetModalBase(
               </View>
 
               <View style={styles.fieldBlock}>
-                <AppText allowFontScaling={false} style={styles.sectionLabel}>
-                  생년월일
-                </AppText>
+                <View style={styles.birthLabelRow}>
+                  <View style={styles.birthTitleWithIcon}>
+                    <AppText allowFontScaling={false} style={styles.sectionLabel}>
+                      생년월일
+                    </AppText>
+                    <TouchableOpacity
+                      style={styles.birthInfoIconTouchable}
+                      activeOpacity={0.7}
+                      disabled={isSaving}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        birthTooltipVisible
+                          ? '생년월일 안내 닫기'
+                          : '생년월일 안내 보기'
+                      }
+                      accessibilityState={{expanded: birthTooltipVisible}}
+                      onPress={() => setBirthTooltipVisible(v => !v)}
+                      hitSlop={{top: 8, bottom: 8, left: 4, right: 4}}>
+                      <AppText
+                        allowFontScaling={false}
+                        style={styles.birthInfoIconText}>
+                        ⓘ
+                      </AppText>
+                    </TouchableOpacity>
+                  </View>
+                  {birthTooltipVisible ? (
+                    <View
+                      accessibilityLiveRegion="polite"
+                      style={styles.birthTooltipBubble}>
+                      <AppText
+                        allowFontScaling={false}
+                        style={styles.birthTooltipText}>
+                        입력하면 일정 화면에서 생일이 기념일로 표시돼요.
+                      </AppText>
+                    </View>
+                  ) : null}
+                </View>
                 <TouchableOpacity
                   activeOpacity={0.9}
                   onPress={openBirthPicker}
@@ -744,9 +884,6 @@ function UserBottomSheetModalBase(
                     </AppText>
                   </View>
                 </TouchableOpacity>
-                <AppText allowFontScaling={false} style={styles.birthHint}>
-                  입력하면 일정 화면에서 생일이 기념일로 표시돼요.
-                </AppText>
               </View>
 
               <View style={styles.fieldBlock}>
@@ -772,9 +909,10 @@ function UserBottomSheetModalBase(
                     nestedScrollEnabled={Platform.OS === 'android'}
                     onChangeText={text => {
                       traitRef.current = text;
+                      setTraitDraft(text);
                       setTraitLength(text.length);
                     }}
-                    placeholder="성격, 분위기, 기억에 남는 포인트를 가볍게 적어보세요."
+                    placeholder="성격이나 특징을 짧게 적어보세요."
                     placeholderTextColor={BOTTOM_SHEET_EDITOR_COLORS.muted}
                     underlineColorAndroid="transparent"
                     onFocus={() => {

@@ -1,13 +1,18 @@
 import React, {useEffect, useMemo, useState, useRef, useCallback} from 'react';
-import {View, TouchableOpacity, PanResponder, Image} from 'react-native';
+import {View, TouchableOpacity, PanResponder, Image, Platform} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {BottomSheetScrollView} from '@gorhom/bottom-sheet';
 
 import AppText from 'components/AppText';
 import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
+import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
+import {getBottomSheetEditorBottomSafe} from 'components/bottomSheet/bottomSheetEditorSharedStyles';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
 import {useReduxFontMode} from 'hooks/useReduxFontMode';
 import {getSheetSnapPointsByTier} from 'utils/layoutMetrics';
 import {FONTS} from 'styles/typography';
+import {BOTTOM_SHEET_BUTTON_LABELS} from 'constants/bottomSheetTitles';
 
 const DEFAULT_SORT_OPTIONS = [
   {key: 'none', title: '선택 안 함'},
@@ -226,30 +231,26 @@ export default function PeriodFilterModal({
       textAlign: 'center',
       marginTop: getResponsiveHeight(2),
     },
-    applyButton: {
-      width: '100%',
-      minHeight: getResponsiveHeight(52),
-      marginTop: getResponsiveHeight(14),
-      borderRadius: 14,
-      backgroundColor: '#FFC84D',
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingVertical: getResponsiveHeight(12),
-    },
-    applyButtonText: {
-      fontSize: rf(15),
-      fontFamily: FONTS.SEMI_BOLD,
-      color: '#111827',
+    scrollContent: {
+      paddingTop: getResponsiveHeight(4),
+      paddingBottom: getResponsiveHeight(16),
     },
   }));
 
   const modalRef = useRef(null);
+  const insets = useSafeAreaInsets();
+  const bottomSafe = useMemo(
+    () => getBottomSheetEditorBottomSafe(insets.bottom, getResponsiveHeight),
+    [insets.bottom],
+  );
+
   const resolvedSnapPoints = useMemo(() => {
+    const isAndroid = Platform.OS === 'android';
     const [first] = getSheetSnapPointsByTier({
       fontMode,
-      normal: ['64%', '92%'],
-      large: ['74%', '93%'],
-      xl: ['84%', '94%'],
+      normal: isAndroid ? ['74%', '92%'] : ['64%', '92%'],
+      large: isAndroid ? ['80%', '93%'] : ['74%', '93%'],
+      xl: isAndroid ? ['86%', '94%'] : ['84%', '94%'],
     });
     return [first];
   }, [fontMode]);
@@ -385,15 +386,11 @@ export default function PeriodFilterModal({
   }, [onApply, periodEnabled, range, selectedSortKey]);
 
   useEffect(() => {
-    const ref = modalRef.current;
-    if (!ref) return;
     if (visible) {
-      requestAnimationFrame(() => {
-        modalRef.current?.present?.();
-      });
-      return;
+      setTimeout(() => modalRef.current?.present?.(), 0);
+    } else {
+      modalRef.current?.dismiss?.();
     }
-    modalRef.current?.dismiss?.();
   }, [visible]);
 
   const handleDismiss = useCallback(() => {
@@ -406,25 +403,23 @@ export default function PeriodFilterModal({
       snapPoints={resolvedSnapPoints}
       title="필터 설정"
       headerCentered={true}
-      useInternalScroll={true}
+      useInternalScroll={false}
       enableContentPanningGesture={true}
       dismissKeyboardOnPress={false}
       onDismiss={handleDismiss}
       closeOnPressOutside={true}
       containerStyle={{paddingHorizontal: getResponsiveWidth(16)}}
-      innerContentStyle={{paddingBottom: getResponsiveHeight(6)}}
-      contentStyle={{paddingBottom: getResponsiveHeight(8)}}
-      disableContentBottomPadding={true}>
+      disableContentBottomPadding>
+      <BottomSheetScrollView
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={styles.scrollContent}>
       <View style={styles.container}>
         <View style={styles.sortCard}>
           <View style={styles.sectionHeaderRow}>
             <AppText style={styles.sectionTitle}>정렬</AppText>
           </View>
-          <View
-            style={[
-              selectedSortKey === 'none' ? styles.sectionDimmed : null,
-              selectedSortKey === 'none' ? styles.sectionOffWrap : null,
-            ]}>
+          <View>
             {(sortOptions || DEFAULT_SORT_OPTIONS).map(opt => {
               const active = opt.key === selectedSortKey;
               return (
@@ -545,14 +540,25 @@ export default function PeriodFilterModal({
             </AppText>
           </View>
         </View>
-
-        <TouchableOpacity
-          activeOpacity={0.9}
-          style={styles.applyButton}
-          onPress={onConfirm}>
-          <AppText style={styles.applyButtonText}>적용</AppText>
-        </TouchableOpacity>
       </View>
+      </BottomSheetScrollView>
+
+      <BottomSheetFooterButtons
+        bottomSafe={bottomSafe}
+        includeBottomSafePadding
+        onCancel={handleDismiss}
+        onSave={onConfirm}
+        cancelLabel={BOTTOM_SHEET_BUTTON_LABELS.CANCEL}
+        saveLabel="적용"
+        showCancel
+        autoCloseOnSave={false}
+        buttonRowStyle={{marginTop: 0}}
+        style={[
+          Platform.OS === 'android' && {
+            paddingBottom: getResponsiveHeight(12),
+          },
+        ]}
+      />
     </BottomSheetLayout>
   );
 }

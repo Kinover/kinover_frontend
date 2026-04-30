@@ -10,6 +10,8 @@ const BOTTOM_SHEET_TITLES = Object.freeze({
 
 export const BOTTOM_SHEET_BUTTON_LABELS = Object.freeze({
   CANCEL: '취소',
+  /** 모달 시트 헤더·본문 우측 등 닫기 액션 (스와이프/백 외 명시 버튼) */
+  CLOSE_SHEET: '닫기',
   CANCEL_CHANGES: '변경 취소',
   APPLY: '적용',
   APPLY_ACTION: '적용하기',

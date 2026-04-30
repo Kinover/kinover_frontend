@@ -1,7 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/screens/memory/components/PostFilterBar.jsx
 
-import React, {useMemo, useState, useCallback, useRef, useEffect} from 'react';
+import React, {useMemo, useRef, useEffect} from 'react';
 import {
   View,
   TouchableOpacity,
@@ -14,7 +14,6 @@ import AppText from 'components/AppText';
 import {
   getResponsiveWidth,
   getResponsiveHeight,
-  getResponsiveIconSize,
 } from 'utils/responsive';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 
@@ -86,14 +85,6 @@ export default React.forwardRef(function PostFilterBar(
           ]}
           onPress={onPressCategory}
           activeOpacity={0.75}>
-          <View
-            style={[
-              styles.categoryDot,
-              {
-                backgroundColor: INACTIVE_ICON,
-              },
-            ]}
-          />
           <AppText
             style={[
               styles.categoryText,
@@ -168,11 +159,6 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
     paddingLeft: getResponsiveWidth(10),
     paddingRight: getResponsiveWidth(9),
-  },
-  categoryDot: {
-    width: getResponsiveWidth(6),
-    height: getResponsiveWidth(6),
-    borderRadius: 99,
   },
   categoryText: {
     // fontSize/lineHeight → fontStyles.categoryText (useScaledStyleSheet)

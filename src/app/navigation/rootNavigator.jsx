@@ -10,7 +10,11 @@ import {View} from 'react-native';
 import {createStackNavigator} from '@react-navigation/stack';
 
 import TabNavigator from './tabNavigator';
+import NoFamilyTabsOverlay from 'components/NoFamilyTabsOverlay';
+import {FamilyJoinOrCreateSheetProvider} from 'contexts/FamilyJoinOrCreateSheetContext';
 import {TabsWithOptionalGuideHost} from 'contexts/GuideOverlayContext';
+import FamilySetupScreen from 'features/auth/screens/FamilySetupScreen';
+import SetupFinishScreen from 'features/auth/screens/SetupFinishScreen';
 import SettingScreen from 'features/setting/screens/SettingScreen';
 import NotificationSettingScreen from 'features/setting/screens/NotificationSettingScreen';
 import BlockedUsersScreen from 'features/setting/screens/BlockedUsersScreen';
@@ -31,10 +35,13 @@ const Stack = createStackNavigator();
 function TabsWithGuideOverlay(props) {
   return (
     <View style={{flex: 1}} pointerEvents="box-none">
-      <TabsWithOptionalGuideHost
-        TabNavigatorComponent={TabNavigator}
-        tabNavigatorProps={props}
-      />
+      <FamilyJoinOrCreateSheetProvider>
+        <TabsWithOptionalGuideHost
+          TabNavigatorComponent={TabNavigator}
+          tabNavigatorProps={props}
+        />
+        <NoFamilyTabsOverlay />
+      </FamilyJoinOrCreateSheetProvider>
     </View>
   );
 }
@@ -106,6 +113,18 @@ export default function RootNavigator({initialRouteName = 'Tabs'}) {
         name="알림화면"
         component={NotificationScreen}
         options={createHeaderOptions}
+      />
+
+      {/* 가족 미설정 상태에서 앱 내 진입용 */}
+      <Stack.Screen
+        name="가족설정화면"
+        component={FamilySetupScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name="설정완료화면"
+        component={SetupFinishScreen}
+        options={{headerShown: false}}
       />
     </Stack.Navigator>
   );

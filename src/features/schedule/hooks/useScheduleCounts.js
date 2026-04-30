@@ -14,6 +14,7 @@ export const useScheduleCounts = (familyId, year, month, viewerUserId) => {
   const {
     data: countData,
     isLoading: queryLoading,
+    isFetching: queryFetching,
     refetch,
   } = useGetScheduleCountPerDayQuery(
     {familyId, year, month, viewerUserId: viewerArg},
@@ -22,6 +23,7 @@ export const useScheduleCounts = (familyId, year, month, viewerUserId) => {
     },
   );
   const isLoading = STORE_MOCK_ENABLED ? false : queryLoading;
+  const isFetching = STORE_MOCK_ENABLED ? false : queryFetching;
 
   // 날짜별 일정 개수 즉시 반영용 (낙관적 업데이트)
   const bumpCount = useCallback((ymd, delta) => {
@@ -73,8 +75,10 @@ export const useScheduleCounts = (familyId, year, month, viewerUserId) => {
   return {
     scheduleCountPerDay,
     isLoading,
+    isFetching,
     refreshTrigger,
     setRefreshTrigger,
     bumpCount,
+    refetch,
   };
 };

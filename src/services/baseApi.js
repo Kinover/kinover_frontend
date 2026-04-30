@@ -37,6 +37,8 @@ const axiosBaseQuery = async ({
 export const baseApi = createApi({
   reducerPath: 'api',
   baseQuery: axiosBaseQuery,
+  /** 네트워크 재연결 시 활성 구독 쿼리 자동 재요청(Web/NetInfo 연동 시) */
+  refetchOnReconnect: true,
   // 🏷️ 자동 새로고침(캐시 무효화)을 위한 '꼬리표(Tags)'들의 전체 명단
 
   tagTypes: [

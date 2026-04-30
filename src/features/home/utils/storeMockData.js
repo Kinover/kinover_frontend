@@ -5,7 +5,7 @@
 
 import {Image} from 'react-native';
 
-export const STORE_MOCK_ENABLED = false;
+export const STORE_MOCK_ENABLED = true;
 
 /** 백엔드 `familyId`(UUID) 형식과 맞춤. 스토어 목업 시 일정 API는 호출하지 않음. */
 export const STORE_MOCK_FAMILY_ID =

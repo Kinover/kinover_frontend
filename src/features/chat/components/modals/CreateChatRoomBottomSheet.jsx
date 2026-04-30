@@ -37,7 +37,9 @@ import {
 } from 'components/bottomSheet/bottomSheetEditorSharedStyles';
 
 import ToastModal from 'components/modal/ToastModal';
-import BOTTOM_SHEET_TITLES from 'constants/bottomSheetTitles';
+import BOTTOM_SHEET_TITLES, {
+  BOTTOM_SHEET_BUTTON_LABELS,
+} from 'constants/bottomSheetTitles';
 import {validateLength} from 'utils/validation';
 import {FONTS} from 'styles/typography';
 
@@ -524,7 +526,8 @@ export default function CreateChatRoomBottomSheet({
     setSelectedIds(Array.isArray(initialSelectedIds) ? initialSelectedIds : []);
     hideToast();
     onCancel?.();
-  }, [initialRoomName, initialSelectedIds, hideToast, onCancel]);
+    modalRef?.current?.dismiss?.();
+  }, [initialRoomName, initialSelectedIds, hideToast, modalRef, onCancel]);
 
   const memberChipData = useMemo(() => {
     const normalized = (members || []).map(m => ({
@@ -699,8 +702,9 @@ export default function CreateChatRoomBottomSheet({
           style={styles.footerFlow}
           onCancel={handleCancel}
           onSave={handleSave}
+          cancelLabel={BOTTOM_SHEET_BUTTON_LABELS.CANCEL}
           saveLabel={isSubmitting ? '만드는 중...' : '만들기'}
-          showCancel={false}
+          showCancel
           autoCloseOnSave={false}
           disabled={isSubmitting}
           saveDisabled={!canSave}

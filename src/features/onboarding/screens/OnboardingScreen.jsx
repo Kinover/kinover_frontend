@@ -245,6 +245,19 @@ const styles = StyleSheet.create({
     fontSize: getResponsiveFontSizeIgnoreAppMode(12),
     color: '#9CA3AF',
   },
+
+  skipCta: {
+    marginTop: getResponsiveHeight(6),
+    alignSelf: 'center',
+    paddingVertical: getResponsiveHeight(8),
+    paddingHorizontal: getResponsiveWidth(12),
+  },
+  skipCtaText: {
+    fontFamily: FONTS.MEDIUM,
+    fontSize: getResponsiveFontSizeIgnoreAppMode(13),
+    color: '#C4B49A',
+    textDecorationLine: 'underline',
+  },
 });
 
 /**
@@ -743,6 +756,14 @@ export default function OnboardingScreen() {
             <Text allowFontScaling={false} style={styles.helper}>
               스와이프해서 넘길 수 있어요
             </Text>
+            <TouchableOpacity
+              onPress={handleSkip}
+              activeOpacity={0.75}
+              style={styles.skipCta}>
+              <Text allowFontScaling={false} style={styles.skipCtaText}>
+                바로 시작하기
+              </Text>
+            </TouchableOpacity>
           </>
         ) : (
           <>
