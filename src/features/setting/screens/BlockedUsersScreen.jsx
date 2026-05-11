@@ -6,13 +6,8 @@ import React, {
   useLayoutEffect,
   useMemo,
 } from 'react';
-import {
-  View,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
+import { View, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {useFocusEffect, useNavigation, useRoute} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import AppText from 'components/AppText';
@@ -52,6 +47,7 @@ import {
 } from 'features/home/services/homeApi';
 import {promptBlockFamilyUser} from 'features/moderation/utils/promptBlockFamilyUser';
 import {FONTS} from 'styles/typography';
+import {useColors} from 'hooks/useColors';
 
 function memberLabel(m) {
   const raw = (m?.name ?? m?.nickname ?? '').trim();
@@ -69,6 +65,7 @@ export default function BlockedUsersScreen() {
   const route = useRoute();
   const dispatch = useDispatch();
   useHideTabBar();
+  const colors = useColors();
 
   const fallbackUser = useSelector(state => state.user);
   const {
@@ -166,7 +163,7 @@ export default function BlockedUsersScreen() {
     return {
       root: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: colors.surfaceSecondary,
       },
       center: {
         flex: 1,
@@ -182,7 +179,7 @@ export default function BlockedUsersScreen() {
       },
       sectionTitle: {
         fontSize: rf(12.5),
-        color: '#888',
+        color: colors.textTertiary,
         marginTop: getResponsiveHeight(16),
         marginBottom: getResponsiveHeight(8),
         paddingHorizontal: getResponsiveWidth(20),
@@ -192,13 +189,13 @@ export default function BlockedUsersScreen() {
         textAlign: 'center',
         fontSize: S.labelFontSize ?? rf(14),
         fontFamily: S.labelFontFamily ?? FONTS.REGULAR,
-        color: '#6B7280',
+        color: colors.textSecondary,
         lineHeight: rf(20),
       },
       inlineHint: {
         fontSize: rf(13),
         fontFamily: FONTS.REGULAR,
-        color: '#6B7280',
+        color: colors.textSecondary,
         lineHeight: rf(19),
         paddingHorizontal: getResponsiveWidth(20),
         paddingVertical: getResponsiveHeight(8),
@@ -210,7 +207,7 @@ export default function BlockedUsersScreen() {
         paddingHorizontal: getResponsiveWidth(20),
         paddingVertical: getResponsiveHeight(14),
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(17,24,39,0.06)',
+        borderBottomColor: colors.borderSubtle,
       },
       memberCol: {
         flex: 1,
@@ -220,13 +217,13 @@ export default function BlockedUsersScreen() {
       nameText: {
         fontSize: rf(15),
         fontFamily: FONTS.MEDIUM,
-        color: '#111827',
+        color: colors.textPrimary,
       },
       blockedRowLabel: {
         flex: 1,
         fontSize: rf(15),
         fontFamily: FONTS.MEDIUM,
-        color: '#111827',
+        color: colors.textPrimary,
         paddingRight: getResponsiveWidth(12),
       },
       subId: {
@@ -406,14 +403,14 @@ export default function BlockedUsersScreen() {
             <AppText allowFontScaling={false} style={styles.blockedRowLabel}>
               구성원 목록을 불러오지 못했어요.
             </AppText>
-            <TouchableOpacity
+            <SpringPressable
               style={styles.unblockBtn}
               onPress={() => refetchFamilyUsers()}
               activeOpacity={0.85}>
               <AppText allowFontScaling={false} style={styles.unblockLabel}>
                 다시 시도
               </AppText>
-            </TouchableOpacity>
+            </SpringPressable>
           </View>
         ) : blockableMembers.length === 0 ? (
           <AppText allowFontScaling={false} style={styles.inlineHint}>
@@ -435,7 +432,7 @@ export default function BlockedUsersScreen() {
                   </AppText>
                 </View>
                 <View style={styles.rowActions}>
-                  <TouchableOpacity
+                  <SpringPressable
                     style={styles.reportBtn}
                     onPress={() => openReportUser(uid)}
                     activeOpacity={0.85}>
@@ -444,7 +441,7 @@ export default function BlockedUsersScreen() {
                       style={styles.reportBtnLabel}>
                       신고
                     </AppText>
-                  </TouchableOpacity>
+                  </SpringPressable>
                   {blocked ? (
                     <View style={styles.blockedPill}>
                       <AppText
@@ -454,7 +451,7 @@ export default function BlockedUsersScreen() {
                       </AppText>
                     </View>
                   ) : (
-                    <TouchableOpacity
+                    <SpringPressable
                       style={styles.blockBtn}
                       onPress={() => onPressBlockMember(uid)}
                       activeOpacity={0.85}>
@@ -463,7 +460,7 @@ export default function BlockedUsersScreen() {
                         style={styles.blockBtnLabel}>
                         차단
                       </AppText>
-                    </TouchableOpacity>
+                    </SpringPressable>
                   )}
                 </View>
               </View>
@@ -486,7 +483,7 @@ export default function BlockedUsersScreen() {
                 사용자 ID {item}
               </AppText>
               <View style={styles.rowActions}>
-                <TouchableOpacity
+                <SpringPressable
                   style={styles.reportBtn}
                   onPress={() => openReportUser(item)}
                   activeOpacity={0.85}>
@@ -495,8 +492,8 @@ export default function BlockedUsersScreen() {
                     style={styles.reportBtnLabel}>
                     신고
                   </AppText>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </SpringPressable>
+                <SpringPressable
                   style={styles.unblockBtn}
                   disabled={unblocking}
                   onPress={() => onUnblock(item)}
@@ -504,7 +501,7 @@ export default function BlockedUsersScreen() {
                   <AppText allowFontScaling={false} style={styles.unblockLabel}>
                     해제
                   </AppText>
-                </TouchableOpacity>
+                </SpringPressable>
               </View>
             </View>
           ))

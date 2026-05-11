@@ -1,11 +1,12 @@
 import React from 'react';
-import {View, TouchableOpacity, Image, StyleSheet} from 'react-native';
+import { View, Image, StyleSheet } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {getResponsiveWidth, getResponsiveHeight} from 'utils/responsive';
 
 export default function GalleryToggle({isGalleryView, onToggle}) {
   return (
     <View style={styles.toggleContainer}>
-      <TouchableOpacity onPress={() => onToggle(true)}>
+      <SpringPressable onPress={() => onToggle(true)}>
         <Image
           source={
             isGalleryView
@@ -14,8 +15,8 @@ export default function GalleryToggle({isGalleryView, onToggle}) {
           }
           style={styles.icon}
         />
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => onToggle(false)}>
+      </SpringPressable>
+      <SpringPressable onPress={() => onToggle(false)}>
         <Image
           source={
             !isGalleryView
@@ -24,7 +25,7 @@ export default function GalleryToggle({isGalleryView, onToggle}) {
           }
           style={styles.icon}
         />
-      </TouchableOpacity>
+      </SpringPressable>
     </View>
   );
 }

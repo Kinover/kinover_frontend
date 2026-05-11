@@ -1,10 +1,11 @@
 import React, {memo, useMemo, useCallback} from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import FastImage from '@d11/react-native-fast-image';
 
 import formatDuration from 'utils/formatDuration';
 import {getResponsiveFontSize, getResponsiveWidth} from 'utils/responsive';
-import {COLORS} from 'styles/style';
+import {useColors} from 'hooks/useColors';
 import AppText from 'components/AppText';
 
 const ITEM_MARGIN = getResponsiveWidth(2);
@@ -24,6 +25,8 @@ const AlbumMediaTile = memo(function AlbumMediaTile({
   indexInPost,
   onOpenPost,
 }) {
+  const colors = useColors();
+
   const tileStyle = useMemo(
     () => ({
       width: tileWidth,
@@ -49,16 +52,16 @@ const AlbumMediaTile = memo(function AlbumMediaTile({
   }, [postId, indexInPost, onOpenPost]);
 
   return (
-    <TouchableOpacity activeOpacity={0.85} onPress={handlePress} style={tileStyle}>
+    <SpringPressable activeOpacity={0.85} onPress={handlePress} style={tileStyle}>
       {source ? (
         <FastImage
           fallback={true}
           source={source}
-          style={styles.galleryImage}
+          style={[styles.galleryImage, {backgroundColor: colors.borderSubtle}]}
           resizeMode={FastImage.resizeMode.cover}
         />
       ) : (
-        <View style={styles.galleryPlaceholder} />
+        <View style={[styles.galleryPlaceholder, {backgroundColor: colors.borderSubtle}]} />
       )}
 
       {isVideo && (
@@ -71,14 +74,14 @@ const AlbumMediaTile = memo(function AlbumMediaTile({
 
           {!!duration && (
             <View pointerEvents="none" style={styles.videoBadge}>
-              <AppText style={styles.videoBadgeText}>
+              <AppText style={[styles.videoBadgeText, {color: colors.textInverse}]}>
                 {formatDuration(duration)}
               </AppText>
             </View>
           )}
         </>
       )}
-    </TouchableOpacity>
+    </SpringPressable>
   );
 });
 
@@ -86,12 +89,10 @@ const styles = StyleSheet.create({
   galleryImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: COLORS.borderSubtle,
   },
   galleryPlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: COLORS.borderSubtle,
   },
   albumPlayOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -128,7 +129,6 @@ const styles = StyleSheet.create({
     borderRadius: 7,
   },
   videoBadgeText: {
-    color: COLORS.textInverse,
     fontSize: getResponsiveFontSize(10.5),
   },
 });

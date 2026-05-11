@@ -26,10 +26,13 @@ export default function MessageFlatList({
   const [isInitialLoaded, setIsInitialLoaded] = useState(false);
 
   const typingTimeoutRef = useRef(null);
+  // 채팅방 처음 로드됐을 때 최신 메세지 ID를 기록해두어 이전 메세지로 타이핑이 뜨는 걸 방지
+  const loadedLatestMsgIdRef = useRef(null);
 
   useEffect(() => {
     setIsInitialLoaded(false);
     setShowKinoTyping(false);
+    loadedLatestMsgIdRef.current = null;
 
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
@@ -98,6 +101,19 @@ export default function MessageFlatList({
     }
 
     if (latest.localType === 'kinoTyping' || latest.localType === 'kinoIntro') {
+      return;
+    }
+
+    const latestId = latest?.clientMessageId ?? latest?.messageId ?? null;
+
+    // 초기 로드 시 최신 메세지 ID 기록 (이 ID로는 타이핑 인디케이터 안 띄움)
+    if (loadedLatestMsgIdRef.current === null) {
+      loadedLatestMsgIdRef.current = latestId ?? 'none';
+      return;
+    }
+
+    // 초기 로드됐을 때 이미 있던 메세지면 타이핑 무시 (이전 세션 메세지)
+    if (latestId && latestId === loadedLatestMsgIdRef.current) {
       return;
     }
 

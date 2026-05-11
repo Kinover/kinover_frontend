@@ -2,15 +2,17 @@
 // src/screens/memory/components/AlbumTabSelector.js
 
 import React, {useEffect, useRef, useState, useCallback} from 'react';
-import { View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, StyleSheet, Animated } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
-import {DEFAULT_STYLE, LAYOUT_STYLE} from 'styles/style';
+import {getDefaultStyle, LAYOUT_STYLE} from 'styles/style';
 import AppText from 'components/AppText';
 import {FONTS} from 'styles/typography';
+import {useColors} from 'hooks/useColors';
 
 // 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
@@ -23,10 +25,13 @@ const TABS = [
 const BASE_UNDERLINE_WIDTH = 40;
 
 export default function AnimatedAlbumTabSelector({selected, onSelect}) {
-  const styles = useScaledStyleSheet(rf => ({
-
+  const colors = useColors();
+  const styles = useScaledStyleSheet(
+    rf => {
+      const defaultTypo = getDefaultStyle(colors);
+      return {
   container: {
-    backgroundColor: 'white',
+    backgroundColor: colors.surfacePrimary,
     paddingBottom: getResponsiveHeight(15),
     paddingVertical: getResponsiveHeight(5),
     paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal+3,
@@ -50,26 +55,29 @@ export default function AnimatedAlbumTabSelector({selected, onSelect}) {
   tab: {marginRight: getResponsiveWidth(25), flexDirection: 'row'},
   tabText: {
     textAlign: 'center',
-    fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
-    fontFamily: DEFAULT_STYLE().sectionTitle.fontFamily,
-    color: 'gray',
+    fontSize: defaultTypo.sectionTitle.fontSize,
+    fontFamily: defaultTypo.sectionTitle.fontFamily,
+    color: colors.textTertiary,
     textAlignVertical: 'bottom',
   },
   selectedText: {
-    color: '#111827',
+    color: colors.textPrimary,
     fontFamily: FONTS.BOLD,
   },
 
   underline: {
     height: 2,
     width: BASE_UNDERLINE_WIDTH + 6,
-    backgroundColor: '#111827',
+    backgroundColor: colors.textPrimary,
     position: 'absolute',
     bottom: -10,
     left: -3,
   },
 
-  }));
+      };
+    },
+    [colors],
+  );
   const translateX = useRef(new Animated.Value(0)).current;
   const scaleX = useRef(new Animated.Value(1)).current;
   const [positions, setPositions] = useState({});
@@ -113,7 +121,7 @@ export default function AnimatedAlbumTabSelector({selected, onSelect}) {
         <View style={styles.tabRowContainer}>
           <View style={styles.tabRow}>
             {TABS.map(tab => (
-              <TouchableOpacity
+              <SpringPressable
                 key={tab.key}
                 onPress={() => onSelect?.(tab.key)}
                 style={styles.tab}
@@ -126,7 +134,7 @@ export default function AnimatedAlbumTabSelector({selected, onSelect}) {
                   ]}>
                   {tab.title}
                 </AppText>
-              </TouchableOpacity>
+              </SpringPressable>
             ))}
 
             <Animated.View

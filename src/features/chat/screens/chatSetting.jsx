@@ -37,12 +37,13 @@ import {
 } from '../store/chatRoomSlice';
 
 import ToastModal from 'components/modal/ToastModal';
-import {COLORS} from 'styles/style';
+import {useColors} from 'hooks/useColors';
 import {onLeaveChat} from '../hooks/onLeaveChat';
 import {FONTS} from 'styles/typography';
 
 export default function ChatSettings({route, navigation}) {
   const dispatch = useDispatch();
+  const colors = useColors();
   const {chatRoomId: rawChatRoomId, isKino: rawIsKino} = route?.params || {};
   const chatRoomId = rawChatRoomId == null ? null : String(rawChatRoomId);
   const isKino = !!rawIsKino;
@@ -54,9 +55,12 @@ export default function ChatSettings({route, navigation}) {
   const hideSubtitle = false;
 
   const styles = useMemo(
-    () => makeStyles(n => getResponsiveFontSize(n)),
-    [],
+    () => makeStyles(n => getResponsiveFontSize(n), colors),
+    [colors],
   );
+
+  // 다크모드에서 아이콘이 너무 하얗게 튀지 않게 한 톤 다운
+  const iconTint = colors.iconSecondary ?? colors.iconPrimary;
 
   const [isChangeKinoModalVisible, setIsChangeKinoModalVisible] =
     useState(false);
@@ -240,7 +244,8 @@ export default function ChatSettings({route, navigation}) {
                 styles.cardRow,
                 pressed && styles.cardRowPressed,
               ]}>
-              <View style={[styles.iconBox, {backgroundColor: '#FEF9C3'}]}>
+              <View
+                style={[styles.iconBox, {backgroundColor: colors.surfaceMuted}]}>
                 {isAlarmOn ? (
                   <Image
                     source={require('../../../assets/images/navigator_alarm-button.png')}
@@ -248,7 +253,7 @@ export default function ChatSettings({route, navigation}) {
                       width: getResponsiveIconSize(20),
                       height: getResponsiveIconSize(20),
                       resizeMode: 'contain',
-                      tintColor: '#111827',
+                      tintColor: iconTint,
                     }}
                   />
                 ) : (
@@ -258,7 +263,7 @@ export default function ChatSettings({route, navigation}) {
                       width: getResponsiveIconSize(20),
                       height: getResponsiveIconSize(20),
                       resizeMode: 'contain',
-                      tintColor: '#111827',
+                      tintColor: iconTint,
                     }}
                   />
                 )}
@@ -297,14 +302,15 @@ export default function ChatSettings({route, navigation}) {
                     styles.cardRow,
                     pressed && styles.cardRowPressed,
                   ]}>
-                  <View style={[styles.iconBox, {backgroundColor: '#EFF6FF'}]}>
+                  <View
+                    style={[styles.iconBox, {backgroundColor: colors.surfaceMuted}]}>
                     <Image
                       source={require('../../../assets/images/pencil.png')}
                       style={{
                         width: getResponsiveIconSize(21),
                         height: getResponsiveIconSize(21),
                         resizeMode: 'contain',
-                        tintColor: '#111827',
+                        tintColor: iconTint,
                       }}
                     />
                   </View>
@@ -336,14 +342,15 @@ export default function ChatSettings({route, navigation}) {
                     styles.cardRow,
                     pressed && styles.cardRowPressed,
                   ]}>
-                  <View style={[styles.iconBox, {backgroundColor: '#F3F4F6'}]}>
+                  <View
+                    style={[styles.iconBox, {backgroundColor: colors.surfaceMuted}]}>
                     <Image
                       source={require('../../../assets/images/navigator_family-button.png')}
                       style={{
                         width: getResponsiveIconSize(21),
                         height: getResponsiveIconSize(21),
                         resizeMode: 'contain',
-                        tintColor: '#111827',
+                        tintColor: iconTint,
                       }}
                     />
                   </View>
@@ -375,7 +382,8 @@ export default function ChatSettings({route, navigation}) {
                     styles.cardRow,
                     pressed && styles.cardRowPressed,
                   ]}>
-                  <View style={[styles.iconBox, {backgroundColor: '#FFF1F2'}]}>
+                  <View
+                    style={[styles.iconBox, {backgroundColor: colors.surfaceMuted}]}>
                     <Image
                       source={require('assets/icons/tabs/2/photo.png')}
                       style={styles.iconImgYellow}
@@ -463,7 +471,8 @@ export default function ChatSettings({route, navigation}) {
                   styles.cardRow,
                   pressed && styles.cardRowPressed,
                 ]}>
-                <View style={[styles.iconBox, {backgroundColor: '#FFF1F2'}]}>
+                <View
+                  style={[styles.iconBox, {backgroundColor: colors.surfaceMuted}]}>
                   <Image
                     source={require('assets/icons/tabs/2/exit.png')}
                     style={styles.iconImgYellowExit}
@@ -489,11 +498,11 @@ export default function ChatSettings({route, navigation}) {
   );
 }
 
-const makeStyles = rf =>
+const makeStyles = (rf, colors) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: '#F5F5F5',
+      backgroundColor: colors.surfaceSecondary,
     },
 
     scrollContent: {
@@ -504,14 +513,14 @@ const makeStyles = rf =>
     sectionLabel: {
       fontSize: rf(12),
       fontFamily: FONTS.REGULAR,
-      color: '#9CA3AF',
+      color: colors.textTertiary,
       marginBottom: getResponsiveHeight(8),
       marginLeft: getResponsiveWidth(4),
       marginTop: getResponsiveHeight(8),
     },
 
     card: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.surfacePrimary,
       borderRadius: getResponsiveIconSize(16),
       overflow: 'hidden',
     },
@@ -530,12 +539,12 @@ const makeStyles = rf =>
     },
 
     cardRowPressed: {
-      backgroundColor: 'rgba(17,24,39,0.04)',
+      backgroundColor: colors.surfaceMuted,
     },
 
     rowDivider: {
       height: 1,
-      backgroundColor: '#F3F4F6',
+      backgroundColor: colors.borderSubtle,
       marginLeft: getResponsiveWidth(16 + 44 + 12),
     },
 
@@ -562,13 +571,13 @@ const makeStyles = rf =>
       width: getResponsiveIconSize(22),
       height: getResponsiveIconSize(22),
       resizeMode: 'contain',
-      tintColor: '#111827',
+      tintColor: colors.iconPrimary,
     },
     iconImgYellowExit: {
       width: getResponsiveIconSize(19.5),
       height: getResponsiveIconSize(19.5),
       resizeMode: 'contain',
-      tintColor: '#111827',
+      tintColor: colors.iconPrimary,
     },
 
     rowTextBox: {
@@ -578,21 +587,21 @@ const makeStyles = rf =>
     rowTitle: {
       fontSize: rf(14),
       fontFamily: FONTS.SEMI_BOLD,
-      color: COLORS.textPrimary,
+      color: colors.textPrimary,
     },
 
     rowSubtitle: {
       marginTop: getResponsiveHeight(2),
       fontSize: rf(11.5),
       fontFamily: FONTS.REGULAR,
-      color: '#9CA3AF',
+      color: colors.textTertiary,
     },
 
     chevronRight: {
       width: getResponsiveIconSize(16),
       height: getResponsiveIconSize(16),
       resizeMode: 'contain',
-      tintColor: '#111827',
+      tintColor: colors.iconPrimary,
     },
 
     leaveText: {

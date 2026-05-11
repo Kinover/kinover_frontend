@@ -2,9 +2,9 @@
 // src/screens/memory/MemoryScreen.js
 
 import React, {useMemo, useState, useRef, useCallback, useEffect} from 'react';
-import {View, TouchableOpacity, Animated, Image, Platform} from 'react-native';
+import { View, Animated, Image, Platform } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import DropShadow from 'react-native-drop-shadow';
 
 import MemoryFeed from './MemoryFeedScreen';
 import AnimatedAlbumTabSelector from '../components/filters/AlbumTabSelector';
@@ -29,15 +29,16 @@ import {hapticLight} from 'utils/haptic';
 import {useFocusEffect} from '@react-navigation/native';
 
 import AnimatedRe, {useAnimatedStyle, withTiming} from 'react-native-reanimated';
-import {BACKGROUND_COLORS} from 'styles/style';
+import {useThemeStyleTokens} from 'hooks/useColors';
 import MemoryGuideModal from '../components/guides/MemoryGuideModal';
 
 export default function MemoryScreen() {
-  const styles = useScaledStyleSheet(rf => ({
-
+  const {BACKGROUND_COLORS, colors} = useThemeStyleTokens();
+  const styles = useScaledStyleSheet(
+    rf => ({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: BACKGROUND_COLORS.secondaryBg,
     width: '100%',
   },
   guideContentWrap: { flex: 1 },
@@ -45,7 +46,7 @@ export default function MemoryScreen() {
     paddingHorizontal: getResponsiveWidth(24),
     paddingBottom: getResponsiveHeight(4),
   },
-  rangeText: {fontSize: rf(12), color: '#777'},
+  rangeText: {fontSize: rf(12), color: colors.textSecondary},
 
   fabWrap: {
     position: 'absolute',
@@ -53,23 +54,17 @@ export default function MemoryScreen() {
     width: getResponsiveIconSize(65),
     height: getResponsiveIconSize(65),
   },
-  fabShadow: {
-    width: getResponsiveIconSize(65),
-    height: getResponsiveIconSize(65),
-  },
-  fabDropShadow: {
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.16,
-    shadowRadius: 3,
-    elevation: 5,
-  },
   fab: {
     width: getResponsiveIconSize(65),
     height: getResponsiveIconSize(65),
     backgroundColor: BACKGROUND_COLORS.primaryBg,
     borderRadius: 999,
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   fabIcon: {
     alignSelf: 'center',
@@ -78,7 +73,9 @@ export default function MemoryScreen() {
     resizeMode: 'contain',
   },
 
-  }));
+  }),
+    [BACKGROUND_COLORS, colors],
+  );
   const dispatch = useDispatch();
   const guideRootRef = useRef(null);
   const guideFilterBarRef = useRef(null);
@@ -89,7 +86,6 @@ export default function MemoryScreen() {
 
   const {
     selectedCategoryIds,
-    selectedCategoryTitle,
     categoryList,
     categorySheetRef,
     handleSelectCategory,
@@ -355,14 +351,12 @@ export default function MemoryScreen() {
       </Animated.View>
 
       <MemoryFeed
-        selectedCategoryTitle={selectedCategoryTitle}
         selectedCategoryIds={selectedCategoryIds}
-        isCategoryOpen={isCategorySheetOpen}
         startDate={startDate}
         endDate={endDate}
         onScroll={handleFeedScroll}
+        onSelectCategory={handleSelectCategory}
         onPressCategoryFilter={openCategorySheet}
-        onApplyFilter={handleApplyPeriod}
         filterBarRef={guideFilterBarRef}
         firstPostRef={guideFirstPostRef}
       />
@@ -385,17 +379,13 @@ export default function MemoryScreen() {
           {right: FAB_RIGHT, bottom: FAB_BOTTOM},
           fabAnimatedStyle,
         ]}>
-        <DropShadow style={styles.fabDropShadow}>
-          <View style={styles.fabShadow}>
-            <TouchableOpacity style={styles.fab} onPress={handleFabPress} activeOpacity={0.8}>
-              <Image
-                source={require('../../../assets/icons/tabs/4/four.png')}
-                style={styles.fabIcon}
-                tintColor={'white'}
-              />
-            </TouchableOpacity>
-          </View>
-        </DropShadow>
+        <SpringPressable style={styles.fab} onPress={handleFabPress} activeOpacity={0.85}>
+          <Image
+            source={require('../../../assets/icons/tabs/4/four.png')}
+            style={styles.fabIcon}
+            tintColor={'white'}
+          />
+        </SpringPressable>
       </AnimatedRe.View>
 
       <PeriodFilterModal

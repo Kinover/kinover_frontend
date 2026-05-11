@@ -1,12 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, {useCallback} from 'react';
-import {
-  Modal,
-  View,
-  TouchableOpacity,
-  Pressable,
-  StyleSheet,
-} from 'react-native';
+import { Modal, View, Pressable, StyleSheet } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import AppText from 'components/AppText';
 import {
   getResponsiveHeight,
@@ -44,7 +39,7 @@ export default function ReportReasonSheet({
             {title}
           </AppText>
           {REPORT_REASON_CODES.map(code => (
-            <TouchableOpacity
+            <SpringPressable
               key={code}
               style={styles.row}
               activeOpacity={0.85}
@@ -52,13 +47,13 @@ export default function ReportReasonSheet({
               <AppText allowFontScaling={false} style={styles.rowLabel}>
                 {REPORT_REASON_LABELS[code] ?? code}
               </AppText>
-            </TouchableOpacity>
+            </SpringPressable>
           ))}
-          <TouchableOpacity style={styles.cancelRow} onPress={onClose}>
+          <SpringPressable style={styles.cancelRow} onPress={onClose}>
             <AppText allowFontScaling={false} style={styles.cancelText}>
               닫기
             </AppText>
-          </TouchableOpacity>
+          </SpringPressable>
         </Pressable>
       </Pressable>
     </Modal>

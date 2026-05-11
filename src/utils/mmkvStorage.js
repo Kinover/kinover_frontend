@@ -1,14 +1,17 @@
 // redux-persist storage adapter for react-native-mmkv
+// - v4+: `createMMKV` 사용 (`new MMKV`는 더 이상 없음 — 실패 시 항상 메모리 폴백만 쓰여 재시작 후 유실됨)
 // - Native module unavailable (e.g. Jest) 환경에서는 in-memory fallback 사용
 
 let mmkv = null;
 const memoryFallback = new Map();
 
 try {
-  const {MMKV} = require('react-native-mmkv');
-  mmkv = new MMKV({
-    id: 'kinover-redux-persist',
-  });
+  const {createMMKV} = require('react-native-mmkv');
+  if (typeof createMMKV === 'function') {
+    mmkv = createMMKV({
+      id: 'kinover-redux-persist',
+    });
+  }
 } catch {
   mmkv = null;
 }
@@ -33,7 +36,11 @@ const storage = {
 
   removeItem: key => {
     if (mmkv) {
-      mmkv.delete(key);
+      try {
+        mmkv.remove(key);
+      } catch {
+        null;
+      }
     } else {
       memoryFallback.delete(key);
     }
@@ -53,7 +60,13 @@ const storage = {
     }
 
     if (mmkv) {
-      keys.forEach(key => mmkv.delete(key));
+      keys.forEach(k => {
+        try {
+          mmkv.remove(k);
+        } catch {
+          null;
+        }
+      });
     } else {
       keys.forEach(key => memoryFallback.delete(key));
     }

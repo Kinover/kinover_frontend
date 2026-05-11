@@ -1,20 +1,59 @@
 // src/store/index.js
 import {configureStore} from '@reduxjs/toolkit';
-import {persistReducer, persistStore} from 'redux-persist';
+import {persistReducer, persistStore, REHYDRATE} from 'redux-persist';
 import autoMergeLevel2 from 'redux-persist/lib/stateReconciler/autoMergeLevel2';
 
 import rootReducer from './rootReducer';
 import {baseApi} from '../services/baseApi';
 import 'features/moderation/services/moderationApi';
-import mmkvStorage from 'utils/mmkvStorage';
+import mmkvStorage, {mmkvGetStringSync, mmkvSetStringSync} from 'utils/mmkvStorage';
 import {EMOTION_PICK_APP_EVENT_ID} from 'config/appEvents';
 import {readEmotionPickAlertDismissFromMmkv} from 'utils/appEventDismissStorage';
+import {
+  getDarkModeMmkvPreference,
+  setDarkMode,
+  UI_DARK_MODE_STORAGE_KEY,
+} from './uiSlice';
+
+/**
+ * autoMergeLevel2 직후 `ui.isDarkMode`를 MMKV로 덮어씀.
+ * persist 스냅샷이 오래된 false를 넣어도 rehydrate 한 번에 Redux 상태가 확정되도록 함.
+ */
+function kinoverPersistReconciler(inboundState, originalState, reducedState, config) {
+  const merged = autoMergeLevel2(
+    inboundState,
+    originalState,
+    reducedState,
+    config,
+  );
+  try {
+    const v = mmkvGetStringSync(UI_DARK_MODE_STORAGE_KEY);
+    if (
+      (v === 'true' || v === 'false') &&
+      merged &&
+      typeof merged === 'object' &&
+      merged.ui &&
+      typeof merged.ui === 'object'
+    ) {
+      return {
+        ...merged,
+        ui: {
+          ...merged.ui,
+          isDarkMode: v === 'true',
+        },
+      };
+    }
+  } catch {
+    null;
+  }
+  return merged;
+}
 
 const persistConfig = {
   key: 'root',
   storage: mmkvStorage,
   /** ui 서브트리를 shallow merge — autoMergeLevel1은 ui 전체를 inbound로 덮어 새 필드(감정 모달 dismiss 등)가 사라짐 */
-  stateReconciler: autoMergeLevel2,
+  stateReconciler: kinoverPersistReconciler,
   version: 1,
   migrate: async state => {
     let result = state;
@@ -23,14 +62,25 @@ const persistConfig = {
     // redux-persist flush 타이밍 문제로 저장이 누락돼도 직접 키는 항상 정확하게 기록됨.
     try {
       if (result?.ui) {
-        const {MMKV} = require('react-native-mmkv');
-        const mmkv = new MMKV({id: 'kinover-redux-persist'});
-        const val = mmkv.getString('ui:bioLockEnabled');
-        if (val !== undefined && val !== null) {
+        const bioVal = mmkvGetStringSync('ui:bioLockEnabled');
+        if (bioVal !== undefined && bioVal !== null) {
           result = {
             ...result,
-            ui: {...result.ui, bioLockEnabled: val === 'true'},
+            ui: {...result.ui, bioLockEnabled: bioVal === 'true'},
           };
+        }
+        const darkVal = mmkvGetStringSync(UI_DARK_MODE_STORAGE_KEY);
+        if (darkVal === 'true' || darkVal === 'false') {
+          result = {
+            ...result,
+            ui: {...result.ui, isDarkMode: darkVal === 'true'},
+          };
+        } else if (result?.ui?.isDarkMode === true) {
+          try {
+            mmkvSetStringSync(UI_DARK_MODE_STORAGE_KEY, 'true');
+          } catch {
+            null;
+          }
         }
       }
     } catch {
@@ -66,12 +116,53 @@ const persistConfig = {
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
 
+/**
+ * - 토글 시 MMKV 즉시 반영
+ * - REHYDRATE 후: persist 스냅샷이 오래되어 isDarkMode가 false로 머지돼도, MMKV에 'true'가 있으면 복구
+ *   (앱 kill 직전 persist flush 전에 죽는 경우 등)
+ */
+const uiDarkModeMmkvMiddleware = store => next => action => {
+  if (action.type === REHYDRATE && action.key === persistConfig.key) {
+    const result = next(action);
+    const pref = getDarkModeMmkvPreference();
+    if (pref !== null) {
+      const fromStore = !!store.getState()?.ui?.isDarkMode;
+      if (fromStore !== pref) {
+        store.dispatch(setDarkMode(pref));
+      }
+    }
+    return result;
+  }
+
+  const prevDark = !!store.getState()?.ui?.isDarkMode;
+  const result = next(action);
+  if (
+    action.type === 'ui/toggleDarkMode' ||
+    action.type === 'ui/setDarkMode'
+  ) {
+    const nextDark = !!store.getState()?.ui?.isDarkMode;
+    if (prevDark !== nextDark) {
+      try {
+        mmkvSetStringSync(
+          UI_DARK_MODE_STORAGE_KEY,
+          nextDark ? 'true' : 'false',
+        );
+      } catch {
+        null;
+      }
+    }
+  }
+  return result;
+};
+
 export const store = configureStore({
   reducer: persistedReducer,
   middleware: getDefaultMiddleware =>
     getDefaultMiddleware({
       serializableCheck: false, // redux-persist 때문에 끄는 게 일반적
-    }).concat(baseApi.middleware), // RTK Query 캐시 생명주기 관리
+    })
+      .concat(uiDarkModeMmkvMiddleware)
+      .concat(baseApi.middleware), // RTK Query 캐시 생명주기 관리
 });
 
 export const persistor = persistStore(store);

@@ -2,7 +2,8 @@
 // src/components/common/SlideSegment.jsx
 
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import { View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
+import { View, StyleSheet, Animated } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {BOTTOMSHEET_STYLE} from 'styles/style';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -171,7 +172,7 @@ export default function SlideSegment({
       {items.map(it => {
         const active = it.key === value;
         return (
-          <TouchableOpacity
+          <SpringPressable
             key={it.key}
             onPress={() => handlePress(it.key)}
             activeOpacity={0.85}
@@ -186,7 +187,7 @@ export default function SlideSegment({
               ]}>
               {it.label}
             </AppText>
-          </TouchableOpacity>
+          </SpringPressable>
         );
       })}
     </View>

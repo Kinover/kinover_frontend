@@ -1,18 +1,7 @@
 // src/components/CustomModal.jsx
 import React, {useMemo, useEffect, useState, useCallback, useRef} from 'react';
-import {
-  View,
-  Modal,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-  Image,
-  Animated,
-  Easing,
-  Dimensions,
-  Pressable,
-  KeyboardAvoidingView,
-} from 'react-native';
+import { View, Modal, StyleSheet, Platform, Image, Animated, Easing, Dimensions, Pressable, KeyboardAvoidingView } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 
 import AppText from 'components/AppText';
 import {
@@ -23,6 +12,7 @@ import {
 } from 'utils/responsive';
 import {hapticLight, hapticMedium} from 'utils/haptic';
 import {FONTS} from 'styles/typography';
+import {useColors, useIsDark} from 'hooks/useColors';
 
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
@@ -83,7 +73,9 @@ export default function CustomModal({
  /** true면 Modal 대신 View 오버레이 사용 (iOS/Android 닫은 뒤 탭 터치 막힘 방지) */
   useViewOverlayOnIOS = false,
 }) {
-  const styles = useMemo(() => makeStyles(1), []);
+  const colors = useColors();
+  const isDark = useIsDark();
+  const styles = useMemo(() => makeStyles(1, colors, isDark), [colors, isDark]);
 
  // Animated.Value는 "한 번만" 만들기 (불필요한 new 방지)
   const animRef = useRef(null);
@@ -269,7 +261,7 @@ export default function CustomModal({
             <View style={styles.shadow}>
               <View style={[styles.modalBox, modalBoxStyle]} pointerEvents="auto">
                 {showCloseButton && (
-                  <TouchableOpacity
+                  <SpringPressable
                     onPress={requestClose}
                     style={styles.closeIconBtn}
                     hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
@@ -279,7 +271,7 @@ export default function CustomModal({
                       style={styles.closeIcon}
                       resizeMode="contain"
                     />
-                  </TouchableOpacity>
+                  </SpringPressable>
                 )}
 
                 {!!titleImage && (
@@ -308,7 +300,7 @@ export default function CustomModal({
 
                 <View style={[styles.buttonRow, buttonBottomStyle]}>
                   {!!closeText && (
-                    <TouchableOpacity
+                    <SpringPressable
                       onPress={handleLeftPress}
                       style={[styles.leftBtn, closeButtonStyle]}
                       activeOpacity={0.9}>
@@ -317,11 +309,11 @@ export default function CustomModal({
                         allowFontScaling={false}>
                         {closeText}
                       </AppText>
-                    </TouchableOpacity>
+                    </SpringPressable>
                   )}
 
                   {!!onConfirm && (
-                    <TouchableOpacity
+                    <SpringPressable
                       onPress={handleRightPress}
                       style={[styles.rightBtn, confirmButtonStyle]}
                       activeOpacity={0.9}>
@@ -330,7 +322,7 @@ export default function CustomModal({
                         allowFontScaling={false}>
                         {confirmText}
                       </AppText>
-                    </TouchableOpacity>
+                    </SpringPressable>
                   )}
                 </View>
               </View>
@@ -338,7 +330,7 @@ export default function CustomModal({
           ) : (
             <View style={[styles.modalBox, modalBoxStyle]} pointerEvents="auto">
               {showCloseButton && (
-                <TouchableOpacity
+                <SpringPressable
                   onPress={requestClose}
                   style={styles.closeIconBtn}
                   hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
@@ -348,7 +340,7 @@ export default function CustomModal({
                     style={styles.closeIcon}
                     resizeMode="contain"
                   />
-                </TouchableOpacity>
+                </SpringPressable>
               )}
 
               {!!titleImage && (
@@ -377,7 +369,7 @@ export default function CustomModal({
 
               <View style={[styles.buttonRow, buttonBottomStyle]}>
                 {!!closeText && (
-                  <TouchableOpacity
+                  <SpringPressable
                     onPress={handleLeftPress}
                     style={[styles.leftBtn, closeButtonStyle]}
                     activeOpacity={0.9}>
@@ -386,11 +378,11 @@ export default function CustomModal({
                       allowFontScaling={false}>
                       {closeText}
                     </AppText>
-                  </TouchableOpacity>
+                  </SpringPressable>
                 )}
 
                 {!!onConfirm && (
-                  <TouchableOpacity
+                  <SpringPressable
                     onPress={handleRightPress}
                     style={[styles.rightBtn, confirmButtonStyle]}
                     activeOpacity={0.9}>
@@ -399,7 +391,7 @@ export default function CustomModal({
                       allowFontScaling={false}>
                       {confirmText}
                     </AppText>
-                  </TouchableOpacity>
+                  </SpringPressable>
                 )}
               </View>
             </View>
@@ -447,9 +439,9 @@ export default function CustomModal({
   );
 }
 
-function makeStyles(fontScale) {
+function makeStyles(fontScale, colors, isDark) {
   const width = Math.min(350, SCREEN_WIDTH - 76);
-  const dimColor = 'rgba(0,0,0,0.56)';
+  const dimColor = isDark ? 'rgba(0,0,0,0.72)' : 'rgba(0,0,0,0.56)';
 
   return StyleSheet.create({
     overlay: {
@@ -482,12 +474,12 @@ function makeStyles(fontScale) {
     modalBox: {
       width,
       borderRadius: 18,
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.surfacePrimary,
       paddingHorizontal: getResponsiveWidth(18),
       paddingTop: getResponsiveHeight(18),
       paddingBottom: getResponsiveHeight(16),
       borderWidth: 1,
-      borderColor: 'rgba(0,0,0,0.04)',
+      borderColor: colors.borderSubtle,
     },
 
     closeIconBtn: {
@@ -503,7 +495,7 @@ function makeStyles(fontScale) {
     closeIcon: {
       width: getResponsiveIconSize(14),
       height: getResponsiveIconSize(14),
-      tintColor: '#111827',
+      tintColor: colors.iconSecondary,
       opacity: 0.9,
     },
 
@@ -519,7 +511,7 @@ function makeStyles(fontScale) {
       fontSize: getResponsiveFontSize(18) * fontScale,
       lineHeight: getResponsiveFontSize(24) * fontScale,
       fontFamily: FONTS.SEMI_BOLD,
-      color: '#111827',
+      color: colors.textPrimary,
       marginTop: getResponsiveHeight(15),
       marginBottom: getResponsiveHeight(10),
       ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
@@ -529,7 +521,7 @@ function makeStyles(fontScale) {
       fontSize: getResponsiveFontSize(13.5) * fontScale,
       lineHeight: getResponsiveFontSize(20) * fontScale,
       fontFamily: FONTS.REGULAR,
-      color: '#6B7280',
+      color: colors.textSecondary,
       marginBottom: getResponsiveHeight(12),
       paddingHorizontal: getResponsiveWidth(6),
       ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
@@ -548,8 +540,8 @@ function makeStyles(fontScale) {
       height: getResponsiveHeight(46),
       borderRadius: getResponsiveWidth(12),
       borderWidth: 1,
-      borderColor: '#E5E7EB',
-      backgroundColor: '#FFFFFF',
+      borderColor: colors.borderSubtle,
+      backgroundColor: colors.surfacePrimary,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -557,22 +549,22 @@ function makeStyles(fontScale) {
       flex: 1,
       height: getResponsiveHeight(46),
       borderRadius: getResponsiveWidth(12),
-      backgroundColor: '#FFC84D',
+      backgroundColor: colors.brandPrimary,
       borderWidth: 1,
-      borderColor: '#FFC84D',
+      borderColor: colors.brandPrimary,
       alignItems: 'center',
       justifyContent: 'center',
     },
     leftText: {
       fontFamily: FONTS.MEDIUM,
       fontSize: getResponsiveFontSize(14) * fontScale,
-      color: '#111827',
+      color: colors.textPrimary,
       ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
     },
     rightText: {
       fontFamily: FONTS.MEDIUM,
       fontSize: getResponsiveFontSize(14) * fontScale,
-      color: '#111827',
+      color: colors.textOnBrandPrimary,
       ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
     },
   });

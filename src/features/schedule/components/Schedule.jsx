@@ -1,13 +1,6 @@
 import React, {useMemo, useState, useCallback, useRef, useEffect} from 'react';
-import {
-  View,
-  Image,
-  TouchableOpacity,
-  StyleSheet,
-  Animated,
-  Alert,
-  Platform,
-} from 'react-native';
+import { View, Image, StyleSheet, Animated, Alert, Platform } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import DropShadow from 'react-native-drop-shadow';
 import {useDispatch, useSelector} from 'react-redux';
 
@@ -23,7 +16,7 @@ import {
   SCHEDULE_CARD_SHADOW,
   getScheduleShadowBoxBaseStyle,
 } from '../constants/scheduleDropShadow';
-import {COLORS, EMPTY_STYLE} from 'styles/style';
+import {useColors, useIsDark, useThemeStyleTokens} from 'hooks/useColors';
 
 import FastImage from '@d11/react-native-fast-image';
 import BirthdayConfettiModal from './BirthdayConfettiModal';
@@ -99,13 +92,12 @@ function StackedAvatar({participants = [], size = AVATAR_SIZE, styles}) {
       collapsable={false}
       style={[
         styles.stackedAvatarCircle,
+        styles.stackedAvatarOverlapRing,
         {
           width: size,
           height: size,
           borderRadius: size / 2,
           marginLeft: i === 0 ? 0 : AVATAR_OVERLAP,
-          borderWidth: 1.5,
-          borderColor: '#FFFFFF',
           zIndex,
         },
       ]}>
@@ -174,13 +166,12 @@ function StackedAvatar({participants = [], size = AVATAR_SIZE, styles}) {
       <View
         style={[
           styles.stackedAvatarPlus,
+          styles.stackedAvatarOverlapRing,
           {
             width: size,
             height: size,
             borderRadius: size / 2,
             marginLeft: AVATAR_OVERLAP,
-            borderWidth: 1.5,
-            borderColor: '#FFFFFF',
             zIndex: 0,
           },
         ]}>
@@ -227,7 +218,7 @@ function ScheduleCard({children, onPress, onLongPress, styles}) {
   return (
     <ScheduleCardShadow styles={styles}>
       <Animated.View collapsable={false} style={{transform: [{scale}]}}>
-        <TouchableOpacity
+        <SpringPressable
           onPress={onPress}
           onLongPress={onLongPress}
           delayLongPress={380}
@@ -237,7 +228,7 @@ function ScheduleCard({children, onPress, onLongPress, styles}) {
           style={[styles.cardWrap, styles.roundPillWrap]}>
           <View style={styles.cardAccentStrip} />
           <View style={styles.cardBody}>{children}</View>
-        </TouchableOpacity>
+        </SpringPressable>
       </Animated.View>
     </ScheduleCardShadow>
   );
@@ -254,6 +245,9 @@ function Schedule({
   currentUserId,
   viewFilterUserIds = [],
 }) {
+  const colors = useColors();
+  const isDark = useIsDark();
+  const {EMPTY_STYLE} = useThemeStyleTokens();
   const styles = useScaledStyleSheet(rf => ({
 
   container: {
@@ -271,7 +265,7 @@ function Schedule({
   calendarDividerLine: {
     height: StyleSheet.hairlineWidth,
     minHeight: 1,
-    backgroundColor: 'rgba(17, 24, 39, 0.1)',
+    backgroundColor: colors.borderSubtle,
   },
   /** 날짜 섹션 헤더 — 카드·구분선 없이 가벼운 레이블 */
   dateSectionHeader: {
@@ -286,14 +280,14 @@ function Schedule({
   dateSectionYmd: {
     fontSize: rf(14),
     fontFamily: FONTS.SEMI_BOLD,
-    color: COLORS.textSecondary,
+    color: colors.textSecondary,
     letterSpacing: -0.1,
     lineHeight: rf(18),
   },
   dateSectionDow: {
     fontSize: rf(14),
     fontFamily: FONTS.MEDIUM,
-    color: COLORS.textTertiary,
+    color: colors.textTertiary,
     letterSpacing: -0.1,
     lineHeight: rf(18),
   },
@@ -320,7 +314,7 @@ function Schedule({
     flexDirection: 'row',
     alignItems: 'stretch',
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfacePrimary,
     overflow: 'hidden',
   },
   cardAccentStrip: {
@@ -330,11 +324,11 @@ function Schedule({
   cardBody: {
     flex: 1,
     minWidth: 0,
-    paddingVertical: getResponsiveHeight(9),
+    paddingVertical: getResponsiveHeight(11),
     paddingHorizontal: getResponsiveWidth(14),
   },
   roundPillWrap: {
-    minHeight: getResponsiveHeight(48),
+    minHeight: getResponsiveHeight(54),
     justifyContent: 'center',
   },
   cardHeaderRow: {
@@ -354,6 +348,10 @@ function Schedule({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  stackedAvatarOverlapRing: {
+    borderWidth: 1.5,
+    borderColor: colors.surfacePrimary,
+  },
   stackedAvatarCircle: {
     overflow: 'hidden',
     backgroundColor: COLOR.GRAY_BG,
@@ -364,7 +362,7 @@ function Schedule({
     justifyContent: 'center',
   },
   stackedAvatarImage: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: colors.surfaceMuted,
   },
   stackedAvatarFallback: {
     backgroundColor: COLOR.GRAY_BG,
@@ -376,13 +374,13 @@ function Schedule({
     color: COLOR.GRAY_TEXT,
   },
   stackedAvatarPlus: {
-    backgroundColor: COLOR.GRAY_BG,
+    backgroundColor: isDark ? 'rgba(255,255,255,0.16)' : COLOR.GRAY_BG,
     alignItems: 'center',
     justifyContent: 'center',
   },
   stackedAvatarPlusText: {
     fontFamily: FONTS.SEMI_BOLD,
-    color: COLOR.GRAY_TEXT,
+    color: isDark ? colors.textPrimary : COLOR.GRAY_TEXT,
   },
   iconCircle: {
     width: getResponsiveWidth(32),
@@ -395,45 +393,45 @@ function Schedule({
     fontSize: rf(16),
     lineHeight: rf(25),
     fontFamily: FONTS.SEMI_BOLD,
-    color: '#111827',
+    color: colors.textPrimary,
   },
   texts: {
     flexDirection: 'column',
-    gap: getResponsiveHeight(2),
+    gap: 0,
     flex: 1,
     minWidth: 0,
   },
   subtitle: {
     fontFamily: FONTS.MEDIUM,
     fontSize: rf(12.5),
-    lineHeight: rf(16),
-    color: '#6B7280',
+    lineHeight: rf(15),
+    color: colors.textSecondary,
   },
   title: {
     fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(15),
-    color: '#111827',
-    lineHeight: rf(20),
+    color: colors.textPrimary,
+    lineHeight: rf(19),
     paddingTop: 0,
   },
   pill: {
     paddingVertical: getResponsiveHeight(5),
     paddingHorizontal: getResponsiveWidth(10),
     borderRadius: 999,
-    backgroundColor: 'rgba(17,24,39,0.05)',
+    backgroundColor: colors.surfaceMuted,
     flexShrink: 0,
   },
   pillText: {
     fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(10.5),
-    color: '#111827',
+    color: colors.textPrimary,
     letterSpacing: 0.4,
   },
   emptyText: {
     textAlign: 'center',
-    fontSize: EMPTY_STYLE().emptyFontSize,
-    fontFamily: EMPTY_STYLE().emptyFontFamily,
-    color: EMPTY_STYLE().emptyColor,
+    fontSize: EMPTY_STYLE.emptyFontSize,
+    fontFamily: EMPTY_STYLE.emptyFontFamily,
+    color: EMPTY_STYLE.emptyColor,
     lineHeight:rf(18),
   },
   emptyWrap: {
@@ -445,11 +443,13 @@ function Schedule({
     width: getResponsiveWidth(30),
     height: getResponsiveHeight(30),
     resizeMode: 'contain',
-    tintColor: '#9CA3AF',
+    tintColor: colors.textTertiary,
     marginBottom: getResponsiveHeight(10),
   },
 
-  }));
+  }),
+    [colors, EMPTY_STYLE],
+  );
 
   const dispatch = useDispatch();
   const fallbackFamilyId = useSelector(
@@ -763,7 +763,7 @@ function Schedule({
 
       {hasBirthday && (
         <ScheduleCardShadow styles={styles}>
-          <TouchableOpacity
+          <SpringPressable
             activeOpacity={0.9}
             onPress={openBirthdayModal}
             style={[styles.cardWrap, styles.roundPillWrap]}>
@@ -803,7 +803,7 @@ function Schedule({
                 </View>
               </View>
             </View>
-          </TouchableOpacity>
+          </SpringPressable>
         </ScheduleCardShadow>
       )}
 
@@ -909,5 +909,4 @@ function Schedule({
 }
 
 export default React.memo(Schedule);
-
 

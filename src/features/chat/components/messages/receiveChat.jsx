@@ -1,13 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
-import {
-  View,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Platform,
-  Image,
-} from 'react-native';
+import { View, StyleSheet, FlatList, Platform, Image } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import FastImage from '@d11/react-native-fast-image';
 
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -34,6 +28,11 @@ import {toCdnUrl} from 'utils/mediaUrl';
 import MentionText from 'components/mention/MentionText';
 import AppText from 'components/AppText';
 import {FONTS} from 'styles/typography';
+import {useColors, useIsDark} from 'hooks/useColors';
+import {
+  CHAT_INCOMING_BUBBLE_DARK_BG,
+  CHAT_INCOMING_BUBBLE_DARK_TEXT,
+} from '../../utils/chatOutgoingBubbleDark';
 
 // 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
@@ -51,6 +50,8 @@ export default function ReceiveChat({
   mentionUsers = [],
   unreadCount = 0,
 }) {
+  const colors = useColors();
+  const isDark = useIsDark();
   const styles = useScaledStyleSheet(rf => ({
     receivedContainer: {flexDirection: 'row', alignItems: 'flex-start'},
 
@@ -58,7 +59,7 @@ export default function ReceiveChat({
       width: AVATAR_W,
       height: AVATAR_W,
       borderRadius: getResponsiveWidth(25),
-      backgroundColor: '#ddd',
+      backgroundColor: colors.surfaceMuted,
       marginRight: getResponsiveWidth(8),
     },
     avatarSpacer: {
@@ -71,14 +72,16 @@ export default function ReceiveChat({
     userName: {
       fontFamily: FONTS.MEDIUM,
       fontSize: CHATROOM_STYLE().messageFontSize,
-      color: '#444',
+      color: colors.textSecondary,
       marginBottom: getResponsiveHeight(7),
     },
 
     messageLine: {flexDirection: 'row', alignItems: 'flex-end', flexShrink: 1},
 
     receivedBubble: {
-      backgroundColor: '#FFECC3',
+      backgroundColor: isDark
+        ? CHAT_INCOMING_BUBBLE_DARK_BG
+        : '#FFECC3',
       borderRadius: getResponsiveIconSize(20),
       maxWidth: getResponsiveWidth(260),
       flexShrink: 1,
@@ -96,7 +99,7 @@ export default function ReceiveChat({
     receivedText: {
       fontFamily: CHATROOM_STYLE().messageFontFamily,
       fontSize: CHATROOM_STYLE().messageFontSize,
-      color: 'black',
+      color: isDark ? CHAT_INCOMING_BUBBLE_DARK_TEXT : '#111827',
       flexWrap: 'wrap',
       lineHeight: rf(17),
     },
@@ -121,7 +124,7 @@ export default function ReceiveChat({
 
     receivedTime: {
       fontSize: rf(10.5),
-      color: '#666',
+      color: colors.textTertiary,
       lineHeight: rf(13),
       ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
     },
@@ -196,7 +199,11 @@ export default function ReceiveChat({
       borderBottomColor: 'transparent',
       marginLeft: 5,
     },
-  }));
+  }), [colors, isDark]);
+  const incomingBubbleBg = isDark
+    ? CHAT_INCOMING_BUBBLE_DARK_BG
+    : '#FFECC3';
+
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [profileModalVisible, setProfileModalVisible] = useState(false);
@@ -393,7 +400,7 @@ export default function ReceiveChat({
         const thumbSource = getThumbSource(item);
 
         return (
-          <TouchableOpacity
+          <SpringPressable
             onPress={() => handleMediaPress(item, index)}
             activeOpacity={0.9}>
             <View style={styles.thumbWrap}>
@@ -422,7 +429,7 @@ export default function ReceiveChat({
                 </View>
               )}
             </View>
-          </TouchableOpacity>
+          </SpringPressable>
         );
       }}
     />
@@ -439,7 +446,7 @@ export default function ReceiveChat({
     const finalRatio = SINGLE_W / finalH;
 
     return (
-      <TouchableOpacity
+      <SpringPressable
         onPress={() => handleMediaPress(uri, 0)}
         activeOpacity={0.9}>
         <View style={{position: 'relative'}}>
@@ -469,7 +476,7 @@ export default function ReceiveChat({
             </View>
           )}
         </View>
-      </TouchableOpacity>
+      </SpringPressable>
     );
   };
 
@@ -481,7 +488,7 @@ export default function ReceiveChat({
       {isGrouped ? (
         <View style={styles.avatarSpacer} />
       ) : (
-        <TouchableOpacity
+        <SpringPressable
           activeOpacity={0.8}
           onPress={() => {
             if (!profileUrl) return;
@@ -496,7 +503,7 @@ export default function ReceiveChat({
             }}
             style={styles.receivedUserImage}
           />
-        </TouchableOpacity>
+        </SpringPressable>
       )}
 
       <View style={styles.textContainer}>
@@ -509,7 +516,7 @@ export default function ReceiveChat({
             <ChatBubble
               alignment="left"
               paddingVariant={normalizedType === 'text' ? 'text' : 'media'}
-              backgroundColor="#FFECC3">
+              backgroundColor={incomingBubbleBg}>
               {isMedia ? (
                 renderMediaGrid()
               ) : hasText ? (

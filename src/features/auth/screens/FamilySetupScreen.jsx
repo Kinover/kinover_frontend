@@ -7,14 +7,17 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation} from '@react-navigation/native';
 
 import FamilyJoinOrCreateForm from 'features/auth/components/FamilyJoinOrCreateForm';
-import {COLORS} from 'styles/style';
+import {useColors} from 'hooks/useColors';
 
 export default function FamilySetupScreen({route}) {
+  const colors = useColors();
   const fromAppFlow = route?.params?.fromAppFlow === true;
   const screenNavigation = useNavigation();
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+    <SafeAreaView
+      style={[styles.container, {backgroundColor: colors.surfacePrimary}]}
+      edges={['top', 'bottom']}>
       <FamilyJoinOrCreateForm
         screenNavigation={screenNavigation}
         fromAppFlow={fromAppFlow}
@@ -28,7 +31,5 @@ export default function FamilySetupScreen({route}) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
-    backgroundColor: COLORS.surfacePrimary,
   },
 });

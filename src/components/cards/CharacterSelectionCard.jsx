@@ -6,9 +6,11 @@ import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
+  getResponsiveIconSize,
   getResponsiveWidth,
 } from 'utils/responsive';
 import {FONTS} from 'styles/typography';
+import {useColors, useIsDark} from 'hooks/useColors';
 
 export default function CharacterSelectionCard({
   imageSource,
@@ -23,29 +25,32 @@ export default function CharacterSelectionCard({
   labelStyle,
   selectedLabelStyle,
 }) {
-  const styles = useScaledStyleSheet(rf => ({
+  const colors = useColors();
+  const isDark = useIsDark();
 
+  const styles = useScaledStyleSheet(
+    rf => ({
   card: {
-    borderRadius: getResponsiveWidth(14),
+    borderRadius: getResponsiveIconSize(22),
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surfacePrimary,
     borderWidth: 1,
-    borderColor: '#E6E8EB',
+    borderColor: colors.borderSubtle,
     ...(Platform.OS === 'ios'
       ? {
           shadowColor: '#000',
-          shadowOffset: {width: 0, height: 3},
-          shadowOpacity: 0.08,
-          shadowRadius: 3,
+          shadowOffset: {width: 0, height: 2},
+          shadowOpacity: isDark ? 0.2 : 0.04,
+          shadowRadius: 4,
         }
       : {
           elevation: 0,
         }),
   },
   cardSelected: {
-    backgroundColor: '#FFF8E6',
-    borderColor: '#FFC84D',
+    backgroundColor: isDark ? 'rgba(255, 200, 77, 0.16)' : '#FFF8E6',
+    borderColor: colors.brandPrimary,
   },
   image: {
     width: getResponsiveWidth(60),
@@ -55,14 +60,16 @@ export default function CharacterSelectionCard({
   label: {
     fontSize: rf(13.5),
     fontFamily: FONTS.REGULAR,
-    color: '#333',
+    color: colors.textSecondary,
   },
   labelSelected: {
     fontFamily: FONTS.BOLD,
-    color: '#000',
+    color: colors.textPrimary,
   },
 
-  }));
+  }),
+    [colors, isDark],
+  );
   const body = (
     <View
       style={[

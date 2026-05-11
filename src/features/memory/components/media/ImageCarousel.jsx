@@ -23,6 +23,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import {FONTS} from 'styles/typography';
+import {useColors} from 'hooks/useColors';
 
 const {width: SCREEN_WIDTH, height: SCREEN_HEIGHT} = Dimensions.get('window');
 
@@ -79,16 +80,17 @@ export default function ImageCarousel({
   onSingleTap,
   isChromeHidden = false,
 }) {
+  const colors = useColors();
   const styles = useScaledStyleSheet(rf => ({
 
-  container: {flex: 1, backgroundColor: '#f9f9f9'},
+  container: {flex: 1, backgroundColor: colors.surfaceSecondary},
   carouselWrap: {flex: 1},
 
   fullItem: {
     flex: 1,
     width: SCREEN_WIDTH,
     height: '100%',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: colors.surfaceSecondary,
     overflow: 'hidden',
   },
   fullTouch: {flex: 1},
@@ -160,7 +162,7 @@ export default function ImageCarousel({
     backgroundColor: 'transparent',
   },
 
-  }));
+  }), [colors]);
   const listRef = useRef(null);
   const insets = useSafeAreaInsets();
  // 안드로이드에서 인디케이터가 헤더에 가리지 않도록: safe top + 네비 헤더 높이

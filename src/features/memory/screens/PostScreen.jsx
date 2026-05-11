@@ -1,6 +1,7 @@
 // src/features/post/screens/PostPage.jsx
 import React, {useEffect, useMemo, useRef, useCallback, useState} from 'react';
-import { View, TouchableOpacity, Image, StyleSheet, ScrollView, Pressable, Platform, Alert } from 'react-native';
+import { View, Image, StyleSheet, ScrollView, Pressable, Platform, Alert } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useDispatch, useSelector} from 'react-redux';
@@ -628,7 +629,7 @@ export default function PostPage({route}) {
 
                 <View style={styles.descHeaderSpacer} />
 
-                <TouchableOpacity
+                <SpringPressable
                   onPress={openCommentSheet}
                   activeOpacity={0.85}
                   style={styles.commentBtn}>
@@ -636,7 +637,7 @@ export default function PostPage({route}) {
                     source={require('../../../assets/icons/chat.png')}
                     style={styles.commentIcon}
                   />
-                </TouchableOpacity>
+                </SpringPressable>
               </View>
 
               <ScrollView scrollEnabled={descExpanded} showsVerticalScrollIndicator={false}>

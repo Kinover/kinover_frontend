@@ -49,9 +49,33 @@ export function getBottomSheetPrimarySaveButtonStyle(rh, ri) {
  * @param {typeof import('utils/responsive').getResponsiveFontSize} rf
  * @param {typeof import('utils/responsive').getResponsiveHeight} rh
  * @param {typeof import('utils/responsive').getResponsiveWidth} rw
+ * @param {typeof import('styles/style').COLORS | null} themeColors — `useColors()` (다크일 때 입력 배경·테두리·글자색)
+ * @param {boolean} [isDark=false]
  */
-export function getBottomSheetEditorSharedStyles(rf, rh, rw) {
+export function getBottomSheetEditorSharedStyles(
+  rf,
+  rh,
+  rw,
+  themeColors = null,
+  isDark = false,
+) {
   const C = BOTTOM_SHEET_EDITOR_COLORS;
+  const shellBg =
+    isDark && themeColors ? themeColors.surfaceMuted : '#F5F5F5';
+  const shellBorder =
+    isDark && themeColors ? themeColors.borderSubtle : '#F5F5F5';
+  const focusBorder =
+    isDark && themeColors ? themeColors.brandPrimary : '#FFC84D';
+  const fieldBoxBg =
+    isDark && themeColors
+      ? themeColors.surfaceMuted
+      : 'rgba(120, 120, 128, 0.08)';
+  const fieldBoxBd =
+    isDark && themeColors
+      ? themeColors.borderSubtle
+      : 'rgba(120, 120, 128, 0.08)';
+  const inputTextColor =
+    isDark && themeColors ? themeColors.textPrimary : C.text;
 
   return {
     content: {
@@ -84,24 +108,24 @@ export function getBottomSheetEditorSharedStyles(rf, rh, rw) {
     singleLineUnderlineWrap: {
       alignSelf: 'stretch',
       borderWidth: 1,
-      borderColor: '#F5F5F5',
+      borderColor: shellBorder,
       borderRadius: rw(12),
-      backgroundColor: '#F5F5F5',
+      backgroundColor: shellBg,
       paddingHorizontal: rw(13),
       paddingVertical: rh(6),
       marginTop: rh(4),
     },
     singleLineUnderlineWrapFocused: {
-      borderColor: '#FFC84D',
+      borderColor: focusBorder,
     },
 
     /** 멀티라인 필드 박스 (프로필 한 줄 소개 등) */
     fieldBoxWrap: {
       alignSelf: 'stretch',
-      backgroundColor: 'rgba(120, 120, 128, 0.08)',
+      backgroundColor: fieldBoxBg,
       borderRadius: 10,
       borderWidth: 1,
-      borderColor: 'rgba(120, 120, 128, 0.08)',
+      borderColor: fieldBoxBd,
       paddingHorizontal: rw(12),
       paddingTop: rh(6),
       paddingBottom: rh(6),
@@ -119,7 +143,7 @@ export function getBottomSheetEditorSharedStyles(rf, rh, rw) {
       includeFontPadding: false,
       fontSize: rf(15),
       fontFamily: FONTS.REGULAR,
-      color: C.text,
+      color: inputTextColor,
       lineHeight: rf(22),
       letterSpacing: -0.18,
       textAlign: 'left',
@@ -137,7 +161,7 @@ export function getBottomSheetEditorSharedStyles(rf, rh, rw) {
       includeFontPadding: false,
       fontSize: rf(15),
       fontFamily: FONTS.REGULAR,
-      color: C.text,
+      color: inputTextColor,
       lineHeight: rf(20),
       letterSpacing: -0.18,
       textAlignVertical: 'center',
@@ -154,7 +178,7 @@ export function getBottomSheetEditorSharedStyles(rf, rh, rw) {
       includeFontPadding: false,
       fontSize: rf(14),
       fontFamily: FONTS.MEDIUM,
-      color: C.text,
+      color: inputTextColor,
       lineHeight: rf(20),
       letterSpacing: -0.18,
       textAlignVertical: 'top',

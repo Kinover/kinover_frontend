@@ -1,6 +1,7 @@
 // src/features/notification/screens/NotificationScreen.js
 import React, {useCallback, useEffect, useLayoutEffect, useMemo} from 'react';
-import {View, ScrollView, TouchableOpacity, Dimensions, Image} from 'react-native';
+import { View, ScrollView, Dimensions, Image } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import FastImage from '@d11/react-native-fast-image';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -14,6 +15,7 @@ import {useNotificationList} from '../hooks/useNotificationList';
 import {EMPTY_STYLE, getHeaderStyles, LAYOUT_STYLE} from 'styles/style';
 import {useFocusEffect, useNavigation, useRoute, StackActions, CommonActions} from '@react-navigation/native';
 import {useDispatch, useStore} from 'react-redux';
+import {useColors} from 'hooks/useColors';
 import {
   getLastFromTabForGlobalScreen,
   setLastFromTabForGlobalScreen,
@@ -30,20 +32,21 @@ import {syncAppBadge} from '../utils/syncAppBadge';
 import {FONTS} from 'styles/typography';
 
 export default function NotificationScreen() {
+  const colors = useColors();
   const styles = useScaledStyleSheet(rf => ({
 
-  container: {flex: 1, backgroundColor: '#fff'},
+  container: {flex: 1, backgroundColor: colors.surfaceSecondary},
   sectionTitle: {
     marginTop: getResponsiveHeight(14),
     marginBottom: getResponsiveHeight(4),
     fontSize: rf(12),
-    color: '#8D8D8D',
+    color: colors.textTertiary,
     fontFamily: FONTS.MEDIUM,
     paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal + 5,
   },
   error: {
     fontSize: rf(15),
-    color: 'red',
+    color: colors.error,
     textAlign: 'center',
   },
   card: {
@@ -52,14 +55,14 @@ export default function NotificationScreen() {
     paddingVertical: getResponsiveHeight(15),
     paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal + 5,
     borderBottomWidth: 0.5,
-    borderBottomColor: '#EFEFEF',
+    borderBottomColor: colors.borderSubtle,
     gap: getResponsiveWidth(12),
   },
-  cardNew: {backgroundColor: '#FFF9EC'},
+  cardNew: {backgroundColor: colors.brandPrimarySoft},
   avatarWrap: {position: 'relative'},
   profileImage: {
     borderRadius: getResponsiveWidth(5),
-    backgroundColor: '#EAEAEA',
+    backgroundColor: colors.surfaceMuted,
   },
   center: {flex: 1, justifyContent: 'center'},
   rowTop: {
@@ -76,18 +79,18 @@ export default function NotificationScreen() {
   when: {
     marginLeft: 'auto',
     fontSize: rf(10),
-    color: '#9A9A9A',
+    color: colors.textTertiary,
     fontFamily: FONTS.REGULAR,
   },
   summary: {
     fontSize: rf(12.5),
-    color: '#1A1A1A',
+    color: colors.textPrimary,
     fontFamily: FONTS.MEDIUM,
   },
   content: {
     marginTop: getResponsiveHeight(2),
     fontSize: rf(12),
-    color: '#444',
+    color: colors.textSecondary,
     fontFamily: FONTS.REGULAR,
     lineHeight: getResponsiveHeight(18),
   },
@@ -156,15 +159,20 @@ export default function NotificationScreen() {
     }
   }, [route?.params?.fromTab]);
 
+  const headerTitleTypography = useMemo(
+    () => getHeaderStyles(colors),
+    [colors],
+  );
+
   // 헤더 타이틀 + 뒤로가기 (pop 사용 → 슬라이드 애니메이션) — Android에서 제목 중앙 정렬
   useLayoutEffect(() => {
     navigation.setOptions({
       headerTitle: '알림',
       headerTitleAlign: 'center',
       headerTitleStyle: {
-        fontSize: getHeaderStyles().defaultTitleFontSize,
-        fontFamily: getHeaderStyles().defaultTitleFontFamily,
-        color: getHeaderStyles().defaultTitleFontColor,
+        fontSize: headerTitleTypography.defaultTitleFontSize,
+        fontFamily: headerTitleTypography.defaultTitleFontFamily,
+        color: headerTitleTypography.defaultTitleFontColor,
       },
       headerLeft: () => (
         <RenderHeaderBackButton
@@ -181,7 +189,7 @@ export default function NotificationScreen() {
         />
       ),
     });
-  }, [navigation, route]);
+  }, [navigation, route, headerTitleTypography]);
 
   const safeRows = useMemo(() => (Array.isArray(rows) ? rows : []), [rows]);
   const hasNotifications = useMemo(
@@ -247,7 +255,7 @@ export default function NotificationScreen() {
         if (row?.type !== 'item') return null;
 
         return (
-          <TouchableOpacity
+          <SpringPressable
             key={`n-${row.key}-${index}`}
             activeOpacity={0.8}
             onPress={() => handlePress(row.notification)}
@@ -296,7 +304,7 @@ export default function NotificationScreen() {
                 </AppText>
               )}
             </View>
-          </TouchableOpacity>
+          </SpringPressable>
         );
       })}
 

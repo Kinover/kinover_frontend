@@ -1,7 +1,8 @@
-import React, {useState, forwardRef, useEffect} from 'react';
+import React, {useState, forwardRef, useEffect, useMemo} from 'react';
 import {TextInput, Keyboard, Platform} from 'react-native';
 import {BottomSheetTextInput} from '@gorhom/bottom-sheet';
 import {COLORS} from 'styles/style';
+import {useColors, useIsDark} from 'hooks/useColors';
 
 /**
  * 공통 입력 컴포넌트.
@@ -28,6 +29,29 @@ const CustomInput = forwardRef(function CustomInput(
   ref,
 ) {
   const [focused, setFocused] = useState(false);
+  const colors = useColors();
+  const isDark = useIsDark();
+  /**
+   * 바텀시트 + disableBaseStyle: 바깥 래퍼가 배경/테두리를 담당하므로 입력은 투명만 유지.
+   * 내부에 surface 배경을 또 주고 editable 토글 시 네이티브 기본(밝은) 배경이 한 프레임 비치는 현상을 막음.
+   */
+  const bottomSheetInputStyle = useMemo(() => {
+    if (disableBaseStyle) {
+      return {backgroundColor: 'transparent'};
+    }
+    return {
+      backgroundColor: isDark ? colors.surfaceMuted : '#F5F5F5',
+    };
+  }, [colors.surfaceMuted, isDark, disableBaseStyle]);
+
+  /** 비활성 시에도 다크 모드에서 밝은 배경이 깜빡이지 않도록 테마 색 사용 */
+  const disabledInputStyle = useMemo(
+    () => ({
+      borderColor: isDark ? colors.borderSubtle : '#EEEEEE',
+      backgroundColor: isDark ? colors.surfaceMuted : '#F9F9F9',
+    }),
+    [colors.borderSubtle, colors.surfaceMuted, isDark],
+  );
 
   const InputComponent = bottomSheet ? BottomSheetTextInput : TextInput;
 
@@ -61,7 +85,7 @@ const CustomInput = forwardRef(function CustomInput(
         !disableBaseStyle && defaultStyle,
         bottomSheet && bottomSheetInputStyle,
         !disableFocusStyle && focused && editable && focusedStyle,
-        !editable && disabledStyle,
+        !editable && !disableBaseStyle && disabledInputStyle,
       ]}
       editable={editable}
       onFocus={handleFocus}
@@ -79,15 +103,6 @@ const defaultStyle = {
 const focusedStyle = {
   borderWidth: 2,
   borderColor: COLORS.brandPrimary,
-};
-
-const bottomSheetInputStyle = {
-  backgroundColor: '#F5F5F5',
-};
-
-const disabledStyle = {
-  borderColor: '#EEEEEE',
-  backgroundColor: '#F9F9F9',
 };
 
 export default CustomInput;

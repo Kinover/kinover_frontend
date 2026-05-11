@@ -1,5 +1,6 @@
 import React, {useState, useEffect} from 'react';
-import {View, TouchableOpacity, Animated} from 'react-native';
+import { View, Animated } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {getResponsiveWidth} from '../utils/responsive';
 
 // 햅틱 유틸 import
@@ -27,7 +28,7 @@ export default function CustomSwitch({isEnabled, toggleSwitch}) {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
+      <SpringPressable
         activeOpacity={0.9}
         onPress={handlePress}
         style={[
@@ -40,7 +41,7 @@ export default function CustomSwitch({isEnabled, toggleSwitch}) {
             {transform: [{translateX: thumbPosition}]},
           ]}
         />
-      </TouchableOpacity>
+      </SpringPressable>
     </View>
   );
 }

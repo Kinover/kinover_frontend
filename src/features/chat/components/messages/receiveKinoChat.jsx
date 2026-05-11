@@ -1,6 +1,7 @@
 // ReceiveKinoChat.jsx
-import React, {useEffect, useRef, useState} from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Animated, Platform, Image } from 'react-native';
+import React, {useEffect, useRef, useState, useMemo} from 'react';
+import { View, FlatList, Animated, Platform, Image } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import FastImage from '@d11/react-native-fast-image';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
@@ -22,9 +23,7 @@ import {CHATROOM_STYLE} from 'styles/style';
 import AppText from 'components/AppText';
 import KinoBubble from '../bubbles/KinoBubble';
 import {FONTS} from 'styles/typography';
-
-// 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
-const Text = AppText;
+import {useColors} from 'hooks/useColors';
 
 const AVATAR_W = getResponsiveWidth(35);
 
@@ -39,6 +38,7 @@ export default function ReceiveKinoChat({
   kinoType = 'YELLOW_KINO',
   forceShowTime = false,
 }) {
+  const colors = useColors();
   const styles = useScaledStyleSheet(rf => ({
 
   receivedContainer: {
@@ -48,7 +48,7 @@ export default function ReceiveKinoChat({
   userName: {
     fontFamily: FONTS.MEDIUM,
     fontSize: CHATROOM_STYLE().messageFontSize,
-    color: '#444',
+    color: colors.textSecondary,
     marginBottom: getResponsiveHeight(7),
   },
   kinoProfileImage: {
@@ -82,7 +82,7 @@ export default function ReceiveKinoChat({
   },
   receivedTime: {
     fontSize: rf(10.5),
-    color: '#666',
+    color: colors.textTertiary,
     marginLeft: getResponsiveWidth(5),
     lineHeight: rf(13),
     marginBottom: getResponsiveHeight(2),
@@ -120,33 +120,33 @@ export default function ReceiveKinoChat({
     width: getResponsiveWidth(7),
     height: getResponsiveWidth(7),
     borderRadius: 999,
-    backgroundColor: '#2A2A2A', // 기본값(동적으로 override 됨)
+    backgroundColor: '#2A2A2A',
   },
 
-  }));
+  }), [colors]);
   const KINO_PROFILE_MAP = {
     YELLOW_KINO: require('assets/kinos/yellowKino.png'),
     BLUE_KINO: require('assets/kinos/blueKino.png'),
     PINK_KINO: require('assets/kinos/pinkKino.png'),
   };
 
- // 말풍선 색상 팔레트 (kinoType별)
- // - bubble: 말풍선 배경
- // - dot: 타이핑 점 색
- // - text: 말풍선 텍스트 색
-  const KINO_BUBBLE_PALETTE = {
-    YELLOW_KINO: {bubble: '#FFC84D', dot: '#2A2A2A', text: 'black'},
-    BLUE_KINO: {bubble: '#334EA7', dot: '#1F2A44', text: 'white'},
-    PINK_KINO: {bubble: '#FFC3DE', dot: '#3A1F2A', text: 'black'},
- // BLUE_KINO: {bubble: '#D7E9FF', dot: '#1F2A44', text: '#0F172A'},
- // PINK_KINO: {bubble: '#FFEAF2', dot: '#3A1F2A', text: '#111827'},
-  };
+  const KINO_BUBBLE_LIGHT = useMemo(
+    () => ({
+      YELLOW_KINO: {bubble: '#FFC84D', dot: '#2A2A2A', text: '#111827'},
+      BLUE_KINO: {bubble: '#334EA7', dot: '#1F2A44', text: '#FFFFFF'},
+      PINK_KINO: {bubble: '#FFC3DE', dot: '#3A1F2A', text: '#111827'},
+    }),
+    [],
+  );
+
   const getKinoProfileSource = type =>
     KINO_PROFILE_MAP[type] ?? KINO_PROFILE_MAP.YELLOW_KINO;
   const kinoProfileSource = getKinoProfileSource(kinoType);
 
-  const bubbleColors =
-    KINO_BUBBLE_PALETTE[kinoType] ?? KINO_BUBBLE_PALETTE.YELLOW_KINO;
+  const bubbleColors = useMemo(
+    () => KINO_BUBBLE_LIGHT[kinoType] ?? KINO_BUBBLE_LIGHT.YELLOW_KINO,
+    [kinoType, KINO_BUBBLE_LIGHT],
+  );
 
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -218,9 +218,9 @@ export default function ReceiveKinoChat({
       keyExtractor={(item, index) => item + index}
       numColumns={3}
       renderItem={({item, index}) => (
-        <TouchableOpacity onPress={() => handleImagePress(item, index)}>
+        <SpringPressable onPress={() => handleImagePress(item, index)}>
           <Image source={{uri: item}} style={styles.imageItem} />
-        </TouchableOpacity>
+        </SpringPressable>
       )}
       scrollEnabled={false}
       contentContainerStyle={styles.imageGrid}
@@ -294,7 +294,7 @@ export default function ReceiveKinoChat({
         <View style={styles.messageContainer}>
           {messageType === 'image' ? (
             imageUrls.length === 1 ? (
-              <TouchableOpacity
+              <SpringPressable
                 onPress={() => handleImagePress(imageUrls[0], 0)}>
                 <FastImage
                   fallback={true}
@@ -302,7 +302,7 @@ export default function ReceiveKinoChat({
                   style={styles.singleImage}
                   resizeMode="cover"
                 />
-              </TouchableOpacity>
+              </SpringPressable>
             ) : (
               renderImages()
             )

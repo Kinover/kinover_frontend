@@ -14,13 +14,16 @@ import ToastModal from 'components/modal/ToastModal';
 
 import {useDeleteUser} from 'features/auth/hooks/useDeleteUser';
 import {FONTS} from 'styles/typography';
+import {useColors, useIsDark} from 'hooks/useColors';
 
 const REQUIRED_TEXT = '탈퇴합니다';
 
 export default function DeleteAccountModal({visible, onClose}) {
+  const colors = useColors();
+  const isDark = useIsDark();
 
-  const styles = useScaledStyleSheet(rf => ({
-
+  const styles = useScaledStyleSheet(
+    rf => ({
   modalButtonRow: {
     flexDirection: 'row',
     gap: getResponsiveWidth(10),
@@ -90,7 +93,7 @@ export default function DeleteAccountModal({visible, onClose}) {
   },
   input: {
     borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    borderColor: isDark ? colors.borderSubtle : '#E5E7EB',
     borderRadius: getResponsiveWidth(10),
     paddingVertical:
       Platform.OS === 'android'
@@ -99,8 +102,8 @@ export default function DeleteAccountModal({visible, onClose}) {
     paddingHorizontal: getResponsiveWidth(14),
     fontSize: rf(16),
     fontFamily: FONTS.REGULAR,
-    color: '#111827',
-    backgroundColor: '#FFFFFF',
+    color: isDark ? colors.textPrimary : '#111827',
+    backgroundColor: isDark ? colors.surfaceMuted : '#FFFFFF',
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
   inputError: {
@@ -119,7 +122,9 @@ export default function DeleteAccountModal({visible, onClose}) {
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
 
-  }));
+  }),
+    [colors, isDark],
+  );
   const {deleteAccount, toastVisible, toastMessage, hideToast, showToast} =
     useDeleteUser(() => {});
 
@@ -205,7 +210,9 @@ export default function DeleteAccountModal({visible, onClose}) {
               allowFontScaling={false}
               autoFocus
               placeholder={`"${REQUIRED_TEXT}" 입력`}
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={
+                isDark ? colors.textTertiary : '#9CA3AF'
+              }
               value={confirmationText}
               onChangeText={setConfirmationText}
               style={[

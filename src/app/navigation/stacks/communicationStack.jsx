@@ -4,7 +4,7 @@ import CommunicationScreen from 'features/chat/screens';
 import KinoChatRoom from 'features/chat/screens/kinoChatRoomScreen';
 import ChatSettings from 'features/chat/screens/chatSetting';
 import {getTabStackHeaderHeight} from 'utils/layoutMetrics';
-import {stackCardScreenOption} from '../navigationTheme';
+import {getStackCardScreenOption} from '../navigationTheme';
 import AppText from 'components/AppText';
 import {
   RenderGoBackButton,
@@ -16,10 +16,12 @@ import ChatRoom from 'features/chat/screens/chatRoomScreen';
 import KinoSelectScreen from 'features/chat/screens/kinoSelectScreen';
 import {HEADER_STYLES} from 'styles/style';
 import ChatRoomMediaScreen from 'features/chat/screens/chatRoomMediaScreen';
+import {useColors} from 'hooks/useColors';
 
 const Stack = createStackNavigator();
 
 export default function CommunicationStack() {
+  const colors = useColors();
   return (
     <Stack.Navigator
       initialRouteName="소통"
@@ -34,7 +36,7 @@ export default function CommunicationStack() {
         headerTitleAlign: 'center',
         headerShown: true,
         headerBackTitleVisible: false,
-        ...stackCardScreenOption,
+        ...getStackCardScreenOption(colors),
       })}>
       <Stack.Screen
         name="소통"
@@ -51,7 +53,7 @@ export default function CommunicationStack() {
                 fontFamily: HEADER_STYLES().mainTitleFontFamily,
                 fontWeight: HEADER_STYLES().mainTitleFontWeight,
                 fontSize: HEADER_STYLES().mainTitleFontSize, // 24 → 16 (다른 앱이랑 비슷한 크기)
-                color: HEADER_STYLES().mainTitleFontColor,
+                color: colors.textPrimary,
                 textAlign: 'center',
                 lineHeight: HEADER_STYLES().mainTitleLineHeight, // 살짝만
                 textAlignVertical: 'center',
@@ -72,10 +74,22 @@ export default function CommunicationStack() {
       <Stack.Screen
         name="키노상담소화면"
         component={KinoChatRoom}
-        options={({navigation}) => ({
+        options={({navigation, route}) => ({
           headerBackTitle: '',
           gestureEnabled: true,
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          headerTitle: () => (
+            <AppText
+              allowFontScaling={false}
+              numberOfLines={1}
+              style={{
+                fontFamily: HEADER_STYLES().defaultTitleFontFamily,
+                fontSize: HEADER_STYLES().defaultTitleFontSize,
+                color: colors.textPrimary,
+              }}>
+              {route?.params?.title ?? '키노상담소'}
+            </AppText>
+          ),
         })}
       />
 
@@ -93,9 +107,21 @@ export default function CommunicationStack() {
       <Stack.Screen
         name="채팅방화면"
         component={ChatRoom}
-        options={({navigation}) => ({
+        options={({navigation, route}) => ({
           gestureEnabled: true,
           headerLeft: () => <RenderGoBackButton navigation={navigation} />,
+          headerTitle: () => (
+            <AppText
+              allowFontScaling={false}
+              numberOfLines={1}
+              style={{
+                fontFamily: HEADER_STYLES().defaultTitleFontFamily,
+                fontSize: HEADER_STYLES().defaultTitleFontSize,
+                color: colors.textPrimary,
+              }}>
+              {route?.params?.title ?? route?.params?.chatRoom?.roomName ?? '채팅'}
+            </AppText>
+          ),
         })}
       />
 

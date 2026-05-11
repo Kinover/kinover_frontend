@@ -24,7 +24,7 @@ import {
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
-import {BACKGROUND_COLORS} from 'styles/style';
+import {useThemeStyleTokens} from 'hooks/useColors';
 
 import HeaderSection from '../components/HeaderSection';
 import MemberGridSection from '../components/MemberGridSection';
@@ -51,6 +51,7 @@ import AppAlertHost from 'components/modal/AppAlertHost';
 import useActiveAppEvent from 'hooks/useActiveAppEvent';
 import {isEmotionValid} from '../utils/emotionUtils';
 import {KEY_FIRST_ENTRY_AFTER_SETUP} from 'hooks/useGuide';
+import {useDelayedLoading} from 'hooks/useDelayedLoading';
 import {useGuideOverlay} from 'contexts/GuideOverlayContext';
 import {
   STORE_MOCK_ENABLED,
@@ -81,6 +82,45 @@ export default function HomeScreen() {
   const guideProfileRef = useRef(null);
   const guideMoodRef = useRef(null);
   const guideInviteRef = useRef(null);
+
+  const {BACKGROUND_COLORS} = useThemeStyleTokens();
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: BACKGROUND_COLORS.primaryBg,
+          overflow: 'visible',
+        },
+        contentWrap: {
+          flex: 1,
+        },
+        scrollContent: {
+          width: '100%',
+          paddingTop: Platform.OS === 'ios' ? '22%' : '13%',
+          alignItems: 'center',
+        },
+        scrollContentFill: {
+          flexGrow: 1,
+        },
+        backgroundCurve: {
+          position: 'absolute',
+          bottom: '-28%',
+          width: '220%',
+          left: '-60%',
+          height: '100%',
+          backgroundColor: BACKGROUND_COLORS.secondaryBg,
+          borderTopLeftRadius: getResponsiveWidth(600),
+          borderTopRightRadius: getResponsiveWidth(600),
+          zIndex: -1,
+        },
+        loadingContainer: {
+          flex: 1,
+          backgroundColor: BACKGROUND_COLORS.primaryBg,
+        },
+      }),
+    [BACKGROUND_COLORS],
+  );
 
   const fallbackUser = useSelector(state => state.user);
   const [modifyUser] = useModifyUserMutation();
@@ -200,6 +240,11 @@ export default function HomeScreen() {
   // 가족 여부로 빈 상태 판단 (가족 생성 직후 멤버가 본인뿐일 때도 정상 처리)
   const isMemberGridEmpty = !familyId;
 
+  // 멤버 수에 따라 동적 chunkSize 계산 (레이아웃 폭에 따라 자동 조정)
+  const dynamicChunkSize = displayFamilyMembers.length <= 2
+    ? displayFamilyMembers.length || 3
+    : 3;
+
  // iOS: 가이드 모달 닫은 뒤 터치 복구용 — early return 앞에 두어 훅 개수 고정
   const [contentKey, setContentKey] = useState(0);
   const handleGuideAfterClose = useCallback(() => setContentKey(k => k + 1), []);
@@ -263,20 +308,17 @@ export default function HomeScreen() {
 
     (async () => {
       if (!user?.userId) return;
+      
+      // familyId가 없으면 즉시 로드 완료 표시
       if (!familyId) {
         if (mounted) setDidInitialLoad(true);
         return;
       }
 
-      if (mounted) setDidInitialLoad(true);
-
-      /**
-       * 접속상태(familyStatus)는 비핵심 데이터라 일시 실패가 잦다.
-       * 핵심(user/family/familyUsers)까지 실패했고, 화면에 쓸 캐시 데이터도 없을 때만 토스트 노출.
-       */
-      const hasCriticalError = isUserError || isFamilyError || isFamilyUsersError;
-      if (mounted && hasCriticalError && !hasCoreHomeData) {
-        setErrorToastVisible(true);
+      // familyId가 있으면 가족 데이터 로드될 때까지 대기
+      // hasCoreHomeData가 true가 되면 로드 완료
+      if (hasCoreHomeData) {
+        if (mounted) setDidInitialLoad(true);
       }
     })();
 
@@ -286,6 +328,19 @@ export default function HomeScreen() {
   }, [
     user?.userId,
     familyId,
+    hasCoreHomeData,
+  ]);
+
+  // 에러 토스트 — 핵심 데이터 로드 후에도 실패한 경우만 노출
+  useEffect(() => {
+    if (!didInitialLoad) return;
+    
+    const hasCriticalError = isUserError || isFamilyError || isFamilyUsersError;
+    if (hasCriticalError && !hasCoreHomeData) {
+      setErrorToastVisible(true);
+    }
+  }, [
+    didInitialLoad,
     isUserError,
     isFamilyError,
     isFamilyUsersError,
@@ -423,7 +478,9 @@ export default function HomeScreen() {
       (familyId &&
         (isFamilyLoading || isFamilyUsersLoading || isFamilyStatusLoading)));
 
-  if (isLoading) {
+  const showSkeleton = useDelayedLoading(isLoading);
+
+  if (showSkeleton) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
         <HomeScreenSkeleton />
@@ -469,6 +526,7 @@ export default function HomeScreen() {
             hasFamily={!!familyId}
             onlineUserIds={displayOnlineUserIds}
             lastActiveMap={displayLastActiveMap}
+            chunkSize={dynamicChunkSize}
             onUserPress={handleUserPress}
             onAddPress={handleMemberAddPress}
             onEmptyJoinByCodePress={() => setHomeInviteJoinModalVisible(true)}
@@ -516,7 +574,6 @@ export default function HomeScreen() {
         ref={userSheetRef}
         selectedUser={selectedUser}
         onSave={handleSave}
-        onCancel={dismissUserSheet}
         onDismiss={clearSelectedUser}
       />
 
@@ -535,38 +592,3 @@ export default function HomeScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: BACKGROUND_COLORS.primaryBg,
-    overflow: 'visible',
-  },
-  contentWrap: {
-    flex: 1,
-  },
-  scrollContent: {
-    width: '100%',
-    paddingTop: Platform.OS === 'ios' ? '22%' : '13%',
-    alignItems: 'center',
-  },
-  /** 구성원 0명: 탭바 위까지 스크롤 영역을 채워 흰 카드가 늘어나도록 */
-  scrollContentFill: {
-    flexGrow: 1,
-  },
-  backgroundCurve: {
-    position: 'absolute',
-    bottom: '-28%',
-    width: '220%',
-    left: '-60%',
-    height: '100%',
-    backgroundColor: BACKGROUND_COLORS.secondaryBg,
-    borderTopLeftRadius: getResponsiveWidth(600),
-    borderTopRightRadius: getResponsiveWidth(600),
-    zIndex: -1,
-  },
-  loadingContainer: {
-    flex: 1,
-    backgroundColor: BACKGROUND_COLORS.primaryBg,
-  },
-});

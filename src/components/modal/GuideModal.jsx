@@ -1,7 +1,8 @@
 // src/components/modal/GuideModal.jsx
 // 젠스파크 스타일: 실제 탭 화면 위 딤+하이라이트(구멍)+말풍선+하단바 또는 미니 씬+말풍선+하단바
 import React, {useCallback, useState, useEffect, useRef} from 'react';
-import { View, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, Dimensions, Platform } from 'react-native';
+import { View, StyleSheet, TouchableWithoutFeedback, Dimensions, Platform } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Animated, {FadeIn, FadeOut} from 'react-native-reanimated';
 import AppText from 'components/AppText';
@@ -306,6 +307,9 @@ function GuideModalCarouselInner({
   const useRealScreen = !!currentTargetRef;
   const hasLiveTarget = !!currentTargetRef?.current;
 
+  const lastTargetRef = useRef(null);
+  const lastLayoutRef = useRef(null);
+
   useEffect(() => {
     setIndex(0);
   }, []);
@@ -313,8 +317,21 @@ function GuideModalCarouselInner({
   useEffect(() => {
     if (!useRealScreen || !currentTargetRef?.current) {
       setTargetLayout(null);
+      lastTargetRef.current = null;
+      lastLayoutRef.current = null;
       return;
     }
+
+    // 동일 ref로 연속 스텝(홈 가이드 1→2 등)일 때 재측정하지 않음 → measure 드리프트로 구멍/말풍선이 덜컥하지 않음
+    if (
+      lastTargetRef.current === currentTargetRef &&
+      lastLayoutRef.current
+    ) {
+      setTargetLayout(lastLayoutRef.current);
+      return;
+    }
+
+    lastTargetRef.current = currentTargetRef;
 
     let cancelled = false;
 
@@ -338,14 +355,16 @@ function GuideModalCarouselInner({
         setTargetLayout(prev => {
           if (
             prev &&
-            Math.abs((prev.x ?? 0) - nextX) < 2 &&
-            Math.abs((prev.y ?? 0) - nextY) < 2 &&
-            Math.abs((prev.width ?? 0) - nextW) < 2 &&
-            Math.abs((prev.height ?? 0) - nextH) < 2
+            Math.abs((prev.x ?? 0) - nextX) < 8 &&
+            Math.abs((prev.y ?? 0) - nextY) < 8 &&
+            Math.abs((prev.width ?? 0) - nextW) < 8 &&
+            Math.abs((prev.height ?? 0) - nextH) < 8
           ) {
             return prev;
           }
-          return {x: nextX, y: nextY, width: nextW, height: nextH};
+          const next = {x: nextX, y: nextY, width: nextW, height: nextH};
+          lastLayoutRef.current = next;
+          return next;
         });
       });
     };
@@ -357,7 +376,7 @@ function GuideModalCarouselInner({
       cancelled = true;
       cancelAnimationFrame(id);
     };
-  }, [useRealScreen, currentTargetRef, index]);
+  }, [useRealScreen, currentTargetRef, index, hasLiveTarget]);
 
   const handleNext = useCallback(() => {
     if (isLast) {
@@ -427,7 +446,7 @@ function GuideModalCarouselInner({
                 : getResponsiveHeight(12),
           },
         ]}>
-        <TouchableOpacity
+        <SpringPressable
           onPress={handleSkip}
           hitSlop={{top: 12, bottom: 12, left: 12, right: 12}}
           style={styles.skipButton}
@@ -435,7 +454,7 @@ function GuideModalCarouselInner({
           <AppText allowFontScaling={false} style={styles.skipText}>
             건너뛰기
           </AppText>
-        </TouchableOpacity>
+        </SpringPressable>
 
         <View
           pointerEvents="none"
@@ -459,14 +478,14 @@ function GuideModalCarouselInner({
           )}
         </View>
 
-        <TouchableOpacity
+        <SpringPressable
           style={styles.nextButton}
           onPress={handleNext}
           activeOpacity={0.88}>
           <AppText allowFontScaling={false} style={styles.nextButtonText}>
             {isLast ? doneText : nextText}
           </AppText>
-        </TouchableOpacity>
+        </SpringPressable>
       </View>
     </View>
   );

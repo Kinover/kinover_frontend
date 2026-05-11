@@ -1,5 +1,6 @@
 $RNFirebaseAsStaticFramework = true
 
+# ✅ 배포 타겟을 16.0으로 설정
 platform :ios, '16.0'
 ENV['RCT_NEW_ARCH_ENABLED'] = '0'
 
@@ -22,6 +23,7 @@ target 'kinover_frontend' do
     :hermes_enabled => true
   )
 
+  # Firebase & Google Utilities (Static Framework 대응)
   pod 'GoogleUtilities',           :modular_headers => true
   pod 'FirebaseCoreInternal',      :modular_headers => true
   pod 'FirebaseCore',              :modular_headers => true
@@ -32,11 +34,33 @@ target 'kinover_frontend' do
   pod 'FirebaseCoreExtension',     :modular_headers => true
   pod 'RecaptchaInterop',          :modular_headers => true
 
+  # Native Modules
   pod 'lottie-react-native', :path => '../node_modules/lottie-react-native'
+  
+  # ✅ 카카오 관련 라이브러리 및 버전 강제 고정 (충돌 해결 핵심)
   pod 'kakao-login',         :path => '../node_modules/@react-native-seoul/kakao-login'
+  # pod 'react-native-kakao-share-link', :path => '../node_modules/react-native-kakao-share-link'
+  
+  pod 'KakaoSDKCommon', '2.22.0'
+  pod 'KakaoSDKAuth', '2.22.0'
+  pod 'KakaoSDKUser', '2.22.0'
+  pod 'KakaoSDKShare', '2.22.0'
+  pod 'KakaoSDKTemplate', '2.22.0'
 
   pre_install do |installer|
-    # ✅ fmt 헤더 파일 직접 패치 — FMT_USE_CONSTEVAL 강제 0으로 덮어씀
+    # ✅ KakaoSDKCommon의 버전 제약(= 2.11.1)을 강제로 제거
+    installer.pod_targets.each do |pod|
+      if pod.name == 'react-native-kakao-share-link'
+        pod.spec.dependencies.each do |dep|
+          if dep.name == 'KakaoSDKCommon'
+            dep.requirement.none? 
+            puts "[Podfile] 🚀 Force-cleared KakaoSDKCommon version constraint for #{pod.name}"
+          end
+        end
+      end
+    end
+
+    # ✅ fmt 헤더 파일 패치 (React Native 0.78 이슈 대응)
     fmt_dir = File.join(installer.sandbox.root, 'fmt', 'include', 'fmt')
     if Dir.exist?(fmt_dir)
       Dir.glob("#{fmt_dir}/*.h").each do |header|
@@ -55,6 +79,15 @@ target 'kinover_frontend' do
   end
 
   post_install do |installer|
+    # react-native-config: Info.plist의 $(KAKAO_APP_KEY) 등은 빌드 시작 전에 tmp.xcconfig가 있어야 치환된다.
+    env_root = File.expand_path('..', __dir__)
+    rn_config_script = File.join(env_root, 'node_modules/react-native-config/ios/ReactNativeConfig/BuildXCConfig.rb')
+    tmp_xcconfig = File.join(__dir__, 'tmp.xcconfig')
+    if File.file?(rn_config_script) && File.file?(File.join(env_root, '.env'))
+      system('ruby', rn_config_script, env_root, tmp_xcconfig) || raise('BuildXCConfig.rb failed — check .env and Ruby')
+      puts '[Podfile] Generated ios/tmp.xcconfig from .env (react-native-config)'
+    end
+
     react_native_post_install(
       installer,
       config[:reactNativePath],
@@ -63,12 +96,13 @@ target 'kinover_frontend' do
 
     installer.pods_project.targets.each do |t|
       t.build_configurations.each do |c|
+        # ✅ 모든 타겟의 iOS 배포 버전을 16.0으로 강제 통일 (Deployment Target 에러 해결)
         c.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '16.0'
         c.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
         c.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
         c.build_settings['CLANG_CXX_LANGUAGE_STANDARD'] = 'c++20'
 
-        # ✅ fmt 타깃만 핀포인트로 잡아서 FMT_USE_CONSTEVAL=0 강제 적용
+        # ✅ fmt 타깃 핀포인트 패치
         if t.name == 'fmt'
           defs = c.build_settings['GCC_PREPROCESSOR_DEFINITIONS']
           defs = defs.is_a?(Array) ? defs : (defs.to_s.empty? ? ['$(inherited)'] : [defs.to_s])
@@ -76,12 +110,6 @@ target 'kinover_frontend' do
             defs << 'FMT_USE_CONSTEVAL=0'
           end
           c.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = defs
-          c.build_settings['OTHER_CPLUSPLUSFLAGS'] = '$(inherited) -DFMT_USE_CONSTEVAL=0'
-        end
-
-        # ✅ 전체 타깃에도 이중 방어
-        existing_flags = c.build_settings['OTHER_CPLUSPLUSFLAGS'].to_s
-        unless existing_flags.include?('FMT_USE_CONSTEVAL')
           c.build_settings['OTHER_CPLUSPLUSFLAGS'] = '$(inherited) -DFMT_USE_CONSTEVAL=0'
         end
 
@@ -95,8 +123,7 @@ target 'kinover_frontend' do
               flat.reject! { |f| f == '-Werror' || f.start_with?('-Werror=') }
               c.build_settings[key] = flat
             else
-              c.build_settings[key] =
-                val.to_s.gsub(/\s*-Werror(=[^\s]+)?\b/, ' ').squeeze(' ').strip
+              c.build_settings[key] = val.to_s.gsub(/\s*-Werror(=[^\s]+)?\b/, ' ').squeeze(' ').strip
             end
           end
         end
@@ -104,10 +131,7 @@ target 'kinover_frontend' do
     end
 
     # ✅ Yoga modulemap 충돌 방지
-    rn_yoga_modulemap = File.expand_path(
-      "../node_modules/react-native/ReactCommon/yoga/yoga/module.modulemap",
-      __dir__
-    )
+    rn_yoga_modulemap = File.expand_path("../node_modules/react-native/ReactCommon/yoga/yoga/module.modulemap", __dir__)
     if File.exist?(rn_yoga_modulemap)
       begin
         File.delete(rn_yoga_modulemap)

@@ -1,12 +1,6 @@
 // src/features/home/components/MemberGridSection.jsx (or .tsx)
 
-import React, {
-  useMemo,
-  useCallback,
-  memo,
-  useEffect,
-  useRef,
-} from 'react';
+import React, {useMemo, useCallback, memo, useEffect, useRef} from 'react';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
@@ -17,6 +11,7 @@ import {
   Image,
   ActivityIndicator,
   ScrollView,
+  Platform,
 } from 'react-native';
 import DropShadow from 'react-native-drop-shadow';
 
@@ -27,8 +22,13 @@ import {
 } from 'utils/responsive';
 import {STORE_MOCK_ENABLED} from '../utils/storeMockData';
 import {formatRelativeKorean} from '../utils/dateUtils';
-import {getEmotionImage, getEmotionColor, getEmotionLabel} from '../utils/emotionUtils';
-import {COLORS, EMPTY_STYLE, LAYOUT_STYLE} from 'styles/style';
+import {
+  getEmotionImage,
+  getEmotionColor,
+  getEmotionLabel,
+} from '../utils/emotionUtils';
+import {LAYOUT_STYLE} from 'styles/style';
+import {useColors, useIsDark, useThemeStyleTokens} from 'hooks/useColors';
 
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {hapticLight} from 'utils/haptic';
@@ -57,6 +57,9 @@ const PROFILE_MAX = getResponsiveIconSize(70);
 
 const DOT_MIN = 8;
 const DOT_MAX = 14;
+
+/** 홈 메인(흰색) 카드 코너 (약 20~24px 스케일) */
+const HOME_CARD_RADIUS = getResponsiveIconSize(22);
 
 // 6명 초과면 "그리드 영역만" 내부 스크롤
 const INTERNAL_SCROLL_THRESHOLD = 6;
@@ -162,10 +165,13 @@ const MemberGridItem = memo(function MemberGridItem({
   const bubbleOpacity = useSharedValue(0);
   const bubbleTranslateY = useSharedValue(6);
 
-  const bubbleAnimStyle = useAnimatedStyle(() => ({
-    opacity: bubbleOpacity.value,
-    transform: [{translateY: bubbleTranslateY.value}],
-  }), [bubbleOpacity, bubbleTranslateY]);
+  const bubbleAnimStyle = useAnimatedStyle(
+    () => ({
+      opacity: bubbleOpacity.value,
+      transform: [{translateY: bubbleTranslateY.value}],
+    }),
+    [bubbleOpacity, bubbleTranslateY],
+  );
 
   const longPressedRef = useRef(false);
   const tapPeekTimerRef = useRef(null);
@@ -277,13 +283,24 @@ const MemberGridItem = memo(function MemberGridItem({
     if (emotionLabel) {
       clearDismissTimer();
       bubbleOpacity.value = withTiming(1, {duration: 180});
-      bubbleTranslateY.value = withTiming(0, {duration: 180, easing: Easing.out(Easing.cubic)});
+      bubbleTranslateY.value = withTiming(0, {
+        duration: 180,
+        easing: Easing.out(Easing.cubic),
+      });
       dismissTimerRef.current = setTimeout(() => {
         hideBubble();
         dismissTimerRef.current = null;
       }, 1800);
     }
-  }, [runTiltPeekOnce, pressScale, emotionLabel, clearDismissTimer, hideBubble, bubbleOpacity, bubbleTranslateY]);
+  }, [
+    runTiltPeekOnce,
+    pressScale,
+    emotionLabel,
+    clearDismissTimer,
+    hideBubble,
+    bubbleOpacity,
+    bubbleTranslateY,
+  ]);
 
   const handleLongPress = useCallback(() => {
     if (isRefreshing) return;
@@ -506,14 +523,27 @@ const MemberGridItem = memo(function MemberGridItem({
                 zIndex: 20,
               },
             ]}>
-            <View style={styles.bubbleBox}>
-              <AppText allowFontScaling={false} style={styles.bubbleText}>
-                {emotionLabel}
-              </AppText>
-              <View style={styles.bubbleTailWrapper}>
-                <View style={styles.bubbleTail} />
+            {Platform.OS === 'android' ? (
+              <DropShadow style={styles.bubbleShadow}>
+                <View style={styles.bubbleBox}>
+                  <AppText allowFontScaling={false} style={styles.bubbleText}>
+                    {emotionLabel}
+                  </AppText>
+                  <View style={styles.bubbleTailWrapper}>
+                    <View style={styles.bubbleTail} />
+                  </View>
+                </View>
+              </DropShadow>
+            ) : (
+              <View style={styles.bubbleBox}>
+                <AppText allowFontScaling={false} style={styles.bubbleText}>
+                  {emotionLabel}
+                </AppText>
+                <View style={styles.bubbleTailWrapper}>
+                  <View style={styles.bubbleTail} />
+                </View>
               </View>
-            </View>
+            )}
           </Animated.View>
         )}
 
@@ -592,305 +622,310 @@ export default function MemberGridSection({
   isRefreshing: isRefreshingProp = null,
   guideInviteRef,
 }) {
-  const styles = useScaledStyleSheet(rf => ({
-    shadowWrap: {
-      position: 'relative',
-      alignItems: 'center',
-      alignSelf: 'center',
-    },
-    /** 홈 스크롤 flexGrow + 빈 그리드: 카드가 남은 높이 채움 */
-    shadowWrapFill: {
-      flex: 1,
-    },
-    dropShadow: {
-      width: '100%',
-      shadowColor: '#000',
-      shadowOffset: {width: 0, height: 1},
-      shadowOpacity: 0.12,
-      shadowRadius: 2,
-      elevation: 3,
-    },
-    dropShadowFill: {
-      flex: 1,
-    },
+  const colors = useColors();
+  const isDark = useIsDark();
+  const {EMPTY_STYLE} = useThemeStyleTokens();
+  const styles = useScaledStyleSheet(
+    rf => ({
+      shadowWrap: {
+        position: 'relative',
+        alignItems: 'center',
+        alignSelf: 'center',
+      },
+      /** 홈 스크롤 flexGrow + 빈 그리드: 카드가 남은 높이 채움 */
+      shadowWrapFill: {
+        flex: 1,
+      },
+      dropShadow: {
+        width: '100%',
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 1},
+        shadowOpacity: 0.04,
+        shadowRadius: 3,
+        elevation: 1,
+      },
+      dropShadowFill: {
+        flex: 1,
+      },
 
-    bodyContainer: {
-      width: '100%',
-      backgroundColor: '#FFFFFF',
-      borderRadius: getResponsiveIconSize(16),
-      paddingTop: getResponsiveHeight(22),
-    },
-    bodyContainerFill: {
-      flex: 1,
-    },
+      bodyContainer: {
+        width: '100%',
+        backgroundColor: colors.surfacePrimary,
+        borderRadius: HOME_CARD_RADIUS,
+        paddingTop: getResponsiveHeight(Platform.OS === 'android' ? 14 : 22),
+      },
+      bodyContainerFill: {
+        flex: 1,
+      },
 
-    gridArea: {
-      position: 'relative',
-    },
-    gridAreaFill: {
-      flex: 1,
-      justifyContent: 'center',
-      minHeight: 0,
-    },
+      gridArea: {
+        position: 'relative',
+      },
+      gridAreaFill: {
+        flex: 1,
+        minHeight: 0,
+      },
 
-    wrapRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'flex-start',
-      alignSelf: 'center',
-    },
+      wrapRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'flex-start',
+        alignSelf: 'center',
+      },
 
-    // 6명 초과 시 내부 스크롤 래퍼
-    innerScrollWrap: {
-      alignSelf: 'center',
-      width: '100%',
-    },
-    innerScrollContent: {
-      // ScrollView 안에서 wrapRow가 중앙에 오도록
-      paddingBottom: getResponsiveHeight(6),
-    },
+      // 6명 초과 시 내부 스크롤 래퍼
+      innerScrollWrap: {
+        alignSelf: 'center',
+        width: '100%',
+      },
+      innerScrollContent: {
+        // ScrollView 안에서 wrapRow가 중앙에 오도록
+        paddingBottom: getResponsiveHeight(6),
+      },
 
-    user: {
-      alignItems: 'center',
-      paddingVertical: getResponsiveHeight(6),
-      borderRadius: getResponsiveIconSize(18),
-    },
+      user: {
+        alignItems: 'center',
+        paddingVertical: getResponsiveHeight(6),
+        borderRadius: getResponsiveIconSize(18),
+      },
 
-    avatarShell: {
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: getResponsiveHeight(8),
-      position: 'relative',
-      overflow: 'visible',
-    },
+      avatarShell: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: getResponsiveHeight(8),
+        position: 'relative',
+        overflow: 'visible',
+      },
 
-    avatarRing: {
-      position: 'absolute',
-      borderWidth: 1,
-      borderColor: '#EEF2F7',
-    },
+      avatarRing: {
+        position: 'absolute',
+        borderWidth: 1,
+        borderColor: colors.borderSubtle,
+      },
 
-    profileImage: {
-      borderRadius: 999,
-      zIndex: 1,
-      borderWidth: 0,
-    },
+      profileImage: {
+        borderRadius: 999,
+        zIndex: 1,
+        borderWidth: 0,
+      },
 
-    emotionPeekMask: {
-      position: 'absolute',
-      overflow: 'hidden',
-      zIndex: 2,
-      alignItems: 'center',
-      justifyContent: 'flex-end',
-    },
+      emotionPeekMask: {
+        position: 'absolute',
+        overflow: 'hidden',
+        zIndex: 2,
+        alignItems: 'center',
+        justifyContent: 'flex-end',
+      },
 
-    emotionImage: {
-      position: 'absolute',
-      resizeMode: 'contain',
-      bottom: 0,
-    },
+      emotionImage: {
+        position: 'absolute',
+        resizeMode: 'contain',
+        bottom: 0,
+      },
 
-    dotBase: {
-      position: 'absolute',
-      zIndex: 5,
-    },
-    dotBorder: {
-      position: 'absolute',
-      backgroundColor: '#FFFFFF',
-      zIndex: 4,
-    },
-    onlineDot: {
-      backgroundColor: '#22C55E',
-    },
-    offlineDot: {
-      backgroundColor: '#D1D5DB',
-    },
+      dotBase: {
+        position: 'absolute',
+        zIndex: 5,
+      },
+      dotBorder: {
+        position: 'absolute',
+        backgroundColor: colors.surfacePrimary,
+        zIndex: 4,
+      },
+      onlineDot: {
+        backgroundColor: '#22C55E',
+      },
+      offlineDot: {
+        backgroundColor: '#D1D5DB',
+      },
 
-    infoCol: {
-      width: '100%',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: getResponsiveHeight(5),
-    },
-    userName: {
-      fontSize: rf(14),
-      fontFamily: FONTS.SEMI_BOLD,
-      color: '#111827',
-      letterSpacing: -0.2,
-    },
-    userNamePlaceholder: {
-      color: '#9CA3AF',
-    },
+      infoCol: {
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: getResponsiveHeight(5),
+      },
+      userName: {
+        fontSize: rf(14),
+        fontFamily: FONTS.SEMI_BOLD,
+        color: colors.textPrimary,
+        letterSpacing: -0.2,
+      },
+      userNamePlaceholder: {
+        color: colors.textTertiary,
+      },
 
-    statusPill: {
-      paddingHorizontal: getResponsiveWidth(8),
-      paddingVertical: getResponsiveHeight(3),
-      borderRadius: 999,
-      borderWidth: 1,
-      maxWidth: '100%',
-    },
-    statusPillOnline: {
-      backgroundColor: 'rgba(34,197,94,0.08)',
-      borderColor: 'rgba(34,197,94,0.15)',
-    },
-    statusPillOffline: {
-      backgroundColor: '#F8FAFC',
-      borderColor: '#EEF2F7',
-    },
+      statusPill: {
+        paddingHorizontal: getResponsiveWidth(8),
+        paddingVertical: getResponsiveHeight(3),
+        borderRadius: 999,
+        borderWidth: 1,
+        maxWidth: '100%',
+      },
+      statusPillOnline: {
+        backgroundColor: 'rgba(34,197,94,0.08)',
+        borderColor: 'rgba(34,197,94,0.15)',
+      },
+      statusPillOffline: {
+        backgroundColor: colors.surfaceMuted,
+        borderColor: colors.borderSubtle,
+      },
 
-    statusText: {
-      fontSize: rf(11),
-      fontFamily: FONTS.MEDIUM,
-    },
-    statusOnline: {color: '#16A34A'},
-    statusOffline: {color: '#6B7280'},
+      statusText: {
+        fontSize: rf(11),
+        fontFamily: FONTS.MEDIUM,
+      },
+      statusOnline: {color: '#16A34A'},
+      statusOffline: {color: colors.textSecondary},
 
-    bubbleBox: {
-      backgroundColor: '#FFFFFF',
-      borderRadius: 10,
-      paddingHorizontal: getResponsiveWidth(10),
-      paddingVertical: getResponsiveHeight(5),
-      shadowColor: '#000',
-      shadowOpacity: 0.12,
-      shadowRadius: 6,
-      shadowOffset: {width: 0, height: 2},
-      elevation: 5,
-      overflow: 'visible',
-    },
-    bubbleText: {
-      fontSize: rf(11.5),
-      fontFamily: FONTS.MEDIUM,
-      color: '#1F2937',
-      letterSpacing: -0.1,
-    },
-    bubbleTailWrapper: {
-      position: 'absolute',
-      bottom: -7,
-      left: 0,
-      right: 0,
-      alignItems: 'center',
-    },
-    bubbleTail: {
-      width: 0,
-      height: 0,
-      borderLeftWidth: 5,
-      borderRightWidth: 5,
-      borderTopWidth: 7,
-      borderLeftColor: 'transparent',
-      borderRightColor: 'transparent',
-      borderTopColor: '#FFFFFF',
-    },
+      bubbleBox: {
+        backgroundColor: colors.surfacePrimary,
+        borderRadius: 10,
+        paddingHorizontal: getResponsiveWidth(10),
+        paddingVertical: getResponsiveHeight(5),
+        overflow: 'visible',
+      },
+      bubbleShadow: {
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.12,
+        shadowRadius: 10,
+        elevation: 6,
+      },
+      bubbleText: {
+        fontSize: rf(11.5),
+        fontFamily: FONTS.MEDIUM,
+        color: colors.textDefault,
+        letterSpacing: -0.1,
+      },
+      bubbleTailWrapper: {
+        position: 'absolute',
+        bottom: -6,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+      },
+      bubbleTail: {
+        width: getResponsiveWidth(10),
+        height: getResponsiveWidth(10),
+        backgroundColor: colors.surfacePrimary,
+        transform: [{rotate: '45deg'}],
+      },
 
-    loadingOverlay: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(255,255,255,0.55)',
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: getResponsiveIconSize(16),
-    },
-    loadingCard: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: getResponsiveWidth(8),
-      paddingHorizontal: getResponsiveWidth(12),
-      paddingVertical: getResponsiveHeight(8),
-      borderRadius: 999,
-      backgroundColor: '#FFFFFF',
-      borderWidth: 1,
-      borderColor: 'rgba(17,24,39,0.08)',
-    },
-    loadingText: {
-      fontSize: rf(12.5),
-      fontFamily: FONTS.SEMI_BOLD,
-      color: '#111827',
-      letterSpacing: -0.1,
-    },
+      loadingOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: isDark
+          ? 'rgba(17,24,39,0.55)'
+          : 'rgba(255,255,255,0.55)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: HOME_CARD_RADIUS,
+      },
+      loadingCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: getResponsiveWidth(8),
+        paddingHorizontal: getResponsiveWidth(12),
+        paddingVertical: getResponsiveHeight(8),
+        borderRadius: 999,
+        backgroundColor: colors.surfacePrimary,
+        borderWidth: 1,
+        borderColor: colors.borderSubtle,
+      },
+      loadingText: {
+        fontSize: rf(12.5),
+        fontFamily: FONTS.SEMI_BOLD,
+        color: colors.textPrimary,
+        letterSpacing: -0.1,
+      },
 
-    emptyStateOuter: {
-      width: '100%',
-      alignItems: 'center',
-      paddingVertical: getResponsiveHeight(8),
-      paddingHorizontal: getResponsiveWidth(4),
-    },
-    emptyStateGroup: {
-      width: '100%',
-      alignItems: 'center',
-      paddingHorizontal: getResponsiveWidth(16),
-      maxWidth: '100%',
-    },
-    emptyCtaStack: {
-      alignSelf: 'center',
-      width: '58%',
-      maxWidth: getResponsiveWidth(188),
-      marginTop: getResponsiveHeight(18),
-      gap: getResponsiveHeight(10),
-    },
-    /** 빈 상태 전용 — 풀폭 고정 높이 CTA가 아닌 유도 버튼 */
-    emptyStateCta: {
-      alignSelf: 'stretch',
-      width: '100%',
-      paddingVertical: getResponsiveHeight(10),
-      paddingHorizontal: getResponsiveWidth(16),
-      minHeight: getResponsiveHeight(40),
-      borderRadius: getResponsiveIconSize(12),
-      backgroundColor: '#FFC84D',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    emptyStateCtaOutline: {
-      alignSelf: 'stretch',
-      width: '100%',
-      paddingVertical: getResponsiveHeight(10),
-      paddingHorizontal: getResponsiveWidth(16),
-      minHeight: getResponsiveHeight(40),
-      borderRadius: getResponsiveIconSize(12),
-      backgroundColor: COLORS.surfacePrimary,
-      borderWidth: 1,
-      borderColor: COLORS.borderSubtle,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    emptyStateCtaText: {
-      fontSize: rf(13),
-      fontFamily: FONTS.SEMI_BOLD,
-      color: '#111827',
-      letterSpacing: -0.18,
-    },
-    emptyStateCtaTextOutline: {
-      fontSize: rf(13),
-      fontFamily: FONTS.SEMI_BOLD,
-      color: COLORS.textStrong,
-      letterSpacing: -0.18,
-    },
-    emptyDesc: {
-      fontSize: EMPTY_STYLE().emptyFontSize,
-      fontFamily: EMPTY_STYLE().emptyFontFamily,
-      color: EMPTY_STYLE().emptyColor,
-      textAlign: 'center',
-      lineHeight: rf(18),
-    },
+      emptyStateOuter: {
+        width: '100%',
+        alignItems: 'center',
+        paddingVertical: getResponsiveHeight(8),
+        paddingHorizontal: getResponsiveWidth(4),
+      },
+      emptyStateGroup: {
+        width: '100%',
+        alignItems: 'center',
+        paddingHorizontal: getResponsiveWidth(16),
+        maxWidth: '100%',
+      },
+      emptyCtaStack: {
+        alignSelf: 'center',
+        width: '58%',
+        maxWidth: getResponsiveWidth(188),
+        marginTop: getResponsiveHeight(18),
+        gap: getResponsiveHeight(10),
+      },
+      /** 빈 상태 전용 — 풀폭 고정 높이 CTA가 아닌 유도 버튼 */
+      emptyStateCta: {
+        alignSelf: 'stretch',
+        width: '100%',
+        paddingVertical: getResponsiveHeight(10),
+        paddingHorizontal: getResponsiveWidth(16),
+        minHeight: getResponsiveHeight(40),
+        borderRadius: getResponsiveIconSize(12),
+        backgroundColor: '#FFC84D',
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
+      emptyStateCtaOutline: {
+        alignSelf: 'stretch',
+        width: '100%',
+        paddingVertical: getResponsiveHeight(10),
+        paddingHorizontal: getResponsiveWidth(16),
+        minHeight: getResponsiveHeight(40),
+        borderRadius: getResponsiveIconSize(12),
+        backgroundColor: colors.surfacePrimary,
+        borderWidth: 1,
+        borderColor: colors.borderSubtle,
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
+      emptyStateCtaText: {
+        fontSize: rf(13),
+        fontFamily: FONTS.SEMI_BOLD,
+        color: '#111827',
+        letterSpacing: -0.18,
+      },
+      emptyStateCtaTextOutline: {
+        fontSize: rf(13),
+        fontFamily: FONTS.SEMI_BOLD,
+        color: colors.textStrong,
+        letterSpacing: -0.18,
+      },
+      emptyDesc: {
+        fontSize: EMPTY_STYLE.emptyFontSize,
+        fontFamily: EMPTY_STYLE.emptyFontFamily,
+        color: EMPTY_STYLE.emptyColor,
+        textAlign: 'center',
+        lineHeight: rf(18),
+      },
 
-    footerFixed: {
-      position: 'absolute',
-    },
+      footerFixed: {
+        position: 'absolute',
+      },
 
-    addButton: {
-      alignSelf: 'center',
-      paddingHorizontal: getResponsiveWidth(32),
-      height: getResponsiveHeight(46),
-      borderRadius: getResponsiveIconSize(12),
-      backgroundColor: '#FFC84D',
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
+      addButton: {
+        alignSelf: 'center',
+        paddingHorizontal: getResponsiveWidth(32),
+        height: getResponsiveHeight(46),
+        borderRadius: getResponsiveIconSize(12),
+        backgroundColor: '#FFC84D',
+        alignItems: 'center',
+        justifyContent: 'center',
+      },
 
-    addButtonText: {
-      fontSize: rf(13.5),
-      fontFamily: FONTS.SEMI_BOLD,
-      color: '#111827',
-      letterSpacing: -0.2,
-    },
-  }));
+      addButtonText: {
+        fontSize: rf(13.5),
+        fontFamily: FONTS.SEMI_BOLD,
+        color: '#111827',
+        letterSpacing: -0.2,
+      },
+    }),
+    [colors, isDark, EMPTY_STYLE],
+  );
   const {width: screenWidth, height: screenHeight} = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
@@ -898,7 +933,13 @@ export default function MemberGridSection({
   const paddingH = getResponsiveWidth(8);
 
   const gapX = getResponsiveWidth(8);
-  const gapY = getResponsiveHeight(14);
+  // 멤버 수에 따라 행 간격 조정 (적을수록 더 작게)
+  const gapY = useMemo(() => {
+    if (members.length <= 3) {
+      return getResponsiveHeight(Platform.OS === 'android' ? 4 : 6);
+    }
+    return getResponsiveHeight(Platform.OS === 'android' ? 10 : 14);
+  }, [members.length]);
 
   const containerWidth =
     screenWidth - LAYOUT_STYLE().screenPaddingHorizontal * 2;
@@ -906,18 +947,22 @@ export default function MemberGridSection({
   const itemWidth = (innerContentWidth - gapX * (chunkSize - 1)) / chunkSize;
 
   // hasFamily가 전달된 경우: 가족 존재 여부로 빈 상태 판단 (혼자만 있을 때도 정상 표시)
-  const isEmptyState = hasFamily != null ? !hasFamily : (!members || members.length === 0);
+  const isEmptyState =
+    hasFamily != null ? !hasFamily : !members || members.length === 0;
   // 가족은 있지만 아직 나 혼자인 상태 (멤버 필터 후 0명)
-  const hasFamilyNoMembers = !isEmptyState && (!members || members.length === 0);
+  const hasFamilyNoMembers =
+    !isEmptyState && (!members || members.length === 0);
+
+  // 빈 상태(가족 없음/멤버 없음)일 때만 카드가 남은 높이를 채우도록 유지.
+  // 멤버가 있을 때 flex로 늘리면 하단에 큰 빈 공간이 생김.
+  const shouldFillHeight = isEmptyState || hasFamilyNoMembers;
 
   const onlineSet = useMemo(() => {
     return new Set((onlineUserIds || []).map(v => String(v)));
   }, [onlineUserIds]);
 
   const isRefreshing =
-    typeof isRefreshingProp === 'boolean'
-      ? isRefreshingProp
-      : false;
+    typeof isRefreshingProp === 'boolean' ? isRefreshingProp : false;
 
   const handleAddPress = useCallback(() => {
     hapticLight();
@@ -935,20 +980,34 @@ export default function MemberGridSection({
   }, [onEmptyCreateFamilyPress, onAddPress]);
 
   // 버튼 아래 여백 확보 (absolute 버튼)
-  const safeBottom = Math.max(insets.bottom, getResponsiveHeight(10));
-  const footerPaddingBottom = safeBottom + getResponsiveHeight(8);
+  // 이 섹션의 버튼은 "카드 내부 absolute"라서, Android system navigation inset을 더하면
+  // 멤버-버튼 사이가 과하게 벌어질 수 있음. Android는 최소 패딩만 사용.
+  const safeBottom =
+    Platform.OS === 'android'
+      ? getResponsiveHeight(0)
+      : Math.max(insets.bottom, getResponsiveHeight(10));
+  const footerPaddingBottom =
+    Platform.OS === 'android'
+      ? getResponsiveHeight(18)
+      : safeBottom + getResponsiveHeight(8);
 
-  const ADD_BUTTON_H = getResponsiveHeight(40);
-  const ADD_BUTTON_GAP = getResponsiveHeight(14);
+  // 실제 버튼 높이(addButton: height 46)와 맞춰 bottomSpace 계산을 안정화
+  const ADD_BUTTON_H = getResponsiveHeight(46);
+  const ADD_BUTTON_GAP = getResponsiveHeight(
+    Platform.OS === 'android' ? 10 : 14,
+  );
   const bottomSpaceNonEmpty =
     footerPaddingBottom + ADD_BUTTON_H + ADD_BUTTON_GAP;
-  const bottomSpace = isEmptyState || hasFamilyNoMembers
-    ? getResponsiveHeight(22)
-    : bottomSpaceNonEmpty;
+  const bottomSpace =
+    isEmptyState || hasFamilyNoMembers
+      ? getResponsiveHeight(Platform.OS === 'android' ? 14 : 22)
+      : bottomSpaceNonEmpty;
 
   // 6명 초과" 기준으로 내부 스크롤 ON
   const enableInnerScroll =
-    !isEmptyState && !hasFamilyNoMembers && members.length > INTERNAL_SCROLL_THRESHOLD;
+    !isEmptyState &&
+    !hasFamilyNoMembers &&
+    members.length > INTERNAL_SCROLL_THRESHOLD;
 
   const gridMaxHRaw = screenHeight * 0.33; // 대충 카드 안에서 1/3 정도만 스크롤 영역
   const gridMaxH = clamp(
@@ -987,154 +1046,181 @@ export default function MemberGridSection({
     <View
       style={[
         styles.shadowWrap,
-        styles.shadowWrapFill,
+        shouldFillHeight && styles.shadowWrapFill,
         {width: containerWidth},
       ]}>
       <DropShadow
-        style={[styles.dropShadow, styles.dropShadowFill]}>
-      <View
-        style={[
-          styles.bodyContainer,
-          styles.bodyContainerFill,
-          {
-            width: '100%',
-            paddingHorizontal: paddingH,
-            paddingBottom: bottomSpace,
-          },
-        ]}>
-        <View style={[styles.gridArea, styles.gridAreaFill]}>
-          {isEmptyState ? (
-            <View style={styles.emptyStateOuter}>
-              <View style={styles.emptyStateGroup}>
-                <Image
-                  style={{
-                    width: getResponsiveWidth(34),
-                    height: getResponsiveWidth(34),
-                    resizeMode: 'contain',
-                    tintColor: EMPTY_STYLE().emptyColor,
-                    marginBottom: getResponsiveHeight(10),
-                  }}
-                  source={require('../../../assets/icons/tabs/1/family.png')}
-                />
-                <AppText allowFontScaling={false} style={styles.emptyDesc}>
-                  {
-                    '아직 가족 모임이 완성되지 않았어요.\n초대 코드로 참여하거나 새 모임을 만들어 보세요!'
-                  }
-                </AppText>
-                <View style={styles.emptyCtaStack}>
+        style={[styles.dropShadow, shouldFillHeight && styles.dropShadowFill]}>
+        <View
+          style={[
+            styles.bodyContainer,
+            shouldFillHeight && styles.bodyContainerFill,
+            {
+              width: '100%',
+              paddingHorizontal: paddingH,
+              paddingBottom: bottomSpace,
+            },
+          ]}>
+          <View
+            style={[
+              styles.gridArea,
+              styles.gridAreaFill,
+              {
+                justifyContent:
+                  Platform.OS === 'android'
+                    ? shouldFillHeight
+                      ? 'center'
+                      : 'flex-start'
+                    : 'center',
+              },
+            ]}>
+            {isEmptyState ? (
+              <View style={styles.emptyStateOuter}>
+                <View style={styles.emptyStateGroup}>
+                  <Image
+                    style={{
+                      width: getResponsiveWidth(34),
+                      height: getResponsiveWidth(34),
+                      resizeMode: 'contain',
+                      tintColor: EMPTY_STYLE.emptyColor,
+                      marginBottom: getResponsiveHeight(10),
+                    }}
+                    source={require('../../../assets/icons/tabs/1/family.png')}
+                  />
+                  <AppText allowFontScaling={false} style={styles.emptyDesc}>
+                    {
+                      '아직 가족 모임이 완성되지 않았어요.\n초대 코드로 참여하거나 새 모임을 만들어 보세요!'
+                    }
+                  </AppText>
+                  <View style={styles.emptyCtaStack}>
+                    <TouchableOpacity
+                      ref={guideInviteRef}
+                      activeOpacity={0.88}
+                      onPress={handleEmptyJoinByCode}
+                      disabled={isRefreshing}
+                      style={[
+                        styles.emptyStateCta,
+                        isRefreshing && {opacity: 0.5},
+                      ]}>
+                      <AppText
+                        allowFontScaling={false}
+                        style={styles.emptyStateCtaText}>
+                        초대코드로 참여
+                      </AppText>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      activeOpacity={0.88}
+                      onPress={handleEmptyCreateFamily}
+                      disabled={isRefreshing}
+                      style={[
+                        styles.emptyStateCtaOutline,
+                        isRefreshing && {opacity: 0.5},
+                      ]}>
+                      <AppText
+                        allowFontScaling={false}
+                        style={styles.emptyStateCtaTextOutline}>
+                        새 모임 만들기
+                      </AppText>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            ) : hasFamilyNoMembers ? (
+              // 가족 생성 후 나 혼자인 상태: 아이콘 + 안내 텍스트 + 초대 버튼 인라인
+              <View style={styles.emptyStateOuter}>
+                <View style={styles.emptyStateGroup}>
+                  <Image
+                    style={{
+                      width: getResponsiveWidth(34),
+                      height: getResponsiveWidth(34),
+                      resizeMode: 'contain',
+                      tintColor: EMPTY_STYLE.emptyColor,
+                      marginBottom: getResponsiveHeight(10),
+                    }}
+                    source={require('../../../assets/icons/tabs/1/family.png')}
+                  />
+                  <AppText allowFontScaling={false} style={styles.emptyDesc}>
+                    {
+                      '아직 가족 모임이 완성되지 않았어요.\n가족을 초대해서 모임을 완성해보세요!'
+                    }
+                  </AppText>
                   <TouchableOpacity
                     ref={guideInviteRef}
-                    activeOpacity={0.88}
-                    onPress={handleEmptyJoinByCode}
+                    activeOpacity={0.9}
+                    onPress={handleAddPress}
                     disabled={isRefreshing}
                     style={[
-                      styles.emptyStateCta,
+                      styles.addButton,
+                      {marginTop: getResponsiveHeight(16)},
                       isRefreshing && {opacity: 0.5},
                     ]}>
                     <AppText
                       allowFontScaling={false}
-                      style={styles.emptyStateCtaText}>
-                      초대코드로 참여
-                    </AppText>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    activeOpacity={0.88}
-                    onPress={handleEmptyCreateFamily}
-                    disabled={isRefreshing}
-                    style={[
-                      styles.emptyStateCtaOutline,
-                      isRefreshing && {opacity: 0.5},
-                    ]}>
-                    <AppText
-                      allowFontScaling={false}
-                      style={styles.emptyStateCtaTextOutline}>
-                      새 모임 만들기
+                      style={styles.addButtonText}>
+                      가족 초대하기
                     </AppText>
                   </TouchableOpacity>
                 </View>
               </View>
-            </View>
-          ) : hasFamilyNoMembers ? (
-            // 가족 생성 후 나 혼자인 상태: 아이콘 + 안내 텍스트 + 초대 버튼 인라인
-            <View style={styles.emptyStateOuter}>
-              <View style={styles.emptyStateGroup}>
-                <Image
-                  style={{
-                    width: getResponsiveWidth(34),
-                    height: getResponsiveWidth(34),
-                    resizeMode: 'contain',
-                    tintColor: EMPTY_STYLE().emptyColor,
-                    marginBottom: getResponsiveHeight(10),
-                  }}
-                  source={require('../../../assets/icons/tabs/1/family.png')}
-                />
-                <AppText allowFontScaling={false} style={styles.emptyDesc}>
-                  {'아직 가족 모임이 완성되지 않았어요.\n가족을 초대해서 모임을 완성해보세요!'}
-                </AppText>
-                <TouchableOpacity
-                  ref={guideInviteRef}
-                  activeOpacity={0.9}
-                  onPress={handleAddPress}
-                  disabled={isRefreshing}
-                  style={[styles.addButton, {marginTop: getResponsiveHeight(16)}, isRefreshing && {opacity: 0.5}]}>
-                  <AppText allowFontScaling={false} style={styles.addButtonText}>
-                    가족 초대하기
-                  </AppText>
-                </TouchableOpacity>
+            ) : enableInnerScroll ? (
+              // 여기: 6명 초과면 "이 영역만" 스크롤
+              <View style={[styles.innerScrollWrap, {maxHeight: gridMaxH}]}>
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  nestedScrollEnabled
+                  contentContainerStyle={styles.innerScrollContent}
+                  scrollEventThrottle={16}
+                  // iOS에서 스크롤 위/아래 바운스 느낌(싫으면 false)
+                  bounces={true}>
+                  {GridContent}
+                </ScrollView>
               </View>
-            </View>
-          ) : enableInnerScroll ? (
-            // 여기: 6명 초과면 "이 영역만" 스크롤
-            <View style={[styles.innerScrollWrap, {maxHeight: gridMaxH}]}>
-              <ScrollView
-                showsVerticalScrollIndicator={false}
-                nestedScrollEnabled
-                contentContainerStyle={styles.innerScrollContent}
-                scrollEventThrottle={16}
-                // iOS에서 스크롤 위/아래 바운스 느낌(싫으면 false)
-                bounces={true}>
-                {GridContent}
-              </ScrollView>
-            </View>
-          ) : (
-            GridContent
-          )}
+            ) : (
+              GridContent
+            )}
 
-          {isRefreshing && (
-            <View style={styles.loadingOverlay} pointerEvents="auto">
-              <View style={styles.loadingCard}>
-                <ActivityIndicator size="small" color="#111827" />
-                <AppText allowFontScaling={false} style={styles.loadingText}>
-                  로딩중…
-                </AppText>
+            {isRefreshing && (
+              <View style={styles.loadingOverlay} pointerEvents="auto">
+                <View style={styles.loadingCard}>
+                  <ActivityIndicator size="small" color="#111827" />
+                  <AppText allowFontScaling={false} style={styles.loadingText}>
+                    로딩중…
+                  </AppText>
+                </View>
               </View>
+            )}
+          </View>
+
+          {!isEmptyState && !hasFamilyNoMembers && (
+            <View
+              style={[
+                styles.footerFixed,
+                {
+                  left: paddingH * 2,
+                  right: paddingH * 2,
+                  bottom:
+                    Platform.OS === 'android'
+                      ? footerPaddingBottom
+                      : paddingH * 2,
+                },
+              ]}>
+              <TouchableOpacity
+                ref={guideInviteRef}
+                activeOpacity={0.9}
+                onPress={handleAddPress}
+                disabled={isRefreshing}
+                style={[
+                  styles.addButton,
+                  {alignSelf: 'stretch', paddingHorizontal: 0},
+                  isRefreshing && {opacity: 0.5},
+                ]}>
+                <AppText allowFontScaling={false} style={styles.addButtonText}>
+                  가족 초대하기
+                </AppText>
+              </TouchableOpacity>
             </View>
           )}
         </View>
-
-        {!isEmptyState && !hasFamilyNoMembers && (
-          <View
-            style={[
-              styles.footerFixed,
-              {
-                left: paddingH * 2,
-                right: paddingH * 2,
-                bottom: paddingH * 2,
-              },
-            ]}>
-            <TouchableOpacity
-              ref={guideInviteRef}
-              activeOpacity={0.9}
-              onPress={handleAddPress}
-              disabled={isRefreshing}
-              style={[styles.addButton, {alignSelf: 'stretch', paddingHorizontal: 0}, isRefreshing && {opacity: 0.5}]}>
-              <AppText allowFontScaling={false} style={styles.addButtonText}>
-                가족 초대하기
-              </AppText>
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
       </DropShadow>
     </View>
   );

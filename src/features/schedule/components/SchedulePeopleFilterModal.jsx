@@ -1,13 +1,12 @@
 import React, {useEffect, useRef, useState, useCallback, useMemo} from 'react';
-import {View, TouchableOpacity, StyleSheet, Platform} from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {BottomSheetScrollView} from '@gorhom/bottom-sheet';
 import AppText from 'components/AppText';
 import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
 import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
-import BOTTOM_SHEET_TITLES, {
-  BOTTOM_SHEET_BUTTON_LABELS,
-} from 'constants/bottomSheetTitles';
+import BOTTOM_SHEET_TITLES from 'constants/bottomSheetTitles';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -223,7 +222,7 @@ export default function SchedulePeopleFilterModal({
             {chips.map(chip => {
               const active = isChipActive(chip);
               return (
-                <TouchableOpacity
+                <SpringPressable
                   key={chip.id}
                   activeOpacity={0.75}
                   onPress={() => handleChipPress(chip)}
@@ -234,7 +233,7 @@ export default function SchedulePeopleFilterModal({
                     numberOfLines={1}>
                     {chip.label}
                   </AppText>
-                </TouchableOpacity>
+                </SpringPressable>
               );
             })}
           </View>
@@ -244,11 +243,8 @@ export default function SchedulePeopleFilterModal({
       <BottomSheetFooterButtons
         bottomSafe={bottomSafe}
         includeBottomSafePadding
-        onCancel={onClose}
         onSave={handleApply}
-        cancelLabel={BOTTOM_SHEET_BUTTON_LABELS.CANCEL}
         saveLabel="선택하기"
-        showCancel
         saveDisabled={!hasPeopleFilterChange}
         autoCloseOnSave={false}
         buttonRowStyle={{marginTop: 0}}

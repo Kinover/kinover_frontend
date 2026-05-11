@@ -1,14 +1,7 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
-import {
-  View,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  Platform,
-  ActivityIndicator,
-  Image,
-} from 'react-native';
+import { View, StyleSheet, FlatList, Platform, ActivityIndicator, Image } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import AppText from 'components/AppText';
 import FastImage from '@d11/react-native-fast-image';
 
@@ -36,6 +29,11 @@ import {toCdnUrl} from 'utils/mediaUrl';
 
 import MentionText from 'components/mention/MentionText';
 import {FONTS} from 'styles/typography';
+import {useColors, useIsDark} from 'hooks/useColors';
+import {
+  CHAT_OUTGOING_BUBBLE_DARK_BG,
+  CHAT_OUTGOING_BUBBLE_DARK_TEXT,
+} from '../../utils/chatOutgoingBubbleDark';
 
 export default function SendChat({
   chatTime,
@@ -52,6 +50,8 @@ export default function SendChat({
   // 이 메시지를 안 읽은 사람 수
   unreadCount = 0,
 }) {
+  const colors = useColors();
+  const isDark = useIsDark();
   const styles = useScaledStyleSheet(rf => ({
     sendContainer: {
       flexDirection: 'row',
@@ -74,7 +74,7 @@ export default function SendChat({
     },
 
     sendBubble: {
-      backgroundColor: '#FFECC3',
+      backgroundColor: isDark ? CHAT_OUTGOING_BUBBLE_DARK_BG : '#FFECC3',
       borderRadius: getResponsiveIconSize(20),
       maxWidth: getResponsiveWidth(260),
       flexShrink: 1,
@@ -91,7 +91,7 @@ export default function SendChat({
     sendText: {
       fontFamily: CHATROOM_STYLE().messageFontFamily,
       fontSize: CHATROOM_STYLE().messageFontSize,
-      color: 'black',
+      color: isDark ? CHAT_OUTGOING_BUBBLE_DARK_TEXT : '#111827',
       lineHeight: rf(17),
     },
     mentionText: {
@@ -101,7 +101,7 @@ export default function SendChat({
 
     sendTime: {
       fontSize: rf(10.5),
-      color: '#666',
+      color: colors.textTertiary,
       ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
     },
 
@@ -113,14 +113,14 @@ export default function SendChat({
       height: getResponsiveWidth(70),
       borderRadius: 4,
       margin: 2,
-      backgroundColor: '#F3F4F6',
+      backgroundColor: colors.surfaceMuted,
     },
-    thumbFallback: {backgroundColor: '#E5E7EB'},
+    thumbFallback: {backgroundColor: colors.borderSubtle},
 
     singleWrapper: {position: 'relative', alignSelf: 'flex-end'},
     singleBase: {
       borderRadius: 10,
-      backgroundColor: '#F3F4F6',
+      backgroundColor: colors.surfaceMuted,
     },
 
     moreOverlay: {
@@ -195,9 +195,11 @@ export default function SendChat({
       borderBottomColor: 'transparent',
       marginLeft: 5,
     },
-  }));
-  // <AppText />는 접근성 정책 포함 AppText로 통일
-  const Text = AppText;
+  }), [colors, isDark]);
+  const outgoingBubbleBg = isDark
+    ? CHAT_OUTGOING_BUBBLE_DARK_BG
+    : '#FFECC3';
+
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -415,7 +417,7 @@ export default function SendChat({
     <ChatBubble
       alignment="right"
       paddingVariant="media"
-      backgroundColor="#FFECC3">
+      backgroundColor={outgoingBubbleBg}>
       <FlatList
         data={displayMedia}
         keyExtractor={(item, index) => String(item) + index}
@@ -429,7 +431,7 @@ export default function SendChat({
           const thumbSource = getThumbSource(item);
 
           return (
-            <TouchableOpacity
+            <SpringPressable
               onPress={() => handleMediaPress(item, index)}
               activeOpacity={0.9}>
               <View style={styles.thumbWrap}>
@@ -458,7 +460,7 @@ export default function SendChat({
                   </View>
                 )}
               </View>
-            </TouchableOpacity>
+            </SpringPressable>
           );
         }}
       />
@@ -480,7 +482,7 @@ export default function SendChat({
 
     return (
       <View style={styles.singleWrapper}>
-        <TouchableOpacity
+        <SpringPressable
           onPress={() => handleMediaPress(uri, 0)}
           activeOpacity={0.9}>
           <View>
@@ -520,7 +522,7 @@ export default function SendChat({
               </View>
             )}
           </View>
-        </TouchableOpacity>
+        </SpringPressable>
 
         {renderUploadOverlay(10)}
       </View>
@@ -550,7 +552,7 @@ export default function SendChat({
         <ChatBubble
           alignment="right"
           paddingVariant="text"
-          backgroundColor="#FFECC3">
+          backgroundColor={outgoingBubbleBg}>
           <MentionText
             text={message}
             users={mentionUsers}

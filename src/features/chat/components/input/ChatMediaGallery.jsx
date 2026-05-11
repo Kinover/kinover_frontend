@@ -1,12 +1,7 @@
 import React from 'react';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
-import {
-  FlatList,
-  Image,
-  StyleSheet,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+import { FlatList, Image, StyleSheet, View } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import Animated, * as Reanimated from 'react-native-reanimated';
 import {GestureDetector} from 'react-native-gesture-handler';
 
@@ -99,7 +94,7 @@ export default function ChatMediaGallery({
         <GestureDetector gesture={pinchGesture}>
           <View style={{flex: 1}}>
             <View style={styles.galleryFloatingArea} pointerEvents="box-none">
-              <TouchableOpacity
+              <SpringPressable
                 activeOpacity={0.9}
                 onPress={onPickFromSystemGallery}
                 style={styles.galleryFloatingButton}
@@ -115,7 +110,7 @@ export default function ChatMediaGallery({
                   }}
                   tintColor={'#ffffff'}
                 />
-              </TouchableOpacity>
+              </SpringPressable>
             </View>
 
             <FlatList

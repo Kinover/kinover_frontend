@@ -1,5 +1,6 @@
 import React, {memo, useMemo} from 'react';
-import {View, TouchableOpacity, StyleSheet, Animated} from 'react-native';
+import { View, StyleSheet, Animated } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import FastImage from '@d11/react-native-fast-image';
 import DropShadow from 'react-native-drop-shadow';
 
@@ -10,7 +11,8 @@ import {
   getResponsiveWidth,
 } from 'utils/responsive';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
-import {COLORS} from 'styles/style';
+import {TAB_SURFACE_CARD_RADIUS} from 'styles/style';
+import {useColors} from 'hooks/useColors';
 import {FONTS} from 'styles/typography';
 
 const FASTIMAGE_DEFAULTS = {
@@ -56,7 +58,7 @@ const Chip = memo(function Chip({text}) {
       ]}>
       <View style={[styles.chipDot, {backgroundColor: dynamicStyle.dot}]} />
       <AppText
-        size={10.8}
+        size={12.6}
         style={[styles.chipText, {color: dynamicStyle.text}]}
         numberOfLines={1}>
         {text}
@@ -83,11 +85,12 @@ const MemoryFeedListItem = memo(function MemoryFeedListItem({
   onPressOutCard,
   firstPostRef,
 }) {
+  const colors = useColors();
   // fontMode가 바뀔 때 재계산 — StyleSheet.create()는 최초 1회 고정이라 사용 불가
   const fontStyles = useScaledStyleSheet(rf => ({
-    dateText: {fontSize: rf(15), lineHeight: rf(18)},
-    metaCompactText: {fontSize: rf(13), lineHeight: rf(15)},
-    contentText: {fontSize: rf(14), lineHeight: rf(19)},
+    dateText: {fontSize: rf(18), lineHeight: rf(22)},
+    metaCompactText: {fontSize: rf(15.5), lineHeight: rf(19)},
+    contentText: {fontSize: rf(17), lineHeight: rf(23)},
   }));
 
   const mediaSource = useMemo(() => {
@@ -106,33 +109,39 @@ const MemoryFeedListItem = memo(function MemoryFeedListItem({
         <View
           ref={index === 0 ? firstPostRef : undefined}
           collapsable={index === 0 ? false : undefined}
-          style={styles.cardOuter}>
-          <TouchableOpacity
+          style={[
+            styles.cardOuter,
+            {
+              backgroundColor: colors.surfacePrimary,
+              borderColor: colors.borderSubtle,
+            },
+          ]}>
+          <SpringPressable
             activeOpacity={1}
             onPressIn={() => onPressInCard(scaleKey)}
             onPressOut={() => onPressOutCard(scaleKey)}
             onPress={() => onPressPost(postId)}
             style={styles.cardPress}>
             <View style={styles.cardHeader}>
-              <AppText style={[styles.dateText, fontStyles.dateText]}>
+              <AppText style={[styles.dateText, fontStyles.dateText, {color: colors.textPrimary}]}>
                 {dateLabel}
               </AppText>
               <AppText
-                style={[styles.metaCompactText, fontStyles.metaCompactText]}>
+                style={[styles.metaCompactText, fontStyles.metaCompactText, {color: colors.textDefault}]}>
                 {mediaLabel}
               </AppText>
             </View>
 
-            <View style={styles.mediaWrap}>
+            <View style={[styles.mediaWrap, {backgroundColor: colors.borderSubtle}]}>
               {mediaSource ? (
                 <FastImage
                   fallback={true}
-                  style={styles.mediaImg}
+                  style={[styles.mediaImg, {backgroundColor: colors.surfaceMuted}]}
                   source={mediaSource}
                   resizeMode={FastImage.resizeMode.cover}
                 />
               ) : (
-                <View style={styles.mediaPlaceholder} />
+                <View style={[styles.mediaPlaceholder, {backgroundColor: colors.surfaceMuted}]} />
               )}
 
               {firstIsVideo && (
@@ -149,14 +158,14 @@ const MemoryFeedListItem = memo(function MemoryFeedListItem({
             <View style={styles.contentArea}>
               {bodyText ? (
                 <AppText
-                  style={[styles.contentText, fontStyles.contentText]}
+                  style={[styles.contentText, fontStyles.contentText, {color: colors.textPrimary}]}
                   numberOfLines={3}
                   ellipsizeMode="tail">
                   {bodyText}
                 </AppText>
               ) : null}
             </View>
-          </TouchableOpacity>
+          </SpringPressable>
         </View>
       </DropShadow>
     </View>
@@ -173,16 +182,16 @@ const styles = StyleSheet.create({
   cardShadowWrap: {},
   cardDropShadow: {
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.12,
-    shadowRadius: 2,
-    elevation: 3,
+    shadowOffset: {width: 0, height: 8},
+    shadowOpacity: 0.045,
+    shadowRadius: 20,
+    elevation: 1,
   },
   cardOuter: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: getResponsiveIconSize(12),
+    borderRadius: TAB_SURFACE_CARD_RADIUS(),
     overflow: 'visible',
-    marginBottom: getResponsiveHeight(18),
+    borderWidth: StyleSheet.hairlineWidth * 2,
+    marginBottom: getResponsiveHeight(22),
     marginHorizontal: '3%',
     paddingHorizontal: getResponsiveWidth(22),
     paddingVertical: getResponsiveHeight(27),
@@ -196,22 +205,19 @@ const styles = StyleSheet.create({
   },
   metaCompactText: {
     // fontSize/lineHeight → fontStyles.metaCompactText (useScaledStyleSheet)
-    fontFamily: FONTS.REGULAR,
+    fontFamily: FONTS.HANDWRITING,
     textAlignVertical: 'bottom',
-    color: COLORS.textDefault,
     marginLeft: getResponsiveWidth(8),
   },
   dateText: {
     // fontSize/lineHeight → fontStyles.dateText (useScaledStyleSheet)
-    fontFamily: FONTS.REGULAR,
+    fontFamily: FONTS.HANDWRITING,
     textAlignVertical: 'bottom',
-    color: COLORS.textPrimary,
     letterSpacing: 0.2,
   },
   mediaWrap: {
     width: '100%',
     aspectRatio: 4 / 3,
-    backgroundColor: COLORS.borderSubtle,
     borderRadius: getResponsiveIconSize(2),
     overflow: 'hidden',
     position: 'relative',
@@ -219,12 +225,10 @@ const styles = StyleSheet.create({
   mediaImg: {
     width: '100%',
     height: '100%',
-    backgroundColor: COLORS.surfaceMuted,
   },
   mediaPlaceholder: {
     width: '100%',
     height: '100%',
-    backgroundColor: COLORS.surfaceMuted,
   },
   playCenter: {
     ...StyleSheet.absoluteFillObject,
@@ -265,7 +269,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.9)',
   },
   chipDot: {
     width: getResponsiveWidth(5),
@@ -285,8 +288,7 @@ const styles = StyleSheet.create({
   },
   contentText: {
     // fontSize/lineHeight → fontStyles.contentText (useScaledStyleSheet)
-    fontFamily: FONTS.REGULAR,
-    color: COLORS.textPrimary,
+    fontFamily: FONTS.HANDWRITING,
     letterSpacing: 0.1,
   },
 });

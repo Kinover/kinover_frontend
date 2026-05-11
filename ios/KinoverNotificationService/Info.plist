@@ -9,5 +9,9 @@
 		<key>NSExtensionPrincipalClass</key>
 		<string>$(PRODUCT_MODULE_NAME).NotificationService</string>
 	</dict>
+	<key>UIAppFonts</key>
+	<array>
+		<string>NanumPenScript-Regular.ttf</string>
+	</array>
 </dict>
 </plist>

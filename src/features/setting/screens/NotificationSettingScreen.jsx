@@ -1,6 +1,6 @@
 // NotificationSettingScreen.js
-import React, {useState, useEffect, useLayoutEffect} from 'react';
-import {View, ScrollView} from 'react-native';
+import React, {useState, useEffect, useLayoutEffect, useMemo} from 'react';
+import {View, ScrollView, StyleSheet} from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -11,7 +11,10 @@ import {
 import CustomSwitch from 'components/customSwitch';
 import useHideTabBar from 'hooks/useHideTabBar';
 import {useSelector, useDispatch} from 'react-redux';
-import {RenderHeaderBackButton} from 'app/navigation/helpers/tabHeaderHelpers';
+import {
+  RenderHeaderBackButton,
+  stackScreenHeaderTitleCentered,
+} from 'app/navigation/helpers/tabHeaderHelpers';
 import {setMarketingNotificationEnabled} from 'store/uiSlice';
 import {
   useGetMarketingNotificationQuery,
@@ -26,27 +29,25 @@ import {
 
 // 토스트 모달 import
 import ToastModal from 'components/modal/ToastModal';
-import {SETTING_STYLES, getHeaderStyles} from 'styles/style';
+import {getHeaderStyles, getSettingStyles} from 'styles/style';
+import {useColors} from 'hooks/useColors';
 
 export default function NotificationSettingScreen() {
-  const styles = useScaledStyleSheet(() => ({
+  const colors = useColors();
+  const headerStyles = useMemo(() => getHeaderStyles(colors), [colors]);
 
+  const styles = useScaledStyleSheet(() => {
+    const S = getSettingStyles(colors);
+    return {
   container: {
-    backgroundColor: '#fff',
+    backgroundColor: colors.surfaceSecondary,
     paddingHorizontal: getResponsiveWidth(18),
     paddingTop: getResponsiveHeight(16),
     flex: 1,
   },
-  header: {
-    fontSize: SETTING_STYLES().titleFontSize,
-    fontWeight: SETTING_STYLES().titleFontWeight,
-    marginBottom: getResponsiveHeight(20), // 🔽 30 → 20
-    color: SETTING_STYLES().titleFontColor,
-    fontFamily: SETTING_STYLES().titleFontFamily,
-  },
   section: {
-    borderBottomWidth: 0.5,
-    borderColor: '#E5E5E5',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.borderSubtle,
     paddingVertical: getResponsiveHeight(6),
   },
   row: {
@@ -56,14 +57,14 @@ export default function NotificationSettingScreen() {
     paddingVertical: getResponsiveHeight(8),
   },
   label: {
-    fontSize: SETTING_STYLES().labelFontSize,
-    color: SETTING_STYLES().labelFontColor,
-    fontFamily: SETTING_STYLES().labelFontFamily,
+    fontSize: S.labelFontSize,
+    color: S.labelFontColor,
+    fontFamily: S.labelFontFamily,
   },
   marketingSubLabel: {
     fontSize: 11,
-    color: '#9E9E9E',
-    fontFamily: SETTING_STYLES().labelFontFamily,
+    color: colors.textTertiary,
+    fontFamily: S.labelFontFamily,
     marginTop: getResponsiveHeight(2),
     flexShrink: 1,
     paddingRight: getResponsiveWidth(12),
@@ -72,7 +73,8 @@ export default function NotificationSettingScreen() {
     flex: 1,
   },
 
-  }));
+  };
+  }, [colors]);
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const route = useRoute();
@@ -108,15 +110,15 @@ export default function NotificationSettingScreen() {
 
  // 알림설정화면 뒤로가기 → 한 단계 pop (설정화면으로, 슬라이드 애니메이션)
   useLayoutEffect(() => {
-    const H = getHeaderStyles();
     navigation.setOptions({
+      ...stackScreenHeaderTitleCentered(),
       headerTitle: () => (
         <AppText
           allowFontScaling={false}
           style={{
-            fontSize: H.defaultTitleFontSize,
-            color: H.defaultTitleFontColor,
-            fontFamily: H.defaultTitleFontFamily,
+            fontSize: headerStyles.defaultTitleFontSize,
+            color: headerStyles.defaultTitleFontColor,
+            fontFamily: headerStyles.defaultTitleFontFamily,
           }}>
           알림 설정
         </AppText>
@@ -135,7 +137,7 @@ export default function NotificationSettingScreen() {
         />
       ),
     });
-  }, [navigation, route]);
+  }, [navigation, route, headerStyles]);
 
  // 전체 알림 토글
   const handleToggleAllNotification = async () => {

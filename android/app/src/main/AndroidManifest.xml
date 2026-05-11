@@ -1,5 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.kinover_frontend">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -24,7 +23,7 @@
 
         <meta-data
             android:name="com.kakao.sdk.AppKey"
-            android:value="@string/kakao_app_key" />
+            android:value="${kakaoNativeAppKey}" />
 
         <activity
             android:name=".MainActivity"
@@ -57,7 +56,8 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data
                     android:host="oauth"
-                    android:scheme="kakao481db040d2e018832f0c8232a8fb7042"/>
+                    android:scheme="kakao${kakaoNativeAppKey}"/> <!-- 여기도 변수 처리 -->
+
             </intent-filter>
         </activity>
 

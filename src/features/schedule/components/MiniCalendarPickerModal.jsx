@@ -2,14 +2,14 @@
 // src/features/schedule/components/MiniCalendarPickerModal.jsx
 
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {View, TouchableOpacity, Platform, useWindowDimensions} from 'react-native';
+import { View, Platform, useWindowDimensions } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 
 import DateTimePicker, {DateTimePickerAndroid} from '@react-native-community/datetimepicker';
 
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
-
 
 import CustomModal from 'components/modal/CustomModal';
 import {FONTS} from 'styles/typography';
@@ -282,34 +282,34 @@ export default function MiniCalendarPickerModal({
               선택 가능 범위: {minYear}년 1월 1일 ~ {maxYear}년 12월 31일
             </AppText>
 
-            {/* <TouchableOpacity
+            {/* <SpringPressable
               activeOpacity={0.9}
               onPress={resetToBase}
               style={styles.resetBtnIOS}>
               <AppText allowFontScaling={false} style={styles.resetTextIOS}>
                 기본값으로 되돌리기
               </AppText>
-            </TouchableOpacity> */}
+            </SpringPressable> */}
           </>
         ) : (
           <>
-            <TouchableOpacity
+            <SpringPressable
               activeOpacity={0.9}
               onPress={openAndroidPicker}
               style={styles.androidPickBtn}>
               <AppText allowFontScaling={false} style={styles.androidPickText}>
                 날짜 고르기
               </AppText>
-            </TouchableOpacity>
+            </SpringPressable>
 
-            {/* <TouchableOpacity
+            {/* <SpringPressable
               activeOpacity={0.9}
               onPress={resetToBase}
               style={styles.resetBtn}>
               <AppText allowFontScaling={false} style={styles.resetText}>
                 기본값으로 되돌리기
               </AppText>
-            </TouchableOpacity> */}
+            </SpringPressable> */}
 
             <AppText allowFontScaling={false} style={styles.rangeHint}>
               선택 가능 범위: {minYear}년 1월 1일 ~ {maxYear}년 12월 31일

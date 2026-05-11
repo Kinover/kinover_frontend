@@ -1,7 +1,9 @@
 // src/utils/navigationRenderers.js
-import React, {memo, useCallback} from 'react';
-import { Platform, TouchableOpacity, View, Image } from 'react-native';
-import {useSelector} from 'react-redux';
+import React, {memo, useCallback, createRef} from 'react';
+import { Platform, View, Image } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
+import {useSelector, useDispatch} from 'react-redux';
+import {toggleDarkMode} from 'store/uiSlice';
 import {
   useGetHasUnreadQuery,
   useGetUnreadCountQuery,
@@ -16,7 +18,8 @@ import {
 } from 'utils/responsive';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 
-import {BUTTON_STYLES, COLORS, HEADER_STYLES, LAYOUT_STYLE} from 'styles/style';
+import {HEADER_STYLES, LAYOUT_STYLE} from 'styles/style';
+import {useColors, useIsDark} from 'hooks/useColors';
 import {hapticLight} from 'utils/haptic';
 import {StackActions} from '@react-navigation/native';
 import {
@@ -27,6 +30,29 @@ import {
   getLastFromTabForGlobalScreen,
 } from '../navigationService';
 import {FONTS} from 'styles/typography';
+
+/**
+ * 스택 헤더 제목을 화면 중앙에 맞춤.
+ * Android는 기본적으로 왼쪽 영역만 제외한 나머지의 중앙에 타이틀이 가서 시각적으로 치우쳐 보임.
+ * 오른쪽에 뒤로 버튼과 동일한 폭의 투명 스페이서를 둬서 균형을 맞춤.
+ */
+export function stackScreenHeaderTitleCentered() {
+  if (Platform.OS !== 'android') {
+    return {headerTitleAlign: 'center'};
+  }
+  const H = HEADER_STYLES();
+  const balanceWidth =
+    H.headerLeftIconLeftPadding -
+    getResponsiveWidth(3) +
+    H.headerLeftIconWidth +
+    getResponsiveWidth(2);
+  return {
+    headerTitleAlign: 'center',
+    headerRight: () => (
+      <View pointerEvents="none" style={{width: balanceWidth}} />
+    ),
+  };
+}
 
 function useTabHeaderBadgeStyles() {
   return useScaledStyleSheet(rf => ({
@@ -90,6 +116,12 @@ function useNotificationBadgeState() {
   );
 
   return {hasUnread, unreadCount: Number.isFinite(unreadCount) ? unreadCount : 0};
+}
+
+/** 명시 tint가 없으면 다크 모드에서 흰색, 라이트에서 검정 */
+function useResolvedHeaderIconTint(explicitTint) {
+  const isDark = useIsDark();
+  return explicitTint ?? (isDark ? '#FFFFFF' : '#000000');
 }
 
 /* =========================================================
@@ -207,8 +239,11 @@ export const TabBarIcon = memo(function TabBarIcon({
 /* =========================================================
  * 탭바 라벨 (이게 없어서 지금 터진 거임)
  * ========================================================= */
-export const renderTabBarLabel = (label, focused) => {
-  const fontSize = getResponsiveFontSize(Platform.OS === 'ios' ? 11 : 12);
+export function TabBarLabel({label, focused}) {
+  const colors = useColors();
+  const fontSize = getResponsiveFontSize(
+    Platform.OS === 'ios' ? 11 : 12,
+  );
   const lineHeight = Math.round(fontSize + 4);
 
   return (
@@ -216,18 +251,22 @@ export const renderTabBarLabel = (label, focused) => {
       allowFontScaling={false}
       numberOfLines={1}
       style={{
-        color: focused ? COLORS.textPrimary : 'gray',
+        color: focused ? colors.textPrimary : 'gray',
         fontSize,
         lineHeight,
-        marginTop: getResponsiveHeight(3),
+        marginTop:
+          Platform.OS === 'android'
+            ? getResponsiveHeight(6)
+            : getResponsiveHeight(2),
         fontFamily: FONTS.MEDIUM,
+        letterSpacing: -0.3,
         includeFontPadding: false,
         textAlignVertical: 'center',
       }}>
       {label}
     </AppText>
   );
-};
+}
 
 /* =========================================================
  * 공통: 헤더 아이콘 버튼 (햅틱 포함)
@@ -241,7 +280,7 @@ const createIconButton = (
   tintColor,
 ) => {
   return (
-    <TouchableOpacity
+    <SpringPressable
       onPress={() => {
         hapticLight();
         onPress?.();
@@ -260,25 +299,43 @@ const createIconButton = (
           tintColor ? {tintColor} : null,
         ]}
       />
-    </TouchableOpacity>
+    </SpringPressable>
   );
 };
 
 /* =========================================================
  * 헤더: 타이틀 로고(아이콘만)
  * ========================================================= */
+/** 홈 `?` 도움말 3단계 스포트라이트용 measureInWindow 타겟 */
+export const headerTitleLogoMeasureRef = createRef();
+
 export const RenderHeaderTitleLogo = memo(function RenderHeaderTitleLogo() {
+  const dispatch = useDispatch();
+
   return (
-    <View style={{paddingBottom: getResponsiveHeight(14)}}>
-      <Image
-        source={require('../../../assets/icons/kino-logo.png')}
-        style={{
-          top: getResponsiveHeight(4),
-          width: getResponsiveWidth(40),
-          height: getResponsiveHeight(40),
-          marginLeft: LAYOUT_STYLE().screenPaddingHorizontal - 3,
+    <View
+      ref={headerTitleLogoMeasureRef}
+      collapsable={false}
+      style={{paddingBottom: getResponsiveHeight(14)}}>
+      <SpringPressable
+        onPress={() => {
+          hapticLight();
+          dispatch(toggleDarkMode());
         }}
-      />
+        activeOpacity={0.8}
+        hitSlop={{top: 10, bottom: 10, left: 6, right: 10}}
+        accessibilityRole="button"
+        accessibilityLabel="테마 전환">
+        <Image
+          source={require('../../../assets/icons/kino-logo.png')}
+          style={{
+            top: getResponsiveHeight(4),
+            width: getResponsiveWidth(40),
+            height: getResponsiveHeight(40),
+            marginLeft: LAYOUT_STYLE().screenPaddingHorizontal - 3,
+          }}
+        />
+      </SpringPressable>
     </View>
   );
 });
@@ -291,7 +348,8 @@ export const RenderHeaderBook = memo(function RenderHeaderBook({
   currentScreen = '홈',
 }) {
   const bookIcon = require('../../../assets/icons/header/magazine.png');
-  const tint = currentScreen === '홈' ? '#FFFFFF' : 'black';
+  const isDark = useIsDark();
+  const tint = currentScreen === '홈' || isDark ? '#FFFFFF' : '#000000';
 
   const goBook = () =>
     navigation.navigate('Tabs', {
@@ -301,7 +359,7 @@ export const RenderHeaderBook = memo(function RenderHeaderBook({
 
   return (
     <View style={{flexDirection: 'row', alignItems: 'flex-end'}}>
-      <TouchableOpacity
+      <SpringPressable
         onPress={() => {
           hapticLight();
           goBook();
@@ -319,7 +377,7 @@ export const RenderHeaderBook = memo(function RenderHeaderBook({
             tint ? {tintColor: tint} : null,
           ]}
         />
-      </TouchableOpacity>
+      </SpringPressable>
     </View>
   );
 });
@@ -333,22 +391,29 @@ export const RenderHeaderHome = memo(function RenderHeaderHome({
   navigation: _navigation,
   currentScreen,
 }) {
+  const colors = useColors();
+  const isDark = useIsDark();
   const {hasUnread, unreadCount} = useNotificationBadgeState();
 
   const isHome = currentScreen === '홈';
+  const useWhiteIcons = isHome || isDark;
 
-  const bellIcon = isHome
+  const bellIcon = useWhiteIcons
     ? require('../../../assets/icons/header/bell_white.png')
     : require('../../../assets/icons/header/bell_black.png');
 
-  const settingIcon = isHome
+  const settingIcon = useWhiteIcons
     ? require('../../../assets/icons/header/setting_white.png')
     : require('../../../assets/icons/header/setting_black.png');
 
   const goAlarm = () => safeNavigate('알림화면', {fromTab: currentScreen});
   const goSetting = () => safeNavigate('설정화면', {fromTab: currentScreen});
 
-  const baseColor = isHome ? '#FFC84D' : '#FFFFFF';
+  const baseColor = isHome
+    ? '#FFC84D'
+    : isDark
+      ? colors.surfacePrimary
+      : '#FFFFFF';
   const styles = useTabHeaderBadgeStyles();
 
   return (
@@ -357,7 +422,7 @@ export const RenderHeaderHome = memo(function RenderHeaderHome({
         flexDirection: 'row',
         marginRight: LAYOUT_STYLE().screenPaddingHorizontal,
       }}>
-      <TouchableOpacity
+      <SpringPressable
         onPress={() => {
           hapticLight();
           goAlarm();
@@ -377,7 +442,7 @@ export const RenderHeaderHome = memo(function RenderHeaderHome({
           badgeInnerMinWidth={9}
           badgeInnerHPadding={0} // 홈에서는 살짝 더 여유 주기
         />
-      </TouchableOpacity>
+      </SpringPressable>
 
       <View style={{width: getResponsiveWidth(12)}} />
 
@@ -397,19 +462,21 @@ export const RenderHeaderHome = memo(function RenderHeaderHome({
  * 나머지 헤더 버튼들
  * ========================================================= */
 export const RenderHeaderLeft1 = memo(function RenderHeaderLeft1() {
+  const iconTint = useResolvedHeaderIconTint(undefined);
   return createIconButton(
     () => safeNavigate('알림화면'),
     require('../../../assets/images/navigator_alarm-button.png'),
     HEADER_STYLES().headerLeftIconWidth,
     {marginLeft: HEADER_STYLES().headerLeftIconLeftPadding},
     {},
-    null,
+    iconTint,
   );
 });
 
 export const RenderHeaderRightSetting = memo(function RenderHeaderRightSetting({
   navigation,
 }) {
+  const isDark = useIsDark();
   return createIconButton(
     () =>
       navigation.navigate('Tabs', {
@@ -419,35 +486,42 @@ export const RenderHeaderRightSetting = memo(function RenderHeaderRightSetting({
     require('../../../assets/images/setting_bt.png'),
     HEADER_STYLES().headerRightIconWidth,
     {marginRight: HEADER_STYLES().headerRightIconRightPadding},
+    {},
+    isDark ? '#FFFFFF' : undefined,
   );
 });
 
 export const RenderHeaderRightChatSetting = memo(
   function RenderHeaderRightChatSetting({onPress}) {
+    const iconTint = useResolvedHeaderIconTint(undefined);
     return createIconButton(
       () => onPress?.(),
       require('../../../assets/icons/List_black.png'),
       HEADER_STYLES().headerRightIconWidth,
       {marginRight: HEADER_STYLES().headerRightIconRightPadding},
       {},
+      iconTint,
     );
   },
 );
 
 export const RenderHeaderDeletePost = memo(function RenderHeaderDeletePost() {
+  const iconTint = useResolvedHeaderIconTint(undefined);
   return createIconButton(
     () => {},
     require('../../../assets/images/trash.png'),
     HEADER_STYLES().headerRightIconWidth,
     {marginRight: HEADER_STYLES().headerRightIconRightPadding},
     {zIndex: 999},
+    iconTint,
   );
 });
 
 export const RenderGoBackButton = memo(function RenderGoBackButton({
   navigation,
-  tintColor = 'black',
+  tintColor,
 }) {
+  const resolvedTint = useResolvedHeaderIconTint(tintColor);
   return createIconButton(
     () => navigation.goBack(),
     require('../../../assets/icons/caretDown_black.png'),
@@ -457,19 +531,20 @@ export const RenderGoBackButton = memo(function RenderGoBackButton({
         HEADER_STYLES().headerLeftIconLeftPadding - getResponsiveWidth(3),
     },
     {zIndex: 999},
-    tintColor,
+    resolvedTint,
   );
 });
 
 export const RenderGoBackButtonGallery = memo(
   function RenderGoBackButtonGallery({navigation, tintColor}) {
+    const resolvedTint = useResolvedHeaderIconTint(tintColor);
     return createIconButton(
       () => navigation.goBack(),
       require('../../../assets/images/navigator_goback-button.png'),
       HEADER_STYLES().headerLeftIconWidth,
       {marginLeft: HEADER_STYLES().headerLeftIconLeftPadding},
       {zIndex: 999},
-      tintColor,
+      resolvedTint,
     );
   },
 );
@@ -477,7 +552,7 @@ export const RenderGoBackButtonGallery = memo(
 export const RenderHeaderBackButton = memo(function RenderHeaderBackButton({
   navigation,
   route,
-  tintColor = 'black',
+  tintColor,
  /** 화면에서 뒤로가기 동작을 직접 지정할 때 사용 (예: 알림설정화면 → 설정화면) */
   onBackPressOverride,
 }) {
@@ -526,6 +601,8 @@ export const RenderHeaderBackButton = memo(function RenderHeaderBackButton({
     safeReset({index: 0, routes: [{name: 'Tabs'}]});
   }, [navigation, route?.name, fromTab, fromScreen, fromParams, onBackPressOverride]);
 
+  const resolvedTint = useResolvedHeaderIconTint(tintColor);
+
   return createIconButton(
     onPress,
     require('../../../assets/icons/caretDown_black.png'),
@@ -535,18 +612,21 @@ export const RenderHeaderBackButton = memo(function RenderHeaderBackButton({
         HEADER_STYLES().headerLeftIconLeftPadding - getResponsiveWidth(3),
     },
     {zIndex: 999},
-    tintColor,
+    resolvedTint,
   );
 });
 
 export const RenderHeaderLogo = memo(function RenderHeaderLogo({
   currentScreen = '홈',
 }) {
+  const colors = useColors();
   const titleFontSize = getResponsiveFontSize(20);
   const titleLineHeight = Math.round(titleFontSize + 6);
+  const titleColor =
+    currentScreen === '홈' ? '#FFFFFF' : colors.textPrimary;
 
   return (
-    <TouchableOpacity
+    <SpringPressable
       onPress={() => {
         hapticLight();
         safeNavigate('알림화면');
@@ -574,10 +654,10 @@ export const RenderHeaderLogo = memo(function RenderHeaderLogo({
           textAlignVertical: 'center',
           fontSize: titleFontSize,
           fontFamily: FONTS.SEMI_BOLD,
-          color: currentScreen === '홈' ? '#FFFFFF' : '#111827',
+          color: titleColor,
         }}>
         Kinover
       </AppText>
-    </TouchableOpacity>
+    </SpringPressable>
   );
 });

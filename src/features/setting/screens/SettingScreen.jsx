@@ -2,7 +2,16 @@
 // SettingScreen.jsx
 
 import React, {useEffect, useLayoutEffect, useState, useCallback, useMemo} from 'react';
-import { View, TouchableOpacity, ScrollView, Image, Linking, Alert, Pressable } from 'react-native';
+import {
+  View,
+  ScrollView,
+  Image,
+  Linking,
+  Alert,
+  Pressable,
+  StyleSheet,
+} from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 
 import {useNavigation, useRoute, StackActions, CommonActions} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
@@ -12,7 +21,10 @@ import {
   setLastFromTabForGlobalScreen,
   getResetToTabState,
 } from 'app/navigation/navigationService';
-import {RenderHeaderBackButton} from 'app/navigation/helpers/tabHeaderHelpers';
+import {
+  RenderHeaderBackButton,
+  stackScreenHeaderTitleCentered,
+} from 'app/navigation/helpers/tabHeaderHelpers';
 
 import LogoutModal from 'features/home/components/LogoutModal';
 import DeleteAccountModal from '../components/DeleteAccountModal';
@@ -26,7 +38,8 @@ import {
 import {useLogout} from 'features/auth/hooks/useLogout';
 import useHideTabBar from 'hooks/useHideTabBar';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
-import {SETTING_STYLES, getHeaderStyles} from 'styles/style';
+import {getHeaderStyles, getSettingStyles} from 'styles/style';
+import {useColors} from 'hooks/useColors';
 
 import {
   checkAndAuthBiometric,
@@ -49,6 +62,8 @@ export default function SettingScreen() {
   const route = useRoute();
   const logout = useLogout();
   const dispatch = useDispatch();
+  const colors = useColors();
+  const headerStyles = useMemo(() => getHeaderStyles(colors), [colors]);
 
   useHideTabBar();
 
@@ -63,15 +78,15 @@ export default function SettingScreen() {
 
   // 뒤로가기: pop 사용 → 슬라이드 애니메이션 (detachInactiveScreens: false라 탭 유지)
   useLayoutEffect(() => {
-    const H = getHeaderStyles();
     navigation.setOptions({
+      ...stackScreenHeaderTitleCentered(),
       headerTitle: () => (
         <AppText
           allowFontScaling={false}
           style={{
-            fontSize: H.defaultTitleFontSize,
-            color: H.defaultTitleFontColor,
-            fontFamily: H.defaultTitleFontFamily,
+            fontSize: headerStyles.defaultTitleFontSize,
+            color: headerStyles.defaultTitleFontColor,
+            fontFamily: headerStyles.defaultTitleFontFamily,
           }}>
           설정
         </AppText>
@@ -91,7 +106,7 @@ export default function SettingScreen() {
         />
       ),
     });
-  }, [navigation, route]);
+  }, [navigation, route, headerStyles]);
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -102,71 +117,75 @@ export default function SettingScreen() {
 
   const bioOn = useSelector(state => state.ui.bioLockEnabled);
 
-  const styles = useScaledStyleSheet(rf => {
-    const S = SETTING_STYLES();
-    return {
-      scroll: {
-        backgroundColor: '#fff',
-        flex: 1,
-      },
-      container: {
-        paddingHorizontal: getResponsiveWidth(20),
-        paddingTop: getResponsiveHeight(10),
-      },
-      header: {
-        fontSize: S.titleFontSize,
-        fontWeight: S.titleFontWeight,
-        marginBottom: getResponsiveHeight(14),
-        color: S.titleFontColor,
-        fontFamily: S.titleFontFamily,
-      },
-      sectionTitle: {
-        fontSize: rf(12.5),
-        color: '#888',
-        marginTop: 0,
-        marginBottom: getResponsiveHeight(8),
-        fontFamily: FONTS.MEDIUM,
-      },
-      hint: {
-        marginTop: getResponsiveHeight(3),
-        fontSize: rf(11.5),
-        color: '#A0A0A0',
-        fontFamily: FONTS.REGULAR,
-      },
-      row: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        minHeight: getResponsiveHeight(56),
-        paddingVertical: getResponsiveHeight(11),
-      },
-      rowTextWrap: {
-        flex: 1,
-        paddingRight: getResponsiveWidth(10),
-      },
-      label: {
-        fontSize: S.labelFontSize,
-        color: S.labelFontColor,
-        fontFamily: S.labelFontFamily,
-      },
-      value: {
-        fontSize: rf(13),
-        color: '#555',
-        fontFamily: FONTS.REGULAR,
-      },
-      arrow: {
-        width: getResponsiveIconSize(11),
-        height: getResponsiveIconSize(11),
-        resizeMode: 'contain',
-      },
-      section: {
-        borderBottomWidth: 0.5,
-        borderColor: '#E5E5E5',
-        paddingTop: getResponsiveHeight(10),
-        paddingBottom: getResponsiveHeight(8),
-      },
-    };
-  });
+  const styles = useScaledStyleSheet(
+    rf => {
+      const S = getSettingStyles(colors);
+      return {
+        scroll: {
+          backgroundColor: colors.surfaceSecondary,
+          flex: 1,
+        },
+        container: {
+          paddingHorizontal: getResponsiveWidth(20),
+          paddingTop: getResponsiveHeight(10),
+        },
+        header: {
+          fontSize: S.titleFontSize,
+          fontWeight: S.titleFontWeight,
+          marginBottom: getResponsiveHeight(14),
+          color: S.titleFontColor,
+          fontFamily: S.titleFontFamily,
+        },
+        sectionTitle: {
+          fontSize: rf(12.5),
+          color: colors.textTertiary,
+          marginTop: 0,
+          marginBottom: getResponsiveHeight(8),
+          fontFamily: FONTS.MEDIUM,
+        },
+        hint: {
+          marginTop: getResponsiveHeight(3),
+          fontSize: rf(11.5),
+          color: colors.textTertiary,
+          fontFamily: FONTS.REGULAR,
+        },
+        row: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          minHeight: getResponsiveHeight(56),
+          paddingVertical: getResponsiveHeight(11),
+        },
+        rowTextWrap: {
+          flex: 1,
+          paddingRight: getResponsiveWidth(10),
+        },
+        label: {
+          fontSize: S.labelFontSize,
+          color: S.labelFontColor,
+          fontFamily: S.labelFontFamily,
+        },
+        value: {
+          fontSize: rf(13),
+          color: colors.textSecondary,
+          fontFamily: FONTS.REGULAR,
+        },
+        arrow: {
+          width: getResponsiveIconSize(11),
+          height: getResponsiveIconSize(11),
+          resizeMode: 'contain',
+          tintColor: colors.textTertiary,
+        },
+        section: {
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderColor: colors.borderSubtle,
+          paddingTop: getResponsiveHeight(10),
+          paddingBottom: getResponsiveHeight(8),
+        },
+      };
+    },
+    [colors],
+  );
 
   const openLink = useCallback(async url => {
     try {
@@ -262,7 +281,7 @@ export default function SettingScreen() {
           알림
         </AppText>
 
-        <TouchableOpacity
+        <SpringPressable
           style={styles.row}
           onPress={() => navigation.navigate('알림설정화면')}
           accessibilityLabel="알림 설정"
@@ -275,7 +294,7 @@ export default function SettingScreen() {
             source={require('../../../assets/images/rightArrow-gray.png')}
             accessibilityIgnoresInvertColors
           />
-        </TouchableOpacity>
+        </SpringPressable>
       </View>
 
       {/* 3) 보안 */}
@@ -312,7 +331,7 @@ export default function SettingScreen() {
           </View>
         ) : null}
 
-        <TouchableOpacity
+        <SpringPressable
           style={styles.row}
           onPress={() => navigation.navigate('차단계정화면')}
           accessibilityLabel="신고 및 차단"
@@ -325,7 +344,7 @@ export default function SettingScreen() {
             source={require('../../../assets/images/rightArrow-gray.png')}
             accessibilityIgnoresInvertColors
           />
-        </TouchableOpacity>
+        </SpringPressable>
       </View>
 
       {/* 4) 고객지원 */}
@@ -334,7 +353,7 @@ export default function SettingScreen() {
           고객지원
         </AppText>
 
-        <TouchableOpacity
+        <SpringPressable
           style={styles.row}
           onPress={() => openLink(INQUIRY_NOTION_URL)}
           activeOpacity={0.8}
@@ -348,7 +367,7 @@ export default function SettingScreen() {
             source={require('../../../assets/images/rightArrow-gray.png')}
             accessibilityIgnoresInvertColors
           />
-        </TouchableOpacity>
+        </SpringPressable>
       </View>
 
       {/* 5) 약관 및 정책 */}
@@ -357,7 +376,7 @@ export default function SettingScreen() {
           약관 및 정책
         </AppText>
 
-        <TouchableOpacity
+        <SpringPressable
           style={styles.row}
           onPress={() =>
             openLink('https://www.notion.so/2129f61bad50805589f6edfcac083179')
@@ -369,9 +388,9 @@ export default function SettingScreen() {
             style={styles.arrow}
             source={require('../../../assets/images/rightArrow-gray.png')}
           />
-        </TouchableOpacity>
+        </SpringPressable>
 
-        <TouchableOpacity
+        <SpringPressable
           style={styles.row}
           onPress={() =>
             openLink('https://www.notion.so/2129f61bad5080f6bd29e269f5f319b1')
@@ -383,7 +402,7 @@ export default function SettingScreen() {
             style={styles.arrow}
             source={require('../../../assets/images/rightArrow-gray.png')}
           />
-        </TouchableOpacity>
+        </SpringPressable>
       </View>
 
       {/* 6) 버전 정보 */}
@@ -407,7 +426,7 @@ export default function SettingScreen() {
           로그인 정보
         </AppText>
 
-        <TouchableOpacity
+        <SpringPressable
           style={styles.row}
           onPress={() => setShowLogoutModal(true)}>
           <AppText allowFontScaling={false} style={styles.label}>
@@ -417,9 +436,9 @@ export default function SettingScreen() {
             style={styles.arrow}
             source={require('../../../assets/images/rightArrow-gray.png')}
           />
-        </TouchableOpacity>
+        </SpringPressable>
 
-        <TouchableOpacity
+        <SpringPressable
           style={styles.row}
           onPress={() => setShowDeleteModal(true)}>
           <AppText allowFontScaling={false} style={styles.label}>
@@ -429,7 +448,7 @@ export default function SettingScreen() {
             style={styles.arrow}
             source={require('../../../assets/images/rightArrow-gray.png')}
           />
-        </TouchableOpacity>
+        </SpringPressable>
       </View>
 
       <LogoutModal

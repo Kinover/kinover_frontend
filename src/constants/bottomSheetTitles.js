@@ -1,8 +1,8 @@
 const BOTTOM_SHEET_TITLES = Object.freeze({
   USER_PROFILE_EDIT: '프로필 편집',
   CHAT_ROOM_CREATE: '채팅방 만들기',
-  CATEGORY_SELECT: '카테고리를 선택해요',
-  SCHEDULE_PEOPLE_FILTER: '누구의 일정을 볼까요?',
+  CATEGORY_SELECT: '카테고리 선택',
+  SCHEDULE_PEOPLE_FILTER: '가족별 일정보기',
   MEMORY_COMMENT: '댓글',
   SCHEDULE_EDITOR_ADD: '일정 추가',
   SCHEDULE_EDITOR_EDIT: '일정 수정',

@@ -1,6 +1,6 @@
 // ChatRoomItem.jsx
 import React from 'react';
-import {Pressable, View, StyleSheet, Image} from 'react-native';
+import {Pressable, View, StyleSheet, Image, Platform} from 'react-native';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
@@ -16,6 +16,7 @@ import {markRoomRead} from '../../store/chatRoomSlice';
 import {getChatRoomTitle} from '../../utils/chatRoomTitleHelper';
 import {shouldHideChatRoomForBlockedUsers} from 'features/moderation/utils/blockedUserFilter';
 import {FONTS} from 'styles/typography';
+import {useColors} from 'hooks/useColors';
 
 function ChatRoomItem({
   chatRoom,
@@ -24,6 +25,7 @@ function ChatRoomItem({
   blockedUserIdSet,
   onBlockedChatNavigate,
 }) {
+  const colors = useColors();
   const styles = useScaledStyleSheet(rf => ({
     pressable: {width: '100%'},
     container: {
@@ -38,7 +40,7 @@ function ChatRoomItem({
     },
     pressOverlay: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(0,0,0,0.045)',
+      backgroundColor: colors.surfaceMuted,
     },
     avatarWrap: {position: 'relative'},
     kinoAvatarWrap: {
@@ -70,15 +72,17 @@ function ChatRoomItem({
       fontFamily: FONTS.MEDIUM,
       fontSize: rf(15),
       lineHeight: rf(16),
-      color: '#101010',
+      color: colors.textPrimary,
     },
     nameUnread: {fontFamily: FONTS.SEMI_BOLD},
     description: {
       fontFamily: FONTS.REGULAR,
       fontSize: rf(12),
-      color: '#5A5A5A',
+      lineHeight: rf(14.5),
+      color: colors.textSecondary,
+      ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
     },
-    descriptionUnread: {fontFamily: FONTS.MEDIUM, color: '#2A2A2A'},
+    descriptionUnread: {fontFamily: FONTS.MEDIUM, color: colors.textPrimary},
     metaCol: {
       height: '80%',
       alignItems: 'flex-end',
@@ -87,7 +91,7 @@ function ChatRoomItem({
     time: {
       fontFamily: FONTS.REGULAR,
       fontSize: rf(11),
-      color: '#8B8B8B',
+      color: colors.textTertiary,
     },
     badge: {
       marginTop: getResponsiveHeight(3.5),
@@ -100,11 +104,11 @@ function ChatRoomItem({
       alignItems: 'center',
     },
     badgeText: {
-      color: '#FFFFFF',
+      color: colors.textOnBrandPrimary,
       fontSize: rf(11.5),
       fontFamily: FONTS.SEMI_BOLD,
     },
-  }));
+  }), [colors]);
 
   const dispatch = useDispatch();
   const familyUserList = useSelector(state => state.userFamily.familyUserList);

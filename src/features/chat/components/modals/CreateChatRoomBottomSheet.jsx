@@ -1,15 +1,15 @@
 /* eslint-disable react-native/no-inline-styles */
 // src/features/chat/components/CreateChatRoomBottomSheet.jsx
 
-import React, {useMemo, useCallback, useState, useEffect, useRef} from 'react';
-import {
-  View,
-  StyleSheet,
-  Platform,
-  TouchableOpacity,
-  Keyboard,
-  InteractionManager,
-} from 'react-native';
+import React, {
+  useMemo,
+  useCallback,
+  useState,
+  useEffect,
+  useRef,
+} from 'react';
+import { View, StyleSheet, Platform, Keyboard, InteractionManager } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import AppText from 'components/AppText';
 
 import {useReduxFontMode} from 'hooks/useReduxFontMode';
@@ -37,11 +37,10 @@ import {
 } from 'components/bottomSheet/bottomSheetEditorSharedStyles';
 
 import ToastModal from 'components/modal/ToastModal';
-import BOTTOM_SHEET_TITLES, {
-  BOTTOM_SHEET_BUTTON_LABELS,
-} from 'constants/bottomSheetTitles';
+import BOTTOM_SHEET_TITLES from 'constants/bottomSheetTitles';
 import {validateLength} from 'utils/validation';
 import {FONTS} from 'styles/typography';
+import {useColors, useIsDark} from 'hooks/useColors';
 
 // 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
@@ -75,10 +74,18 @@ export default function CreateChatRoomBottomSheet({
   maxRoomNameLength = 30,
   snapPoints: externalSnapPoints,
 }) {
-  const shared = getBottomSheetEditorSharedStyles(
-    getResponsiveFontSize,
-    getResponsiveHeight,
-    getResponsiveWidth,
+  const colors = useColors();
+  const isDark = useIsDark();
+  const shared = useMemo(
+    () =>
+      getBottomSheetEditorSharedStyles(
+        getResponsiveFontSize,
+        getResponsiveHeight,
+        getResponsiveWidth,
+        colors,
+        isDark,
+      ),
+    [colors, isDark],
   );
   const styles = useScaledStyleSheet(rf => ({
     body: {
@@ -126,7 +133,7 @@ export default function CreateChatRoomBottomSheet({
       includeFontPadding: false,
       fontSize: rf(16),
       fontFamily: FONTS.REGULAR,
-      color: '#0B1220',
+      color: colors.textPrimary,
       lineHeight: rf(21),
       letterSpacing: -0.18,
       textAlign: 'left',
@@ -200,7 +207,9 @@ export default function CreateChatRoomBottomSheet({
       paddingTop: getResponsiveHeight(10),
       paddingBottom: getResponsiveHeight(2),
     },
-  }));
+  }),
+    [shared, colors.textPrimary],
+  );
   const fontMode = useReduxFontMode();
   const insets = useSafeAreaInsets();
   const bottomSafe = useMemo(
@@ -208,8 +217,11 @@ export default function CreateChatRoomBottomSheet({
     [insets.bottom],
   );
 
-  // roomName: ref로만 관리
+  // roomName: ref + draft(변경 감지·버튼 활성화)
   const roomNameRef = useRef(String(initialRoomName ?? ''));
+  const [roomNameDraft, setRoomNameDraft] = useState(
+    String(initialRoomName ?? ''),
+  );
   const [roomNameKey, setRoomNameKey] = useState(0);
 
   const [selectedIds, setSelectedIds] = useState(
@@ -275,7 +287,9 @@ export default function CreateChatRoomBottomSheet({
 
   // initialRoomName 변경 시 ref 갱신 + input 리마운트
   useEffect(() => {
-    roomNameRef.current = String(initialRoomName ?? '');
+    const next = String(initialRoomName ?? '');
+    roomNameRef.current = next;
+    setRoomNameDraft(next);
     setRoomNameKey(k => k + 1);
   }, [initialRoomName]);
 
@@ -518,16 +532,14 @@ export default function CreateChatRoomBottomSheet({
     modalRef,
   ]);
 
-  const handleCancel = useCallback(() => {
-    roomNameRef.current = String(initialRoomName ?? '');
+  const resetFormFromInitial = useCallback(() => {
+    const next = String(initialRoomName ?? '');
+    roomNameRef.current = next;
+    setRoomNameDraft(next);
     setRoomNameKey(k => k + 1);
     setIsRoomNameFocused(false);
-
     setSelectedIds(Array.isArray(initialSelectedIds) ? initialSelectedIds : []);
-    hideToast();
-    onCancel?.();
-    modalRef?.current?.dismiss?.();
-  }, [initialRoomName, initialSelectedIds, hideToast, modalRef, onCancel]);
+  }, [initialRoomName, initialSelectedIds]);
 
   const memberChipData = useMemo(() => {
     const normalized = (members || []).map(m => ({
@@ -560,7 +572,7 @@ export default function CreateChatRoomBottomSheet({
       };
 
       return (
-        <TouchableOpacity
+        <SpringPressable
           key={`${item.type}-${String(item.id)}`}
           activeOpacity={0.75}
           onPress={onPress}
@@ -580,7 +592,7 @@ export default function CreateChatRoomBottomSheet({
             numberOfLines={1}>
             {item.name}
           </AppText>
-        </TouchableOpacity>
+        </SpringPressable>
       );
     },
     [isAllSelected, selectedIds, toggleAll, toggleMember, isSubmitting],
@@ -588,6 +600,7 @@ export default function CreateChatRoomBottomSheet({
 
   const handleDismiss = useCallback(() => {
     hideToast();
+    resetFormFromInitial();
     setIsSubmitting(false);
     setIsRoomNameFocused(false);
     keyboardOpenRef.current = false;
@@ -601,7 +614,8 @@ export default function CreateChatRoomBottomSheet({
       }
       pendingInteractionRef.current = null;
     }
-  }, [hideToast]);
+    onCancel?.();
+  }, [hideToast, resetFormFromInitial, onCancel]);
 
   // 내부 탭: 토스트만 닫기(키보드 dismiss/snap은 Layout)
   const handleTouchInside = useCallback(() => {
@@ -659,7 +673,9 @@ export default function CreateChatRoomBottomSheet({
                 key={`room-${roomNameKey}`}
                 defaultValue={roomNameRef.current}
                 onChangeText={t => {
-                  roomNameRef.current = String(t).slice(0, maxRoomNameLength);
+                  const s = String(t).slice(0, maxRoomNameLength);
+                  roomNameRef.current = s;
+                  setRoomNameDraft(s);
                 }}
                 onTouchStart={markRoomNameFocusInteraction}
                 onFocus={() => {
@@ -700,14 +716,10 @@ export default function CreateChatRoomBottomSheet({
           excludeSafeForMeasure={false}
           onLayoutHeight={setFooterHeight}
           style={styles.footerFlow}
-          onCancel={handleCancel}
           onSave={handleSave}
-          cancelLabel={BOTTOM_SHEET_BUTTON_LABELS.CANCEL}
           saveLabel={isSubmitting ? '만드는 중...' : '만들기'}
-          showCancel
           autoCloseOnSave={false}
-          disabled={isSubmitting}
-          saveDisabled={!canSave}
+          saveDisabled={!canSave || isSubmitting}
         />
       </BottomSheetLayout>
 

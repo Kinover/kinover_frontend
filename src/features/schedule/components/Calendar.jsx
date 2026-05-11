@@ -2,14 +2,8 @@
 // src/features/schedule/components/Calendar.jsx (CalendarToggle)
 
 import React, {useRef, useMemo, useEffect, useCallback, useState} from 'react';
-import {
-  View,
-  TouchableOpacity,
-  Image,
-  PanResponder,
-  Platform,
-  Animated as RNAnimated,
-} from 'react-native';
+import { View, Image, PanResponder, Platform, Animated as RNAnimated } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import DropShadow from 'react-native-drop-shadow';
 import {DateTimePickerAndroid} from '@react-native-community/datetimepicker';
 
@@ -39,12 +33,19 @@ import {
   SCHEDULE_CARD_SHADOW,
   getScheduleShadowBoxBaseStyle,
 } from '../constants/scheduleDropShadow';
-import {COLORS, DEFAULT_STYLE} from 'styles/style';
+import {DEFAULT_STYLE} from 'styles/style';
+import {useColors, useIsDark} from 'hooks/useColors';
 
 import DatePicker from 'react-native-date-picker';
 import {FONTS} from 'styles/typography';
 
 const RADIUS = 14;
+
+/** 카드 상단 헤더(연월·필터·화살·월/주) — 배경·모서리 통일 (moved inside component) */
+const CAL_HEADER_CTRL_RADIUS = 10;
+/** 세그먼트 트랙 inset — `CAL_HEADER_CTRL_RADIUS`와 짝 */
+const CAL_HEADER_SEG_INSET = 2;
+const CAL_HEADER_SEG_RADIUS = CAL_HEADER_CTRL_RADIUS - CAL_HEADER_SEG_INSET;
 
 const TYPE = {
   INDIVIDUAL: 'INDIVIDUAL',
@@ -57,9 +58,6 @@ const COLOR = {
   FAMILY: '#3B82F6',
   /** 키노 PINK 테마·kinoSelectScreen highlight와 동일 */
   INDIVIDUAL: '#EC4899',
-  FOCUS_BG: 'rgba(17, 24, 39, 0.096)',
-  FOCUS_BORDER: '#111827',
-  FOCUS_TEXT: '#111827',
 };
 
 const normalizeBirthToKey = birth => {
@@ -165,7 +163,17 @@ export default function CalendarToggle({
   peopleFilterActive = false,
   peopleFilterLoading = false,
 }) {
-  const styles = useScaledStyleSheet(rf => ({
+  const colors = useColors();
+  const isDark = useIsDark();
+  const CAL_HEADER_CTRL_BG = colors.surfaceMuted;
+  const styles = useScaledStyleSheet(rf => {
+    const hdrMinH = getResponsiveWidth(32);
+    /** 사람 필터 · 이전/다음 — 연·월보다 살짝 작게 */
+    const hdrIconBtn = getResponsiveWidth(30);
+    const hdrPadH = getResponsiveWidth(10);
+    const hdrPadV = getResponsiveHeight(5);
+
+    return {
     container: {
       paddingTop: getResponsiveHeight(8),
       marginBottom: getResponsiveHeight(5),
@@ -177,7 +185,7 @@ export default function CalendarToggle({
     cardInner: {
       borderRadius: RADIUS,
       overflow: 'hidden',
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.surfacePrimary,
     },
     calendarTouchWrap: {
       width: '100%',
@@ -201,18 +209,16 @@ export default function CalendarToggle({
       flex: 1,
       minWidth: 0,
     },
-    /** 달력 아이콘 + 월/주 라벨 — `iconBtn`과 동일 토큰, 너비는 내용만큼만 (아이콘은 날짜 왼쪽 = LTR 관례) */
+    /** 연·월 + 드롭다운 — 배경 없음, 행 높이는 `hdrMinH` 기준 */
     headerLeftDatePicker: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: getResponsiveWidth(6),
       alignSelf: 'flex-start',
       maxWidth: '100%',
-      borderRadius: 10,
-      paddingHorizontal: getResponsiveWidth(10),
-      paddingVertical: getResponsiveHeight(5),
-      minHeight: getResponsiveWidth(32),
-      backgroundColor: '#F3F4F6',
+      paddingHorizontal: hdrPadH,
+      paddingVertical: hdrPadV,
+      minHeight: hdrMinH,
     },
     headerRight: {
       flexDirection: 'row',
@@ -224,7 +230,7 @@ export default function CalendarToggle({
       fontFamily: DEFAULT_STYLE().sectionTitle.fontFamily,
       // fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
       fontSize: getResponsiveFontSize(19),
-      color: COLORS.textPrimary,
+      color: colors.textPrimary,
       letterSpacing: -0.2,
     },
     /** PostFilterBar 카테고리와 동일 — 아래쪽 화살표 에셋 */
@@ -234,19 +240,19 @@ export default function CalendarToggle({
       resizeMode: 'contain',
     },
     iconBtn: {
-      width: getResponsiveWidth(30),
-      height: getResponsiveWidth(30),
-      borderRadius: 10,
+      width: hdrIconBtn,
+      height: hdrIconBtn,
+      borderRadius: CAL_HEADER_CTRL_RADIUS,
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: '#F3F4F6',
+      backgroundColor: CAL_HEADER_CTRL_BG,
       resizeMode: 'contain',
     },
     calendarIcon: {
       width: getResponsiveWidth(18),
       height: getResponsiveWidth(18),
       resizeMode: 'contain',
-      tintColor: 'black',
+      tintColor: colors.iconPrimary,
     },
     navButtons: {
       flexDirection: 'row',
@@ -254,17 +260,19 @@ export default function CalendarToggle({
       alignItems: 'center',
     },
     navIcon: {
-      width: getResponsiveWidth(15),
-      height: getResponsiveWidth(15),
+      width: getResponsiveWidth(14),
+      height: getResponsiveWidth(14),
       resizeMode: 'contain',
+      tintColor: colors.textSecondary,
     },
     peopleFilterBtn: {
       position: 'relative',
     },
     peopleFilterIcon: {
-      width: getResponsiveWidth(18),
-      height: getResponsiveWidth(18),
+      width: getResponsiveWidth(17),
+      height: getResponsiveWidth(17),
       resizeMode: 'contain',
+      tintColor: colors.iconPrimary,
     },
     peopleFilterBadge: {
       position: 'absolute',
@@ -275,26 +283,26 @@ export default function CalendarToggle({
       borderRadius: 4,
       backgroundColor: COLOR.ANNIV,
       borderWidth: 1.5,
-      borderColor: '#FFFFFF',
+      borderColor: colors.surfacePrimary,
     },
     /** 월 ↔ 주 — 현재 선택이 배경으로 보이도록 세그먼트 */
     modeToggleTrack: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: '#E5E7EB',
-      borderRadius: 10,
-      padding: 2,
+      backgroundColor: CAL_HEADER_CTRL_BG,
+      borderRadius: CAL_HEADER_CTRL_RADIUS,
+      padding: CAL_HEADER_SEG_INSET,
     },
     modeSeg: {
-      paddingHorizontal: getResponsiveWidth(9),
-      paddingVertical: getResponsiveHeight(5),
-      borderRadius: 8,
+      paddingHorizontal: hdrPadH,
+      paddingVertical: hdrPadV,
+      borderRadius: CAL_HEADER_SEG_RADIUS,
       minWidth: getResponsiveWidth(34),
       alignItems: 'center',
       justifyContent: 'center',
     },
     modeSegActive: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.surfacePrimary,
       ...Platform.select({
         ios: {
           shadowColor: '#000',
@@ -310,11 +318,11 @@ export default function CalendarToggle({
     modeSegText: {
       fontSize: rf(12),
       fontFamily: FONTS.MEDIUM,
-      color: '#6B7280',
+      color: colors.textSecondary,
     },
     modeSegTextActive: {
       fontFamily: FONTS.SEMI_BOLD,
-      color: '#111827',
+      color: colors.textPrimary,
     },
 
     weekRow: {
@@ -325,7 +333,7 @@ export default function CalendarToggle({
     divider: {
       height: 1,
       width: '100%',
-      backgroundColor: '#EEF2F7',
+      backgroundColor: colors.borderSubtle,
       marginTop: getResponsiveHeight(4),
       marginBottom: getResponsiveHeight(8),
     },
@@ -336,7 +344,7 @@ export default function CalendarToggle({
     dayText: {
       fontFamily: FONTS.SEMI_BOLD,
       fontSize: rf(12.5),
-      color: '#6B7280',
+      color: colors.textSecondary,
       textAlign: 'center',
     },
     sundayText: {
@@ -350,13 +358,15 @@ export default function CalendarToggle({
     innerCircle: {
       alignItems: 'center',
       justifyContent: 'center',
-      borderWidth: 1,
-      borderColor: 'white',
-      backgroundColor: '#FFFFFF',
+      borderWidth: isDark ? 1 : 0,
+      borderColor: isDark ? colors.surfacePrimary : 'transparent',
+      backgroundColor: colors.surfacePrimary,
     },
     selectedBox: {
-      backgroundColor: COLOR.FOCUS_BG,
-      borderColor: COLOR.FOCUS_BORDER,
+      backgroundColor: isDark
+        ? 'rgba(255,255,255,0.12)'
+        : 'rgba(17, 24, 39, 0.096)',
+      borderColor: isDark ? 'rgba(255,255,255,0.35)' : colors.borderStrong,
       borderWidth: 1,
     },
 
@@ -371,11 +381,11 @@ export default function CalendarToggle({
     dateText: {
       fontFamily: FONTS.MEDIUM,
       fontSize: rf(13.5),
-      color: '#111827',
+      color: colors.textPrimary,
     },
     selectedText: {
       fontFamily: FONTS.SEMI_BOLD,
-      color: COLOR.FOCUS_TEXT,
+      color: colors.textPrimary,
     },
     holidayText: {
       color: '#EF4444',
@@ -411,7 +421,27 @@ export default function CalendarToggle({
     dotIndividual: {
       backgroundColor: COLOR.INDIVIDUAL,
     },
-  }));
+
+    legendRow: {
+      marginTop: getResponsiveHeight(8),
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: getResponsiveWidth(12),
+    },
+    legendItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: getResponsiveWidth(5),
+    },
+    legendText: {
+      fontSize: rf(11.5),
+      fontFamily: FONTS.MEDIUM,
+      color: colors.textSecondary,
+      letterSpacing: -0.1,
+    },
+  };
+  }, [colors, isDark]);
   const {OUTER_HPAD, GAP, cellSize, gridWidth, cardWidth} = useCalendarLayout();
 
   const {
@@ -674,7 +704,7 @@ export default function CalendarToggle({
         <View style={styles.cardInner}>
           <View style={styles.cardInnerHeader}>
             <View style={styles.headerLeft}>
-              <TouchableOpacity
+              <SpringPressable
                 accessibilityRole="button"
                 accessibilityLabel={`${headerLabel}`}
                 accessibilityHint="탭하면 날짜를 선택할 수 있어요."
@@ -693,19 +723,19 @@ export default function CalendarToggle({
                   style={[
                     styles.monthDropdownArrow,
                     {
-                      tintColor: '#6B7280',
+                      tintColor: colors.textSecondary,
                       transform: [{rotate: monthArrowRotate}],
                     },
                   ]}
                   accessibilityElementsHidden
                   importantForAccessibility="no"
                 />
-              </TouchableOpacity>
+              </SpringPressable>
             </View>
 
             <View style={styles.headerRight}>
               {typeof onPressPeopleFilter === 'function' ? (
-                <TouchableOpacity
+                <SpringPressable
                   style={[
                     styles.iconBtn,
                     styles.peopleFilterBtn,
@@ -720,11 +750,11 @@ export default function CalendarToggle({
                   {peopleFilterActive ? (
                     <View style={styles.peopleFilterBadge} />
                   ) : null}
-                </TouchableOpacity>
+                </SpringPressable>
               ) : null}
 
               <View style={styles.navButtons}>
-                <TouchableOpacity
+                <SpringPressable
                   style={styles.iconBtn}
                   onPress={() =>
                     mode === 'month' ? changeMonth(-1) : changeWeek(-1)
@@ -735,9 +765,9 @@ export default function CalendarToggle({
                     style={styles.navIcon}
                     resizeMode="contain"
                   />
-                </TouchableOpacity>
+                </SpringPressable>
 
-                <TouchableOpacity
+                <SpringPressable
                   style={styles.iconBtn}
                   onPress={() =>
                     mode === 'month' ? changeMonth(1) : changeWeek(1)
@@ -748,13 +778,13 @@ export default function CalendarToggle({
                     style={styles.navIcon}
                     resizeMode="contain"
                   />
-                </TouchableOpacity>
+                </SpringPressable>
               </View>
 
               <View
                 style={styles.modeToggleTrack}
                 accessibilityRole="tablist">
-                <TouchableOpacity
+                <SpringPressable
                   accessibilityRole="tab"
                   accessibilityState={{selected: mode === 'month'}}
                   accessibilityLabel="월 보기"
@@ -771,8 +801,8 @@ export default function CalendarToggle({
                     ]}>
                     월
                   </AppText>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </SpringPressable>
+                <SpringPressable
                   accessibilityRole="tab"
                   accessibilityState={{selected: mode === 'week'}}
                   accessibilityLabel="주 보기"
@@ -789,7 +819,7 @@ export default function CalendarToggle({
                     ]}>
                     주
                   </AppText>
-                </TouchableOpacity>
+                </SpringPressable>
               </View>
             </View>
           </View>
@@ -849,7 +879,7 @@ export default function CalendarToggle({
                       const holiday = isHoliday(item.date);
 
                       return (
-                        <TouchableOpacity
+                        <SpringPressable
                           key={idx}
                           style={[
                             styles.dayCell,
@@ -882,7 +912,7 @@ export default function CalendarToggle({
                             </AppText>
                             {renderDots(counts)}
                           </View>
-                        </TouchableOpacity>
+                        </SpringPressable>
                       );
                     })}
                   </View>
@@ -916,7 +946,7 @@ export default function CalendarToggle({
                       const holiday = isHoliday(item.date);
 
                       return (
-                        <TouchableOpacity
+                        <SpringPressable
                           key={idx}
                           style={[
                             styles.dayCell,
@@ -948,12 +978,33 @@ export default function CalendarToggle({
                             </AppText>
                             {renderDots(counts)}
                           </View>
-                        </TouchableOpacity>
+                        </SpringPressable>
                       );
                     })}
                   </View>
                 </Animated.View>
               </Animated.View>
+
+              <View style={styles.legendRow}>
+                <View style={styles.legendItem}>
+                  <View style={[styles.dotBase, styles.dotAnniv]} />
+                  <AppText allowFontScaling={false} style={styles.legendText}>
+                    기념일
+                  </AppText>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.dotBase, styles.dotFamily]} />
+                  <AppText allowFontScaling={false} style={styles.legendText}>
+                    가족 일정
+                  </AppText>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.dotBase, styles.dotIndividual]} />
+                  <AppText allowFontScaling={false} style={styles.legendText}>
+                    개인 일정
+                  </AppText>
+                </View>
+              </View>
             </View>
           </View>
         </View>

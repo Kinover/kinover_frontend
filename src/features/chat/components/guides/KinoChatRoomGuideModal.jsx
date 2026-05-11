@@ -1,7 +1,8 @@
 // src/features/chat/components/KinoChatGuideModal.tsx
 
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, Modal } from 'react-native';
+import { View, StyleSheet, Modal } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
@@ -104,15 +105,15 @@ export default function KinoChatGuideModal({
           </View>
 
           <View style={styles.buttonRow}>
-            <TouchableOpacity onPress={onSkip}>
+            <SpringPressable onPress={onSkip}>
               <AppText style={styles.skipText}>건너뛰기</AppText>
-            </TouchableOpacity>
+            </SpringPressable>
 
-            <TouchableOpacity style={styles.nextButton} onPress={onNext}>
+            <SpringPressable style={styles.nextButton} onPress={onNext}>
               <AppText style={styles.nextButtonText}>
                 {step === totalSteps - 1 ? '완료' : '다음'}
               </AppText>
-            </TouchableOpacity>
+            </SpringPressable>
           </View>
         </View>
       </View>

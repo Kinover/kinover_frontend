@@ -1,14 +1,7 @@
 // src/features/auth/screens/PhoneVerificationScreen.jsx
 import React, {useState, useEffect, useCallback, useRef} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-} from 'react-native';
+import { View, Text, StyleSheet, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useRoute, useNavigation, StackActions} from '@react-navigation/native';
 import {useDispatch} from 'react-redux';
@@ -26,6 +19,8 @@ import {
   getNeedsSignup,
   getAuthRoutingMmkvSnapshotSync,
   clearPhoneVerifyThenFamily,
+  commitSignupProgressFinish,
+  markFamilySkipFinishScreenPendingSync,
 } from 'utils/storage';
 import {clearPhoneVerificationPending} from '../store/loginSlice';
 import {finalizeAfterPhoneVerificationThunk} from '../store/loginThunk';
@@ -249,9 +244,14 @@ export default function PhoneVerificationScreen() {
 
       const {phoneVerifyThenFamily} = getAuthRoutingMmkvSnapshotSync();
       if (route.params?.continueToFamilyAfterVerify || phoneVerifyThenFamily) {
-        completePhoneVerification(SIGNUP_PROGRESS_STEP.FAMILY);
+        // 가입 과정에서 가족 설정 화면 생략 → 설정완료로 이동
+        completePhoneVerification(SIGNUP_PROGRESS_STEP.FINISH);
         dispatch(clearPhoneVerificationPending());
-        navigation.dispatch(StackActions.replace('가족설정화면'));
+        markFamilySkipFinishScreenPendingSync();
+        commitSignupProgressFinish();
+        navigation.dispatch(
+          StackActions.replace('설정완료화면', {skippedFamilySetup: true}),
+        );
         Promise.resolve().then(() => {
           emitAuthFlagsChanged();
         });
@@ -286,7 +286,8 @@ export default function PhoneVerificationScreen() {
       // RootScreen이 그 사이에 리렌더될 때 동기 MMKV 읽기는 아직 전화 대기(true)라
       // 전화번호 화면으로 다시 고정되는 레이스가 난다. (이전엔 React state 캐시 이슈로 순서를 바꿔 썼음)
       if (shouldGoToFamilySetup) {
-        completePhoneVerification(SIGNUP_PROGRESS_STEP.FAMILY);
+        // 가족 설정 화면 생략 → finish로 전환
+        completePhoneVerification(SIGNUP_PROGRESS_STEP.FINISH);
       } else {
         completePhoneVerification(null);
       }
@@ -294,7 +295,11 @@ export default function PhoneVerificationScreen() {
       dispatch(clearPhoneVerificationPending());
 
       if (shouldGoToFamilySetup) {
-        navigation.dispatch(StackActions.replace('가족설정화면'));
+        markFamilySkipFinishScreenPendingSync();
+        commitSignupProgressFinish();
+        navigation.dispatch(
+          StackActions.replace('설정완료화면', {skippedFamilySetup: true}),
+        );
       }
 
       Promise.resolve().then(() => {
@@ -406,7 +411,7 @@ export default function PhoneVerificationScreen() {
             </View>
 
             {canResend ? (
-              <TouchableOpacity
+              <SpringPressable
                 onPress={handleResend}
                 disabled={loading || rateLimitSeconds > 0}
                 style={styles.resendButton}
@@ -416,7 +421,7 @@ export default function PhoneVerificationScreen() {
                     ? `재전송 가능 ${formatTimer(rateLimitSeconds)}`
                     : '인증번호 재전송'}
                 </Text>
-              </TouchableOpacity>
+              </SpringPressable>
             ) : null}
 
             {error ? (

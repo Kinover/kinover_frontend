@@ -1,13 +1,18 @@
 // src/features/home/components/HeaderSection.jsx
-import React, {useMemo, useEffect, useRef, useCallback} from 'react';
+import React, {useMemo, useEffect, useRef, useCallback, useState} from 'react';
 import {
   View,
   TouchableOpacity,
   StyleSheet,
   Image,
+  Platform,
   useWindowDimensions,
+  Modal,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import DropShadow from 'react-native-drop-shadow';
+// eslint-disable-next-line import/no-named-as-default -- react-native-svg 기본 export
+import Svg, {Defs, Mask, Rect, Circle} from 'react-native-svg';
 
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -19,13 +24,15 @@ import {
 
 import {hapticLight} from 'utils/haptic';
 import {safeNavigate} from 'app/navigation/navigationService';
+import {headerTitleLogoMeasureRef} from 'app/navigation/helpers/tabHeaderHelpers';
 import {
   getEmotionImage,
   getEmotionPickerImage,
   getEmotionColor,
   getEmotionLabel,
 } from '../utils/emotionUtils';
-import {COLORS, DEFAULT_STYLE, LAYOUT_STYLE} from 'styles/style';
+import {getDefaultStyle, LAYOUT_STYLE} from 'styles/style';
+import {useColors} from 'hooks/useColors';
 
 import Animated, {
   useSharedValue,
@@ -44,7 +51,7 @@ const CLOUD_FRONT = 'https://dzqa9jgkeds0b.cloudfront.net/';
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 
 const AVATAR = getResponsiveIconSize(92);
-const _CARD_RADIUS = getResponsiveIconSize(16);
+const HEADER_CARD_RADIUS = getResponsiveIconSize(22);
 
 // ===== base sizes =====
 const BASE_DISPLAY = AVATAR * 1.3;
@@ -68,6 +75,9 @@ export default function HeaderSection({
   onInvitePress: _onInvitePress,
   guideRefs,
 }) {
+  const colors = useColors();
+  const defaultStyle = useMemo(() => getDefaultStyle(colors), [colors]);
+
   const styles = useScaledStyleSheet(_rf => ({
     smileIcon: {
       width: '68%',
@@ -78,14 +88,14 @@ export default function HeaderSection({
       width: '42%',
       height: '42%',
       resizeMode: 'contain',
-      tintColor: '#9CA3AF',
+      tintColor: colors.textTertiary,
     },
 
     inviteIcon: {
       width: '62%',
       height: '62%',
       resizeMode: 'contain',
-      tintColor: '#6B7280', // MemberGridSection 톤 참고
+      tintColor: colors.textSecondary,
     },
 
     smileFab: {
@@ -98,14 +108,14 @@ export default function HeaderSection({
       width: getResponsiveIconSize(38),
       height: getResponsiveIconSize(38),
       borderRadius: getResponsiveIconSize(19),
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.surfacePrimary,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
-      borderColor: '#E5E7EB',
+      borderColor: colors.borderSubtle,
     },
     smileBtnUnset: {
-      backgroundColor: '#FAFAFA',
+      backgroundColor: colors.surfaceMuted,
     },
 
     // 초대 버튼은 같은 톤으로(살짝만 키워도 됨)
@@ -113,29 +123,36 @@ export default function HeaderSection({
       width: getResponsiveIconSize(30),
       height: getResponsiveIconSize(30),
       borderRadius: getResponsiveIconSize(10),
-      backgroundColor: '#F3F4F6',
+      backgroundColor: colors.surfaceMuted,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
-      borderColor: '#ECEFF3',
+      borderColor: colors.borderSubtle,
     },
 
     bubbleBox: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.surfacePrimary,
       borderRadius: 10,
       paddingHorizontal: getResponsiveWidth(10),
       paddingVertical: getResponsiveHeight(5),
-      shadowColor: '#000',
-      shadowOpacity: 0.12,
-      shadowRadius: 6,
-      shadowOffset: {width: 0, height: 2},
-      elevation: 5,
       overflow: 'visible',
+      ...(Platform.OS === 'android'
+        ? {
+            elevation: 0,
+            shadowOpacity: 0,
+          }
+        : {
+            shadowColor: '#000',
+            shadowOpacity: 0.05,
+            shadowRadius: 4,
+            shadowOffset: {width: 0, height: 1},
+            elevation: 2,
+          }),
     },
     bubbleText: {
       fontSize: getResponsiveHeight(13),
       fontFamily: FONTS.MEDIUM,
-      color: '#1F2937',
+      color: colors.textDefault,
       letterSpacing: -0.1,
     },
     bubbleTailWrapper: {
@@ -153,7 +170,7 @@ export default function HeaderSection({
       borderTopWidth: 7,
       borderLeftColor: 'transparent',
       borderRightColor: 'transparent',
-      borderTopColor: '#FFFFFF',
+      borderTopColor: colors.surfacePrimary,
     },
 
     headerContainer: {
@@ -169,7 +186,7 @@ export default function HeaderSection({
       zIndex: 3,
     },
     avatarRing: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.surfacePrimary,
       overflow: 'hidden',
     },
     avatarPress: {
@@ -179,43 +196,101 @@ export default function HeaderSection({
     },
     shadowBox: {
       width: '100%',
-      borderRadius: getResponsiveIconSize(16),
+      borderRadius: HEADER_CARD_RADIUS,
       backgroundColor: 'transparent',
       shadowColor: '#000',
       shadowOffset: {width: 0, height: 1},
-      shadowOpacity: 0.12,
-      shadowRadius: 2,
-      elevation: 3,
+      shadowOpacity: 0.04,
+      shadowRadius: 3,
+      elevation: 1,
     },
     headerCard: {
+      position: 'relative',
       width: '100%',
       alignItems: 'center',
       paddingTop: getResponsiveHeight(66),
       paddingBottom: getResponsiveHeight(22),
       paddingHorizontal: getResponsiveWidth(8),
-      backgroundColor: '#FFFFFF',
-      borderRadius: getResponsiveIconSize(16),
+      backgroundColor: colors.surfacePrimary,
+      borderRadius: HEADER_CARD_RADIUS,
+    },
+    helpFab: {
+      position: 'absolute',
+      top: getResponsiveHeight(10),
+      right: getResponsiveWidth(14),
+      zIndex: 10,
+    },
+    helpBtn: {
+      width: getResponsiveIconSize(26),
+      height: getResponsiveIconSize(26),
+      borderRadius: 999,
+      backgroundColor: colors.surfaceMuted,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.borderSubtle,
+    },
+    helpMark: {
+      fontSize: getResponsiveHeight(14),
+      fontFamily: FONTS.SEMI_BOLD,
+      color: colors.textSecondary,
+    },
+    helpBubbleContainer: {
+      zIndex: 30,
+    },
+    helpBubbleBox: {
+      backgroundColor: colors.surfacePrimary,
+      borderRadius: 12,
+      paddingHorizontal: getResponsiveWidth(14),
+      paddingVertical: getResponsiveHeight(12),
+      maxWidth: getResponsiveWidth(280),
+      shadowColor: '#000',
+      shadowOpacity: 0.08,
+      shadowRadius: 8,
+      shadowOffset: {width: 0, height: 2},
+      elevation: 4,
+    },
+    helpBubbleText: {
+      fontSize: getResponsiveHeight(14),
+      fontFamily: FONTS.MEDIUM,
+      color: colors.textPrimary,
+      lineHeight: getResponsiveHeight(20),
+      textAlign: 'center',
+    },
+    helpBubbleTailWrapper: {
+      position: 'absolute',
+      top: -7,
+    },
+    helpBubbleTail: {
+      width: 0,
+      height: 0,
+      borderLeftWidth: 6,
+      borderRightWidth: 6,
+      borderBottomWidth: 7,
+      borderLeftColor: 'transparent',
+      borderRightColor: 'transparent',
+      borderBottomColor: colors.surfacePrimary,
     },
 
     userNameHeader: {
       fontFamily: FONTS.SEMI_BOLD,
-      fontSize: DEFAULT_STYLE().sectionTitle.fontSize,
-      color: COLORS.textPrimary,
+      fontSize: defaultStyle.sectionTitle.fontSize,
+      color: colors.textPrimary,
       letterSpacing: -0.2,
       marginBottom: 3,
     },
     userNamePlaceholder: {
-      color: DEFAULT_STYLE().sectionSubtitle.color,
+      color: defaultStyle.sectionSubtitle.color,
     },
     trait: {
-      fontFamily: DEFAULT_STYLE().sectionSubtitle.fontFamily,
+      fontFamily: defaultStyle.sectionSubtitle.fontFamily,
       fontSize: getResponsiveHeight(13),
       marginTop: getResponsiveHeight(4),
-      color: DEFAULT_STYLE().sectionSubtitle.color,
+      color: defaultStyle.sectionSubtitle.color,
       textAlign: 'center',
-      lineHeight: DEFAULT_STYLE().sectionSubtitle.fontSize + 1,
+      lineHeight: defaultStyle.sectionSubtitle.fontSize + 1,
     },
-  }));
+  }), [colors, defaultStyle]);
   const {width: screenWidth} = useWindowDimensions();
 
   const containerWidth =
@@ -271,6 +346,214 @@ export default function HeaderSection({
     const fromNick = typeof nick === 'string' ? nick.trim() : '';
     return fromNick;
   }, [user?.name, user?.nickname]);
+
+  /**
+   * =========================
+   * Header help (?): 3단계 스포트라이트 (기분 → 프로필 → 상단 로고·테마)
+   * =========================
+   */
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
+  const [helpStep, setHelpStep] = useState(1);
+  const helpTimersRef = useRef([]);
+  const helpBtnRef = useRef(null);
+  const [helpAnchor, setHelpAnchor] = useState(null);
+  const avatarTouchRef = useRef(null);
+  const [avatarAnchor, setAvatarAnchor] = useState(null);
+  const moodTouchRef = useRef(null);
+  const [moodAnchor, setMoodAnchor] = useState(null);
+  const [logoAnchor, setLogoAnchor] = useState(null);
+  const [helpBubbleBoxW, setHelpBubbleBoxW] = useState(0);
+
+  const assignFamilyGuideRef = useCallback(
+    node => {
+      avatarTouchRef.current = node;
+      const r = guideRefs?.family_status;
+      if (typeof r === 'function') {
+        r(node);
+      } else if (r) {
+        r.current = node;
+      }
+    },
+    [guideRefs],
+  );
+
+  const assignMoodGuideRef = useCallback(
+    node => {
+      moodTouchRef.current = node;
+      const r = guideRefs?.my_mood;
+      if (typeof r === 'function') {
+        r(node);
+      } else if (r) {
+        r.current = node;
+      }
+    },
+    [guideRefs],
+  );
+
+  const clearHelpTimers = useCallback(() => {
+    helpTimersRef.current.forEach(tid => clearTimeout(tid));
+    helpTimersRef.current = [];
+  }, []);
+
+  const measureHelpAnchor = useCallback(() => {
+    const node = helpBtnRef.current;
+    if (!node?.measureInWindow) return;
+    node.measureInWindow((x, y, width, height) => {
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+      setHelpAnchor({x, y, width, height});
+    });
+  }, []);
+
+  const measureAvatarAnchor = useCallback(() => {
+    const node = avatarTouchRef.current;
+    if (!node?.measureInWindow) return;
+    node.measureInWindow((x, y, width, height) => {
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+      setAvatarAnchor({x, y, width, height});
+    });
+  }, []);
+
+  const measureMoodAnchor = useCallback(() => {
+    const node = moodTouchRef.current;
+    if (!node?.measureInWindow) return;
+    node.measureInWindow((x, y, width, height) => {
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+      setMoodAnchor({x, y, width, height});
+    });
+  }, []);
+
+  const measureLogoAnchor = useCallback(() => {
+    const node = headerTitleLogoMeasureRef?.current;
+    if (!node?.measureInWindow) return;
+    node.measureInWindow((x, y, width, height) => {
+      if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+      setLogoAnchor({x, y, width, height});
+    });
+  }, []);
+
+  const closeHelp = useCallback(() => {
+    clearHelpTimers();
+    setIsHelpOpen(false);
+  }, [clearHelpTimers]);
+
+  const advanceOrCloseHelp = useCallback(() => {
+    if (helpStep === 1) {
+      clearHelpTimers();
+      setHelpStep(2);
+      helpTimersRef.current.push(
+        setTimeout(() => setIsHelpOpen(false), 2500),
+      );
+      requestAnimationFrame(() => {
+        measureAvatarAnchor();
+      });
+      return;
+    }
+    if (helpStep === 2) {
+      clearHelpTimers();
+      setHelpStep(3);
+      helpTimersRef.current.push(
+        setTimeout(() => setIsHelpOpen(false), 2500),
+      );
+      requestAnimationFrame(() => {
+        measureLogoAnchor();
+      });
+      return;
+    }
+    closeHelp();
+  }, [
+    helpStep,
+    clearHelpTimers,
+    closeHelp,
+    measureAvatarAnchor,
+    measureLogoAnchor,
+  ]);
+
+  const toggleHelp = useCallback(() => {
+    setIsHelpOpen(prev => {
+      const next = !prev;
+      if (next) {
+        clearHelpTimers();
+        setHelpStep(1);
+        requestAnimationFrame(() => {
+          measureHelpAnchor();
+          measureAvatarAnchor();
+          measureMoodAnchor();
+          measureLogoAnchor();
+        });
+        const t1 = setTimeout(() => {
+          setHelpStep(2);
+          requestAnimationFrame(() => measureAvatarAnchor());
+        }, 2000);
+        const t2 = setTimeout(() => {
+          setHelpStep(3);
+          requestAnimationFrame(() => measureLogoAnchor());
+        }, 4000);
+        const t3 = setTimeout(() => setIsHelpOpen(false), 6200);
+        helpTimersRef.current = [t1, t2, t3];
+      } else {
+        clearHelpTimers();
+      }
+      return next;
+    });
+  }, [
+    clearHelpTimers,
+    measureHelpAnchor,
+    measureAvatarAnchor,
+    measureMoodAnchor,
+    measureLogoAnchor,
+  ]);
+
+  useEffect(() => {
+    if (!isHelpOpen) return;
+    requestAnimationFrame(() => {
+      if (helpStep === 1) measureMoodAnchor();
+      if (helpStep === 2) measureAvatarAnchor();
+      if (helpStep === 3) measureLogoAnchor();
+    });
+  }, [isHelpOpen, helpStep, measureMoodAnchor, measureAvatarAnchor, measureLogoAnchor]);
+
+  useEffect(() => {
+    if (!isHelpOpen) setHelpBubbleBoxW(0);
+  }, [isHelpOpen]);
+
+  /** `?` 도움말 말풍선 위치·꼬리: 버블이 화면에 클램프되어도 꼬리는 앵커 중심을 가리킴 */
+  const helpBubblePosition = useMemo(() => {
+    if (!helpAnchor) return null;
+    const bubbleW = getResponsiveWidth(260);
+    const margin = 12;
+    const anchor =
+      helpStep === 1
+        ? moodAnchor || helpAnchor
+        : helpStep === 2
+          ? avatarAnchor || helpAnchor
+          : logoAnchor || helpAnchor;
+    const anchorCX = anchor.x + anchor.width / 2;
+    const bubbleLeft = clamp(
+      anchorCX - bubbleW / 2,
+      margin,
+      screenWidth - bubbleW - margin,
+    );
+    const bubbleTop =
+      anchor.y + anchor.height + getResponsiveHeight(16);
+    const measuredW =
+      helpBubbleBoxW > 0 ? helpBubbleBoxW : bubbleW;
+    const tailHalf = 6;
+    const tailMax = Math.max(12, measuredW - 24);
+    const tailLeft = clamp(
+      anchorCX - bubbleLeft - tailHalf,
+      12,
+      tailMax,
+    );
+    return {bubbleLeft, bubbleTop, tailLeft};
+  }, [
+    helpAnchor,
+    helpStep,
+    moodAnchor,
+    avatarAnchor,
+    logoAnchor,
+    helpBubbleBoxW,
+    screenWidth,
+  ]);
 
   /**
    * =========================
@@ -583,7 +866,15 @@ export default function HeaderSection({
         dismissTimerRef.current = null;
       }, 1800);
     }
-  }, [runTapTiltPeekOnce, pressScale, emotionLabel, clearDismissTimer, hideBubble, bubbleOpacity, bubbleTranslateY]);
+  }, [
+    runTapTiltPeekOnce,
+    pressScale,
+    emotionLabel,
+    clearDismissTimer,
+    hideBubble,
+    bubbleOpacity,
+    bubbleTranslateY,
+  ]);
 
   const handleAvatarLongPress = useCallback(() => {
     longPressedRef.current = true;
@@ -610,7 +901,7 @@ export default function HeaderSection({
   return (
     <View style={[styles.headerContainer, {width: containerWidth}]}>
       <TouchableOpacity
-        ref={guideRefs?.family_status}
+        ref={assignFamilyGuideRef}
         activeOpacity={1}
         onPressIn={handleAvatarPressIn}
         onPress={handleAvatarPress}
@@ -627,7 +918,7 @@ export default function HeaderSection({
             height: areaSize + 35,
             marginBottom: overlap,
             borderRadius: 999,
-            backgroundColor: '#FFFFFF',
+            backgroundColor: colors.surfacePrimary,
           },
         ]}>
         <Animated.View style={avatarPressStyle}>
@@ -646,7 +937,7 @@ export default function HeaderSection({
                     borderRadius: ringSize / 2,
                     borderWidth: 6,
                     borderColor: ringBorderColor,
-                    backgroundColor: '#FFFFFF',
+                    backgroundColor: colors.surfacePrimary,
                     alignItems: 'center',
                     justifyContent: 'center',
                   },
@@ -718,7 +1009,7 @@ export default function HeaderSection({
         </Animated.View>
 
         <TouchableOpacity
-          ref={guideRefs?.my_mood}
+          ref={assignMoodGuideRef}
           onPress={goEmotionSetting}
           hitSlop={{top: 12, bottom: 12, left: 12, right: 12}}
           activeOpacity={0.85}
@@ -773,6 +1064,25 @@ export default function HeaderSection({
 
       <DropShadow style={styles.shadowBox}>
         <View style={styles.headerCard}>
+          <TouchableOpacity
+            ref={helpBtnRef}
+            onPress={() => {
+              hapticLight();
+              toggleHelp();
+            }}
+            hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
+            accessibilityRole="button"
+            accessibilityLabel="홈 도움말"
+            accessibilityHint="누르면 기분·프로필·테마 로고 안내가 순서대로 보여요"
+            activeOpacity={0.85}
+            style={styles.helpFab}>
+            <View style={styles.helpBtn}>
+              <AppText allowFontScaling={false} style={styles.helpMark}>
+                ?
+              </AppText>
+            </View>
+          </TouchableOpacity>
+
           <AppText
             allowFontScaling={false}
             style={[
@@ -790,6 +1100,102 @@ export default function HeaderSection({
           </AppText>
         </View>
       </DropShadow>
+
+      <Modal
+        visible={isHelpOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={closeHelp}>
+        <TouchableWithoutFeedback onPress={advanceOrCloseHelp}>
+          <View style={StyleSheet.absoluteFillObject} accessible={false}>
+            <Svg width="100%" height="100%">
+              <Defs>
+                <Mask id="spotlightMask">
+                  <Rect x="0" y="0" width="100%" height="100%" fill="#fff" />
+                  {helpStep === 3 && !!logoAnchor && (
+                    <Circle
+                      cx={logoAnchor.x + logoAnchor.width / 2}
+                      cy={logoAnchor.y + logoAnchor.height / 2}
+                      r={Math.max(
+                        0,
+                        Math.max(logoAnchor.width, logoAnchor.height) / 2 +
+                          getResponsiveIconSize(10),
+                      )}
+                      fill="#000"
+                    />
+                  )}
+                  {helpStep === 2 && !!avatarAnchor && (
+                    <Circle
+                      cx={avatarAnchor.x + avatarAnchor.width / 2}
+                      cy={avatarAnchor.y + avatarAnchor.height / 2}
+                      r={Math.max(0, ringSize / 2 + getResponsiveIconSize(12))}
+                      fill="#000"
+                    />
+                  )}
+                  {helpStep === 1 && !!moodAnchor && (
+                    <Circle
+                      cx={moodAnchor.x + moodAnchor.width / 2}
+                      cy={moodAnchor.y + moodAnchor.height / 2}
+                      r={Math.max(
+                        0,
+                        moodAnchor.width / 2 + getResponsiveIconSize(10),
+                      )}
+                      fill="#000"
+                    />
+                  )}
+                </Mask>
+              </Defs>
+              <Rect
+                x="0"
+                y="0"
+                width="100%"
+                height="100%"
+                fill="rgba(17,24,39,0.45)"
+                mask="url(#spotlightMask)"
+              />
+            </Svg>
+          </View>
+        </TouchableWithoutFeedback>
+
+        {!!helpAnchor && helpBubblePosition && (
+          <View
+            pointerEvents="box-none"
+            style={[
+              styles.helpBubbleContainer,
+              {
+                position: 'absolute',
+                left: helpBubblePosition.bubbleLeft,
+                top: helpBubblePosition.bubbleTop,
+              },
+            ]}>
+            <TouchableWithoutFeedback onPress={advanceOrCloseHelp}>
+              <View
+                style={styles.helpBubbleBox}
+                onLayout={e => {
+                  const w = e.nativeEvent.layout.width;
+                  if (w > 0 && Math.abs(w - helpBubbleBoxW) > 0.5) {
+                    setHelpBubbleBoxW(w);
+                  }
+                }}>
+                <AppText allowFontScaling={false} style={styles.helpBubbleText}>
+                  {helpStep === 1
+                    ? '여기 눌러 오늘 기분 선택'
+                    : helpStep === 2
+                      ? '짧게 눌러 기분 확인, 길게 눌러 프로필 수정'
+                      : '상단 로고를 누르면 다크 모드와 화이트 모드를 바꿀 수 있어요.'}
+                </AppText>
+                <View
+                  style={[
+                    styles.helpBubbleTailWrapper,
+                    {left: helpBubblePosition.tailLeft},
+                  ]}>
+                  <View style={styles.helpBubbleTail} />
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        )}
+      </Modal>
     </View>
   );
 }

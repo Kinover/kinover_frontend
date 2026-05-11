@@ -1,0 +1,2 @@
+#include? "tmp.xcconfig"
+#include "Pods/Target Support Files/Pods-kinover_frontend/Pods-kinover_frontend.debug.xcconfig"

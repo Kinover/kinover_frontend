@@ -37,7 +37,9 @@ import SkeletonMemoryItem from '../components/skeletons/SkeletonMemoryItem';
 import {filterPostsByDateRange} from '../utils/postDateFilter';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
-import {EMPTY_STYLE, LAYOUT_STYLE} from 'styles/style';
+import {useDelayedLoading} from 'hooks/useDelayedLoading';
+import {LAYOUT_STYLE} from 'styles/style';
+import {useThemeStyleTokens} from 'hooks/useColors';
 
 import {getVideoThumbnail} from 'utils/videoThumbnail';
 import {toCdnUrl} from 'utils/mediaUrl';
@@ -48,17 +50,12 @@ import PostFilterBar from '../components/filters/PostFilterBar';
 import MagazineBanner from '../components/sections/MagazineBanner';
 import MemoryFeedListItem from '../components/items/MemoryFeedListItem';
 import AlbumMediaTile from '../components/items/AlbumMediaTile';
-import PeriodFilterModal from '../components/bottomSheets/PeriodFilterBottomSheet';
-import {FONTS} from 'styles/typography';
-
 const {width: SCREEN_WIDTH} = Dimensions.get('window');
 
 /* =========================
  * Constants
  * ========================= */
 const ITEM_MARGIN = getResponsiveWidth(2);
-
-const BG = '#FFFFFF';
 
 /* =========================
  * Android Layout Animation
@@ -98,20 +95,22 @@ const isUuidString = v =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v);
 
 export default function MemoryFeed({
-  selectedCategoryTitle,
   /** null | string[] — null이면 전체 */
   selectedCategoryIds = null,
-  isCategoryOpen = false,
   startDate,
   endDate,
   onScroll,
+  /** 카테고리 칩 선택 — null 또는 id 배열 */
+  onSelectCategory,
+  /** 바텀시트(복수 선택 등) */
   onPressCategoryFilter,
-  onApplyFilter,
   filterBarRef,
   firstPostRef,
 }) {
-  const styles = useScaledStyleSheet(_rf => ({
-    container: {flex: 1, backgroundColor: BG},
+  const {BACKGROUND_COLORS, EMPTY_STYLE} = useThemeStyleTokens();
+  const styles = useScaledStyleSheet(
+    _rf => ({
+    container: {flex: 1, backgroundColor: BACKGROUND_COLORS.secondaryBg},
     postContainer: {},
 
     emptyWrapper: {paddingTop: getResponsiveHeight(60), alignItems: 'center'},
@@ -120,28 +119,19 @@ export default function MemoryFeed({
       marginBottom: getResponsiveHeight(8),
     },
     emptyText: {
-      fontSize: EMPTY_STYLE().emptyFontSize,
-      fontFamily: EMPTY_STYLE().emptyFontFamily,
-      color: EMPTY_STYLE().emptyColor,
+      fontSize: EMPTY_STYLE.emptyFontSize,
+      fontFamily: EMPTY_STYLE.emptyFontFamily,
+      color: EMPTY_STYLE.emptyColor,
     },
     emptySubText: {
       marginTop: getResponsiveHeight(4),
-      fontSize: EMPTY_STYLE().emptyFontSize,
-      fontFamily: EMPTY_STYLE().emptyFontFamily,
-      color: EMPTY_STYLE().emptyColor,
+      fontSize: EMPTY_STYLE.emptyFontSize,
+      fontFamily: EMPTY_STYLE.emptyFontFamily,
+      color: EMPTY_STYLE.emptyColor,
     },
-
-    gestureHintRow: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      paddingVertical: getResponsiveHeight(6),
-    },
-    gestureHintText: {
-      fontSize: getResponsiveFontSize(11),
-      fontFamily: FONTS.REGULAR,
-      color: EMPTY_STYLE().emptyColor,
-    },
-  }));
+  }),
+    [BACKGROUND_COLORS, EMPTY_STYLE],
+  );
   const insets = useSafeAreaInsets();
   const dispatch = useDispatch();
   const navigation = useNavigation();
@@ -202,7 +192,6 @@ export default function MemoryFeed({
 
   const [refreshing, setRefreshing] = useState(false);
   const [sortKey, setSortKey] = useState(null);
-  const [filterModalVisible, setFilterModalVisible] = useState(false);
 
   const listRef = useRef(null);
 
@@ -367,6 +356,7 @@ export default function MemoryFeed({
   }, [doFetch, resetScrollToTop]);
 
   const isLoading = (isPostsFetching || memoryLoading) && !refreshing;
+  const showSkeleton = useDelayedLoading(isLoading);
 
   const categoryTitleMap = useMemo(() => {
     const map = new Map();
@@ -700,68 +690,46 @@ export default function MemoryFeed({
     [refreshing, onRefresh],
   );
 
-  const headerCategoryTitle =
-    selectedCategoryTitle === '전체'
-      ? '카테고리'
-      : selectedCategoryTitle || '카테고리';
+  // 카테고리가 있으면 필터바 항상 표시 (선택한 카테고리에 게시글이 없어도 유지)
+  const showFilterBar = Array.isArray(categoryList) && categoryList.length > 0;
 
-  const headerPeriodLabel =
-    startDate && endDate
-      ? `${startDate.replace(/-/g, '.')} ~ ${endDate.replace(/-/g, '.')}`
-      : null;
-
-  /** 게시글이 하나도 없을 때는 카테고리·정렬 필터 UI를 노출하지 않음 */
-  const hasAnyPostsInFeed = Array.isArray(memoryList) && memoryList.length > 0;
+  const onChangeSort = useCallback(key => {
+    setSortKey(key === 'oldest' ? 'oldest' : 'latest');
+  }, []);
 
   const listHeader = useMemo(
     () => (
       <View
         style={{
           paddingHorizontal: LAYOUT_STYLE().screenPaddingHorizontal,
-          gap: getResponsiveHeight(4),
-          paddingBottom: getResponsiveHeight(8),
+          gap: getResponsiveHeight(9),
+          paddingTop: getResponsiveHeight(5),
+          paddingBottom: getResponsiveHeight(10),
         }}>
         <MagazineBanner />
-        {hasAnyPostsInFeed ? (
+        {showFilterBar ? (
           <PostFilterBar
             ref={filterBarRef}
-            categoryTitle={headerCategoryTitle}
-            categoryOpen={isCategoryOpen}
-            onPressCategory={onPressCategoryFilter}
-            periodLabel={headerPeriodLabel}
-            onPressFilterSettings={() => setFilterModalVisible(true)}
-            sortActive={sortKey === 'latest' || sortKey === 'oldest'}
+            categoryList={categoryList}
+            selectedCategoryIds={selectedCategoryIds}
+            onSelectCategory={onSelectCategory}
+            onOpenCategoryMore={onPressCategoryFilter}
+            sortKey={sortKey}
+            onChangeSort={onChangeSort}
           />
         ) : null}
-        {isAllPhotos && (
-          <View style={styles.gestureHintRow}>
-            <AppText style={styles.gestureHintText}>
-              핀치로 크기 조절 · 좌우 스와이프로 탭 전환
-            </AppText>
-          </View>
-        )}
       </View>
     ),
     [
-      hasAnyPostsInFeed,
-      headerCategoryTitle,
-      isCategoryOpen,
+      showFilterBar,
+      categoryList,
+      selectedCategoryIds,
+      onSelectCategory,
       onPressCategoryFilter,
-      headerPeriodLabel,
       sortKey,
-      isAllPhotos,
+      onChangeSort,
       styles,
-      setFilterModalVisible,
     ],
-  );
-
-  const handleApplyFilterModal = useCallback(
-    ({startDate: s, endDate: e, sortKey: nextSort}) => {
-      onApplyFilter?.({startDate: s, endDate: e});
-      setSortKey(nextSort ?? null);
-      setFilterModalVisible(false);
-    },
-    [onApplyFilter],
   );
 
   const listEmptyComponent = useMemo(
@@ -772,7 +740,7 @@ export default function MemoryFeed({
             width: getResponsiveWidth(34),
             height: getResponsiveWidth(34),
             resizeMode: 'contain',
-            tintColor: EMPTY_STYLE().emptyColor,
+            tintColor: EMPTY_STYLE.emptyColor,
             marginBottom: getResponsiveHeight(8),
           }}
           source={require('../../../assets/icons/tabs/4/camera.png')}></Image>
@@ -782,13 +750,13 @@ export default function MemoryFeed({
         </AppText>
       </View>
     ),
-    [styles],
+    [styles, EMPTY_STYLE],
   );
 
   /* =========================
    * Loading UI (Skeleton)
    * ========================= */
-  if (isLoading) {
+  if (showSkeleton) {
     if (isAllPhotos) {
       const skeletonData = Array.from({length: 12}, (_, i) => i.toString());
       const columns = 4;
@@ -897,15 +865,6 @@ export default function MemoryFeed({
           />
         </GestureDetector>
       )}
-
-      <PeriodFilterModal
-        visible={filterModalVisible}
-        onClose={() => setFilterModalVisible(false)}
-        onApply={handleApplyFilterModal}
-        initialStartDate={startDate}
-        initialEndDate={endDate}
-        initialSortKey={sortKey}
-      />
     </View>
   );
 }

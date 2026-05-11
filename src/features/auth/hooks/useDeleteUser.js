@@ -4,13 +4,14 @@ import {useCallback, useState} from 'react';
 import * as Keychain from 'react-native-keychain';
 import {useDispatch} from 'react-redux';
 import {useDeleteUserMutation} from 'features/home/services/homeApi';
-import {deleteLoginInfo} from 'utils/storage';
+import {deleteLoginInfo, markForceTermsNextLoginSync} from 'utils/storage';
 import {RESET_ALL_STATE} from 'store/rootReducer';
 import {baseApi} from 'services/baseApi';
 import {persistor} from 'store';
 import {resetGuideShownKeys} from 'hooks/useGuide';
 import mmkvStorage from 'utils/mmkvStorage';
 import {clearEmotionPickAlertDismissMmkvForLogout} from 'utils/appEventDismissStorage';
+import {setDarkMode, UI_DARK_MODE_STORAGE_KEY} from 'store/uiSlice';
 import {stopChatSocket} from 'features/chat/hooks/ChatSocket';
 
 const FONT_MODE_STORAGE_KEY = 'ui:fontMode';
@@ -44,7 +45,14 @@ export function useDeleteUser(onSuccess) {
 
       // 로컬 저장소 정리 (Keychain + hasFamily)
       await deleteLoginInfo();
+      // 재가입은 항상 약관부터(1회)
+      markForceTermsNextLoginSync();
       await mmkvStorage.setItem(FONT_MODE_STORAGE_KEY, 'NORMAL');
+      try {
+        await mmkvStorage.setItem(UI_DARK_MODE_STORAGE_KEY, 'false');
+      } catch {
+        null;
+      }
       try {
         await Keychain.resetInternetCredentials(FONT_MODE_KEYCHAIN_SERVICE);
       } catch {
@@ -54,14 +62,14 @@ export function useDeleteUser(onSuccess) {
       // 가이드 "봤음" 플래그 삭제 → 재가입 후 탭 진입 시 가이드 다시 노출
       await resetGuideShownKeys();
 
-      // persist 완전 초기화
+      // Redux·persistoid를 먼저 초기화한 뒤 purge/flush (로그아웃 훅과 동일 이유)
+      dispatch({type: RESET_ALL_STATE});
+      dispatch(baseApi.util.resetApiState());
+      dispatch(setDarkMode(false));
+
       try { await persistor.purge(); } catch { null; }
       try { await persistor.flush(); } catch { null; }
       try { await clearEmotionPickAlertDismissMmkvForLogout(); } catch { null; }
-
-      // 모든 슬라이스(family/schedule/memory/chatRoom 등) + RTK Query 캐시를 한 번에 초기화
-      dispatch({type: RESET_ALL_STATE});
-      dispatch(baseApi.util.resetApiState());
 
       showToast('회원 탈퇴가 정상적으로 처리되었어요.');
       onSuccess && onSuccess(result);

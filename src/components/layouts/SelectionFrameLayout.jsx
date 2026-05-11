@@ -11,13 +11,14 @@ import {
 } from 'utils/responsive';
 import BottomActionButton from 'components/BottomActionButton';
 import {FONTS} from 'styles/typography';
+import {useColors} from 'hooks/useColors';
 
 const ANDROID_NAV_BAR_FALLBACK = 48;
 
 export default function SelectionFrameLayout({
   title,
   subtitle,
-  backgroundColor = '#F9F9F9',
+  backgroundColor,
   headerExtra = null,
   actionLabel = '선택 완료',
   onActionPress,
@@ -34,6 +35,9 @@ export default function SelectionFrameLayout({
    */
   balanceVerticalSpacing = false,
 }) {
+  const colors = useColors();
+  const resolvedBackgroundColor = backgroundColor ?? colors.surfaceSecondary;
+
   const styles = useScaledStyleSheet(rf => ({
 
   container: {
@@ -56,14 +60,14 @@ export default function SelectionFrameLayout({
   title: {
     fontSize: rf(20),
     fontFamily: FONTS.SEMI_BOLD,
-    color: '#000',
+    color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: getResponsiveHeight(6),
   },
   subtitle: {
     fontSize: rf(13),
     fontFamily: FONTS.LIGHT,
-    color: '#6B7280',
+    color: colors.textSecondary,
     textAlign: 'center',
   },
   content: {
@@ -81,7 +85,7 @@ export default function SelectionFrameLayout({
     paddingTop: getResponsiveHeight(12),
   },
 
-  }));
+  }), [colors]);
   const insets = useSafeAreaInsets();
 
   const bottomSafe = useMemo(() => {
@@ -106,7 +110,7 @@ export default function SelectionFrameLayout({
   }, [balanceVerticalSpacing, bottomSafe, insets.bottom]);
 
   return (
-    <View style={[styles.container, {backgroundColor}]}>
+    <View style={[styles.container, {backgroundColor: resolvedBackgroundColor}]}>
       <View
         style={[
           styles.header,

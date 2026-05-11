@@ -59,6 +59,9 @@ yarn-error.log
 # Bundle artifact
 *.jsbundle
 
+# react-native-config — 빌드 시 .env에서 생성 (저장소에 커밋하지 않음)
+ios/tmp.xcconfig
+
 # Ruby / CocoaPods
 **/Pods/
 /vendor/bundle/

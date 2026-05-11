@@ -2,15 +2,8 @@
 // src/features/schedule/screens/ScheduleScreen.jsx
 import React, {useMemo, useState, useCallback, useRef, useEffect} from 'react';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
-import {
-  StyleSheet,
-  ScrollView,
-  View,
-  TouchableOpacity,
-  RefreshControl,
-  Image,
-  Alert,
-} from 'react-native';
+import { StyleSheet, ScrollView, View, RefreshControl, Image, Alert } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import DropShadow from 'react-native-drop-shadow';
 
@@ -37,6 +30,7 @@ import {useScheduleEditor} from '../hooks/useScheduleEditor';
 
 import useHolidayMap from '../hooks/useHolidayMap';
 import {useLocalDateKey} from '../hooks/useLocalDateKey';
+import {useDelayedLoading} from 'hooks/useDelayedLoading';
 
 import {
   useAddScheduleMutation,
@@ -47,7 +41,8 @@ import {
 import {useGetFamilyUsersQuery} from '../../home/services/homeApi';
 
 import {hapticLight} from 'utils/haptic';
-import {BACKGROUND_COLORS, LAYOUT_STYLE} from 'styles/style';
+import {LAYOUT_STYLE, TAB_CARD_DROP_SHADOW} from 'styles/style';
+import {useThemeStyleTokens} from 'hooks/useColors';
 
 import ScheduleGuideModal from '../components/ScheduleGuideModal';
 import {
@@ -82,9 +77,10 @@ const toLongArray = raw => {
 };
 
 export default function ScheduleScreen() {
-  const styles = useScaledStyleSheet(_rf => ({
-
-  container: {flex: 1, backgroundColor: '#F9F9F9'},
+  const {BACKGROUND_COLORS} = useThemeStyleTokens();
+  const styles = useScaledStyleSheet(
+    _rf => ({
+  container: {flex: 1, backgroundColor: BACKGROUND_COLORS.secondaryBg},
   mainContentWrap: {flex: 1},
   mainContainer: {
     flex: 1,
@@ -103,11 +99,11 @@ export default function ScheduleScreen() {
     height: '100%',
   },
   fabDropShadow: {
-    shadowColor: '#000',
+    ...TAB_CARD_DROP_SHADOW,
     shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.16,
-    shadowRadius: 3,
-    elevation: 5,
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
   },
   fabMeasure: {
     ...StyleSheet.absoluteFillObject,
@@ -132,7 +128,9 @@ export default function ScheduleScreen() {
     backgroundColor: 'rgba(249,249,249,0.92)',
   },
 
-  }));
+  }),
+    [BACKGROUND_COLORS],
+  );
 
   const insets = useSafeAreaInsets();
   const fabNavInset = getFabAndroidNavInsetExtra(insets.bottom);
@@ -273,6 +271,8 @@ export default function ScheduleScreen() {
     setRefreshTrigger,
     bumpCount,
   } = useScheduleCounts(familyId, year, month, viewerForScheduleCount);
+
+  const showSkeleton = useDelayedLoading(isLoading);
 
   const {scheduleCountPerDay: scheduleCountPerDayForCalendar, loadingFiltered} =
     useScheduleCountsFilteredByUsers({
@@ -472,7 +472,6 @@ export default function ScheduleScreen() {
         throw e;
       } finally {
         blockOpenFor();
-        setRefreshTrigger(prev => prev + 1);
         closeSheet();
       }
     },
@@ -486,7 +485,6 @@ export default function ScheduleScreen() {
       editingSchedule,
       bumpCount,
       selectedDateKey,
-      setRefreshTrigger,
       closeSheet,
       blockOpenFor,
       addSchedule,
@@ -538,7 +536,6 @@ export default function ScheduleScreen() {
 
     openSheet(null);
   }, [isLoading, openSheet, currentUserId, shouldBlockOpen]);
-
 
  // iOS: 가이드 모달 닫은 뒤 터치 복구용
   const [contentKey, setContentKey] = useState(0);
@@ -631,7 +628,7 @@ export default function ScheduleScreen() {
             pointerEvents="none"
             style={styles.fabMeasure}
           />
-          <TouchableOpacity
+          <SpringPressable
             style={[styles.fab, isLoading && {opacity: 0.4}]}
             onPress={handleFabPress}
             activeOpacity={0.8}>
@@ -645,12 +642,12 @@ export default function ScheduleScreen() {
               }}
               tintColor={'white'}
             />
-          </TouchableOpacity>
+          </SpringPressable>
           </View>
         </DropShadow>
       </View>
 
-      {isLoading && (
+      {showSkeleton && (
         <View style={styles.loadingOverlay} pointerEvents="auto">
           <ScheduleScreenSkeleton />
         </View>

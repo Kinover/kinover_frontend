@@ -31,7 +31,7 @@ android {
     applicationId "com.kinover_frontend"
     minSdkVersion rootProject.ext.minSdkVersion
     targetSdkVersion rootProject.ext.targetSdkVersion
-    versionCode 81
+    versionCode 89
     versionName "1.0.2"
     ndk {
       abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
@@ -39,6 +39,9 @@ android {
     manifestPlaceholders = [
       kakaoNativeAppKey: (project.env.get("KAKAO_NATIVE_APP_KEY") ?: "")
     ]
+    // @react-native-seoul/kakao-login: RNKakaoLoginsModule init이 R.string.kakao_app_key로 KakaoSdk.init을 다시 호출함.
+    // 라이브러리 기본 kakao_strings.xml(샘플/dooboolab 앱 키)이 병합되지 않도록 앱 모듈에서 덮어씀.
+    resValue "string", "kakao_app_key", (project.env.get("KAKAO_NATIVE_APP_KEY") ?: "")
   }
   signingConfigs {
     debug {
@@ -72,6 +75,9 @@ android {
   packaging {
     resources {
       excludes += ["builddef.lst"]
+    }
+    jniLibs {
+      useLegacyPackaging = false
     }
   }
 }

@@ -2,7 +2,8 @@
 /* eslint-disable no-alert */
 /* eslint-disable react-native/no-inline-styles */
 import React, {useState, useLayoutEffect, useEffect, useMemo} from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
+import { View, FlatList, Image } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import CustomInput from 'components/CustomInput';
 import {useNavigation} from '@react-navigation/native';
 import {useSelector} from 'react-redux';
@@ -31,14 +32,14 @@ function CategoryHeaderTitle() {
 
 function CategoryHeaderRight({onPress}) {
   return (
-    <TouchableOpacity
+    <SpringPressable
       onPress={onPress}
       style={{marginRight: getResponsiveWidth(10)}}>
       <Image
         source={require('../../../assets/images/check-bt.png')}
         style={{width: 25, height: 25, resizeMode: 'contain'}}
       />
-    </TouchableOpacity>
+    </SpringPressable>
   );
 }
 
@@ -126,7 +127,7 @@ export default function CategoryPage() {
     const isSelected = selectedIndex === index;
 
     return (
-      <TouchableOpacity
+      <SpringPressable
         onPress={() => {
           setSelectedIndex(index);
           setSelectedCategory(item);
@@ -136,7 +137,7 @@ export default function CategoryPage() {
           selectedIndex === index && styles.selectedItem,
         ]}>
         <AppText style={styles.itemText}>{item.title}</AppText>
-        <TouchableOpacity>
+        <View>
           <Image
             source={
               isSelected
@@ -149,8 +150,8 @@ export default function CategoryPage() {
               resizeMode: 'contain',
             }}
           />
-        </TouchableOpacity>
-      </TouchableOpacity>
+        </View>
+      </SpringPressable>
     );
   };
 

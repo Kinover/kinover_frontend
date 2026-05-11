@@ -25,6 +25,8 @@ const PENDING_INVITE_CODE_KEY = 'invite:pendingCode';
 const FAMILY_SETUP_SKIPPED_KEY = 'auth:familySetupSkipped';
 /** 나중에 하기로 설정완료 화면에 온 상태(시작하기 전). 라우트 params 유실 시에도 스킵 완료 분기 유지 */
 const FAMILY_SKIP_PENDING_FINISH_KEY = 'auth:familySkipPendingFinish';
+/** 탈퇴 직후 재가입: 다음 소셜 로그인에서 약관부터 강제(1회) */
+const FORCE_TERMS_NEXT_LOGIN_KEY = 'auth:forceTermsNextLogin';
 
 export const SIGNUP_PROGRESS_STEP = {
   PHONE: 'phone',
@@ -517,6 +519,29 @@ export const clearSignupOnboardingAux = async () => {
   }
 };
 
+/** 탈퇴 직후: 다음 로그인에서 약관부터 보여주기 */
+export function markForceTermsNextLoginSync() {
+  try {
+    mmkvSetStringSync(FORCE_TERMS_NEXT_LOGIN_KEY, '1');
+  } catch {
+    null;
+  }
+  emitAuthFlagsChanged();
+}
+
+/** 1회 플래그 소비 */
+export function consumeForceTermsNextLoginSync() {
+  try {
+    const raw = mmkvGetStringSync(FORCE_TERMS_NEXT_LOGIN_KEY);
+    const enabled = raw === '1' || raw === 'true';
+    if (!enabled) return false;
+    mmkvStorage.removeItem(FORCE_TERMS_NEXT_LOGIN_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // A 방식: 로그인 세션 저장은 "토큰 중심"으로!
 // hasFamily는 여기서 저장하지 말고, 로그인 성공 후 fetchUser로 확정해서 setHasFamily로 저장
 export const saveLoginSession = async ({token, needsSignup}) => {
@@ -658,17 +683,68 @@ export function clearPendingInviteCode() {
 }
 
 export const deleteLoginInfo = async () => {
+  // 앱 강종/백그라운드 등으로 async 삭제가 끝나기 전에 재실행되면 자동로그인이 다시 될 수 있어
+  // MMKV 토큰을 먼저 "동기"로 비워 안정성을 높인다.
   try {
-    await Keychain.resetGenericPassword();
-    await mmkvStorage.removeItem(ACCESS_TOKEN_KEY);
-    await mmkvStorage.removeItem(HAS_FAMILY_KEY);
-    await mmkvStorage.removeItem(NEEDS_SIGNUP_KEY);
-    await mmkvStorage.removeItem(LEGACY_GUEST_MODE_KEY);
-    mmkvStorage.removeItem(FAMILY_SETUP_SKIPPED_KEY);
-    mmkvStorage.removeItem(FAMILY_SKIP_PENDING_FINISH_KEY);
-    await clearSignupOnboardingAux();
-    emitAuthFlagsChanged();
-  } catch (error) {
+    mmkvSetStringSync(ACCESS_TOKEN_KEY, '');
+  } catch {
     null;
   }
+
+  // Keychain/MMKV 중 하나가 실패해도 다른 쪽은 반드시 정리되도록 분리 처리
+  try {
+    await mmkvStorage.removeItem(ACCESS_TOKEN_KEY);
+  } catch {
+    null;
+  }
+  try {
+    // resetGenericPassword는 실패 시 throw 대신 false를 반환할 수 있음
+    const ok = await Keychain.resetGenericPassword();
+    if (ok !== true) {
+      // 남아있는 토큰이 자동로그인으로 이어지지 않도록 "빈 토큰"으로 한 번 덮어쓴 뒤 재시도
+      try {
+        await Keychain.setGenericPassword('jwtToken', '', {
+          accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+        });
+      } catch {
+        null;
+      }
+      try {
+        await Keychain.resetGenericPassword();
+      } catch {
+        null;
+      }
+    }
+  } catch {
+    null;
+  }
+
+  try {
+    await mmkvStorage.removeItem(HAS_FAMILY_KEY);
+  } catch {
+    null;
+  }
+  try {
+    await mmkvStorage.removeItem(NEEDS_SIGNUP_KEY);
+  } catch {
+    null;
+  }
+  try {
+    await mmkvStorage.removeItem(LEGACY_GUEST_MODE_KEY);
+  } catch {
+    null;
+  }
+  try {
+    mmkvStorage.removeItem(FAMILY_SETUP_SKIPPED_KEY);
+    mmkvStorage.removeItem(FAMILY_SKIP_PENDING_FINISH_KEY);
+  } catch {
+    null;
+  }
+  try {
+    await clearSignupOnboardingAux();
+  } catch {
+    null;
+  }
+
+  emitAuthFlagsChanged();
 };

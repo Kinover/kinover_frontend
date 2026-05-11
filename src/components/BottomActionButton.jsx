@@ -1,8 +1,9 @@
 // src/components/BottomActionButton.jsx
 import React, {useMemo} from 'react';
-import {TouchableOpacity, View, StyleSheet, Platform} from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {BUTTON_STYLES, COLORS} from 'styles/style';
+import {useThemeStyleTokens} from 'hooks/useColors';
 import {
   getResponsiveFontSize,
   getResponsiveHeight,
@@ -27,10 +28,14 @@ export default function BottomActionButton({
   scrollInsetsBottom = true,
   /** 미지정 시 테마 저장 버튼 색(BUTTON_STYLES().saveBg) */
   backgroundColor,
-  labelColor = COLORS.textPrimary,
+  labelColor: labelColorProp,
+  containerStyle,
   buttonStyle,
   labelStyle,
 }) {
+  const {BUTTON_STYLES, colors} = useThemeStyleTokens();
+  const labelColor = labelColorProp ?? BUTTON_STYLES.saveLabelColor;
+
   const styles = useMemo(() => {
     return StyleSheet.create({
       buttonContainer: {
@@ -48,7 +53,7 @@ export default function BottomActionButton({
       },
 
       button: {
-        backgroundColor: backgroundColor ?? BUTTON_STYLES().saveBg,
+        backgroundColor: backgroundColor ?? BUTTON_STYLES.saveBg,
         height: getResponsiveHeight(50),
         width: '100%',
         borderRadius: getResponsiveIconSize(14),
@@ -56,20 +61,20 @@ export default function BottomActionButton({
       },
       buttonDisabled: {
         opacity: 0.7,
-        backgroundColor: COLORS.disabled,
+        backgroundColor: colors.disabled,
       },
       buttonText: {
         fontSize: getResponsiveFontSize(14),
         lineHeight: getResponsiveHeight(30),
         textAlign: 'center',
-        fontFamily: BUTTON_STYLES().fontFamily,
+        fontFamily: BUTTON_STYLES.fontFamily,
         color: labelColor,
       },
       buttonTextDisabled: {
         color: '#374151',
       },
     });
-  }, [backgroundColor, labelColor]);
+  }, [backgroundColor, labelColor, BUTTON_STYLES, colors.disabled]);
 
   const insets = useSafeAreaInsets();
 
@@ -95,8 +100,9 @@ export default function BottomActionButton({
         isFixed
           ? {bottom: bottomOffset}
           : {paddingBottom: scrollInsetsBottom ? insets.bottom : 0},
+        containerStyle,
       ]}>
-      <TouchableOpacity
+      <SpringPressable
         accessible={true}
         accessibilityRole="button"
         accessibilityLabel={label}
@@ -113,7 +119,7 @@ export default function BottomActionButton({
           ]}>
           {label}
         </AppText>
-      </TouchableOpacity>
+      </SpringPressable>
     </View>
   );
 }

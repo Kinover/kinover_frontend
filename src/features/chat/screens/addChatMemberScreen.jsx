@@ -6,18 +6,14 @@
  * ========================================================= */
 
 import React, {useState, useLayoutEffect, useCallback} from 'react';
-import {
-  View,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-  Image,
-} from 'react-native';
+import { View, ScrollView, ActivityIndicator, Image } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {useSelector} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import useHideTabBar from 'hooks/useHideTabBar';
+import {useColors, useIsDark} from 'hooks/useColors';
 import {useGetFamilyUsersQuery} from 'features/home/services/homeApi';
 import {
   useGetChatRoomUsersQuery,
@@ -29,20 +25,21 @@ import {
   getResponsiveIconSize,
   getResponsiveFontSize,
 } from 'utils/responsive';
-import {HEADER_STYLES, COLORS} from 'styles/style';
 import {FONTS} from 'styles/typography';
 
 export default function AddChatMemberScreen({navigation, route}) {
+  const isDark = useIsDark();
+  const colors = useColors();
   const styles = useScaledStyleSheet(rf => ({
     container: {
       flex: 1,
-      backgroundColor: '#F5F5F5',
+      backgroundColor: colors.surfaceSecondary,
     },
     headerTitle: {
-      fontSize: HEADER_STYLES().defaultTitleFontSize,
+      fontSize: getResponsiveFontSize(20),
       textAlign: 'center',
-      fontFamily: HEADER_STYLES().defaultTitleFontFamily,
-      color: HEADER_STYLES().defaultTitleFontColor,
+      fontFamily: FONTS.MEDIUM,
+      color: colors.textPrimary,
     },
     headerCheckIcon: {
       width: getResponsiveWidth(24),
@@ -53,7 +50,7 @@ export default function AddChatMemberScreen({navigation, route}) {
     sectionLabel: {
       fontSize: rf(12),
       fontFamily: FONTS.REGULAR,
-      color: '#9CA3AF',
+      color: colors.textTertiary,
       marginBottom: getResponsiveHeight(6),
       marginLeft: getResponsiveWidth(4),
       marginTop: getResponsiveHeight(16),
@@ -66,7 +63,7 @@ export default function AddChatMemberScreen({navigation, route}) {
       elevation: 0,
     },
     card: {
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.surfacePrimary,
       borderRadius: getResponsiveIconSize(16),
       overflow: 'hidden',
     },
@@ -78,11 +75,11 @@ export default function AddChatMemberScreen({navigation, route}) {
       paddingHorizontal: getResponsiveWidth(16),
     },
     userItemSelected: {
-      backgroundColor: '#FFF2CC',
+      backgroundColor: colors.brandPrimarySoft,
     },
     divider: {
       height: 1,
-      backgroundColor: '#F3F4F6',
+      backgroundColor: colors.borderSubtle,
       marginLeft: getResponsiveWidth(16 + 40 + 12),
     },
     userInfo: {
@@ -94,12 +91,12 @@ export default function AddChatMemberScreen({navigation, route}) {
       height: getResponsiveIconSize(40),
       borderRadius: getResponsiveIconSize(20),
       marginRight: getResponsiveWidth(12),
-      backgroundColor: '#eee',
+      backgroundColor: colors.surfaceMuted,
     },
     userName: {
       fontSize: rf(15),
       fontFamily: FONTS.REGULAR,
-      color: '#222',
+      color: colors.textPrimary,
     },
     selectIcon: {
       width: getResponsiveIconSize(14),
@@ -109,7 +106,7 @@ export default function AddChatMemberScreen({navigation, route}) {
     emptyText: {
       fontSize: rf(13),
       fontFamily: FONTS.REGULAR,
-      color: '#9CA3AF',
+      color: colors.textTertiary,
       textAlign: 'center',
       paddingVertical: getResponsiveHeight(20),
     },
@@ -162,17 +159,20 @@ export default function AddChatMemberScreen({navigation, route}) {
       ),
       headerRight: () =>
         selected.length > 0 ? (
-          <TouchableOpacity
+          <SpringPressable
             onPress={handleInvite}
             style={{marginRight: getResponsiveWidth(10)}}>
             <FastImage
               source={require('assets/icons/check.png')}
-              style={styles.headerCheckIcon}
+              style={[
+                styles.headerCheckIcon,
+                isDark && {tintColor: '#F9FAFB'},
+              ]}
             />
-          </TouchableOpacity>
+          </SpringPressable>
         ) : null,
     });
-  }, [navigation, styles, handleInvite, selected]);
+  }, [navigation, styles, handleInvite, selected, isDark]);
 
   if (isFamilyUsersLoading || roomUsersLoading) {
     return (
@@ -234,7 +234,7 @@ export default function AddChatMemberScreen({navigation, route}) {
                 const isSelected = selected.includes(user.userId);
                 return (
                   <View key={String(user.userId)}>
-                    <TouchableOpacity
+                    <SpringPressable
                       onPress={() => toggleUser(user.userId)}
                       style={[
                         styles.userItem,
@@ -255,7 +255,7 @@ export default function AddChatMemberScreen({navigation, route}) {
                         }
                         style={styles.selectIcon}
                       />
-                    </TouchableOpacity>
+                    </SpringPressable>
                   </View>
                 );
               })}

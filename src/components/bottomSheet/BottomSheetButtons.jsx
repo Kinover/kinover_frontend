@@ -1,6 +1,7 @@
 import React from 'react';
-import { TouchableOpacity, View, StyleSheet, Platform } from 'react-native';
-import {BUTTON_STYLES, COLORS} from 'styles/style';
+import { View, StyleSheet, Platform } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
+import {useThemeStyleTokens} from 'hooks/useColors';
 import AppText from 'components/AppText';
 import {
   getResponsiveFontSize,
@@ -18,7 +19,8 @@ export function BottomSheetButtons({
   onSave,
   cancelLabel = BOTTOM_SHEET_BUTTON_LABELS.CANCEL,
   saveLabel = BOTTOM_SHEET_BUTTON_LABELS.SAVE_ACTION,
-  showCancel = true,
+  /** 하단 취소는 숨기고 헤더 ×·백드롭으로 닫기 (삭제 등 보조 액션은 `showCancel`) */
+  showCancel = false,
   bottomSheetRef,
   autoCloseOnSave = true,
   saveButtonStyle,
@@ -27,6 +29,7 @@ export function BottomSheetButtons({
   buttonRowStyle,
   saveDisabled = false,
 }) {
+  const {BUTTON_STYLES, colors} = useThemeStyleTokens();
   const [saving, setSaving] = React.useState(false);
 
   const handleCancelPress = () => {
@@ -68,12 +71,18 @@ export function BottomSheetButtons({
   return (
     <View style={[styles.buttonRow, buttonRowStyle]}>
       {showCancel && (
-        <TouchableOpacity
+        <SpringPressable
           style={[
             styles.button,
-            styles.cancelButton,
+            {
+              backgroundColor: BUTTON_STYLES.cancelBg,
+              borderWidth: 1,
+              borderColor: colors.borderSubtle,
+              borderRadius: BUTTON_STYLES.border_radius,
+            },
             cancelButtonStyle,
             cancelLabel === BOTTOM_SHEET_BUTTON_LABELS.DELETE && {
+              backgroundColor: '#FFFFFF',
               borderColor: '#EF4444',
             },
           ]}
@@ -84,6 +93,7 @@ export function BottomSheetButtons({
             allowFontScaling={false}
             style={[
               styles.buttonText,
+              {color: colors.textStrong},
               styles.cancelButtonText,
               cancelTextStyle,
               cancelLabel === BOTTOM_SHEET_BUTTON_LABELS.DELETE && {
@@ -92,23 +102,33 @@ export function BottomSheetButtons({
             ]}>
             {cancelLabel}
           </AppText>
-        </TouchableOpacity>
+        </SpringPressable>
       )}
 
-      <TouchableOpacity
+      <SpringPressable
         style={[
           styles.button,
-          styles.saveButton,
+          {
+            backgroundColor: colors.brandPrimary,
+            borderRadius: BUTTON_STYLES.border_radius,
+          },
           saveButtonStyle,
-          (saving || saveDisabled) && {opacity: 0.4},
+          saving && styles.saveButtonBusy,
+          saveDisabled && !saving && styles.saveButtonDisabled,
         ]}
         onPress={handleSavePress}
         disabled={saving || saveDisabled}
         activeOpacity={0.85}>
-        <AppText allowFontScaling={false} style={styles.buttonText}>
+        <AppText
+          allowFontScaling={false}
+          style={[
+            styles.buttonText,
+            {color: colors.textOnBrandPrimary},
+            saveDisabled && !saving && styles.saveButtonTextDisabled,
+          ]}>
           {saving ? BOTTOM_SHEET_BUTTON_LABELS.SAVE_LOADING : saveLabel}
         </AppText>
-      </TouchableOpacity>
+      </SpringPressable>
     </View>
   );
 }
@@ -225,23 +245,24 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: getResponsiveHeight(52),
     paddingVertical: getResponsiveHeight(16),
-    borderRadius: BUTTON_STYLES().border_radius,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  cancelButton: {
-    backgroundColor: BUTTON_STYLES().cancelBg,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+  /** 저장/적용 불가(폼 미충족·변경 없음 등) — CTA와 시각적으로 구분 */
+  saveButtonDisabled: {
+    backgroundColor: '#E5E7EB',
   },
-  saveButton: {
-    backgroundColor: COLORS.brandPrimary,
+  /** 제출 중: 살짝만 눌린 톤(라벨은 SAVE_LOADING으로 구분) */
+  saveButtonBusy: {
+    opacity: 0.92,
+  },
+  saveButtonTextDisabled: {
+    color: '#9CA3AF',
   },
   buttonText: {
     textAlign: 'center',
-    fontFamily: BUTTON_STYLES().fontFamily,
+    fontFamily: FONTS.MEDIUM,
     fontSize: getResponsiveFontSize(15.5),
-    color: '#111827',
   },
   cancelButtonText: {
     color: '#4B5563',

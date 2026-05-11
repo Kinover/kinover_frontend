@@ -10,7 +10,8 @@ import React, {
   useImperativeHandle,
   useMemo,
 } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, Platform, Dimensions, Image, LayoutAnimation, UIManager, Keyboard, ScrollView } from 'react-native';
+import { View, TextInput, StyleSheet, Platform, Dimensions, Image, LayoutAnimation, UIManager, Keyboard, ScrollView } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {useDispatch} from 'react-redux';
 import FastImage from '@d11/react-native-fast-image';
 import {Gesture} from 'react-native-gesture-handler';
@@ -56,6 +57,7 @@ import {
   getExtFromUri,
 } from '../../utils/chatInputUtils';
 import {FONTS} from 'styles/typography';
+import {useColors} from 'hooks/useColors';
 
 const COLORS = {
   bg: '#F6F7FB',
@@ -117,6 +119,7 @@ const ChatInput = forwardRef(function ChatInput(
 ) {
   const dispatch = useDispatch();
   const insets = useSafeAreaInsets();
+  const colors = useColors();
 
   const makeClientId = useCallback(
     () => `${Date.now()}_${Math.random().toString(16).slice(2)}`,
@@ -348,7 +351,7 @@ const ChatInput = forwardRef(function ChatInput(
               marginBottom: PREVIEW_GAP,
             },
           ]}>
-          <TouchableOpacity
+          <SpringPressable
             activeOpacity={0.85}
             style={StyleSheet.absoluteFill}
             onPress={() => setPreviewModalIndex(index)}>
@@ -357,7 +360,7 @@ const ChatInput = forwardRef(function ChatInput(
               style={styles.previewImage}
               resizeMode="cover"
             />
-          </TouchableOpacity>
+          </SpringPressable>
           {item.isVideo && (
             <View style={[styles.videoBadge, styles.previewVideoBadge]}>
               <AppText style={styles.videoBadgeText}>
@@ -365,7 +368,7 @@ const ChatInput = forwardRef(function ChatInput(
               </AppText>
             </View>
           )}
-          <TouchableOpacity
+          <SpringPressable
             style={styles.previewRemove}
             onPress={() => removeSelectedAt(index)}
             hitSlop={{top: 6, bottom: 6, left: 6, right: 6}}
@@ -378,7 +381,7 @@ const ChatInput = forwardRef(function ChatInput(
                 ×
               </AppText>
             </View>
-          </TouchableOpacity>
+          </SpringPressable>
         </View>
       )),
     [selectedImages, previewCellSize, removeSelectedAt],
@@ -721,7 +724,7 @@ const ChatInput = forwardRef(function ChatInput(
       const order = getSelectOrder(selectedImages, item);
 
       return (
-        <TouchableOpacity
+        <SpringPressable
           onPress={() => handleToggleImage(item)}
           activeOpacity={0.9}>
           <View style={[styles.tile, {width: imageSize, height: imageSize}]}>
@@ -749,7 +752,7 @@ const ChatInput = forwardRef(function ChatInput(
               </View>
             )}
           </View>
-        </TouchableOpacity>
+        </SpringPressable>
       );
     },
     [selectedImages, handleToggleImage, imageSize],
@@ -805,7 +808,11 @@ const ChatInput = forwardRef(function ChatInput(
   }, [isKeyboardVisible, insets.bottom, androidNavBottomInset]);
 
   return (
-    <View style={[styles.root, {paddingBottom: rootPaddingBottom}]}>
+    <View
+      style={[
+        styles.root,
+        {paddingBottom: rootPaddingBottom, backgroundColor: colors.surfaceSecondary},
+      ]}>
       {/* 멘션 드롭다운 (bottom 기준만 사용) */}
       {!!activeMention && mentionCandidates.length > 0 && (
         <ChatMentionDropdown
@@ -815,15 +822,19 @@ const ChatInput = forwardRef(function ChatInput(
         />
       )}
 
-      <View style={styles.inputColumn}>
-        <View style={styles.innerContainer}>
+      <View
+        style={[
+          styles.inputColumn,
+          {backgroundColor: colors.surfaceSecondary, borderColor: colors.borderSubtle},
+        ]}>
+        <View style={[styles.innerContainer, {backgroundColor: colors.surfaceSecondary}]}>
         <View
           style={[
             styles.inputContainer,
             !enableMediaPicker && {paddingLeft: getResponsiveWidth(12)},
           ]}>
           {enableMediaPicker && (
-            <TouchableOpacity
+            <SpringPressable
               style={styles.inputPlusButton}
               onPress={() => {
  // 여기만 바뀜: “인앱 갤러리 토글” X → “시스템 갤러리 바로 오픈”
@@ -852,12 +863,12 @@ const ChatInput = forwardRef(function ChatInput(
                 ]}
                 tintColor="white"
               />
-            </TouchableOpacity>
+            </SpringPressable>
           )}
 
           <TextInput
             ref={inputRef}
-            style={styles.input}
+            style={[styles.input, {color: colors.textPrimary}]}
             value={message}
             onChangeText={t => {
               const prevCursor = cursorRef.current;
@@ -874,7 +885,7 @@ const ChatInput = forwardRef(function ChatInput(
             placeholder={
               enableMention ? '@이름 으로 멘션 가능' : '메시지를 입력하세요'
             }
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textTertiary}
             returnKeyType="send"
             editable={!isSending && !sendingLockRef.current}
             onFocus={() => {
@@ -891,7 +902,7 @@ const ChatInput = forwardRef(function ChatInput(
           />
 
           {message.length > 0 && !isSending && !sendingLockRef.current && (
-            <TouchableOpacity
+            <SpringPressable
               style={styles.clearButton}
               onPress={() => {
                 hapticSelection();
@@ -900,12 +911,12 @@ const ChatInput = forwardRef(function ChatInput(
               }}>
               <Image
                 source={require('assets/images/clearBt.png')}
-                style={styles.clearIcon}
+                style={[styles.clearIcon, {tintColor: colors.iconSecondary}]}
               />
-            </TouchableOpacity>
+            </SpringPressable>
           )}
 
-          <TouchableOpacity
+          <SpringPressable
             onPress={() => {
               hapticLight();
               handleSend();
@@ -929,7 +940,7 @@ const ChatInput = forwardRef(function ChatInput(
                 </View>
               )}
             </View>
-          </TouchableOpacity>
+          </SpringPressable>
         </View>
         </View>
 
@@ -1161,7 +1172,7 @@ const styles = StyleSheet.create({
     borderColor: '#fff',
   },
   sendBadgeText: {
-    color: '#fff',
+    color: '#111827',
     fontSize: getResponsiveIconSize(11.5),
     fontFamily: FONTS.SEMI_BOLD,
     includeFontPadding: false,

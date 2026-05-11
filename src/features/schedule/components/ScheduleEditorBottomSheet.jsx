@@ -14,15 +14,8 @@ import React, {
   useEffect,
   useCallback,
 } from 'react';
-import {
-  View,
-  StyleSheet,
-  Platform,
-  TouchableOpacity,
-  Keyboard,
-  Animated,
-  Modal,
-} from 'react-native';
+import { View, StyleSheet, Platform, Keyboard, Animated, Modal } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import DateTimePicker, {
   DateTimePickerAndroid,
 } from '@react-native-community/datetimepicker';
@@ -59,6 +52,7 @@ import {
 import {BOTTOMSHEET_STYLE} from 'styles/style';
 import {Easing} from 'react-native-reanimated';
 import {FONTS} from 'styles/typography';
+import {useColors, useIsDark} from 'hooks/useColors';
 
 const KIND = {
   INDIVIDUAL: 'individual',
@@ -120,6 +114,50 @@ const normalizeKind = raw => {
 
   return KIND.INDIVIDUAL;
 };
+
+const participantIdsKey = ids =>
+  !ids?.length
+    ? ''
+    : [...new Set((ids || []).map(v => String(v)))].sort().join('\u0001');
+
+/** 편집 모드에서 저장 버튼(변경 없음 비활성화)용 스냅샷 — 로드 effect와 동일 규칙 */
+function getEditBaseline(es) {
+  if (!es) return null;
+  const initTitle = String(
+    es?.title ?? es?.name ?? es?.scheduleTitle ?? '',
+  ).trim();
+  const raw =
+    es?.__forcedKind ??
+    es?.kind ??
+    es?.type ??
+    es?.scheduleType ??
+    es?.category ??
+    null;
+  const forcedFamily = es?.isShared === true || es?.shared === true;
+  let initialKind = normalizeKind(raw);
+  if (initialKind !== KIND.ANNIVERSARY && forcedFamily) {
+    initialKind = KIND.FAMILY;
+  }
+  const candidateIds =
+    es?.userIds ??
+    es?.participantIds ??
+    es?.participants ??
+    es?.memberIds ??
+    null;
+  const candidateArr = Array.isArray(candidateIds)
+    ? candidateIds
+    : candidateIds
+    ? [candidateIds]
+    : es?.userId != null
+    ? [es.userId]
+    : null;
+  const normalizedCandidates = candidateArr ? uniqIds(candidateArr) : [];
+  const idsKey =
+    initialKind === KIND.ANNIVERSARY
+      ? ''
+      : participantIdsKey(normalizedCandidates);
+  return {title: initTitle, kind: initialKind, idsKey};
+}
 
 /** YYYY-MM-DD 문자열 → Date 객체 */
 function parseDateString(raw) {
@@ -201,7 +239,12 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     },
     ref,
   ) => {
-    const styles = useScaledStyleSheet(makeStyles);
+    const themeColors = useColors();
+    const isDark = useIsDark();
+    const styles = useScaledStyleSheet(
+      rf => makeStyles(rf, themeColors, isDark),
+      [themeColors, isDark],
+    );
     const fontMode = useReduxFontMode();
 
     const [localKind, setLocalKind] = useState(KIND.INDIVIDUAL);
@@ -606,7 +649,6 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       dismiss: () => closeSheet(),
     }));
 
-
     const handleTouchInsideResetOnly = useCallback(() => {
       if (!isTitleFocused) return;
       if (titleFocusInteractionRef.current) return;
@@ -659,6 +701,8 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const handlePressSave = async () => {
       if (isClosing) return;
 
+      Keyboard.dismiss();
+
       const text = scheduleRef.current || '';
       if (!text.trim()) {
         showToast('일정 제목을 입력해주세요.');
@@ -674,8 +718,8 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       const count = safeSelectedIds.length;
 
       if (currentKind === KIND.INDIVIDUAL) {
-        if (count === 0 && currentUserId == null) {
-          showToast('사용자 정보를 찾을 수 없어 일정을 저장할 수 없어요.');
+        if (count === 0) {
+          showToast('일정 대상 구성원을 선택해주세요.');
           return;
         }
       }
@@ -707,6 +751,8 @@ const ScheduleEditorBottomSheetModal = forwardRef(
     const confirmDelete = async () => {
       if (isClosing) return;
 
+      Keyboard.dismiss();
+
       setDeleteModalVisible(false);
       setIsClosing(true);
 
@@ -727,17 +773,48 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       const titleText = String(titleDraft ?? '').trim();
       const hasTitle = titleText.length > 0;
       const titleValid = validateLength(titleText, {max: 200}).valid;
-      const hasDate = String(basePayload?.date ?? '').trim().length > 0;
-      const hasKind = currentKind === KIND.INDIVIDUAL || currentKind === KIND.FAMILY;
+
+      const rawDate = basePayload?.date;
+      const hasDate =
+        rawDate != null &&
+        (rawDate instanceof Date
+          ? !Number.isNaN(rawDate.getTime())
+          : String(rawDate).trim().length > 0);
+
+      const hasKind =
+        currentKind === KIND.INDIVIDUAL ||
+        currentKind === KIND.FAMILY ||
+        currentKind === KIND.ANNIVERSARY;
+
       const hasParticipants =
-        currentKind === KIND.INDIVIDUAL
-          ? safeSelectedIds.length > 0 || currentUserId != null
-          : currentKind === KIND.FAMILY
+        currentKind === KIND.ANNIVERSARY
+          ? true
+          : currentKind === KIND.INDIVIDUAL || currentKind === KIND.FAMILY
           ? safeSelectedIds.length > 0
           : false;
 
       return hasTitle && titleValid && hasDate && hasKind && hasParticipants;
-    }, [titleDraft, basePayload?.date, currentKind, safeSelectedIds, currentUserId]);
+    }, [titleDraft, basePayload?.date, currentKind, safeSelectedIds]);
+
+    const editBaseline = useMemo(
+      () => getEditBaseline(editingSchedule),
+      [editingSchedule],
+    );
+
+    const hasScheduleEdits = useMemo(() => {
+      if (!editingSchedule || !editBaseline) return true;
+      const curTitle = String(titleDraft ?? '').trim();
+      if (curTitle !== editBaseline.title) return true;
+      if (currentKind !== editBaseline.kind) return true;
+      if (currentKind === KIND.ANNIVERSARY) return false;
+      return participantIdsKey(safeSelectedIds) !== editBaseline.idsKey;
+    }, [
+      editingSchedule,
+      editBaseline,
+      titleDraft,
+      currentKind,
+      safeSelectedIds,
+    ]);
 
     const footerProps = useMemo(() => {
       const saveStyle = getBottomSheetPrimarySaveButtonStyle(
@@ -751,18 +828,16 @@ const ScheduleEditorBottomSheetModal = forwardRef(
           cancelLabel: BOTTOM_SHEET_BUTTON_LABELS.DELETE,
           saveLabel: BOTTOM_SHEET_BUTTON_LABELS.SAVE_ACTION,
           showCancel: true,
-          saveDisabled: !canSave || isClosing,
+          saveDisabled: !canSave || isClosing || !hasScheduleEdits,
           autoCloseOnSave: false,
           saveButtonStyle: saveStyle,
           buttonRowStyle: {marginTop: 0},
         };
       }
       return {
-        onCancel: closeSheet,
         onSave: handlePressSave,
-        cancelLabel: BOTTOM_SHEET_BUTTON_LABELS.CANCEL,
         saveLabel: BOTTOM_SHEET_BUTTON_LABELS.SAVE_ACTION,
-        showCancel: true,
+        showCancel: false,
         saveDisabled: !canSave || isClosing,
         autoCloseOnSave: false,
         saveButtonStyle: saveStyle,
@@ -774,6 +849,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
       handlePressDelete,
       canSave,
       isClosing,
+      hasScheduleEdits,
       closeSheet,
     ]);
 
@@ -813,7 +889,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
           (currentKind === KIND.INDIVIDUAL && isAll) || isAnniversaryMode;
 
         return (
-          <TouchableOpacity
+          <SpringPressable
             key={`${item.type}-${item.userId}`}
             activeOpacity={0.75}
             onPress={onPress}
@@ -833,7 +909,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
               numberOfLines={1}>
               {item.name}
             </AppText>
-          </TouchableOpacity>
+          </SpringPressable>
         );
       },
       [
@@ -891,7 +967,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                       style={styles.sectionLabel}
                       requiredMarkStyle={styles.requiredMark}
                     />
-                    <TouchableOpacity
+                    <SpringPressable
                       activeOpacity={0.7}
                       onPress={() => {
                         Keyboard.dismiss();
@@ -907,7 +983,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                         style={styles.dateFieldText}>
                         {dateLabelShort || '날짜를 선택해주세요'}
                       </AppText>
-                    </TouchableOpacity>
+                    </SpringPressable>
                   </View>
 
                   {/* 제목 */}
@@ -959,7 +1035,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                       requiredMarkStyle={styles.requiredMark}
                     />
                     <View style={styles.segmentTrack}>
-                      <TouchableOpacity
+                      <SpringPressable
                         activeOpacity={0.92}
                         onPress={() => handleKindChange(KIND.INDIVIDUAL)}
                         style={[
@@ -976,8 +1052,8 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                           ]}>
                           개인
                         </AppText>
-                      </TouchableOpacity>
-                      <TouchableOpacity
+                      </SpringPressable>
+                      <SpringPressable
                         activeOpacity={0.92}
                         onPress={() => handleKindChange(KIND.FAMILY)}
                         style={[
@@ -994,7 +1070,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                           ]}>
                           가족
                         </AppText>
-                      </TouchableOpacity>
+                      </SpringPressable>
                     </View>
                   </View>
 
@@ -1040,7 +1116,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
           onRequestClose={() => setDeleteModalVisible(false)}
           closeOnBackdropPress={true}
           showCloseButton={true}
-          confirmTextStyle={{color: '#FFFFFF'}}
+          confirmTextStyle={{color: '#111827'}}
         />
 
         <ToastModal
@@ -1058,7 +1134,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
             <View style={[StyleSheet.absoluteFill, {justifyContent: 'flex-end'}]}>
               <Animated.View
                 style={[styles.sheetBackdrop, {opacity: backdropOpacity}]}>
-                <TouchableOpacity
+                <SpringPressable
                   activeOpacity={1}
                   style={StyleSheet.absoluteFill}
                   onPress={closeIOSActionSheet}
@@ -1069,16 +1145,16 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                 style={[styles.sheetBox, {transform: [{translateY: sheetY}]}]}
                 pointerEvents="auto">
                 <View style={styles.sheetHeader}>
-                  <TouchableOpacity
+                  <SpringPressable
                     activeOpacity={0.8}
                     onPress={closeIOSActionSheet}
                     style={styles.sheetHeaderBtn}>
                     <AppText style={styles.sheetHeaderText}>취소</AppText>
-                  </TouchableOpacity>
+                  </SpringPressable>
 
                   <AppText style={styles.sheetTitle}>날짜 선택</AppText>
 
-                  <TouchableOpacity
+                  <SpringPressable
                     activeOpacity={0.8}
                     onPress={confirmIOSActionSheet}
                     style={styles.sheetHeaderBtn}>
@@ -1086,7 +1162,7 @@ const ScheduleEditorBottomSheetModal = forwardRef(
                       style={[styles.sheetHeaderText, {color: COLORS.brand}]}>
                       확인
                     </AppText>
-                  </TouchableOpacity>
+                  </SpringPressable>
                 </View>
 
                 <View style={styles.sheetPickerArea}>
@@ -1116,20 +1192,23 @@ const ScheduleEditorBottomSheetModal = forwardRef(
 ScheduleEditorBottomSheetModal.displayName = 'ScheduleEditorBottomSheetModal';
 export default ScheduleEditorBottomSheetModal;
 
-const makeStyles = rf =>
-  StyleSheet.create({
-  ...getBottomSheetEditorSharedStyles(
+const makeStyles = (rf, themeColors, isDarkMode) => {
+  const shared = getBottomSheetEditorSharedStyles(
     rf,
     getResponsiveHeight,
     getResponsiveWidth,
-  ),
+    themeColors,
+    isDarkMode,
+  );
+  return StyleSheet.create({
+  ...shared,
 
   dateFieldRow: {
     alignSelf: 'stretch',
     borderWidth: 1,
-    borderColor: '#F5F5F5',
+    borderColor: isDarkMode ? themeColors.borderSubtle : '#F5F5F5',
     borderRadius: getResponsiveWidth(12),
-    backgroundColor: '#F5F5F5',
+    backgroundColor: isDarkMode ? themeColors.surfaceMuted : '#F5F5F5',
     paddingHorizontal: getResponsiveWidth(12),
     paddingVertical: getResponsiveHeight(11),
     marginTop: getResponsiveHeight(4),
@@ -1140,7 +1219,7 @@ const makeStyles = rf =>
   dateFieldText: {
     fontSize: rf(16),
     fontFamily: FONTS.REGULAR,
-    color: COLORS.text,
+    color: isDarkMode ? themeColors.textPrimary : COLORS.text,
     letterSpacing: -0.18,
   },
 
@@ -1209,21 +1288,8 @@ const makeStyles = rf =>
     color: '#111827',
   },
 
-  /** 일정 제목 인풋 외곽 라인: 채팅방 이름 변경 모달과 동일한 톤 */
-  singleLineUnderlineWrap: {
-    alignSelf: 'stretch',
-    borderWidth: 1,
-    borderColor: '#F5F5F5',
-    borderRadius: getResponsiveWidth(12),
-    backgroundColor: '#F5F5F5',
-    paddingHorizontal: getResponsiveWidth(13),
-    paddingVertical: getResponsiveHeight(6),
-    marginTop: getResponsiveHeight(4),
-  },
-  singleLineUnderlineWrapFocused: {
-    borderColor: '#FFC84D',
-  },
   scheduleTitleInput: {
+    ...shared.scheduleTitleInput,
     minHeight: getResponsiveHeight(30),
     maxHeight: getResponsiveHeight(80),
     paddingHorizontal: 0,
@@ -1234,7 +1300,7 @@ const makeStyles = rf =>
     includeFontPadding: false,
     fontSize: rf(16),
     fontFamily: FONTS.REGULAR,
-    color: COLORS.text,
+    color: isDarkMode ? themeColors.textPrimary : COLORS.text,
     lineHeight: rf(21),
     letterSpacing: -0.18,
     textAlign: 'left',
@@ -1338,3 +1404,4 @@ const makeStyles = rf =>
     alignSelf: 'center',
   },
   });
+};

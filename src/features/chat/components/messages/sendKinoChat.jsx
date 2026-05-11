@@ -1,6 +1,7 @@
 // SendKinoChat.jsx
 import React, {useEffect, useRef, useState, useMemo} from 'react';
-import { View, StyleSheet, TouchableOpacity, Platform, FlatList } from 'react-native';
+import { View, StyleSheet, Platform, FlatList } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import AppText from 'components/AppText';
 import FastImage from '@d11/react-native-fast-image';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -21,6 +22,11 @@ import {
 import {getSpacingStyle} from '../../utils/getSpacingStyle';
 import {CHATROOM_STYLE} from 'styles/style';
 import KinoBubble from '../bubbles/KinoBubble';
+import {useColors, useIsDark} from 'hooks/useColors';
+import {
+  CHAT_OUTGOING_BUBBLE_DARK_BG,
+  CHAT_OUTGOING_BUBBLE_DARK_TEXT,
+} from '../../utils/chatOutgoingBubbleDark';
 
 // 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
@@ -34,6 +40,9 @@ export default function SendKinoChat({
   isSameSender = false,
   kinoType = 'YELLOW_KINO',
 }) {
+  const colors = useColors();
+  const isDark = useIsDark();
+
   const styles = useScaledStyleSheet(rf => ({
 
   sendContainer: {
@@ -42,7 +51,7 @@ export default function SendKinoChat({
     justifyContent: 'flex-end',
   },
   sendBubble: {
-    backgroundColor: '#FFECC3', // 기본값(동적으로 override 됨)
+    backgroundColor: isDark ? CHAT_OUTGOING_BUBBLE_DARK_BG : '#FFECC3',
     borderRadius: getResponsiveIconSize(20),
     maxWidth: getResponsiveWidth(260),
     flexShrink: 1,
@@ -59,13 +68,13 @@ export default function SendKinoChat({
   sendText: {
     fontFamily: CHATROOM_STYLE().messageFontFamily,
     fontSize: CHATROOM_STYLE().KinoMessageFontSize,
-    color: 'black', // 기본값(동적으로 override 됨)
+    color: isDark ? CHAT_OUTGOING_BUBBLE_DARK_TEXT : '#111827',
     flexWrap: 'wrap',
     lineHeight: rf(18),
   },
   sendTime: {
     fontSize: rf(10.5),
-    color: '#666',
+    color: colors.textTertiary,
     marginRight: getResponsiveWidth(5),
     marginBottom: getResponsiveHeight(2),
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
@@ -84,7 +93,7 @@ export default function SendKinoChat({
     alignSelf: 'flex-end',
   },
 
-  }));
+  }), [colors, isDark]);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -107,22 +116,24 @@ export default function SendKinoChat({
     setModalVisible(true);
   };
 
- // 키노 타입별 "보내는 말풍선" 팔레트
- // 조건: ReceiveKinoChat의 bubble(진한 말풍선)보다 "연한" 톤
-  const KINO_SEND_BUBBLE_PALETTE = useMemo(
+  const KINO_SEND_LIGHT = useMemo(
     () => ({
- // Receive: #FFC84D
-      YELLOW_KINO: {bubble: '#FFECC3', text: 'black'},
- // Receive: #334EA7
+      YELLOW_KINO: {bubble: '#FFECC3', text: '#111827'},
       BLUE_KINO: {bubble: '#D7E9FF', text: '#0F172A'},
- // Receive: #FFC3DE
       PINK_KINO: {bubble: '#FFEAF2', text: '#111827'},
     }),
     [],
   );
 
-  const bubbleColors =
-    KINO_SEND_BUBBLE_PALETTE[kinoType] ?? KINO_SEND_BUBBLE_PALETTE.YELLOW_KINO;
+  const bubbleColors = useMemo(() => {
+    if (isDark) {
+      return {
+        bubble: CHAT_OUTGOING_BUBBLE_DARK_BG,
+        text: CHAT_OUTGOING_BUBBLE_DARK_TEXT,
+      };
+    }
+    return KINO_SEND_LIGHT[kinoType] ?? KINO_SEND_LIGHT.YELLOW_KINO;
+  }, [isDark, kinoType, KINO_SEND_LIGHT]);
 
   const renderImages = () => (
     <KinoBubble
@@ -134,10 +145,10 @@ export default function SendKinoChat({
         keyExtractor={(item, index) => item + index}
         numColumns={3}
         renderItem={({item, index}) => (
-          <TouchableOpacity onPress={() => handleImagePress(item, index)}>
+          <SpringPressable onPress={() => handleImagePress(item, index)}>
             <FastImage         fallback={true}
  source={{uri: item}} style={styles.imageItem} />
-          </TouchableOpacity>
+          </SpringPressable>
         )}
         scrollEnabled={false}
         contentContainerStyle={styles.imageGrid}
@@ -151,14 +162,14 @@ export default function SendKinoChat({
 
       {messageType === 'image' ? (
         imageUrls.length === 1 ? (
-          <TouchableOpacity onPress={() => handleImagePress(imageUrls[0], 0)}>
+          <SpringPressable onPress={() => handleImagePress(imageUrls[0], 0)}>
             <FastImage         fallback={true}
 
               source={{uri: imageUrls[0]}}
               style={styles.singleImage}
               resizeMode="cover"
             />
-          </TouchableOpacity>
+          </SpringPressable>
         ) : (
           renderImages()
         )

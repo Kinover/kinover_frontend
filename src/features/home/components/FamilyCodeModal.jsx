@@ -4,15 +4,18 @@ import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
   getResponsiveHeight,
+  getResponsiveIconSize,
   getResponsiveWidth,
 } from 'utils/responsive';
 import CustomModal from 'components/modal/CustomModal';
 import Clipboard from '@react-native-clipboard/clipboard';
+import {useColors} from 'hooks/useColors';
 import {COLORS} from 'styles/style';
 import {hapticLight, hapticSuccess} from 'utils/haptic';
 import {FONTS} from 'styles/typography';
 
 export default function FamilyCodeModal({visible, onClose, familyCode}) {
+  const colors = useColors();
   const styles = useScaledStyleSheet(rf => ({
 
   innerWrapper: {
@@ -25,8 +28,9 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    /* 모달 본문이 라이트 톤이라 다크 모드에서도 라이트 카드와 동일하게 유지 */
     backgroundColor: COLORS.surfaceSecondary,
-    borderRadius: getResponsiveWidth(14),
+    borderRadius: getResponsiveIconSize(22),
     paddingVertical: getResponsiveHeight(14),
     paddingHorizontal: getResponsiveWidth(14),
     marginBottom: getResponsiveHeight(14),
@@ -74,7 +78,7 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
     paddingVertical: getResponsiveHeight(8),
     paddingHorizontal: getResponsiveWidth(12),
     borderRadius: 999,
-    backgroundColor: COLORS.brandPrimary,
+    backgroundColor: colors.brandPrimary,
   },
 
   copyBtnCopied: {
@@ -91,7 +95,9 @@ export default function FamilyCodeModal({visible, onClose, familyCode}) {
     color: COLORS.textStrong,
   },
 
-  }));
+  }),
+    [colors],
+  );
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(() => {

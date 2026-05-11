@@ -9,16 +9,8 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {
-  View,
-  StyleSheet,
-  Image,
-  TouchableOpacity,
-  Platform,
-  useWindowDimensions,
-  Animated,
-  Text,
-} from 'react-native';
+import { View, StyleSheet, Image, Platform, useWindowDimensions, Animated, Text } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import FastImage from '@d11/react-native-fast-image';
 import Svg, {Defs, Rect, RadialGradient, Stop} from 'react-native-svg';
@@ -692,11 +684,11 @@ export default function OnboardingScreen() {
       <View style={[styles.topBar, {paddingTop: topBarPaddingTop}]}>
         <View style={styles.skipHit}>
           {!isLast ? (
-            <TouchableOpacity onPress={handleSkip} activeOpacity={0.8}>
+            <SpringPressable onPress={handleSkip} activeOpacity={0.8}>
               <Text allowFontScaling={false} style={styles.skipText}>
                 건너뛰기
               </Text>
-            </TouchableOpacity>
+            </SpringPressable>
           ) : (
             <View />
           )}
@@ -745,36 +737,28 @@ export default function OnboardingScreen() {
 
         {!isLast ? (
           <>
-            <TouchableOpacity
+            <SpringPressable
               activeOpacity={0.9}
               onPress={handleNext}
               style={styles.nextBtn}>
               <Text allowFontScaling={false} style={styles.nextText}>
                 다음
               </Text>
-            </TouchableOpacity>
+            </SpringPressable>
             <Text allowFontScaling={false} style={styles.helper}>
               스와이프해서 넘길 수 있어요
             </Text>
-            <TouchableOpacity
-              onPress={handleSkip}
-              activeOpacity={0.75}
-              style={styles.skipCta}>
-              <Text allowFontScaling={false} style={styles.skipCtaText}>
-                바로 시작하기
-              </Text>
-            </TouchableOpacity>
           </>
         ) : (
           <>
-            <TouchableOpacity
+            <SpringPressable
               activeOpacity={0.9}
               onPress={handleKakaoLoginPress}>
               <Image
                 style={styles.kakaoBtnImage}
                 source={require('../../../assets/images/kakao-login-button.jpg')}
               />
-            </TouchableOpacity>
+            </SpringPressable>
 
             {Platform.OS === 'ios' && (
               <View style={styles.appleBtnWrap}>

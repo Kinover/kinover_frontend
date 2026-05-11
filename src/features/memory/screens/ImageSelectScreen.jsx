@@ -12,14 +12,8 @@ import React, {
 } from 'react';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
-import {
-  View,
-  TouchableOpacity,
-  Platform,
-  Image,
-  Dimensions,
-  Pressable,
-} from 'react-native';
+import { View, Platform, Image, Dimensions, Pressable } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import FastImage from '@d11/react-native-fast-image';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {launchImageLibrary} from 'react-native-image-picker';
@@ -34,6 +28,7 @@ import {
 import useHideTabBar from 'hooks/useHideTabBar';
 import ToastModal from 'components/modal/ToastModal';
 import {HEADER_STYLES} from 'styles/style';
+import {useColors, useIsDark} from 'hooks/useColors';
 
 import {
   convertPhUriToFileUri,
@@ -62,36 +57,44 @@ const ITEM_SIZE =
 
 const PLUS_TILE_ID = '__PLUS_TILE__';
 
-const COLORS = {
-  bg: '#F6F7FB',
-  surface: '#FFFFFF',
-  text: '#111827',
-  sub: '#6B7280',
-  line: 'rgba(17,24,39,0.08)',
-  lineStrong: 'rgba(17,24,39,0.12)',
-  chipGlass: 'rgba(17,24,39,0.38)',
-  chipGlass2: 'rgba(17,24,39,0.26)',
-  plusBg: '#FFFFFF',
-};
-
-const R = getResponsiveIconSize(14);
 const TILE_R = getResponsiveIconSize(14);
 const PILL_R = 999;
 
 export default function ImageSelectPage() {
-  const styles = useScaledStyleSheet(rf => ({
+  const colors = useColors();
+  const isDark = useIsDark();
+  const headerTheme = useMemo(() => HEADER_STYLES.get(colors), [colors]);
+  const C = useMemo(
+    () => ({
+      bg: isDark ? colors.surfaceSecondary : '#F6F7FB',
+      text: colors.textPrimary,
+      sub: colors.textSecondary,
+      lineStrong: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(17,24,39,0.12)',
+      chipGlass: isDark ? 'rgba(255,255,255,0.30)' : 'rgba(17,24,39,0.38)',
+      chipGlass2: isDark ? 'rgba(255,255,255,0.22)' : 'rgba(17,24,39,0.26)',
+      plusBg: colors.surfacePrimary,
+      tileBg: isDark ? colors.surfaceMuted : '#EDEFF4',
+      tileBorder: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(17,24,39,0.06)',
+      plusIconCircleBg: isDark ? colors.surfaceMuted : '#F9FAFB',
+    }),
+    [colors, isDark],
+  );
 
+  const headerIconTint = isDark ? '#FFFFFF' : '#111827';
+
+  const styles = useScaledStyleSheet(
+    rf => ({
   container: {
     flex: 1,
-    backgroundColor: COLORS.bg,
+    backgroundColor: C.bg,
     paddingHorizontal: H_PADDING,
     paddingTop: getResponsiveHeight(12),
   },
 
   headerTitle: {
-    fontSize: HEADER_STYLES().defaultTitleFontSize,
-    fontFamily: HEADER_STYLES().defaultTitleFontFamily,
-    color: HEADER_STYLES().defaultTitleFontColor,
+    fontSize: headerTheme.defaultTitleFontSize,
+    fontFamily: headerTheme.defaultTitleFontFamily,
+    color: headerTheme.defaultTitleFontColor,
     lineHeight: getResponsiveHeight(26),
     textAlign: 'center',
     textAlignVertical: 'center',
@@ -119,9 +122,9 @@ export default function ImageSelectPage() {
     height: ITEM_SIZE,
     borderRadius: TILE_R,
     overflow: 'hidden',
-    backgroundColor: '#EDEFF4',
+    backgroundColor: C.tileBg,
     borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.06)',
+    borderColor: C.tileBorder,
   },
   tileActive: {
     opacity: 0.95,
@@ -129,7 +132,7 @@ export default function ImageSelectPage() {
   },
   tileImage: {width: '100%', height: '100%'},
   thumbFallback: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: C.tileBg,
   },
   placeholder: {width: ITEM_SIZE, height: ITEM_SIZE, opacity: 0},
 
@@ -138,8 +141,8 @@ export default function ImageSelectPage() {
     height: ITEM_SIZE,
     borderRadius: TILE_R,
     borderWidth: 1,
-    borderColor: COLORS.lineStrong,
-    backgroundColor: COLORS.plusBg,
+    borderColor: C.lineStrong,
+    backgroundColor: C.plusBg,
     overflow: 'hidden',
   },
   plusInner: {
@@ -153,28 +156,28 @@ export default function ImageSelectPage() {
     height: getResponsiveWidth(44),
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: COLORS.lineStrong,
-    backgroundColor: '#F9FAFB',
+    borderColor: C.lineStrong,
+    backgroundColor: C.plusIconCircleBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
   plusIcon: {
     fontSize: rf(22),
     fontFamily: FONTS.BOLD,
-    color: COLORS.text,
+    color: C.text,
     lineHeight: rf(24),
   },
   plusSubText: {
     fontSize: rf(12.8),
     fontFamily: FONTS.SEMI_BOLD,
-    color: COLORS.text,
+    color: C.text,
     letterSpacing: -0.1,
   },
   plusHint: {
     marginTop: getResponsiveHeight(-2),
     fontSize: rf(11),
     fontFamily: FONTS.MEDIUM,
-    color: COLORS.sub,
+    color: C.sub,
   },
 
  /* =================== 여기부터 “꾸민” 부분 =================== */
@@ -188,7 +191,7 @@ export default function ImageSelectPage() {
     height: getResponsiveWidth(22),
     paddingHorizontal: getResponsiveWidth(7),
     borderRadius: PILL_R,
-    backgroundColor: COLORS.chipGlass,
+    backgroundColor: C.chipGlass,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.22)',
     alignItems: 'center',
@@ -240,7 +243,7 @@ export default function ImageSelectPage() {
     height: getResponsiveWidth(22),
     paddingHorizontal: getResponsiveWidth(10),
     borderRadius: PILL_R,
-    backgroundColor: COLORS.chipGlass2,
+    backgroundColor: C.chipGlass2,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
@@ -297,10 +300,12 @@ export default function ImageSelectPage() {
   helperText: {
     fontSize: rf(12.5),
     fontFamily: FONTS.MEDIUM,
-    color: COLORS.sub,
+    color: C.sub,
   },
 
-  }));
+  }),
+    [C, headerTheme],
+  );
   const navigation = useNavigation();
   const route = useRoute();
   const {postId = null, mode = '등록'} = route?.params || {};
@@ -543,7 +548,7 @@ export default function ImageSelectPage() {
     }
 
     navigation.navigate('카테고리선택화면', {
-      selectedImages: selectedFiles.map(({id, ...rest}) => rest),
+      selectedImages: selectedFiles.map(({id: _clientId, ...rest}) => rest),
       from: '이미지선택화면',
       mode: isEditMode ? '수정' : '등록',
       postId: isEditMode ? postId : null,
@@ -562,19 +567,19 @@ export default function ImageSelectPage() {
         </AppText>
       ),
       headerRight: () => (
-        <TouchableOpacity
+        <SpringPressable
           onPress={goNext}
           disabled={!hasSelection}
           style={[styles.headerRightBtn, !hasSelection && {opacity: 0.35}]}
           activeOpacity={0.85}>
           <Image
             source={require('../../../assets/icons/check.png')}
-            style={styles.checkIcon}
+            style={[styles.checkIcon, {tintColor: headerIconTint}]}
           />
-        </TouchableOpacity>
+        </SpringPressable>
       ),
     });
-  }, [goNext, hasSelection, navigation, selectedFiles.length, isEditMode]);
+  }, [goNext, hasSelection, headerIconTint, navigation, selectedFiles.length, isEditMode, styles]);
 
   const canAddMore = selectedFiles.length < MAX_SELECTION;
 
@@ -689,7 +694,7 @@ export default function ImageSelectPage() {
           ) : null}
 
           {/* X 버튼(예쁘게) */}
-          <TouchableOpacity
+          <SpringPressable
             onPress={() => {
               setSelectedFiles(prev => prev.filter(x => x.id !== item.id));
 
@@ -712,7 +717,7 @@ export default function ImageSelectPage() {
             <AppText style={styles.removeBtnText}>
               ✕
             </AppText>
-          </TouchableOpacity>
+          </SpringPressable>
         </Pressable>
       );
     },

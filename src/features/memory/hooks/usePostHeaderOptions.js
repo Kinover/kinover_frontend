@@ -1,6 +1,7 @@
 // src/features/post/hooks/usePostHeaderOptions.js
 import React, {useEffect} from 'react';
-import {View, TouchableOpacity, Image} from 'react-native';
+import { View, Image } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {getResponsiveIconSize, getResponsiveWidth, getResponsiveHeight} from 'utils/responsive';
 import {HEADER_STYLES} from 'styles/style';
 import AppText from 'components/AppText';
@@ -36,7 +37,7 @@ export default function usePostHeaderOptions({
       headerBackground: () => <View style={{flex: 1, backgroundColor: 'transparent'}} />,
 
       headerLeft: () => (
-        <TouchableOpacity
+        <SpringPressable
           onPress={() => navigation.goBack()}
           style={{paddingHorizontal: getResponsiveWidth(13)}}
           disabled={isOptionBusy}>
@@ -50,11 +51,11 @@ export default function usePostHeaderOptions({
               opacity: isOptionBusy ? 0.6 : 1,
             }}
           />
-        </TouchableOpacity>
+        </SpringPressable>
       ),
 
       headerRight: () => (
-        <TouchableOpacity
+        <SpringPressable
           onPress={() => {
             if (isChromeHidden) return;
             if (isLeavingRef?.current) return;
@@ -70,7 +71,7 @@ export default function usePostHeaderOptions({
             source={require('../../../assets/icons/List.png')}
             style={styles.headerIcon}
           />
-        </TouchableOpacity>
+        </SpringPressable>
       ),
     });
   }, [

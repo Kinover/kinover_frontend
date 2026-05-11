@@ -261,7 +261,7 @@ export default function RootScreen() {
         } else if (p === SIGNUP_PROGRESS_STEP.FAMILY) {
           t = {
             flow: 'AuthFlow',
-            initialRouteName: '가족설정화면',
+            initialRouteName: '설정완료화면',
             needsSignup,
           };
         } else if (p === SIGNUP_PROGRESS_STEP.FINISH) {
@@ -338,11 +338,17 @@ export default function RootScreen() {
   useLayoutEffect(() => {
     if (!target || !navigationRef.isReady()) return;
     const nextFlow = target.flow;
-    const prevFlow = prevRootTargetFlowRef.current;
+    const root = navigationRef.getRootState?.();
+    const idx = root?.index ?? 0;
+    const currentRootName = root?.routes?.[idx]?.name ?? null;
 
-    if (prevFlow === 'AuthFlow' && nextFlow === 'AppFlow') {
+    // prevFlow가 null인 첫 전환에서도 AuthFlow ↔ AppFlow가 확실히 전환되도록
+    if (nextFlow === 'AppFlow' && currentRootName !== ROOT_MAIN_APP_SCREEN) {
       safeReset(getResetToMainAppFlowState('홈'));
-    } else if (prevFlow === 'AppFlow' && nextFlow === 'AuthFlow') {
+    } else if (
+      nextFlow === 'AuthFlow' &&
+      currentRootName !== ROOT_AUTH_FLOW_SCREEN
+    ) {
       safeReset({
         index: 0,
         routes: [{name: ROOT_AUTH_FLOW_SCREEN}],

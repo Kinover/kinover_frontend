@@ -21,9 +21,12 @@ let reconnectTimer = null;
 let reconnectAttempt = 0;
 let connectedToken = null;
 let isManuallyClosed = false;
+
 /** background 진입으로 인한 일시 해제 시, active 시 자동 재연결 */
 let isPausedByBackground = false;
 
+// React 훅 사용 불가 환경(모듈 레벨)에서 dispatch·getState를 쓰기 위해
+// startChatSocket() 호출 시 주입받아 보관
 let dispatchRef = null;
 let getStateRef = null;
 let started = false;
@@ -236,7 +239,6 @@ async function openSocket() {
 
   ws.onclose = () => {
     ws = null;
-
 
     if (isManuallyClosed) return;
     if (isPausedByBackground) return;

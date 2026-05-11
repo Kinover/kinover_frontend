@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import {Image} from 'react-native';
+import {Image, Platform} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {useSharedValue} from 'react-native-reanimated';
 
@@ -15,27 +15,25 @@ import CommunicationStack from './stacks/communicationStack';
 import ScheduleStack from './stacks/scheduleStack';
 import MemoryStack from './stacks/memoryStack';
 import {AnimatedTabBar, TabBarVisibilityProvider} from './animatedTabBar';
-import {renderTabBarLabel} from './helpers/tabHeaderHelpers';
+import {TabBarLabel} from './helpers/tabHeaderHelpers';
 import {
   getResponsiveHeight,
   getResponsiveIconSize,
   getResponsiveWidth,
 } from 'utils/responsive';
-import {COLORS} from 'styles/style';
+import {useColors, useIsDark} from 'hooks/useColors';
 
 // ==================== Constants ====================
 
 const Tab = createBottomTabNavigator();
 
-/** 탭바 기본 스타일 */
+/** 탭바 기본 스타일 (non-color props only) — Android는 커스텀 탭 실측과 맞게 약간 더 높게 */
 const tabBarBaseStyle = {
-  backgroundColor: COLORS.surfacePrimary,
-  borderTopColor: COLORS.borderSubtle,
   borderTopLeftRadius: getResponsiveIconSize(15),
   borderTopRightRadius: getResponsiveIconSize(15),
   paddingTop: 8,
   paddingHorizontal: getResponsiveWidth(15),
-  height: getResponsiveHeight(107.5),
+  height: getResponsiveHeight(Platform.OS === 'android' ? 90 : 83),
 };
 
 /** 탭 목록 */
@@ -71,14 +69,16 @@ const TABS = [
  * @param {number} props.source - 이미지 리소스
  */
 function TabIcon({focused, source}) {
+  const colors = useColors();
+  const iconSize = getResponsiveIconSize(Platform.OS === 'android' ? 32 : 30);
   return (
     <Image
       source={source}
       style={{
-        width: getResponsiveIconSize(30),
-        height: getResponsiveIconSize(30),
+        width: iconSize,
+        height: iconSize,
         resizeMode: 'contain',
-        tintColor: focused ? COLORS.iconPrimary : COLORS.textTertiary,
+        tintColor: focused ? colors.iconPrimary : colors.textTertiary,
       }}
     />
   );
@@ -92,30 +92,42 @@ function TabIcon({focused, source}) {
  */
 export default function TabNavigator() {
   const tabBarHiddenSV = useSharedValue(0);
+  const colors = useColors();
+  const isDark = useIsDark();
 
   return (
     <TabBarVisibilityProvider sharedValue={tabBarHiddenSV}>
       <Tab.Navigator
         initialRouteName="홈"
-        tabBar={props => <AnimatedTabBar {...props} />}
+        tabBar={props => (
+          <AnimatedTabBar
+            {...props}
+            key={isDark ? 'tabbar-dark' : 'tabbar-light'}
+          />
+        )}
+        detachInactiveScreens={false}
         screenOptions={({route}) => {
           const currentTab = TABS.find(tab => tab.name === route.name);
 
           return {
             headerShown: false,
             keyboardHidesTabBar: true,
+            animation: 'fade',
             sceneStyle: {
-              backgroundColor: COLORS.surfacePrimary,
+              backgroundColor: colors.surfacePrimary,
             },
             tabBarStyle: {
               ...tabBarBaseStyle,
+              backgroundColor: colors.surfacePrimary,
+              borderTopColor: colors.borderSubtle,
               backgroundColor: 'transparent',
               elevation: 0,
               shadowOpacity: 0,
               borderTopWidth: 0,
             },
-            tabBarLabel: ({focused}) =>
-              renderTabBarLabel(route.name, focused),
+            tabBarLabel: ({focused}) => (
+              <TabBarLabel label={route.name} focused={focused} />
+            ),
             tabBarIcon: ({focused}) => (
               <TabIcon focused={focused} source={currentTab?.icon} />
             ),

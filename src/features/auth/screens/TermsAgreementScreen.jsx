@@ -1,14 +1,15 @@
 // src/screens/auth/TermsAgreementScreen.js
 
 import React, {useState, useEffect, useRef, useMemo, useCallback} from 'react';
-import {View, StyleSheet, TouchableOpacity, ScrollView, Text} from 'react-native';
+import { View, StyleSheet, ScrollView, Text } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useSelector, useDispatch} from 'react-redux';
 import BottomActionButton from 'components/BottomActionButton';
 import {useNavigateToWhere} from 'hooks/useNavigateToWhere';
 import {BottomSheetModal, BottomSheetBackdrop} from '@gorhom/bottom-sheet';
 import ToastModal from 'components/modal/ToastModal';
-import {COLORS} from 'styles/style';
+import {useColors} from 'hooks/useColors';
 import {
   getResponsiveHeight,
   getResponsiveWidth,
@@ -19,6 +20,8 @@ import {
   commitTermsConsentAndSkipProfileToFamily,
   advanceSignupAfterProfileSaved,
   clearSignupSkipProfileAfterTerms,
+  commitSignupProgressFinish,
+  markFamilySkipFinishScreenPendingSync,
 } from 'utils/storage';
 import {setPhoneVerificationPending} from 'features/auth/store/loginSlice';
 import {updateUserProfile} from 'api/userProfileApi';
@@ -73,6 +76,110 @@ export default function TermsAgreementScreen() {
 
   // 가입 전 화면: 앱 글씨 크기 설정과 무관하게 시트 높이 고정
   const snapPoints = useMemo(() => ['73%'], []);
+
+  const colors = useColors();
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {flex: 1, padding: 24, backgroundColor: colors.surfacePrimary},
+        title: {
+          color: colors.textPrimary,
+          fontSize: 26,
+          fontWeight: '700',
+          marginTop: 20,
+          marginBottom: 6,
+        },
+        sub: {color: colors.textSecondary, marginBottom: 24, fontSize: 13},
+        scroll: {flex: 1},
+        row: {
+          paddingVertical: 14,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        },
+        allRow: {justifyContent: 'space-between'},
+        rowLeft: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          flex: 1,
+          paddingRight: 8,
+        },
+        checkbox: {
+          width: 20,
+          height: 20,
+          borderRadius: 6,
+          borderWidth: 1,
+          borderColor: colors.borderSubtle,
+          justifyContent: 'center',
+          alignItems: 'center',
+          marginRight: 10,
+        },
+        checkboxChecked: {
+          backgroundColor: colors.brandPrimary,
+          borderColor: colors.brandPrimary,
+        },
+        checkIcon: {
+          color: colors.textOnBrandPrimary,
+          fontSize: 12,
+          fontWeight: '700',
+        },
+        allText: {fontSize: 15, fontWeight: '700', color: colors.textPrimary},
+        allRightText: {fontSize: 11, color: colors.textTertiary},
+        divider: {
+          height: 1,
+          backgroundColor: colors.borderSubtle,
+          marginVertical: 10,
+        },
+        labelRow: {flexDirection: 'row', alignItems: 'center'},
+        itemText: {fontSize: 14, fontWeight: '600', color: colors.textPrimary},
+        requiredTag: {marginLeft: 6, fontSize: 11, color: colors.error},
+        optionalTag: {marginLeft: 6, fontSize: 11, color: colors.textSecondary},
+        descText: {marginTop: 2, fontSize: 11, color: colors.textSecondary},
+        detailText: {
+          fontSize: 12,
+          color: colors.textTertiary,
+          textDecorationLine: 'underline',
+        },
+        sheetContainer: {
+          flex: 1,
+          paddingHorizontal: 20,
+          paddingTop: 12,
+          paddingBottom: 24,
+        },
+        sheetHeaderRow: {
+          flexDirection: 'row',
+          alignItems: 'flex-start',
+          marginBottom: 8,
+        },
+        sheetHeaderSide: {
+          width: 30,
+        },
+        sheetTitle: {
+          flex: 1,
+          fontSize: 18,
+          fontWeight: '700',
+          color: colors.textPrimary,
+          textAlign: 'center',
+          paddingHorizontal: 4,
+        },
+        sheetHeaderClose: {
+          width: 30,
+          height: 30,
+          borderRadius: 15,
+          backgroundColor: colors.surfaceMuted,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginTop: getResponsiveHeight(-4),
+        },
+        sheetScroll: {marginTop: 4},
+        sheetBody: {
+          fontSize: 13,
+          lineHeight: 18,
+          color: colors.textDefault,
+        },
+      }),
+    [colors],
+  );
 
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
@@ -158,8 +265,12 @@ export default function TermsAgreementScreen() {
         dispatch(syncMarketingNotificationFromServer());
         advanceSignupAfterProfileSaved();
         clearSignupSkipProfileAfterTerms();
+        // 가입 과정에서 가족 설정 화면은 생략 → 설정완료로 이동(가족은 홈에서 연결)
+        markFamilySkipFinishScreenPendingSync();
+        commitSignupProgressFinish();
         navigateToWhere({
-          screen: '가족설정화면',
+          screen: '설정완료화면',
+          params: {skippedFamilySetup: true},
           replace: true,
         });
       } else {
@@ -247,7 +358,7 @@ export default function TermsAgreementScreen() {
             numberOfLines={2}>
             {title}
           </Text>
-          <TouchableOpacity
+          <SpringPressable
             accessibilityRole="button"
             accessibilityLabel={BOTTOM_SHEET_BUTTON_LABELS.CLOSE_SHEET}
             hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
@@ -255,7 +366,7 @@ export default function TermsAgreementScreen() {
             onPress={dismissTermsDetailSheet}
             style={styles.sheetHeaderClose}>
             <SheetHeaderCloseIcon size={getResponsiveIconSize(16)} />
-          </TouchableOpacity>
+          </SpringPressable>
         </View>
         <ScrollView style={styles.sheetScroll}>
           <Text allowFontScaling={false} style={styles.sheetBody}>
@@ -292,7 +403,7 @@ export default function TermsAgreementScreen() {
         contentContainerStyle={{paddingBottom: 24}}>
         {/* 전체 동의 */}
         <View style={[styles.row, styles.allRow]}>
-          <TouchableOpacity
+          <SpringPressable
             activeOpacity={0.8}
             style={styles.rowLeft}
             onPress={handleToggleAll}>
@@ -300,7 +411,7 @@ export default function TermsAgreementScreen() {
             <Text allowFontScaling={false} style={styles.allText}>
               전체 동의
             </Text>
-          </TouchableOpacity>
+          </SpringPressable>
           <Text allowFontScaling={false} style={styles.allRightText}>
             필수 · 선택 모두 동의
           </Text>
@@ -310,7 +421,7 @@ export default function TermsAgreementScreen() {
 
         {/* 서비스 이용약관 */}
         <View style={styles.row}>
-          <TouchableOpacity
+          <SpringPressable
             activeOpacity={0.8}
             style={styles.rowLeft}
             onPress={() => handleToggleItem('terms')}>
@@ -328,17 +439,17 @@ export default function TermsAgreementScreen() {
                 서비스 이용에 필요한 기본 규정이에요.
               </Text>
             </View>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleOpenDetail('terms')}>
+          </SpringPressable>
+          <SpringPressable onPress={() => handleOpenDetail('terms')}>
             <Text allowFontScaling={false} style={styles.detailText}>
               보기
             </Text>
-          </TouchableOpacity>
+          </SpringPressable>
         </View>
 
         {/* 개인정보 처리방침 */}
         <View style={styles.row}>
-          <TouchableOpacity
+          <SpringPressable
             activeOpacity={0.8}
             style={styles.rowLeft}
             onPress={() => handleToggleItem('privacy')}>
@@ -356,17 +467,17 @@ export default function TermsAgreementScreen() {
                 개인정보 처리 방식과 보관 기간을 안내해요.
               </Text>
             </View>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleOpenDetail('privacy')}>
+          </SpringPressable>
+          <SpringPressable onPress={() => handleOpenDetail('privacy')}>
             <Text allowFontScaling={false} style={styles.detailText}>
               보기
             </Text>
-          </TouchableOpacity>
+          </SpringPressable>
         </View>
 
         {/* 마케팅 정보 수신 */}
         <View style={styles.row}>
-          <TouchableOpacity
+          <SpringPressable
             activeOpacity={0.8}
             style={styles.rowLeft}
             onPress={() => handleToggleItem('marketing')}>
@@ -384,12 +495,12 @@ export default function TermsAgreementScreen() {
                 이벤트·새 기능 소식을 받을 수 있어요.
               </Text>
             </View>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => handleOpenDetail('marketing')}>
+          </SpringPressable>
+          <SpringPressable onPress={() => handleOpenDetail('marketing')}>
             <Text allowFontScaling={false} style={styles.detailText}>
               보기
             </Text>
-          </TouchableOpacity>
+          </SpringPressable>
         </View>
       </ScrollView>
 
@@ -422,87 +533,3 @@ export default function TermsAgreementScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {flex: 1, padding: 24, backgroundColor: '#FFFFFF'},
-  title: {
-    color: 'black',
-    fontSize: 26,
-    fontWeight: '700',
-    marginTop: 20,
-    marginBottom: 6,
-  },
-  sub: {color: '#6B7280', marginBottom: 24, fontSize: 13},
-  scroll: {flex: 1},
-  row: {
-    paddingVertical: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  allRow: {justifyContent: 'space-between'},
-  rowLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    paddingRight: 8,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  checkboxChecked: {backgroundColor: '#FFC84D', borderColor: '#FFC84D'},
-  checkIcon: {color: '#FFFFFF', fontSize: 12, fontWeight: '700'},
-  allText: {fontSize: 15, fontWeight: '700', color: 'black'},
-  allRightText: {fontSize: 11, color: COLORS.textTertiary},
-  divider: {height: 1, backgroundColor: '#E5E7EB', marginVertical: 10},
-  labelRow: {flexDirection: 'row', alignItems: 'center'},
-  itemText: {fontSize: 14, fontWeight: '600', color: 'black'},
-  requiredTag: {marginLeft: 6, fontSize: 11, color: '#DC2626'},
-  optionalTag: {marginLeft: 6, fontSize: 11, color: '#6B7280'},
-  descText: {marginTop: 2, fontSize: 11, color: '#6B7280'},
-  detailText: {
-    fontSize: 12,
-    color: COLORS.textTertiary,
-    textDecorationLine: 'underline',
-  },
-  sheetContainer: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 24,
-  },
-  sheetHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  sheetHeaderSide: {
-    width: 30,
-  },
-  sheetTitle: {
-    flex: 1,
-    fontSize: 18,
-    fontWeight: '700',
-    color: 'black',
-    textAlign: 'center',
-    paddingHorizontal: 4,
-  },
-  sheetHeaderClose: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: getResponsiveHeight(-4),
-  },
-  sheetScroll: {marginTop: 4},
-  sheetBody: {fontSize: 13, lineHeight: 18, color: '#111827'},
-});

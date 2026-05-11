@@ -1,6 +1,7 @@
 // YMDPickerModal.js
 import React from 'react';
-import { Modal, View, TouchableOpacity, StyleSheet, TouchableWithoutFeedback, Platform } from 'react-native';
+import { Modal, View, StyleSheet, TouchableWithoutFeedback, Platform } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import RNPickerSelect from 'react-native-picker-select';
 import Svg, {Path} from 'react-native-svg';
 import AppText from 'components/AppText';
@@ -12,7 +13,8 @@ import {
 } from 'utils/responsive';
 
 import {useYMDPickerState} from '../hooks/useYMDPickerState';
-import {BACKGROUND_COLORS, BUTTON_STYLES, COLORS} from 'styles/style';
+import {BACKGROUND_COLORS, BUTTON_STYLES} from 'styles/style';
+import {useColors} from 'hooks/useColors';
 import {FONTS} from 'styles/typography';
 
 export default function YMDPickerModal({
@@ -23,6 +25,7 @@ export default function YMDPickerModal({
   minYear = 2000,
   maxYear = 2100,
 }) {
+  const colors = useColors();
   const styles = useScaledStyleSheet(rf => ({
 
   backdrop: {
@@ -101,7 +104,7 @@ export default function YMDPickerModal({
   pickerPlaceholder: {
     fontFamily: FONTS.MEDIUM,
     fontSize: rf(14),
-    color: COLORS.textTertiary,
+    color: colors.textTertiary,
   },
 
   pickerIconContainer: {
@@ -132,8 +135,8 @@ export default function YMDPickerModal({
   },
 
   confirm: {
-    backgroundColor: COLORS.brandPrimary,
-    borderColor: COLORS.brandPrimary,
+    backgroundColor: colors.brandPrimary,
+    borderColor: colors.brandPrimary,
   },
 
   cancelText: {
@@ -179,7 +182,7 @@ export default function YMDPickerModal({
     <Svg width={16} height={16} viewBox="0 0 24 24">
       <Path
         d="M6 9l6 6 6-6"
-        stroke={COLORS.textTertiary}
+        stroke={colors.textTertiary}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -262,17 +265,17 @@ export default function YMDPickerModal({
               </View>
 
               <View style={styles.actions}>
-                <TouchableOpacity
+                <SpringPressable
                   style={[styles.btn, styles.cancel]}
                   onPress={onClose}>
                   <AppText style={styles.cancelText}>취소</AppText>
-                </TouchableOpacity>
+                </SpringPressable>
 
-                <TouchableOpacity
+                <SpringPressable
                   style={[styles.btn, styles.confirm]}
                   onPress={handleConfirm}>
                   <AppText style={styles.confirmText}>확인</AppText>
-                </TouchableOpacity>
+                </SpringPressable>
               </View>
             </View>
           </TouchableWithoutFeedback>

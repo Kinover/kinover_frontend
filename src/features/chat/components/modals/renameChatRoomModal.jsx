@@ -12,6 +12,7 @@ import {required, validateLength} from 'utils/validation';
 
 import AppText from 'components/AppText';
 import {FONTS} from 'styles/typography';
+import {useColors, useIsDark} from 'hooks/useColors';
 
 // 기존 JSX의 <AppText />를 접근성 정책 포함 AppText로 통일
 const Text = AppText;
@@ -26,16 +27,18 @@ export default function RenameChatRoomModal({
   setNewRoomName,
   currentRoomName,
 }) {
-  const styles = useScaledStyleSheet(rf => ({
-
+  const colors = useColors();
+  const isDark = useIsDark();
+  const styles = useScaledStyleSheet(
+    rf => ({
   textInput: {
     borderWidth: 1,
-    borderColor: '#F5F5F5',
+    borderColor: isDark ? colors.borderSubtle : '#F5F5F5',
     borderRadius: getResponsiveWidth(12),
     paddingVertical: getResponsiveHeight(12),
     paddingHorizontal: getResponsiveWidth(12),
     fontSize: rf(15),
-    backgroundColor: '#F5F5F5',
+    backgroundColor: isDark ? colors.surfaceMuted : '#F5F5F5',
     fontFamily: FONTS.REGULAR,
     marginTop: getResponsiveHeight(4),
     marginBottom: getResponsiveHeight(10),
@@ -55,7 +58,9 @@ export default function RenameChatRoomModal({
     lineHeight: getResponsiveHeight(16),
   },
 
-  }));
+  }),
+    [colors, isDark],
+  );
   const [fieldError, setFieldError] = useState('');
   const [isNameFocused, setIsNameFocused] = useState(false);
 
@@ -119,8 +124,11 @@ export default function RenameChatRoomModal({
             borderWidth: 0,
             paddingVertical: 0,
             paddingHorizontal: 0,
+            color: isDark ? colors.textPrimary : '#111827',
           }}
-          placeholderTextColor="#999"
+          placeholderTextColor={
+            isDark ? colors.textTertiary : '#999'
+          }
         />
       </View>
     </CustomModal>

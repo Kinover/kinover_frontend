@@ -11,7 +11,6 @@ import {createStackNavigator} from '@react-navigation/stack';
 
 import TabNavigator from './tabNavigator';
 import NoFamilyTabsOverlay from 'components/NoFamilyTabsOverlay';
-import {FamilyJoinOrCreateSheetProvider} from 'contexts/FamilyJoinOrCreateSheetContext';
 import {TabsWithOptionalGuideHost} from 'contexts/GuideOverlayContext';
 import FamilySetupScreen from 'features/auth/screens/FamilySetupScreen';
 import SetupFinishScreen from 'features/auth/screens/SetupFinishScreen';
@@ -19,9 +18,13 @@ import SettingScreen from 'features/setting/screens/SettingScreen';
 import NotificationSettingScreen from 'features/setting/screens/NotificationSettingScreen';
 import BlockedUsersScreen from 'features/setting/screens/BlockedUsersScreen';
 import NotificationScreen from 'features/notification/screens/NotificationScreen';
-import {RenderHeaderBackButton} from './helpers/tabHeaderHelpers';
+import {
+  RenderHeaderBackButton,
+  stackScreenHeaderTitleCentered,
+} from './helpers/tabHeaderHelpers';
 import {getTabStackHeaderHeight} from 'utils/layoutMetrics';
-import {stackCardScreenOption} from './navigationTheme';
+import {getStackCardScreenOption} from './navigationTheme';
+import {useColors} from 'hooks/useColors';
 
 // ==================== Constants ====================
 
@@ -35,13 +38,11 @@ const Stack = createStackNavigator();
 function TabsWithGuideOverlay(props) {
   return (
     <View style={{flex: 1}} pointerEvents="box-none">
-      <FamilyJoinOrCreateSheetProvider>
-        <TabsWithOptionalGuideHost
-          TabNavigatorComponent={TabNavigator}
-          tabNavigatorProps={props}
-        />
-        <NoFamilyTabsOverlay />
-      </FamilyJoinOrCreateSheetProvider>
+      <TabsWithOptionalGuideHost
+        TabNavigatorComponent={TabNavigator}
+        tabNavigatorProps={props}
+      />
+      <NoFamilyTabsOverlay />
     </View>
   );
 }
@@ -75,6 +76,7 @@ const createHeaderOptions = (navigation, route) => ({
  * @returns {JSX.Element} 루트 네비게이터 컴포넌트
  */
 export default function RootNavigator({initialRouteName = 'Tabs'}) {
+  const colors = useColors();
   return (
     <Stack.Navigator
       initialRouteName={initialRouteName}
@@ -82,7 +84,7 @@ export default function RootNavigator({initialRouteName = 'Tabs'}) {
         headerShown: false,
         // 설정/알림 갔다 와도 Tabs 언마운트 안 하게 → goBack() 시 탭 상태 유지
         detachInactiveScreens: false,
-        ...stackCardScreenOption,
+        ...getStackCardScreenOption(colors),
       }}>
       {/* 메인 탭 네비게이터 + iOS 가이드 오버레이 호스트 */}
       <Stack.Screen name="Tabs" component={TabsWithGuideOverlay} />
@@ -105,6 +107,7 @@ export default function RootNavigator({initialRouteName = 'Tabs'}) {
         component={BlockedUsersScreen}
         options={({navigation, route}) => ({
           ...createHeaderOptions(navigation, route),
+          ...stackScreenHeaderTitleCentered(),
           headerTitle: '신고 및 차단',
         })}
       />

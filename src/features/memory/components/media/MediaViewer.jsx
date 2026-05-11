@@ -2,7 +2,8 @@
 
 /* eslint-disable react-native/no-inline-styles */
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
-import { Modal, StyleSheet, TouchableOpacity, Dimensions, View, FlatList, Platform, PermissionsAndroid, ActivityIndicator } from 'react-native';
+import { Modal, StyleSheet, Dimensions, View, FlatList, Platform, PermissionsAndroid, ActivityIndicator } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import Video from 'react-native-video';
 import FastImage from '@d11/react-native-fast-image';
 
@@ -506,9 +507,9 @@ export default function MediaViewer({
       <View style={styles.overlay} />
 
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={handleClose} style={styles.circleIconBtn}>
+        <SpringPressable onPress={handleClose} style={styles.circleIconBtn}>
           <AppText style={styles.xText}>✕</AppText>
-        </TouchableOpacity>
+        </SpringPressable>
 
         <View pointerEvents="none" style={styles.indexPill}>
           <AppText style={styles.headerIndex}>

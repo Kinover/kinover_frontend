@@ -2,6 +2,10 @@
   "migIndex": 1,
   "data": [
     {
+      "path": "src/assets/fonts/NanumPenScript-Regular.ttf",
+      "sha1": "72576277a2fb1aa5fb87529b32cd55ce094a4032"
+    },
+    {
       "path": "src/assets/fonts/Pretendard-Bold.ttf",
       "sha1": "5014ee949529efb25dc8d2555fb8d4586f43e058"
     },

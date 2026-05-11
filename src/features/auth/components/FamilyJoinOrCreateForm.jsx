@@ -1,5 +1,6 @@
-import React, {useState, useCallback} from 'react';
-import {View, StyleSheet, TouchableOpacity} from 'react-native';
+import React, {useState, useCallback, useMemo} from 'react';
+import { View, StyleSheet } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {useDispatch, useStore} from 'react-redux';
 import {StackActions} from '@react-navigation/native';
 import CustomInput from 'components/CustomInput';
@@ -14,7 +15,7 @@ import {
 } from 'features/home/services/homeApi';
 
 import {validateLength, required} from 'utils/validation';
-import {COLORS} from 'styles/style';
+import {useColors} from 'hooks/useColors';
 import {clearPhoneVerificationPending} from 'features/auth/store/loginSlice';
 import {
   commitSignupProgressFinish,
@@ -58,6 +59,142 @@ export default function FamilyJoinOrCreateForm({
   onSheetSuccess,
   screenNavigation,
 }) {
+  const colors = useColors();
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        screenRoot: {
+          flex: 1,
+        },
+        sheetRoot: {
+          alignSelf: 'stretch',
+          paddingBottom: 8,
+        },
+        screenContentPadding: {
+          paddingHorizontal: 24,
+          paddingTop: 24,
+        },
+        title: {
+          color: colors.textPrimary,
+          fontSize: 26,
+          fontWeight: '700',
+          marginTop: 4,
+          marginBottom: 6,
+        },
+        sub: {
+          color: colors.textSecondary,
+          marginBottom: 30,
+          fontSize: 13,
+        },
+        compactIntro: {
+          color: colors.textSecondary,
+          fontSize: 13,
+          lineHeight: 20,
+          marginBottom: 20,
+        },
+        field: {
+          marginBottom: 18,
+        },
+        label: {
+          color: colors.textPrimary,
+          fontSize: 15,
+          marginBottom: 6,
+          fontWeight: '600',
+        },
+        input: {
+          borderWidth: 1,
+          borderColor: colors.borderSubtle,
+          borderRadius: 10,
+          paddingHorizontal: 12,
+          paddingVertical: 10,
+          fontSize: 14,
+        },
+        error: {
+          color: colors.error,
+          marginBottom: 8,
+          fontSize: 12,
+        },
+        dividerRow: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          marginTop: 12,
+          marginBottom: 26,
+        },
+        divider: {
+          flex: 1,
+          height: 1,
+          backgroundColor: colors.borderSubtle,
+        },
+        dividerText: {
+          marginHorizontal: 8,
+          fontSize: 11,
+          color: colors.textTertiary,
+        },
+        createCard: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          paddingHorizontal: 16,
+          paddingVertical: 14,
+          borderRadius: 14,
+          backgroundColor: colors.surfaceSecondary,
+          borderWidth: 1,
+          borderColor: colors.borderSubtle,
+        },
+        createCardIconBox: {
+          width: 40,
+          height: 40,
+          borderRadius: 999,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: colors.surfacePrimary,
+          marginRight: 12,
+        },
+        createCardIcon: {
+          fontSize: 22,
+        },
+        createCardTextBox: {
+          flex: 1,
+        },
+        createCardTitle: {
+          fontSize: 14,
+          fontWeight: '700',
+          color: colors.textStrong,
+          marginBottom: 2,
+        },
+        createCardDesc: {
+          fontSize: 12,
+          color: colors.textSecondary,
+        },
+        createCardArrow: {
+          fontSize: 18,
+          color: colors.textTertiary,
+          marginLeft: 8,
+        },
+        skipButton: {
+          alignSelf: 'center',
+          marginTop: 18,
+          paddingVertical: 10,
+          paddingHorizontal: 16,
+          borderRadius: 999,
+          backgroundColor: colors.surfaceMuted,
+          borderWidth: 1,
+          borderColor: colors.borderSubtle,
+        },
+        skipButtonText: {
+          fontSize: 13,
+          color: colors.textSecondary,
+        },
+
+        contentGrow: {
+          flex: 1,
+        },
+        fixedCtaContainer: {
+          paddingHorizontal: 24,
+        },
+      }),
+    [colors],
+  );
+
   const dispatch = useDispatch();
   const store = useStore();
 
@@ -200,92 +337,100 @@ export default function FamilyJoinOrCreateForm({
 
   return (
     <View style={surface === 'sheet' ? styles.sheetRoot : styles.screenRoot}>
-      {!compact ? (
-        <>
-          <AppText
-            allowFontScaling={false}
-            style={styles.title}>{`가족과 연결되려면\n가족 코드가 필요해요`}</AppText>
-          <AppText allowFontScaling={false} style={styles.sub}>
-            이미 초대받았다면 코드를 입력해주세요.
-          </AppText>
-        </>
-      ) : (
-        <AppText allowFontScaling={false} style={styles.compactIntro}>
-          초대 코드가 있으면 입력해 주세요. 없으면 새 가족 모임을 만들 수 있어요.
-        </AppText>
-      )}
-
-      <View style={styles.field}>
+      <View
+        style={[
+          styles.contentGrow,
+          surface === 'screen' ? styles.screenContentPadding : null,
+        ]}>
         {!compact ? (
-          <AppText allowFontScaling={false} style={styles.label}>
-            가족 코드{' '}
+          <>
+            <AppText
+              allowFontScaling={false}
+              style={styles.title}>{`가족과 연결되려면\n가족 코드가 필요해요`}</AppText>
+            <AppText allowFontScaling={false} style={styles.sub}>
+              이미 초대받았다면 코드를 입력해주세요.
+            </AppText>
+          </>
+        ) : (
+          <AppText allowFontScaling={false} style={styles.compactIntro}>
+            초대 코드가 있으면 입력해 주세요. 없으면 새 가족 모임을 만들 수 있어요.
+          </AppText>
+        )}
+
+        <View style={styles.field}>
+          {!compact ? (
+            <AppText allowFontScaling={false} style={styles.label}>
+              가족 코드{' '}
+            </AppText>
+          ) : null}
+          <CustomInput
+            allowFontScaling={false}
+            style={styles.input}
+            placeholder="가족 코드를 입력하세요"
+            placeholderTextColor="#9E9E9E"
+            value={familyCode}
+            onChangeText={setFamilyCode}
+            autoCapitalize="none"
+          />
+        </View>
+
+        {fieldError ? (
+          <AppText allowFontScaling={false} style={styles.error}>
+            {fieldError}
           </AppText>
         ) : null}
-        <CustomInput
-          allowFontScaling={false}
-          style={styles.input}
-          placeholder="가족 코드를 입력하세요"
-          placeholderTextColor="#9E9E9E"
-          value={familyCode}
-          onChangeText={setFamilyCode}
-          autoCapitalize="none"
-        />
+
+        <View style={styles.dividerRow}>
+          <View style={styles.divider} />
+          <AppText allowFontScaling={false} style={styles.dividerText}>
+            또는
+          </AppText>
+          <View style={styles.divider} />
+        </View>
+
+        <SpringPressable
+          style={styles.createCard}
+          activeOpacity={0.85}
+          onPress={handleCreateFamily}
+          disabled={creating}>
+          <View style={styles.createCardIconBox}>
+            <AppText allowFontScaling={false} style={styles.createCardIcon}>
+              🏡
+            </AppText>
+          </View>
+          <View style={styles.createCardTextBox}>
+            <AppText allowFontScaling={false} style={styles.createCardTitle}>
+              새 가족 모임 만들기
+            </AppText>
+            <AppText allowFontScaling={false} style={styles.createCardDesc}>
+              내가 방장이 되어 가족을 초대할게요
+            </AppText>
+          </View>
+          <AppText allowFontScaling={false} style={styles.createCardArrow}>
+            ›
+          </AppText>
+        </SpringPressable>
+
+        {surface === 'screen' || onSkipPress ? (
+          <SpringPressable
+            style={styles.skipButton}
+            activeOpacity={0.85}
+            onPress={handleSkipFamily}>
+            <AppText allowFontScaling={false} style={styles.skipButtonText}>
+              나중에 할게요
+            </AppText>
+          </SpringPressable>
+        ) : null}
       </View>
 
-      {fieldError ? (
-        <AppText allowFontScaling={false} style={styles.error}>
-          {fieldError}
-        </AppText>
-      ) : null}
-
       <BottomActionButton
+        variant="fixed"
         useAppFontScaling={false}
         label="참여하기"
         onPress={handleSubmit}
         disabled={isJoinDisabled}
+        containerStyle={surface === 'screen' ? styles.fixedCtaContainer : null}
       />
-
-      <View style={styles.dividerRow}>
-        <View style={styles.divider} />
-        <AppText allowFontScaling={false} style={styles.dividerText}>
-          또는
-        </AppText>
-        <View style={styles.divider} />
-      </View>
-
-      <TouchableOpacity
-        style={styles.createCard}
-        activeOpacity={0.85}
-        onPress={handleCreateFamily}
-        disabled={creating}>
-        <View style={styles.createCardIconBox}>
-          <AppText allowFontScaling={false} style={styles.createCardIcon}>
-            🏡
-          </AppText>
-        </View>
-        <View style={styles.createCardTextBox}>
-          <AppText allowFontScaling={false} style={styles.createCardTitle}>
-            새 가족 모임 만들기
-          </AppText>
-          <AppText allowFontScaling={false} style={styles.createCardDesc}>
-            내가 방장이 되어 가족을 초대할게요
-          </AppText>
-        </View>
-        <AppText allowFontScaling={false} style={styles.createCardArrow}>
-          ›
-        </AppText>
-      </TouchableOpacity>
-
-      {surface === 'screen' || onSkipPress ? (
-        <TouchableOpacity
-          style={styles.skipButton}
-          activeOpacity={0.7}
-          onPress={handleSkipFamily}>
-          <AppText allowFontScaling={false} style={styles.skipButtonText}>
-            나중에 할게요
-          </AppText>
-        </TouchableOpacity>
-      ) : null}
 
       <ToastModal
         visible={toastVisible}
@@ -295,120 +440,3 @@ export default function FamilyJoinOrCreateForm({
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  screenRoot: {
-    flex: 1,
-  },
-  sheetRoot: {
-    alignSelf: 'stretch',
-    paddingBottom: 8,
-  },
-  title: {
-    color: COLORS.textPrimary,
-    fontSize: 26,
-    fontWeight: '700',
-    marginTop: 4,
-    marginBottom: 6,
-  },
-  sub: {
-    color: COLORS.textSecondary,
-    marginBottom: 30,
-    fontSize: 13,
-  },
-  compactIntro: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    lineHeight: 20,
-    marginBottom: 20,
-  },
-  field: {
-    marginBottom: 18,
-  },
-  label: {
-    color: COLORS.textPrimary,
-    fontSize: 15,
-    marginBottom: 6,
-    fontWeight: '600',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-  },
-  error: {
-    color: COLORS.error,
-    marginBottom: 8,
-    fontSize: 12,
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 12,
-    marginBottom: 26,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: COLORS.borderSubtle,
-  },
-  dividerText: {
-    marginHorizontal: 8,
-    fontSize: 11,
-    color: COLORS.textTertiary,
-  },
-  createCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 14,
-    backgroundColor: COLORS.surfaceSecondary,
-    borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
-  },
-  createCardIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: COLORS.surfacePrimary,
-    marginRight: 12,
-  },
-  createCardIcon: {
-    fontSize: 22,
-  },
-  createCardTextBox: {
-    flex: 1,
-  },
-  createCardTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: COLORS.textStrong,
-    marginBottom: 2,
-  },
-  createCardDesc: {
-    fontSize: 12,
-    color: COLORS.textSecondary,
-  },
-  createCardArrow: {
-    fontSize: 18,
-    color: COLORS.textTertiary,
-    marginLeft: 8,
-  },
-  skipButton: {
-    alignSelf: 'center',
-    marginTop: 28,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-  },
-  skipButtonText: {
-    fontSize: 13,
-    color: COLORS.textTertiary,
-    textDecorationLine: 'underline',
-  },
-});

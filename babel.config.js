@@ -1,10 +1,13 @@
 // babel.config.js
+const path = require('path');
+
 module.exports = {
   presets: ['module:@react-native/babel-preset'],
   plugins: [
     [
       'module-resolver',
       {
+        cwd: path.resolve(__dirname),
         root: ['./src'],
         alias: {
           '@': './src',

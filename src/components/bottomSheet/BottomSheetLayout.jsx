@@ -8,17 +8,8 @@ const DEFAULT_ANIMATION_CONFIGS = {
   duration: 180,
   easing: Easing.out(Easing.cubic),
 };
-import {
-  View,
-  StyleSheet,
-  Animated,
-  Platform,
-  Dimensions,
-  Keyboard,
-  TouchableWithoutFeedback,
-  TouchableOpacity,
-  InteractionManager,
-} from 'react-native';
+import { View, StyleSheet, Animated, Platform, Dimensions, Keyboard, TouchableWithoutFeedback, InteractionManager } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -37,9 +28,8 @@ import {
   getResponsiveFontSize,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import {getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
 
-import {BOTTOMSHEET_STYLE} from 'styles/style';
+import {useThemeStyleTokens} from 'hooks/useColors';
 import {FONTS} from 'styles/typography';
 import {BOTTOM_SHEET_BUTTON_LABELS} from 'constants/bottomSheetTitles';
 import SheetHeaderCloseIcon from 'components/bottomSheet/SheetHeaderCloseIcon';
@@ -105,6 +95,7 @@ export default function BottomSheetLayout({
   maxDynamicContentSize: maxDynamicContentSizeProp,
 
 }) {
+  const {BOTTOMSHEET_STYLE, colors} = useThemeStyleTokens();
   const styles = useScaledStyleSheet(rf => ({
 
   container: {
@@ -124,17 +115,17 @@ export default function BottomSheetLayout({
     width: '100%',
   },
   headerBalanceSlot: {
-    width: getResponsiveWidth(30),
+    width: getResponsiveWidth(26),
   },
   titleInRow: {
     flex: 1,
     minWidth: 0,
   },
   headerClosePill: {
-    width: getResponsiveWidth(30),
-    height: getResponsiveWidth(30),
-    borderRadius: getResponsiveWidth(15),
-    backgroundColor: '#F3F4F6',
+    width: getResponsiveWidth(26),
+    height: getResponsiveWidth(26),
+    borderRadius: getResponsiveWidth(13),
+    backgroundColor: colors.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: getResponsiveHeight(-4),
@@ -146,9 +137,10 @@ export default function BottomSheetLayout({
     marginBottom: getResponsiveHeight(2),
   },
   title: {
-    fontFamily: BOTTOMSHEET_STYLE()?.title?.fontFamily || FONTS.SEMI_BOLD,
-    fontSize: BOTTOMSHEET_STYLE()?.title?.fontSize || rf(16),
-    color: BOTTOMSHEET_STYLE()?.title?.color || '#111827',
+    fontFamily: BOTTOMSHEET_STYLE?.title?.fontFamily || FONTS.SEMI_BOLD,
+    fontSize: BOTTOMSHEET_STYLE?.title?.fontSize || rf(16),
+    // 바텀시트 타이틀은 테마 텍스트 색을 최우선으로 사용(다크모드에서 검정으로 보이는 케이스 방지)
+    color: colors.textPrimary,
     letterSpacing: -0.2,
   },
   titleCentered: {
@@ -158,10 +150,10 @@ export default function BottomSheetLayout({
   subtitle: {
     marginTop: getResponsiveHeight(3),
     fontFamily:
-      BOTTOMSHEET_STYLE()?.subtitle?.fontFamily || FONTS.MEDIUM,
+      BOTTOMSHEET_STYLE?.subtitle?.fontFamily || FONTS.MEDIUM,
     fontSize:
-      BOTTOMSHEET_STYLE()?.subtitle?.fontSize || rf(12.5),
-    color: BOTTOMSHEET_STYLE()?.subtitle?.color || '#6B7280',
+      BOTTOMSHEET_STYLE?.subtitle?.fontSize || rf(12.5),
+    color: colors.textSecondary,
     lineHeight: rf(18),
   },
   subtitleCentered: {
@@ -179,15 +171,13 @@ export default function BottomSheetLayout({
     minHeight: Platform.OS === 'android' ? 1 : undefined,
   },
 
-  }));
+  }), [colors]);
   const insets = useSafeAreaInsets();
   const WINDOW_H = Dimensions.get('window').height;
 
  // 키보드 높이 추적 → bottomInset 동적 변경으로 시트 전체를 키보드 위로 올림
   const [kbHeight, setKbHeight] = useState(0);
 
- // Android 시스템 네비게이션 바 높이 fallback (에뮬/실기기 모두 insets가 0이거나 작을 수 있음)
-  const ANDROID_SYSTEM_NAV_FALLBACK = getResponsiveHeight(56);
   const IOS_HOME_INDICATOR_MIN = getResponsiveHeight(34);
 
  /**
@@ -199,17 +189,19 @@ export default function BottomSheetLayout({
  * contentBottomPad 를 넉넉히 줘서 저장 버튼이 하단바에 가려지지 않게 함.
  */
 
- /**
- * Android 하단 여백 정책 (중요)
- * - insets.bottom이 0인 경우(에뮬/실기기에서 시스템 네비게이션바 영역 미보고) fallback으로 네비바 높이만큼 여백 확보
- */
+  /**
+   * Android 하단 여백 정책 (빈 공간 최소화)
+   * - 바텀시트는 "추정 네비게이션바 높이"를 더하면 하단이 과하게 비는 경우가 많아
+   *   safe-area insets.bottom을 우선으로 사용한다.
+   * - 단, 일부 Android 환경에서 insets.bottom이 0으로 내려오는 경우가 있어
+   *   버튼/푸터가 바닥에 너무 붙는 것만 방지하는 최소값만 적용한다.
+   */
   const androidInset = Platform.OS === 'android' ? Number(insets.bottom || 0) : 0;
-  const androidInsetByScreen = getAndroidNavBottomInsetEstimate();
-  const androidSafeBottom = Math.max(
-    androidInset,
-    androidInsetByScreen,
-    ANDROID_SYSTEM_NAV_FALLBACK,
-  );
+  const ANDROID_MIN_BOTTOM_SAFE = getResponsiveHeight(10);
+  const androidSafeBottom =
+    Platform.OS === 'android'
+      ? (androidInset > 0 ? androidInset : ANDROID_MIN_BOTTOM_SAFE)
+      : 0;
 
  // 콘텐츠 하단 패딩: Android fallback, iOS는 홈 인디케이터 최소값
   const baseBottom =
@@ -221,7 +213,7 @@ export default function BottomSheetLayout({
  // keyboardBehavior가 다른 값이면 gorhom 자체 처리에 맡김(bottomInset=0 유지).
   const bottomInsetForModal = keyboardBehavior === 'none' ? kbHeight : 0;
 
-  const ANDROID_FOOTER_BUFFER = getResponsiveHeight(16);
+  const ANDROID_FOOTER_BUFFER = getResponsiveHeight(10);
 
  /**
  * contentBottomPad 정책
@@ -357,7 +349,7 @@ export default function BottomSheetLayout({
     modalRef?.current?.dismiss?.();
   }, [modalRef, onHeaderClosePress]);
 
-  const headerCloseIconSize = getResponsiveIconSize(16);
+  const headerCloseIconSize = getResponsiveIconSize(13);
 
   const renderBackdrop = useCallback(
     props => (
@@ -532,6 +524,7 @@ export default function BottomSheetLayout({
     <BottomSheetModal
       key={modalKey}
       ref={modalRef}
+      backgroundStyle={{backgroundColor: colors.surfacePrimary}}
       handleIndicatorStyle={{
         width: getResponsiveWidth(48),
         height: getResponsiveHeight(4),
@@ -579,15 +572,18 @@ export default function BottomSheetLayout({
                     ]}>
                     {title}
                   </AppText>
-                  <TouchableOpacity
+                  <SpringPressable
                     accessibilityRole="button"
                     accessibilityLabel={BOTTOM_SHEET_BUTTON_LABELS.CLOSE_SHEET}
                     hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
                     activeOpacity={0.75}
                     style={styles.headerClosePill}
                     onPress={handleHeaderClose}>
-                    <SheetHeaderCloseIcon size={headerCloseIconSize} />
-                  </TouchableOpacity>
+                    <SheetHeaderCloseIcon
+                      size={headerCloseIconSize}
+                      color={colors.iconPrimary}
+                    />
+                  </SpringPressable>
                 </View>
               ) : (
                 <AppText
@@ -601,15 +597,18 @@ export default function BottomSheetLayout({
               ))}
             {!title && showHeaderCloseButton && (
               <View style={styles.headerOnlyCloseRow}>
-                <TouchableOpacity
+                <SpringPressable
                   accessibilityRole="button"
                   accessibilityLabel={BOTTOM_SHEET_BUTTON_LABELS.CLOSE_SHEET}
                   hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}
                   activeOpacity={0.75}
                   style={styles.headerClosePill}
                   onPress={handleHeaderClose}>
-                  <SheetHeaderCloseIcon size={headerCloseIconSize} />
-                </TouchableOpacity>
+                  <SheetHeaderCloseIcon
+                    size={headerCloseIconSize}
+                    color={colors.iconPrimary}
+                  />
+                </SpringPressable>
               </View>
             )}
             {headerAccessory}

@@ -2,14 +2,8 @@
 // src/features/chat/screens/KinoSelectScreen.jsx
 
 import React, {useEffect, useRef, useState, useCallback, useMemo} from 'react';
-import {
-  View,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-  Animated,
-  useWindowDimensions,
-} from 'react-native';
+import { View, Image, StyleSheet, Animated, useWindowDimensions } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import AppText from 'components/AppText';
 import Carousel from 'react-native-reanimated-carousel';
 import {useNavigation, useRoute} from '@react-navigation/native';
@@ -26,9 +20,9 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import {BUTTON_STYLES, COLORS} from 'styles/style';
 import SelectionFrameLayout from 'components/layouts/SelectionFrameLayout';
 import {FONTS} from 'styles/typography';
+import {useColors, useIsDark} from 'hooks/useColors';
 
 const KINO_TYPE_TO_PERSONALITY = {
   YELLOW_KINO: 'SUNNY',
@@ -64,6 +58,9 @@ const KINOS = [
   },
 ];
 
+/** 매 렌더 `map` 하면 배열 참조가 바뀌어 FadingKinoText 페이드 이펙트가 불필요하게 재실행됨 */
+const KINO_DESCRIPTIONS = KINOS.map(k => k.description);
+
 const mod = (n, m) => ((n % m) + m) % m;
 
 // 설명 카드 팔레트 (kinoType)
@@ -95,20 +92,22 @@ const SCREEN_BG = {
 };
 
 export default function KinoSelectScreen() {
+  const colors = useColors();
+  const isDark = useIsDark();
   const styles = useScaledStyleSheet(rf => ({
     headerBadge: {
       paddingHorizontal: getResponsiveWidth(12),
       paddingVertical: getResponsiveHeight(5),
       borderRadius: 999,
       marginBottom: getResponsiveHeight(10),
-      backgroundColor: 'rgba(17,24,39,0.07)',
+      backgroundColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(17,24,39,0.07)',
       borderWidth: 1,
-      borderColor: 'rgba(17,24,39,0.08)',
+      borderColor: isDark ? 'rgba(255,255,255,0.14)' : 'rgba(17,24,39,0.08)',
     },
     headerBadgeText: {
       fontSize: rf(10),
       letterSpacing: 1,
-      color: '#374151',
+      color: colors.textSecondary,
       fontFamily: FONTS.SEMI_BOLD,
     },
 
@@ -118,9 +117,9 @@ export default function KinoSelectScreen() {
       paddingHorizontal: getResponsiveWidth(20),
       borderRadius: getResponsiveWidth(24),
 
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.surfacePrimary,
       borderWidth: 1,
-      borderColor: '#E7E9EE',
+      borderColor: colors.borderSubtle,
 
       marginTop: getResponsiveHeight(6),
       shadowOffset: {width: 0, height: 10},
@@ -143,13 +142,13 @@ export default function KinoSelectScreen() {
       fontSize: rf(17),
       fontFamily: FONTS.SEMI_BOLD,
       lineHeight: rf(23),
-      color: '#111827',
+      color: colors.textPrimary,
     },
     kinoText: {
       fontSize: rf(14.5),
       fontFamily: FONTS.REGULAR,
       lineHeight: rf(21),
-      color: '#1F2937',
+      color: colors.textDefault,
     },
     paraGap: {
       marginBottom: getResponsiveHeight(10),
@@ -194,9 +193,9 @@ export default function KinoSelectScreen() {
     arrowGlass: {
       ...StyleSheet.absoluteFillObject,
       borderRadius: 999,
-      backgroundColor: 'rgba(255,255,255,0.92)',
+      backgroundColor: isDark ? 'rgba(17,24,39,0.62)' : 'rgba(255,255,255,0.92)',
       borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.95)',
+      borderColor: isDark ? 'rgba(255,255,255,0.10)' : 'rgba(255,255,255,0.95)',
       shadowColor: '#E0D4C4',
       shadowOffset: {width: 0, height: 4},
       shadowOpacity: 0.2,
@@ -207,7 +206,7 @@ export default function KinoSelectScreen() {
       width: getResponsiveIconSize(18),
       height: getResponsiveIconSize(18),
       resizeMode: 'contain',
-      tintColor: BUTTON_STYLES().saveBg,
+      tintColor: colors.brandPrimary,
     },
 
     kinoMetaWrap: {
@@ -217,13 +216,13 @@ export default function KinoSelectScreen() {
     kinoName: {
       fontFamily: FONTS.BOLD,
       fontSize: rf(18),
-      color: '#111827',
+      color: colors.textPrimary,
     },
     kinoTone: {
       marginTop: getResponsiveHeight(4),
       fontFamily: FONTS.REGULAR,
       fontSize: rf(12.5),
-      color: '#6B7280',
+      color: colors.textSecondary,
     },
     pagination: {
       flexDirection: 'row',
@@ -236,13 +235,15 @@ export default function KinoSelectScreen() {
       width: getResponsiveWidth(8),
       height: getResponsiveWidth(8),
       borderRadius: 99,
-      backgroundColor: 'rgba(107,114,128,0.28)',
+      backgroundColor: isDark
+        ? 'rgba(255,255,255,0.22)'
+        : 'rgba(107,114,128,0.28)',
     },
     dotActive: {
       width: getResponsiveWidth(22),
-      backgroundColor: '#111827',
+      backgroundColor: colors.iconPrimary,
     },
-  }));
+  }), [colors, isDark]);
   const navigation = useNavigation();
   const route = useRoute();
   const dispatch = useDispatch();
@@ -322,8 +323,11 @@ export default function KinoSelectScreen() {
   }, [currentKinoType]);
 
   const screenBg = useMemo(() => {
+    if (isDark) {
+      return colors.surfaceSecondary;
+    }
     return SCREEN_BG[currentKinoType] || SCREEN_BG.YELLOW_KINO;
-  }, [currentKinoType]);
+  }, [currentKinoType, isDark, colors.surfaceSecondary]);
 
   /**
    * 줄바꿈 안정화 + 하이라이트(키노) 유지:
@@ -397,22 +401,29 @@ export default function KinoSelectScreen() {
       subtitle="원하는 대화 스타일의 키노를 골라보세요."
       backgroundColor={screenBg}
       actionLabel="선택 완료"
-      actionButtonBackgroundColor={COLORS.brandPrimary}
-      actionButtonLabelColor={COLORS.textPrimary}
+      actionButtonBackgroundColor={colors.brandPrimary}
+      actionButtonLabelColor="#111827"
       onActionPress={() => setConfirmVisible(true)}>
       <View style={styles.bubbleWrap}>
         <View
           style={[
             styles.textCard,
-            {
-              borderColor: cardColors.border,
-              shadowColor: cardColors.shadow,
-            },
+            isDark
+              ? {
+                  borderColor: colors.borderSubtle,
+                  shadowColor: 'transparent',
+                  shadowOpacity: 0,
+                  elevation: 0,
+                }
+              : {
+                  borderColor: cardColors.border,
+                  shadowColor: cardColors.shadow,
+                },
           ]}>
           <View style={styles.textCardContent}>
             <FadingKinoText
               index={currentIndex}
-              descriptions={KINOS.map(k => k.description)}
+              descriptions={KINO_DESCRIPTIONS}
               renderLine={renderHighlightedLine}
               styles={styles}
             />
@@ -459,7 +470,7 @@ export default function KinoSelectScreen() {
         </View>
 
         {/* 화살표 */}
-        <TouchableOpacity
+        <SpringPressable
           style={[
             styles.arrowButton,
             {left: getResponsiveWidth(10), width: ARROW_W, height: ARROW_H},
@@ -472,9 +483,9 @@ export default function KinoSelectScreen() {
             source={require('assets/images/leftArrow.png')}
             style={styles.arrowIcon}
           />
-        </TouchableOpacity>
+        </SpringPressable>
 
-        <TouchableOpacity
+        <SpringPressable
           style={[
             styles.arrowButton,
             {right: getResponsiveWidth(10), width: ARROW_W, height: ARROW_H},
@@ -487,7 +498,7 @@ export default function KinoSelectScreen() {
             source={require('assets/images/rightArrow.png')}
             style={styles.arrowIcon}
           />
-        </TouchableOpacity>
+        </SpringPressable>
 
         <View style={styles.kinoMetaWrap}>
           <AppText style={styles.kinoName}>

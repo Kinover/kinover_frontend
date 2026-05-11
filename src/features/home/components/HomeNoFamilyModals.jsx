@@ -13,7 +13,7 @@ import {
 } from 'features/home/services/homeApi';
 
 import {validateLength, required} from 'utils/validation';
-import {COLORS} from 'styles/style';
+import {useColors} from 'hooks/useColors';
 import {
   commitSignupProgressFinish,
   getPendingInviteCodeSync,
@@ -43,6 +43,7 @@ function messageFromRtkError(err, fallback) {
 
 /** 홈(가족 없음): 초대 코드 입력 후 참여 — CustomModal */
 export function HomeFamilyInviteJoinModal({visible, onClose}) {
+  const colors = useColors();
   const store = useStore();
   const [triggerGetFamily] = useLazyGetFamilyQuery();
   const [joinFamily] = useJoinFamilyMutation();
@@ -127,10 +128,10 @@ export function HomeFamilyInviteJoinModal({visible, onClose}) {
         subTextPlacement="title"
         showCloseButton
         closeOnBackdropPress={!joining}>
-        <View style={styles.fieldBlock}>
+        <View style={staticStyles.fieldBlock}>
           <CustomInput
             allowFontScaling={false}
-            style={styles.input}
+            style={[staticStyles.input, {borderColor: colors.borderSubtle}]}
             placeholder="가족 코드를 입력하세요"
             placeholderTextColor="#9E9E9E"
             value={code}
@@ -142,7 +143,7 @@ export function HomeFamilyInviteJoinModal({visible, onClose}) {
             editable={!joining}
           />
           {fieldError ? (
-            <AppText allowFontScaling={false} style={styles.fieldError}>
+            <AppText allowFontScaling={false} style={[staticStyles.fieldError, {color: colors.error}]}>
               {fieldError}
             </AppText>
           ) : null}
@@ -228,14 +229,13 @@ export function HomeFamilyCreateModal({visible, onClose}) {
   );
 }
 
-const styles = StyleSheet.create({
+const staticStyles = StyleSheet.create({
   fieldBlock: {
     alignSelf: 'stretch',
     marginTop: getResponsiveHeight(4),
   },
   input: {
     borderWidth: 1,
-    borderColor: COLORS.borderSubtle,
     borderRadius: 10,
     paddingHorizontal: 12,
     paddingVertical: 10,
@@ -245,6 +245,5 @@ const styles = StyleSheet.create({
     marginTop: getResponsiveHeight(8),
     fontSize: getResponsiveFontSize(12),
     fontFamily: FONTS.REGULAR,
-    color: COLORS.error,
   },
 });

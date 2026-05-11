@@ -2,7 +2,8 @@
 
 /* eslint-disable react-native/no-inline-styles */
 import React, {useEffect, useMemo, useRef, useState, useCallback} from 'react';
-import { Modal, StyleSheet, TouchableOpacity, Dimensions, View, FlatList, Platform, PermissionsAndroid, ActivityIndicator, Image } from 'react-native';
+import { Modal, StyleSheet, Dimensions, View, FlatList, Platform, PermissionsAndroid, ActivityIndicator, Image } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import AppText from 'components/AppText';
 import Video from 'react-native-video';
 import FastImage from '@d11/react-native-fast-image';
@@ -420,11 +421,11 @@ export default function MediaModal({
       <View style={styles.overlay} />
 
       <View style={styles.topBar}>
-        <TouchableOpacity onPress={handleClose} style={styles.circleIconBtn}>
+        <SpringPressable onPress={handleClose} style={styles.circleIconBtn}>
           <AppText style={styles.xText}>
             ✕
           </AppText>
-        </TouchableOpacity>
+        </SpringPressable>
 
         <View style={styles.indexPill}>
           <AppText style={styles.indexText}>
@@ -433,7 +434,7 @@ export default function MediaModal({
           </AppText>
         </View>
 
-        <TouchableOpacity
+        <SpringPressable
           onPress={openMenu}
           disabled={isMenuDisabled}
           style={[styles.circleIconBtn, isMenuDisabled && {opacity: 0.5}]}>
@@ -442,7 +443,7 @@ export default function MediaModal({
             style={styles.dotsIcon}
  // resizeMode={FastImage.resizeMode.contain}
           />
-        </TouchableOpacity>
+        </SpringPressable>
       </View>
 
       <NativeViewGestureHandler ref={nativeViewRef} disallowInterruption={false}>
@@ -474,14 +475,14 @@ export default function MediaModal({
       <Animated.View
         pointerEvents={menuVisible ? 'auto' : 'none'}
         style={[styles.menuOverlay, menuOverlayStyle]}>
-        <TouchableOpacity
+        <SpringPressable
           style={StyleSheet.absoluteFillObject}
           activeOpacity={1}
           onPress={closeMenu}
         />
 
         <Animated.View style={[styles.menuBox, menuBoxStyle]}>
-          <TouchableOpacity
+          <SpringPressable
             onPress={() => {
               closeMenu();
               runSave('single');
@@ -495,11 +496,11 @@ export default function MediaModal({
             <AppText style={styles.menuText}>
               {singleLabel}
             </AppText>
-          </TouchableOpacity>
+          </SpringPressable>
 
           <View style={styles.menuDivider} />
 
-          <TouchableOpacity
+          <SpringPressable
             onPress={() => {
               closeMenu();
               runSave('all');
@@ -513,7 +514,7 @@ export default function MediaModal({
             <AppText style={styles.menuText}>
               전체저장
             </AppText>
-          </TouchableOpacity>
+          </SpringPressable>
         </Animated.View>
       </Animated.View>
 

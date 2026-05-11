@@ -171,7 +171,6 @@ export function FontModeSliderBlue({
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
@@ -230,3 +229,4 @@ const styles = StyleSheet.create({
     elevation: 9,
   },
 });
+

@@ -9,7 +9,8 @@ import React, {
   useMemo,
   useCallback,
 } from 'react';
-import {View, StyleSheet, Platform, TouchableOpacity} from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {BottomSheetScrollView} from '@gorhom/bottom-sheet';
 import {
@@ -21,9 +22,7 @@ import {getBottomSheetEditorBottomSafe} from 'components/bottomSheet/bottomSheet
 
 import BottomSheetLayout from 'components/bottomSheet/BottomSheetLayout';
 import BottomSheetFooterButtons from 'components/bottomSheet/BottomSheetFooterButtons';
-import BOTTOM_SHEET_TITLES, {
-  BOTTOM_SHEET_BUTTON_LABELS,
-} from 'constants/bottomSheetTitles';
+import BOTTOM_SHEET_TITLES from 'constants/bottomSheetTitles';
 import {hapticSuccess, hapticLight} from 'utils/haptic';
 import {FONTS} from 'styles/typography';
 
@@ -232,7 +231,7 @@ const CategoryBottomSheetModal = forwardRef(
                 idKey != null ? idKey : `${cat.title ?? 'c'}-${index}`;
 
               return (
-                <TouchableOpacity
+                <SpringPressable
                   key={key}
                   activeOpacity={0.75}
                   onPress={() =>
@@ -248,7 +247,7 @@ const CategoryBottomSheetModal = forwardRef(
                     ]}>
                     {cat.title}
                   </AppText>
-                </TouchableOpacity>
+                </SpringPressable>
               );
             })}
           </View>
@@ -257,11 +256,8 @@ const CategoryBottomSheetModal = forwardRef(
         <BottomSheetFooterButtons
           bottomSafe={bottomSafe}
           includeBottomSafePadding
-          onCancel={closeSheet}
           onSave={handleApply}
-          cancelLabel={BOTTOM_SHEET_BUTTON_LABELS.CANCEL}
           saveLabel="선택하기"
-          showCancel
           saveDisabled={!hasSelectionChange}
           autoCloseOnSave={false}
           buttonRowStyle={{marginTop: 0}}

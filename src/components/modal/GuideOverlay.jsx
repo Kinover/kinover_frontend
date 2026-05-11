@@ -1,14 +1,20 @@
 // src/components/modal/GuideOverlay.jsx
 // 실제 탭 화면 위에 딤 + 하이라이트(구멍) + 말풍선 + 하단바 (첨부 시안 구조)
-import React, {useEffect} from 'react';
-import { View, StyleSheet, TouchableOpacity, Pressable, Dimensions, Platform, Image } from 'react-native';
+import React, {useEffect, useRef} from 'react';
+import {
+  View,
+  StyleSheet,
+  Pressable,
+  Dimensions,
+  Platform,
+  Image,
+  TouchableWithoutFeedback,
+} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import Animated, {
   Easing,
-  FadeIn,
-  FadeOut,
   useAnimatedStyle,
   useSharedValue,
   withRepeat,
@@ -290,11 +296,17 @@ export default function GuideOverlay({
   const stableBubbleLeft = Math.round(bubbleLeft);
   const stableBubbleTop = bubbleTop != null ? Math.round(bubbleTop) : undefined;
 
+  // 하이라이트 구멍이 실제로 바뀔 때만 펄스를 다시 시작한다.
+  // stepIndex만 바뀌고 타깃 ref/좌표가 같으면(홈 가이드 1→2 등) 펄스를 리셋하지 않아 화면이 덜컥하지 않음.
+  const highlightHoleKey = hasHole
+    ? `${Math.round(holeX)}_${Math.round(holeY)}_${Math.round(holeW)}_${Math.round(holeH)}_${highlightRadius}`
+    : '';
+
   // 하이라이트 박스에 살짝 펄스 모션
   const highlightPulse = useSharedValue(0);
 
   useEffect(() => {
-    if (!hasHole) {
+    if (!hasHole || !highlightHoleKey) {
       return;
     }
     highlightPulse.value = 0;
@@ -306,16 +318,29 @@ export default function GuideOverlay({
       -1,
       false,
     );
-  }, [hasHole, highlightPulse, stepIndex]);
+  }, [hasHole, highlightHoleKey, highlightPulse]);
 
   const highlightStyle = useAnimatedStyle(() => {
-    const scale = 1 + highlightPulse.value * 0.06;
+    const scale = 1 + highlightPulse.value * 0.04;
     const opacity = 0.55 + highlightPulse.value * 0.35;
     return {
       opacity,
       transform: [{scale}],
     };
   });
+
+  // 오버레이 최초 1회만 말풍선 페이드 (스텝 전환 시에는 애니메이션 없음 → 흔들림 방지)
+  const bubbleIntro = useSharedValue(0);
+  const didBubbleIntro = useRef(false);
+  useEffect(() => {
+    if (didBubbleIntro.current) return;
+    didBubbleIntro.current = true;
+    bubbleIntro.value = withTiming(1, {duration: 200});
+  }, [bubbleIntro]);
+
+  const bubbleIntroStyle = useAnimatedStyle(() => ({
+    opacity: bubbleIntro.value,
+  }));
 
   const bubbleIsAboveTarget = hasHole && bubbleTop != null && bubbleTop < rawY;
   const showTimelineGuideImage = hasHole && key === 'timeline';
@@ -381,11 +406,10 @@ export default function GuideOverlay({
         )}
       </View>
 
-      <Pressable
-        style={StyleSheet.absoluteFill}
-        onPress={onNext}
-        pointerEvents="auto"
-      />
+      {/* 탭으로 다음 단계: Pressable ripple·스프링이 없어야 오버레이 전체가 덜컥하지 않음 */}
+      <TouchableWithoutFeedback onPress={onNext}>
+        <View style={StyleSheet.absoluteFill} accessible={false} />
+      </TouchableWithoutFeedback>
 
       {showTimelineGuideImage && (
         <View
@@ -426,10 +450,9 @@ export default function GuideOverlay({
       )}
 
       <Animated.View
-        entering={FadeIn.duration(160)}
-        exiting={FadeOut.duration(130)}
         style={[
           styles.bubbleWrap,
+          bubbleIntroStyle,
           hasHole && !shouldRenderWithoutHole
             ? {
                 position: 'absolute',
@@ -463,15 +486,18 @@ export default function GuideOverlay({
                 : getResponsiveHeight(12),
           },
         ]}>
-        <TouchableOpacity
+        <Pressable
+          android_ripple={Platform.OS === 'android' ? null : undefined}
           onPress={onSkip}
           hitSlop={{top: 12, bottom: 12, left: 12, right: 12}}
-          style={styles.skipButton}
-          activeOpacity={0.88}>
+          style={({pressed}) => [
+            styles.skipButton,
+            pressed && Platform.OS === 'ios' ? {opacity: 0.88} : null,
+          ]}>
           <AppText allowFontScaling={false} style={styles.skipText}>
             건너뛰기
           </AppText>
-        </TouchableOpacity>
+        </Pressable>
 
         <View
           pointerEvents="none"
@@ -495,14 +521,17 @@ export default function GuideOverlay({
           )}
         </View>
 
-        <TouchableOpacity
-          style={styles.nextButton}
-          onPress={onNext}
-          activeOpacity={0.88}>
+        <Pressable
+          android_ripple={Platform.OS === 'android' ? null : undefined}
+          style={({pressed}) => [
+            styles.nextButton,
+            pressed && Platform.OS === 'ios' ? {opacity: 0.92} : null,
+          ]}
+          onPress={onNext}>
           <AppText allowFontScaling={false} style={styles.nextButtonText}>
             {isLast ? doneText : nextText}
           </AppText>
-        </TouchableOpacity>
+        </Pressable>
       </View>
     </View>
   );

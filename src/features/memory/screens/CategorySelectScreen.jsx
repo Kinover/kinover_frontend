@@ -1,20 +1,21 @@
 // src/features/memory/screens/CategorySelectScreen.jsx
 
 import React, {useState, useLayoutEffect, useEffect, useMemo} from 'react';
-import { View, StyleSheet, FlatList, TouchableOpacity, Image, Platform } from 'react-native';
+import { View, FlatList, Image, Platform } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import CustomInput from 'components/CustomInput';
 import {useNavigation} from '@react-navigation/native';
 import {useDispatch, useSelector} from 'react-redux';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
-  getResponsiveFontSize,
   getResponsiveHeight,
   getResponsiveWidth,
 } from 'utils/responsive';
 import CategoryModal from '../components/modals/CategoryModal';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {EMPTY_STYLE, HEADER_STYLES, COLORS} from 'styles/style';
+import {EMPTY_STYLE, HEADER_STYLES} from 'styles/style';
+import {useColors, useIsDark} from 'hooks/useColors';
 import uuid from 'react-native-uuid';
 import {useGetCategoriesQuery, useGetPostByIdQuery} from '../services/memoryApi';
 import {setTempCategoryList} from '../store/categorySlice';
@@ -23,19 +24,24 @@ import CheckBadge from 'components/CheckBadge';
 import {FONTS} from 'styles/typography';
 
 export default function CategorySelectPage({route}) {
-  const styles = useScaledStyleSheet(rf => ({
+  const colors = useColors();
+  const isDark = useIsDark();
+  const headerTheme = useMemo(() => HEADER_STYLES.get(colors), [colors]);
+  const headerIconTint = isDark ? '#FFFFFF' : '#111827';
 
+  const styles = useScaledStyleSheet(
+    rf => ({
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: colors.surfacePrimary,
     borderTopWidth: 1,
-    borderColor: '#E5E5E5',
+    borderColor: colors.borderSubtle,
   },
 
   headerTitle: {
-    fontSize: HEADER_STYLES().defaultTitleFontSize,
-    fontFamily: HEADER_STYLES().defaultTitleFontFamily,
-    color: HEADER_STYLES().defaultTitleFontColor,
+    fontSize: headerTheme.defaultTitleFontSize,
+    fontFamily: headerTheme.defaultTitleFontFamily,
+    color: headerTheme.defaultTitleFontColor,
     lineHeight: getResponsiveHeight(26),
     textAlign: 'center',
     textAlignVertical: 'center',
@@ -56,13 +62,16 @@ export default function CategorySelectPage({route}) {
     paddingHorizontal: getResponsiveWidth(22),
   },
   selectedItem: {
-    backgroundColor: '#FFF3D2',
+    backgroundColor: isDark ? 'rgba(255, 200, 77, 0.22)' : '#FFF3D2',
   },
   itemText: {
     fontSize: rf(14.5),
     fontFamily: FONTS.REGULAR,
-    color: 'black',
+    color: colors.textPrimary,
     textAlignVertical: 'center',
+  },
+  itemTextOnSelected: {
+    color: colors.textOnBrandPrimary,
   },
 
  // 오른쪽 영역(체크뱃지 자리)
@@ -78,7 +87,7 @@ export default function CategorySelectPage({route}) {
 
   separator: {
     height: 1,
-    backgroundColor: '#eee',
+    backgroundColor: colors.borderSubtle,
     marginHorizontal: getResponsiveWidth(5),
   },
   addButton: {
@@ -86,7 +95,7 @@ export default function CategorySelectPage({route}) {
     paddingHorizontal: getResponsiveWidth(22),
   },
   addText: {
-    color: '#F8B500',
+    color: colors.brandPrimaryStrong,
     fontSize: rf(14.5),
     fontFamily: FONTS.MEDIUM,
   },
@@ -95,7 +104,7 @@ export default function CategorySelectPage({route}) {
     paddingHorizontal: getResponsiveWidth(10),
   },
   modalTitle: {
-    color: 'black',
+    color: colors.textPrimary,
     fontSize:
       Platform.OS === 'android'
         ? rf(17)
@@ -107,7 +116,7 @@ export default function CategorySelectPage({route}) {
   },
   inputBox: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderSubtle,
     borderRadius: 8,
     paddingHorizontal: getResponsiveWidth(10),
     paddingVertical:
@@ -115,9 +124,9 @@ export default function CategorySelectPage({route}) {
   },
   inputWrap: {
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.borderSubtle,
     borderRadius: getResponsiveWidth(10),
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.surfaceMuted,
     marginTop: getResponsiveHeight(8),
     marginBottom: getResponsiveHeight(8),
     paddingHorizontal: getResponsiveWidth(12),
@@ -133,13 +142,15 @@ export default function CategorySelectPage({route}) {
     paddingHorizontal: 0,
     fontSize: rf(16),
     fontFamily: FONTS.REGULAR,
-    color: '#111827',
+    color: colors.textPrimary,
     backgroundColor: 'transparent',
     borderWidth: 0,
     ...(Platform.OS === 'android' ? {includeFontPadding: false} : null),
   },
 
-  }));
+  }),
+    [colors, headerTheme, isDark],
+  );
   const navigation = useNavigation();
   const dispatch = useDispatch();
 
@@ -265,7 +276,7 @@ export default function CategorySelectPage({route}) {
         </AppText>
       ),
       headerRight: () => (
-        <TouchableOpacity
+        <SpringPressable
           onPress={() => {
             if (!selectedCategory) return;
 
@@ -285,9 +296,9 @@ export default function CategorySelectPage({route}) {
           activeOpacity={0.85}>
           <Image
             source={require('../../../assets/icons/check.png')}
-            style={styles.checkImage}
+            style={[styles.checkImage, {tintColor: headerIconTint}]}
           />
-        </TouchableOpacity>
+        </SpringPressable>
       ),
     });
   }, [
@@ -299,6 +310,8 @@ export default function CategorySelectPage({route}) {
     postId,
     removedUrls,
     postFromStore,
+    headerIconTint,
+    styles,
   ]);
 
  /** -----------------------
@@ -308,14 +321,15 @@ export default function CategorySelectPage({route}) {
     const isSelected = selectedIndex === index;
 
     return (
-      <TouchableOpacity
+      <SpringPressable
         onPress={() => {
           setSelectedIndex(index);
           setSelectedCategory(item);
         }}
         activeOpacity={0.85}
         style={[styles.itemContainer, isSelected && styles.selectedItem]}>
-        <AppText style={styles.itemText}>
+        <AppText
+          style={[styles.itemText, isSelected && styles.itemTextOnSelected]}>
           {item.title}
         </AppText>
 
@@ -326,15 +340,15 @@ export default function CategorySelectPage({route}) {
               size={getResponsiveWidth(16)}
               dotSize={getResponsiveWidth(8)}
               borderWidth={2}
-              borderColor={COLORS.brandPrimary}
+              borderColor={colors.brandPrimary}
               backgroundColor="#FFFFFF"
-              dotColor={COLORS.brandPrimary}
+              dotColor={colors.brandPrimary}
             />
           ) : (
             <View style={styles.badgePlaceholder} />
           )}
         </View>
-      </TouchableOpacity>
+      </SpringPressable>
     );
   };
 
@@ -349,14 +363,14 @@ export default function CategorySelectPage({route}) {
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={
           <>
-            <TouchableOpacity
+            <SpringPressable
               style={styles.addButton}
               onPress={() => setAddModalVisible(true)}
               activeOpacity={0.85}>
               <AppText style={styles.addText}>
                 카테고리 추가
               </AppText>
-            </TouchableOpacity>
+            </SpringPressable>
             <View style={styles.separator} />
           </>
         }

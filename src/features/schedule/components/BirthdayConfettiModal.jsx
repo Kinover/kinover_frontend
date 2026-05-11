@@ -7,6 +7,7 @@ import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {getResponsiveWidth, getResponsiveHeight} from 'utils/responsive';
 import {FONTS} from 'styles/typography';
+import {useColors, useIsDark} from 'hooks/useColors';
 
 export default function BirthdayModal({
   visible,
@@ -20,7 +21,10 @@ export default function BirthdayModal({
   onSelectChatRoom,
   chatRoomLoading = false,
 }) {
-  const styles = useScaledStyleSheet(rf => ({
+  const colors = useColors();
+  const isDark = useIsDark();
+  const styles = useScaledStyleSheet(
+    rf => ({
     modalBox: {
       width: getResponsiveWidth(326),
       maxWidth: '90%',
@@ -76,18 +80,18 @@ export default function BirthdayModal({
     /* ── 메시지 입력창 ─────────────────────── */
     messageInput: {
       borderWidth: 1,
-      borderColor: 'rgba(17,24,39,0.10)',
+      borderColor: isDark ? colors.borderSubtle : '#F5F5F5',
       borderRadius: getResponsiveWidth(14),
       paddingHorizontal: getResponsiveWidth(14),
-      paddingTop: getResponsiveHeight(12),
-      paddingBottom: getResponsiveHeight(12),
+      paddingTop: getResponsiveHeight(10),
+      paddingBottom: getResponsiveHeight(10),
       fontFamily: FONTS.REGULAR,
       fontSize: rf(13.5),
-      color: '#111827',
+      color: isDark ? colors.textPrimary : '#111827',
       lineHeight: getResponsiveHeight(21),
       minHeight: getResponsiveHeight(90),
       textAlignVertical: 'top',
-      backgroundColor: '#FAFAFA',
+      backgroundColor: isDark ? colors.surfaceMuted : '#F5F5F5',
       ...(Platform.OS === 'ios'
         ? {
             shadowColor: '#000',
@@ -99,7 +103,7 @@ export default function BirthdayModal({
     },
     messageInputFocused: {
       borderColor: '#FFC84D',
-      backgroundColor: '#FFFFFF',
+      borderWidth: 2,
     },
     messageHelperText: {
       marginTop: -getResponsiveHeight(2),
@@ -115,6 +119,9 @@ export default function BirthdayModal({
       fontSize: rf(12.5),
       color: '#374151',
       marginBottom: getResponsiveHeight(9),
+    },
+    messageSectionLabel: {
+      marginBottom: getResponsiveHeight(2),
     },
     roomChipWrap: {
       flexDirection: 'row',
@@ -158,7 +165,9 @@ export default function BirthdayModal({
     confirmDisabled: {
       opacity: 0.38,
     },
-  }));
+  }),
+    [colors, isDark],
+  );
 
   /* ── 이름 파싱 ──────────────────────────────── */
   const parsed = useMemo(() => {
@@ -191,9 +200,7 @@ export default function BirthdayModal({
       setEditedMessage(defaultMessage);
       setInputFocused(false);
     }
-    // defaultMessage는 namesText에 의존 → visible만 deps로 두면 충분
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible]);
+  }, [visible, defaultMessage]);
 
   const canSend =
     selectedChatRoomId != null &&
@@ -211,6 +218,7 @@ export default function BirthdayModal({
       visible={visible}
       onClose={onClose}
       onConfirm={handleConfirm}
+      closeText="닫기"
       confirmText={sendingMessage ? '전송 중...' : '보내기'}
       confirmButtonStyle={!canSend ? styles.confirmDisabled : null}
       title={null}
@@ -236,8 +244,10 @@ export default function BirthdayModal({
         </View>
 
         {/* ── 편집 가능한 축하 메시지 ──────────── */}
-        <AppText allowFontScaling={false} style={styles.messageHelperText}>
-          문구를 눌러 원하는 내용으로 자유롭게 수정할 수 있어요.
+        <AppText
+          allowFontScaling={false}
+          style={[styles.sectionLabel, styles.messageSectionLabel]}>
+          축하 메시지
         </AppText>
         <TextInput
           allowFontScaling={false}
@@ -250,11 +260,16 @@ export default function BirthdayModal({
           multiline
           editable={!sendingMessage}
           placeholder="축하 메시지를 입력해주세요"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={
+            isDark ? colors.textTertiary : '#9CA3AF'
+          }
           onFocus={() => setInputFocused(true)}
           onBlur={() => setInputFocused(false)}
           scrollEnabled={false}
         />
+        <AppText allowFontScaling={false} style={styles.messageHelperText}>
+          문구를 눌러 원하는 내용으로 자유롭게 수정할 수 있어요.
+        </AppText>
 
         {/* ── 채팅방 선택 ───────────────────────── */}
         <View>

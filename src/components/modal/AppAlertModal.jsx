@@ -1,6 +1,7 @@
 // src/components/AppAlertModal.jsx
 import React, {useEffect, useCallback, useMemo} from 'react';
-import { View, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, StyleSheet, Image } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import CustomModal from './CustomModal';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -9,6 +10,7 @@ import {
   getResponsiveWidth,
   getResponsiveFontSize,
 } from 'utils/responsive';
+import {useColors} from 'hooks/useColors';
 
 /**
  * AppAlertModal
@@ -51,6 +53,7 @@ export default function AppAlertModal({
    */
   imageFlank = null,
 }) {
+  const colors = useColors();
   const styles = useScaledStyleSheet(rf => ({
 
   modalBox: {borderRadius: getResponsiveWidth(22)},
@@ -96,7 +99,7 @@ export default function AppAlertModal({
     textAlign: 'center',
     fontSize: rf(15),
     fontWeight: '600',
-    color: '#374151',
+    color: colors.textDefault,
     lineHeight: Math.round(rf(22)),
   },
 
@@ -115,7 +118,7 @@ export default function AppAlertModal({
 
   buttonRow: {},
   closeText: {color: '#111827'},
-  confirmText: {color: '#FFFFFF'},
+  confirmText: {color: colors.textOnBrandPrimary},
 
   }));
  // 자동 닫힘
@@ -195,20 +198,20 @@ export default function AppAlertModal({
       closeTextStyle={styles.closeText}
       footerOutside={
         secondaryText ? (
-          <TouchableOpacity
+          <SpringPressable
             activeOpacity={0.85}
             onPress={onSecondary}
             hitSlop={{top: 8, bottom: 8, left: 12, right: 12}}>
             <AppText allowFontScaling={false} style={styles.outsideDismissText}>
               {secondaryText}
             </AppText>
-          </TouchableOpacity>
+          </SpringPressable>
         ) : tertiaryText ? (
-          <TouchableOpacity activeOpacity={0.85} onPress={handleTertiary}>
+          <SpringPressable activeOpacity={0.85} onPress={handleTertiary}>
             <AppText allowFontScaling={false} style={styles.tertiaryText}>
               {tertiaryText}
             </AppText>
-          </TouchableOpacity>
+          </SpringPressable>
         ) : null
       }>
       <View style={styles.body}>

@@ -348,12 +348,12 @@ export default function SetupFinishScreen() {
         <View style={styles.textBlock}>
           <Text allowFontScaling={false} style={styles.headerTitle}>
             {skippedFamilySetup
-              ? '이제 가족과 연결해 볼까요?'
+              ? '우리 가족의 소중한 기록,\nKinover에서 시작해요'
               : '가족 모임 준비 완료!'}
           </Text>
           <Text allowFontScaling={false} style={styles.headerSubTitle}>
             {skippedFamilySetup
-              ? '가족 코드는 홈에서 입력하면 돼요.\n시작하기를 누르면 홈으로 들어가요.'
+              ? '가족 모임을 만들고 함께 소중한 순간들을 기록해봐요.'
               : `이제 키노와 함께 가족의 하루를 나누고${'\n'}소중한 순간들을 편하게 기록해 보세요.`}
           </Text>
         </View>

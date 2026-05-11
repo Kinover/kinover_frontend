@@ -17,19 +17,8 @@ import {
   Video as VideoCompressor,
 } from 'react-native-compressor';
 
-import {
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  Image,
-  ActivityIndicator,
-  Pressable,
-  Dimensions,
-  KeyboardAvoidingView,
-  Keyboard,
-  Platform,
-  BackHandler,
-} from 'react-native';
+import { StyleSheet, View, Image, ActivityIndicator, Pressable, Dimensions, KeyboardAvoidingView, Keyboard, Platform, BackHandler } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 
 import CustomInput from 'components/CustomInput';
 import {useFocusEffect} from '@react-navigation/native';
@@ -45,6 +34,7 @@ import {getPresignedUrls, uploadFileToS3} from 'api/imageUrlApi';
 import useHideTabBar from 'hooks/useHideTabBar';
 import ToastModal from 'components/modal/ToastModal';
 import {HEADER_STYLES} from 'styles/style';
+import {useColors, useIsDark} from 'hooks/useColors';
 
 import {uploadPostApi} from 'api/uploadPostApi';
 import updatePostApi from 'api/updatePostApi';
@@ -104,20 +94,25 @@ const logAxiosError = (tag, e) => {
 };
 
 export default function CreatePostPage({navigation, route}) {
-  const styles = useScaledStyleSheet(rf => ({
+  const colors = useColors();
+  const isDark = useIsDark();
+  const headerTheme = useMemo(() => HEADER_STYLES.get(colors), [colors]);
+  const headerIconTint = isDark ? '#FFFFFF' : '#111827';
 
+  const styles = useScaledStyleSheet(
+    rf => ({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: colors.surfacePrimary,
     padding: SIDE_PADDING,
     borderTopWidth: 1,
-    borderColor: '#E5E5E5',
+    borderColor: colors.borderSubtle,
   },
 
   headerText: {
-    fontSize: HEADER_STYLES().defaultTitleFontSize,
-    fontFamily: HEADER_STYLES().defaultTitleFontFamily,
-    color: HEADER_STYLES().defaultTitleFontColor,
+    fontSize: headerTheme.defaultTitleFontSize,
+    fontFamily: headerTheme.defaultTitleFontFamily,
+    color: headerTheme.defaultTitleFontColor,
     lineHeight: getResponsiveHeight(26),
     textAlign: 'center',
     textAlignVertical: 'center',
@@ -150,7 +145,7 @@ export default function CreatePostPage({navigation, route}) {
     resizeMode: 'cover',
   },
   thumbFallback: {
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.surfaceMuted,
   },
 
   playOverlay: {
@@ -199,11 +194,11 @@ export default function CreatePostPage({navigation, route}) {
 
   inputWrap: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: colors.borderSubtle,
     borderRadius: 12,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.surfaceMuted,
   },
   inputFocused: {
     borderColor: '#FFC84D',
@@ -214,6 +209,7 @@ export default function CreatePostPage({navigation, route}) {
     padding: 0,
     borderWidth: 0,
     backgroundColor: 'transparent',
+    color: colors.textPrimary,
   },
 
   loadingOverlay: {
@@ -221,10 +217,14 @@ export default function CreatePostPage({navigation, route}) {
     zIndex: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.6)',
+    backgroundColor: isDark
+      ? 'rgba(17,24,39,0.72)'
+      : 'rgba(255,255,255,0.6)',
   },
 
-  }));
+  }),
+    [colors, headerTheme, isDark],
+  );
   const [createCategory] = useCreateCategoryMutation();
   const [deletePostImage] = useDeletePostImageMutation();
   const dispatch = useDispatch();
@@ -765,7 +765,7 @@ export default function CreatePostPage({navigation, route}) {
         </AppText>
       ),
       headerRight: () => (
-        <TouchableOpacity
+        <SpringPressable
           onPress={handleUpload}
           disabled={isUploading || !canSubmit}
           style={[
@@ -775,9 +775,9 @@ export default function CreatePostPage({navigation, route}) {
           activeOpacity={0.85}>
           <Image
             source={require('../../../assets/icons/check.png')}
-            style={styles.checkIcon}
+            style={[styles.checkIcon, {tintColor: headerIconTint}]}
           />
-        </TouchableOpacity>
+        </SpringPressable>
       ),
 
  // ADD: 헤더 뒤로 버튼 제거
@@ -786,7 +786,15 @@ export default function CreatePostPage({navigation, route}) {
  // ADD: iOS 스와이프 뒤로(gesture)도 차단
       gestureEnabled: false,
     });
-  }, [navigation, handleUpload, isUploading, isEditMode, canSubmit]);
+  }, [
+    navigation,
+    handleUpload,
+    isUploading,
+    isEditMode,
+    canSubmit,
+    headerIconTint,
+    styles,
+  ]);
 
  /* =========================
  * UI
@@ -883,7 +891,7 @@ export default function CreatePostPage({navigation, route}) {
             onBlur={() => setIsContentFocused(false)}
             onEndEditing={() => setIsContentFocused(false)}
             placeholder="글로 남긴 추억은 더 생생해요"
-            placeholderTextColor="#999"
+            placeholderTextColor={colors.textTertiary}
           />
         </View>
 

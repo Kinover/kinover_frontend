@@ -17,14 +17,16 @@ import {
 } from '../helpers/tabHeaderHelpers';
 
 import {getTabStackHeaderHeight} from 'utils/layoutMetrics';
-import {stackCardScreenOption} from '../navigationTheme';
+import {getStackCardScreenOption} from '../navigationTheme';
 
 import {HEADER_STYLES} from 'styles/style';
+import {useColors} from 'hooks/useColors';
 
 const Stack = createStackNavigator();
 
 export default function MemoryStack() {
   const navigation = useNavigation();
+  const colors = useColors();
 
   const defaultHeaderStyle = {
     borderBottomWidth: 0,
@@ -44,7 +46,7 @@ export default function MemoryStack() {
 
         headerStyle: defaultHeaderStyle,
         headerTitleAlign: 'left',
-        ...stackCardScreenOption,
+        ...getStackCardScreenOption(colors),
  // headerTitle: '',
         headerRight: () => (
           <RenderHeaderHome navigation={navigation} currentScreen="추억" />
@@ -57,7 +59,7 @@ export default function MemoryStack() {
               fontFamily: HEADER_STYLES().mainTitleFontFamily,
               fontWeight: HEADER_STYLES().mainTitleFontWeight,
               fontSize: HEADER_STYLES().mainTitleFontSize, // 24 → 16 (다른 앱이랑 비슷한 크기)
-              color: 'black',
+              color: colors.textPrimary,
               lineHeight: HEADER_STYLES().mainTitleLineHeight, // 너무 크지 않게 살짝만
               textAlignVertical: 'center',
             }}>

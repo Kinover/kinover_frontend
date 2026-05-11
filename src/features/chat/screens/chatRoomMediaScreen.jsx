@@ -1,12 +1,6 @@
 import React, {useCallback, useMemo, useState} from 'react';
-import {
-  View,
-  TouchableOpacity,
-  Image,
-  ActivityIndicator,
-  FlatList,
-  Dimensions,
-} from 'react-native';
+import { View, Image, ActivityIndicator, FlatList, Dimensions } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {useGetChatRoomMediaQuery} from '../services/chatApi';
 import MediaModal from '../components/messages/mediaModal';
 import AppText from 'components/AppText';
@@ -16,7 +10,7 @@ import {
   getResponsiveWidth,
   getResponsiveIconSize,
 } from 'utils/responsive';
-import {COLORS} from 'styles/style';
+import {useColors} from 'hooks/useColors';
 import {FONTS} from 'styles/typography';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -35,8 +29,10 @@ const TABS = [
 ];
 
 export default function ChatRoomMediaScreen({route}) {
-  const styles = useScaledStyleSheet(rf => ({
-    page: {flex: 1, backgroundColor: '#F5F5F5'},
+  const colors = useColors();
+  const styles = useScaledStyleSheet(
+    rf => ({
+    page: {flex: 1, backgroundColor: colors.surfaceMuted},
 
     tabRow: {
       flexDirection: 'row',
@@ -49,10 +45,10 @@ export default function ChatRoomMediaScreen({route}) {
       paddingVertical: getResponsiveHeight(7),
       paddingHorizontal: getResponsiveWidth(16),
       borderRadius: getResponsiveIconSize(20),
-      backgroundColor: '#FFFFFF',
+      backgroundColor: colors.surfacePrimary,
     },
     tabActive: {
-      backgroundColor: '#111827',
+      backgroundColor: colors.brandPrimary,
     },
     tabText: {
       fontSize: rf(13),
@@ -60,7 +56,7 @@ export default function ChatRoomMediaScreen({route}) {
       color: '#9CA3AF',
     },
     tabTextActive: {
-      color: '#FFFFFF',
+      color: colors.textOnBrandPrimary,
       fontFamily: FONTS.SEMI_BOLD,
     },
 
@@ -111,7 +107,9 @@ export default function ChatRoomMediaScreen({route}) {
       color: '#FFFFFF',
       fontFamily: FONTS.MEDIUM,
     },
-  }));
+  }),
+    [colors],
+  );
 
   const chatRoomId = route?.params?.chatRoomId ?? null;
   const initialType = String(route?.params?.initialType ?? 'ALL').toUpperCase();
@@ -193,7 +191,7 @@ export default function ChatRoomMediaScreen({route}) {
       const kind = normalizeMediaType(item);
       const isLastCol = index % COLUMNS === COLUMNS - 1;
       return (
-        <TouchableOpacity
+        <SpringPressable
           style={[
             styles.mediaCell,
             {marginRight: isLastCol ? 0 : GRID_GAP, marginBottom: GRID_GAP},
@@ -216,7 +214,7 @@ export default function ChatRoomMediaScreen({route}) {
               </AppText>
             </View>
           )}
-        </TouchableOpacity>
+        </SpringPressable>
       );
     },
     [openMediaModal, styles],
@@ -229,7 +227,7 @@ export default function ChatRoomMediaScreen({route}) {
         {TABS.map(({key, label}) => {
           const active = type === key;
           return (
-            <TouchableOpacity
+            <SpringPressable
               key={key}
               onPress={() => setType(key)}
               style={[styles.tab, active && styles.tabActive]}
@@ -239,14 +237,14 @@ export default function ChatRoomMediaScreen({route}) {
                 style={[styles.tabText, active && styles.tabTextActive]}>
                 {label}
               </AppText>
-            </TouchableOpacity>
+            </SpringPressable>
           );
         })}
       </View>
 
       {isLoading ? (
         <View style={styles.centerBox}>
-          <ActivityIndicator color={COLORS.brandPrimary} />
+          <ActivityIndicator color={colors.brandPrimary} />
           <AppText allowFontScaling={false} style={styles.helperText}>
             불러오는 중이에요
           </AppText>
@@ -277,7 +275,7 @@ export default function ChatRoomMediaScreen({route}) {
           ListFooterComponent={
             isFetching ? (
               <View style={{paddingVertical: getResponsiveHeight(14), alignItems: 'center'}}>
-                <ActivityIndicator color={COLORS.brandPrimary} />
+                <ActivityIndicator color={colors.brandPrimary} />
               </View>
             ) : null
           }

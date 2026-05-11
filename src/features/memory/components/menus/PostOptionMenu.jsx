@@ -8,7 +8,8 @@ import React, {
   forwardRef,
   useImperativeHandle,
 } from 'react';
-import { View, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import AppText from 'components/AppText';
 
 import Animated, {
@@ -106,7 +107,7 @@ function PostOptionsMenu(
       <Pressable style={StyleSheet.absoluteFillObject} onPress={close} />
 
       <Animated.View style={[styles.menuBox, boxStyle]}>
-        <TouchableOpacity
+        <SpringPressable
           onPress={() => {
             close();
             onSaveCurrent?.();
@@ -121,11 +122,11 @@ function PostOptionsMenu(
           <AppText style={styles.menuText}>
             현재 미디어 저장{currentLabel ? ` (${currentLabel})` : ''}
           </AppText>
-        </TouchableOpacity>
+        </SpringPressable>
 
         <View style={styles.menuDivider} />
 
-        <TouchableOpacity
+        <SpringPressable
           onPress={() => {
             close();
             onSaveAll?.();
@@ -140,12 +141,12 @@ function PostOptionsMenu(
           <AppText style={styles.menuText}>
             전체 미디어 저장 ({mediaCount || 0})
           </AppText>
-        </TouchableOpacity>
+        </SpringPressable>
 
         {showEditPost ? (
           <>
             <View style={styles.menuDivider} />
-            <TouchableOpacity
+            <SpringPressable
               onPress={() => {
                 close();
                 onEditPost?.();
@@ -155,13 +156,13 @@ function PostOptionsMenu(
               style={[styles.menuItem, disableMenu && {opacity: 0.5}]}
             >
               <AppText style={styles.menuText}>게시글 수정</AppText>
-            </TouchableOpacity>
+            </SpringPressable>
           </>
         ) : null}
 
         <View style={styles.menuDivider} />
 
-        <TouchableOpacity
+        <SpringPressable
           onPress={() => {
             close();
             onReportPost?.();
@@ -174,12 +175,12 @@ function PostOptionsMenu(
           ]}
         >
           <AppText style={styles.menuText}>신고</AppText>
-        </TouchableOpacity>
+        </SpringPressable>
 
         {showEditPost ? (
           <>
             <View style={styles.menuDivider} />
-            <TouchableOpacity
+            <SpringPressable
               onPress={() => {
                 close();
                 onDeleteCurrentImage?.();
@@ -194,10 +195,10 @@ function PostOptionsMenu(
               <AppText style={[styles.menuText, {color: '#FF5A5F'}]}>
                 현재 미디어 삭제
               </AppText>
-            </TouchableOpacity>
+            </SpringPressable>
 
             <View style={styles.menuDivider} />
-            <TouchableOpacity
+            <SpringPressable
               onPress={() => {
                 close();
                 onDeletePost?.();
@@ -209,7 +210,7 @@ function PostOptionsMenu(
               <AppText style={[styles.menuText, {color: '#FF5A5F'}]}>
                 게시글 삭제
               </AppText>
-            </TouchableOpacity>
+            </SpringPressable>
           </>
         ) : null}
       </Animated.View>

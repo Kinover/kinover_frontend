@@ -14,11 +14,9 @@ import {
   Pressable,
   Alert,
 } from 'react-native';
-import {
-  GestureHandlerRootView,
-} from 'react-native-gesture-handler';
+import {GestureHandlerRootView} from 'react-native-gesture-handler';
 import {NavigationContainer} from '@react-navigation/native';
-import {kinoverNavigationTheme} from './navigation/navigationTheme';
+import {useNavigationTheme} from './navigation/navigationTheme';
 import {Provider, useDispatch, useSelector} from 'react-redux';
 import {MenuProvider} from 'react-native-popup-menu';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
@@ -28,13 +26,10 @@ import LottieView from 'lottie-react-native';
 import mmkvStorage from 'utils/mmkvStorage';
 import * as Keychain from 'react-native-keychain';
 
-import {
-  deleteLoginInfo,
-  setNeedsSignup,
-  setHasFamily,
-} from 'utils/storage';
+import {deleteLoginInfo, setNeedsSignup, setHasFamily} from 'utils/storage';
 import {setLogout, setAuthChecked} from 'features/auth/store/loginSlice';
 import store, {persistor} from 'store';
+import {getDarkModeMmkvPreference, setDarkMode} from 'store/uiSlice';
 import {PersistGate} from 'redux-persist/integration/react';
 import RootScreen from './navigation/rootScreen';
 import {
@@ -49,7 +44,9 @@ import AppText from 'components/AppText';
 import {useLogout} from 'features/auth/hooks/useLogout';
 import {subscribeAccountBanned} from 'utils/accountBannedEvent';
 import {subscribeSessionInvalidated} from 'utils/sessionInvalidatedEvent';
-import useNetworkStatus, {registerReconnectCallback} from 'hooks/useNetworkStatus';
+import useNetworkStatus, {
+  registerReconnectCallback,
+} from 'hooks/useNetworkStatus';
 import {reconnectIfNeeded} from 'features/chat/hooks/ChatSocket';
 import {
   hydrateBlockedUsersFromStorage,
@@ -66,6 +63,17 @@ import {FONTS} from 'styles/typography';
 const SPLASH_KEY = 'SPLASH_SHOWN_V1';
 const SPLASH_KEYCHAIN_SERVICE = 'kinover.splash.once';
 const ENABLE_APP_LOCK = false;
+
+/**
+ * App.tsx - 애플리케이션 최상단 루트 컴포넌트
+ *
+ * [주요 역할]
+ * 1. 환경 설정: Redux, Navigation, Gesture, BottomSheet 등 각종 Provider 초기화
+ * 2. 상태 복구(Hydration): MMKV/Redux-Persist를 통한 다크모드, 차단 목록 등 로컬 데이터 복구
+ * 3. 온보딩 제어: 최초 실행 시에만 노출되는 Splash 화면 로직 관리
+ * 4. 보안/인증: 앱 잠금(Biometrics), 계정 제재, 세션 만료 등 인증 상태 감시
+ * 5. 시스템 브릿지: 앱 상태(Foreground/Background), 네트워크 연결, 차단 사용자 동기화
+ */
 
 function KinoverSplashView({loop = false, onAnimationFinish}) {
   return (
@@ -103,6 +111,9 @@ function SplashFirstRun({onFinish}) {
 
   return <KinoverSplashView loop={false} onAnimationFinish={finish} />;
 }
+
+// 스플래시를 당장 렌더하지 않더라도, 추후 재활성화를 위해 코드/리소스는 유지
+export {KinoverSplashView, SplashFirstRun};
 
 // 생체인식 잠금 — 백그라운드 갔다 오면 다시 인증 요구
 function AccountBannedBridge() {
@@ -254,10 +265,7 @@ function AppLockGate({readyForAuth}) {
       const prev = lastAppStateRef.current;
       lastAppStateRef.current = nextState;
 
-      if (
-        prev === 'active' &&
-        nextState === 'background'
-      ) {
+      if (prev === 'active' && nextState === 'background') {
         authSatisfiedRef.current = false;
         startupAuthTriedRef.current = true;
         return;
@@ -295,6 +303,7 @@ function AppLockGate({readyForAuth}) {
   );
 }
 
+// 네트워크 상태 변경 시 소켓 재연결 및 API 재요청
 function NetworkStatusBridge() {
   const dispatch = useDispatch();
   useNetworkStatus({alertWhenOffline: true, alertWhenReconnected: true});
@@ -311,7 +320,9 @@ function NetworkStatusBridge() {
 function BlockedUsersReduxBridge() {
   const dispatch = useDispatch();
   const rehydrated = useSelector(state => !!state?._persist?.rehydrated);
-  const rawUserId = useSelector(state => state?.user?.userId ?? state?.user?.id);
+  const rawUserId = useSelector(
+    state => state?.user?.userId ?? state?.user?.id,
+  );
   const userKey =
     rawUserId != null && String(rawUserId).trim() !== ''
       ? String(rawUserId)
@@ -354,23 +365,21 @@ function DevForceResetLogin() {
     if (!rehydrated) return;
     if (didRef.current) return;
     didRef.current = true;
- // 로그인 초기화 테스트할 때 위 플래그 true로 바꿔서 씀
+    // 로그인 초기화 테스트할 때 위 플래그 true로 바꿔서 씀
     (async () => {
       try {
-
         await persistor.purge();
 
- // 1) Keychain/MMKV login 관련 제거
+        // 1) Keychain/MMKV login 관련 제거
         await deleteLoginInfo();
 
- // 2) signup 플래그 정리
+        // 2) signup 플래그 정리
         await setNeedsSignup(false);
         await setHasFamily(null);
 
- // 3) redux state 정리
+        // 3) redux state 정리
         dispatch(setLogout());
         dispatch(setAuthChecked(true));
-
       } catch (e) {
         dispatch(setLogout());
         dispatch(setAuthChecked(true));
@@ -383,12 +392,58 @@ function DevForceResetLogin() {
 
 // ==================== Main ====================
 
-// 나중에 다크모드 켜면 여기서 바꿀 거
+// Provider 안에서 isDarkMode를 읽고 StatusBar + NavigationContainer를 담당
+function AppShell({
+  splashHydrated,
+  showSplash: _showSplash,
+  splashDone: _splashDone,
+  onSplashFinish: _onSplashFinish,
+  readyForAuth,
+}) {
+  const isDarkMode = useSelector(state => !!state.ui?.isDarkMode);
+  const navTheme = useNavigationTheme();
+
+  return (
+    <>
+      {Platform.OS === 'android' && (
+        <StatusBar
+          translucent
+          backgroundColor="transparent"
+          barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        />
+      )}
+      <MenuProvider>
+        <NavigationContainer
+          theme={navTheme}
+          ref={navigationRef}
+          onReady={() => {
+            flushPendingNavigation();
+          }}>
+          {!splashHydrated ? (
+            <View style={styles.splashGatePlaceholder} />
+          ) : (
+            <GuideOverlayProvider>
+              <View style={styles.guideRootWrap}>
+                <View style={styles.mainContent}>
+                  <RootScreen />
+                </View>
+                <View style={styles.guideOverlayWrap} pointerEvents="box-none">
+                  <GuideOverlayRoot />
+                </View>
+                <AppLockGate readyForAuth={readyForAuth} />
+              </View>
+            </GuideOverlayProvider>
+          )}
+        </NavigationContainer>
+      </MenuProvider>
+    </>
+  );
+}
+
 export default function App() {
   const [splashHydrated, setSplashHydrated] = useState(false);
   const [splashDone, setSplashDone] = useState(false);
   const [showSplash, setShowSplash] = useState(false);
-  const isDarkMode = false;
 
   useEffect(() => {
     (async () => {
@@ -439,24 +494,23 @@ export default function App() {
     setShowSplash(false);
   }, []);
 
-  const readyForAuth =
-    splashHydrated && (!showSplash || splashDone);
+  const readyForAuth = splashHydrated && (!showSplash || splashDone);
 
   return (
     <GestureHandlerRootView style={styles.root}>
-      {/* Android StatusBar 설정 (투명 + translucent) */}
-      {Platform.OS === 'android' && (
-        <StatusBar
-          translucent
-          backgroundColor="transparent"
-          barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        />
-      )}
-
       <SafeAreaProvider>
         <KeyboardProvider navigationBarTranslucent={Platform.OS === 'android'}>
           <Provider store={store}>
-            <PersistGate loading={null} persistor={persistor}>
+            <PersistGate
+              loading={null}
+              persistor={persistor}
+              onBeforeLift={() => {
+                // 다크모드 값 읽음
+                const pref = getDarkModeMmkvPreference();
+                if (pref !== null) {
+                  store.dispatch(setDarkMode(pref));
+                }
+              }}>
               <BottomSheetModalProvider>
                 <DevForceResetLogin />
                 <NetworkStatusBridge />
@@ -464,34 +518,13 @@ export default function App() {
                 <AppStateResourceBridge />
                 <AccountBannedBridge />
                 <SessionInvalidatedBridge />
-
-                <MenuProvider>
-                  <NavigationContainer
-                    theme={kinoverNavigationTheme}
-                    ref={navigationRef}
-                    onReady={() => {
-                      flushPendingNavigation();
-                    }}>
-                    {!splashHydrated ? (
-                      <View style={styles.splashGatePlaceholder} />
-                    ) : showSplash && !splashDone ? (
-                      <SplashFirstRun onFinish={onSplashFinish} />
-                    ) : (
-                      <GuideOverlayProvider>
-                        <View style={styles.guideRootWrap}>
-                          <View style={styles.mainContent}>
-                            <RootScreen />
-                          </View>
-                          <View style={styles.guideOverlayWrap} pointerEvents="box-none">
-                            <GuideOverlayRoot />
-                          </View>
-                          <AppLockGate readyForAuth={readyForAuth} />
-                        </View>
-                      </GuideOverlayProvider>
-                    )}
-
-                  </NavigationContainer>
-                </MenuProvider>
+                <AppShell
+                  splashHydrated={splashHydrated}
+                  showSplash={showSplash}
+                  splashDone={splashDone}
+                  onSplashFinish={onSplashFinish}
+                  readyForAuth={readyForAuth}
+                />
               </BottomSheetModalProvider>
             </PersistGate>
           </Provider>

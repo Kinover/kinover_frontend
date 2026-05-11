@@ -24,6 +24,7 @@ import {useModifyUserMutation} from '../services/homeApi';
 import CharacterSelectionCard from 'components/cards/CharacterSelectionCard';
 import SelectionFrameLayout from 'components/layouts/SelectionFrameLayout';
 import {FONTS} from 'styles/typography';
+import {useColors} from 'hooks/useColors';
 
 const EMOTIONS = [
   {
@@ -69,7 +70,7 @@ const EMOTIONS = [
 ];
 
 const CARD_H_DEFAULT = getResponsiveHeight(115);
-const RADIUS = 14;
+const RADIUS = getResponsiveIconSize(22);
 
 // 그림자 잘림 방지용 “가장자리 여백”
 const EDGE_GUTTER = getResponsiveWidth(6);
@@ -225,8 +226,10 @@ const EmotionItem = ({
  * @returns {JSX.Element} 감정 선택 화면
  */
 export default function StateScreen() {
-  const styles = useScaledStyleSheet(rf => ({
+  const colors = useColors();
 
+  const styles = useScaledStyleSheet(
+    rf => ({
   gridWrap: {
     flex: 1,
     minHeight: 0,
@@ -257,15 +260,17 @@ export default function StateScreen() {
   emotionText: {
     fontSize: rf(13.5),
     fontFamily: FONTS.REGULAR,
-    color: '#333',
+    color: colors.textSecondary,
   },
 
   emotionTextSelected: {
     fontFamily: FONTS.BOLD,
-    color: '#000',
+    color: colors.textPrimary,
   },
 
-  }));
+  }),
+    [colors],
+  );
   const navigation = useNavigation();
   const [modifyUser] = useModifyUserMutation();
   const user = useSelector(state => state.user);
@@ -319,9 +324,8 @@ export default function StateScreen() {
     <SelectionFrameLayout
       title="지금 나의 감정을 골라주세요"
       subtitle="선택한 감정은 24시간 동안 유지돼요."
-      backgroundColor="#F9F9F9"
       actionLabel="선택 완료"
-      actionButtonBackgroundColor="#FFC84D"
+      actionButtonBackgroundColor={colors.brandPrimary}
       actionButtonLabelColor="#111827"
       actionButtonStyle={{
         height: getResponsiveHeight(52),

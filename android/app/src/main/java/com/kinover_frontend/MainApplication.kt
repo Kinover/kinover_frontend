@@ -38,9 +38,9 @@ class MainApplication : Application(), ReactApplication {
     super.onCreate()
     SoLoader.init(this, OpenSourceMergedSoMapping)
 
-    // com.facebook.react.bridge.ReactBridge.init()
-    // KakaoSdk.init(this, "bce05be0c0a25b65bbb43adf582ff2f8") // 문자열 직접!
-    KakaoSdk.init(this, getString(R.string.kakao_app_key))
+    BuildConfig.KAKAO_NATIVE_APP_KEY.takeIf { it.isNotBlank() }?.let { key ->
+      KakaoSdk.init(this, key)
+    }
 
 
     if (BuildConfig.IS_NEW_ARCHITECTURE_ENABLED) {

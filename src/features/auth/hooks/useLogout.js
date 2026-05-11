@@ -14,6 +14,7 @@ import {clearEmotionPickAlertDismissMmkvForLogout} from 'utils/appEventDismissSt
 
 import {stopChatSocket} from 'features/chat/hooks/ChatSocket';
 import {setAuthChecked} from '../store/loginSlice';
+import {readDarkModeFromMmkv, setDarkMode} from 'store/uiSlice';
 import {setLocalBlockedUserIds} from 'features/moderation/utils/blockedUsersStorage';
 
 const nextTick = () => new Promise(resolve => setTimeout(resolve, 0));
@@ -50,6 +51,8 @@ export const useLogout = () => {
     // 모든 슬라이스(family/schedule/memory/chatRoom 등) + RTK Query 캐시를 한 번에 초기화
     dispatch({type: RESET_ALL_STATE});
     dispatch(baseApi.util.resetApiState());
+    // 테마는 기기 설정으로 MMKV에 남겨 두고, 풀 리셋 후 복원
+    dispatch(setDarkMode(readDarkModeFromMmkv()));
 
     // 로그인 화면으로 라우팅되도록 authChecked 복원
     dispatch(setAuthChecked(true));

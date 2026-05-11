@@ -2,17 +2,8 @@
 // src/features/post/components/MemoryDetailBottomSheet.js
 
 import React, {useMemo, useCallback, useState, useRef, useEffect} from 'react';
-import {
-  View,
-  TouchableOpacity,
-  Animated,
-  FlatList,
-  Image,
-  Platform,
-  Pressable,
-  Keyboard,
-  TextInput,
-} from 'react-native';
+import { View, Animated, FlatList, Image, Platform, Pressable, Keyboard, TextInput } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -32,7 +23,8 @@ const {Swipeable} = require('react-native-gesture-handler');
 import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
 import {useKeyboardHandler} from 'react-native-keyboard-controller';
 import {runOnJS} from 'react-native-reanimated';
-import {COLORS, EMPTY_STYLE} from 'styles/style';
+import {EMPTY_STYLE} from 'styles/style';
+import {useColors, useIsDark} from 'hooks/useColors';
 import BOTTOM_SHEET_TITLES from 'constants/bottomSheetTitles';
 import {FONTS} from 'styles/typography';
 const ACTION_W = getResponsiveWidth(70);
@@ -138,6 +130,7 @@ function CommentFooter({
   onFooterLayoutHeight,
   disabled = false,
 }) {
+  const colors = useColors();
   const insets = useSafeAreaInsets();
   const draftRef = useRef(initialText || '');
   const inputRef = useRef(null);
@@ -248,7 +241,7 @@ function CommentFooter({
 
   return (
     <View
-      style={{paddingBottom: contentBottomPad, backgroundColor: '#F9F9F9'}}
+      style={[styles.footerOuter, {paddingBottom: contentBottomPad}]}
       onLayout={e => {
         const h = e?.nativeEvent?.layout?.height ?? 0;
         if (h > 0) onFooterLayoutHeight?.(h);
@@ -317,7 +310,7 @@ function CommentFooter({
                   ? '지금은 댓글을 작성할 수 없어요'
                   : '댓글을 달아보세요'
               }
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               value={draftText}
               onChangeText={t => {
                 if (disabled) return;
@@ -344,7 +337,7 @@ function CommentFooter({
                   ? '지금은 댓글을 작성할 수 없어요'
                   : '댓글을 달아보세요'
               }
-              placeholderTextColor="#999"
+              placeholderTextColor={colors.textTertiary}
               value={draftText}
               onChangeText={t => {
                 if (disabled) return;
@@ -363,7 +356,7 @@ function CommentFooter({
             />
           )}
 
-          <TouchableOpacity
+          <SpringPressable
             onPress={handleSubmit}
             activeOpacity={0.9}
             disabled={!canSubmitComment}
@@ -379,7 +372,7 @@ function CommentFooter({
               ]}
               source={require('assets/icons/sendBt-dark.png')}
             />
-          </TouchableOpacity>
+          </SpringPressable>
         </View>
       </View>
     </View>
@@ -397,12 +390,21 @@ export default function MemoryDetailBottomSheet({
   onDeleteComment,
   onRequestReportComment,
   snapPoints: snapPointsProp,
-  backgroundColor = '#F9F9F9',
+  backgroundColor: backgroundColorProp,
   familyUsers = [],
   myUserId,
   onSheetChange,
   disabled = false,
 }) {
+  const colors = useColors();
+  const isDark = useIsDark();
+  const sheetBackgroundColor =
+    backgroundColorProp != null
+      ? backgroundColorProp
+      : isDark
+        ? colors.surfacePrimary
+        : '#F9F9F9';
+  const emptyPalette = useMemo(() => EMPTY_STYLE.get(colors), [colors]);
   const styles = useScaledStyleSheet(rf => ({
   sheetInner: {},
   sheetBackground: {
@@ -412,13 +414,15 @@ export default function MemoryDetailBottomSheet({
   sheetHandle: {
     width: getResponsiveWidth(48),
     height: getResponsiveHeight(4),
-    backgroundColor: 'rgba(156,163,175,0.45)',
+    backgroundColor: isDark
+      ? 'rgba(255,255,255,0.35)'
+      : 'rgba(156,163,175,0.45)',
   },
   commentSheetHeader: {
     paddingTop: getResponsiveHeight(12),
     paddingBottom: getResponsiveHeight(16),
     paddingHorizontal: getResponsiveWidth(14),
-    backgroundColor: '#F9F9F9',
+    backgroundColor: sheetBackgroundColor,
   },
   commentHeaderRow: {
     position: 'relative',
@@ -431,14 +435,14 @@ export default function MemoryDetailBottomSheet({
   commentSheetTitle: {
     fontFamily: FONTS.SEMI_BOLD,
     fontSize: rf(18.5),
-    color: '#111827',
+    color: colors.textStrong,
     textAlign: 'center',
   },
   commentCountText: {
     marginLeft: getResponsiveWidth(6),
     fontFamily: FONTS.REGULAR,
     fontSize: rf(12.5),
-    color: '#9CA3AF',
+    color: colors.textTertiary,
   },
   closeButton: {
     position: 'absolute',
@@ -452,11 +456,13 @@ export default function MemoryDetailBottomSheet({
     width: getResponsiveWidth(22),
     height: getResponsiveWidth(22),
     resizeMode: 'contain',
-    tintColor: '#6B7280',
+    tintColor: colors.textSecondary,
   },
   commentSheetDivider: {
     height: 1,
-    backgroundColor: 'rgba(17,24,39,0.1)',
+    backgroundColor: isDark
+      ? 'rgba(255,255,255,0.1)'
+      : 'rgba(17,24,39,0.1)',
   },
 
   commentBox: {
@@ -464,8 +470,8 @@ export default function MemoryDetailBottomSheet({
     paddingVertical: getResponsiveHeight(10),
   },
   commentBoxSwiped: {
-    backgroundColor: '#F3F4F6',
-    borderRadius: getResponsiveWidth(10),
+    backgroundColor: isDark ? colors.surfaceMuted : '#F3F4F6',
+    borderRadius: 0,
   },
   commentRow: {flexDirection: 'row'},
   commentWriterImage: {
@@ -483,26 +489,28 @@ export default function MemoryDetailBottomSheet({
   commentWriter: {
     fontFamily: FONTS.MEDIUM,
     fontSize: rf(13),
-    color: '#000',
+    color: colors.textPrimary,
   },
   timeText: {
     fontSize: rf(10),
-    color: '#999',
+    color: colors.textTertiary,
   },
   commentContent: {
     marginTop: getResponsiveHeight(4),
     fontFamily: FONTS.REGULAR,
     fontSize: rf(12),
     lineHeight: rf(15),
-    color: '#000',
+    color: colors.textDefault,
   },
   commentList: {
     flex: 1,
   },
   mentionText: {
-    color: '#111827',
+    color: isDark ? colors.textPrimary : '#111827',
     fontFamily: FONTS.SEMI_BOLD,
-    backgroundColor: 'rgba(255,200,77,0.22)',
+    backgroundColor: isDark
+      ? 'rgba(255,200,77,0.18)'
+      : 'rgba(255,200,77,0.22)',
     paddingHorizontal: getResponsiveWidth(6),
     paddingVertical: getResponsiveHeight(2),
     borderRadius: 8,
@@ -516,16 +524,16 @@ export default function MemoryDetailBottomSheet({
   },
   emptyText: {
     textAlign: 'center',
-    fontSize: EMPTY_STYLE().emptyFontSize,
-    fontFamily: EMPTY_STYLE().emptyFontFamily,
-    color: EMPTY_STYLE().emptyColor,
+    fontSize: emptyPalette.emptyFontSize,
+    fontFamily: emptyPalette.emptyFontFamily,
+    color: emptyPalette.emptyColor,
   },
   emptySubText: {
     marginTop: getResponsiveHeight(4),
     textAlign: 'center',
-    fontSize: EMPTY_STYLE().emptyFontSize,
-    fontFamily: EMPTY_STYLE().emptyFontFamily,
-    color: EMPTY_STYLE().emptyColor,
+    fontSize: emptyPalette.emptyFontSize,
+    fontFamily: emptyPalette.emptyFontFamily,
+    color: emptyPalette.emptyColor,
   },
 
   rightActionContainer: {
@@ -569,10 +577,15 @@ export default function MemoryDetailBottomSheet({
     height: getResponsiveHeight(26),
   },
 
+  footerOuter: {
+    backgroundColor: sheetBackgroundColor,
+  },
   footerBar: {
-    backgroundColor: '#F9F9F9',
+    backgroundColor: sheetBackgroundColor,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(17,24,39,0.08)',
+    borderTopColor: isDark
+      ? 'rgba(255,255,255,0.08)'
+      : 'rgba(17,24,39,0.08)',
     paddingTop: getResponsiveHeight(8),
     paddingHorizontal: getResponsiveWidth(14),
     paddingBottom: getResponsiveHeight(10),
@@ -585,18 +598,18 @@ export default function MemoryDetailBottomSheet({
     width: '100%',
     alignSelf: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(55, 65, 81,0.45)',
+    borderColor: isDark ? colors.borderSubtle : 'rgba(55, 65, 81,0.45)',
     borderRadius: getResponsiveWidth(10),
     paddingHorizontal: INPUT_SIDE_PAD,
     height: INPUT_H,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: isDark ? colors.surfaceMuted : '#F5F5F5',
   },
   commentInput: {
     flex: 1,
     fontSize: rf(14),
     fontFamily: FONTS.REGULAR,
     lineHeight: getResponsiveHeight(17),
-    color: '#000',
+    color: colors.textPrimary,
     paddingVertical: 0,
     textAlignVertical: 'center',
   },
@@ -612,7 +625,7 @@ export default function MemoryDetailBottomSheet({
     marginRight: -getResponsiveWidth(4),
   },
   commentSendBtInactive: {
-    tintColor: COLORS.textTertiary,
+    tintColor: colors.textTertiary,
     transform: [{scale: 0.85}],
   },
 
@@ -624,10 +637,10 @@ export default function MemoryDetailBottomSheet({
     elevation: 20,
   },
   mentionDropdownBox: {
-    backgroundColor: '#fff',
+    backgroundColor: isDark ? colors.surfaceSecondary : '#fff',
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(17,24,39,0.10)',
+    borderColor: isDark ? colors.borderSubtle : 'rgba(17,24,39,0.10)',
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOpacity: Platform.OS === 'ios' ? 0.08 : 0.2,
@@ -650,17 +663,19 @@ export default function MemoryDetailBottomSheet({
   mentionName: {
     flex: 1,
     minWidth: 0,
-    color: COLORS.textPrimary,
+    color: colors.textPrimary,
     fontFamily: FONTS.MEDIUM,
     fontSize: rf(13.5),
   },
   mentionHint: {
-    color: '#6B7280',
+    color: colors.textSecondary,
     fontFamily: FONTS.MEDIUM,
     fontSize: rf(12),
   },
 
-  }));
+  }),
+    [colors, isDark, sheetBackgroundColor, emptyPalette],
+  );
   const isSamsungAndroid = useMemo(() => {
     if (Platform.OS !== 'android') return false;
     const brand = String(
@@ -757,7 +772,7 @@ export default function MemoryDetailBottomSheet({
       return (
         <View style={styles.rightActionContainer}>
           <Animated.View style={{flex: 1, transform: [{translateX}]}}>
-            <TouchableOpacity
+            <SpringPressable
               style={styles.deleteAction}
               activeOpacity={0.85}
               onPress={() => {
@@ -767,12 +782,12 @@ export default function MemoryDetailBottomSheet({
               <AppText style={styles.deleteActionText}>
                 삭제
               </AppText>
-            </TouchableOpacity>
+            </SpringPressable>
           </Animated.View>
         </View>
       );
     },
-    [onDeleteComment, disabled],
+    [onDeleteComment, disabled, styles],
   );
 
   const renderReportRightActions = useCallback(
@@ -786,7 +801,7 @@ export default function MemoryDetailBottomSheet({
       return (
         <View style={styles.rightActionContainer}>
           <Animated.View style={{flex: 1, transform: [{translateX}]}}>
-            <TouchableOpacity
+            <SpringPressable
               style={styles.reportAction}
               activeOpacity={0.85}
               onPress={() => {
@@ -794,12 +809,12 @@ export default function MemoryDetailBottomSheet({
                 onRequestReportComment?.(comment);
               }}>
               <AppText style={styles.reportActionText}>신고</AppText>
-            </TouchableOpacity>
+            </SpringPressable>
           </Animated.View>
         </View>
       );
     },
-    [onRequestReportComment, disabled],
+    [onRequestReportComment, disabled, styles],
   );
 
   const renderCommentItem = useCallback(
@@ -919,6 +934,7 @@ export default function MemoryDetailBottomSheet({
       disabled,
       openedSwipeCommentId,
       onRequestReportComment,
+      styles,
     ],
   );
 
@@ -933,7 +949,7 @@ export default function MemoryDetailBottomSheet({
       handleIndicatorStyle={styles.sheetHandle}
       enablePanDownToClose={!disabled}
       backdropComponent={renderBackdrop}
-      backgroundStyle={[styles.sheetBackground, {backgroundColor}]}
+      backgroundStyle={[styles.sheetBackground, {backgroundColor: sheetBackgroundColor}]}
       onChange={onSheetChange}
       enableContentPanningGesture={false}
       enableHandlePanningGesture={!disabled}
@@ -950,7 +966,7 @@ export default function MemoryDetailBottomSheet({
             <AppText style={styles.commentCountText}>
               {commentCount}
             </AppText>
-            <TouchableOpacity
+            <SpringPressable
               onPress={handleCloseSheet}
               activeOpacity={0.75}
               style={styles.closeButton}>
@@ -958,7 +974,7 @@ export default function MemoryDetailBottomSheet({
                 source={require('assets/icons/close(1).png')}
                 style={styles.closeButtonIcon}
               />
-            </TouchableOpacity>
+            </SpringPressable>
           </View>
           <View style={styles.commentSheetDivider} />
         </View>

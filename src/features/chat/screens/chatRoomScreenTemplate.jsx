@@ -9,6 +9,7 @@ import useChatRoomTemplate from '../hooks/useChatRoomTemplate';
 import ChatRoomMessageList from '../components/messages/ChatRoomMessageList';
 import ChatRoomInputArea from '../components/rooms/ChatRoomInputArea';
 import ToastModal from 'components/modal/ToastModal';
+import {useColors} from 'hooks/useColors';
 
 export default function ChatRoomScreenTemplate({
   chatRoom,
@@ -17,6 +18,7 @@ export default function ChatRoomScreenTemplate({
   isKino,
   navigation,
 }) {
+  const colors = useColors();
   // 스택 헤더 높이 — iOS KAV offset에 사용
   const headerHeight = useHeaderHeight();
 
@@ -80,7 +82,7 @@ export default function ChatRoomScreenTemplate({
   //   (edge-to-edge + 자동완성 바 + 삼성 플로팅 툴바 포함)
   return (
     <KeyboardAvoidingView
-      style={styles.container}
+      style={[styles.container, {backgroundColor: colors.surfaceSecondary}]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       automaticOffset={Platform.OS === 'android'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? headerHeight : 0}>
@@ -90,5 +92,5 @@ export default function ChatRoomScreenTemplate({
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#fff'},
+  container: {flex: 1},
 });

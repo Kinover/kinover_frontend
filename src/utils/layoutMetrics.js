@@ -82,16 +82,9 @@ export const getKeyboardSafeGap = () => getResponsiveHeight(12);
 
 /**
  * 탭·루트 스택의 `headerStyle.height`.
- * Android는 동일 Figma 스케일(107.5)이 네이티브 헤더 툴바만 유독 두껍게 보이는 경우가 많아
- * 총 높이만 소폭 줄인다. iOS는 기존과 동일.
+ * iOS·Android 동일 스케일(상단 헤더 높이 통일).
  */
-export const getTabStackHeaderHeight = () => {
-  const base = getResponsiveHeight(107.5);
-  if (Platform.OS !== 'android') {
-    return base;
-  }
-  return getResponsiveHeight(76);
-};
+export const getTabStackHeaderHeight = () => getResponsiveHeight(107.5);
 
 /**
  * 메인 하단 탭바(AnimatedTabBar) 세로 점유 높이와 동일.

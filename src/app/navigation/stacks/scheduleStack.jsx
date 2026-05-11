@@ -3,15 +3,17 @@ import {createStackNavigator} from '@react-navigation/stack';
 import ScheduleScreen from 'features/schedule/screens';
 import AppText from 'components/AppText';
 import {getTabStackHeaderHeight} from 'utils/layoutMetrics';
-import {stackCardScreenOption} from '../navigationTheme';
+import {getStackCardScreenOption} from '../navigationTheme';
 import {
   RenderHeaderHome,
 } from '../helpers/tabHeaderHelpers';
 import {HEADER_STYLES} from 'styles/style';
+import {useColors} from 'hooks/useColors';
 
 const Stack = createStackNavigator();
 
 export default function ScheduleStack() {
+  const colors = useColors();
   return (
     <Stack.Navigator
       initialRouteName="일정"
@@ -25,7 +27,7 @@ export default function ScheduleStack() {
           height: getTabStackHeaderHeight(),
         },
         headerTitleAlign: 'left',
-        ...stackCardScreenOption,
+        ...getStackCardScreenOption(colors),
         headerLeft: () => null,
         headerTitle: () => (
           <AppText
@@ -34,7 +36,7 @@ export default function ScheduleStack() {
               fontFamily: HEADER_STYLES().mainTitleFontFamily,
               fontWeight: HEADER_STYLES().mainTitleFontWeight,
               fontSize: HEADER_STYLES().mainTitleFontSize, // 24 → 16 (다른 앱이랑 비슷한 크기)
-              color: 'black',
+              color: colors.textPrimary,
               lineHeight: HEADER_STYLES().mainTitleLineHeight, // 너무 크지 않게 살짝만
               textAlignVertical: 'center',
             }}>

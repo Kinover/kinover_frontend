@@ -2,15 +2,8 @@
 // src/features/chat/screens/CommunicationScreen.jsx
 
 import React, {useCallback, useState, useRef, useMemo} from 'react';
-import {
-  StyleSheet,
-  View,
-  TouchableOpacity,
-  FlatList,
-  RefreshControl,
-  Image,
-  Platform,
-} from 'react-native';
+import { StyleSheet, View, FlatList, RefreshControl, Image, Platform } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import DropShadow from 'react-native-drop-shadow';
 
@@ -40,18 +33,24 @@ import ToastModal from 'components/modal/ToastModal';
 
 import {BACKGROUND_COLORS, EMPTY_STYLE} from 'styles/style';
 import {hapticLight} from 'utils/haptic';
+import {useColors} from 'hooks/useColors';
 
 import CreateChatRoomBottomSheet from '../components/modals/CreateChatRoomBottomSheet';
 import ChatGuideModal from '../components/guides/ChatGuideModal';
 import {STORE_MOCK_ENABLED} from '../../home/utils/storeMockData';
 import {shouldHideChatRoomForBlockedUsers} from 'features/moderation/utils/blockedUserFilter';
+import {useDelayedLoading} from 'hooks/useDelayedLoading';
 const Text = AppText;
 
 export default function CommunicationScreen({navigation}) {
-  const styles = useScaledStyleSheet(rf => ({
+  const colors = useColors();
+  const styles = useScaledStyleSheet(rf => {
+    const emptyStyle = EMPTY_STYLE.get(colors);
+    const backgroundColors = BACKGROUND_COLORS.get(colors);
+    return {
     container: {
       flex: 1,
-      backgroundColor: '#F9F9F9',
+      // NOTE: 테마 토글 직후에도 즉시 반영되도록 실제 배경색은 렌더에서 주입한다.
     },
     listWrap: {flex: 1},
     listContent: {
@@ -60,9 +59,9 @@ export default function CommunicationScreen({navigation}) {
       gap: getResponsiveHeight(6),
     },
     noChatMessage: {
-      fontSize: EMPTY_STYLE().emptyFontSize,
-      fontFamily: EMPTY_STYLE().emptyFontFamily,
-      color: EMPTY_STYLE().emptyColor,
+      fontSize: emptyStyle.emptyFontSize,
+      fontFamily: emptyStyle.emptyFontFamily,
+      color: emptyStyle.emptyColor,
       textAlign: 'center',
       marginTop: getResponsiveHeight(80),
       lineHeight: rf(20),
@@ -78,16 +77,16 @@ export default function CommunicationScreen({navigation}) {
       marginBottom: getResponsiveHeight(8),
     },
     emptyText: {
-      fontSize: EMPTY_STYLE().emptyFontSize,
-      fontFamily: EMPTY_STYLE().emptyFontFamily,
-      color: EMPTY_STYLE().emptyColor,
+      fontSize: emptyStyle.emptyFontSize,
+      fontFamily: emptyStyle.emptyFontFamily,
+      color: emptyStyle.emptyColor,
       textAlign: 'center',
     },
     emptySubText: {
       marginTop: getResponsiveHeight(4),
-      fontSize: EMPTY_STYLE().emptyFontSize,
-      fontFamily: EMPTY_STYLE().emptyFontFamily,
-      color: EMPTY_STYLE().emptyColor,
+      fontSize: emptyStyle.emptyFontSize,
+      fontFamily: emptyStyle.emptyFontFamily,
+      color: emptyStyle.emptyColor,
       textAlign: 'center',
       lineHeight: getResponsiveHeight(18),
     },
@@ -120,7 +119,7 @@ export default function CommunicationScreen({navigation}) {
     fab: {
       width: '100%',
       height: '100%',
-      backgroundColor: BACKGROUND_COLORS.primaryBg,
+      backgroundColor: backgroundColors.primaryBg,
       borderRadius: 999,
       justifyContent: 'center',
     },
@@ -130,7 +129,8 @@ export default function CommunicationScreen({navigation}) {
       height: '45%',
       resizeMode: 'contain',
     },
-  }));
+  };
+  }, [colors]);
 
   const insets = useSafeAreaInsets();
   const fabNavInset = getFabAndroidNavInsetExtra(insets.bottom);
@@ -169,6 +169,7 @@ export default function CommunicationScreen({navigation}) {
   // familyId/userId 미확보 구간(autoLogin 진행 중)도 로딩으로 처리 → 빈 화면 대신 스켈레톤 표시
   // auth 확인이 끝난 뒤에는 식별자가 비어도 무한 스켈레톤에 머물지 않게 한다.
   const loading = isLoading || (!loginAuthChecked && (!familyId || !userId));
+  const showSkeleton = useDelayedLoading(loading);
 
   // RTK Query: 채팅방 생성 mutation
   const [createChatRoom] = useCreateChatRoomMutation();
@@ -286,7 +287,7 @@ export default function CommunicationScreen({navigation}) {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, {backgroundColor: colors.surfaceSecondary}]}>
       {/* 소통 가이드 모달: 실제 화면 위 오버레이 */}
       <ChatGuideModal
         enabled={true}
@@ -301,7 +302,7 @@ export default function CommunicationScreen({navigation}) {
       />
 
       <View key={contentKey} style={styles.listWrap}>
-        {loading && chatRoomList.length === 0 ? (
+        {showSkeleton && chatRoomList.length === 0 ? (
           <FlatList
             data={Array.from({length: 6}, (_, i) => `skeleton-${i}`)}
             keyExtractor={item => item}
@@ -381,7 +382,7 @@ export default function CommunicationScreen({navigation}) {
             pointerEvents="none"
             style={styles.fabMeasure}
           />
-          <TouchableOpacity
+          <SpringPressable
             onPress={openCreateChatRoomSheet}
             style={styles.fab}
             activeOpacity={0.8}
@@ -393,7 +394,7 @@ export default function CommunicationScreen({navigation}) {
               tintColor="white"
               accessibilityIgnoresInvertColors
             />
-          </TouchableOpacity>
+          </SpringPressable>
           </View>
         </DropShadow>
       </View>

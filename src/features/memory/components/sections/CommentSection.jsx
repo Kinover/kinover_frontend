@@ -1,7 +1,8 @@
 // src/features/post/components/CommentSection.js
 
 import React, {useEffect, useState} from 'react';
-import { View, ScrollView, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Platform, Animated } from 'react-native';
+import { View, ScrollView, TextInput, StyleSheet, SafeAreaView, Platform, Animated } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 
 import AppText, {AnimatedAppText} from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
@@ -228,7 +229,7 @@ export default function CommentSection({
     return (
       <View style={styles.rightActionContainer}>
         <Animated.View style={{flex: 1, transform: [{translateX}], opacity}}>
-          <TouchableOpacity
+          <SpringPressable
             style={[styles.deleteAction, {flex: 1}]}
             activeOpacity={0.8}
             onPress={() => onDeleteComment?.(commentId)}>
@@ -239,7 +240,7 @@ export default function CommentSection({
               ]}>
               삭제
             </AnimatedAppText>
-          </TouchableOpacity>
+          </SpringPressable>
         </Animated.View>
       </View>
     );
@@ -265,7 +266,7 @@ export default function CommentSection({
     return (
       <View style={styles.rightActionContainer}>
         <Animated.View style={{flex: 1, transform: [{translateX}], opacity}}>
-          <TouchableOpacity
+          <SpringPressable
             style={[styles.reportAction, {flex: 1}]}
             activeOpacity={0.8}
             onPress={() => onReportComment?.(comment)}>
@@ -276,7 +277,7 @@ export default function CommentSection({
               ]}>
               신고
             </AnimatedAppText>
-          </TouchableOpacity>
+          </SpringPressable>
         </Animated.View>
       </View>
     );
@@ -390,7 +391,7 @@ export default function CommentSection({
               onSubmitEditing={onSubmitComment}
               returnKeyType="send"
             />
-            <TouchableOpacity
+            <SpringPressable
               onPress={onSubmitComment}
               disabled={!(commentText || '').trim().length}>
               <FastImage
@@ -401,7 +402,7 @@ export default function CommentSection({
                 source={require('assets/icons/paperPlaneTilt.png')}
                 resizeMode={FastImage.resizeMode.contain}
               />
-            </TouchableOpacity>
+            </SpringPressable>
           </View>
         </>
       )}

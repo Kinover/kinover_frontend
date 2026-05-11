@@ -1,5 +1,6 @@
 import React from 'react';
-import { TouchableOpacity, Image, StyleSheet } from 'react-native';
+import { Image, StyleSheet } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import AppText from 'components/AppText';
 import {useScaledStyleSheet} from 'hooks/useScaledStyleSheet';
 import {
@@ -42,13 +43,13 @@ export default function CategoryDropdownButton({selectedTitle, onPress}) {
 
   }));
   return (
-    <TouchableOpacity style={[styles.categoryButton]} onPress={onPress}>
+    <SpringPressable style={[styles.categoryButton]} onPress={onPress}>
       <AppText style={styles.text}>{selectedTitle}</AppText>
       <Image
         source={require('assets/icons/category-down.png')}
         style={styles.icon}
       />
-    </TouchableOpacity>
+    </SpringPressable>
   );
 }
 

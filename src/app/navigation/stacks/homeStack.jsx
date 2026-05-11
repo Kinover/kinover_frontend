@@ -9,12 +9,13 @@ import {
   RenderHeaderTitleLogo,
 } from '../helpers/tabHeaderHelpers';
 import {getTabStackHeaderHeight} from 'utils/layoutMetrics';
-import {stackCardScreenOption} from '../navigationTheme';
+import {getStackCardScreenOption} from '../navigationTheme';
 import StateScreen from 'features/home/screens/stateScreen';
 
 import {notificationApi} from 'features/notification/services/notificationApi';
 import {useDispatch, useSelector} from 'react-redux';
 import {useIsFocused} from '@react-navigation/native';
+import {useColors} from 'hooks/useColors';
 
 const Stack = createStackNavigator();
 
@@ -29,6 +30,7 @@ const defaultHeaderStyle = {
 
 const HomeStack = ({route}) => {
   const dispatch = useDispatch();
+  const colors = useColors();
 
   const isFocused = useIsFocused();
   const userId = useSelector(state => state.user.userId);
@@ -71,7 +73,7 @@ const HomeStack = ({route}) => {
         headerStyle: defaultHeaderStyle,
         headerTitleAlign: 'bottom',
         headerShown: true,
-        ...stackCardScreenOption,
+        ...getStackCardScreenOption(colors),
         headerLeft: () => <RenderHeaderTitleLogo />,
  // headerLeft: null,
         headerTitle: '',

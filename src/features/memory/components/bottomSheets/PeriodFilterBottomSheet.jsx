@@ -1,5 +1,6 @@
 import React, {useEffect, useMemo, useState, useRef, useCallback} from 'react';
-import {View, TouchableOpacity, PanResponder, Image, Platform} from 'react-native';
+import { View, PanResponder, Image, Platform } from 'react-native';
+import SpringPressable from 'components/SpringPressable';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {BottomSheetScrollView} from '@gorhom/bottom-sheet';
 
@@ -12,8 +13,6 @@ import {getResponsiveHeight, getResponsiveWidth} from 'utils/responsive';
 import {useReduxFontMode} from 'hooks/useReduxFontMode';
 import {getSheetSnapPointsByTier} from 'utils/layoutMetrics';
 import {FONTS} from 'styles/typography';
-import {BOTTOM_SHEET_BUTTON_LABELS} from 'constants/bottomSheetTitles';
-
 const DEFAULT_SORT_OPTIONS = [
   {key: 'none', title: '선택 안 함'},
   {key: 'latest', title: '최신순'},
@@ -385,6 +384,33 @@ export default function PeriodFilterModal({
     });
   }, [onApply, periodEnabled, range, selectedSortKey]);
 
+  const normalizeAppliedSort = k =>
+    k == null || k === '' || k === 'none' ? null : k;
+
+  const hasFilterChanges = useMemo(() => {
+    const nextStart = periodEnabled ? range.startDate : '';
+    const nextEnd = periodEnabled ? range.endDate : '';
+    const nextSort = normalizeAppliedSort(selectedSortKey);
+
+    const initStart = String(initialStartDate ?? '').trim();
+    const initEnd = String(initialEndDate ?? '').trim();
+    const initSort = normalizeAppliedSort(initialSortKey);
+
+    return (
+      nextStart !== initStart ||
+      nextEnd !== initEnd ||
+      nextSort !== initSort
+    );
+  }, [
+    periodEnabled,
+    range.startDate,
+    range.endDate,
+    selectedSortKey,
+    initialStartDate,
+    initialEndDate,
+    initialSortKey,
+  ]);
+
   useEffect(() => {
     if (visible) {
       setTimeout(() => modalRef.current?.present?.(), 0);
@@ -423,7 +449,7 @@ export default function PeriodFilterModal({
             {(sortOptions || DEFAULT_SORT_OPTIONS).map(opt => {
               const active = opt.key === selectedSortKey;
               return (
-                <TouchableOpacity
+                <SpringPressable
                   key={opt.key}
                   activeOpacity={0.8}
                   style={[styles.sortOption, active && styles.sortOptionActive]}
@@ -446,7 +472,7 @@ export default function PeriodFilterModal({
                       source={require('assets/icons/check-gray.png')}
                     />
                   ) : null}
-                </TouchableOpacity>
+                </SpringPressable>
               );
             })}
           </View>
@@ -456,7 +482,7 @@ export default function PeriodFilterModal({
         <View style={styles.rangeCard}>
           <View style={styles.sectionHeaderRow}>
             <AppText style={styles.sectionTitle}>기간 선택</AppText>
-            <TouchableOpacity
+            <SpringPressable
               activeOpacity={0.8}
               style={[
                 styles.sectionToggleBtn,
@@ -470,7 +496,7 @@ export default function PeriodFilterModal({
                 ]}>
                 선택 안 함
               </AppText>
-            </TouchableOpacity>
+            </SpringPressable>
           </View>
 
           <View
@@ -546,11 +572,9 @@ export default function PeriodFilterModal({
       <BottomSheetFooterButtons
         bottomSafe={bottomSafe}
         includeBottomSafePadding
-        onCancel={handleDismiss}
         onSave={onConfirm}
-        cancelLabel={BOTTOM_SHEET_BUTTON_LABELS.CANCEL}
         saveLabel="적용"
-        showCancel
+        saveDisabled={!hasFilterChanges}
         autoCloseOnSave={false}
         buttonRowStyle={{marginTop: 0}}
         style={[

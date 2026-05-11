@@ -7,11 +7,10 @@ import Animated, {
   withSequence,
   withSpring,
 } from 'react-native-reanimated';
-import LinearGradient from 'react-native-linear-gradient';
+import {BlurView} from '@react-native-community/blur';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-
 import {hapticSelection, hapticLight} from 'utils/haptic';
-import {getAndroidNavBottomInsetEstimate} from 'utils/layoutMetrics';
+import {useColors, useIsDark} from 'hooks/useColors';
 
 const TabBarVisibilityContext = createContext(null);
 
@@ -60,11 +59,11 @@ function AnimatedTabButton({
   const pressScale = useSharedValue(1);
   const pressOpacity = useSharedValue(1);
 
- // focused 상태 애니메이션(항상 살짝 강조)
-  const focusedScale = useSharedValue(focused ? 1.025 : 1);
+ // focused 상태 애니메이션
+  const focusedScale = useSharedValue(focused ? 1.1 : 1);
 
   useEffect(() => {
-    focusedScale.value = withTiming(focused ? 1.04 : 1, {duration: 180});
+    focusedScale.value = withSpring(focused ? 1.1 : 1, {damping: 12, stiffness: 200});
   }, [focused, focusedScale]);
 
   const animStyle = useAnimatedStyle(() => {
@@ -160,17 +159,19 @@ function AnimatedTabButton({
 
 export function AnimatedTabBar(props) {
   const {tabBarTranslateY} = useTabBarVisibility();
+  const colors = useColors();
+  const isDark = useIsDark();
 
-  // Samsung 3버튼 내비게이션 등 Android 기기에서 insets.bottom이 0으로 내려오는 경우 대비
-  // screen - window - statusBar 추정값과 비교해 더 큰 값을 사용
   const insets = useSafeAreaInsets();
   const rawInsetBottom = Number(insets?.bottom ?? 0);
-  const navInset =
-    Platform.OS === 'android'
-      ? Math.max(rawInsetBottom, getAndroidNavBottomInsetEstimate())
-      : 0;
+  // Android는 기본적으로 window가 system navigation bar 영역을 제외하는 경우가 많아서
+  // "추정 네비바 높이"를 더하면 탭바 내부에 불필요한 빈 공간이 생길 수 있음.
+  // 탭바에서는 safe-area insets.bottom만 신뢰한다.
+  const navInset = Platform.OS === 'android' ? rawInsetBottom : 0;
 
-  const H = 90 + navInset;
+  /** Android: 탭 영역을 iOS 대비 살짝 넉넉히 (터치·가독) */
+  const tabBarBodyPx = Platform.OS === 'android' ? 94 : 84;
+  const H = tabBarBodyPx + navInset;
 
   const activeTabName = props?.state?.routes?.[props.state.index]?.name;
   const activeTabState = props?.state?.routes?.[props.state.index]?.state;
@@ -207,14 +208,41 @@ export function AnimatedTabBar(props) {
   return (
     <Animated.View
       pointerEvents={shouldShowTabBar ? 'auto' : 'none'}
-      style={[styles.wrapper, {height: H}, animStyle]}>
-      <LinearGradient
-        pointerEvents="none"
-        colors={['rgba(0,0,0,0.00)', 'rgba(0,0,0,0.06)', 'rgba(0,0,0,0.12)']}
-        style={styles.gradient}
+      style={[
+        styles.wrapper,
+        {
+          height: H,
+          backgroundColor:
+            Platform.OS === 'android'
+              ? colors.surfacePrimary
+              : 'transparent',
+        },
+        animStyle,
+      ]}>
+
+      {Platform.OS === 'ios' ? (
+        <BlurView
+          style={StyleSheet.absoluteFill}
+          blurType={isDark ? 'dark' : 'xlight'}
+          blurAmount={24}
+          reducedTransparencyFallbackColor={
+            isDark ? colors.surfacePrimary : 'white'
+          }
+        />
+      ) : null}
+
+      <View
+        style={[styles.separator, {backgroundColor: colors.borderSubtle}]}
       />
 
-      <View style={[styles.row, {paddingBottom: 15 + navInset}]}>
+      <View
+        style={[
+          styles.row,
+          {
+            paddingBottom: 14 + navInset,
+            paddingTop: Platform.OS === 'android' ? 12 : 0,
+          },
+        ]}>
         {props.state.routes.map((route, index) => {
           const focused = props.state.index === index;
           const descriptor = props.descriptors?.[route.key];
@@ -242,17 +270,16 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'white',
-    overflow: 'visible',
+    overflow: 'hidden',
     zIndex: 9999,
-    elevation: 9999,
+    elevation: Platform.OS === 'android' ? 8 : 0,
   },
-  gradient: {
+  separator: {
     position: 'absolute',
-    top: -18,
+    top: 0,
     left: 0,
     right: 0,
-    height: 18,
+    height: StyleSheet.hairlineWidth,
   },
   row: {
     flex: 1,
